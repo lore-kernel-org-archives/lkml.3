@@ -1,127 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078Ab3FMSal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:30:41 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36378 "EHLO hydra.sisk.pl"
+	id S1759134Ab3FMSaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:30:09 -0400
+Received: from etezian.org ([198.101.225.253]:56460 "EHLO mail.etezian.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758359Ab3FMSai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:30:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
-Date: Thu, 13 Jun 2013 20:39:51 +0200
-Message-ID: <2136440.CPpNzdaTXG@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1841512.D0ScSNfNgy@vostro.rjw.lan>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-4-git-send-email-jiang.liu@huawei.com> <1841512.D0ScSNfNgy@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758959Ab3FMS3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:29:00 -0400
+From: Andi Shyti <andi@etezian.org>
+To: arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, pc@asdf.org, oatilla@gmail.com,
+        andi@etezian.org
+Subject: [PATCH 13/19] bh1770glc: Code cleaning and aligning in source code
+Date: Thu, 13 Jun 2013 20:20:47 +0200
+Message-Id: <ccace4fcc6af928dfc0b4cc95b5f021ed2767e23.1371145891.git.andi@etezian.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1371145891.git.andi@etezian.org>
+References: <cover.1371145891.git.andi@etezian.org>
+In-Reply-To: <cover.1371145891.git.andi@etezian.org>
+References: <cover.1371145891.git.andi@etezian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 13, 2013 08:26:10 PM Rafael J. Wysocki wrote:
-> On Friday, June 14, 2013 12:32:26 AM Jiang Liu wrote:
-> > ACPI dock driver can't be built as a module any more, so clean up
-> > module related code.
-> > 
-> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> > Cc: Shaohua Li <shaohua.li@intel.com>
-> > Cc: Len Brown <lenb@kernel.org>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: linux-acpi@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> 
-> How exactly does this depend on [2/9]?  If it doesn't at all, it should go
-> after [1/9].
+From: Onur Atilla <oatilla@gmail.com>
 
-However, this isn't even 3.10 material, so please stop sending it for now.
+Removed unused variables and definitions, adjusted some code
+alignement and removed trailing spaces.
 
-Thanks,
-Rafael
+Signed-off-by: Onur Atilla <oatilla@gmail.com>
+Signed-off-by: Andi Shyti <andi@etezian.org>
+---
+ drivers/misc/bh1770glc.c      |   55 +++++++++++++++++++----------------------
+ include/linux/i2c/bh1770glc.h |   25 ++++++++++---------
+ 2 files changed, 38 insertions(+), 42 deletions(-)
 
-
-> > ---
-> >  drivers/acpi/dock.c | 41 -----------------------------------------
-> >  1 file changed, 41 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> > index 79c8d9e..50e38b7 100644
-> > --- a/drivers/acpi/dock.c
-> > +++ b/drivers/acpi/dock.c
-> > @@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
-> >  
-> >  static struct atomic_notifier_head dock_notifier_list;
-> >  
-> > -static const struct acpi_device_id dock_device_ids[] = {
-> > -	{"LNXDOCK", 0},
-> > -	{"", 0},
-> > -};
-> > -MODULE_DEVICE_TABLE(acpi, dock_device_ids);
-> > -
-> 
-> Don't we actually need the device IDs?
-> 
-> >  struct dock_station {
-> >  	acpi_handle handle;
-> >  	unsigned long last_dock_time;
-> > @@ -1013,30 +1007,6 @@ err_unregister:
-> >  }
-> >  
-> >  /**
-> > - * dock_remove - free up resources related to the dock station
-> > - */
-> > -static int dock_remove(struct dock_station *ds)
-> > -{
-> > -	struct dock_dependent_device *dd, *tmp;
-> > -	struct platform_device *dock_device = ds->dock_device;
-> > -
-> > -	if (!dock_station_count)
-> > -		return 0;
-> > -
-> > -	/* remove dependent devices */
-> > -	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
-> > -		kfree(dd);
-> > -
-> > -	list_del(&ds->sibling);
-> > -
-> > -	/* cleanup sysfs */
-> > -	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
-> > -	platform_device_unregister(dock_device);
-> > -
-> > -	return 0;
-> > -}
-> > -
-> > -/**
-> >   * find_dock_and_bay - look for dock stations and bays
-> >   * @handle: acpi handle of a device
-> >   * @lvl: unused
-> > @@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
-> >  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
-> >  	return 0;
-> >  }
-> > -
-> > -static void __exit dock_exit(void)
-> > -{
-> > -	struct dock_station *tmp, *dock_station;
-> > -
-> > -	unregister_acpi_bus_notifier(&dock_acpi_notifier);
-> > -	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
-> > -		dock_remove(dock_station);
-> > -}
-> > -
-> > -module_exit(dock_exit);
-> 
-> The other changes look OK to me.
-
+diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
+index fe49964..054d3f3 100644
+--- a/drivers/misc/bh1770glc.c
++++ b/drivers/misc/bh1770glc.c
+@@ -105,27 +105,25 @@
+ #define BH1770_ENABLE		1
+ #define BH1770_PROX_CHANNELS	1
+ 
+-#define BH1770_LUX_DEFAULT_RATE	1 /* Index to lux rate table */
+-#define BH1770_PROX_DEFAULT_RATE 1 /* Direct HW value =~ 50Hz */
+-#define BH1770_PROX_DEF_RATE_THRESH 6 /* Direct HW value =~ 5 Hz */
+-#define BH1770_STARTUP_DELAY	50
+-#define BH1770_RESET_TIME	10
+-#define BH1770_TIMEOUT		2100 /* Timeout in 2.1 seconds */
+-
+-#define BH1770_LUX_RANGE	65535
+-#define BH1770_PROX_RANGE	255
+-#define BH1770_COEF_SCALER	1024
+-#define BH1770_CALIB_SCALER	8192
+-#define BH1770_LUX_NEUTRAL_CALIB_VALUE (1 * BH1770_CALIB_SCALER)
+-#define BH1770_LUX_DEF_THRES	1000
+-#define BH1770_PROX_DEF_THRES	70
+-#define BH1770_PROX_DEF_ABS_THRES   100
+-#define BH1770_DEFAULT_PERSISTENCE  10
+-#define BH1770_PROX_MAX_PERSISTENCE 50
+ #define BH1770_LUX_GA_SCALE	16384
+ #define BH1770_LUX_CF_SCALE	2048 /* CF ChipFactor */
+-#define BH1770_NEUTRAL_CF	BH1770_LUX_CF_SCALE
+-#define BH1770_LUX_CORR_SCALE	4096
++#define BH1770_LUX_DEFAULT_RATE		1 /* Index to lux rate table */
++#define BH1770_PROX_DEFAULT_RATE	1 /* Direct HW value =~ 50Hz */
++#define BH1770_PROX_DEF_RATE_THRESH	6 /* Direct HW value =~ 5 Hz */
++#define BH1770_STARTUP_DELAY		50
++#define BH1770_RESET_TIME		10
++#define BH1770_TIMEOUT			2100 /* Timeout in 2.1 seconds */
++
++#define BH1770_LUX_RANGE		65535
++#define BH1770_PROX_RANGE		255
++#define BH1770_CALIB_SCALER		8192
++#define BH1770_LUX_NEUTRAL_CALIB_VALUE	(1 * BH1770_CALIB_SCALER)
++#define BH1770_LUX_DEF_THRES		1000
++#define BH1770_PROX_DEF_THRES		100
++#define BH1770_DEFAULT_PERSISTENCE	10
++#define BH1770_PROX_MAX_PERSISTENCE	50
++#define BH1770_NEUTRAL_CF		BH1770_LUX_CF_SCALE
++#define BH1770_LUX_CORR_SCALE		4096
+ 
+ #define PROX_ABOVE_THRESHOLD	1
+ #define PROX_BELOW_THRESHOLD	0
+@@ -158,7 +156,6 @@ struct bh1770_chip {
+ 
+ 	int	prox_enable_count;
+ 	u16	prox_coef;
+-	u16	prox_const;
+ 	int	prox_rate;
+ 	int	prox_rate_threshold;
+ 	u8	prox_persistence;
+@@ -356,7 +353,7 @@ static int bh1770_ps_get_result(struct bh1770_chip *chip)
+ 	 * when ALS levels goes above limit, proximity result may be
+ 	 * false proximity. Thus ignore the result. With real proximity
+ 	 * there is a shadow causing low als levels.
+-	*/
++	 */
+ 	if (chip->lux_data_raw > PROX_IGNORE_LUX_LIMIT)
+ 		return 0;
+ 
+@@ -547,8 +544,6 @@ static int bh1770_detect(struct bh1770_chip *chip)
+ 	part = (u8)ret;
+ 
+ 	chip->revision = (part & BH1770_REV_MASK) >> BH1770_REV_SHIFT;
+-	chip->prox_coef = BH1770_COEF_SCALER;
+-	chip->prox_const = 0;
+ 	chip->lux_cf = BH1770_NEUTRAL_CF;
+ 	chip->prox_min_threshold = BH1770_PROX_DEF_THRES;
+ 
+@@ -816,7 +811,7 @@ static ssize_t bh1770_prox_enable_show(struct device *dev,
+ static ssize_t bh1770_prox_result_show(struct device *dev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+-	struct bh1770_chip *chip =  dev_get_drvdata(dev);
++	struct bh1770_chip *chip = dev_get_drvdata(dev);
+ 	ssize_t ret;
+ 
+ 	mutex_lock(&chip->mutex);
+@@ -1218,7 +1213,6 @@ static DEVICE_ATTR(chip_id, S_IRUGO, bh1770_chip_id_show, NULL);
+ static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR, bh1770_power_state_show,
+ 						 bh1770_power_state_store);
+ 
+-
+ static struct attribute *sysfs_attrs[] = {
+ 	&dev_attr_lux0_calibscale.attr,
+ 	&dev_attr_lux0_calibscale_default.attr,
+@@ -1282,11 +1276,6 @@ static int bh1770_probe(struct i2c_client *client,
+ 	else
+ 		chip->lux_ga = chip->pdata->glass_attenuation;
+ 
+-	chip->prox_led		= chip->pdata->led_def_curr;
+-	chip->prox_persistence	= BH1770_DEFAULT_PERSISTENCE;
+-	chip->prox_rate_threshold = BH1770_PROX_DEF_RATE_THRESH;
+-	chip->prox_rate		= BH1770_PROX_DEFAULT_RATE;
+-	chip->prox_data		= 0;
+ 	/* Make sure that the given hysteresis value is in range */
+ 	if ((chip->pdata->prox_hysteresis > BH1770_PROX_RANGE) ||
+ 		(chip->pdata->prox_hysteresis < 0)) {
+@@ -1295,6 +1284,12 @@ static int bh1770_probe(struct i2c_client *client,
+ 		chip->prox_hysteresis = chip->pdata->prox_hysteresis;
+ 	}
+ 
++	chip->prox_led			= chip->pdata->led_def_curr;
++	chip->prox_persistence		= BH1770_DEFAULT_PERSISTENCE;
++	chip->prox_rate_threshold	= BH1770_PROX_DEF_RATE_THRESH;
++	chip->prox_rate			= BH1770_PROX_DEFAULT_RATE;
++	chip->prox_data			= 0;
++
+ 	chip->regs[0].supply = reg_vcc;
+ 	chip->regs[1].supply = reg_vleds;
+ 
+diff --git a/include/linux/i2c/bh1770glc.h b/include/linux/i2c/bh1770glc.h
+index ed670dd..3efbae4 100644
+--- a/include/linux/i2c/bh1770glc.h
++++ b/include/linux/i2c/bh1770glc.h
+@@ -25,6 +25,15 @@
+ #ifndef __BH1770_H__
+ #define __BH1770_H__
+ 
++#define BH1770_LED_5mA		0
++#define BH1770_LED_10mA		1
++#define BH1770_LED_20mA		2
++#define BH1770_LED_50mA		3
++#define BH1770_LED_100mA	4
++#define BH1770_LED_150mA	5
++#define BH1770_LED_200mA	6
++#define BH1770_NEUTRAL_GA 16384 /* 16384 / 16384 = 1 */
++
+ /**
+  * struct bh1770_platform_data - platform data for bh1770glc driver
+  * @led_def_curr: IR led driving current.
+@@ -37,18 +46,10 @@
+  */
+ 
+ struct bh1770_platform_data {
+-#define BH1770_LED_5mA	0
+-#define BH1770_LED_10mA	1
+-#define BH1770_LED_20mA	2
+-#define BH1770_LED_50mA	3
+-#define BH1770_LED_100mA 4
+-#define BH1770_LED_150mA 5
+-#define BH1770_LED_200mA 6
+-	__u8 led_def_curr;
+-#define BH1770_NEUTRAL_GA 16384 /* 16384 / 16384 = 1 */
+-	__u32 glass_attenuation;
+-	__u32 als_scf_BH1770;
+-	__u32 als_scf_SFH7770;
++	u8 led_def_curr;
++	u32 glass_attenuation;
++	u32 als_scf_BH1770;
++	u32 als_scf_SFH7770;
+ 	u8 prox_hysteresis;
+ 	u8 prox_min_thresh_BH1770;
+ 	u8 prox_min_thresh_SFH7770;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
