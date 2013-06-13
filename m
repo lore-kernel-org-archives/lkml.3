@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab3FMJNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:13:33 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6785 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3FMJNb (ORCPT
+	id S1758411Ab3FMJQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:16:33 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:40890 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab3FMJQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:13:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 13 Jun 2013 02:11:46 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>
-CC: <gnurou@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v2 0/3] ARM: tegra: add basic support for Trusted Foundations
-Date: Thu, 13 Jun 2013 18:12:22 +0900
-Message-ID: <1371114745-24710-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.3
-X-NVConfidentiality: public
+	Thu, 13 Jun 2013 05:16:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
+References: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
+Date: Thu, 13 Jun 2013 14:46:31 +0530
+Message-ID: <CAKohpomDXmQ_DWpHgm1mD5WWUvBTjWXBPDp1KOWb1mff4UdX=g@mail.gmail.com>
+Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg@marvell.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, njiang1@marvell.com, zjwu@marvell.com,
+        ylmao@marvell.com, chenxg.marvell@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New revision of the initial patch, fixed according to the many suggestions
-received. (thanks!)
+On 13 June 2013 14:31, Xiaoguang Chen <chenxg@marvell.com> wrote:
+> cpufreq governor stop and start should be kept in sequence.
+> If not, there will be unexpected behavior, for example:
+>
+> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+> the normal sequence is as below:
+>
+> 1) Current governor is userspace, one application tries to set
+> governor to ondemand. it will call __cpufreq_set_policy in which it
+> will stop userspace governor and then start ondemand governor.
+>
+> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+> call cpufreq_add_policy_cpu. on which it first stops userspace
+> governor, and then starts userspace governor.
+>
+> Now if the sequence of above two cases interleaves, it becames
+> below sequence:
+>
+> 1) application stops userspace governor
+> 2)                                      hotplug stops userspace governor
+> 3) application starts ondemand governor
+> 4)                                      hotplug starts a governor
+>
+> in step 4, hotplug is supposed to start userspace governor, but now
+> the governor has been changed by application to ondemand, so hotplug
+> starts ondemand governor again !!!!
+>
+> The solution is: do not allow stop one policy's governor multi-times
+> Governor stop should only do once for one policy, after it is stopped,
+> no other governor stop should be executed. also add one mutext to
+> protect __cpufreq_governor so governor operation can be kept in sequence.
+>
+> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
+>  include/linux/cpufreq.h   |  1 +
+>  2 files changed, 25 insertions(+)
 
-Changes since v1:
-- Split patch into logical chunks as suggested by Tomasz
-- Simplified smc function according to comments from Russel and David
-- Use proper "Trusted Foundations" naming for firmware instead of "SecureOS"
-- Very simple firmware infrastructure in mach-tegra to support the use of other
-  firmwares
-- Presence of secure monitor is signaled through a DT node instead of a "chosen"
-  property
-- Complain if support for a declared secure monitor is not compiled in
+I forgot to tell you earlier but please update changelog everytime you
+send a new version.
 
-Alexandre Courbot (3):
-  ARM: tegra: basic support for Trusted Foundations
-  ARM: tegra: split setting of CPU reset handler
-  ARM: tegra: set CPU reset handler with firmware op
-
- Documentation/devicetree/bindings/arm/tegra.txt    | 11 +++++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- arch/arm/configs/tegra_defconfig                   |  1 +
- arch/arm/mach-tegra/Kconfig                        | 14 ++++++
- arch/arm/mach-tegra/Makefile                       |  3 ++
- arch/arm/mach-tegra/common.c                       |  2 +
- arch/arm/mach-tegra/firmware.c                     | 40 +++++++++++++++++
- arch/arm/mach-tegra/firmware.h                     | 19 ++++++++
- arch/arm/mach-tegra/reset.c                        | 40 ++++++++++++-----
- arch/arm/mach-tegra/trusted_foundations.c          | 51 ++++++++++++++++++++++
- 10 files changed, 171 insertions(+), 11 deletions(-)
- create mode 100644 arch/arm/mach-tegra/firmware.c
- create mode 100644 arch/arm/mach-tegra/firmware.h
- create mode 100644 arch/arm/mach-tegra/trusted_foundations.c
-
--- 
-1.8.3
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
