@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3FMHxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 03:53:48 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:55888 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3FMHxr (ORCPT
+	id S1757505Ab3FMH4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:56:19 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28860 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755531Ab3FMH4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 03:53:47 -0400
-From: Rojhalat Ibrahim <imr@rtschenk.de>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Michael Guntsche <michael.guntsche@it-loops.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc/pci: Fix setup of Freescale PCI / PCIe controllers
-Date: Thu, 13 Jun 2013 09:53:43 +0200
-Message-ID: <27985603.vMaTQLaIcr@pcimr>
-User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
+	Thu, 13 Jun 2013 03:56:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,857,1363129200"; 
+   d="scan'208";a="21612731"
+Date: Thu, 13 Jun 2013 09:56:11 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: "Michael S. Tsirkin" <mst@redhat.com>
+cc: Rusty Russell <rusty@rustcorp.com.au>, Julia Lawall <julia.lawall@lip6.fr>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Thomas Meyer <thomas@m3y3r.de>, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] PTR_ERR: return 0 if ptr isn't an error value.
+In-Reply-To: <20130613073046.GB10326@redhat.com>
+Message-ID: <alpine.DEB.2.02.1306130955380.2260@hadrien>
+References: <1370080565.29224.29.camel@localhost.localdomain> <87mwr8sz9g.fsf@rustcorp.com.au> <20130603071526.GA5483@pengutronix.de> <alpine.DEB.2.02.1306082305220.1968@localhost6.localdomain6> <87mwquzkvf.fsf@rustcorp.com.au>
+ <20130613073046.GB10326@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-818502900-1371110171=:2260"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 50d8f87d2b3 (powerpc/fsl-pci Make PCIe hotplug work with Freescale
-PCIe controllers) does not handle non-PCIe controllers properly, which causes
-a panic during boot for certain configurations.
-This patch fixes the issue for 83xx devices by calling the proper setup function.
-For booke/86xx devices a check is added to differentiate between PCI and PCIe
-controllers.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Reported-by: Michael Guntsche <mike@it-loops.com>
-Cc: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Rojhalat Ibrahim <imr@rtschenk.de>
----
- arch/powerpc/sysdev/fsl_pci.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+--8323329-818502900-1371110171=:2260
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 028ac1f..45670df 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -97,22 +97,23 @@ static int fsl_indirect_read_config(struct pci_bus *bus, unsigned int devfn,
- 	return indirect_read_config(bus, devfn, offset, len, val);
- }
- 
--static struct pci_ops fsl_indirect_pci_ops =
-+static struct pci_ops fsl_indirect_pcie_ops =
- {
- 	.read = fsl_indirect_read_config,
- 	.write = indirect_write_config,
- };
- 
-+#if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
-+
- static void __init fsl_setup_indirect_pci(struct pci_controller* hose,
- 					  resource_size_t cfg_addr,
- 					  resource_size_t cfg_data, u32 flags)
- {
- 	setup_indirect_pci(hose, cfg_addr, cfg_data, flags);
--	hose->ops = &fsl_indirect_pci_ops;
-+	if (early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP))  /* PCIe */
-+		hose->ops = &fsl_indirect_pcie_ops;
- }
- 
--#if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
--
- #define MAX_PHYS_ADDR_BITS	40
- static u64 pci64_dma_offset = 1ull << MAX_PHYS_ADDR_BITS;
- 
-@@ -814,8 +815,8 @@ int __init mpc83xx_add_bridge(struct device_node *dev)
- 		if (ret)
- 			goto err0;
- 	} else {
--		fsl_setup_indirect_pci(hose, rsrc_cfg.start,
--				       rsrc_cfg.start + 4, 0);
-+		setup_indirect_pci(hose, rsrc_cfg.start,
-+				   rsrc_cfg.start + 4, 0);
- 	}
- 
- 	printk(KERN_INFO "Found FSL PCI host bridge at 0x%016llx. "
+On Thu, 13 Jun 2013, Michael S. Tsirkin wrote:
 
---
-1.8.1.5
+> On Thu, Jun 13, 2013 at 02:07:40PM +0930, Rusty Russell wrote:
+> > Julia Lawall <julia.lawall@lip6.fr> writes:
+> > > On Mon, 3 Jun 2013, Uwe Kleine-König wrote:
+> > > For a random example, here is a function that currently uses PTR_RET:
+> >
+> > Heheh, nice choice: I think I wrote that code originally :)
+> >
+> > > static int __net_init iptable_raw_net_init(struct net *net)
+> > > {
+> > >         struct ipt_replace *repl;
+> > >
+> > >         repl = ipt_alloc_initial_table(&packet_raw);
+> > > 	if (repl == NULL)
+> > >                 return -ENOMEM;
+> > >         net->ipv4.iptable_raw =
+> > >                 ipt_register_table(net, &packet_raw, repl);
+> > > 	kfree(repl);
+> > >         return PTR_RET(net->ipv4.iptable_raw);
+> > > }
+> > >
+> > > If it becomes return PTR_ERR(...); at the end, won't it look like the
+> > > function always fails?
+> >
+> > That is a valid point, though in this case the reader will know that
+> > can't be the case.
+> >
+> > On the other hand, there's an incremental learning curve cost to every
+> > convenience function we add.  There are only 50 places where we use
+> > PTR_RET(), so it's not saving us very much typing over the clearest
+> > solution: open-coding the test.
+> >
+> > I think using PTR_ERR() is a less bad solution than promoting PTR_RET,
+> > which has a non-obvious name.
+> >
+> > Cheers,
+> > Rusty.
+>
+> Will a longer name make the function more obvious?
+> 	PTR_ERR_OR_ZERO() ?
+> 	PTR_ERR0() ?
+> PTR_ERR() can then stay simple for cases where we know we
+> are on the error path.
 
+I was thinking of something along those lines.  And in that case, PTR_ERR
+could stay without the additional test.
+
+julia
+--8323329-818502900-1371110171=:2260--
