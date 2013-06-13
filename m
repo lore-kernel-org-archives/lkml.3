@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab3FMTLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:11:01 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:56539 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab3FMTK7 (ORCPT
+	id S1758256Ab3FMTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:13:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37269 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab3FMTNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:10:59 -0400
-Message-ID: <51BA193F.9040504@suse.cz>
-Date: Thu, 13 Jun 2013 21:10:55 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-CC: lwn@lwn.net
-Subject: Re: Linux 3.9.6
-References: <20130613175502.GA9768@kroah.com>
-In-Reply-To: <20130613175502.GA9768@kroah.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Jun 2013 15:13:25 -0400
+Date: Thu, 13 Jun 2013 12:13:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-Id: <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
+In-Reply-To: <20130613190610.GA13970@mtj.dyndns.org>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+	<20130613190610.GA13970@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 07:55 PM, Greg KH wrote:
-> I'm announcing the release of the 3.9.6 kernel.
+On Thu, 13 Jun 2013 12:06:10 -0700 Tejun Heo <tj@kernel.org> wrote:
 
-Greg,
+> Hello, Andrew, Kent.
+> 
+> On Wed, Jun 12, 2013 at 04:38:54PM -0700, Andrew Morton wrote:
+> ...
+> > > +unsigned percpu_tag_alloc(struct percpu_tag_pool *pool, gfp_t gfp)
+> > > +{
+> > > +	DEFINE_WAIT(wait);
+> > > +	struct percpu_tag_cpu_freelist *tags;
+> > > +	unsigned long flags;
+> > > +	unsigned tag, this_cpu;
+> > > +
+> > > +	while (1) {
+> > > +		local_irq_save(flags);
+> ...
+> > > +		schedule();
+> > > +	}
+> > 
+> > Does this loop need a try_to_freeze()?
+> 
+> I don't think so.  Kernel tasks should never enter freezer without it
+> explicitly knowing it.  It should be something evident in the
+> top-level control flow.  Freezer acts as a giant lock and entering
+> freezer deep underneath where the task could be holding random number
+> of resources and locks can easily develop into a deadlock.
 
-did you forget to push? 3.0 and 3.4 appeared on the mirrors, unlike 3.9...
+As I understand it, if a task is stuck in this loop at freeze time, the
+whole freeze attempt will fail.  But it's been a long time since I
+thought about or worked on this stuff.
 
-thanks,
--- 
-js
-suse labs
+Another issue is device takedown ordering - this thread is blocked
+waiting for tags to be returned by IO completion, so there may be
+issues where the hardware has been shut down.
+
+I really don't know - I'm flagging it as something which should be
+thought about, tested, etc.
+
+> If this allocation wait is gonna be visible to userland, what's
+> necessary probably would be making the sleeping interruptible.  The
+> freezer will then make the alloc fail and control should return to the
+> signal delivery path where it'll be frozen without holding any
+> resources.
+
+Maybe.  Interruptible sleeps here will be a bit of a nuisance with
+signals.  Poke Rafael ;)
+
