@@ -1,114 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab3FMNaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:30:07 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:44762 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419Ab3FMNaC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:30:02 -0400
-Date: Thu, 13 Jun 2013 22:29:57 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mundt <lethal@linux-sh.org>,
-        David McCullough <david_mccullough@au.securecomputing.com>,
-        Thorsten Glaser <tg@mirbsd.org>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: shmobile: Use POSIX "$((..))" instead of
- bashism "$[...]"
-Message-ID: <20130613132957.GA22787@verge.net.au>
-References: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
- <1371129052-31506-3-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371129052-31506-3-git-send-email-geert@linux-m68k.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758429Ab3FMN2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:28:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758174Ab3FMN2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:04 -0400
+X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
+   d="scan'208";a="7537689"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [Part1 PATCH v5 10/22] x86, mm, numa: Move two functions calling on successful path later
+Date: Thu, 13 Jun 2013 21:02:57 +0800
+Message-Id: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:31,
+	Serialize complete at 2013/06/13 20:58:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 03:10:51PM +0200, Geert Uytterhoeven wrote:
-> According to the bash 4.1 manpage, "$[...]" is deprecated, and will be
-> removed in upcoming versions of bash.
-> Hence replace the bash-specific "$[...]" by POSIX "$((..))" for arithmetic
-> expansion, which also allows to drop the forced use of bash.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/arm/mach-shmobile/Makefile.boot |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-shmobile/Makefile.boot b/arch/arm/mach-shmobile/Makefile.boot
-> index 95ebc7c..75a55e1 100644
-> --- a/arch/arm/mach-shmobile/Makefile.boot
-> +++ b/arch/arm/mach-shmobile/Makefile.boot
-> @@ -1,5 +1,5 @@
-> -__ZRELADDR	:= $(shell /bin/bash -c 'printf "0x%08x" \
-> -		     $$[$(CONFIG_MEMORY_START) + 0x8000]')
-> +__ZRELADDR	:= $(shell printf "0x%08x" \
-> +		     $$(($(CONFIG_MEMORY_START) + 0x8000)))
->  
->     zreladdr-y   += $(__ZRELADDR)
+From: Yinghai Lu <yinghai@kernel.org>
 
-This code was (very) recently changed by a patch that I
-have queued up for v3.11 in the cleanup-boot branch of my renesas tree
-on kernel.org. I believe that patch removes the instance of $[..]].
+We need to have numa info ready before init_mem_mappingi(), so that we
+can call init_mem_mapping per node, and alse trim node memory ranges to
+big alignment.
 
+Currently, parsing numa info needs to allocate some buffer and need to be
+called after init_mem_mapping. So try to split parsing numa info procedure
+into two steps:
+	- The first step will be called before init_mem_mapping, and it
+	  should not need allocate buffers.
+	- The second step will cantain all the buffer related code and be
+	  executed later.
 
-commit 12dca809ef785e451263351325d4806198040b40
-Author: Magnus Damm <damm@opensource.se>
-Date:   Mon Jun 10 18:28:57 2013 +0900
+At last we will have early_initmem_init() and initmem_init().
 
-    ARM: shmobile: uImage load address rework
-    
-    This is V2 of the mach-shmobile uImage load address rework patch.
-    
-    Rework the mach-shmobile uImage load address calculation by storing
-    the per-board load addresses in Makefile.boot. This removes the
-    CONFIG_MEMORY_START dependency from Makefile.boot, and it also makes
-    it possible to create safe kernel images that boot on multiple boards.
-    
-    This is one of several series of code that reworks code not to rely on
-    CONFIG_MEMORY_START/SIZE which in turn is needed for ARCH_MULTIPLATFORM.
-    
-    Signed-off-by: Magnus Damm <damm@opensource.se>
-    Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-    Reviewed-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-    Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+This patch implements only the first step.
 
-diff --git a/arch/arm/mach-shmobile/Makefile.boot b/arch/arm/mach-shmobile/Makefile.boot
-index 498efd9..6b147ea 100644
---- a/arch/arm/mach-shmobile/Makefile.boot
-+++ b/arch/arm/mach-shmobile/Makefile.boot
-@@ -1,6 +1,22 @@
--__ZRELADDR	:= $(shell /bin/bash -c 'printf "0x%08x" \
--		     $$[$(CONFIG_MEMORY_START) + 0x8000]')
-+# per-board load address for uImage
-+loadaddr-y	:=
-+loadaddr-$(CONFIG_MACH_AG5EVM) += 0x40008000
-+loadaddr-$(CONFIG_MACH_AP4EVB) += 0x40008000
-+loadaddr-$(CONFIG_MACH_APE6EVM) += 0x40008000
-+loadaddr-$(CONFIG_MACH_ARMADILLO800EVA) += 0x40008000
-+loadaddr-$(CONFIG_MACH_ARMADILLO800EVA_REFERENCE) += 0x40008000
-+loadaddr-$(CONFIG_MACH_BOCKW) += 0x60008000
-+loadaddr-$(CONFIG_MACH_BONITO) += 0x40008000
-+loadaddr-$(CONFIG_MACH_KOTA2) += 0x41008000
-+loadaddr-$(CONFIG_MACH_KZM9D) += 0x40008000
-+loadaddr-$(CONFIG_MACH_KZM9G) += 0x41008000
-+loadaddr-$(CONFIG_MACH_KZM9G_REFERENCE) += 0x41008000
-+loadaddr-$(CONFIG_MACH_LAGER) += 0x40008000
-+loadaddr-$(CONFIG_MACH_MACKEREL) += 0x40008000
-+loadaddr-$(CONFIG_MACH_MARZEN) += 0x60008000
-+loadaddr-$(CONFIG_MACH_MARZEN_REFERENCE) += 0x60008000
+setup_node_data() and numa_init_array() are only called for successful
+path, so we can move these two callings to x86_numa_init(). That will also
+make numa_init() smaller and more readable.
+
+-v2: remove online_node_map clear in numa_init(), as it is only
+     set in setup_node_data() at last in successful path.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c |   69 +++++++++++++++++++++++++++++----------------------
+ 1 files changed, 39 insertions(+), 30 deletions(-)
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a71c4e2..07ae800 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -477,7 +477,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+ 	unsigned long uninitialized_var(pfn_align);
+-	int i, nid;
++	int i;
  
-+__ZRELADDR	:= $(sort $(loadaddr-y))
-    zreladdr-y   += $(__ZRELADDR)
+ 	/* Account for nodes with cpus and no memory */
+ 	node_possible_map = numa_nodes_parsed;
+@@ -506,24 +506,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
+ 		return -EINVAL;
  
- # Unsupported legacy stuff
+-	/* Finally register nodes. */
+-	for_each_node_mask(nid, node_possible_map) {
+-		u64 start = PFN_PHYS(max_pfn);
+-		u64 end = 0;
+-
+-		for (i = 0; i < mi->nr_blks; i++) {
+-			if (nid != mi->blk[i].nid)
+-				continue;
+-			start = min(mi->blk[i].start, start);
+-			end = max(mi->blk[i].end, end);
+-		}
+-
+-		if (start < end)
+-			setup_node_data(nid, start, end);
+-	}
+-
+-	/* Dump memblock with node info and return. */
+-	memblock_dump_all();
+ 	return 0;
+ }
+ 
+@@ -559,7 +541,6 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	nodes_clear(numa_nodes_parsed);
+ 	nodes_clear(node_possible_map);
+-	nodes_clear(node_online_map);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+ 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+@@ -577,15 +558,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	for (i = 0; i < nr_cpu_ids; i++) {
+-		int nid = early_cpu_to_node(i);
+-
+-		if (nid == NUMA_NO_NODE)
+-			continue;
+-		if (!node_online(nid))
+-			numa_clear_node(i);
+-	}
+-	numa_init_array();
+ 	return 0;
+ }
+ 
+@@ -618,7 +590,7 @@ static int __init dummy_numa_init(void)
+  * last fallback is dummy single node config encomapssing whole memory and
+  * never fails.
+  */
+-void __init x86_numa_init(void)
++static void __init early_x86_numa_init(void)
+ {
+ 	if (!numa_off) {
+ #ifdef CONFIG_X86_NUMAQ
+@@ -638,6 +610,43 @@ void __init x86_numa_init(void)
+ 	numa_init(dummy_numa_init);
+ }
+ 
++void __init x86_numa_init(void)
++{
++	int i, nid;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	early_x86_numa_init();
++
++	/* Finally register nodes. */
++	for_each_node_mask(nid, node_possible_map) {
++		u64 start = PFN_PHYS(max_pfn);
++		u64 end = 0;
++
++		for (i = 0; i < mi->nr_blks; i++) {
++			if (nid != mi->blk[i].nid)
++				continue;
++			start = min(mi->blk[i].start, start);
++			end = max(mi->blk[i].end, end);
++		}
++
++		if (start < end)
++			setup_node_data(nid, start, end); /* online is set */
++	}
++
++	/* Dump memblock with node info */
++	memblock_dump_all();
++
++	for (i = 0; i < nr_cpu_ids; i++) {
++		int nid = early_cpu_to_node(i);
++
++		if (nid == NUMA_NO_NODE)
++			continue;
++		if (!node_online(nid))
++			numa_clear_node(i);
++	}
++	numa_init_array();
++}
++
+ static __init int find_near_online_node(int node)
+ {
+ 	int n, val;
+-- 
+1.7.1
 
