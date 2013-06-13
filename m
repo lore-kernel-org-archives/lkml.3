@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3FMPqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:46:08 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:53928 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab3FMPqG (ORCPT
+	id S1757721Ab3FMPsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:48:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2157 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab3FMPsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:46:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <51B9E8BB.9020104@wwwdotorg.org>
-References: <cover.1371022830.git.viresh.kumar@linaro.org>
-	<881257c10f24b5ca8721b561726bac8887dc922e.1371022830.git.viresh.kumar@linaro.org>
-	<51B898B6.8070103@wwwdotorg.org>
-	<CAKohponC5pKABTi=t64ZXrHxi-Y6cbvAXtjY=_aMkka4s-MCiQ@mail.gmail.com>
-	<51B9E8BB.9020104@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 21:16:05 +0530
-Message-ID: <CAKohpokNPR5aZ=WnOeZZD9RCY98_eS1-=dohzVBwyoAwP4ackg@mail.gmail.com>
-Subject: Re: [PATCH 10/11] cpufreq: tegra: select CPU_FREQ_TABLE for ARCH_TEGRA
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Jun 2013 11:48:15 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tkaDFPjYVEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=apdwqXrHFoAA:10 a=_-W6ry4MO39G3158N6EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371138491.9844.288.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Date: Thu, 13 Jun 2013 11:48:11 -0400
+In-Reply-To: <20130613152059.GA133453@redhat.com>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+	 <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+	 <20130612170316.GO133453@redhat.com> <20130613131057.GA15997@somewhere>
+	 <20130613140207.GW133453@redhat.com> <20130613142210.GD16339@somewhere>
+	 <20130613144515.GX133453@redhat.com> <20130613145601.GE16339@somewhere>
+	 <20130613152059.GA133453@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2013 21:13, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/12/2013 10:24 PM, Viresh Kumar wrote:
->> On 12 June 2013 21:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 06/12/2013 02:15 AM, Viresh Kumar wrote:
->>>> ARCH_TEGRA selects ARCH_HAS_CPUFREQ, so CPUFREQ will be enabled for all variants
->>>> of TEGRA. CPUFreq driver for tegra is enabled if ARCH_TEGRA is selected. Driver
->>>> uses APIs from freq_table.c and so we must select CPU_FREQ_TABLE for ARCH_TEGRA.
->>>>
->>>> This also removes select CPU_FREQ_TABLE from individual tegra variants.
->>>
->>> I guess the real issue here is that drivers/cpufreq/tegra-cpufreq.c gets
->>> built based on ARCH_TEGRA, which doesn't depend on nor select CPU_FREQ
->>> itself, so:
->>>
->>>         select CPU_FREQ_TABLE if CPU_FREQ
->>>
->>> ... isn't guaranteed to fire.
->>>
->>> The correct solution seems to be:
->>>
->>> * Add CONFIG_ARM_TEGRA_CPUFREQ to drivers/cpufreq/Kconfig.arm.
->>> * Make that Kconfig option selct CPU_FREQ_TABLE.
->>> * Make that Kconfig option be def_bool ARCH_TEGRA.
->>> * Modify drivers/cpufreq/Makefile to build tegra-cpufreq.c based on that.
->>> * Remove all the cpufreq-related stuff from arch/arm/mach-tegra/Kconfig.
->>>
->>> That way, tegra-cpufreq.c can't be built if !CPU_FREQ, and Tegra's
->>> cpufreq works the same way as all the other cpufreq drivers.
->>
->> Hmmm. check this out (attached too for you to test):
->
-> This certainly generates the correct .config when I "make
-> tegra_defconfig" after applying it, and a build after disabling CPU_FREQ
-> links OK, so,
+On Thu, 2013-06-13 at 11:20 -0400, Don Zickus wrote:
 
-Yeah, I also compile tested it.
+> I don't know enough about how full dynticks work to even present a
+> solution.  But currently I was working with the Red Hat performance team
+> to enhance perf to help our customers diagnose performance problems
+> easier.
+> 
+> My fear is anyone who uses full dynticks and has issues, can't use perf to
+> help diagnose their problems because it will change the dynamics of the
+> problem.  And with the current huge drop in performance in cpu_idle (as
+> compared to RHEL-6's 2.6.32 kernel) due to what seems to be miscalculated
+> c-states, one might have a hard time evaluating if full dynticks is doing
+> the right thing or not.
 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
->
-> (I assume this patch would go through the cpufreq tree?)
+This needs to be fixed, but not for 3.11. Although, you can still use
+ftrace to diagnose it.
 
-Yes. Via my ARM cpufreq tree.
+> 
+> Then again perhaps full dynticks isn't useful for distros like RHEL.
+
+It will be very useful for RHEL. But its still very new, and I wouldn't
+recommend using it in a production environment yet. There's still a few
+issues that need to be worked out, including this one. When the issues
+are fixed, then RHEL and other distributions will definitely want to
+enable this.
+
+> 
+> That's why I was hoping to solve the underlying problem as opposed to
+> accepting patches like this which work around the symptoms.
+
+For now it's just to get things working as people expect it to. First
+impressions are very important, and if someone enables it and sees it
+makes no difference, they may from then on never trust it. The way to
+handle that is to make sure it works when enabled, even if it disables
+some other cool features. But as I said, it shouldn't be used in
+production quite yet.
+
+> 
+> Again, my knowledge of full dynticks is poor, so I have almost no idea of
+> the complexities surrounding the problem and how hard it is to even solve
+> it.
+
+The concept behind full dynamic ticks is very easy. When you set a given
+CPU(s) to dynamic tick, when it only has a single task scheduled on that
+CPU, it disables the periodic tick. This removes essentially *all*
+latency from the kernel! That is, if the task is doing some complex
+calculations, it wont be interrupted for kernel maintenance. A lot of
+Red Hat customers would love to have this feature. It allows for
+extremely low latency actions even without a real-time kernel. Heck, it
+works without even kernel preemption.
+
+Now removing the periodic tick is not a trivial task, and this is where
+all our issues come from. In fact, we can not even completely remove the
+tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
+set to. We have to handle everything that depends on that tick, which
+includes perf, among other things.
+
+-- Steve
+
+
