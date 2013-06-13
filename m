@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758999Ab3FMTnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:43:00 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:49035 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3FMTm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:42:58 -0400
-Date: Thu, 13 Jun 2013 21:42:31 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        netdev <netdev@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
-Message-ID: <20130613194231.GA11949@electric-eye.fr.zoreil.com>
-References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
- <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+	id S1759060Ab3FMTqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:46:24 -0400
+Received: from fieldses.org ([174.143.236.118]:52676 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757636Ab3FMTqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 15:46:21 -0400
+Date: Thu, 13 Jun 2013 15:45:46 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 06/14] locks: don't walk inode->i_flock list in
+ locks_show
+Message-ID: <20130613194545.GC19218@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+ <1370948948-31784-7-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <1370948948-31784-7-git-send-email-jlayton@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko <andy.shevchenko@gmail.com> :
-[...]
-> I just realize you are using circular buffer here. What about to use
-> them with linux' native framework? Documentation/circular-buffers.txt
+On Tue, Jun 11, 2013 at 07:09:00AM -0400, Jeff Layton wrote:
+> When we convert over to using the i_lock to protect the i_flock list,
+> that will introduce a potential lock inversion problem in locks_show.
+> When we want to walk the i_flock list, we'll need to take the i_lock.
+> 
+> Rather than do that, just walk the global blocked_locks list and print
+> out any that are blocked on the given lock.
 
-It's almost unused in drivers/net. I won't mind if it stays this way.
+I'm OK with this as obviously /proc/locks shouldn't be the common case,
+but it still bugs me a bit that we're suddenly making it something like
 
--- 
-Ueimor
+	O(number of held locks * number of waiters)
+
+where it used to be
+
+	O(number of held lock + number of waiters)
+
+I wonder if there's any solution that's just as easy and avoids scanning
+the blocked list each time.
+
+--b.
+
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index e451d18..3fd27f0 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -2249,8 +2249,10 @@ static int locks_show(struct seq_file *f, void *v)
+>  
+>  	lock_get_status(f, fl, *((loff_t *)f->private), "");
+>  
+> -	list_for_each_entry(bfl, &fl->fl_block, fl_block)
+> -		lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> +	list_for_each_entry(bfl, &blocked_list, fl_link) {
+> +		if (bfl->fl_next == fl)
+> +			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> +	}
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.1
+> 
