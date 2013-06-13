@@ -1,168 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab3FMLOb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 07:14:31 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:43212 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab3FMLOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 07:14:30 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Simon Glass <sjg@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>, ilho215.lee@samsung.com,
-        eunki_kim@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] pinctrl: exynos: reorder xyz_irq_unmask() so future patch can ack
-Date: Thu, 13 Jun 2013 13:14:25 +0200
-Message-ID: <2067345.uNWy6pBO6B@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1371058399-31933-2-git-send-email-dianders@chromium.org>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org> <1371058399-31933-2-git-send-email-dianders@chromium.org>
+	id S1753995Ab3FMLV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 07:21:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48854 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab3FMLVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 07:21:25 -0400
+Message-ID: <51B9AB18.30801@ti.com>
+Date: Thu, 13 Jun 2013 14:20:56 +0300
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Oleksandr Kozaruk <oleksandr.kozaruk@globallogic.com>
+CC: <gg@slimlogic.co.uk>, Mark Brown <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lgirdwood@gmail.com>, <balbi@ti.com>,
+        <peter.ujfalusi@ti.com>, <t-kristo@ti.com>, <tony@atomide.com>
+Subject: Re: [RFC v1] MFD: Change TWL6025 references to TWL6032
+References: <1370602390-12306-1-git-send-email-oleksandr.kozaruk@ti.com> <20130607143649.GS31367@sirena.org.uk> <c73c260b90be6e1640a430e8cbba6cac@slimlogic.co.uk> <CAPb7_mtVg7Uz6jS5BwCCxo-dcju6Ophh4+QWG7N5zOHJQixw5A@mail.gmail.com>
+In-Reply-To: <CAPb7_mtVg7Uz6jS5BwCCxo-dcju6Ophh4+QWG7N5zOHJQixw5A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.163]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 of June 2013 10:33:18 Doug Anderson wrote:
-> This patch does nothing but reorder the functions to improve the
-> readability of a future patch.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/pinctrl/pinctrl-exynos.c | 52
-> ++++++++++++++++++++-------------------- 1 file changed, 26
-> insertions(+), 26 deletions(-)
-
-IMHO just moving _ack() above _mask() (or _unmask()) would be enough, 
-without touching _mask() and _unmask() in this patch, but have my
-
-Acked-by: Tomasz Figa <t.figa@samsung.com>
-
-Best regards,
-Tomasz
-
-P.S. I think you might have missed linux-arm-kernel and linux-samsung-soc 
-in recipients list of this series.
-
-> diff --git a/drivers/pinctrl/pinctrl-exynos.c
-> b/drivers/pinctrl/pinctrl-exynos.c index c29a28e..c0729a3 100644
-> --- a/drivers/pinctrl/pinctrl-exynos.c
-> +++ b/drivers/pinctrl/pinctrl-exynos.c
-> @@ -50,7 +50,7 @@ static const struct of_device_id exynos_wkup_irq_ids[]
-> = { { }
->  };
-> 
-> -static void exynos_gpio_irq_unmask(struct irq_data *irqd)
-> +static void exynos_gpio_irq_mask(struct irq_data *irqd)
->  {
->  	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
->  	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-> @@ -61,13 +61,22 @@ static void exynos_gpio_irq_unmask(struct irq_data
-> *irqd) spin_lock_irqsave(&bank->slock, flags);
-> 
->  	mask = readl(d->virt_base + reg_mask);
-> -	mask &= ~(1 << irqd->hwirq);
-> +	mask |= 1 << irqd->hwirq;
->  	writel(mask, d->virt_base + reg_mask);
-> 
->  	spin_unlock_irqrestore(&bank->slock, flags);
->  }
-> 
-> -static void exynos_gpio_irq_mask(struct irq_data *irqd)
-> +static void exynos_gpio_irq_ack(struct irq_data *irqd)
-> +{
-> +	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-> +	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-> +	unsigned long reg_pend = d->ctrl->geint_pend + bank->eint_offset;
-> +
-> +	writel(1 << irqd->hwirq, d->virt_base + reg_pend);
-> +}
-> +
-> +static void exynos_gpio_irq_unmask(struct irq_data *irqd)
->  {
->  	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
->  	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-> @@ -78,21 +87,12 @@ static void exynos_gpio_irq_mask(struct irq_data
-> *irqd) spin_lock_irqsave(&bank->slock, flags);
-> 
->  	mask = readl(d->virt_base + reg_mask);
-> -	mask |= 1 << irqd->hwirq;
-> +	mask &= ~(1 << irqd->hwirq);
->  	writel(mask, d->virt_base + reg_mask);
-> 
->  	spin_unlock_irqrestore(&bank->slock, flags);
->  }
-> 
-> -static void exynos_gpio_irq_ack(struct irq_data *irqd)
-> -{
-> -	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-> -	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-> -	unsigned long reg_pend = d->ctrl->geint_pend + bank->eint_offset;
-> -
-> -	writel(1 << irqd->hwirq, d->virt_base + reg_pend);
-> -}
-> -
->  static int exynos_gpio_irq_set_type(struct irq_data *irqd, unsigned int
-> type) {
->  	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-> @@ -268,7 +268,7 @@ err_domains:
->  	return ret;
->  }
-> 
-> -static void exynos_wkup_irq_unmask(struct irq_data *irqd)
-> +static void exynos_wkup_irq_mask(struct irq_data *irqd)
->  {
->  	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
->  	struct samsung_pinctrl_drv_data *d = b->drvdata;
-> @@ -279,13 +279,22 @@ static void exynos_wkup_irq_unmask(struct irq_data
-> *irqd) spin_lock_irqsave(&b->slock, flags);
-> 
->  	mask = readl(d->virt_base + reg_mask);
-> -	mask &= ~(1 << irqd->hwirq);
-> +	mask |= 1 << irqd->hwirq;
->  	writel(mask, d->virt_base + reg_mask);
-> 
->  	spin_unlock_irqrestore(&b->slock, flags);
->  }
-> 
-> -static void exynos_wkup_irq_mask(struct irq_data *irqd)
-> +static void exynos_wkup_irq_ack(struct irq_data *irqd)
-> +{
-> +	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
-> +	struct samsung_pinctrl_drv_data *d = b->drvdata;
-> +	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
-> +
-> +	writel(1 << irqd->hwirq, d->virt_base + pend);
-> +}
-> +
-> +static void exynos_wkup_irq_unmask(struct irq_data *irqd)
->  {
->  	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
->  	struct samsung_pinctrl_drv_data *d = b->drvdata;
-> @@ -296,21 +305,12 @@ static void exynos_wkup_irq_mask(struct irq_data
-> *irqd) spin_lock_irqsave(&b->slock, flags);
-> 
->  	mask = readl(d->virt_base + reg_mask);
-> -	mask |= 1 << irqd->hwirq;
-> +	mask &= ~(1 << irqd->hwirq);
->  	writel(mask, d->virt_base + reg_mask);
-> 
->  	spin_unlock_irqrestore(&b->slock, flags);
->  }
-> 
-> -static void exynos_wkup_irq_ack(struct irq_data *irqd)
-> -{
-> -	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
-> -	struct samsung_pinctrl_drv_data *d = b->drvdata;
-> -	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
-> -
-> -	writel(1 << irqd->hwirq, d->virt_base + pend);
-> -}
-> -
->  static int exynos_wkup_irq_set_type(struct irq_data *irqd, unsigned int
-> type) {
->  	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
+On 06/13/2013 11:17 AM, Oleksandr Kozaruk wrote:
+> On Fri, Jun 7, 2013 at 5:44 PM, <gg@slimlogic.co.uk 
+> <mailto:gg@slimlogic.co.uk>> wrote:
+> >
+> > On 2013-06-07 15:36, Mark Brown wrote:
+> >>
+> >> On Fri, Jun 07, 2013 at 01:53:10PM +0300, Oleksandr Kozaruk wrote:
+> >>>
+> >>> From: Graeme Gregory <gg@slimlogic.co.uk <mailto:gg@slimlogic.co.uk>>
+> >>>
+> >>> The TWL6025 was never released beyond sample form and was replaced by
+> >>> the PhoenixLite range of chips - TWL6032. Change the references to
+> >>> reference the TWL6032 class and name the registers to twl6032 in 
+> line with
+> >>> an actual released chip name to avoid confusion.
+> >>>
+> >>> Currently there is no users of TWL6025 in the code.
+> >>
+> >>
+> >> Given that the chip exists even if not widely distributed it seems as
+> >> well to keep the twl6025 references in there at least in the device ID
+> >> table - it won't do any harm to people using the twl6032 name and might
+> >> help someone who happens to pick up an old board for whatever reason.
+> >
+> >
+> > I do not think any "old boards" exist, it really was a limited run!
+> >
+> > Graeme
+>
+> Hello Mark, Graeme,
+>
+> Taking in account that:
+> - there is no hardware to test twl6025, testing is not possible;
+> - there is no documentation for twl6025, and if there are any changes 
+> to twl6032 is not known;
+> - twl6032 is available, and in production, twl6025 is not even found 
+> on ti.com <http://ti.com>
+>
+> So, what do you think, can this change be accepted?
+> <http://www.globallogic.com/email_disclaimer.txt>
+Sorry for spamming - had problems with mail server.
