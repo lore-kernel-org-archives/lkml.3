@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759510Ab3FMWns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:43:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26363 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759324Ab3FMWmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759323Ab3FMWmM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Jun 2013 18:42:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26340 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab3FMWmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 18:42:10 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>, penberg@kernel.org
-Subject: [Patch v5 1/9] lockdep: Be nice about building from userspace
-Date: Thu, 13 Jun 2013 18:41:16 -0400
-Message-Id: <1371163284-6346-2-git-send-email-sasha.levin@oracle.com>
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [Patch v5 5/9] liblockdep: Add public headers for pthread_rwlock_t implementation
+Date: Thu, 13 Jun 2013 18:41:20 -0400
+Message-Id: <1371163284-6346-6-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
 References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
@@ -22,62 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep is an awesome piece of code which detects locking issues
-which are relevant both to userspace and kernelspace. We can
-easily make lockdep work in userspace since there is really no
-kernel spacific magic going on in the code.
-
-All we need is to wrap two functions which are used by lockdep
-and are very kernel specific.
-
-Doing that will allow tools located in tools/ to easily utilize
-lockdep's code for their own use.
+Both pthreads and lockdep support dealing with rwlocks, so
+here's the liblockdep implementation for those.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: penberg@kernel.org
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/lockdep.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ tools/lib/lockdep/include/liblockdep/rwlock.h | 86 +++++++++++++++++++++++++++
+ 1 file changed, 86 insertions(+)
+ create mode 100644 tools/lib/lockdep/include/liblockdep/rwlock.h
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 8a0efac..1966746 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -584,6 +584,7 @@ static int very_verbose(struct lock_class *class)
- /*
-  * Is this the address of a static object:
-  */
-+#ifdef __KERNEL__
- static int static_obj(void *obj)
- {
- 	unsigned long start = (unsigned long) &_stext,
-@@ -610,6 +611,7 @@ static int static_obj(void *obj)
- 	 */
- 	return is_module_address(addr) || is_module_percpu_address(addr);
- }
+diff --git a/tools/lib/lockdep/include/liblockdep/rwlock.h b/tools/lib/lockdep/include/liblockdep/rwlock.h
+new file mode 100644
+index 0000000..a680ab8
+--- /dev/null
++++ b/tools/lib/lockdep/include/liblockdep/rwlock.h
+@@ -0,0 +1,86 @@
++#ifndef _LIBLOCKDEP_RWLOCK_H
++#define _LIBLOCKDEP_RWLOCK_H
++
++#include <pthread.h>
++#include "common.h"
++
++struct liblockdep_pthread_rwlock {
++	pthread_rwlock_t rwlock;
++	struct lockdep_map dep_map;
++};
++
++typedef struct liblockdep_pthread_rwlock liblockdep_pthread_rwlock_t;
++
++#define LIBLOCKDEP_PTHREAD_RWLOCK_INITIALIZER(rwl)			\
++		(struct liblockdep_pthread_rwlock) {			\
++	.rwlock = PTHREAD_RWLOCK_INITIALIZER,				\
++	.dep_map = STATIC_LOCKDEP_MAP_INIT(#rwl, &((&(rwl))->dep_map)),	\
++}
++
++static inline int __rwlock_init(liblockdep_pthread_rwlock_t *lock,
++				const char *name,
++				struct lock_class_key *key,
++				const pthread_rwlockattr_t *attr)
++{
++	lockdep_init_map(&lock->dep_map, name, key, 0);
++
++	return pthread_rwlock_init(&lock->rwlock, attr);
++}
++
++#define liblockdep_pthread_rwlock_init(lock, attr)		\
++({							\
++	static struct lock_class_key __key;		\
++							\
++	__rwlock_init((lock), #lock, &__key, (attr));	\
++})
++
++static inline int liblockdep_pthread_rwlock_rdlock(liblockdep_pthread_rwlock_t *lock)
++{
++	lock_acquire(&lock->dep_map, 0, 0, 2, 2, NULL, (unsigned long)_RET_IP_);
++	return pthread_rwlock_rdlock(&lock->rwlock);
++
++}
++
++static inline int liblockdep_pthread_rwlock_unlock(liblockdep_pthread_rwlock_t *lock)
++{
++	lock_release(&lock->dep_map, 0, (unsigned long)_RET_IP_);
++	return pthread_rwlock_unlock(&lock->rwlock);
++}
++
++static inline int liblockdep_pthread_rwlock_wrlock(liblockdep_pthread_rwlock_t *lock)
++{
++	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_RET_IP_);
++	return pthread_rwlock_wrlock(&lock->rwlock);
++}
++
++static inline int liblockdep_pthread_rwlock_tryrdlock(liblockdep_pthread_rwlock_t *lock)
++{
++	lock_acquire(&lock->dep_map, 0, 1, 2, 2, NULL, (unsigned long)_RET_IP_);
++	return pthread_rwlock_tryrdlock(&lock->rwlock) == 0 ? 1 : 0;
++}
++
++static inline int liblockdep_pthread_rwlock_trywlock(liblockdep_pthread_rwlock_t *lock)
++{
++	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_RET_IP_);
++	return pthread_rwlock_trywlock(&lock->rwlock) == 0 ? 1 : 0;
++}
++
++static inline int liblockdep_rwlock_destroy(liblockdep_pthread_rwlock_t *lock)
++{
++	return pthread_rwlock_destroy(&lock->rwlock);
++}
++
++#ifdef __USE_LIBLOCKDEP
++
++#define pthread_rwlock_t		liblockdep_pthread_rwlock_t
++#define pthread_rwlock_init		liblockdep_pthread_rwlock_init
++#define pthread_rwlock_rdlock		liblockdep_pthread_rwlock_rdlock
++#define pthread_rwlock_unlock		liblockdep_pthread_rwlock_unlock
++#define pthread_rwlock_wrlock		liblockdep_pthread_rwlock_wrlock
++#define pthread_rwlock_tryrdlock	liblockdep_pthread_rwlock_tryrdlock
++#define pthread_rwlock_trywlock		liblockdep_pthread_rwlock_trywlock
++#define pthread_rwlock_destroy		liblockdep_rwlock_destroy
++
 +#endif
- 
- /*
-  * To make lock name printouts unique, we calculate a unique
-@@ -4114,6 +4116,7 @@ void debug_check_no_locks_held(struct task_struct *task)
- 		print_held_locks_bug(task);
- }
- 
-+#ifdef __KERNEL__
- void debug_show_all_locks(void)
- {
- 	struct task_struct *g, *p;
-@@ -4171,6 +4174,7 @@ retry:
- 		read_unlock(&tasklist_lock);
- }
- EXPORT_SYMBOL_GPL(debug_show_all_locks);
++
 +#endif
- 
- /*
-  * Careful: only use this function if you are sure that
 -- 
 1.8.1.2
 
