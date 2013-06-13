@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab3FMIVB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:21:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37512 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481Ab3FMIU6 (ORCPT
+	id S1758310Ab3FMIWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:22:16 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:50868 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473Ab3FMIWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:20:58 -0400
-Date: Thu, 13 Jun 2013 01:20:55 -0700 (PDT)
-Message-Id: <20130613.012055.1850149112448977565.davem@davemloft.net>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org, john.r.fastabend@intel.com, kaber@trash.net,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2] macvlan: don't touch promisc without passthrough
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371107001-10250-1-git-send-email-mst@redhat.com>
-References: <1371107001-10250-1-git-send-email-mst@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jun 2013 04:22:12 -0400
+Date: Thu, 13 Jun 2013 10:22:05 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jani Nikula <jani.nikula@intel.com>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        chris@chris-wilson.co.uk, daniel@ffwll.ch
+Subject: Re: [PATCH 0/3]
+Message-ID: <20130613082205.GL22870@phenom.ffwll.local>
+Mail-Followup-To: Jani Nikula <jani.nikula@intel.com>,
+	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	chris@chris-wilson.co.uk
+References: <cover.1370525922.git.jani.nikula@intel.com>
+ <87d2rzl4qp.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d2rzl4qp.fsf@intel.com>
+X-Operating-System: Linux phenom 3.9.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 13 Jun 2013 10:07:29 +0300
+On Thu, Jun 06, 2013 at 04:59:26PM +0300, Jani Nikula wrote:
+> 
+> With Greg's address fixed. Please drop the old one from any
+> replies. Sorry for the noise.
 
-> commit df8ef8f3aaa6692970a436204c4429210addb23a
-> "macvlan: add FDB bridge ops and macvlan flags"
-> added a way to control NOPROMISC macvlan flag through netlink.
-> 
-> However, with a non passthrough device we never set promisc on open,
-> even if NOPROMISC is off.  As a result:
-> 
-> If userspace clears NOPROMISC on open, then does not clear it on a
-> netlink command, promisc counter is not decremented on stop and there
-> will be no way to clear it once macvlan is detached.
-> 
-> If userspace does not clear NOPROMISC on open, then sets NOPROMISC on a
-> netlink command, promisc counter will be decremented from 0 and overflow
-> to fffffffff with no way to clear promisc.
-> 
-> To fix, simply ignore NOPROMISC flag in a netlink command for
-> non-passthrough devices, same as we do at open/close.
-> 
-> Since we touch this code anyway - check dev_set_promiscuity return code
-> and pass it to users (though an error here is unlikely).
-> 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Reviewed-by: John Fastabend <john.r.fastabend@intel.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Oops, replied with the old one still there.
 
-Applied, thanks.
+Greg, Andrew: Imo it's best to merge all three patches through the same
+tree, so:
+
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+on the i915 parts of it. If you want I can also slurp them in through the
+intel tree, including the new dmi match code.
+
+Thanks, Daniel
+
+> 
+> On Thu, 06 Jun 2013, Jani Nikula <jani.nikula@intel.com> wrote:
+> > Hi Greg, Andrew -
+> >
+> > Patch 1 is for DMI, bugfixes in patches 2-3 for i915 and included for
+> > completeness. After a tested-by they should be good for stable. I'll
+> > leave it to Daniel to sort out how the last two get in.
+> >
+> > BR,
+> > Jani.
+> >
+> > Chris Wilson (1):
+> >   drm/i915: Quirk away phantom LVDS on Intel's D510MO mainboard
+> >
+> > Jani Nikula (2):
+> >   dmi: add support for exact DMI matches in addition to substring
+> >     matching
+> >   drm/i915: Quirk away phantom LVDS on Intel's D525MW mainboard
+> >
+> >  drivers/firmware/dmi_scan.c       |   12 +++++++++---
+> >  drivers/gpu/drm/i915/intel_lvds.c |   16 ++++++++++++++++
+> >  include/linux/mod_devicetable.h   |    6 ++++--
+> >  3 files changed, 29 insertions(+), 5 deletions(-)
+> >
+> > -- 
+> > 1.7.9.5
+> >
+> 
+> -- 
+> Jani Nikula, Intel Open Source Technology Center
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
