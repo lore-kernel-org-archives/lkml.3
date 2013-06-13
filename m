@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab3FMMVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:21:31 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:31976 "EHLO multi.imgtec.com"
+	id S1757183Ab3FMMVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:21:36 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:31965 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756331Ab3FMMV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:21:28 -0400
+	id S1755152Ab3FMMVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 08:21:30 -0400
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Markos Chandras <markos.chandras@imgtec.com>,
         James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 09/10] metag/traps: include setup.h for the per_cpu_trap_init declaration
-Date: Thu, 13 Jun 2013 13:19:40 +0100
-Message-ID: <1371125981-5184-10-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH 10/10] metag/.gitignore: Extend the *.dtb pattern to match the dtb.S files
+Date: Thu, 13 Jun 2013 13:19:41 +0100
+Message-ID: <1371125981-5184-11-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371125981-5184-1-git-send-email-james.hogan@imgtec.com>
 References: <1371125981-5184-1-git-send-email-james.hogan@imgtec.com>
@@ -25,24 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Markos Chandras <markos.chandras@imgtec.com>
 
+The .SECONDARY rule for generating the *.dtb.S files added in
+0b4184c26b18ecbc0ec0657f514b087c3a6216fb
+"metag: avoid unnecessary builtin dtb rebuilds"
+
 Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/kernel/traps.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/metag/boot/.gitignore | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/metag/kernel/traps.c b/arch/metag/kernel/traps.c
-index a7051de..c00ade0 100644
---- a/arch/metag/kernel/traps.c
-+++ b/arch/metag/kernel/traps.c
-@@ -33,6 +33,7 @@
- #include <asm/siginfo.h>
- #include <asm/traps.h>
- #include <asm/hwthread.h>
-+#include <asm/setup.h>
- #include <asm/switch.h>
- #include <asm/user_gateway.h>
- #include <asm/syscall.h>
+diff --git a/arch/metag/boot/.gitignore b/arch/metag/boot/.gitignore
+index a021da2..2d6c0c1 100644
+--- a/arch/metag/boot/.gitignore
++++ b/arch/metag/boot/.gitignore
+@@ -1,4 +1,4 @@
+ vmlinux*
+ uImage*
+ ramdisk.*
+-*.dtb
++*.dtb*
 -- 
 1.8.1.2
 
