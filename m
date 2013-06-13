@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab3FMRe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 13:34:27 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:47049 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab3FMReZ (ORCPT
+	id S1758690Ab3FMRh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 13:37:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42695 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab3FMRh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 13:34:25 -0400
+	Thu, 13 Jun 2013 13:37:56 -0400
+Date: Thu, 13 Jun 2013 18:37:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: convert max_pfn and max_low_pfn to be relative to
+	PFN0
+Message-ID: <20130613173723.GK18614@n2100.arm.linux.org.uk>
+References: <1371089603-22601-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-In-Reply-To: <1371141152-9468-10-git-send-email-jiang.liu@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
-	<1371141152-9468-10-git-send-email-jiang.liu@huawei.com>
-Date: Thu, 13 Jun 2013 23:34:24 +0600
-Message-ID: <CAN_LGv0H82nGmmz0wtLp6bUebyo0o_O9ye9n-1YXqfohv_qpOQ@mail.gmail.com>
-Subject: Re: [BUGFIX 9/9] ACPI: use new helper functions to simpilify code
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371089603-22601-1-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/13 Jiang Liu <jiang.liu@huawei.com>:
-> Use new helper functions to simpilify ACPI dock, acpiphp code.
+On Wed, Jun 12, 2013 at 07:13:23PM -0700, Colin Cross wrote:
+> >From code inspection, I believe this will also improve block device
+> performance where the bounce limit was set to BLK_BOUNCE_HIGH, which
+> was bouncing unnecessarily for the top PHYS_PFN_OFFSET pages of low
+> memory.
 
-Not tested yet, just looking at the code
+This has the potential to break platforms.  The problem is the duality
+of the dma_mask - is it a mask of the bits which the device can drive,
+or a PFN limit.  The block layer interprets it as a PFN limit, because
+of course everywhere starts their memory at physical address zero.
 
-> -       /*
-> -        * TBD: _EJD support.
-> -        */
+This gets into a world of pain if you have any of these conditions:
+(a) RAM not starting at physical address zero
+(b) Any translation between physical addresses and bus addresses
 
-You have removed this comment. Did it become invalid since it has been written?
-
--- 
-Alexander E. Patrakov
+What we know is that the existing stuff works.  What we don't know is
+whether changing it will break anything which falls into the above
+two categories.
