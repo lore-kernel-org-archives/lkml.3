@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab3FMHGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 03:06:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750762Ab3FMHGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 03:06:52 -0400
-Date: Thu, 13 Jun 2013 10:07:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH v2] macvlan: don't touch promisc without passthrough
-Message-ID: <1371107001-10250-1-git-send-email-mst@redhat.com>
+	id S932624Ab3FMHHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:07:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47143 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834Ab3FMHHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 03:07:17 -0400
+Message-ID: <51B96F83.10309@ti.com>
+Date: Thu, 13 Jun 2013 12:36:43 +0530
+From: Ambresh K <ambresh@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>,
+        Rajendra <rnayak@ti.com>, Nishanth Menon <nm@ti.com>
+Subject: Re: [Patch 3/3] clk: Avoid re-parenting orphan clk's having invalid
+ parent index.
+References: <1367475929-32166-1-git-send-email-ambresh@ti.com> <1367475929-32166-4-git-send-email-ambresh@ti.com> <20130529071809.6058.24017@quantum> <51AD9450.5090107@ti.com> <20130611220744.8816.8856@quantum>
+In-Reply-To: <20130611220744.8816.8856@quantum>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit df8ef8f3aaa6692970a436204c4429210addb23a
-"macvlan: add FDB bridge ops and macvlan flags"
-added a way to control NOPROMISC macvlan flag through netlink.
 
-However, with a non passthrough device we never set promisc on open,
-even if NOPROMISC is off.  As a result:
 
-If userspace clears NOPROMISC on open, then does not clear it on a
-netlink command, promisc counter is not decremented on stop and there
-will be no way to clear it once macvlan is detached.
 
-If userspace does not clear NOPROMISC on open, then sets NOPROMISC on a
-netlink command, promisc counter will be decremented from 0 and overflow
-to fffffffff with no way to clear promisc.
+>> Sorry for not being descriptive in commit message.  
+>>
+>> a) Avoids unnecessary re-parenting cycle for orphan clock's with invalid parent for every clock
+>>
+> 
+> True, but this is a minor optimisation.  If this is a big optimization
+> for you then you really need to fix your bootloader.  We shouldn't be
+> optimizing slow error paths just because we refuse to fix the errors.
 
-To fix, simply ignore NOPROMISC flag in a netlink command for
-non-passthrough devices, same as we do at open/close.
+Got it! Should be fixed in boot-loader. 
 
-Since we touch this code anyway - check dev_set_promiscuity return code
-and pass it to users (though an error here is unlikely).
+> 
+>> b) With patch [1/3], after a clk with invalid parent was encountered, for every clk registered thereafter seeing following logs. 
+>> <Snippet>
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent
+>> [    0.000000] __clk_init: orphan clk(gpu_core_gclk_mux) invalid parent  
+>>
+>> Please advice, if can be handled better. 
+>>
+> 
+> First off, I don't think we should create new structures to work around
+> bugs that should be fixed.  pr_err_once() will let us know something is
+> wrong and won't flood the log.  Even then I'm inclined to say that
+> flooding the log is OK and will motivate you to fix up your bootloader.
+> Error prints are there for a reason.
+> 
+> Secondly, I spent like 10 minutes looking at this code and I'm still
+> confused.  For a clock with invalid parent programming, are you adding
+> it to BOTH the orphan list and the has_invalid_parent list?  Why?  Is
+> this just avoid the spurious prints?  For everyone clock registered we
+> walk the list of orphans to see if that orphan can be reparented.  This
+> patch adds another nested list walk (likely a short list) for each of
+> those orphans in the first list walk, so it starts to look like O(n^2).
+> I don't like it.
+> 
+> I think the first two patches in the series look good, but unless I am
+> misunderstanding this patch I feel that it can be dropped entirely.
+> 
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Reviewed-by: John Fastabend <john.r.fastabend@intel.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Thanks for your time! 
+Will drop this patch and send V2 for first 2 patches. 
 
-Changes from v1:
-    minor style changes suggested by Sergei Shtylyov
 
- drivers/net/macvlan.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 1c502bb..6e91931 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -853,18 +853,24 @@ static int macvlan_changelink(struct net_device *dev,
- 		struct nlattr *tb[], struct nlattr *data[])
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
--	if (data && data[IFLA_MACVLAN_MODE])
--		vlan->mode = nla_get_u32(data[IFLA_MACVLAN_MODE]);
-+
- 	if (data && data[IFLA_MACVLAN_FLAGS]) {
- 		__u16 flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
- 		bool promisc = (flags ^ vlan->flags) & MACVLAN_FLAG_NOPROMISC;
--
--		if (promisc && (flags & MACVLAN_FLAG_NOPROMISC))
--			dev_set_promiscuity(vlan->lowerdev, -1);
--		else if (promisc && !(flags & MACVLAN_FLAG_NOPROMISC))
--			dev_set_promiscuity(vlan->lowerdev, 1);
-+		if (vlan->port->passthru && promisc) {
-+			int err;
-+
-+			if (flags & MACVLAN_FLAG_NOPROMISC)
-+				err = dev_set_promiscuity(vlan->lowerdev, -1);
-+			else
-+				err = dev_set_promiscuity(vlan->lowerdev, 1);
-+			if (err < 0)
-+				return err;
-+		}
- 		vlan->flags = flags;
- 	}
-+	if (data && data[IFLA_MACVLAN_MODE])
-+		vlan->mode = nla_get_u32(data[IFLA_MACVLAN_MODE]);
- 	return 0;
- }
- 
--- 
-MST
+Regards,
+Ambresh
