@@ -1,52 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab3FMIl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:41:58 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:54340 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab3FMIlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:41:55 -0400
+	id S1758378Ab3FMIpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:45:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54724 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756822Ab3FMIpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 04:45:10 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
+        <sylvester.nawrocki@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <akpm@linux-foundation.org>
+CC: <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>
+Subject: [PATCH v7 3/9] usb: phy: twl4030: use the new generic PHY framework
+Date: Thu, 13 Jun 2013 14:13:53 +0530
+Message-ID: <1371113039-5784-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371113039-5784-1-git-send-email-kishon@ti.com>
+References: <1371113039-5784-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130612132713.GE4320@laptop>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-	<20130612132713.GE4320@laptop>
-Date: Thu, 13 Jun 2013 10:41:54 +0200
-Message-ID: <CACRpkdYtocMN-qvhOX_uHw=zoJysjJhGjQv5gL_ijkR56QL4Bg@mail.gmail.com>
-Subject: Re: [PATCH 00/32] ARM: ux500: Enable clocks for Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 3:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> After this patchset has been applied, we can request clocks directly
->> from Device Tree without using any AUXDATA device-name hacks. We also
->> take care to remove all of thos at the end of the set.
->
-> So it looks like Mike and Grant have okayed the actual design of this
-> patch-set, which is great. Is there any chance on some proper Acks from
-> Linus and Mike please?
+Used the generic PHY framework API to create the PHY. For powering on
+and powering off the PHY, power_on and power_off ops are used. Once the
+MUSB OMAP glue is adapted to the new framework, the suspend and resume
+ops of usb phy library will be removed.
 
-I will get to it. Basically I don't see there is a hurry as this has
-no chance to hit the v3.11 merge window anyway so we'll have
-lots of time to discuss it.
+However using the old usb phy library cannot be completely removed
+because otg is intertwined with phy and moving to the new
+framework completely will break otg. Once we have a separate otg state machine,
+we can get rid of the usb phy library.
 
-Why 3.12: my five pull request for ux500 stuff to ARM SoC is still
-outstanding, and this stuff will clash with that unless we get
-a common merge base. So we have to wait for ARM SoC
-to settle at this point.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/phy/phy-twl4030-usb.c |   48 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 47 insertions(+), 1 deletion(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
+index 8f78d2d..65a5e43 100644
+--- a/drivers/usb/phy/phy-twl4030-usb.c
++++ b/drivers/usb/phy/phy-twl4030-usb.c
+@@ -33,6 +33,7 @@
+ #include <linux/io.h>
+ #include <linux/delay.h>
+ #include <linux/usb/otg.h>
++#include <linux/phy/phy.h>
+ #include <linux/usb/musb-omap.h>
+ #include <linux/usb/ulpi.h>
+ #include <linux/i2c/twl.h>
+@@ -431,6 +432,14 @@ static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
+ 	dev_dbg(twl->dev, "%s\n", __func__);
+ }
+ 
++static int twl4030_phy_power_off(struct phy *phy)
++{
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
++
++	twl4030_phy_suspend(twl, 0);
++	return 0;
++}
++
+ static void __twl4030_phy_resume(struct twl4030_usb *twl)
+ {
+ 	twl4030_phy_power(twl, 1);
+@@ -459,6 +468,14 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
+ 	}
+ }
+ 
++static int twl4030_phy_power_on(struct phy *phy)
++{
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
++
++	twl4030_phy_resume(twl);
++	return 0;
++}
++
+ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+ {
+ 	/* Enable writing to power configuration registers */
+@@ -602,13 +619,22 @@ static int twl4030_usb_phy_init(struct usb_phy *phy)
+ 	status = twl4030_usb_linkstat(twl);
+ 	twl->linkstat = status;
+ 
+-	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
++	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID) {
+ 		omap_musb_mailbox(twl->linkstat);
++		twl4030_phy_power_on(phy);
++	}
+ 
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ 	return 0;
+ }
+ 
++static int twl4030_phy_init(struct phy *phy)
++{
++	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
++
++	return twl4030_usb_phy_init(&twl->phy);
++}
++
+ static int twl4030_set_suspend(struct usb_phy *x, int suspend)
+ {
+ 	struct twl4030_usb *twl = phy_to_twl(x);
+@@ -646,13 +672,22 @@ static int twl4030_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	return 0;
+ }
+ 
++static const struct phy_ops ops = {
++	.init		= twl4030_phy_init,
++	.power_on	= twl4030_phy_power_on,
++	.power_off	= twl4030_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
+ static int twl4030_usb_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_usb_data *pdata = pdev->dev.platform_data;
+ 	struct twl4030_usb	*twl;
++	struct phy		*phy;
+ 	int			status, err;
+ 	struct usb_otg		*otg;
+ 	struct device_node	*np = pdev->dev.of_node;
++	struct phy_provider	*phy_provider;
+ 
+ 	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
+ 	if (!twl)
+@@ -689,6 +724,17 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	otg->set_host		= twl4030_set_host;
+ 	otg->set_peripheral	= twl4030_set_peripheral;
+ 
++	phy_provider = devm_of_phy_provider_register(twl->dev, THIS_MODULE,
++		of_phy_simple_xlate);
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
++	phy = devm_phy_create(twl->dev, 0, &ops, "twl4030", twl);
++	if (IS_ERR(phy)) {
++		dev_dbg(&pdev->dev, "Failed to create PHY\n");
++		return PTR_ERR(phy);
++	}
++
+ 	/* init spinlock for workqueue */
+ 	spin_lock_init(&twl->lock);
+ 
+-- 
+1.7.10.4
+
