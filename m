@@ -1,161 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab3FMQdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:33:55 -0400
-Received: from smtp-out-056.synserver.de ([212.40.185.56]:1058 "EHLO
-	smtp-out-053.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754643Ab3FMQdy (ORCPT
+	id S1757943Ab3FMQer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:34:47 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:58473 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab3FMQep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:33:54 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1174
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, stable@vger.kernel.org
-Subject: [PATCH] dma: pl330: Fix cyclic transfers
-Date: Thu, 13 Jun 2013 18:34:02 +0200
-Message-Id: <1371141242-20091-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Thu, 13 Jun 2013 12:34:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <24084769.VqIFUPHnqh@flatron>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+	<1371058399-31933-3-git-send-email-dianders@chromium.org>
+	<24084769.VqIFUPHnqh@flatron>
+Date: Thu, 13 Jun 2013 09:34:43 -0700
+X-Google-Sender-Auth: zcoEFytjiJZfi1FvAT1bn6vhd04
+Message-ID: <CAD=FV=XzAGoVDic5L8Zub6MMBf_sb6-4aOuq5orT5ska84XiOA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts
+ before unmasking
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Simon Glass <sjg@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Ilho Lee <ilho215.lee@samsung.com>,
+        =?UTF-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate a descriptor for each period of a cyclic transfer, not just the first.
-Also since the callback needs to be called for each finished period make sure to
-initialize the callback and callback_param fields of each descriptor in a cyclic
-transfer.
+Tomasz,
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/dma/pl330.c | 87 ++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 66 insertions(+), 21 deletions(-)
+On Thu, Jun 13, 2013 at 3:54 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Doug,
+>
+> On Wednesday 12 of June 2013 10:33:19 Doug Anderson wrote:
+>> A level-triggered interrupt should be acked after the interrupt line
+>> becomes inactive and before it is unmasked, or else another interrupt
+>> will be immediately triggered.  Acking before or after calling the
+>> handler is not enough.
+>
+> Nice catch.
+>
+> I guess that pinctrl-s3c64xx will need similar fix as well, won't it?
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index bd69cc4..d539e06 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2505,6 +2505,10 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
- 	/* Assign cookies to all nodes */
- 	while (!list_empty(&last->node)) {
- 		desc = list_entry(last->node.next, struct dma_pl330_desc, node);
-+		if (pch->cyclic) {
-+			desc->txd.callback = last->txd.callback;
-+			desc->txd.callback_param = last->txd.callback_param;
-+		}
- 
- 		dma_cookie_assign(&desc->txd);
- 
-@@ -2688,32 +2692,19 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
- 		size_t period_len, enum dma_transfer_direction direction,
- 		unsigned long flags, void *context)
- {
--	struct dma_pl330_desc *desc;
-+	struct dma_pl330_desc *desc = NULL, *first = NULL;
- 	struct dma_pl330_chan *pch = to_pchan(chan);
-+	struct dma_pl330_dmac *pdmac = pch->dmac;
-+	unsigned int i;
- 	dma_addr_t dst;
- 	dma_addr_t src;
- 
--	desc = pl330_get_desc(pch);
--	if (!desc) {
--		dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
--			__func__, __LINE__);
-+	if (len % period_len != 0)
- 		return NULL;
--	}
- 
- 	switch (direction) {
- 	case DMA_MEM_TO_DEV:
--		desc->rqcfg.src_inc = 1;
--		desc->rqcfg.dst_inc = 0;
--		desc->req.rqtype = MEMTODEV;
--		src = dma_addr;
--		dst = pch->fifo_addr;
--		break;
- 	case DMA_DEV_TO_MEM:
--		desc->rqcfg.src_inc = 0;
--		desc->rqcfg.dst_inc = 1;
--		desc->req.rqtype = DEVTOMEM;
--		src = pch->fifo_addr;
--		dst = dma_addr;
- 		break;
- 	default:
- 		dev_err(pch->dmac->pif.dev, "%s:%d Invalid dma direction\n",
-@@ -2721,12 +2712,66 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
- 		return NULL;
- 	}
- 
--	desc->rqcfg.brst_size = pch->burst_sz;
--	desc->rqcfg.brst_len = 1;
-+	for (i = 0; i < len / period_len; i++) {
-+		desc = pl330_get_desc(pch);
-+		if (!desc) {
-+			dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
-+				__func__, __LINE__);
- 
--	pch->cyclic = true;
-+			if (!first)
-+				return NULL;
- 
--	fill_px(&desc->px, dst, src, period_len);
-+			spin_lock_irqsave(&pdmac->pool_lock, flags);
-+
-+			while (!list_empty(&first->node)) {
-+				desc = list_entry(first->node.next,
-+						struct dma_pl330_desc, node);
-+				list_move_tail(&desc->node, &pdmac->desc_pool);
-+			}
-+
-+			list_move_tail(&first->node, &pdmac->desc_pool);
-+
-+			spin_unlock_irqrestore(&pdmac->pool_lock, flags);
-+
-+			return NULL;
-+		}
-+
-+		switch (direction) {
-+		case DMA_MEM_TO_DEV:
-+			desc->rqcfg.src_inc = 1;
-+			desc->rqcfg.dst_inc = 0;
-+			desc->req.rqtype = MEMTODEV;
-+			src = dma_addr;
-+			dst = pch->fifo_addr;
-+			break;
-+		case DMA_DEV_TO_MEM:
-+			desc->rqcfg.src_inc = 0;
-+			desc->rqcfg.dst_inc = 1;
-+			desc->req.rqtype = DEVTOMEM;
-+			src = pch->fifo_addr;
-+			dst = dma_addr;
-+			break;
-+		default:
-+			break;
-+		}
-+
-+		desc->rqcfg.brst_size = pch->burst_sz;
-+		desc->rqcfg.brst_len = 1;
-+		fill_px(&desc->px, dst, src, period_len);
-+
-+		if (!first)
-+			first = desc;
-+		else
-+			list_add_tail(&desc->node, &first->node);
-+
-+		dma_addr += period_len;
-+	}
-+
-+	if (!desc)
-+		return NULL;
-+
-+	pch->cyclic = true;
-+	desc->txd.flags = flags;
- 
- 	return &desc->txd;
- }
--- 
-1.8.0
+It needs this whole series of 3, probably.  The mask and unmask need
+the lock and as well as the acking for level interrupts.
 
+I don't have any way to test that code but it's a pretty simple change
+to make.  Do you want to do it or do you have an idea of someone who
+should?
+
+
+> I think you can eliminate most of the code by doing this following way:
+>
+>         if (irqd_get_trigger_type(irqd) & IRQ_TYPE_LEVEL_MASK)
+>                 exynos_gpio_irq_ack(irqd);
+
+Duh, right.  OK, v2 coming shortly.  Thank you for pointing out the
+right way to do this!  :)
+
+-Doug
