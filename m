@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3FMNPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:15:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49039 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3FMNPi (ORCPT
+	id S1757573Ab3FMNQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:16:33 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:52393 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab3FMNQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:15:38 -0400
-Date: Thu, 13 Jun 2013 15:15:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over global
- devices
-In-Reply-To: <51B991EF.70800@linaro.org>
-Message-ID: <alpine.LFD.2.02.1306131331430.22970@ionos>
-References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org> <1370291642-13259-2-git-send-email-sboyd@codeaurora.org> <51B0A6E8.20909@linaro.org> <20130606180425.GQ599@codeaurora.org> <51B10D85.1060507@linaro.org> <20130606223848.GR599@codeaurora.org>
- <20130612214435.GE10823@codeaurora.org> <51B991EF.70800@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 13 Jun 2013 09:16:32 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <mvm7ghyrydr.fsf@hawking.suse.de>
+References: <1371124784-13306-1-git-send-email-geert@linux-m68k.org>
+	<mvm7ghyrydr.fsf@hawking.suse.de>
+Date: Thu, 13 Jun 2013 15:16:32 +0200
+X-Google-Sender-Auth: d0M3430dW_NJjOSvI0zD3cPfMKg
+Message-ID: <CAMuHMdVdvHBzFbsNu96J+hXO-aVU8Z1XXVG_UtszJMdoz9nkMg@mail.gmail.com>
+Subject: Re: [PATCH] m68k/uaccess: Fix asm constraints for userspace access
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013, Daniel Lezcano wrote:
-> I prefer Thomas to have a look at it and ack it. I changed Cc to To for
-> Thomas.
+On Thu, Jun 13, 2013 at 2:25 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Geert Uytterhoeven <geert@linux-m68k.org> writes:
+>
+>> Also, relax the asm constraints for 16-bit userspace accesses in
+>> __put_user() and __get_user(), as both "move" and "moves" do support
+>> such transfers between memory and address registers.
+>
+> There's another occurrence in __constant_copy_from_user and
+> __constant_copy_to_user.
 
-The patch does not apply on tip timers/core. The code has been
-reworked a month ago. Please work against tip timers/core. That's
-where this stuff ends up.
+Thanks! I will fix those, too.
 
-Thanks,
+Gr{oetje,eeting}s,
 
-	tglx
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
