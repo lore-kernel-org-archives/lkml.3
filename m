@@ -1,112 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab3FMP3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:29:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34288 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758270Ab3FMP3k (ORCPT
+	id S1758506Ab3FMP3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:29:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57789 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758442Ab3FMP3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:29:40 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-54-51b9e562ed9e
+	Thu, 13 Jun 2013 11:29:47 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-c5-51b9e569d7f1
 From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 To: linux-security-module@vger.kernel.org
 Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
         linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
         Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC 4/5] security: smack: add kmem_cache for smack_rule allocations
-Date: Thu, 13 Jun 2013 17:29:11 +0200
-Message-id: <1371137352-31273-5-git-send-email-t.stanislaws@samsung.com>
+Subject: [RFC 5/5] security: smack: add kmem_cache for smack_master_list
+ allocations
+Date: Thu, 13 Jun 2013 17:29:12 +0200
+Message-id: <1371137352-31273-6-git-send-email-t.stanislaws@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
 References: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e+xgG7y052BBhs/sFjc2/aLzeJs0xt2
-	i8u75rBZfOh5xGax9shddou3k1YwW8xrf8nqwO7Rt2UVo8fR/YvYPD5vkgtgjuKySUnNySxL
-	LdK3S+DK2DPlBlPBCuGKfU8uMjYwfufvYuTkkBAwkTi/8i8rhC0mceHeerYuRi4OIYFFjBJN
-	Xc2MEE4Xk8S2K9OYQarYgDqOLfnMCGKLCGhKHJsO0cEssI1RouPFVCaQhLCAr8SzXVfAGlgE
-	VCWWvVzGAmLzCnhInFt4kh1inbzE0/t9bCA2p4CnxNtbG8FqhIBqjj5ZzDyBkXcBI8MqRtHU
-	guSC4qT0XEO94sTc4tK8dL3k/NxNjOAgeia1g3Flg8UhRgEORiUe3oQLOwOFWBPLiitzDzFK
-	cDArifCqPwQK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRq
-	YLQ+6pG0MXlDm1Bf/52UNt00x2cXfY6bBthMCOt5f0LxxZG99ooPPoqqBS9gc/n26PCd8mQ+
-	u77Alhx93SAlMfOfhazbV5imTzJcIrLUvZht9wqplTOM+x3//T5g63500p6HsqyNbkxKZf/d
-	l0VJ27/a4bK6OS2IU0Mj/JL4dc4PaXLLddxOKbEUZyQaajEXFScCADNyvWweAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e+xgG7m052BBi2t6hb3tv1iszjb9Ibd
+	4vKuOWwWH3oesVmsPXKX3eLtpBXMFvPaX7I6sHv0bVnF6HF0/yI2j8+b5AKYo7hsUlJzMstS
+	i/TtErgypj2MK7glUfFtygnGBsZlIl2MnBwSAiYSO/ZfZoGwxSQu3FvP1sXIxSEksIhR4v+s
+	B0wQTheTxPWdF5lAqtiAOo4t+cwIYosIaEocmw7RwSywjVGi48VUsCJhgTCJgwensnYxcnCw
+	CKhKTDnpARLmFfCQmHR7DdQ2eYmn9/vYQGxOAU+Jt7c2gsWFgGqOPlnMPIGRdwEjwypG0dSC
+	5ILipPRcI73ixNzi0rx0veT83E2M4AB6Jr2DcVWDxSFGAQ5GJR7ehAs7A4VYE8uKK3MPMUpw
+	MCuJ8Ko/BArxpiRWVqUW5ccXleakFh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpg
+	LI6bVVXw/ZSQ76yL0bo9y79w5F0WX2yW/FfrBkvACc7ZNkZxvCorY5KlW018XrloKz5UvGYu
+	fDO/9tnbWb/ifhzhqux4ONEo7snLW5eFghl/9f0WLtTwvxAqOZ2B7a9YK9Ob5a+CIpMWWvbs
+	un3qku4z3l8XbM4s3nbynM2lhpxsFlP/nF/FSizFGYmGWsxFxYkAa7aUtRwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM, sizeof(struct smack_rule)==20. Allocation by kmalloc() uses a
-32-byte-long chunk to allocate 20 bytes. Just ask ksize().  It means that 40%
+On ARM, sizeof(struct smack_master_list) == 12. Allocation by kmalloc() uses a
+32-byte-long chunk to allocate 12 bytes. Just ask ksize().  It means that 63%
 of memory is simply wasted for padding bytes.
 
 The problem is fixed in this patch by using kmem_cache. The cache allocates
-struct smack_rule using 24-byte-long chunks according to ksize(). This reduces
-amount of used memory by 25%.
+struct smack_master_list using 16-byte-long chunks according to ksize(). This
+reduces amount of used memory by 50%.
 
 Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
- security/smack/smack.h     |    3 +++
- security/smack/smack_lsm.c |   11 ++++++++++-
- security/smack/smackfs.c   |    2 +-
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ security/smack/smack.h     |    7 +++++++
+ security/smack/smack_lsm.c |    8 ++++++++
+ security/smack/smackfs.c   |    8 ++------
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
 diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 8ad3095..38ba673 100644
+index 38ba673..463f818 100644
 --- a/security/smack/smack.h
 +++ b/security/smack/smack.h
-@@ -233,6 +233,9 @@ extern struct mutex	smack_known_lock;
- extern struct list_head smack_known_list;
- extern struct list_head smk_netlbladdr_list;
- 
-+/* Cache for fast and thrifty allocations */
-+extern struct kmem_cache *smack_rule_cache;
+@@ -194,6 +194,12 @@ struct smk_audit_info {
+ 	struct smack_audit_data sad;
+ #endif
+ };
 +
++struct smack_master_list {
++	struct list_head	list;
++	struct smack_rule	*smk_rule;
++};
++
+ /*
+  * These functions are in smack_lsm.c
+  */
+@@ -235,6 +241,7 @@ extern struct list_head smk_netlbladdr_list;
+ 
+ /* Cache for fast and thrifty allocations */
+ extern struct kmem_cache *smack_rule_cache;
++extern struct kmem_cache *smack_master_list_cache;
+ 
  extern struct security_operations smack_ops;
  
- /*
 diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index d52c780..7aa696a 100644
+index 7aa696a..1d4a1b0 100644
 --- a/security/smack/smack_lsm.c
 +++ b/security/smack/smack_lsm.c
-@@ -3564,6 +3564,9 @@ static __init void init_smack_known_list(void)
- 	list_add(&smack_known_web.list, &smack_known_list);
- }
+@@ -3566,6 +3566,7 @@ static __init void init_smack_known_list(void)
  
-+/* KMEM caches for fast and thrifty allocations */
-+struct kmem_cache *smack_rule_cache;
-+
+ /* KMEM caches for fast and thrifty allocations */
+ struct kmem_cache *smack_rule_cache;
++struct kmem_cache *smack_master_list_cache;
+ 
  /**
   * smack_init - initialize the smack system
-  *
-@@ -3577,10 +3580,16 @@ static __init int smack_init(void)
- 	if (!security_module_enable(&smack_ops))
- 		return 0;
+@@ -3584,9 +3585,16 @@ static __init int smack_init(void)
+ 	if (!smack_rule_cache)
+ 		return -ENOMEM;
  
-+	smack_rule_cache = KMEM_CACHE(smack_rule, 0);
-+	if (!smack_rule_cache)
++	smack_master_list_cache = KMEM_CACHE(smack_master_list, 0);
++	if (!smack_master_list_cache) {
++		kmem_cache_destroy(smack_rule_cache);
 +		return -ENOMEM;
++	}
 +
  	tsp = new_task_smack(smack_known_floor.smk_known,
  				smack_known_floor.smk_known, GFP_KERNEL);
--	if (tsp == NULL)
-+	if (tsp == NULL) {
-+		kmem_cache_destroy(smack_rule_cache);
+ 	if (tsp == NULL) {
++		kmem_cache_destroy(smack_master_list_cache);
+ 		kmem_cache_destroy(smack_rule_cache);
  		return -ENOMEM;
-+	}
- 
- 	printk(KERN_INFO "Smack:  Initializing.\n");
- 
+ 	}
 diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index e8c57f3..c08b1ec 100644
+index c08b1ec..c7a1b0d 100644
 --- a/security/smack/smackfs.c
 +++ b/security/smack/smackfs.c
-@@ -217,7 +217,7 @@ static int smk_set_access(struct smack_parsed_rule *srp,
- 	}
+@@ -104,11 +104,6 @@ LIST_HEAD(smk_netlbladdr_list);
+  * Rule lists are maintained for each label.
+  * This master list is just for reading /smack/load and /smack/load2.
+  */
+-struct smack_master_list {
+-	struct list_head	list;
+-	struct smack_rule	*smk_rule;
+-};
+-
+ LIST_HEAD(smack_rule_list);
  
- 	if (found == 0) {
--		sp = kzalloc(sizeof(*sp), GFP_KERNEL);
-+		sp = kmem_cache_zalloc(smack_rule_cache, GFP_KERNEL);
- 		if (sp == NULL) {
- 			rc = -ENOMEM;
- 			goto out;
+ struct smack_parsed_rule {
+@@ -233,7 +228,8 @@ static int smk_set_access(struct smack_parsed_rule *srp,
+ 		 * it needs to get added for reporting.
+ 		 */
+ 		if (global) {
+-			smlp = kzalloc(sizeof(*smlp), GFP_KERNEL);
++			smlp = kmem_cache_zalloc(smack_master_list_cache,
++							GFP_KERNEL);
+ 			if (smlp != NULL) {
+ 				smlp->smk_rule = sp;
+ 				list_add_rcu(&smlp->list, &smack_rule_list);
 -- 
 1.7.9.5
 
