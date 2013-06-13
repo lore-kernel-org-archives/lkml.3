@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab3FMN2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:38 -0400
+	id S932326Ab3FMN24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:28:56 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:6846 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758404Ab3FMN2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:22 -0400
+	id S1758164Ab3FMN2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:21 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537721"
+   d="scan'208";a="7537719"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,106 +17,96 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [Part1 PATCH v5 18/22] x86, mm, numa: Add early_initmem_init() stub
-Date: Thu, 13 Jun 2013 21:03:05 +0800
-Message-Id: <1371128589-8953-19-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org
+Subject: [Part2 PATCH v4 03/15] page_alloc, mem-hotplug: Improve movablecore to {en|dis}able using SRAT.
+Date: Thu, 13 Jun 2013 21:03:27 +0800
+Message-Id: <1371128619-8987-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:18,
+ 2013/06/13 20:58:45,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:28,
-	Serialize complete at 2013/06/13 20:58:28
+ 2013/06/13 20:59:02,
+	Serialize complete at 2013/06/13 20:59:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+The Hot-Pluggable Fired in SRAT specified which memory ranges are hotpluggable.
+We will arrange hotpluggable memory as ZONE_MOVABLE for users who want to use
+memory hotplug functionality. But this will cause NUMA performance decreased
+because kernel cannot use ZONE_MOVABLE.
 
-Introduce early_initmem_init() to call early_x86_numa_init(),
-which will be used to parse numa info earlier.
+So we improve movablecore boot option to allow those who want to use memory
+hotplug functionality to enable using SRAT info to arrange movable memory.
 
-Later will call init_mem_mapping for all the nodes.
+Users can specify "movablecore=acpi" in kernel commandline to enable this
+functionality.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+For those who don't use memory hotplug or who don't want to lose their NUMA
+performance, just don't specify anything. The kernel will work as before.
+
+Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/page_types.h |    1 +
- arch/x86/kernel/setup.c           |    1 +
- arch/x86/mm/init.c                |    6 ++++++
- arch/x86/mm/numa.c                |    7 +++++--
- 4 files changed, 13 insertions(+), 2 deletions(-)
+ include/linux/memory_hotplug.h |    3 +++
+ mm/page_alloc.c                |   13 +++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index b012b82..d04dd8c 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -55,6 +55,7 @@ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 3e622c6..0b21e54 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -33,6 +33,9 @@ enum {
+ 	ONLINE_MOVABLE,
+ };
  
-+void early_initmem_init(void);
- extern void initmem_init(void);
- 
- #endif	/* !__ASSEMBLY__ */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d11b1b7..301165e 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1162,6 +1162,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	early_acpi_boot_init();
- 
-+	early_initmem_init();
- 	initmem_init();
- 	memblock_find_dma_reserve();
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 8554656..3c21f16 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -467,6 +467,12 @@ void __init init_mem_mapping(void)
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
- 
-+#ifndef CONFIG_NUMA
-+void __init early_initmem_init(void)
-+{
-+}
-+#endif
++/* Enable/disable SRAT in movablecore boot option */
++extern bool movablecore_enable_srat;
 +
  /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
-  * is valid. The argument is a physical page number.
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 630e09f..7d76936 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -665,13 +665,16 @@ static void __init early_x86_numa_init(void)
- 	numa_init(dummy_numa_init);
+  * pgdat resizing functions
+  */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7ba7703..ee5ae49 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -209,6 +209,8 @@ static unsigned long __initdata required_kernelcore;
+ static unsigned long __initdata required_movablecore;
+ static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+ 
++bool __initdata movablecore_enable_srat;
++
+ /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+ int movable_zone;
+ EXPORT_SYMBOL(movable_zone);
+@@ -5062,6 +5064,12 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 	}
  }
  
-+void __init early_initmem_init(void)
++static void __init cmdline_movablecore_srat(char *p)
 +{
-+	early_x86_numa_init();
++	if (p && !strcmp(p, "acpi"))
++		movablecore_enable_srat = true;
 +}
 +
- void __init x86_numa_init(void)
+ static int __init cmdline_parse_core(char *p, unsigned long *core)
  {
- 	int i, nid;
- 	struct numa_meminfo *mi = &numa_meminfo;
+ 	unsigned long long coremem;
+@@ -5092,6 +5100,11 @@ static int __init cmdline_parse_kernelcore(char *p)
+  */
+ static int __init cmdline_parse_movablecore(char *p)
+ {
++	cmdline_movablecore_srat(p);
++
++	if (movablecore_enable_srat)
++		return 0;
++
+ 	return cmdline_parse_core(p, &required_movablecore);
+ }
  
--	early_x86_numa_init();
--
- #ifdef CONFIG_ACPI_NUMA
- 	if (srat_used)
- 		x86_acpi_numa_init_slit();
 -- 
 1.7.1
 
