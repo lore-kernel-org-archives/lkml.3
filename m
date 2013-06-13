@@ -1,148 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab3FMP3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:29:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34280 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3FMP3e (ORCPT
+	id S1758321Ab3FMPat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:30:49 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:58703 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3FMPap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:29:34 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-4c-51b9e55d026f
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-To: linux-security-module@vger.kernel.org
-Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC 2/5] security: smack: avoid kmalloc() in smk_parse_long_rule()
-Date: Thu, 13 Jun 2013 17:29:09 +0200
-Message-id: <1371137352-31273-3-git-send-email-t.stanislaws@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
-References: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e+xgG7s052BBp2fxC3ubfvFZnG26Q27
-	xeVdc9gsPvQ8YrNYe+Quu8XbSSuYLea1v2R1YPfo27KK0ePo/kVsHp83yQUwR3HZpKTmZJal
-	FunbJXBlLJ56mK1gvXTFrbs9zA2MT0W7GDk5JARMJI7cW80GYYtJXLi3Hsjm4hASWMQo8X36
-	TlYIp4tJYsu836wgVWxAHceWfGYEsUUENCWOTYfoYBbYxijR8WIqE0hCWMBH4sy/88wgNouA
-	qsT1ZbPZuxg5OHgFPCR+T4+A2CYv8fR+H9hmTgFPibe3NrKA2EJAJUefLGaewMi7gJFhFaNo
-	akFyQXFSeq6hXnFibnFpXrpecn7uJkZwCD2T2sG4ssHiEKMAB6MSD2/ChZ2BQqyJZcWVuYcY
-	JTiYlUR41R8ChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
-	NTAuq7JwMTbbfqOUZbFoj5fitd8hy/8HRcvILPnLrJCwVIJjlvNZjidVKpMdqnbMdnObkS4j
-	r/+eI2Cf39y7i9r23/i8QdQo9NSpDofz53fGrdePvFI0S0j67P38s782bfs/fc2bJY+8Z2uo
-	Pd7w5E9Q7++lVfZv2r0FDm28zxUWdG3C/f8d3qqlSizFGYmGWsxFxYkAFvyc8R0CAAA=
+	Thu, 13 Jun 2013 11:30:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1361458226-8142-1-git-send-email-tim.gardner@canonical.com>
+References: <20130221131931.GA29577@agk-dp.fab.redhat.com>
+	<1361458226-8142-1-git-send-email-tim.gardner@canonical.com>
+Date: Thu, 13 Jun 2013 18:30:45 +0300
+Message-ID: <CA+ydwtq_THgL87ESb4Z4T8pMhZUQiAX_9qac2agPwHABGEjuRA@mail.gmail.com>
+Subject: Re: [PATCH linux-next v2] DM RAID: validate_raid_redundancy: Silence
+ uninitialized variable warning
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>,
+        linux-raid@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function smk_parse_long_rule() allocates a number of temporary strings on heap
-(kmalloc cache). Moreover, the sizes of those allocations might be large if
-user calls write() for a long chunk. A big kmalloc triggers a heavy reclaim
-havoc and it is very likely to fail.
+2013/2/21 Tim Gardner <tim.gardner@canonical.com>:
+> drivers/md/dm-raid.c:453:53: warning: 'rebuilds_per_group' may be used uninitialized in this function [-Wuninitialized]
+> drivers/md/dm-raid.c:383:11: note: 'rebuilds_per_group' was declared here
 
-This patch introduces smk_parse_substrings() function that parses a string into
-substring separated by whitespaces.  The buffer for substring is preallocated.
-It must store substring the worst case scenario which is SMK_LOAD2LEN in case
-of long rule parsing.
+Hello, is this patch getting merged? I'm also seeing this exact same
+compiler warning in my mainline builds.
 
-The buffer is allocated on stack what is slightly faster than kmalloc().
+Tommi
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
----
- security/smack/smackfs.c |   67 +++++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 34 deletions(-)
-
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 9a3cd0d..46f111e 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -364,6 +364,33 @@ static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
- }
- 
- /**
-+ * smk_parse_strings - parse white-space separated substring from a string
-+ * @src: a long string to be parsed, null terminated
-+ * @dst: a buffer for substrings, should be at least strlen(src)+1 bytes
-+ * @args: table for parsed substring
-+ * @size: number of slots in args table
-+ *
-+ * Returns number of parsed substrings
-+ */
-+static int smk_parse_substrings(const char *src, char *dst,
-+	char *args[], int size)
-+{
-+	int cnt;
-+
-+	for (cnt = 0; cnt < size; ++cnt) {
-+		src = skip_spaces(src);
-+		if (*src == 0)
-+			break;
-+		args[cnt] = dst;
-+		for (; *src && !isspace(*src); ++src, ++dst)
-+			*dst = *src;
-+		*(dst++) = 0;
-+	}
-+
-+	return cnt;
-+}
-+
-+/**
-  * smk_parse_long_rule - parse Smack rule from rule string
-  * @data: string to be parsed, null terminated
-  * @rule: Will be filled with Smack parsed rule
-@@ -375,48 +402,20 @@ static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
- static int smk_parse_long_rule(const char *data, struct smack_parsed_rule *rule,
- 				int import, int change)
- {
--	char *subject;
--	char *object;
--	char *access1;
--	char *access2;
--	int datalen;
-+	char tmp[SMK_LOAD2LEN + 1];
-+	char *args[4];
- 	int rc = -1;
- 
--	/* This is inefficient */
--	datalen = strlen(data);
--
--	/* Our first element can be 64 + \0 with no spaces */
--	subject = kzalloc(datalen + 1, GFP_KERNEL);
--	if (subject == NULL)
--		return -1;
--	object = kzalloc(datalen, GFP_KERNEL);
--	if (object == NULL)
--		goto free_out_s;
--	access1 = kzalloc(datalen, GFP_KERNEL);
--	if (access1 == NULL)
--		goto free_out_o;
--	access2 = kzalloc(datalen, GFP_KERNEL);
--	if (access2 == NULL)
--		goto free_out_a;
--
- 	if (change) {
--		if (sscanf(data, "%s %s %s %s",
--			subject, object, access1, access2) == 4)
--			rc = smk_fill_rule(subject, object, access1, access2,
-+		if (smk_parse_substrings(data, tmp, args, 4) == 4)
-+			rc = smk_fill_rule(args[0], args[1], args[2], args[3],
- 				rule, import, 0);
- 	} else {
--		if (sscanf(data, "%s %s %s", subject, object, access1) == 3)
--			rc = smk_fill_rule(subject, object, access1, NULL,
-+		if (smk_parse_substrings(data, tmp, args, 3) == 3)
-+			rc = smk_fill_rule(args[0], args[1], args[2], NULL,
- 				rule, import, 0);
- 	}
- 
--	kfree(access2);
--free_out_a:
--	kfree(access1);
--free_out_o:
--	kfree(object);
--free_out_s:
--	kfree(subject);
- 	return rc;
- }
- 
--- 
-1.7.9.5
-
+>
+> It is impossible that rebuilds_per_group could be used before set, but set
+> it to 0 anyways to silence GCC warnings.
+>
+> Cc: Alasdair Kergon <agk@redhat.com>
+> Cc: dm-devel@redhat.com
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: linux-raid@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>
+> v2 - Added GCC comment. Update commit log with a more definite explanation.
+>
+> As Neil has pointed out, https://lwn.net/Articles/529954/ indicates
+> uninitialized_var() is going away.
+>
+>  drivers/md/dm-raid.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
+> index 9d6bf19..1dbc341 100644
+> --- a/drivers/md/dm-raid.c
+> +++ b/drivers/md/dm-raid.c
+> @@ -380,7 +380,8 @@ static int validate_region_size(struct raid_set *rs, unsigned long region_size)
+>  static int validate_raid_redundancy(struct raid_set *rs)
+>  {
+>         unsigned i, rebuild_cnt = 0;
+> -       unsigned rebuilds_per_group, copies, d;
+> +       unsigned rebuilds_per_group = 0; /* GCC 4.6.3 */
+> +       unsigned copies, d;
+>         unsigned group_size, last_group_start;
+>
+>         for (i = 0; i < rs->md.raid_disks; i++)
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
