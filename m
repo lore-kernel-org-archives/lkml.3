@@ -1,208 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3FMJTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:19:31 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27502 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758371Ab3FMJT3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:19:29 -0400
-Message-ID: <51B98D17.2050902@huawei.com>
-Date: Thu, 13 Jun 2013 17:12:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1758549Ab3FMJTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:19:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56487 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758532Ab3FMJTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 05:19:45 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 03/11] gpio: davinci: Modify to platform driver
+Thread-Topic: [PATCH 03/11] gpio: davinci: Modify to platform driver
+Thread-Index: AQHOVrtf6gwEFoq/8kygHsiS/vHYRpkwAbsAgACPoZCAALxDgIAAxFyQgAC16gCAAItCwP//maCAgACH+5A=
+Date: Thu, 13 Jun 2013 09:18:01 +0000
+Deferred-Delivery: Thu, 13 Jun 2013 09:17:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EADA96F@DBDE04.ent.ti.com>
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
+ <1369206634-6778-4-git-send-email-avinashphilip@ti.com>
+ <51B71056.9010103@ti.com>
+ <518397C60809E147AF5323E0420B992E3EAD9D75@DBDE04.ent.ti.com>
+ <51B826BF.7050009@ti.com>
+ <518397C60809E147AF5323E0420B992E3EADA252@DBDE04.ent.ti.com>
+ <51B96410.7000807@ti.com>
+ <518397C60809E147AF5323E0420B992E3EADA883@DBDE04.ent.ti.com>
+ <51B98301.9090404@ti.com>
+In-Reply-To: <51B98301.9090404@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v3 5/9] memcg: use css_get/put when charging/uncharging kmem
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5D9Js7s027920
 
-Sorry for updating the patchset so late.
+On Thu, Jun 13, 2013 at 13:59:53, Nori, Sekhar wrote:
+> On 6/13/2013 1:02 PM, Philip, Avinash wrote:
+> 
+> > With tnetv107x_defconfig build is failing
+> > 
+> > arch/arm/mach-davinci/board-tnetv107x-evm.c:282:15: error:
+> >  'davinci_timer_init' undeclared here (not in a function)
+> > arch/arm/mach-davinci/board-tnetv107x-evm.c:284:15: error:
+> >  'davinci_init_late' undeclared here (not in a function)
+> > make[1]: *** [arch/arm/mach-davinci/board-tnetv107x-evm.o] Error 1
+> > 
+> > Following patch fixes the build above breakage
+> 
+> The error you are seeing and the patch you provided below have no
+> correlation.
 
-I've made some changes for the memory barrier thing, and I agree with
-Michal that there can be improvement but can be a separate patch.
+No. Above build error fixed by
+ 
++#include <mach/common.h>
 
-If this version is ok for everyone, I'll send the whole patchset out
-to Andrew.
+Other changes are not related to above error.
 
-=========================
+> 
+> > 
+> > diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> > index ba79837..4a9c320 100644
+> > --- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> > +++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> > @@ -30,6 +30,7 @@
+> >  #include <asm/mach/arch.h>
+> >  #include <asm/mach-types.h>
+> > 
+> > +#include <mach/common.h>
+> >  #include <mach/irqs.h>
+> >  #include <mach/edma.h>
+> >  #include <mach/mux.h>
+> > @@ -147,7 +148,7 @@ static struct davinci_nand_pdata nand_config = {
+> >         .ecc_bits       = 1,
+> >  };
+> > 
+> > -static struct davinci_uart_config serial_config __initconst = {
+> > +static struct davinci_uart_config serial_config = {
+> >         .enabled_uarts  = BIT(1),
+> >  };
+> 
+> You can make this __initdata instead - assuming its okay to have this
+> memory discarded at init.
 
-Use css_get/put instead of mem_cgroup_get/put.
+I will check.
 
-We can't do a simple replacement, because here mem_cgroup_put()
-is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
-won't be called until css refcnt goes down to 0.
+> 
+> > 
+> > @@ -245,7 +246,7 @@ static struct ti_ssp_data ssp_config = {
+> >         },
+> >  };
+> > 
+> > -static struct tnetv107x_device_info evm_device_info __initconst = {
+> > +static struct tnetv107x_device_info evm_device_info = {
+> 
+> Same here. You can make this __initdata.
+> 
+> Please send a formal patch for the errors you have seen.
 
-Instead we increment css refcnt in mem_cgroup_css_offline(), and
-then check if there's still kmem charges. If not, css refcnt will
-be decremented immediately, otherwise the refcnt won't be decremented
-when kmem charges goes down to 0.
+Ok
 
-v3:
-- changed wmb() to smp_smb(), and moved it to memcg_kmem_mark_dead(),
-  and added comment.
+> 
+> >         .serial_config          = &serial_config,
+> >         .mmc_config[1]          = &mmc_config,  /* controller 1 */
+> >         .nand_config[0]         = &nand_config, /* chip select 0 */
+> > 
+> > 
+> > 
+> >>
+> >>>
+> >>> So I prefer to leave tnetv107x platform for now.
+> >>
+> >> I don't think that's acceptable. At least by me.
+> > 
+> > I think 2 options are available
+> > 1. Convert gpio-tnetv107x.c to platform driver. This will help in
+> > 	removing gpio references in davinci_soc_info structure.
+> > 2. Remove inline gpio api support and start use gpiolib support.
+> > 
+> > I prefer first option. It will help in removing
+> > <arch/arm/mach-davinci/include/mach/gpio-davinci.h>.
+> 
+> Okay. Can you take this up in this series? I understand you may not have
+> an tnetv107x board, but at least you can get to a series that builds.
+> 
+> Even if you choose to do just option #2, I am OK. What I really want to
+> see is inline API gone completely (not just remain largely unused). This
+> will also help you avoid exposing internal data structures like
+> davinci_gpio_controller exposed to the whole kernel. The worse part
+> right now is you have two copies of the same structure exposed globally
+> from two different include folders.
 
-v2:
-- added wmb() in kmem_cgroup_css_offline(), pointed out by Michal
-- revised comments as suggested by Michal
-- fixed to check if kmem is activated in kmem_cgroup_css_offline()
+I understood. I will take option 2.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c | 70 ++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 45 insertions(+), 25 deletions(-)
+Thanks
+Avinash
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 466c595..76dcd0e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -416,6 +416,11 @@ static void memcg_kmem_clear_activated(struct mem_cgroup *memcg)
- 
- static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
- {
-+	/*
-+	 * We need to call css_get() first, because memcg_uncharge_kmem()
-+	 * will call css_put() if it sees the memcg is dead.
-+	 */
-+	smb_wmb();
- 	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
- 		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
- }
-@@ -3060,8 +3065,16 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
- 	if (res_counter_uncharge(&memcg->kmem, size))
- 		return;
- 
-+	/*
-+	 * Releases a reference taken in kmem_cgroup_css_offline in case
-+	 * this last uncharge is racing with the offlining code or it is
-+	 * outliving the memcg existence.
-+	 *
-+	 * The memory barrier imposed by test&clear is paired with the
-+	 * explicit one in memcg_kmem_mark_dead().
-+	 */
- 	if (memcg_kmem_test_and_clear_dead(memcg))
--		mem_cgroup_put(memcg);
-+		css_put(&memcg->css);
- }
- 
- void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-@@ -5165,14 +5178,6 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
- 		 * starts accounting before all call sites are patched
- 		 */
- 		memcg_kmem_set_active(memcg);
--
--		/*
--		 * kmem charges can outlive the cgroup. In the case of slab
--		 * pages, for instance, a page contain objects from various
--		 * processes, so it is unfeasible to migrate them away. We
--		 * need to reference count the memcg because of that.
--		 */
--		mem_cgroup_get(memcg);
- 	} else
- 		ret = res_counter_set_limit(&memcg->kmem, val);
- out:
-@@ -5205,12 +5210,10 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- 		goto out;
- 
- 	/*
--	 * destroy(), called if we fail, will issue static_key_slow_inc() and
--	 * mem_cgroup_put() if kmem is enabled. We have to either call them
--	 * unconditionally, or clear the KMEM_ACTIVE flag. I personally find
--	 * this more consistent, since it always leads to the same destroy path
-+	 * __mem_cgroup_free() will issue static_key_slow_dec() because this
-+	 * memcg is active already. If the later initialization fails then the
-+	 * cgroup core triggers the cleanup so we do not have to do it here.
- 	 */
--	mem_cgroup_get(memcg);
- 	static_key_slow_inc(&memcg_kmem_enabled_key);
- 
- 	mutex_lock(&set_limit_mutex);
-@@ -5893,23 +5896,38 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 	return mem_cgroup_sockets_init(memcg, ss);
- }
- 
--static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-+static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- {
--	mem_cgroup_sockets_destroy(memcg);
-+	if (!memcg_kmem_is_active(memcg))
-+		return;
-+
-+	/*
-+	 * kmem charges can outlive the cgroup. In the case of slab
-+	 * pages, for instance, a page contain objects from various
-+	 * processes. As we prevent from taking a reference for every
-+	 * such allocation we have to be careful when doing uncharge
-+	 * (see memcg_uncharge_kmem) and here during offlining.
-+	 *
-+	 * The idea is that that only the _last_ uncharge which sees
-+	 * the dead memcg will drop the last reference. An additional
-+	 * reference is taken here before the group is marked dead
-+	 * which is then paired with css_put during uncharge resp. here.
-+	 *
-+	 * Although this might sound strange as this path is called from
-+	 * css_offline() when the referencemight have dropped down to 0
-+	 * and shouldn't be incremented anymore (css_tryget would fail)
-+	 * we do not have other options because of the kmem allocations
-+	 * lifetime.
-+	 */
-+	css_get(&memcg->css);
- 
- 	memcg_kmem_mark_dead(memcg);
- 
- 	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
- 		return;
- 
--	/*
--	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
--	 * path here, being careful not to race with memcg_uncharge_kmem: it is
--	 * possible that the charges went down to 0 between mark_dead and the
--	 * res_counter read, so in that case, we don't need the put
--	 */
- 	if (memcg_kmem_test_and_clear_dead(memcg))
--		mem_cgroup_put(memcg);
-+		css_put(&memcg->css);
- }
- #else
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
-@@ -5917,7 +5935,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 	return 0;
- }
- 
--static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-+static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- {
- }
- #endif
-@@ -6350,6 +6368,8 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 
-+	kmem_cgroup_css_offline(memcg);
-+
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
- 	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
-@@ -6359,7 +6379,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 
--	kmem_cgroup_destroy(memcg);
-+	mem_cgroup_sockets_destroy(memcg);
- 
- 	mem_cgroup_put(memcg);
- }
--- 
-1.8.0.2
+> 
+> Thanks,
+> Sekhar
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
