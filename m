@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab3FMCof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 22:44:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3275 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757003Ab3FMCoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 22:44:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,855,1363158000"; 
-   d="scan'208";a="349051350"
-Date: Thu, 13 Jun 2013 10:44:27 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [scsi] WARNING: at fs/sysfs/dir.c:530 sysfs_add_one()
-Message-ID: <20130613024427.GA11085@localhost>
-References: <20130613013032.GA7558@localhost>
- <1371090883.1978.61.camel@dabdike>
+	id S932425Ab3FMCop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 22:44:45 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:18592 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab3FMCom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 22:44:42 -0400
+X-Spam-Score: -100.8
+Message-ID: <51B931E7.5050406@asianux.com>
+Date: Thu, 13 Jun 2013 10:43:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371090883.1978.61.camel@dabdike>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Tony Luck <tony.luck@gmail.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        alpha <linux-alpha@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        linux-am33-list@redhat.com, Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [Suggestion] arch/*/include/asm/bitops.h: about __set_bit() API.
+References: <51B30285.6020503@asianux.com> <CA+8MBbK_nfOhZGsd5wU-hyiwh3pHS5c42eiBfxLpCjDgBKUqJg@mail.gmail.com> <CAMuHMdWVx79L=ErRkNMide6xNqQt1RQr0psN8nqoADeV0h768A@mail.gmail.com>
+In-Reply-To: <CAMuHMdWVx79L=ErRkNMide6xNqQt1RQr0psN8nqoADeV0h768A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 07:34:43PM -0700, James Bottomley wrote:
-> On Thu, 2013-06-13 at 09:30 +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit a256ba092ec57213f96059d41ac5473ff92f5e7c
-> > Author: Nicholas Bellinger <nab@linux-iscsi.org>
-> > Date:   Sat May 18 02:40:43 2013 -0700
-> > 
-> >     scsi: Split scsi_dispatch_cmd into __scsi_dispatch_cmd setup
-> >     
-> >     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> You may be evaluating a bogus branch because no such commit has darkened
-> the SCSI list, so it obviously can't be on upstream track.
+On 06/11/2013 03:32 PM, Geert Uytterhoeven wrote:
+> On Tue, Jun 11, 2013 at 12:26 AM, Tony Luck <tony.luck@gmail.com> wrote:
+>> > On Sat, Jun 8, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> >> using 'unsigned int *', implicitly:
+>>> >>   ./ia64/include/asm/bitops.h:63:__set_bit (int nr, volatile void *addr)
+>> >
+>> > There is some downside on ia64 to your suggestion.  If "addr" is properly
+>> > aligned for an "int", but misaligned for a long ... i.e. addr%8 == 4, then I'll
+>> > take an unaligned reference trap if I work with long* where the current code
+>> > working with int* does not.
+>> >
+>> > Now perhaps all the callers do guarantee long* alignment?  But I don't know.
+>> >
+>> > Apart from uniformity, there doesn't see to be any upside to changing this.
+> The address pointers have been supposed to be "long *" for a very long time.
+> Probably alpha (the second official Linux platform) did it
+> differently, and never
+> standardized to "long *".
 
-Yeah, sorry I should probably not CC linux-scsi.
+Excuse me, I am not quite familiar with the details, but I guess, it is
+about functional feature issues, not (or not only) about bug issues.
 
-The bug is still in a private tree:
+For the architectures which can fully support 64-bit OS, excluding ia64
+and alpha, all of them can support setting 64 bits (from 0 to 63) under
+64-bit machine.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git  scsi-mq
+I am not quite sure whether any sub-systems have already set higher bit
+(> 31) under 64-bit machine, but in the future, it seems they could (at
+least our API supposed so).
 
-Thanks,
-Fengguang
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
