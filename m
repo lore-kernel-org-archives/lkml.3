@@ -1,273 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab3FMX0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 19:26:00 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:44257 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab3FMXZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 19:25:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130613152238.GB5146@linux.vnet.ibm.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	<20130611170249.GA1091@linux.vnet.ibm.com>
-	<20130612154008.GA9714@linux.vnet.ibm.com>
-	<51B934AD.1070807@cn.fujitsu.com>
-	<20130613152238.GB5146@linux.vnet.ibm.com>
-Date: Fri, 14 Jun 2013 07:25:57 +0800
-Message-ID: <CACvQF52F57Ac17oNjfD0wMoV26csbRDPRWSQd5OYRXFUQSs01Q@mail.gmail.com>
-Subject: Re: [PATCH RFC ticketlock] v3 Auto-queued ticketlock
-From: Lai Jiangshan <eag0628@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org,
-        walken@google.com, waiman.long@hp.com, davidlohr.bueso@hp.com
-Content-Type: text/plain; charset=UTF-8
+	id S1758985Ab3FMX0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 19:26:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17383 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758933Ab3FMX03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 19:26:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,862,1363158000"; 
+   d="scan'208";a="329160424"
+Subject: Performance regression from switching lock to rw-sem for anon-vma
+ tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jun 2013 16:26:32 -0700
+Message-ID: <1371165992.27102.573.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 11:22 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Jun 13, 2013 at 10:55:41AM +0800, Lai Jiangshan wrote:
->> On 06/12/2013 11:40 PM, Paul E. McKenney wrote:
->> > Breaking up locks is better than implementing high-contention locks, but
->> > if we must have high-contention locks, why not make them automatically
->> > switch between light-weight ticket locks at low contention and queued
->> > locks at high contention?  After all, this would remove the need for
->> > the developer to predict which locks will be highly contended.
->> >
->> > This commit allows ticket locks to automatically switch between pure
->> > ticketlock and queued-lock operation as needed.  If too many CPUs are
->> > spinning on a given ticket lock, a queue structure will be allocated
->> > and the lock will switch to queued-lock operation.  When the lock becomes
->> > free, it will switch back into ticketlock operation.  The low-order bit
->> > of the head counter is used to indicate that the lock is in queued mode,
->> > which forces an unconditional mismatch between the head and tail counters.
->> > This approach means that the common-case code path under conditions of
->> > low contention is very nearly that of a plain ticket lock.
->> >
->> > A fixed number of queueing structures is statically allocated in an
->> > array.  The ticket-lock address is used to hash into an initial element,
->> > but if that element is already in use, it moves to the next element.  If
->> > the entire array is already in use, continue to spin in ticket mode.
->> >
->> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> > [ paulmck: Eliminate duplicate code and update comments (Steven Rostedt). ]
->> > [ paulmck: Address Eric Dumazet review feedback. ]
->> > [ paulmck: Use Lai Jiangshan idea to eliminate smp_mb(). ]
->> > [ paulmck: Expand ->head_tkt from s32 to s64 (Waiman Long). ]
->> > [ paulmck: Move cpu_relax() to main spin loop (Steven Rostedt). ]
->> > [ paulmck: Reduce queue-switch contention (Waiman Long). ]
->> > [ paulmck: __TKT_SPIN_INC for __ticket_spin_trylock() (Steffen Persvold). ]
->> > [ paulmck: Type safety fixes (Steven Rostedt). ]
->> > [ paulmck: Pre-check cmpxchg() value (Waiman Long). ]
->> > [ paulmck: smp_mb() downgrade to smp_wmb() (Lai Jiangshan). ]
->>
->>
->> Hi, Paul,
->>
->> I simplify the code and remove the search by encoding the index of struct tkt_q_head
->> into lock->tickets.head.
->>
->> A) lock->tickets.head(when queued-lock):
->> ---------------------------------
->>  index of struct tkt_q_head |0|1|
->> ---------------------------------
->
-> Interesting approach!  It might reduce queued-mode overhead a bit in
-> some cases, though I bet that in the common case the first queue element
-> examined is the right one.  More on this below.
->
->> The bit0 = 1 for queued, and the bit1 = 0 is reserved for __ticket_spin_unlock(),
->> thus __ticket_spin_unlock() will not change the higher bits of lock->tickets.head.
->>
->> B) tqhp->head is for the real value of lock->tickets.head.
->> if the last bit of tqhp->head is 1, it means it is the head ticket when started queuing.
->
-> But don't you also need the xadd() in __ticket_spin_unlock() to become
-> a cmpxchg() for this to work?  Or is your patch missing your changes to
-> arch/x86/include/asm/spinlock.h?  Either way, this is likely to increase
-> the no-contention overhead, which might be counterproductive.  Wouldn't
-> hurt to get measurements, though.
+Ingo,
 
-No, don't need to change __ticket_spin_unlock() in my idea.
-bit1 in the  tickets.head is reserved for __ticket_spin_unlock(),
-__ticket_spin_unlock() only changes the bit1, it will not change
-the higher bits. tkt_q_do_wake() will restore the tickets.head.
+At the time of switching the anon-vma tree's lock from mutex to 
+rw-sem (commit 5a505085), we encountered regressions for fork heavy workload. 
+A lot of optimizations to rw-sem (e.g. lock stealing) helped to 
+mitigate the problem.  I tried an experiment on the 3.10-rc4 kernel 
+to compare the performance of rw-sem to one that uses mutex. I saw 
+a 8% regression in throughput for rw-sem vs a mutex implementation in
+3.10-rc4.
 
-This approach avoids cmpxchg in __ticket_spin_unlock().
+For the experiments, I used the exim mail server workload in 
+the MOSBENCH test suite on 4 socket (westmere) and a 4 socket 
+(ivy bridge) with the number of clients sending mail equal 
+to number of cores.  The mail server will
+fork off a process to handle an incoming mail and put it into mail
+spool. The lock protecting the anon-vma tree is stressed due to
+heavy forking. On both machines, I saw that the mutex implementation 
+has 8% more throughput.  I've pinned the cpu frequency to maximum
+in the experiments.
 
->
-> Given the results that Davidlohr posted, I believe that the following
-> optimizations would also provide some improvement:
->
-> 1.      Move the call to tkt_spin_pass() from __ticket_spin_lock()
->         to a separate linker section in order to reduce the icache
->         penalty exacted by the spinloop.  This is likely to be causing
->         some of the performance reductions in the cases where ticket
->         locks are not highly contended.
->
-> 2.      Limit the number of elements searched for in the array of
->         queues.  However, this would help only if a number of ticket
->         locks were in queued mode at the same time.
->
-> 3.      Dynamically allocate the queue array at boot.  This might
->         also reduce cache pressure, again, at least in cases where
->         there are a number of ticket locks in queued mode at the
->         same time.
->
-> Frederic just reminded me that I owe him some energy-efficiency improvements
-> for adaptive ticks, so I won't get to these very quickly.  Please feel free
-> to take these on -- the patch clearly does well under high contention, so
-> reducing the no-contention penalty could really help.
->
->                                                         Thanx, Paul
->
->> Thanks,
->> Lai
->>
->>  kernel/tktqlock.c |   51 +++++++++++++--------------------------------------
->>  1 files changed, 13 insertions(+), 38 deletions(-)
->>
->> diff --git a/kernel/tktqlock.c b/kernel/tktqlock.c
->> index 912817c..1329d0f 100644
->> --- a/kernel/tktqlock.c
->> +++ b/kernel/tktqlock.c
->> @@ -33,7 +33,7 @@ struct tkt_q {
->>
->>  struct tkt_q_head {
->>       arch_spinlock_t *ref;           /* Pointer to spinlock if in use. */
->> -     s64 head_tkt;                   /* Head ticket when started queuing. */
->> +     __ticket_t head;                /* Real head when queued. */
->>       struct tkt_q *spin;             /* Head of queue. */
->>       struct tkt_q **spin_tail;       /* Tail of queue. */
->>  };
->> @@ -77,15 +77,8 @@ static unsigned long tkt_q_hash(arch_spinlock_t *lock)
->>   */
->>  static struct tkt_q_head *tkt_q_find_head(arch_spinlock_t *lock)
->>  {
->> -     int i;
->> -     int start;
->> -
->> -     start = i = tkt_q_hash(lock);
->> -     do
->> -             if (ACCESS_ONCE(tkt_q_heads[i].ref) == lock)
->> -                     return &tkt_q_heads[i];
->> -     while ((i = tkt_q_next_slot(i)) != start);
->> -     return NULL;
->> +     BUILD_BUG_ON(TKT_Q_NQUEUES > (1 << (TICKET_SHIFT - 2)));
->> +     return &tkt_q_heads[ACCESS_ONCE(lock->tickets.head) >> 2];
->>  }
->>
->>  /*
->> @@ -101,11 +94,11 @@ static bool tkt_q_try_unqueue(arch_spinlock_t *lock, struct tkt_q_head *tqhp)
->>
->>       /* Pick up the ticket values. */
->>       asold = ACCESS_ONCE(*lock);
->> -     if ((asold.tickets.head & ~0x1) == asold.tickets.tail) {
->> +     if (tqhp->head == asold.tickets.tail) {
->>
->>               /* Attempt to mark the lock as not having a queue. */
->>               asnew = asold;
->> -             asnew.tickets.head &= ~0x1;
->> +             asnew.tickets.head = tqhp->head;
->>               if (cmpxchg(&lock->head_tail,
->>                           asold.head_tail,
->>                           asnew.head_tail) == asold.head_tail) {
->> @@ -128,12 +121,9 @@ void tkt_q_do_wake(arch_spinlock_t *lock)
->>       struct tkt_q_head *tqhp;
->>       struct tkt_q *tqp;
->>
->> -     /*
->> -      * If the queue is still being set up, wait for it.  Note that
->> -      * the caller's xadd() provides the needed memory ordering.
->> -      */
->> -     while ((tqhp = tkt_q_find_head(lock)) == NULL)
->> -             cpu_relax();
->> +     tqhp = tkt_q_find_head(lock);
->> +     ACCESS_ONCE(lock->tickets.head) -= __TKT_SPIN_INC;
->> +     ACCESS_ONCE(tqhp->head) = (tqhp->head & ~0x1) + __TKT_SPIN_INC;
->>
->>       for (;;) {
->>
->> @@ -145,9 +135,7 @@ void tkt_q_do_wake(arch_spinlock_t *lock)
->>                       return; /* No element, successfully removed queue. */
->>               cpu_relax();
->>       }
->> -     if (ACCESS_ONCE(tqhp->head_tkt) != -1)
->> -             ACCESS_ONCE(tqhp->head_tkt) = -1;
->> -     smp_mb(); /* Order pointer fetch and assignment against handoff. */
->> +     smp_mb(); /* Order modification, pointer fetch and assignment against handoff. */
->>       ACCESS_ONCE(tqp->cpu) = -1;
->>  }
->>  EXPORT_SYMBOL(tkt_q_do_wake);
->> @@ -169,10 +157,7 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
->>        */
->>       smp_mb();  /* See above block comment. */
->>
->> -     /* If there no longer is a queue, leave. */
->>       tqhp = tkt_q_find_head(lock);
->> -     if (tqhp == NULL)
->> -             return false;
->>
->>       /* Initialize our queue element. */
->>       tq.cpu = raw_smp_processor_id();
->> @@ -180,9 +165,8 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
->>       tq.next = NULL;
->>
->>       /* Check to see if we already hold the lock. */
->> -     if (ACCESS_ONCE(tqhp->head_tkt) == inc.tail) {
->> +     if (ACCESS_ONCE(tqhp->head) == (inc.tail | 0x1)) {
->>               /* The last holder left before queue formed, we hold lock. */
->> -             tqhp->head_tkt = -1;
->>               return true;
->>       }
->>
->> @@ -290,16 +274,14 @@ tkt_q_init_contend(int i, arch_spinlock_t *lock, struct __raw_tickets inc)
->>                * Record the head counter in case one of the spinning
->>                * CPUs already holds the lock but doesn't realize it yet.
->>                */
->> -             tqhp->head_tkt = asold.tickets.head;
->> +             tqhp->head = asold.tickets.head | 0x1;
->>
->>               /* The low-order bit in the head counter says "queued". */
->> -             asnew.tickets.head |= 0x1;
->> +             asnew.tickets.head = (i << 2) + 0x1;
->>       } while (cmpxchg(&lock->head_tail,
->>                asold.head_tail,
->>                asnew.head_tail) != asold.head_tail);
->>
->> -     /* Point the queue at the lock and go spin on it. */
->> -     ACCESS_ONCE(tqhp->ref) = lock;
->>       return tkt_q_do_spin(lock, inc);
->>  }
->>
->> @@ -321,15 +303,8 @@ bool tkt_q_start_contend(arch_spinlock_t *lock, struct __raw_tickets inc)
->>        * the lock with the corresponding queue.
->>        */
->>       do {
->> -             /*
->> -              * Use 0x1 to mark the queue in use, but also avoiding
->> -              * any spinners trying to use it before we get it all
->> -              * initialized.
->> -              */
->>               if (!tkt_q_heads[i].ref &&
->> -                 cmpxchg(&tkt_q_heads[i].ref,
->> -                         NULL,
->> -                         (arch_spinlock_t *)0x1) == NULL) {
->> +                 cmpxchg(&tkt_q_heads[i].ref, NULL, lock) == NULL) {
->>
->>                       /* Succeeded, now go initialize it. */
->>                       return tkt_q_init_contend(i, lock, inc);
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I've tried two separate tweaks to the rw-sem on 3.10-rc4.  I've tested 
+each tweak individually.
+
+1) Add an owner field when a writer holds the lock and introduce 
+optimistic spinning when an active writer is holding the semaphore.  
+It reduced the context switching by 30% to a level very close to the
+mutex implementation.  However, I did not see any throughput improvement
+of exim.
+
+2) When the sem->count's active field is non-zero (i.e. someone
+is holding the lock), we can skip directly to the down_write_failed
+path, without adding the RWSEM_DOWN_WRITE_BIAS and taking
+it off again from sem->count, saving us two atomic operations.
+Since we will try the lock stealing again later, this should be okay.
+Unfortunately it did not improve the exim workload either.  
+
+Any suggestions on the difference between rwsem and mutex performance
+and possible improvements to recover this regression?
+
+Thanks.
+
+Tim
+
+vmstat for mutex implementation: 
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+
+vmstat for rw-sem implementation (3.10-rc4)
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+
+
+Profile for mutex implementation:
+5.02%             exim  [kernel.kallsyms]     [k] page_fault
+3.67%             exim  [kernel.kallsyms]     [k] anon_vma_interval_tree_insert
+2.66%             exim  [kernel.kallsyms]     [k] unmap_single_vma
+2.15%             exim  [kernel.kallsyms]     [k] do_raw_spin_lock
+2.14%             exim  [kernel.kallsyms]     [k] page_cache_get_speculative
+2.04%             exim  [kernel.kallsyms]     [k] copy_page_rep
+1.58%             exim  [kernel.kallsyms]     [k] clear_page_c
+1.55%             exim  [kernel.kallsyms]     [k] cpu_relax
+1.55%             exim  [kernel.kallsyms]     [k] mutex_unlock
+1.42%             exim  [kernel.kallsyms]     [k] __slab_free
+1.16%             exim  [kernel.kallsyms]     [k] mutex_lock  
+1.12%             exim  libc-2.13.so          [.] vfprintf   
+0.99%             exim  [kernel.kallsyms]     [k] find_vma  
+0.95%             exim  [kernel.kallsyms]     [k] __list_del_entry    
+
+Profile for rw-sem implementation
+4.88%             exim  [kernel.kallsyms]     [k] page_fault
+3.43%             exim  [kernel.kallsyms]     [k] anon_vma_interval_tree_insert
+2.65%             exim  [kernel.kallsyms]     [k] unmap_single_vma
+2.46%             exim  [kernel.kallsyms]     [k] do_raw_spin_lock
+2.25%             exim  [kernel.kallsyms]     [k] copy_page_rep
+2.01%             exim  [kernel.kallsyms]     [k] page_cache_get_speculative
+1.81%             exim  [kernel.kallsyms]     [k] clear_page_c
+1.51%             exim  [kernel.kallsyms]     [k] __slab_free
+1.12%             exim  libc-2.13.so          [.] vfprintf
+1.06%             exim  [kernel.kallsyms]     [k] __list_del_entry
+1.02%          swapper  [kernel.kallsyms]     [k] _raw_spin_unlock_irqrestore
+1.00%             exim  [kernel.kallsyms]     [k] find_vma
+0.93%             exim  [kernel.kallsyms]     [k] mutex_unlock
+
+
+turbostat for mutex implementation:
+pk cor CPU    %c0  GHz  TSC    %c1    %c3    %c6 CTMP   %pc3   %pc6
+            82.91 2.39 2.39  11.65   2.76   2.68   51   0.00   0.00
+
+turbostat of rw-sem implementation (3.10-rc4):
+pk cor CPU    %c0  GHz  TSC    %c1    %c3    %c6 CTMP   %pc3   %pc6
+            80.10 2.39 2.39  14.96   2.80   2.13   52   0.00   0.00
+
+
+
+
