@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab3FMSa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:30:27 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:39976 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759106Ab3FMSaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:30:21 -0400
+	id S1759078Ab3FMSal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:30:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36378 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758359Ab3FMSai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:30:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
+Date: Thu, 13 Jun 2013 20:39:51 +0200
+Message-ID: <2136440.CPpNzdaTXG@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1841512.D0ScSNfNgy@vostro.rjw.lan>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-4-git-send-email-jiang.liu@huawei.com> <1841512.D0ScSNfNgy@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20130613173723.GK18614@n2100.arm.linux.org.uk>
-References: <1371089603-22601-1-git-send-email-ccross@android.com>
-	<20130613173723.GK18614@n2100.arm.linux.org.uk>
-Date: Thu, 13 Jun 2013 11:30:20 -0700
-X-Google-Sender-Auth: NFbI010ej72yUPf73uS3oCdLREo
-Message-ID: <CAMbhsRSmsq9-KC1i4yYO3FXoHQAcM8rVi-c5n8+Sz+FPFSL72w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: convert max_pfn and max_low_pfn to be relative to PFN0
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 7:37 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jun 12, 2013 at 07:13:23PM -0700, Colin Cross wrote:
->> >From code inspection, I believe this will also improve block device
->> performance where the bounce limit was set to BLK_BOUNCE_HIGH, which
->> was bouncing unnecessarily for the top PHYS_PFN_OFFSET pages of low
->> memory.
->
-> This has the potential to break platforms.  The problem is the duality
-> of the dma_mask - is it a mask of the bits which the device can drive,
-> or a PFN limit.  The block layer interprets it as a PFN limit, because
-> of course everywhere starts their memory at physical address zero.
+On Thursday, June 13, 2013 08:26:10 PM Rafael J. Wysocki wrote:
+> On Friday, June 14, 2013 12:32:26 AM Jiang Liu wrote:
+> > ACPI dock driver can't be built as a module any more, so clean up
+> > module related code.
+> > 
+> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> > Cc: Shaohua Li <shaohua.li@intel.com>
+> > Cc: Len Brown <lenb@kernel.org>
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Cc: linux-acpi@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> 
+> How exactly does this depend on [2/9]?  If it doesn't at all, it should go
+> after [1/9].
 
-I've never come across a device with dma_mask set to anything but
-0xFFFFFFFF, and a quick search didn't find me any good examples.
-dma_mask set to the mask of bits the device can drive seems logical,
-and it doesn't seem hard to fix the block layer (and the few other
-users of max_pfn) to use min_low_pfn << PAGE_SHIFT + dma_mask.
+However, this isn't even 3.10 material, so please stop sending it for now.
 
-> This gets into a world of pain if you have any of these conditions:
-> (a) RAM not starting at physical address zero
-The device I tested on has RAM at 0x40000000, which is what caused my problem.
+Thanks,
+Rafael
 
-> (b) Any translation between physical addresses and bus addresses
-Is that just footbridge, integrator, and ks8695?  Those are the only
-machines that define __virt_to_bus
 
-> What we know is that the existing stuff works.  What we don't know is
-> whether changing it will break anything which falls into the above
-> two categories.
+> > ---
+> >  drivers/acpi/dock.c | 41 -----------------------------------------
+> >  1 file changed, 41 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> > index 79c8d9e..50e38b7 100644
+> > --- a/drivers/acpi/dock.c
+> > +++ b/drivers/acpi/dock.c
+> > @@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
+> >  
+> >  static struct atomic_notifier_head dock_notifier_list;
+> >  
+> > -static const struct acpi_device_id dock_device_ids[] = {
+> > -	{"LNXDOCK", 0},
+> > -	{"", 0},
+> > -};
+> > -MODULE_DEVICE_TABLE(acpi, dock_device_ids);
+> > -
+> 
+> Don't we actually need the device IDs?
+> 
+> >  struct dock_station {
+> >  	acpi_handle handle;
+> >  	unsigned long last_dock_time;
+> > @@ -1013,30 +1007,6 @@ err_unregister:
+> >  }
+> >  
+> >  /**
+> > - * dock_remove - free up resources related to the dock station
+> > - */
+> > -static int dock_remove(struct dock_station *ds)
+> > -{
+> > -	struct dock_dependent_device *dd, *tmp;
+> > -	struct platform_device *dock_device = ds->dock_device;
+> > -
+> > -	if (!dock_station_count)
+> > -		return 0;
+> > -
+> > -	/* remove dependent devices */
+> > -	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
+> > -		kfree(dd);
+> > -
+> > -	list_del(&ds->sibling);
+> > -
+> > -	/* cleanup sysfs */
+> > -	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
+> > -	platform_device_unregister(dock_device);
+> > -
+> > -	return 0;
+> > -}
+> > -
+> > -/**
+> >   * find_dock_and_bay - look for dock stations and bays
+> >   * @handle: acpi handle of a device
+> >   * @lvl: unused
+> > @@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
+> >  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
+> >  	return 0;
+> >  }
+> > -
+> > -static void __exit dock_exit(void)
+> > -{
+> > -	struct dock_station *tmp, *dock_station;
+> > -
+> > -	unregister_acpi_bus_notifier(&dock_acpi_notifier);
+> > -	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
+> > -		dock_remove(dock_station);
+> > -}
+> > -
+> > -module_exit(dock_exit);
+> 
+> The other changes look OK to me.
 
-The existing stuff breaks a userspace API, /proc/kpagecount and
-/proc/kpageflags.  It is currently impossible to read the page at
-max_pfn on ARM.  It is possible to read the pages after max_pfn
-because of an underflow in the kpagecount bounds check, which doesn't
-cause problems because it checks pfn_valid on every pfn.  Just taking
-out the bounds check against max_pfn in kpagecount and kpageflags
-would also fix my problem, but it seems correct on everything but ARM.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
