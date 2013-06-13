@@ -1,164 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab3FMWc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:32:28 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:60303 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758279Ab3FMWc0 (ORCPT
+	id S1758230Ab3FMWdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:33:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19687 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508Ab3FMWdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:32:26 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "'Mauro Carvalho Chehab'" <mchehab@redhat.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Cesar Eduardo Barros'" <cesarb@cesarb.net>,
-        "'David S. Miller'" <davem@davemloft.net>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        linux-kernel@vger.kernel.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
-Date: Fri, 14 Jun 2013 00:32:23 +0200
-Message-ID: <26381641.c4KnMQ8aS6@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <15cf01ce6884$8c073f20$a415bd60$%kim@samsung.com>
-References: <1371143144-31764-1-git-send-email-dianders@chromium.org> <1552010.DOo3aEBKyJ@flatron> <15cf01ce6884$8c073f20$a415bd60$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 13 Jun 2013 18:33:47 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        <stable@vger.kernel.org>
+Subject: [PATCH v2] x86: Fix /proc/mtrr with base/size more than 44bits
+Date: Thu, 13 Jun 2013 15:33:35 -0700
+Message-Id: <1371162815-29931-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 of June 2013 07:22:53 Kukjin Kim wrote:
-> Tomasz Figa wrote:
-> > On Thursday 13 of June 2013 10:25:02 Doug Anderson wrote:
-> > > Tomasz,
-> > > 
-> > > On Thu, Jun 13, 2013 at 10:13 AM, Tomasz Figa
-> > > <tomasz.figa@gmail.com>
-> > 
-> > wrote:
-> > > > On Thursday 13 of June 2013 10:05:44 Doug Anderson wrote:
-> > > >> It's convenient if get_maintainer suggests sending samsung/exynos
-> > > >> pinctrl changes to linux-samsung-soc and to Kukjin.  Add an entry
-> > > >> for
-> > > >> that.
-> > > > 
-> > > > Well, if we are already at it, we could list the actual
-> > > > maintainers of
-> > > > the driver.
-> > > > 
-> > > > The original maintainer was Thomas Abraham
-> > > > <thomas.abraham@linaro.org>
-> > > > (added to CC) and after joining to development of this driver last
-> > > > year I have become a de facto maintainer as well, so...
-> > > > 
-> > > >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> > > >> ---
-> > > >> 
-> > > >>  MAINTAINERS | 10 ++++++++++
-> > > >>  1 file changed, 10 insertions(+)
-> > > >> 
-> > > >> diff --git a/MAINTAINERS b/MAINTAINERS
-> > > >> index 8d97b3e..d026e38 100644
-> > > >> --- a/MAINTAINERS
-> > > >> +++ b/MAINTAINERS
-> > > >> @@ -6284,6 +6284,16 @@ L:    
-> > > >> linux-arm-kernel@lists.infradead.org
-> > > >> (moderated for non-subscribers) S:    Maintained
-> > > >> 
-> > > >>  F:   drivers/pinctrl/pinctrl-at91.c
-> > > >> 
-> > > >> +PIN CONTROLLER - SAMSUNG
-> > > >> +M:   Linus Walleij <linus.walleij@linaro.org>
-> > > >> +M:   Kukjin Kim <kgene.kim@samsung.com>
-> > > > 
-> > > > So actually this would be:
-> > > > M:      Thomas Abraham <thomas.abraham@linaro.org>
-> > > > M:      Tomasz Figa <t.figa@samsung.com>
-> > > > 
-> > > > Thomas, do you agree on this?
-> > > 
-> > > Ah.  Wasn't sure where the official maintainership should lie.  ;) 
-> > > If
-> > > Thomas is happy with this then I'll spin and re-send.  Shall I
-> > > remove
-> > > Kukjin and Linus, then?  It's convenient to have Linus on the list
-> > > since he tends to be the one applying the patches...
-> > 
-> > From my understanding how it works, there is no need to list Linus in
-> > particular drivers, because he's already listed as a maintainer of the
-> > whole pinctrl subsystem and get-maintainer accounts for this.
-> > 
-> > Similarly for Kukjin, he's listed as the main Samsung maintainer
-> > already,
-> If so, the directory like pinctrl should be added under Samsung ARM
-> Architectures like spi and sound for Samsung stuff...
+On one sytem that mtrr range is more then 44bits, in dmesg we have
+[    0.000000] MTRR default type: write-back
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-DFFFF write-through
+[    0.000000]   E0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 [000080000000-0000FFFFFFFF] mask 3FFF80000000 uncachable
+[    0.000000]   1 [380000000000-38FFFFFFFFFF] mask 3F0000000000 uncachable
+[    0.000000]   2 [000099000000-000099FFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   3 [00009A000000-00009AFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   4 [381FFA000000-381FFBFFFFFF] mask 3FFFFE000000 write-through
+[    0.000000]   5 [381FFC000000-381FFC0FFFFF] mask 3FFFFFF00000 write-through
+[    0.000000]   6 [0000AD000000-0000ADFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   7 [0000BD000000-0000BDFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   8 disabled
+[    0.000000]   9 disabled
 
-I don't think so, because it's a part of the pin control subsystem.
+but /proc/mtrr report wrong:
+reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
+reg01: base=0x80000000000 (8388608MB), size=1048576MB, count=1: uncachable
+reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
+reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
+reg04: base=0x81ffa000000 (8519584MB), size=   32MB, count=1: write-through
+reg05: base=0x81ffc000000 (8519616MB), size=    1MB, count=1: write-through
+reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
+reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
+reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
 
-> > but AFAIK in this case the script can't infer this based on directory
-> 
-> > structure. Let's see how it's done for other Samsung drivers:
-> Well, I don't think so, because pinctrl has the close relationship with
-> exynos arch part and it's little bit different with following. Just in
-> my understanding.
+so bit 44 and bit 45 get cut off.
 
-I'm not really sure what you mean. Pin control is a separate kernel 
-subsystem, which shouldn't have any dependencies on arch code.
+We have problems in arch/x86/kernel/cpu/mtrr/generic.c::generic_get_mtrr().
+1. for base, we miss cast base_lo to 64bit before shifting.
+Fix that by adding u64 casting.
 
-> > DRM DRIVERS FOR EXYNOS
-> > M:      Inki Dae <inki.dae@samsung.com>
-> > M:      Joonyoung Shim <jy0922.shim@samsung.com>
-> > M:      Seung-Woo Kim <sw0312.kim@samsung.com>
-> > M:      Kyungmin Park <kyungmin.park@samsung.com>
-> > L:      dri-devel@lists.freedesktop.org
-> > T:      git git://git.kernel.org/pub/scm/linux/kernel/git/daeinki/drm-
-> > exynos.git
-> > S:      Supported
-> > F:      drivers/gpu/drm/exynos
-> > F:      include/drm/exynos*
-> > F:      include/uapi/drm/exynos*
-> > 
-> > EXYNOS DP DRIVER
-> > M:      Jingoo Han <jg1.han@samsung.com>
-> > L:      linux-fbdev@vger.kernel.org
-> > S:      Maintained
-> > F:      drivers/video/exynos/exynos_dp*
-> > F:      include/video/exynos_dp*
-> > 
-> > EXYNOS MIPI DISPLAY DRIVERS
-> > M:      Inki Dae <inki.dae@samsung.com>
-> > M:      Donghwa Lee <dh09.lee@samsung.com>
-> > M:      Kyungmin Park <kyungmin.park@samsung.com>
-> > L:      linux-fbdev@vger.kernel.org
-> > S:      Maintained
-> > F:      drivers/video/exynos/exynos_mipi*
-> > F:      include/video/exynos_mipi*
-> > 
-> > ARM/SAMSUNG S5P SERIES 2D GRAPHICS ACCELERATION (G2D) SUPPORT
-> > M:      Kyungmin Park <kyungmin.park@samsung.com>
-> > M:      Kamil Debski <k.debski@samsung.com>
-> > L:      linux-arm-kernel@lists.infradead.org
-> > L:      linux-media@vger.kernel.org
-> > S:      Maintained
-> > F:      drivers/media/platform/s5p-g2d/
-> 
-> And I'm asking above all guys _really_ do review and maintaining the
-> file or directories? I don't think so.
+2. for size, it only can handle 44 bits aka 32bits + page_shift
+Fix that with 64bit mask instead of 32bit mask_lo, then range could be
+more than 44bits.
+At the same time, we need to update size_or_mask for old cpus that does
+support cpuid 0x80000008 to get phys_addr. Need to set high 32bits
+to all 1s, otherwise will not get correct size for them.
 
-I'm not really sure what makes you think they don't. I can see all of them 
-involved in works on mentioned drivers.
+Also fix mtrr_add_page: it should check base and (base + size - 1)
+instead of base and size, as base and size could be small but
+base + size could bigger enough to be out of boundary. We can
+use boot_cpu_data.x86_phys_bits directly to avoid size_or_mask.
 
-Best regards,
-Tomasz
+So When are we going to have size more than 44bits? that is 16TiB.
 
-> > and so on.
-> > 
-> > So I think, based on this precedent, we can do the same for pinctrl.
-> > Let's wait to see Thomas' view on this.
+after patch we have right ouput:
+reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
+reg01: base=0x380000000000 (58720256MB), size=1048576MB, count=1: uncachable
+reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
+reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
+reg04: base=0x381ffa000000 (58851232MB), size=   32MB, count=1: write-through
+reg05: base=0x381ffc000000 (58851264MB), size=    1MB, count=1: write-through
+reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
+reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
+reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
+
+-v2: simply checking in mtrr_add_page according to hpa.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: <stable@vger.kernel.org>
+
+---
+ arch/x86/kernel/cpu/mtrr/generic.c |   21 +++++++++++----------
+ arch/x86/kernel/cpu/mtrr/main.c    |   16 +++++++++-------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/cpu/mtrr/generic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/generic.c
++++ linux-2.6/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long ba
+ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+ 			     unsigned long *size, mtrr_type *type)
+ {
+-	unsigned int mask_lo, mask_hi, base_lo, base_hi;
+-	unsigned int tmp, hi;
++	u32 mask_lo, mask_hi, base_lo, base_hi;
++	unsigned int hi;
++	u64 tmp, mask;
+ 
+ 	/*
+ 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
+@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned in
+ 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
+ 
+ 	/* Work out the shifted address mask: */
+-	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
+-	mask_lo = size_or_mask | tmp;
++	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
++	mask = size_or_mask | tmp;
+ 
+ 	/* Expand tmp with high bits to all 1s: */
+-	hi = fls(tmp);
++	hi = fls64(tmp);
+ 	if (hi > 0) {
+-		tmp |= ~((1<<(hi - 1)) - 1);
++		tmp |= ~((1ULL<<(hi - 1)) - 1);
+ 
+-		if (tmp != mask_lo) {
++		if (tmp != mask) {
+ 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
+ 			add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+-			mask_lo = tmp;
++			mask = tmp;
+ 		}
+ 	}
+ 
+@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned in
+ 	 * This works correctly if size is a power of two, i.e. a
+ 	 * contiguous range:
+ 	 */
+-	*size = -mask_lo;
+-	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
++	*size = -mask;
++	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
+ 	*type = base_lo & 0xff;
+ 
+ out_put_cpu:
+Index: linux-2.6/arch/x86/kernel/cpu/mtrr/main.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/main.c
++++ linux-2.6/arch/x86/kernel/cpu/mtrr/main.c
+@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, un
+ 		return -EINVAL;
+ 	}
+ 
+-	if (base & size_or_mask || size & size_or_mask) {
++	if ((base | (base + size - 1)) >>
++	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
+ 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
+ 		return -EINVAL;
+ 	}
+@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_o
+ 
+ int __initdata changed_by_mtrr_cleanup;
+ 
++#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
+ /**
+  * mtrr_bp_init - initialize mtrrs on the boot CPU
+  *
+@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
+ 
+ 	if (cpu_has_mtrr) {
+ 		mtrr_if = &generic_mtrr_ops;
+-		size_or_mask = 0xff000000;			/* 36 bits */
++		size_or_mask = SIZE_OR_MASK_BITS(36);
+ 		size_and_mask = 0x00f00000;
+ 		phys_addr = 36;
+ 
+@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
+ 			     boot_cpu_data.x86_mask == 0x4))
+ 				phys_addr = 36;
+ 
+-			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
++			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
+ 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
+ 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
+ 			   boot_cpu_data.x86 == 6) {
+@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
+ 			 * VIA C* family have Intel style MTRRs,
+ 			 * but don't support PAE
+ 			 */
+-			size_or_mask = 0xfff00000;		/* 32 bits */
++			size_or_mask = SIZE_OR_MASK_BITS(32);
+ 			size_and_mask = 0;
+ 			phys_addr = 32;
+ 		}
+@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
+ 			if (cpu_has_k6_mtrr) {
+ 				/* Pre-Athlon (K6) AMD CPU MTRRs */
+ 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
+ 		case X86_VENDOR_CENTAUR:
+ 			if (cpu_has_centaur_mcr) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
+ 		case X86_VENDOR_CYRIX:
+ 			if (cpu_has_cyrix_arr) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
