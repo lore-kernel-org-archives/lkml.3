@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab3FMNLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:11:06 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60981 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab3FMNLE (ORCPT
+	id S1757517Ab3FMNLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:11:18 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:36030 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab3FMNLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:11:04 -0400
-Date: Thu, 13 Jun 2013 15:10:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130613131057.GA15997@somewhere>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612170316.GO133453@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Jun 2013 09:11:13 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mundt <lethal@linux-sh.org>
+Cc: David McCullough <david_mccullough@au.securecomputing.com>,
+        Thorsten Glaser <tg@mirbsd.org>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/3] h8300/boot: Use POSIX "$((..))" instead of bashism "$[...]"
+Date: Thu, 13 Jun 2013 15:10:50 +0200
+Message-Id: <1371129052-31506-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
+References: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
-> On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
-> > When the watchdog runs, it prevents the full dynticks
-> > CPUs from stopping their tick because the hard lockup
-> > detector uses perf events internally, which in turn
-> > rely on the periodic tick.
-> > 
-> > Since this is a rather confusing behaviour that is not
-> > easy to track down and identify for those who want to
-> > test CONFIG_NO_HZ_FULL, let's default disable the
-> > watchdog on boot time when full dynticks is enabled.
-> > 
-> > The user can still enable it later on runtime using
-> > proc or sysctl.
-> 
-> I thought we had a conversation awhile ago, where we agreed this was going
-> to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
-> tree?  I am confused why this is still needed?
+On Ubuntu, where /bin/sh -> dash, "make ARCH=h8300 clean" gives:
 
-We agreed on the patch but it hasn't been applied yet. I'm trying to get
-a sane series of nohz patches before sending to Ingo.
+printf: 1: $[0x00400000+0x00140000]: expected numeric value
 
-Thanks.
+Replace the bash-specific "$[...]" by POSIX "$((..))" for arithmetic
+expansion to fix this.
+Note that according to the bash 4.1 manpage, "$[...]" is deprecated, and
+will be removed in upcoming versions of bash.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/h8300/boot/compressed/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/h8300/boot/compressed/Makefile b/arch/h8300/boot/compressed/Makefile
+index 94faad1..787fd04 100644
+--- a/arch/h8300/boot/compressed/Makefile
++++ b/arch/h8300/boot/compressed/Makefile
+@@ -16,7 +16,7 @@ OBJECTS = $(obj)/head.o $(obj)/misc.o
+ #
+ CONFIG_MEMORY_START     ?= 0x00400000
+ CONFIG_BOOT_LINK_OFFSET ?= 0x00140000
+-IMAGE_OFFSET := $(shell printf "0x%08x" $$[$(CONFIG_MEMORY_START)+$(CONFIG_BOOT_LINK_OFFSET)])
++IMAGE_OFFSET := $(shell printf "0x%08x" $$(($(CONFIG_MEMORY_START)+$(CONFIG_BOOT_LINK_OFFSET))))
+ 
+ LDFLAGS_vmlinux := -Ttext $(IMAGE_OFFSET) -estartup $(obj)/vmlinux.lds
+ 
+-- 
+1.7.0.4
+
