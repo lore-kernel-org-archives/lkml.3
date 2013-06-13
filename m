@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab3FMEID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:08:03 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44118 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab3FMEFE (ORCPT
+	id S1752963Ab3FMEJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:09:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56767 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752054Ab3FMEJr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:05:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        koverstreet@google.com, linux-kernel@vger.kernel.org,
-        cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/11] cgroup: remove now unused css_depth()
-Date: Wed, 12 Jun 2013 21:04:48 -0700
-Message-Id: <1371096298-24402-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1371096298-24402-1-git-send-email-tj@kernel.org>
-References: <1371096298-24402-1-git-send-email-tj@kernel.org>
+	Thu, 13 Jun 2013 00:09:47 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "Cousson, Benoit" <b-cousson@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>
+Subject: RE: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and regulator
+ nodes
+Thread-Topic: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and regulator
+ nodes
+Thread-Index: AQHOZ0aOzpDdDqo2IEWs3NtTs2HlqpkxtMgAgAFTriA=
+Date: Thu, 13 Jun 2013 04:09:22 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EB4B8@DBDE04.ent.ti.com>
+References: <1371025140-25376-1-git-send-email-j-keerthy@ti.com>
+ <51B8990A.8030506@wwwdotorg.org>
+In-Reply-To: <51B8990A.8030506@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h |  1 -
- kernel/cgroup.c        | 12 ------------
- 2 files changed, 13 deletions(-)
+Hi Stephen,
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index d0ad379..5830592 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -848,7 +848,6 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
- 
- /* Get id and depth of css */
- unsigned short css_id(struct cgroup_subsys_state *css);
--unsigned short css_depth(struct cgroup_subsys_state *css);
- struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
- 
- #else /* !CONFIG_CGROUPS */
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3ad2a9c..dc8997a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -5230,18 +5230,6 @@ unsigned short css_id(struct cgroup_subsys_state *css)
- }
- EXPORT_SYMBOL_GPL(css_id);
- 
--unsigned short css_depth(struct cgroup_subsys_state *css)
--{
--	struct css_id *cssid;
--
--	cssid = rcu_dereference_check(css->id, css_refcnt(css));
--
--	if (cssid)
--		return cssid->depth;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(css_depth);
--
- /**
-  *  css_is_ancestor - test "root" css is an ancestor of "child"
-  * @child: the css to be tested.
--- 
-1.8.2.1
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Wednesday, June 12, 2013 9:22 PM
+> To: J, KEERTHY
+> Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-
+> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com;
+> sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+> Subject: Re: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and
+> regulator nodes
+> 
+> On 06/12/2013 02:19 AM, J Keerthy wrote:
+> > This patch adds Palmas MFD node and the regulator nodes for OMAP5.
+> >
+> > The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
+> >
+> > Boot tested on omap5-uevm board.
+> 
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
+Thanks..
+
+> 
+> > diff --git a/arch/arm/boot/dts/omap5-uevm.dts
+> > b/arch/arm/boot/dts/omap5-uevm.dts
+> 
+> > +	palmas: palmas@48 {
+> > +		reg = <0x48>;
+> > +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N
+> */
+> > +		interrupt-parent = <&gic>;
+> > +		compatible = "ti,palmas";
+> 
+> ... although personally I prefer the compatible property to be right at
+> the top of each node, since it's what implies the schema for the rest
+> of the node. That's a tiny nit though; feel free to ignore it if the
+> OMAP files don't follow that convention.
+
+Sure. I will send hopefully the last version incorporating this :-).
+
+Regards,
+Keerthy
