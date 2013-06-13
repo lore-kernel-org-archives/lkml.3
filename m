@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab3FMNja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:39:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	id S1758243Ab3FMNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:39:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758014Ab3FMN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758028Ab3FMN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 09:27:59 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537680"
+   d="scan'208";a="7537681"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,88 +18,89 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part2 PATCH v4 13/15] x86, memblock, mem-hotplug: Free hotpluggable memory reserved by memblock.
-Date: Thu, 13 Jun 2013 21:03:37 +0800
-Message-Id: <1371128619-8987-14-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part2 PATCH v4 08/15] x86, numa: Save nid when reserve memory into memblock.reserved[].
+Date: Thu, 13 Jun 2013 21:03:32 +0800
+Message-Id: <1371128619-8987-9-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/06/13 20:58:46,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:03,
-	Serialize complete at 2013/06/13 20:59:03
+ 2013/06/13 20:59:05,
+	Serialize complete at 2013/06/13 20:59:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We reserved hotpluggable memory in memblock. And when memory initialization
-is done, we have to free it to buddy system.
+Since we introduced numa_sync_memblock_nid synchronize nid info in
+memblock.reserved[] and numa_meminfo, when numa_meminfo has been
+initialized, we need to save the nid into memblock.reserved[] when
+we reserve memory.
 
-This patch free memory reserved by memblock with flag MEMBLK_HOTPLUGGABLE.
-
+Reported-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
  include/linux/memblock.h |    1 +
- mm/memblock.c            |   17 +++++++++++++++++
- mm/nobootmem.c           |    3 +++
- 3 files changed, 21 insertions(+), 0 deletions(-)
+ include/linux/mm.h       |    9 +++++++++
+ mm/memblock.c            |   10 +++++++++-
+ 3 files changed, 19 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index ce315b2..d113175 100644
+index 93f3453..f558590 100644
 --- a/include/linux/memblock.h
 +++ b/include/linux/memblock.h
-@@ -66,6 +66,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
- int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
-+void memblock_free_hotpluggable(void);
+@@ -61,6 +61,7 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
+ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
++int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
  void memblock_trim_memory(phys_addr_t align);
- void memblock_mark_kernel_nodes(void);
- bool memblock_is_kernel_node(int nid);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b827743..4a94b56 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1662,6 +1662,15 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ #endif
+ 
++#ifdef CONFIG_NUMA
++int __init early_numa_find_range_nid(u64 start, u64 size);
++#else
++static inline int __init early_numa_find_range_nid(u64 start, u64 size)
++{
++	return 0;
++}
++#endif
++
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 51f0264..9df0b5f 100644
+index 9e871e9..cc55ff0 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -568,6 +568,23 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
- 	return __memblock_remove(&memblock.reserved, base, size);
+@@ -580,9 +580,17 @@ static int __init_memblock memblock_reserve_region(phys_addr_t base,
+ 	return memblock_add_region(_rgn, base, size, nid, flags);
  }
  
-+static void __init_memblock memblock_free_flags(unsigned long flags)
++int __init_memblock memblock_reserve_node(phys_addr_t base,
++					  phys_addr_t size, int nid)
 +{
-+	int i;
-+	struct memblock_type *reserved = &memblock.reserved;
-+
-+	for (i = 0; i < reserved->cnt; i++) {
-+		if (reserved->regions[i].flags == flags)
-+			memblock_remove_region(reserved, i);
-+	}
++	return memblock_reserve_region(base, size, nid,
++				       MEMBLK_FLAGS_DEFAULT);
 +}
 +
-+void __init_memblock memblock_free_hotpluggable()
-+{
-+	memblock_dbg("memblock: free all hotpluggable memory");
-+	memblock_free_flags(MEMBLK_HOTPLUGGABLE);
-+}
-+
- static int __init_memblock memblock_reserve_region(phys_addr_t base,
- 						   phys_addr_t size,
- 						   int nid,
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index bdd3fa2..dbfbcb9 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -165,6 +165,9 @@ unsigned long __init free_all_bootmem(void)
- 	for_each_online_pgdat(pgdat)
- 		reset_node_lowmem_managed_pages(pgdat);
+ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+-	return memblock_reserve_region(base, size, MAX_NUMNODES,
++	int nid = early_numa_find_range_nid(base, size);
++	return memblock_reserve_region(base, size, nid,
+ 				       MEMBLK_FLAGS_DEFAULT);
+ }
  
-+	/* Hotpluggable memory reserved by memblock should also be freed. */
-+	memblock_free_hotpluggable();
-+
- 	/*
- 	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
- 	 *  because in some case like Node0 doesn't have RAM installed
 -- 
 1.7.1
 
