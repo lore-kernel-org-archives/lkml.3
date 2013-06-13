@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3FMO4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:56:09 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:58426 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab3FMO4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:56:08 -0400
-Date: Thu, 13 Jun 2013 16:56:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130613145601.GE16339@somewhere>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
- <20130613131057.GA15997@somewhere>
- <20130613140207.GW133453@redhat.com>
- <20130613142210.GD16339@somewhere>
- <20130613144515.GX133453@redhat.com>
+	id S1756168Ab3FMO52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:57:28 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752196Ab3FMO50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:57:26 -0400
+Message-ID: <51B9DDD3.3000107@nod.at>
+Date: Thu, 13 Jun 2013 16:57:23 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613144515.GX133453@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        bsingharora@gmail.com, hannes@cmpxchg.org
+Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL pointer
+ dereference at 00000000000001a8
+References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com> <20130613120248.GB23070@dhcp22.suse.cz> <51B9B5BC.4090702@nod.at> <20130613132908.GC23070@dhcp22.suse.cz> <20130613133244.GD23070@dhcp22.suse.cz> <51B9CA83.9070001@nod.at> <20130613143946.GF23070@dhcp22.suse.cz> <51B9DB23.7010609@nod.at>
+In-Reply-To: <51B9DB23.7010609@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:45:15AM -0400, Don Zickus wrote:
-> On Thu, Jun 13, 2013 at 04:22:12PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Jun 13, 2013 at 10:02:07AM -0400, Don Zickus wrote:
-> > > On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
-> > > > On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
-> > > > > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
-> > > > > > When the watchdog runs, it prevents the full dynticks
-> > > > > > CPUs from stopping their tick because the hard lockup
-> > > > > > detector uses perf events internally, which in turn
-> > > > > > rely on the periodic tick.
-> > > > > > 
-> > > > > > Since this is a rather confusing behaviour that is not
-> > > > > > easy to track down and identify for those who want to
-> > > > > > test CONFIG_NO_HZ_FULL, let's default disable the
-> > > > > > watchdog on boot time when full dynticks is enabled.
-> > > > > > 
-> > > > > > The user can still enable it later on runtime using
-> > > > > > proc or sysctl.
-> > > > > 
-> > > > > I thought we had a conversation awhile ago, where we agreed this was going
-> > > > > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
-> > > > > tree?  I am confused why this is still needed?
-> > > > 
-> > > > We agreed on the patch but it hasn't been applied yet. I'm trying to get
-> > > > a sane series of nohz patches before sending to Ingo.
-> > > 
-> > > Peter,
-> > > 
-> > > Where is this patch?
-> > 
-> > Which patch? The old version of the current one? It was part of a previous series
-> > that needed improvements so it hasn't been applied yet.
-> 
-> I guess I am confused.  I thought Peter said in an email awhile ago, that
-> he found Stephan's patch (that converted perf to use hrtimers) and applied
-> it to his tree.  Are you saying it was unapplied because it needed
-> improvements?
+Am 13.06.2013 16:45, schrieb Richard Weinberger:
+> Am 13.06.2013 16:39, schrieb Michal Hocko:
+>> On Thu 13-06-13 15:34:59, Richard Weinberger wrote:
+>>> Am 13.06.2013 15:32, schrieb Michal Hocko:
+>>>> Ohh and could you post the config please? Sorry should have asked
+>>>> earlier.
+>>>
+>>> See attachment.
+>>
+>> Nothing unusual there. Could you enable CONFIG_DEBUG_VM maybe it will
+>> help too catch the problem earlier.
+>
+> OK
+>
+>>>> On Thu 13-06-13 15:29:08, Michal Hocko wrote:
+>>>>>
+>>>>> On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
+>>>>> [...]
+>>>>>> All code
+>>>>>> ========
+>>>>>>     0:   89 50 08                mov    %edx,0x8(%rax)
+>>>>>>     3:   48 89 d1                mov    %rdx,%rcx
+>>>>>>     6:   0f 1f 40 00             nopl   0x0(%rax)
+>>>>>>     a:   49 8b 04 24             mov    (%r12),%rax
+>>>>>>     e:   48 89 c2                mov    %rax,%rdx
+>>>>>>    11:   48 c1 e8 38             shr    $0x38,%rax
+>>>>>>    15:   83 e0 03                and    $0x3,%eax
+>>>>>                     nid = page_to_nid
+>>>>>>    18:   48 c1 ea 3a             shr    $0x3a,%rdx
+>>>>>                     zid = page_zonenum
+>>
+>> Ohh, I am wrong here. rdx should be nid and eax the zid.
+>>
+>>>>>
+>>>>>>    1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
+>>>>>>    23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
+>>>>>                     &memcg->nodeinfo[nid]->zoneinfo[zid]
+>>>>>
+>>>>>>    2a:   00
+>>>>>>    2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
+>>>>>
+>>>>> OK, so this maps to:
+>>>>>          if (unlikely(lruvec->zone != zone)) <<<
+>>>>>                  lruvec->zone = zone;
+>>>>>
+>>>>>> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
+>>>>>> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
+>>>>>> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
+>>>>>> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
+>>>>>> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
+>>>>>> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
+>>>>>> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
+>>>>>
+>>>>> RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
+>>>>> contain an address at an offset from ffff88003e04a800 But there is 0x138 there
+>>>>> instead.
+>>
+>> Hmm, now that I am looking at the registers again. RDX which should be
+>> nid seems to be quite big. It says this is node 32. Does the machine
+>> have really so many NUMA nodes?
+>
+> No. It's a KVM guest with two CPUs. Nothing special.
+> qemu command line:
+> qemu-kvm -m 1G -drive file=lxc_host.qcow2,if=virtio -nographic -kernel linux/arch/x86/boot/bzImage -append console=ttyS0 root=/dev/vda2 -net user,hostfwd=tcp::5555-:22 -net
+> nic,model=e1000 -smp 4
 
-I think it doesn't completely remove the perf tick. Besides it doesn't really
-solve the problem since perf events will require periodic hrtimers to work,
-which still defeats the purpose of full dynticks.
+Errr, I meant four CPUs. :)
+
+Thanks,
+//richard
+
