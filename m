@@ -1,353 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759330Ab3FMVt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:49:29 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45775 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759292Ab3FMVtD (ORCPT
+	id S1759346Ab3FMVuF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:50:05 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:49033 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759274Ab3FMVuD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:49:03 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 2/2] dtc: ensure #line directives don't consume data from the next line
-Date: Thu, 13 Jun 2013 22:48:53 +0100
-Message-Id: <1371160133-10104-3-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371160133-10104-1-git-send-email-grant.likely@linaro.org>
-References: <1371160133-10104-1-git-send-email-grant.likely@linaro.org>
+	Thu, 13 Jun 2013 17:50:03 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: netdev <netdev@vger.kernel.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHOaEOGxmtFPAMcx06HlhA2FiRqtg==
+Date: Thu, 13 Jun 2013 21:48:49 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5DFFBB@DE02WEMBXB.internal.synopsys.com>
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+	<CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+	<4881796E12491D4BB15146FE0209CE643F5DFB22@DE02WEMBXB.internal.synopsys.com>
+ <CAHp75VcChT7=DpUYUBw3ZNXXBNCL4kj6HB6nCFL=ytUYaXUXZg@mail.gmail.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.225.15.131]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
-could match line-break characters. If the #line directive did not contain
-the optional flags field at the end, this could cause any integer data on
-the next line to be consumed as part of the #line directive parsing. This
-could cause syntax errors (i.e. #line parsing consuming the leading 0
-from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
-which is a syntax error), or invalid compilation results (i.e. simply
-consuming literal 1234 as part of the #line processing, thus removing it
-from the cell data).
+On 06/14/2013 12:50 AM, Andy Shevchenko wrote:
+> On Thu, Jun 13, 2013 at 11:25 PM, Alexey Brodkin
+> <Alexey.Brodkin@synopsys.com> wrote:
+>> On 06/13/2013 10:25 PM, Andy Shevchenko wrote:
+>>> On Thu, Jun 13, 2013 at 5:37 PM, Alexey Brodkin
+>>> <Alexey.Brodkin@synopsys.com> wrote:
+>>>> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+>>>> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+>>>> ARCAngel4/ML50x.
+>
+>>>> +++ b/drivers/net/ethernet/arc/arc_emac.h
+>
+>> And what about function names? Do you think it worth to shorten them too
+>> since most of them aren't visible outside (static).
+>
+> It's better to keep them in their namespace. So, leave them as is.
 
-Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+Ok, makes sense.
 
-Convert all instances of {WS}, even though the other instances should be
-irrelevant for any well-formed #line directive. This is done for
-consistency and ultimate safety.
+>>>> +struct arc_emac_priv {
+>
+>>>> +};
+>
+>>> It seems you missed my comments against the names of the members. Can
+>>> you address them or comment why not?
+>>
+>> You mean to add description in kerneldoc format for all the fields in
+>> structures?
+>
+> Not only that one. About member names as well.
 
-[Cherry picked from DTC commit a1ee6f068e1c8dbc62873645037a353d7852d5cc]
+Ok, I'll re-visit member names as advised.
 
-Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- scripts/dtc/dtc-lexer.l             |   2 +-
- scripts/dtc/dtc-lexer.lex.c_shipped | 232 ++++++++++++++++++------------------
- 2 files changed, 117 insertions(+), 117 deletions(-)
+>> Well while in general it could be "a proper way" of documenting sources
+>> I found it not that convenient especially in case of really long structures.
+>
+>> In my case "arc_emac_priv" structure has 21 members, so right before
+>> structure itself there will be another at least 21 line of comments.
+>
+> Not an argument, you understand.
+>
+>> Moreover: "The kernel-doc function comments describe each parameter to
+>> the function, in order, with the @name lines."
+>
+>> While I don't think that each and every member needs description.
+>
+> Describe them in couple of words.
+>
+>> At
+>> least some pairs like Tx/Rx I believe may share the only comment saying
+>> "Pointers to BD rings - CPU side".
+>
+> What BD means? May be it worth to describe as well?
+>
+>> Also I barely can find an example of strict usage of kernel-doc format
+>> for data structures in drivers nearby.
+>>
+>> For example take a look at STMMAC - drivers/net/ethernet/stmicro/stmmac/
+>> Lots of structures defined, non with kernel-doc description.
+>
+> Again, not an excuse :-)
 
-diff --git a/scripts/dtc/dtc-lexer.l b/scripts/dtc/dtc-lexer.l
-index 254d5af..3b41bfc 100644
---- a/scripts/dtc/dtc-lexer.l
-+++ b/scripts/dtc/dtc-lexer.l
-@@ -71,7 +71,7 @@ static int pop_input_file(void);
- 			push_input_file(name);
- 		}
- 
--<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
-+<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)? {
- 			char *line, *tmp, *fn;
- 			/* skip text before line # */
- 			line = yytext;
-diff --git a/scripts/dtc/dtc-lexer.lex.c_shipped b/scripts/dtc/dtc-lexer.lex.c_shipped
-index a6c5fcd..2d30f41 100644
---- a/scripts/dtc/dtc-lexer.lex.c_shipped
-+++ b/scripts/dtc/dtc-lexer.lex.c_shipped
-@@ -405,19 +405,19 @@ static yyconst flex_int16_t yy_accept[161] =
- static yyconst flex_int32_t yy_ec[256] =
-     {   0,
-         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
--        2,    2,    2,    1,    1,    1,    1,    1,    1,    1,
-+        4,    4,    4,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
--        1,    2,    4,    5,    6,    1,    1,    7,    8,    1,
--        1,    9,   10,   10,   11,   10,   12,   13,   14,   15,
--       15,   15,   15,   15,   15,   15,   15,   16,    1,   17,
--       18,   19,   10,   10,   20,   20,   20,   20,   20,   20,
--       21,   21,   21,   21,   21,   22,   21,   21,   21,   21,
--       21,   21,   21,   21,   23,   21,   21,   24,   21,   21,
--        1,   25,   26,    1,   21,    1,   20,   27,   28,   29,
--
--       30,   20,   21,   21,   31,   21,   21,   32,   33,   34,
--       35,   36,   21,   37,   38,   39,   40,   41,   21,   24,
--       42,   21,   43,   44,   45,    1,    1,    1,    1,    1,
-+        1,    2,    5,    6,    7,    1,    1,    8,    9,    1,
-+        1,   10,   11,   11,   12,   11,   13,   14,   15,   16,
-+       16,   16,   16,   16,   16,   16,   16,   17,    1,   18,
-+       19,   20,   11,   11,   21,   21,   21,   21,   21,   21,
-+       22,   22,   22,   22,   22,   23,   22,   22,   22,   22,
-+       22,   22,   22,   22,   24,   22,   22,   25,   22,   22,
-+        1,   26,   27,    1,   22,    1,   21,   28,   29,   30,
-+
-+       31,   21,   22,   22,   32,   22,   22,   33,   34,   35,
-+       36,   37,   22,   38,   39,   40,   41,   42,   22,   25,
-+       43,   22,   44,   45,   46,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-@@ -434,36 +434,36 @@ static yyconst flex_int32_t yy_ec[256] =
-         1,    1,    1,    1,    1
-     } ;
- 
--static yyconst flex_int32_t yy_meta[46] =
-+static yyconst flex_int32_t yy_meta[47] =
-     {   0,
--        1,    1,    1,    1,    1,    2,    3,    1,    2,    2,
--        2,    4,    5,    5,    5,    6,    1,    1,    1,    7,
--        8,    8,    8,    8,    1,    1,    7,    7,    7,    7,
--        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
--        8,    8,    3,    1,    1
-+        1,    1,    1,    1,    1,    1,    2,    3,    1,    2,
-+        2,    2,    4,    5,    5,    5,    6,    1,    1,    1,
-+        7,    8,    8,    8,    8,    1,    1,    7,    7,    7,
-+        7,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-+        8,    8,    8,    3,    1,    1
-     } ;
- 
- static yyconst flex_int16_t yy_base[175] =
-     {   0,
--        0,  388,  381,   40,   41,  386,   71,  385,   34,   44,
--      390,  395,   60,   62,  371,  112,  111,  111,  111,  104,
--      370,  106,  371,  342,  124,  119,    0,  144,  395,    0,
--      123,    0,  159,  153,  165,  167,  395,  130,  395,  382,
--      395,    0,  372,  122,  395,  157,  374,  379,  350,   21,
--      346,  349,  395,  395,  395,  395,  395,  362,  395,  395,
--      181,  346,  342,  395,  359,    0,  191,  343,  190,  351,
--      350,    0,    0,    0,  173,  362,  177,  367,  357,  329,
--      335,  328,  337,  331,  206,  329,  334,  327,  395,  338,
--      170,  314,  346,  345,  318,  325,  343,  158,  316,  212,
--
--      322,  319,  320,  395,  340,  336,  308,  305,  314,  304,
--      295,  138,  208,  220,  395,  292,  305,  265,  264,  254,
--      201,  222,  285,  275,  273,  270,  236,  235,  225,  115,
--      395,  395,  252,  216,  216,  217,  214,  230,  209,  220,
--      213,  239,  211,  217,  216,  209,  229,  395,  240,  225,
--      206,  169,  395,  395,  116,  106,   99,   54,  395,  395,
--      254,  260,  268,  272,  276,  282,  289,  293,  301,  309,
--      313,  319,  327,  335
-+        0,  385,  378,   40,   41,  383,   72,  382,   34,   44,
-+      388,  393,   61,  117,  368,  116,  115,  115,  115,   48,
-+      367,  107,  368,  339,  127,  120,    0,  147,  393,    0,
-+      127,    0,  133,  156,  168,  153,  393,  125,  393,  380,
-+      393,    0,  369,  127,  393,  160,  371,  377,  347,   21,
-+      343,  346,  393,  393,  393,  393,  393,  359,  393,  393,
-+      183,  343,  339,  393,  356,    0,  183,  340,  187,  348,
-+      347,    0,    0,    0,  178,  359,  195,  365,  354,  326,
-+      332,  325,  334,  328,  204,  326,  331,  324,  393,  335,
-+      150,  311,  343,  342,  315,  322,  340,  179,  313,  207,
-+
-+      319,  316,  317,  393,  337,  333,  305,  302,  311,  301,
-+      310,  190,  338,  337,  393,  307,  322,  301,  305,  277,
-+      208,  311,  307,  278,  271,  270,  248,  246,  213,  130,
-+      393,  393,  263,  235,  207,  221,  218,  229,  213,  213,
-+      206,  234,  218,  210,  208,  193,  219,  393,  223,  204,
-+      176,  157,  393,  393,  120,  106,   97,  119,  393,  393,
-+      245,  251,  259,  263,  267,  273,  280,  284,  292,  300,
-+      304,  310,  318,  326
-     } ;
- 
- static yyconst flex_int16_t yy_def[175] =
-@@ -489,108 +489,108 @@ static yyconst flex_int16_t yy_def[175] =
-       160,  160,  160,  160
-     } ;
- 
--static yyconst flex_int16_t yy_nxt[441] =
-+static yyconst flex_int16_t yy_nxt[440] =
-     {   0,
--       12,   13,   14,   15,   16,   12,   17,   18,   12,   12,
--       12,   19,   12,   12,   12,   12,   20,   21,   22,   23,
--       23,   23,   23,   23,   12,   12,   23,   23,   23,   23,
-+       12,   13,   14,   13,   15,   16,   12,   17,   18,   12,
-+       12,   12,   19,   12,   12,   12,   12,   20,   21,   22,
-+       23,   23,   23,   23,   23,   12,   12,   23,   23,   23,
-        23,   23,   23,   23,   23,   23,   23,   23,   23,   23,
--       23,   23,   12,   24,   12,   25,   34,   35,   35,   25,
--       81,   26,   26,   27,   27,   27,   34,   35,   35,   82,
--       28,   36,   36,   36,   36,  159,   29,   28,   28,   28,
--       28,   12,   13,   14,   15,   16,   30,   17,   18,   30,
--       30,   30,   26,   30,   30,   30,   12,   20,   21,   22,
--       31,   31,   31,   31,   31,   32,   12,   31,   31,   31,
-+       23,   23,   23,   12,   24,   12,   25,   34,   35,   35,
-+       25,   81,   26,   26,   27,   27,   27,   34,   35,   35,
-+       82,   28,   36,   36,   36,   53,   54,   29,   28,   28,
-+       28,   28,   12,   13,   14,   13,   15,   16,   30,   17,
-+       18,   30,   30,   30,   26,   30,   30,   30,   12,   20,
-+       21,   22,   31,   31,   31,   31,   31,   32,   12,   31,
- 
-        31,   31,   31,   31,   31,   31,   31,   31,   31,   31,
--       31,   31,   31,   12,   24,   12,   39,   41,   45,   47,
--       53,   54,   48,   56,   57,   61,   61,   47,   66,   45,
--       48,   66,   66,   66,   39,   46,   40,   49,   59,   50,
--      158,   51,  122,   52,  157,   49,   46,   50,  136,   63,
--      137,   52,  156,   43,   40,   62,   65,   65,   65,   59,
--       61,   61,  123,   65,   75,   69,   69,   69,   36,   36,
--       65,   65,   65,   65,   70,   71,   72,   69,   69,   69,
--       45,   46,   61,   61,  109,   77,   70,   71,   93,  110,
--       68,   70,   71,   85,   85,   85,   66,   46,  155,   66,
--
--       66,   66,   69,   69,   69,  122,   59,  100,  100,   61,
--       61,   70,   71,  100,  100,  148,  112,  154,   85,   85,
--       85,   61,   61,  129,  129,  123,  129,  129,  135,  135,
--      135,  142,  142,  148,  143,  149,  153,  135,  135,  135,
--      142,  142,  160,  143,  152,  151,  150,  146,  145,  144,
--      141,  140,  139,  149,   38,   38,   38,   38,   38,   38,
--       38,   38,   42,  138,  134,  133,   42,   42,   44,   44,
--       44,   44,   44,   44,   44,   44,   58,   58,   58,   58,
--       64,  132,   64,   66,  131,  130,   66,  160,   66,   66,
--       67,  128,  127,   67,   67,   67,   67,   73,  126,   73,
--
--       73,   76,   76,   76,   76,   76,   76,   76,   76,   78,
--       78,   78,   78,   78,   78,   78,   78,   91,  125,   91,
--       92,  124,   92,   92,  120,   92,   92,  121,  121,  121,
--      121,  121,  121,  121,  121,  147,  147,  147,  147,  147,
--      147,  147,  147,  119,  118,  117,  116,  115,   47,  114,
--      110,  113,  111,  108,  107,  106,   48,  105,  104,   89,
--      103,  102,  101,   99,   98,   97,   96,   95,   94,   79,
--       77,   90,   89,   88,   59,   87,   86,   59,   84,   83,
--       80,   79,   77,   74,  160,   60,   59,   55,   37,  160,
--       33,   25,   26,   25,   11,  160,  160,  160,  160,  160,
-+       31,   31,   31,   31,   31,   12,   24,   12,   36,   36,
-+       36,   39,   41,   45,   47,   56,   57,   48,   61,   47,
-+       39,  159,   48,   66,   61,   45,   66,   66,   66,  158,
-+       46,   40,   49,   59,   50,  157,   51,   49,   52,   50,
-+       40,   63,   46,   52,   36,   36,   36,  156,   43,   62,
-+       65,   65,   65,   59,  136,   68,  137,   65,   75,   69,
-+       69,   69,   70,   71,   65,   65,   65,   65,   70,   71,
-+       72,   69,   69,   69,   61,   46,   45,  155,  154,   66,
-+       70,   71,   66,   66,   66,  122,   85,   85,   85,   59,
-+
-+       69,   69,   69,   46,   77,  100,  109,   93,  100,   70,
-+       71,  110,  112,  122,  129,  123,  153,   85,   85,   85,
-+      135,  135,  135,  148,  148,  160,  135,  135,  135,  152,
-+      142,  142,  142,  123,  143,  142,  142,  142,  151,  143,
-+      150,  146,  145,  149,  149,   38,   38,   38,   38,   38,
-+       38,   38,   38,   42,  144,  141,  140,   42,   42,   44,
-+       44,   44,   44,   44,   44,   44,   44,   58,   58,   58,
-+       58,   64,  139,   64,   66,  138,  134,   66,  133,   66,
-+       66,   67,  132,  131,   67,   67,   67,   67,   73,  130,
-+       73,   73,   76,   76,   76,   76,   76,   76,   76,   76,
-+
-+       78,   78,   78,   78,   78,   78,   78,   78,   91,  160,
-+       91,   92,  129,   92,   92,  128,   92,   92,  121,  121,
-+      121,  121,  121,  121,  121,  121,  147,  147,  147,  147,
-+      147,  147,  147,  147,  127,  126,  125,  124,   61,   61,
-+      120,  119,  118,  117,  116,  115,   47,  114,  110,  113,
-+      111,  108,  107,  106,   48,  105,  104,   89,  103,  102,
-+      101,   99,   98,   97,   96,   95,   94,   79,   77,   90,
-+       89,   88,   59,   87,   86,   59,   84,   83,   80,   79,
-+       77,   74,  160,   60,   59,   55,   37,  160,   33,   25,
-+       26,   25,   11,  160,  160,  160,  160,  160,  160,  160,
- 
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
--      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
-+      160,  160,  160,  160,  160,  160,  160,  160,  160
-     } ;
- 
--static yyconst flex_int16_t yy_chk[441] =
-+static yyconst flex_int16_t yy_chk[440] =
-     {   0,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
--        1,    1,    1,    1,    1,    4,    9,    9,    9,   10,
--       50,    4,    5,    5,    5,    5,   10,   10,   10,   50,
--        5,   13,   13,   14,   14,  158,    5,    5,    5,    5,
--        5,    7,    7,    7,    7,    7,    7,    7,    7,    7,
-+        1,    1,    1,    1,    1,    1,    4,    9,    9,    9,
-+       10,   50,    4,    5,    5,    5,    5,   10,   10,   10,
-+       50,    5,   13,   13,   13,   20,   20,    5,    5,    5,
-+        5,    5,    7,    7,    7,    7,    7,    7,    7,    7,
-         7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
-         7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
- 
-         7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
--        7,    7,    7,    7,    7,    7,   16,   17,   18,   19,
--       20,   20,   19,   22,   22,   25,   25,   26,   31,   44,
--       26,   31,   31,   31,   38,   18,   16,   19,   31,   19,
--      157,   19,  112,   19,  156,   26,   44,   26,  130,   26,
--      130,   26,  155,   17,   38,   25,   28,   28,   28,   28,
--       33,   33,  112,   28,   46,   34,   34,   34,   36,   36,
--       28,   28,   28,   28,   34,   34,   34,   35,   35,   35,
--       75,   46,   61,   61,   98,   77,   35,   35,   77,   98,
--       33,   91,   91,   61,   61,   61,   67,   75,  152,   67,
--
--       67,   67,   69,   69,   69,  121,   67,   85,   85,  113,
--      113,   69,   69,  100,  100,  143,  100,  151,   85,   85,
--       85,  114,  114,  122,  122,  121,  129,  129,  135,  135,
--      135,  138,  138,  147,  138,  143,  150,  129,  129,  129,
--      142,  142,  149,  142,  146,  145,  144,  141,  140,  139,
--      137,  136,  134,  147,  161,  161,  161,  161,  161,  161,
--      161,  161,  162,  133,  128,  127,  162,  162,  163,  163,
--      163,  163,  163,  163,  163,  163,  164,  164,  164,  164,
--      165,  126,  165,  166,  125,  124,  166,  123,  166,  166,
--      167,  120,  119,  167,  167,  167,  167,  168,  118,  168,
--
--      168,  169,  169,  169,  169,  169,  169,  169,  169,  170,
--      170,  170,  170,  170,  170,  170,  170,  171,  117,  171,
--      172,  116,  172,  172,  111,  172,  172,  173,  173,  173,
--      173,  173,  173,  173,  173,  174,  174,  174,  174,  174,
--      174,  174,  174,  110,  109,  108,  107,  106,  105,  103,
--      102,  101,   99,   97,   96,   95,   94,   93,   92,   90,
--       88,   87,   86,   84,   83,   82,   81,   80,   79,   78,
--       76,   71,   70,   68,   65,   63,   62,   58,   52,   51,
--       49,   48,   47,   43,   40,   24,   23,   21,   15,   11,
--        8,    6,    3,    2,  160,  160,  160,  160,  160,  160,
-+        7,    7,    7,    7,    7,    7,    7,    7,   14,   14,
-+       14,   16,   17,   18,   19,   22,   22,   19,   25,   26,
-+       38,  158,   26,   31,   33,   44,   31,   31,   31,  157,
-+       18,   16,   19,   31,   19,  156,   19,   26,   19,   26,
-+       38,   26,   44,   26,   36,   36,   36,  155,   17,   25,
-+       28,   28,   28,   28,  130,   33,  130,   28,   46,   34,
-+       34,   34,   91,   91,   28,   28,   28,   28,   34,   34,
-+       34,   35,   35,   35,   61,   46,   75,  152,  151,   67,
-+       35,   35,   67,   67,   67,  112,   61,   61,   61,   67,
-+
-+       69,   69,   69,   75,   77,   85,   98,   77,  100,   69,
-+       69,   98,  100,  121,  129,  112,  150,   85,   85,   85,
-+      135,  135,  135,  143,  147,  149,  129,  129,  129,  146,
-+      138,  138,  138,  121,  138,  142,  142,  142,  145,  142,
-+      144,  141,  140,  143,  147,  161,  161,  161,  161,  161,
-+      161,  161,  161,  162,  139,  137,  136,  162,  162,  163,
-+      163,  163,  163,  163,  163,  163,  163,  164,  164,  164,
-+      164,  165,  134,  165,  166,  133,  128,  166,  127,  166,
-+      166,  167,  126,  125,  167,  167,  167,  167,  168,  124,
-+      168,  168,  169,  169,  169,  169,  169,  169,  169,  169,
-+
-+      170,  170,  170,  170,  170,  170,  170,  170,  171,  123,
-+      171,  172,  122,  172,  172,  120,  172,  172,  173,  173,
-+      173,  173,  173,  173,  173,  173,  174,  174,  174,  174,
-+      174,  174,  174,  174,  119,  118,  117,  116,  114,  113,
-+      111,  110,  109,  108,  107,  106,  105,  103,  102,  101,
-+       99,   97,   96,   95,   94,   93,   92,   90,   88,   87,
-+       86,   84,   83,   82,   81,   80,   79,   78,   76,   71,
-+       70,   68,   65,   63,   62,   58,   52,   51,   49,   48,
-+       47,   43,   40,   24,   23,   21,   15,   11,    8,    6,
-+        3,    2,  160,  160,  160,  160,  160,  160,  160,  160,
- 
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-       160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
--      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
-+      160,  160,  160,  160,  160,  160,  160,  160,  160
-     } ;
- 
- static yy_state_type yy_last_accepting_state;
--- 
-1.8.1.2
+Ok, will add description)
 
+>> Still you think the only way to go is to add kernel-doc description then
+>> I'll add it ASAP, might be it will be a good example for other developers.
+>
+> Right.
+>
+>>>> +++ b/drivers/net/ethernet/arc/arc_emac_main.c
+>>>
+>
+>>>> +static int arc_emac_poll(struct napi_struct *napi, int budget)
+>>>> +{
+>
+>>>> +       unsigned int i, loop, work_done = 0;
+>
+>>>> +       for (loop = 0; loop < RX_BD_NUM; loop++) {
+>
+>>>> +               work_done++;
+>>>> +               if (work_done >= budget)
+>>>> +                       break;
+>>>
+>>> Those three could easily go to the for () on the top of this function.
+>>
+>> Correct. It should be like this on top of the "arc_emac_poll":
+>> ====
+>>                  if (work_done >= budget)
+>>                          break;
+>>                  work_done++;
+>> ====
+>
+> I meant something like
+> for (loop = 0; loop < RX_BD_NUM && work_done < budget; loop++, work_done++)
+
+Well, it turned out that counter increment was put in the end of the 
+loop on purpose.
+
+But with help of this hint I understood that "arc_emac_poll" was 
+implemented a bit incorrectly. Now I added an exit from the loop on the 
+first BD owned by EMAC. This is possible because we know that buffers 
+are processed in order.
+
+>>>> +static int arc_emac_open(struct net_device *ndev)
+>>>> +{
+>>>
+>>>> +       /* Set Poll rate so that it polls every 1 ms */
+>>>> +       arc_reg_set(priv, R_POLLRATE,
+>>>> +                    priv->clock_frequency / 1000000);
+>>>
+>>> I don't understand how you end up with 1ms here. 1000000 is just a
+>>> magic number, clock_frequency generally is an arbitrary value.
+>
+> I meant how do you guarantee this is 1ms? What if clock_frequency is not 100MHz?
+
+That's why I needed to pass CPU frequency to "arc_emac_probe" via DT.
+As we see from description in HW documentation poll period measured in 
+CPU cycles = "1024 cycles *  R_POLLRATE", or "1024 * 
+priv->clock_frequency / 1000000", or "priv->clock_frequency / 1000".
+Now since length of 1 cycle is "1 / priv->clock_frequency" we may 
+calculate poll period measured in seconds. It will be 
+"priv->clock_frequency / 1000 * (1 / priv->clock_frequency)" which is 
+1/1000 of second i.e. 1 millisecond. Makes sense?
+
+Regards,
+Alexey
