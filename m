@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab3FMLWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 07:22:34 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:48157 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3FMLWc (ORCPT
+	id S1754697Ab3FML0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 07:26:16 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:30210
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752088Ab3FML0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 07:22:32 -0400
-Date: Thu, 13 Jun 2013 12:22:28 +0100
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2013-06-13
-Message-ID: <20130613112228.GB17870@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 13 Jun 2013 07:26:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1de2h1dfeh1dffh1155h)
+Date: Thu, 13 Jun 2013 19:25:52 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc/sysfs: disable hotplug for the boot cpu
+Message-ID: <20130613112552.GC7536@localhost.localdomain>
+References: <1369727984-21505-1-git-send-email-chenhui.zhao@freescale.com>
+ <1369727984-21505-2-git-send-email-chenhui.zhao@freescale.com>
+ <1370036984.3928.144.camel@pasglop>
+ <20130603104315.GA1365@localhost.localdomain>
+ <1371007522.8250.169.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <1371007522.8250.169.camel@pasglop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 12, 2013 at 01:25:22PM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-06-03 at 18:43 +0800, Zhao Chenhui wrote:
+> > On Sat, Jun 01, 2013 at 07:49:44AM +1000, Benjamin Herrenschmidt wrote:
+> > > On Tue, 2013-05-28 at 15:59 +0800, Zhao Chenhui wrote:
+> > > > Some features depend on the boot cpu, for instance, hibernate/suspend.
+> > > > So disable hotplug for the boot cpu.
+> > > 
+> > > Don't we have code to "move" the boot CPU around when that happens ?
+> > > 
+> > > Ben.
+> > > 
+> > 
+> > Currently, the code in generic_cpu_disable() likes this:
+> > 
+> >         if (cpu == boot_cpuid)                                                 
+> > 	                return -EBUSY;
+> 
+> But the code in pseries/hotplug-cpu.c doesn't, we just "move" the boot
+> CPU around when that happens. Any reason we can't do that generically ?
+> 
+> Cheers,
+> Ben.
+> 
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Some multicore SoCs firstly boot up the cpu0 after warm reset.
+In some suspend/resume cases, SoC will do a warm reset when resuming.
+In order to ensure that the suspending and resuming is running
+on a same cpu, cpu0 should be the last cpu to suspend. Here, cpu0 is
+the boot_cpuid.
 
-Hi John,
+-Chenhui
 
-A few important fixes to 3.10. The first one is a crash fix and talks by itself.
-Then we have the support for a device id, it should be fine if you want to
-remove this. Next there are two btmrvl fixes, one for a potential race
-condition that could make its main thread never stop and the other to fix the
-return code when a memory allocation fails. It was returning 0 instead of
--ENOMEM. Last is a fix to an issue that affects at least some Thinkpad X60,
-Initialization on those laptops were failing due by unsupported cmd we were
-sending to the device. The patch fixes this by checking if the cmd is
-supported first.
+> > If the dying cpu is the boot cpu, it will return -EBUSY. In the subsequent error handling,
+> > cpu_notify_nofail(CPU_DOWN_FAILED) in _cpu_down() will be called. Unfortunately, some
+> > cpu notifier callbacks handled CPU_DOWN_PREPARE, but not CPU_DOWN_FAILED, such as sched_cpu_inactive().
+> > So it will cause issues.
+> > 
+> > If we set the hotpluggable for the boot cpu, we can prevent user applications from disabling the boot cpu.
+> > 
+> > -Chenhui
+> > 
 
-Please pull or let me know of any concerns you may have.
-
-	Gustavo
-
----
-The following changes since commit d90b9e29ec5fe7a08eb7965386ebb47615306584:
-
-  Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-fixes (2013-06-12 14:28:21 -0400)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-
-for you to fetch changes up to 0e1aba9361bf292fbdca781d419dca67d6b9911f:
-
-  Bluetooth: btmrvl: fix thread stopping race (2013-06-13 11:48:38 +0100)
-
-----------------------------------------------------------------
-Anderson Lizardo (1):
-      Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
-
-Cho, Yu-Chen (1):
-      Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
-
-Daniel Drake (1):
-      Bluetooth: btmrvl: fix thread stopping race
-
-Johan Hedberg (1):
-      Bluetooth: Fix conditions for HCI_Delete_Stored_Link_Key
-
-Wei Yongjun (1):
-      Bluetooth: btmrvl: fix error return code in btmrvl_sdio_card_to_host()
-
- drivers/bluetooth/btmrvl_main.c |  9 ++++-----
- drivers/bluetooth/btmrvl_sdio.c |  1 +
- drivers/bluetooth/btusb.c       |  3 +++
- net/bluetooth/hci_core.c        | 15 ++++++++++-----
- net/bluetooth/l2cap_core.c      |  3 +++
- 5 files changed, 21 insertions(+), 10 deletions(-)
-
-
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuat0AAoJEPs3PUX4s20omJwP/iqoxp1m7A3mtRWi5VdcclWM
-1G/Lyo/gHPK/0tW11ypI6ppogp25B6mxhyhFXHYRK6dVBo3t36ag0ABTcvNgzp1J
-TGBsKUn0+GzyBqcUmRuRj+3X4m9F6fbLcWcU22vmNfJ0s+lhsgi08D7tN01G7NdU
-Bj5ASouMplFj1GHdqThDtFD7YMTbxohOOVkrW7M2ZdSfYX0f0wLFAimReaA9a41U
-GBaTBi/xBAq50NeZGmDC57e6/kJHdX1CG3+/NYfwwFEHfI4uCmNwnQPkhnHkbVmO
-gZ0DNZ0/P5svbocNCi1Z4GUJtnL3WLrMiH17rvlUR0QPSa0P/C7AUoyKm6au4SSk
-Z/xaKsmgRbdAE9cX6C702IqkhWhwz3DXqUm7Bk4T/7x1J7Yep5jnYvTAxDZukKYN
-SYOeUVB2aGHzTEBLH2ZhK+qFJKiUVtsLo2w73xODi0rFcv7aTL1D/MognvqokzsM
-1qD5VXk+UEFMzSoBLpkvkaI+J4mxcBitzyHNY3Y55lqXSNd4nRCNrVyLWJpFhGHw
-SyCFQ4gDQ+b/9rI1Y732ZU32t+qA8UBtnnfu41sRi1itFPr+h1GYuK0qtbvPblom
-OBJXLxavVS5vIFlXcY8I19UHmENFLAfAhVdJePZo/UQvCXCVF8PS2jAIRU857rgs
-/KUyaA8rBYxeh/ZFl1Z/
-=dRCI
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
