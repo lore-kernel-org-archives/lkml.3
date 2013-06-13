@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab3FMPjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:39:52 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:34491 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3FMPjv (ORCPT
+	id S1756873Ab3FMPms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:42:48 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:34161 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3FMPmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:39:51 -0400
-Message-ID: <1371137986.3252.112.camel@edumazet-glaptop>
-Subject: Re: include/net/ipv6.h:408:38: warning:
- =?UTF-8?Q?=E2=80=98*=28=28void?= =?UTF-8?Q?_*=29&addr+8=29=E2=80=99?= may
- be used uninitialized in this function
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Jun 2013 08:39:46 -0700
-In-Reply-To: <CA+ydwtrVHDE65dVTBijGguZDK0+=+tzi+nn1UywRqfn9Rx4ZuA@mail.gmail.com>
-References: <CA+ydwtrVHDE65dVTBijGguZDK0+=+tzi+nn1UywRqfn9Rx4ZuA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 13 Jun 2013 11:42:47 -0400
+Date: Thu, 13 Jun 2013 17:42:31 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] RAPIDIO: Fix idt_gen2.c build
+Message-ID: <20130613154231.GA27745@linux-mips.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-13 at 18:16 +0300, Tommi Rantala wrote:
-> Hello, I'm seeing the following compiler warnings. Do these make any
-> sense? I'm doing a x86-64 build.
+idt_gen2.c relies that one of the header files used will include
+<asm/page.h> which will define the required symbol PAGE_SIZE.  On MIPS
+for example <asm/page.h> will not be included implicitly which will
+result in the following build error:
 
-> $ gcc --version
-> gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
-> Copyright (C) 2012 Free Software Foundation, Inc.
-> This is free software; see the source for copying conditions.  There is NO
-> warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-> 
-> config:
-> http://fpaste.org/18443/13711363/
+  CC      drivers/rapidio/switches/idt_gen2.o
+drivers/rapidio/switches/idt_gen2.c: In function ‘idtg2_show_errlog’:
+drivers/rapidio/switches/idt_gen2.c:379:30: error: ‘PAGE_SIZE’ undeclared (first use in this function)
+drivers/rapidio/switches/idt_gen2.c:379:30: note: each undeclared identifier is reported only once for each function it appears in
 
-Well, what tree are you using ?
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+---
+
+If you're ok with this patch I can put it into my next pull request for
+Linux.  Thanks!
 
 
+ drivers/rapidio/switches/idt_gen2.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/rapidio/switches/idt_gen2.c b/drivers/rapidio/switches/idt_gen2.c
+index 809b7a3..5d3b0f0 100644
+--- a/drivers/rapidio/switches/idt_gen2.c
++++ b/drivers/rapidio/switches/idt_gen2.c
+@@ -15,6 +15,8 @@
+ #include <linux/rio_drv.h>
+ #include <linux/rio_ids.h>
+ #include <linux/delay.h>
++
++#include <asm/page.h>
+ #include "../rio.h"
+ 
+ #define LOCAL_RTE_CONF_DESTID_SEL	0x010070
