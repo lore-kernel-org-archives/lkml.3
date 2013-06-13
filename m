@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab3FMN2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
+	id S1758553Ab3FMNeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:34:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758213Ab3FMN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:05 -0400
+	id S1758287Ab3FMN2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:08 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537691"
+   d="scan'208";a="7537698"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,116 +17,105 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-Date: Thu, 13 Jun 2013 21:02:47 +0800
-Message-Id: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Subject: [Part1 PATCH v5 16/22] x86, mm, numa: Move numa emulation handling down.
+Date: Thu, 13 Jun 2013 21:03:03 +0800
+Message-Id: <1371128589-8953-17-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:16,
+ 2013/06/13 20:58:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:24,
-	Serialize complete at 2013/06/13 20:58:24
+ 2013/06/13 20:58:27,
+	Serialize complete at 2013/06/13 20:58:27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yinghai Lu <yinghai@kernel.org>
 
-No offence, just rebase and resend the patches from Yinghai to help
-to push this functionality faster.
-Also improve the comments in the patches' log.
+numa_emulation() needs to allocate buffer for new numa_meminfo
+and distance matrix, so execute it later in x86_numa_init().
 
+Also we change the behavoir:
+	- before this patch, if user input wrong data in command
+	  line, it will fall back to next numa probing or disabling
+	  numa.
+	- after this patch, if user input wrong data in command line,
+	  it will stay with numa info probed from previous probing,
+	  like ACPI SRAT or amd_numa.
 
-One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+We need to call numa_check_memblks to reject wrong user inputs early
+so that we can keep the original numa_meminfo not changed.
 
-| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-| Author: Tang Chen <tangchen@cn.fujitsu.com>
-| Date:   Fri Feb 22 16:33:44 2013 -0800
-|
-|    acpi, memory-hotplug: parse SRAT before memblock is ready
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c           |    6 +++---
+ arch/x86/mm/numa_emulation.c |    2 +-
+ arch/x86/mm/numa_internal.h  |    2 ++
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
-It broke several things, like acpi override and fall back path etc.
-
-This patchset is clean implementation that will parse numa info early.
-1. keep the acpi table initrd override working by split finding with copying.
-   finding is done at head_32.S and head64.c stage,
-        in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
-        in head64.c, initrd is accessed via kernel low mapping address
-        with help of #PF set page table.
-   copying is done with early_ioremap just after memblock is setup.
-2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
-   seperate initmem_init to two stages.
-   early_initmem_init will only extract numa info early into numa_meminfo.
-   initmem_init will keep slit and emulation handling.
-3. keep other old code flow untouched like relocate_initrd and initmem_init.
-   early_initmem_init will take old init_mem_mapping position.
-   it call early_x86_numa_init and init_mem_mapping for every nodes.
-   For 64bit, we avoid having size limit on initrd, as relocate_initrd
-   is still after init_mem_mapping for all memory.
-4. last patch will try to put page table on local node, so that memory
-   hotplug will be happy.
-
-In short, early_initmem_init will parse numa info early and call
-init_mem_mapping to set page table for every nodes's mem.
-
-could be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-
-and it is based on today's Linus tree.
-
--v2: Address tj's review and split patches to small ones.
--v3: Add some Acked-by from tj, also stop abusing cpio_data for acpi_files info
--v4: fix one typo found by Tang Chen.
-     Also added tested-by from Thomas Renninger and Tony.
--v5: Rebase to Linux-3.10.0-rc5 (patch 5 and 21 has been rebased)
-     Improve comments in patches' log.
-     Improve comment in init_mem_mapping() in patch21.
-
-Yinghai Lu (22):
-  x86: Change get_ramdisk_{image|size}() to global
-  x86, microcode: Use common get_ramdisk_{image|size}()
-  x86, ACPI, mm: Kill max_low_pfn_mapped
-  x86, ACPI: Search buffer above 4GB in a second try for acpi initrd
-    table override
-  x86, ACPI: Increase acpi initrd override tables number limit
-  x86, ACPI: Split acpi_initrd_override() into find/copy two steps
-  x86, ACPI: Store override acpi tables phys addr in cpio files info
-    array
-  x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
-  x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-  x86, mm, numa: Move two functions calling on successful path later
-  x86, mm, numa: Call numa_meminfo_cover_memory() checking early
-  x86, mm, numa: Move node_map_pfn_alignment() to x86
-  x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
-  x86, mm, numa: Set memblock nid later
-  x86, mm, numa: Move node_possible_map setting later
-  x86, mm, numa: Move numa emulation handling down.
-  x86, ACPI, numa, ia64: split SLIT handling out
-  x86, mm, numa: Add early_initmem_init() stub
-  x86, mm: Parse numa info earlier
-  x86, mm: Add comments for step_size shift
-  x86, mm: Make init_mem_mapping be able to be called several times
-  x86, mm, numa: Put pagetable on local node ram for 64bit
-
- arch/ia64/kernel/setup.c                |    4 +-
- arch/x86/include/asm/acpi.h             |    3 +-
- arch/x86/include/asm/page_types.h       |    2 +-
- arch/x86/include/asm/pgtable.h          |    2 +-
- arch/x86/include/asm/setup.h            |    9 ++
- arch/x86/kernel/head64.c                |    2 +
- arch/x86/kernel/head_32.S               |    4 +
- arch/x86/kernel/microcode_intel_early.c |    8 +-
- arch/x86/kernel/setup.c                 |   86 +++++++-----
- arch/x86/mm/init.c                      |  121 +++++++++++-----
- arch/x86/mm/numa.c                      |  240 ++++++++++++++++++++++++-------
- arch/x86/mm/numa_emulation.c            |    2 +-
- arch/x86/mm/numa_internal.h             |    2 +
- arch/x86/mm/srat.c                      |   11 +-
- drivers/acpi/numa.c                     |   13 +-
- drivers/acpi/osl.c                      |  138 +++++++++++++------
- include/linux/acpi.h                    |   20 ++--
- include/linux/mm.h                      |    3 -
- mm/page_alloc.c                         |   52 +-------
- 19 files changed, 476 insertions(+), 246 deletions(-)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index da2ebab..3254f22 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -534,7 +534,7 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+ }
+ #endif
+ 
+-static int __init numa_check_memblks(struct numa_meminfo *mi)
++int __init numa_check_memblks(struct numa_meminfo *mi)
+ {
+ 	nodemask_t nodes_parsed;
+ 	unsigned long pfn_align;
+@@ -604,8 +604,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	numa_emulation(&numa_meminfo, numa_distance_cnt);
+-
+ 	ret = numa_check_memblks(&numa_meminfo);
+ 	if (ret < 0)
+ 		return ret;
+@@ -669,6 +667,8 @@ void __init x86_numa_init(void)
+ 
+ 	early_x86_numa_init();
+ 
++	numa_emulation(&numa_meminfo, numa_distance_cnt);
++
+ 	node_possible_map = numa_nodes_parsed;
+ 	numa_nodemask_from_meminfo(&node_possible_map, mi);
+ 
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index dbbbb47..5a0433d 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 	if (ret < 0)
+ 		goto no_emu;
+ 
+-	if (numa_cleanup_meminfo(&ei) < 0) {
++	if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
+ 		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+ 		goto no_emu;
+ 	}
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index ad86ec9..bb2fbcc 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -21,6 +21,8 @@ void __init numa_reset_distance(void);
+ 
+ void __init x86_numa_init(void);
+ 
++int __init numa_check_memblks(struct numa_meminfo *mi);
++
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+ 			   int numa_dist_cnt);
+-- 
+1.7.1
 
