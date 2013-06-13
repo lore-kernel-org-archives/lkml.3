@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311Ab3FMNk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:40:27 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40784 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757001Ab3FMNkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:40:21 -0400
-Date: Thu, 13 Jun 2013 08:39:50 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [RFC PATCH 1/4] regulator: Introduce OMAP regulator to control
- PMIC over VC/VP
-Message-ID: <20130613133950.GA32174@kahuna>
-References: <1369246717-4167-1-git-send-email-nm@ti.com>
- <1369246717-4167-2-git-send-email-nm@ti.com>
- <20130610103131.GR31367@sirena.org.uk>
- <CAGo_u6qTiPpd0DDe3jnPh_UxTwox22azhcMGy=fftL8H+DGeyw@mail.gmail.com>
- <20130610164905.GJ1403@sirena.org.uk>
- <CAGo_u6ov=yaCwt8apbvW57ErAvhgUBHHw9gwADBC1fJUrfucUQ@mail.gmail.com>
- <20130610180150.GQ1403@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130610180150.GQ1403@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758714Ab3FMNlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:41:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757099Ab3FMN15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:27:57 -0400
+X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
+   d="scan'208";a="7537675"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [Part1 PATCH v5 20/22] x86, mm: Add comments for step_size shift
+Date: Thu, 13 Jun 2013 21:03:07 +0800
+Message-Id: <1371128589-8953-21-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:28,
+	Serialize complete at 2013/06/13 20:58:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19:01-20130610, Mark Brown wrote:
-> On Mon, Jun 10, 2013 at 12:51:42PM -0500, Nishanth Menon wrote:
-> 
-> > a) Tegra seems to use Lookup Table for sending predefinied voltage
-> > values to PMIC. OMAP has no concept of lookup table.
-> 
-> They seem to be doing basically the same thing here, you've got a linear
-> map of selector to voltage too AFAICT.
-> 
-> > b) Tegra and OMAP h/w blocks seem to use I2C - that is good.
-> > c) How about the i2c slave and register addresses, slew rates, start,
-> > end voltages, max voltages that SoC can support etc, I am yet to
-> > understand those.
-> > d) OMAP has 3 modules - AVS (SmartReflex), Voltage Processor(VP),
-> > Voltage Controller(VC) - I am not yet sure about the Tegra hardware
-> > blocks involved.
-> 
-> This all seems like it's at the implementation detail level - the bit
-> that seems like we should be able to share it is the big picture bit for
-> how we describe how the AP side stuff and PMIC are hooked up without
-> having to have a bunch of completely non-framework stuff for things
-> like describing the PMIC.
+From: Yinghai Lu <yinghai@kernel.org>
 
-I am having a bit of a difficulty trying to understand your concern
-here.
+As requested by hpa, add comments for why we choose 5 to be
+the step size shift.
 
-Problem statement:
-OMAP has this weird custom h/w where one programs the voltage and that
-voltage is send over i2c - this is not same as Tegra's lookup table
-array which automatically sends out entries, in OMAP, software has to trigger
-the voltage transition
-This path is split into 3 different modules - AVS, VC, VP -> This is
-implementation detail as you already mentioned.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/init.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
 
-Anyhow, to recap, the overview of the hardware interface is as follows:
-PMIC that OMAP interfaces to are of two categories:
-a) ones that talk only on the custom OMAP VC path
-b) ones that talk both custom OMAP VC and regular i2c (e.g.
-   twl4030,6030,palmas)
-
-The voltage control for a voltage rail (e.g. vdd_mpu) is again PMIC
-specific
-a) 6030 will not allow voltage to be set over regular i2c
-b) 4030 allows either custom i2c path OR regular i2c path (only 1 at a
-   time).
-c) palmas allows both custom i2c path AND regular i2c path to set
-   voltage!
-
->From a Linux angle, when using regular i2c, it is a piece of cake. Standard
-regulator uses regular i2c, vc-vp angle avoided
-Example: Palmas: we'd use the regular palmas driver to do this.
-
-When using custom i2c path(vc/vp/avs), it gets a bit complex
-We'd like (if possible) drivers like cpufreq to be ignorant of regulator
-and transfer path used ofcourse as this depends on the board component
-selection.
-E.g. 4030/palmas/6030 vdd_mpu can be represented as a regulator, which in turn
-uses custom OMAP data transfer path to set voltage
-
-I was trying to understand your statement as to what Paul was doing
-(which was basically pull out the vsel values and put them in his
- hardware lookup table for h/w to auto send the voltage) Vs what I was
-attempting to do (describe OMAP's view of the PMIC and provide data
-path).
-In my view, we were trying to do "voltage scale" in two completely
-different ways depending on the SoC we were working on.
-
-If your concern was describing PMIC parameters in dts, I can easily move
-them inside the omap_pmic driver and provide required compatible flags.
-If, on the other hand, the entire approach followed is flawed, I'd like to
-understand the rationale for the same.
-
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 3c21f16..5f38e72 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -395,8 +395,23 @@ static unsigned long __init init_range_memory_mapping(
+ 	return mapped_ram_size;
+ }
+ 
+-/* (PUD_SHIFT-PMD_SHIFT)/2 */
+-#define STEP_SIZE_SHIFT 5
++static unsigned long __init get_new_step_size(unsigned long step_size)
++{
++	/*
++	 * initial mapped size is PMD_SIZE, aka 2M.
++	 * We can not set step_size to be PUD_SIZE aka 1G yet.
++	 * In worse case, when 1G is cross the 1G boundary, and
++	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
++	 * to map 1G range with PTE. Use 5 as shift for now.
++	 */
++	unsigned long new_step_size = step_size << 5;
++
++	if (new_step_size > step_size)
++		step_size = new_step_size;
++
++	return  step_size;
++}
++
+ void __init init_mem_mapping(void)
+ {
+ 	unsigned long end, real_end, start, last_start;
+@@ -445,7 +460,7 @@ void __init init_mem_mapping(void)
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+-			step_size <<= STEP_SIZE_SHIFT;
++			step_size = get_new_step_size(step_size);
+ 		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ 
 -- 
-Regards,
-Nishanth Menon
+1.7.1
+
