@@ -1,198 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab3FMEOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:14:09 -0400
-Received: from nm28-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.229]:39861
-	"EHLO nm28-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750774Ab3FMEOG (ORCPT
+	id S1753851Ab3FMEYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:24:04 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:60340 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3FMEYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:14:06 -0400
-X-Yahoo-Newman-Id: 40147.27212.bm@smtp103.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0PN5Vi8VM1mkcv.W6w0MMorDEOOcJ6agf8n6rcaZuwFnk5z
- dd9YD3hez9ASX3mSS_ikUvb2RJofQLzkt9x7T.xj_ViL20NlMjsrJvkdxKwu
- C7YcvFFllELrUqdPxdlYU3VMQdAbHmpyJ7KjqbqEwfUnyrdjpqu8I4tuy4fX
- ZcmfSjmtViYnNRhSJDbO03g5JJbLC.XeMcIzscPRp7KL3M7WxTWnkfTNM9Ta
- N5AugjO28rSlBhoToO3dTRM_dYTF9WuVhkeFsIZNGdQ5GgAyoN3UL7zVCY6K
- AMkNUmOOhlHhiLWCQexJIs3prgHw7fYyHbUMeB_hYl8KUO8aK5uOHQHiz7Un
- M2A4B2_cWXRTUT4I1_icvOAJi2TO3xM4Lc0tsSwMsvdmJviZELsUtIl_7ZQA
- SNP2QIMXRkJyNBDCf.Ph_HilOeTtiJfeH.uKtY9fd8YDzNPJeRUo1q9_USoX
- dq3QI1UqV3im6VYctbzY5lEUG6HES_akKLrd2DSFTSNWkPQCsK5344P.hT9v
- _IDI033c9zT1ynMTpbf7iPu7kH6SV8bFhz5M5PM7668zdo2H7jQQ-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.10.13] (casey@82.204.39.68 with plain)
-        by smtp103.biz.mail.bf1.yahoo.com with SMTP; 12 Jun 2013 21:14:04 -0700 PDT
-Message-ID: <51B9470E.7060107@schaufler-ca.com>
-Date: Wed, 12 Jun 2013 21:14:06 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 00:24:02 -0400
 MIME-Version: 1.0
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-CC: linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFCv2] security: smack: add a hash table to quicken smk_find_entry()
-References: <1370955313-3605-1-git-send-email-t.stanislaws@samsung.com> <1370955313-3605-2-git-send-email-t.stanislaws@samsung.com> <51B802EF.2080403@schaufler-ca.com> <51B87A3C.7050906@samsung.com>
-In-Reply-To: <51B87A3C.7050906@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51B898B6.8070103@wwwdotorg.org>
+References: <cover.1371022830.git.viresh.kumar@linaro.org>
+	<881257c10f24b5ca8721b561726bac8887dc922e.1371022830.git.viresh.kumar@linaro.org>
+	<51B898B6.8070103@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 09:54:01 +0530
+Message-ID: <CAKohponC5pKABTi=t64ZXrHxi-Y6cbvAXtjY=_aMkka4s-MCiQ@mail.gmail.com>
+Subject: Re: [PATCH 10/11] cpufreq: tegra: select CPU_FREQ_TABLE for ARCH_TEGRA
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: multipart/mixed; boundary=089e013a032af0e29504df017fc8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/12/2013 6:40 AM, Tomasz Stanislawski wrote:
-> Hi Casey,
-> Thank you for your review.
-> Please refer to comments below.
->
-> On 06/12/2013 07:11 AM, Casey Schaufler wrote:
->> On 6/11/2013 5:55 AM, Tomasz Stanislawski wrote:
->>> This patch adds a hash table to quicken searching of a smack label by its name.
->>>
->>> Basically, the patch improves performance of SMACK initialization.  Parsing of
->>> rules involves translation from a string to a smack_known (aka label) entity
->>> which is done in smk_find_entry().
->> There is one place where this is done, and that is in smk_import_entry().
+--089e013a032af0e29504df017fc8
+Content-Type: text/plain; charset=ISO-8859-1
+
+On 12 June 2013 21:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/12/2013 02:15 AM, Viresh Kumar wrote:
+>> ARCH_TEGRA selects ARCH_HAS_CPUFREQ, so CPUFREQ will be enabled for all variants
+>> of TEGRA. CPUFreq driver for tegra is enabled if ARCH_TEGRA is selected. Driver
+>> uses APIs from freq_table.c and so we must select CPU_FREQ_TABLE for ARCH_TEGRA.
 >>
->> There is another place where labels are looked up, and that is in
->> smack_from_secattr(). Can you apply this enhancement there, too?
->>
-> The overmentioned function contains following check:
+>> This also removes select CPU_FREQ_TABLE from individual tegra variants.
 >
->                         if (memcmp(sap->attr.mls.cat,
->                                  skp->smk_netlabel.attr.mls.cat,
->                                  SMK_CIPSOLEN) != 0)
->                                  continue;
+> I guess the real issue here is that drivers/cpufreq/tegra-cpufreq.c gets
+> built based on ARCH_TEGRA, which doesn't depend on nor select CPU_FREQ
+> itself, so:
 >
-> What does it mean?
-
-The Smack label is encoded in the CIPSO categories in one
-of two ways. When the label is imported (smk_import_entry())
-the CIPSO encoding is generated and saved in the smack_known
-entry for that label. When a packet is received the CIPSO
-categories are not interpreted, instead it's a simple matter
-of matching the saved category set in the label list.
-
-> I expect that there was a reason not to use smk_find_entry()
-> in smack_from_secattr().
-
-Yes. While the dirty little secret is that for short labels
-the CIPSO encoding is the Smack label, you can't count on the
-bitwise representation matching because, well, networking code
-is just like that.
-
-
-> Do you want me to introduce a new hash table for searching
-> skp->smk_netlabel.attr.mls.cat using up to SMK_CIPSOLEN character
-> to produce a hash?
-
-If we're going down the hashing path this would be an obvious
-step to take. And we're always looking for ways to improve
-network performance.
-
-> If it is true then this change is rather orthogonal to the current patch
-> and it can go to a separate patch.
-
-I can go either way.
-
-> Moreover, smack_from_secid() may need some hashing improvement.
-
-Yes. The hash function is going to be pretty trivial. smack_from_secid
-is a fortunately rare call.
-
+>         select CPU_FREQ_TABLE if CPU_FREQ
 >
->>> The current implementation of the function iterates over a global list of
->>> smack_known resulting in O(N) complexity for smk_find_entry().  The total
->>> complexity of SMACK initialization becomes O(rules * labels).  Therefore it
->>> scales quadratically with a complexity of a system.
->>>
->>> Applying the patch reduced the complexity of smk_find_entry() to O(1) as long
->>> as number of label is in hundreds. If the number of labels is increased please
->>> update SMACK_HASH_SLOTS constant defined in security/smack/smack.h. Introducing
->>> the configuration of this constant with Kconfig or cmdline might be a good
->>> idea.
->>>
->>> The size of the hash table was adjusted experimentally.  The rule set used by
->>> TIZEN contains circa 17K rules for 500 labels.  The table above contains
->>> results of SMACK initialization using 'time smackctl apply' bash command.
->>> The 'Ref' is a kernel without this patch applied. The consecutive values
->>> refers to value of SMACK_HASH_SLOTS.  Every measurement was repeated three
->>> times to reduce noise.
->>>
->>>      |  Ref  |   1   |   2   |   4   |   8   |   16  |   32  |   64  |  128  |  256  |  512
->>> --------------------------------------------------------------------------------------------
->>> Run1 | 1.156 | 1.096 | 0.883 | 0.764 | 0.692 | 0.667 | 0.649 | 0.633 | 0.634 | 0.629 | 0.620
->>> Run2 | 1.156 | 1.111 | 0.885 | 0.764 | 0.694 | 0.661 | 0.649 | 0.651 | 0.634 | 0.638 | 0.623
->>> Run3 | 1.160 | 1.107 | 0.886 | 0.764 | 0.694 | 0.671 | 0.661 | 0.638 | 0.631 | 0.624 | 0.638
->>> AVG  | 1.157 | 1.105 | 0.885 | 0.764 | 0.693 | 0.666 | 0.653 | 0.641 | 0.633 | 0.630 | 0.627
->>                  4%      20%     14%     9%      4%      2%      2%      1%      <1%
->>
->>
->> You get 4% by going to the hlist. The improvement is trivial after 16 slots.
->> If you have 500 labels and 128 slots that's an average of 4 labels per slot.
->> That's an awfully big hash table for so few labels and so little performance
->> gain over what you get with 16 slots. Plus, 500 labels is a huge number of
->> labels. Most Smack systems should be using far fewer than that. 
->>
-> Ok. 16 slots might be considered as 'good-enough'.
+> ... isn't guaranteed to fire.
 >
-> However, the cost of a single slot is a hash table is only 4 bytes (on ARM).
-> For example, using 64 slots instead of 16 costs only 4 * (64 - 16) = 196 bytes.
-> It is a very small value in comparison to other structures used in SMACK.
-> For example, sizeof(struct smack_rule) == 20. Notice that 32 bytes are consumed
-> due to kmalloc alignment policy (refer to include/linux/kmalloc_sizes.h).
-> So the cost is equal to the cost of 6 additional rules.
+> The correct solution seems to be:
 >
-> The performance gain is 4% (for 64 slots compared to 16 slots).
-
-Which is still only 20 milliseconds, once, at boot time.
-
-> The gain (expressed in percents) will be larger if IO issues in smackctl get resolved.
-> The additional memory cost for TIZEN case (not including smack_known and other objects) is:
-> 196 / (17k rules * 32 bytes/rule) * 100% = 0.03%
-
-But that memory is in use forever. 
-
-> I think that 4% speed for 0.03% memory is a very good trade-off.
-> Especially as it makes system more resistant if a number of labels somehow
-> get increased.
-
-The number of labels is already larger than it ought to be. We have
-work to do on that.
-
-> Anyway, if you consider 16 to be the best value then 16 is the best value.
+> * Add CONFIG_ARM_TEGRA_CPUFREQ to drivers/cpufreq/Kconfig.arm.
+> * Make that Kconfig option selct CPU_FREQ_TABLE.
+> * Make that Kconfig option be def_bool ARCH_TEGRA.
+> * Modify drivers/cpufreq/Makefile to build tegra-cpufreq.c based on that.
+> * Remove all the cpufreq-related stuff from arch/arm/mach-tegra/Kconfig.
 >
-> Are there any other issues to be fixed in the patch?
+> That way, tegra-cpufreq.c can't be built if !CPU_FREQ, and Tegra's
+> cpufreq works the same way as all the other cpufreq drivers.
 
-I don't see any right now, but of course something could come up
-during my testing.
+Hmmm. check this out (attached too for you to test):
 
-> Do you think that commit log is a good place for measurement results.
-> Maybe cover-letter would be a better place?
+----------x---------------x------------
 
-Commit log is fine. It never hurts to record why something
-seems like a good idea.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Wed, 12 Jun 2013 12:05:48 +0530
+Subject: [PATCH] cpufreq: tegra: create CONFIG_ARM_TEGRA_CPUFREQ
 
->
-> Regards,
-> Tomasz Stanislawski
->
->>> Surprisingly, a single hlist is slightly faster than a double-linked list.
->>> The speed-up saturates near 64 slots.  Therefore I chose value 128 to provide
->>> some margin if more labels were used.
->>> It looks that IO becomes a new bottleneck.
->>>
->>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
->>> ---
->>>  security/smack/smack.h        |    5 +++++
->>>  security/smack/smack_access.c |   30 +++++++++++++++++++++++++++---
->>>  security/smack/smack_lsm.c    |   12 ++++++------
->>>  3 files changed, 38 insertions(+), 9 deletions(-)
->>>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+currently Tegra cpufreq driver gets built based on ARCH_TEGRA, which doesn't
+depend on nor select CPU_FREQ itself, so:
 
+        select CPU_FREQ_TABLE if CPU_FREQ
+
+... isn't guaranteed to fire.
+
+The correct solution seems to be:
+
+* Add CONFIG_ARM_TEGRA_CPUFREQ to drivers/cpufreq/Kconfig.arm.
+* Make that Kconfig option selct CPU_FREQ_TABLE.
+* Make that Kconfig option be def_bool ARCH_TEGRA.
+* Modify drivers/cpufreq/Makefile to build tegra-cpufreq.c based on that.
+* Remove all the cpufreq-related stuff from arch/arm/mach-tegra/Kconfig.
+
+That way, tegra-cpufreq.c can't be built if !CPU_FREQ, and Tegra's
+cpufreq works the same way as all the other cpufreq drivers.
+
+This patch does it.
+
+Suggested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ arch/arm/mach-tegra/Kconfig | 3 ---
+ drivers/cpufreq/Kconfig.arm | 8 ++++++++
+ drivers/cpufreq/Makefile    | 2 +-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 84d72fc..5c0db06 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -28,7 +28,6 @@ config ARCH_TEGRA_2x_SOC
+ 	select ARM_ERRATA_754327 if SMP
+ 	select ARM_ERRATA_764369 if SMP
+ 	select ARM_GIC
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	select CPU_V7
+ 	select PINCTRL
+ 	select PINCTRL_TEGRA20
+@@ -46,7 +45,6 @@ config ARCH_TEGRA_3x_SOC
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_764369 if SMP
+ 	select ARM_GIC
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	select CPU_V7
+ 	select PINCTRL
+ 	select PINCTRL_TEGRA30
+@@ -63,7 +61,6 @@ config ARCH_TEGRA_114_SOC
+ 	select ARM_ARCH_TIMER
+ 	select ARM_GIC
+ 	select ARM_L1_CACHE_SHIFT_6
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	select CPU_V7
+ 	select PINCTRL
+ 	select PINCTRL_TEGRA114
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index d52261b..5085427 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -154,3 +154,11 @@ config ARM_SPEAR_CPUFREQ
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver support for SPEAr SOCs.
++
++config ARM_TEGRA_CPUFREQ
++	bool "TEGRA CPUFreq support"
++	depends on ARCH_TEGRA
++	select CPU_FREQ_TABLE
++	default y
++	help
++	  This adds the CPUFreq driver support for TEGRA SOCs.
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 13c3f83..9c873e7 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -71,7 +71,7 @@ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
+ obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
+ obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
+ obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
+-obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
++obj-$(CONFIG_ARM_TEGRA_CPUFREQ)		+= tegra-cpufreq.o
+
+ ##################################################################################
+ # PowerPC platform drivers
+
+--089e013a032af0e29504df017fc8
+Content-Type: application/octet-stream; 
+	name="0001-cpufreq-tegra-create-CONFIG_ARM_TEGRA_CPUFREQ.patch"
+Content-Disposition: attachment; 
+	filename="0001-cpufreq-tegra-create-CONFIG_ARM_TEGRA_CPUFREQ.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhvg063j0
+
+RnJvbSAzODlkNzY4NzhlYzFkNmViNTM4M2NiNmFjY2Y1OTMzZjM1ZTFiYjFhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8Mzg5ZDc2ODc4ZWMxZDZlYjUzODNjYjZhY2NmNTkz
+M2YzNWUxYmIxYS4xMzcxMDk3Mzk2LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogV2VkLCAxMiBKdW4g
+MjAxMyAxMjowNTo0OCArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIGNwdWZyZXE6IHRlZ3JhOiBjcmVh
+dGUgQ09ORklHX0FSTV9URUdSQV9DUFVGUkVRCgpjdXJyZW50bHkgVGVncmEgY3B1ZnJlcSBkcml2
+ZXIgZ2V0cyBidWlsdCBiYXNlZCBvbiBBUkNIX1RFR1JBLCB3aGljaCBkb2Vzbid0CmRlcGVuZCBv
+biBub3Igc2VsZWN0IENQVV9GUkVRIGl0c2VsZiwgc286CgogICAgICAgIHNlbGVjdCBDUFVfRlJF
+UV9UQUJMRSBpZiBDUFVfRlJFUQoKLi4uIGlzbid0IGd1YXJhbnRlZWQgdG8gZmlyZS4KClRoZSBj
+b3JyZWN0IHNvbHV0aW9uIHNlZW1zIHRvIGJlOgoKKiBBZGQgQ09ORklHX0FSTV9URUdSQV9DUFVG
+UkVRIHRvIGRyaXZlcnMvY3B1ZnJlcS9LY29uZmlnLmFybS4KKiBNYWtlIHRoYXQgS2NvbmZpZyBv
+cHRpb24gc2VsY3QgQ1BVX0ZSRVFfVEFCTEUuCiogTWFrZSB0aGF0IEtjb25maWcgb3B0aW9uIGJl
+IGRlZl9ib29sIEFSQ0hfVEVHUkEuCiogTW9kaWZ5IGRyaXZlcnMvY3B1ZnJlcS9NYWtlZmlsZSB0
+byBidWlsZCB0ZWdyYS1jcHVmcmVxLmMgYmFzZWQgb24gdGhhdC4KKiBSZW1vdmUgYWxsIHRoZSBj
+cHVmcmVxLXJlbGF0ZWQgc3R1ZmYgZnJvbSBhcmNoL2FybS9tYWNoLXRlZ3JhL0tjb25maWcuCgpU
+aGF0IHdheSwgdGVncmEtY3B1ZnJlcS5jIGNhbid0IGJlIGJ1aWx0IGlmICFDUFVfRlJFUSwgYW5k
+IFRlZ3JhJ3MKY3B1ZnJlcSB3b3JrcyB0aGUgc2FtZSB3YXkgYXMgYWxsIHRoZSBvdGhlciBjcHVm
+cmVxIGRyaXZlcnMuCgpUaGlzIHBhdGNoIGRvZXMgaXQuCgpTdWdnZXN0ZWQtYnk6IFN0ZXBoZW4g
+V2FycmVuIDxzd2FycmVuQG52aWRpYS5jb20+CkFja2VkLWJ5OiBBcm5kIEJlcmdtYW5uIDxhcm5k
+QGFybmRiLmRlPgpTaWduZWQtb2ZmLWJ5OiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5h
+cm8ub3JnPgotLS0KIGFyY2gvYXJtL21hY2gtdGVncmEvS2NvbmZpZyB8IDMgLS0tCiBkcml2ZXJz
+L2NwdWZyZXEvS2NvbmZpZy5hcm0gfCA4ICsrKysrKysrCiBkcml2ZXJzL2NwdWZyZXEvTWFrZWZp
+bGUgICAgfCAyICstCiAzIGZpbGVzIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlv
+bnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL2FybS9tYWNoLXRlZ3JhL0tjb25maWcgYi9hcmNoL2Fy
+bS9tYWNoLXRlZ3JhL0tjb25maWcKaW5kZXggODRkNzJmYy4uNWMwZGIwNiAxMDA2NDQKLS0tIGEv
+YXJjaC9hcm0vbWFjaC10ZWdyYS9LY29uZmlnCisrKyBiL2FyY2gvYXJtL21hY2gtdGVncmEvS2Nv
+bmZpZwpAQCAtMjgsNyArMjgsNiBAQCBjb25maWcgQVJDSF9URUdSQV8yeF9TT0MKIAlzZWxlY3Qg
+QVJNX0VSUkFUQV83NTQzMjcgaWYgU01QCiAJc2VsZWN0IEFSTV9FUlJBVEFfNzY0MzY5IGlmIFNN
+UAogCXNlbGVjdCBBUk1fR0lDCi0Jc2VsZWN0IENQVV9GUkVRX1RBQkxFIGlmIENQVV9GUkVRCiAJ
+c2VsZWN0IENQVV9WNwogCXNlbGVjdCBQSU5DVFJMCiAJc2VsZWN0IFBJTkNUUkxfVEVHUkEyMApA
+QCAtNDYsNyArNDUsNiBAQCBjb25maWcgQVJDSF9URUdSQV8zeF9TT0MKIAlzZWxlY3QgQVJNX0VS
+UkFUQV83NTQzMjIKIAlzZWxlY3QgQVJNX0VSUkFUQV83NjQzNjkgaWYgU01QCiAJc2VsZWN0IEFS
+TV9HSUMKLQlzZWxlY3QgQ1BVX0ZSRVFfVEFCTEUgaWYgQ1BVX0ZSRVEKIAlzZWxlY3QgQ1BVX1Y3
+CiAJc2VsZWN0IFBJTkNUUkwKIAlzZWxlY3QgUElOQ1RSTF9URUdSQTMwCkBAIC02Myw3ICs2MSw2
+IEBAIGNvbmZpZyBBUkNIX1RFR1JBXzExNF9TT0MKIAlzZWxlY3QgQVJNX0FSQ0hfVElNRVIKIAlz
+ZWxlY3QgQVJNX0dJQwogCXNlbGVjdCBBUk1fTDFfQ0FDSEVfU0hJRlRfNgotCXNlbGVjdCBDUFVf
+RlJFUV9UQUJMRSBpZiBDUFVfRlJFUQogCXNlbGVjdCBDUFVfVjcKIAlzZWxlY3QgUElOQ1RSTAog
+CXNlbGVjdCBQSU5DVFJMX1RFR1JBMTE0CmRpZmYgLS1naXQgYS9kcml2ZXJzL2NwdWZyZXEvS2Nv
+bmZpZy5hcm0gYi9kcml2ZXJzL2NwdWZyZXEvS2NvbmZpZy5hcm0KaW5kZXggZDUyMjYxYi4uNTA4
+NTQyNyAxMDA2NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVxL0tjb25maWcuYXJtCisrKyBiL2RyaXZl
+cnMvY3B1ZnJlcS9LY29uZmlnLmFybQpAQCAtMTU0LDMgKzE1NCwxMSBAQCBjb25maWcgQVJNX1NQ
+RUFSX0NQVUZSRVEKIAlkZWZhdWx0IHkKIAloZWxwCiAJICBUaGlzIGFkZHMgdGhlIENQVUZyZXEg
+ZHJpdmVyIHN1cHBvcnQgZm9yIFNQRUFyIFNPQ3MuCisKK2NvbmZpZyBBUk1fVEVHUkFfQ1BVRlJF
+UQorCWJvb2wgIlRFR1JBIENQVUZyZXEgc3VwcG9ydCIKKwlkZXBlbmRzIG9uIEFSQ0hfVEVHUkEK
+KwlzZWxlY3QgQ1BVX0ZSRVFfVEFCTEUKKwlkZWZhdWx0IHkKKwloZWxwCisJICBUaGlzIGFkZHMg
+dGhlIENQVUZyZXEgZHJpdmVyIHN1cHBvcnQgZm9yIFRFR1JBIFNPQ3MuCmRpZmYgLS1naXQgYS9k
+cml2ZXJzL2NwdWZyZXEvTWFrZWZpbGUgYi9kcml2ZXJzL2NwdWZyZXEvTWFrZWZpbGUKaW5kZXgg
+MTNjM2Y4My4uOWM4NzNlNyAxMDA2NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVxL01ha2VmaWxlCisr
+KyBiL2RyaXZlcnMvY3B1ZnJlcS9NYWtlZmlsZQpAQCAtNzEsNyArNzEsNyBAQCBvYmotJChDT05G
+SUdfQVJNX1M1UFYyMTBfQ1BVRlJFUSkJKz0gczVwdjIxMC1jcHVmcmVxLm8KIG9iai0kKENPTkZJ
+R19BUk1fU0ExMTAwX0NQVUZSRVEpCSs9IHNhMTEwMC1jcHVmcmVxLm8KIG9iai0kKENPTkZJR19B
+Uk1fU0ExMTEwX0NQVUZSRVEpCSs9IHNhMTExMC1jcHVmcmVxLm8KIG9iai0kKENPTkZJR19BUk1f
+U1BFQVJfQ1BVRlJFUSkJCSs9IHNwZWFyLWNwdWZyZXEubwotb2JqLSQoQ09ORklHX0FSQ0hfVEVH
+UkEpCQkrPSB0ZWdyYS1jcHVmcmVxLm8KK29iai0kKENPTkZJR19BUk1fVEVHUkFfQ1BVRlJFUSkJ
+CSs9IHRlZ3JhLWNwdWZyZXEubwogCiAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiAjIFBvd2Vy
+UEMgcGxhdGZvcm0gZHJpdmVycwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcyZQoK
+--089e013a032af0e29504df017fc8--
