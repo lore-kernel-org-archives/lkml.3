@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab3FMN2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:34314 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755675Ab3FMN2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:22 -0400
-X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537720"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [Part2 PATCH v4 12/15] x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE to mark and reserve hotpluggable memory.
-Date: Thu, 13 Jun 2013 21:03:36 +0800
-Message-Id: <1371128619-8987-13-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:20,
-	Serialize complete at 2013/06/13 20:59:20
+	id S1758522Ab3FMN3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:29:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56200 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757150Ab3FMN3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:29:13 -0400
+Date: Thu, 13 Jun 2013 15:29:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Richard Weinberger <richard@nod.at>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        bsingharora@gmail.com, hannes@cmpxchg.org
+Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
+ pointer dereference at 00000000000001a8
+Message-ID: <20130613132908.GC23070@dhcp22.suse.cz>
+References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
+ <20130613120248.GB23070@dhcp22.suse.cz>
+ <51B9B5BC.4090702@nod.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B9B5BC.4090702@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We mark out movable memory ranges and reserve them with MEMBLK_HOTPLUGGABLE flag in
-memblock.reserved. This should be done after the memory mapping is initialized
-because the kernel now supports allocate pagetable pages on local node, which
-are kernel pages.
 
-The reserved hotpluggable will be freed to buddy when memory initialization
-is done.
+On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
+[...]
+> All code
+> ========
+>    0:   89 50 08                mov    %edx,0x8(%rax)
+>    3:   48 89 d1                mov    %rdx,%rcx
+>    6:   0f 1f 40 00             nopl   0x0(%rax)
+>    a:   49 8b 04 24             mov    (%r12),%rax
+>    e:   48 89 c2                mov    %rax,%rdx
+>   11:   48 c1 e8 38             shr    $0x38,%rax
+>   15:   83 e0 03                and    $0x3,%eax
+					nid = page_to_nid
+>   18:   48 c1 ea 3a             shr    $0x3a,%rdx
+					zid = page_zonenum
 
-And also, ensure all the nodes which the kernel resides in are un-hotpluggable.
+>   1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
+>   23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
+					&memcg->nodeinfo[nid]->zoneinfo[zid]
 
-This idea is from Wen Congyang <wency@cn.fujitsu.com> and Jiang Liu <jiang.liu@huawei.com>.
+>   2a:   00
+>   2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
 
-Suggested-by: Jiang Liu <jiang.liu@huawei.com>
-Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
----
- arch/x86/mm/numa.c       |   29 +++++++++++++++++++++++++++++
- include/linux/memblock.h |    3 +++
- mm/memblock.c            |   18 ++++++++++++++++++
- 3 files changed, 50 insertions(+), 0 deletions(-)
+OK, so this maps to:
+        if (unlikely(lruvec->zone != zone)) <<<
+                lruvec->zone = zone;
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 2b5057f..31595c5 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -771,6 +771,33 @@ static void __init early_x86_numa_init_mapping(void)
- }
- #endif
- 
-+#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-+static void __init early_mem_hotplug_init()
-+{
-+	int i, nid;
-+	phys_addr_t start, end;
-+
-+	if (!movablecore_enable_srat)
-+		return;
-+
-+	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-+		nid = numa_meminfo.blk[i].nid;
-+		start = numa_meminfo.blk[i].start;
-+		end = numa_meminfo.blk[i].end;
-+
-+		if (!numa_meminfo.blk[i].hotpluggable ||
-+		    memblock_is_kernel_node(nid))
-+			continue;
-+
-+		memblock_reserve_hotpluggable(start, end - start, nid);
-+	}
-+}
-+#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+static inline void early_mem_hotplug_init()
-+{
-+}
-+#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+
- void __init early_initmem_init(void)
- {
- 	early_x86_numa_init();
-@@ -790,6 +817,8 @@ void __init early_initmem_init(void)
- 	load_cr3(swapper_pg_dir);
- 	__flush_tlb_all();
- 
-+	early_mem_hotplug_init();
-+
- 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
- }
- 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 517c027..ce315b2 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -22,6 +22,7 @@
- /* Definition of memblock flags. */
- #define MEMBLK_FLAGS_DEFAULT	0x0	/* default flag */
- #define	MEMBLK_LOCAL_NODE	0x1	/* node-life-cycle data */
-+#define	MEMBLK_HOTPLUGGABLE	0x2	/* hotpluggable region */
- 
- struct memblock_region {
- 	phys_addr_t base;
-@@ -64,8 +65,10 @@ int memblock_free(phys_addr_t base, phys_addr_t size);
- int memblock_reserve(phys_addr_t base, phys_addr_t size);
- int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
-+int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
- void memblock_trim_memory(phys_addr_t align);
- void memblock_mark_kernel_nodes(void);
-+bool memblock_is_kernel_node(int nid);
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
-diff --git a/mm/memblock.c b/mm/memblock.c
-index e747bc6..51f0264 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -603,6 +603,12 @@ int __init_memblock memblock_reserve_local_node(phys_addr_t base,
- 	return memblock_reserve_region(base, size, nid, MEMBLK_LOCAL_NODE);
- }
- 
-+int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
-+					phys_addr_t size, int nid)
-+{
-+	return memblock_reserve_region(base, size, nid, MEMBLK_HOTPLUGGABLE);
-+}
-+
- /**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
-@@ -816,11 +822,23 @@ void __init_memblock memblock_mark_kernel_nodes()
- 			node_set(nid, memblock_kernel_nodemask);
- 		}
- }
-+
-+bool __init_memblock memblock_is_kernel_node(int nid)
-+{
-+	if (node_isset(nid, memblock_kernel_nodemask))
-+		return true;
-+	return false;
-+}
- #else
- void __init_memblock memblock_mark_kernel_nodes()
- {
- 	node_set(0, memblock_kernel_nodemask);
- }
-+
-+bool __init_memblock memblock_is_kernel_node(int nid)
-+{
-+	return true;
-+}
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
- 
- static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
+> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
+> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
+> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
+> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
+> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
+> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
+
+RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
+contain an address at an offset from ffff88003e04a800 But there is 0x138 there
+instead.
+
+Is this easily reproducible? Could you configure kdump.
+
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
