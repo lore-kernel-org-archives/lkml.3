@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab3FMX2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 19:28:09 -0400
-Received: from mx1.corp.phx1.mozilla.com ([63.245.216.69]:41096 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab3FMX2H (ORCPT
+	id S1758913Ab3FMXmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 19:42:45 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:36456 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab3FMXmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 19:28:07 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jun 2013 19:28:07 EDT
-Date: Thu, 13 Jun 2013 16:21:11 -0700
-From: Jed Davis <jld@mozilla.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: ARM: Record the user-mode PC in the call chain.
-Message-ID: <20130613232111.GA12536@mozilla.com>
+	Thu, 13 Jun 2013 19:42:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-User-Agent-Host: Linux nimbostratus 3.2.0-4-amd64 x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371163963.5555.25.camel@pasglop>
+References: <CACxGe6sE5qm5CmGxO8p1dR9v7bbqipm5pYRz8F6pQdWVHetCgA@mail.gmail.com>
+ <1371163963.5555.25.camel@pasglop>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Fri, 14 Jun 2013 00:42:23 +0100
+X-Google-Sender-Auth: 7zC14HlPK_Ay6HGxFKVXmZg-0Oc
+Message-ID: <CACxGe6t=dwkd8q3m2QgMt0dnOfyBDJk_eRo70S-_wXM7Sj1ZWw@mail.gmail.com>
+Subject: Re: [GIT PULL] devicetree bugfixes for v3.10
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Stephen Warren <SWarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip.
+On Thu, Jun 13, 2013 at 11:52 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Thu, 2013-06-13 at 23:22 +0100, Grant Likely wrote:
+>> Grant Likely (2):
+>>       dtc: Update generated files to output from Bison 2.5
+>>       dtc: ensure #line directives don't consume data from the next
+>
+> Question. Are those fixes also in the upstream dtc from jdl ? Or have we
+> effectively forked it ?
 
-It's possible to partially work around this problem by post-processing
-the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-wasn't in the kernel when the sample was taken.
+cherry picked from dtc. In v3.11 we'll need a full resync from jdl.
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
----
- arch/arm/kernel/perf_event.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 8c3094d..d9f5cd4 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -569,6 +569,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		return;
- 	}
- 
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
--- 
-1.7.10.4
-
+g.
