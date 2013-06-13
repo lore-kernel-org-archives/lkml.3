@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab3FMCnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 22:43:15 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44531 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600Ab3FMCnO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 22:43:14 -0400
-Date: Wed, 12 Jun 2013 19:43:10 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        Cgroups <cgroups@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 04/11] cgroup: use kzalloc() and list_del_init()
-Message-ID: <20130613024310.GC10979@localhost>
-References: <1371070996-20613-1-git-send-email-tj@kernel.org>
- <1371070996-20613-5-git-send-email-tj@kernel.org>
- <51B93038.9010202@huawei.com>
- <20130613023831.GB10979@localhost>
- <CAOS58YPv_uKeTqZSNF=sXTEnLn=LTbsdpBPM5K_ykXoVT-+CpA@mail.gmail.com>
+	id S1758275Ab3FMCof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 22:44:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3275 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757003Ab3FMCoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 22:44:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,855,1363158000"; 
+   d="scan'208";a="349051350"
+Date: Thu, 13 Jun 2013 10:44:27 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [scsi] WARNING: at fs/sysfs/dir.c:530 sysfs_add_one()
+Message-ID: <20130613024427.GA11085@localhost>
+References: <20130613013032.GA7558@localhost>
+ <1371090883.1978.61.camel@dabdike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOS58YPv_uKeTqZSNF=sXTEnLn=LTbsdpBPM5K_ykXoVT-+CpA@mail.gmail.com>
+In-Reply-To: <1371090883.1978.61.camel@dabdike>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 07:41:15PM -0700, Tejun Heo wrote:
-> Hello,
+On Wed, Jun 12, 2013 at 07:34:43PM -0700, James Bottomley wrote:
+> On Thu, 2013-06-13 at 09:30 +0800, Fengguang Wu wrote:
+> > Greetings,
+> > 
+> > I got the below dmesg and the first bad commit is
+> > 
+> > commit a256ba092ec57213f96059d41ac5473ff92f5e7c
+> > Author: Nicholas Bellinger <nab@linux-iscsi.org>
+> > Date:   Sat May 18 02:40:43 2013 -0700
+> > 
+> >     scsi: Split scsi_dispatch_cmd into __scsi_dispatch_cmd setup
+> >     
+> >     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> On Wed, Jun 12, 2013 at 7:38 PM, Kent Overstreet <koverstreet@google.com> wrote:
-> > IMO, list_del() is preferred when the object shouldn't be reused (i.e.
-> > it gets taken off a list and then it's freed). list_del_init() could
-> > hide bugs.
-> 
-> Nah... use-after-frees are detected much more reliably by poisoning
-> anyway. Using list_del() instead of list_del_init() to hunt down
-> use-after-free isn't a good idea because you're likely to corrupt the
-> memory of unrelated area. I really don't see much point in using
-> list_del().
+> You may be evaluating a bogus branch because no such commit has darkened
+> the SCSI list, so it obviously can't be on upstream track.
 
-list_del() does do poisoning - and list debugging is cheaper to enable
-than full slab debugging.
+Yeah, sorry I should probably not CC linux-scsi.
+
+The bug is still in a private tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git  scsi-mq
+
+Thanks,
+Fengguang
