@@ -1,628 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3FMPC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:02:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37629 "EHLO mga11.intel.com"
+	id S1757602Ab3FMPCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:02:33 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:46471 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756982Ab3FMPCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:02:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,859,1363158000"; 
-   d="scan'208";a="352731257"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: Linus <linus.walleij@linaro.org>
-Cc: <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH v2 1/1] gpio: add Intel BayTrail gpio driver
-Date: Thu, 13 Jun 2013 18:06:23 +0300
-Message-Id: <1371135983-12592-2-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1756987Ab3FMPCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:02:30 -0400
+Message-ID: <51B9DF02.6040609@imgtec.com>
+Date: Thu, 13 Jun 2013 16:02:26 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 5/5] clk: clk-mux: implement remuxing on set_rate
+References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com> <1369056507-32521-6-git-send-email-james.hogan@imgtec.com> <519AFBB6.90700@codeaurora.org>
+In-Reply-To: <519AFBB6.90700@codeaurora.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_13_16_02_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for gpio on Intel BayTrail platforms. BayTrail supports 3 banks
-of gpios called SCORE, NCORE ans SUS with 102, 28 and 44 gpio pins.
-Supports gpio interrupts and ACPI gpio events.
+On 21/05/13 05:44, Saravana Kannan wrote:
+> On 05/20/2013 06:28 AM, James Hogan wrote:
+>> Implement clk-mux remuxing if the CLK_SET_RATE_NO_REPARENT flag isn't
+>> set. This implements determine_rate for clk-mux to propagate to each
+>> parent and to choose the best one (like clk-divider this chooses the
+>> parent which provides the fastest rate <= the requested rate).
+>>
+>> The determine_rate op is implemented as a core helper function so that
+>> it can be easily used by more complex clocks which incorporate muxes.
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> Cc: Mike Turquette <mturquette@linaro.org>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> ---
+>> Changes in v4:
+>>
+>> * never pass NULL to determine_rate's best_parent_clk parameter.
+>>
+>> Changes in v3:
+>>
+>> * rename/invert CLK_SET_RATE_REMUX to CLK_SET_RATE_NO_REPARENT and move
+>>    to patch 3.
+>>
+>>   drivers/clk/clk-mux.c        |  1 +
+>>   drivers/clk/clk.c            | 49
+>> ++++++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/clk-provider.h |  3 +++
+>>   3 files changed, 53 insertions(+)
+>>
+>> diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+>> index 25b1734..cecfa01 100644
+>> --- a/drivers/clk/clk-mux.c
+>> +++ b/drivers/clk/clk-mux.c
+>> @@ -100,6 +100,7 @@ static int clk_mux_set_parent(struct clk_hw *hw,
+>> u8 index)
+>>   const struct clk_ops clk_mux_ops = {
+>>       .get_parent = clk_mux_get_parent,
+>>       .set_parent = clk_mux_set_parent,
+>> +    .determine_rate = __clk_mux_determine_rate,
+>>   };
+>>   EXPORT_SYMBOL_GPL(clk_mux_ops);
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 3ce4810..85b661d 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -692,6 +692,55 @@ struct clk *__clk_lookup(const char *name)
+>>       return NULL;
+>>   }
+>>
+>> +/*
+>> + * Helper for finding best parent to provide a given frequency. This
+>> can be used
+>> + * directly as a determine_rate callback (e.g. for a mux), or from a
+>> more
+>> + * complex clock that may combine a mux with other operations.
+>> + */
+>> +long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+>> +                  unsigned long *best_parent_rate,
+>> +                  struct clk **best_parent_p)
+>> +{
+>> +    struct clk *clk = hw->clk, *parent, *best_parent = NULL;
+>> +    int i, num_parents;
+>> +    unsigned long parent_rate, best = 0;
+>> +
+>> +    /* if NO_REPARENT flag set, pass through to current parent */
+>> +    if (clk->flags & CLK_SET_RATE_NO_REPARENT) {
+>> +        parent = clk->parent;
+>> +        if (clk->flags & CLK_SET_RATE_PARENT)
+>> +            best = __clk_round_rate(parent, rate);
+>> +        else if (parent)
+>> +            best = __clk_get_rate(parent);
+>> +        else
+>> +            best = __clk_get_rate(clk);
+>> +        goto out;
+>> +    }
+>> +
+>> +    /* find the parent that can provide the fastest rate <= rate */
+>> +    num_parents = clk->num_parents;
+>> +    for (i = 0; i < num_parents; i++) {
+> 
+> While writing a similar code for our internal tree, I quickly came to
+> the realization that, "all parents are equal, but some are more equal
+> than others". The simplest example is a clock tree like this:
+> 
+> Source -> Divider -> Mux
+> Source -> Mux
+> 
+> A rate of Y can be achieved for Mux by either running Source at Y and
+> picking that input or running Source at Y * 2 and Divider set to div-2
+> and picking the Divider input.
+> 
+> The solution seems to be a priority list of parents. I'm sure there
+> would be other reason (jitter, clock quality, etc) for a mux to pick one
+> parent vs. another when both of them can provide the required rate.
+> 
+> I think this loop should loop over parents based on their priority
+> order. So, parents should become a struct of { clk, index } and have the
+> parents listed in the order of priority. Well, at least in that long run
+> that would be better to avoid messing up parent/index values. But for
+> now, you could just have a priority array of index or parents.
+> 
+> It might not fit 100% of the cases where two parents can provide the
+> same rate, but it should fit most use cases.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/gpio/Kconfig         |   12 +
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/gpio-baytrail.c |  547 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 560 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-baytrail.c
+Sorry for the delay replying.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 573c449..b712006 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -108,6 +108,18 @@ config GPIO_MAX730X
- 
- comment "Memory mapped GPIO drivers:"
- 
-+config GPIO_BAYTRAIL
-+	bool "Intel Baytrail GPIO support"
-+	depends on ACPI && X86
-+	select IRQ_DOMAIN
-+	help
-+	  driver for memory mapped GPIO functionality on Intel Baytrail
-+	  platforms. Supports 3 banks with 102, 28 and 44 gpios.
-+	  Most pins are usually muxed to some other functionality by firmware,
-+	  so only a small amount is available for gpio use.
-+
-+	  Requires ACPI device enumeration code to set up a platform device.
-+
- config GPIO_CLPS711X
- 	def_bool y
- 	depends on ARCH_CLPS711X
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0cb2d65..bc1f6b3 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
- obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_AMD8111)	+= gpio-amd8111.o
- obj-$(CONFIG_GPIO_ARIZONA)	+= gpio-arizona.o
-+obj-$(CONFIG_GPIO_BAYTRAIL)	+= gpio-baytrail.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
-diff --git a/drivers/gpio/gpio-baytrail.c b/drivers/gpio/gpio-baytrail.c
-new file mode 100644
-index 0000000..55efbdc
---- /dev/null
-+++ b/drivers/gpio/gpio-baytrail.c
-@@ -0,0 +1,547 @@
-+/*
-+ * GPIO driver for Intel Baytrail
-+ * Copyright (c) 2012-2013, Intel Corporation.
-+ *
-+ * Author: Mathias Nyman <mathias.nyman@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/bitops.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/gpio.h>
-+#include <linux/irqdomain.h>
-+#include <linux/acpi.h>
-+#include <linux/acpi_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/seq_file.h>
-+#include <linux/io.h>
-+#include <linux/pm_runtime.h>
-+
-+/* memory mapped register offsets */
-+#define BYT_CONF0_REG		0x000
-+#define BYT_CONF1_REG		0x004
-+#define BYT_VAL_REG		0x008
-+#define BYT_DFT_REG		0x00c
-+#define BYT_INT_STAT_REG	0x800
-+
-+/* BYT_CONF0_REG register bits */
-+#define BYT_TRIG_NEG		BIT(26)
-+#define BYT_TRIG_POS		BIT(25)
-+#define BYT_TRIG_LVL		BIT(24)
-+#define BYT_PIN_MUX		0x07
-+
-+/* BYT_VAL_REG register bits */
-+#define BYT_INPUT_EN		BIT(2)  /* 0: input enabled (active low)*/
-+#define BYT_OUTPUT_EN		BIT(1)  /* 0: output enabled (active low)*/
-+#define BYT_LEVEL		BIT(0)
-+
-+#define BYT_DIR_MASK		(BIT(1) | BIT(2))
-+#define BYT_TRIG_MASK		(BIT(26) | BIT(25) | BIT(24))
-+
-+#define BYT_NGPIO_SCORE		102
-+#define BYT_NGPIO_NCORE		28
-+#define BYT_NGPIO_SUS		44
-+
-+/*
-+ * Baytrail gpio controller consist of three separate sub-controllers called
-+ * SCORE, NCORE and SUS. The sub-controllers are identified by their acpi UID.
-+ *
-+ * GPIO numbering is _not_ ordered meaning that gpio # 0 in ACPI namespace does
-+ * _not_ correspond to the first gpio register at controller's gpio base.
-+ * There is no logic or pattern in mapping gpio numbers to registers (pads) so
-+ * each sub-controller needs to have its own mapping table
-+ */
-+
-+static unsigned score_gpio_to_pad[BYT_NGPIO_SCORE] = {
-+	85, 89, 93, 96, 99, 102, 98, 101, 34, 37,
-+	36, 38, 39, 35, 40, 84, 62, 61, 64, 59,
-+	54, 56, 60, 55, 63, 57, 51, 50, 53, 47,
-+	52, 49, 48, 43, 46, 41, 45, 42, 58, 44,
-+	95, 105, 70, 68, 67, 66, 69, 71, 65, 72,
-+	86, 90, 88, 92, 103, 77, 79, 83, 78, 81,
-+	80, 82, 13, 12, 15, 14, 17, 18, 19, 16,
-+	2, 1, 0, 4, 6, 7, 9, 8, 33, 32,
-+	31, 30, 29, 27, 25, 28, 26, 23, 21, 20,
-+	24, 22, 5, 3, 10, 11, 106, 87, 91, 104,
-+	97, 100,
-+};
-+
-+static unsigned ncore_gpio_to_pad[BYT_NGPIO_NCORE] = {
-+	19, 18, 17, 20, 21, 22, 24, 25, 23, 16,
-+	14, 15, 12, 26, 27, 1, 4, 8, 11, 0,
-+	3, 6, 10, 13, 2, 5, 9, 7,
-+};
-+
-+static unsigned sus_gpio_to_pad[BYT_NGPIO_SUS] = {
-+	29, 33, 30, 31, 32, 34, 36, 35, 38, 37,
-+	18, 7, 11, 20, 17, 1, 8, 10, 19, 12,
-+	0, 2, 23, 39, 28, 27, 22, 21, 24, 25,
-+	26, 51, 56, 54, 49, 55, 48, 57, 50, 58,
-+	52, 53, 59, 40,
-+};
-+
-+struct gpio_bank {
-+	char		*uid; /* acpi _UID */
-+	int		ngpio;
-+	unsigned	*to_pad;
-+};
-+
-+static struct gpio_bank byt_banks[] = {
-+	{
-+		.uid = "1",
-+		.ngpio = BYT_NGPIO_SCORE,
-+		.to_pad = score_gpio_to_pad,
-+	},
-+	{
-+		.uid = "2",
-+		.ngpio = BYT_NGPIO_NCORE,
-+		.to_pad = ncore_gpio_to_pad,
-+	},
-+	{
-+		.uid = "3",
-+		.ngpio = BYT_NGPIO_SUS,
-+		.to_pad = sus_gpio_to_pad,
-+	},
-+	{
-+	},
-+};
-+
-+struct byt_gpio {
-+	struct gpio_chip	chip;
-+	struct irq_domain	*domain;
-+	struct platform_device	*pdev;
-+	spinlock_t		lock;
-+	void __iomem		*reg_base;
-+	unsigned		*gpio_to_pad;
-+};
-+
-+static void __iomem *byt_gpio_reg(struct gpio_chip *chip, unsigned offset,
-+				 int reg)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	u32 reg_offset;
-+	void __iomem *ptr;
-+
-+	if (reg == BYT_INT_STAT_REG)
-+		reg_offset = (offset / 32) * 4;
-+	else
-+		reg_offset = vg->gpio_to_pad[offset] * 16;
-+
-+	ptr = (void __iomem *) (vg->reg_base + reg_offset + reg);
-+	return ptr;
-+}
-+
-+static int byt_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+
-+	pm_runtime_get(&vg->pdev->dev);
-+
-+	return 0;
-+}
-+
-+static void byt_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	void __iomem *reg = byt_gpio_reg(&vg->chip, offset, BYT_CONF0_REG);
-+	u32 value;
-+
-+	/* clear interrupt triggering */
-+	value = readl(reg);
-+	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
-+	writel(value, reg);
-+
-+	pm_runtime_put(&vg->pdev->dev);
-+}
-+
-+static int byt_irq_type(struct irq_data *d, unsigned type)
-+{
-+	struct byt_gpio *vg = irq_data_get_irq_chip_data(d);
-+	u32 offset = irqd_to_hwirq(d);
-+	u32 value;
-+	unsigned long flags;
-+	void __iomem *reg = byt_gpio_reg(&vg->chip, offset, BYT_CONF0_REG);
-+
-+	if (offset >= vg->chip.ngpio)
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&vg->lock, flags);
-+	value = readl(reg);
-+
-+	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
-+	 * are used to indicate high and low level triggering
-+	 */
-+	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
-+
-+	switch (type) {
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		value |= BYT_TRIG_LVL;
-+	case IRQ_TYPE_EDGE_RISING:
-+		value |= BYT_TRIG_POS;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		value |= BYT_TRIG_LVL;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		value |= BYT_TRIG_NEG;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		value |= (BYT_TRIG_NEG | BYT_TRIG_POS);
-+		break;
-+	}
-+	writel(value, reg);
-+
-+	spin_unlock_irqrestore(&vg->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int byt_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	void __iomem *reg = byt_gpio_reg(chip, offset, BYT_VAL_REG);
-+	return readl(reg) & BYT_LEVEL;
-+}
-+
-+static void byt_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	void __iomem *reg = byt_gpio_reg(chip, offset, BYT_VAL_REG);
-+	unsigned long flags;
-+	u32 old_val;
-+
-+	spin_lock_irqsave(&vg->lock, flags);
-+
-+	old_val = readl(reg);
-+
-+	if (value)
-+		writel(old_val | BYT_LEVEL, reg);
-+	else
-+		writel(old_val & ~BYT_LEVEL, reg);
-+
-+	spin_unlock_irqrestore(&vg->lock, flags);
-+}
-+
-+static int byt_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	void __iomem *reg = byt_gpio_reg(chip, offset, BYT_VAL_REG);
-+	unsigned long flags;
-+	u32 value;
-+
-+	spin_lock_irqsave(&vg->lock, flags);
-+
-+	value = readl(reg) | BYT_DIR_MASK;
-+	value = value & (~BYT_INPUT_EN); /* active low */
-+	writel(value, reg);
-+
-+	spin_unlock_irqrestore(&vg->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int byt_gpio_direction_output(struct gpio_chip *chip,
-+				     unsigned gpio, int value)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	void __iomem *reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
-+	unsigned long flags;
-+	u32 reg_val;
-+
-+	spin_lock_irqsave(&vg->lock, flags);
-+
-+	reg_val = readl(reg) | (BYT_DIR_MASK | !!value);
-+	reg_val &= ~(BYT_OUTPUT_EN | !value);
-+	writel(reg_val, reg);
-+
-+	spin_unlock_irqrestore(&vg->lock, flags);
-+
-+	return 0;
-+}
-+
-+static void byt_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	int i;
-+	unsigned long flags;
-+	u32 conf0, val, offs;
-+
-+	spin_lock_irqsave(&vg->lock, flags);
-+
-+	for (i = 0; i < vg->chip.ngpio; i++) {
-+		offs = vg->gpio_to_pad[i] * 16;
-+		conf0 = readl(vg->reg_base + offs + BYT_CONF0_REG);
-+		val = readl(vg->reg_base + offs + BYT_VAL_REG);
-+
-+		seq_printf(s,
-+			   " gpio-%-3d %s %s %s pad-%-3d offset:0x%03x mux:%d %s %s %s\n",
-+			   i,
-+			   val & BYT_INPUT_EN ? "  " : "in",
-+			   val & BYT_OUTPUT_EN ? "   " : "out",
-+			   val & BYT_LEVEL ? "hi" : "lo",
-+			   vg->gpio_to_pad[i], offs,
-+			   conf0 & 0x7,
-+			   conf0 & BYT_TRIG_NEG ? "fall" : "",
-+			   conf0 & BYT_TRIG_POS ? "rise" : "",
-+			   conf0 & BYT_TRIG_LVL ? "lvl " : "");
-+
-+	}
-+	spin_unlock_irqrestore(&vg->lock, flags);
-+}
-+
-+static int byt_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct byt_gpio *vg = container_of(chip, struct byt_gpio, chip);
-+	return irq_create_mapping(vg->domain, offset);
-+}
-+
-+static void byt_gpio_irq_handler(unsigned irq, struct irq_desc *desc)
-+{
-+	struct irq_data *data = irq_desc_get_irq_data(desc);
-+	struct byt_gpio *vg = irq_data_get_irq_handler_data(data);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+	u32 base, pin, mask;
-+	void __iomem *reg;
-+	u32 pending;
-+	unsigned virq;
-+	int looplimit = 0;
-+
-+	/* check from GPIO controller which pin triggered the interrupt */
-+	for (base = 0; base < vg->chip.ngpio; base += 32) {
-+
-+		reg = byt_gpio_reg(&vg->chip, base, BYT_INT_STAT_REG);
-+
-+		while ((pending = readl(reg))) {
-+			pin = __ffs(pending);
-+			mask = BIT(pin);
-+			/* Clear before handling so we can't lose an edge */
-+			writel(mask, reg);
-+
-+			virq = irq_find_mapping(vg->domain, base + pin);
-+			generic_handle_irq(virq);
-+
-+			/* In case bios or user sets triggering incorretly a pin
-+			 * might remain in "interrupt triggered" state.
-+			 */
-+			if (looplimit++ > 32) {
-+				dev_err(&vg->pdev->dev,
-+					"Gpio %d interrupt flood, disabling\n",
-+					base + pin);
-+
-+				reg = byt_gpio_reg(&vg->chip, base + pin,
-+						   BYT_CONF0_REG);
-+				mask = readl(reg);
-+				mask &= ~(BYT_TRIG_NEG | BYT_TRIG_POS |
-+					  BYT_TRIG_LVL);
-+				writel(mask, reg);
-+				mask = readl(reg); /* flush */
-+				break;
-+			}
-+		}
-+	}
-+	chip->irq_eoi(data);
-+}
-+
-+static void byt_irq_unmask(struct irq_data *d)
-+{
-+}
-+
-+static void byt_irq_mask(struct irq_data *d)
-+{
-+}
-+
-+static struct irq_chip byt_irqchip = {
-+	.name = "BYT-GPIO",
-+	.irq_mask = byt_irq_mask,
-+	.irq_unmask = byt_irq_unmask,
-+	.irq_set_type = byt_irq_type,
-+};
-+
-+static void byt_gpio_irq_init_hw(struct byt_gpio *vg)
-+{
-+	void __iomem *reg;
-+	u32 base, value;
-+
-+	/* clear interrupt status trigger registers */
-+	for (base = 0; base < vg->chip.ngpio; base += 32) {
-+		reg = byt_gpio_reg(&vg->chip, base, BYT_INT_STAT_REG);
-+		writel(0xffffffff, reg);
-+		/* make sure trigger bits are cleared, if not then a pin
-+		   might be misconfigured in bios */
-+		value = readl(reg);
-+		if (value)
-+			dev_err(&vg->pdev->dev,
-+				"GPIO interrupt flood, pins misconfigured\n");
-+	}
-+}
-+
-+static int byt_gpio_irq_map(struct irq_domain *d, unsigned int virq,
-+			    irq_hw_number_t hw)
-+{
-+	struct byt_gpio *vg = d->host_data;
-+
-+	irq_set_chip_and_handler_name(virq, &byt_irqchip, handle_simple_irq,
-+				      "demux");
-+	irq_set_chip_data(virq, vg);
-+	irq_set_irq_type(virq, IRQ_TYPE_NONE);
-+
-+	return 0;
-+}
-+
-+static const struct irq_domain_ops byt_gpio_irq_ops = {
-+	.map = byt_gpio_irq_map,
-+};
-+
-+static int byt_gpio_probe(struct platform_device *pdev)
-+{
-+	struct byt_gpio *vg;
-+	struct gpio_chip *gc;
-+	struct resource *mem_rc, *irq_rc;
-+	struct device *dev = &pdev->dev;
-+	struct acpi_device *acpi_dev;
-+	struct gpio_bank *bank;
-+	acpi_handle handle = ACPI_HANDLE(dev);
-+	unsigned hwirq;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &acpi_dev))
-+		return -ENODEV;
-+
-+	vg = devm_kzalloc(dev, sizeof(struct byt_gpio), GFP_KERNEL);
-+	if (!vg) {
-+		dev_err(&pdev->dev, "can't allocate byt_gpio chip data\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (bank = byt_banks; bank->uid; bank++) {
-+		if (!strcmp(acpi_dev->pnp.unique_id, bank->uid)) {
-+			vg->chip.ngpio = bank->ngpio;
-+			vg->gpio_to_pad = bank->to_pad;
-+			break;
-+		}
-+	}
-+
-+	if (!vg->chip.ngpio || !vg->gpio_to_pad)
-+		return -ENODEV;
-+
-+	vg->pdev = pdev;
-+	platform_set_drvdata(pdev, vg);
-+
-+	mem_rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	vg->reg_base = devm_ioremap_resource(dev, mem_rc);
-+	if (IS_ERR(vg->reg_base))
-+		return PTR_ERR(vg->reg_base);
-+
-+	spin_lock_init(&vg->lock);
-+
-+	gc = &vg->chip;
-+	gc->label = dev_name(&pdev->dev);
-+	gc->owner = THIS_MODULE;
-+	gc->request = byt_gpio_request;
-+	gc->free = byt_gpio_free;
-+	gc->direction_input = byt_gpio_direction_input;
-+	gc->direction_output = byt_gpio_direction_output;
-+	gc->get = byt_gpio_get;
-+	gc->set = byt_gpio_set;
-+	gc->dbg_show = byt_gpio_dbg_show;
-+	gc->base = -1;
-+	gc->can_sleep = 0;
-+	gc->dev = dev;
-+
-+	ret = gpiochip_add(gc);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
-+		return ret;
-+	}
-+
-+	/* set up interrupts  */
-+	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (irq_rc && irq_rc->start) {
-+		hwirq = irq_rc->start;
-+		gc->to_irq = byt_gpio_to_irq;
-+
-+		vg->domain = irq_domain_add_linear(NULL, gc->ngpio,
-+						   &byt_gpio_irq_ops, vg);
-+		if (!vg->domain)
-+			return -ENXIO;
-+
-+		byt_gpio_irq_init_hw(vg);
-+
-+		irq_set_handler_data(hwirq, vg);
-+		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
-+
-+		/* Register interrupt handlers for gpio signaled acpi events */
-+		acpi_gpiochip_request_interrupts(gc);
-+	}
-+
-+	pm_runtime_enable(dev);
-+
-+	return 0;
-+}
-+
-+static int byt_gpio_runtime_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int byt_gpio_runtime_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops byt_gpio_pm_ops = {
-+	.runtime_suspend = byt_gpio_runtime_suspend,
-+	.runtime_resume = byt_gpio_runtime_resume,
-+};
-+
-+static const struct acpi_device_id byt_gpio_acpi_match[] = {
-+	{ "INT33B2", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
-+
-+static int byt_gpio_remove(struct platform_device *pdev)
-+{
-+	struct byt_gpio *vg = platform_get_drvdata(pdev);
-+	int err;
-+	pm_runtime_disable(&pdev->dev);
-+	err = gpiochip_remove(&vg->chip);
-+	if (err)
-+		dev_warn(&pdev->dev, "failed to remove gpio_chip.\n");
-+
-+	return 0;
-+}
-+
-+static struct platform_driver byt_gpio_driver = {
-+	.probe          = byt_gpio_probe,
-+	.remove         = byt_gpio_remove,
-+	.driver         = {
-+		.name   = "byt_gpio",
-+		.owner  = THIS_MODULE,
-+		.pm	= &byt_gpio_pm_ops,
-+		.acpi_match_table = ACPI_PTR(byt_gpio_acpi_match),
-+	},
-+};
-+
-+static int __init byt_gpio_init(void)
-+{
-+	return platform_driver_register(&byt_gpio_driver);
-+}
-+
-+subsys_initcall(byt_gpio_init);
--- 
-1.7.4.1
+What you say sounds reasonable. As Stephen Boyd suggested though, I'd
+like to omit this from this patchset as its something that can be
+tackled later.
+
+Cheers
+James
 
