@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3FMO52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:57:28 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752196Ab3FMO50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:57:26 -0400
-Message-ID: <51B9DDD3.3000107@nod.at>
-Date: Thu, 13 Jun 2013 16:57:23 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756601Ab3FMO5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:57:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37968 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756331Ab3FMO5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:57:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19UwngPHslp8RDk+XEEuG+G
+Date: Thu, 13 Jun 2013 07:57:24 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: N900 device tree conversion: how to do first step
+Message-ID: <20130613145724.GH8164@atomide.com>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+ <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
+ <20130613132624.GA3464@amd.pavel.ucw.cz>
+ <20130613141001.GF8164@atomide.com>
+ <20130613142809.GA3775@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, hannes@cmpxchg.org
-Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL pointer
- dereference at 00000000000001a8
-References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com> <20130613120248.GB23070@dhcp22.suse.cz> <51B9B5BC.4090702@nod.at> <20130613132908.GC23070@dhcp22.suse.cz> <20130613133244.GD23070@dhcp22.suse.cz> <51B9CA83.9070001@nod.at> <20130613143946.GF23070@dhcp22.suse.cz> <51B9DB23.7010609@nod.at>
-In-Reply-To: <51B9DB23.7010609@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613142809.GA3775@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.06.2013 16:45, schrieb Richard Weinberger:
-> Am 13.06.2013 16:39, schrieb Michal Hocko:
->> On Thu 13-06-13 15:34:59, Richard Weinberger wrote:
->>> Am 13.06.2013 15:32, schrieb Michal Hocko:
->>>> Ohh and could you post the config please? Sorry should have asked
->>>> earlier.
->>>
->>> See attachment.
->>
->> Nothing unusual there. Could you enable CONFIG_DEBUG_VM maybe it will
->> help too catch the problem earlier.
->
-> OK
->
->>>> On Thu 13-06-13 15:29:08, Michal Hocko wrote:
->>>>>
->>>>> On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
->>>>> [...]
->>>>>> All code
->>>>>> ========
->>>>>>     0:   89 50 08                mov    %edx,0x8(%rax)
->>>>>>     3:   48 89 d1                mov    %rdx,%rcx
->>>>>>     6:   0f 1f 40 00             nopl   0x0(%rax)
->>>>>>     a:   49 8b 04 24             mov    (%r12),%rax
->>>>>>     e:   48 89 c2                mov    %rax,%rdx
->>>>>>    11:   48 c1 e8 38             shr    $0x38,%rax
->>>>>>    15:   83 e0 03                and    $0x3,%eax
->>>>>                     nid = page_to_nid
->>>>>>    18:   48 c1 ea 3a             shr    $0x3a,%rdx
->>>>>                     zid = page_zonenum
->>
->> Ohh, I am wrong here. rdx should be nid and eax the zid.
->>
->>>>>
->>>>>>    1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
->>>>>>    23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
->>>>>                     &memcg->nodeinfo[nid]->zoneinfo[zid]
->>>>>
->>>>>>    2a:   00
->>>>>>    2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
->>>>>
->>>>> OK, so this maps to:
->>>>>          if (unlikely(lruvec->zone != zone)) <<<
->>>>>                  lruvec->zone = zone;
->>>>>
->>>>>> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
->>>>>> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
->>>>>> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
->>>>>> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
->>>>>> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
->>>>>> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
->>>>>> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
->>>>>
->>>>> RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
->>>>> contain an address at an offset from ffff88003e04a800 But there is 0x138 there
->>>>> instead.
->>
->> Hmm, now that I am looking at the registers again. RDX which should be
->> nid seems to be quite big. It says this is node 32. Does the machine
->> have really so many NUMA nodes?
->
-> No. It's a KVM guest with two CPUs. Nothing special.
-> qemu command line:
-> qemu-kvm -m 1G -drive file=lxc_host.qcow2,if=virtio -nographic -kernel linux/arch/x86/boot/bzImage -append console=ttyS0 root=/dev/vda2 -net user,hostfwd=tcp::5555-:22 -net
-> nic,model=e1000 -smp 4
+* Pavel Machek <pavel@ucw.cz> [130613 07:34]:
+> On Thu 2013-06-13 07:10:01, Tony Lindgren wrote:
+> > * Pavel Machek <pavel@ucw.cz> [130613 06:32]:
+> >  
+> > > If I init spi manually (and some more hacks), it works in the
+> > > qemu. But I have not tested on real hw for a while.
+> > 
+> > You should be able to initialize spi by adding the .dts entry,
+> > or is there something missing in drivers/spi/spi-omap2-mcspi.c?
+> 
+> Not sure, I guess I'll find out soon. Do you have example dts that
+> uses drivers/spi/spi-omap2-mcspi.c? Grepping spi in dts/ was not too
+> successful.
 
-Errr, I meant four CPUs. :)
+Hmm I think all we have is what's written in
+Documentation/devicetree/bindings/spi/omap-spi.txt and
+omap4-sdp.dts.
 
-Thanks,
-//richard
+Regards,
+
+Tony
 
