@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455Ab3FMQsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:48:18 -0400
-Received: from mail-yh0-f73.google.com ([209.85.213.73]:63448 "EHLO
-	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab3FMQsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:48:17 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>, ilho215.lee@samsung.com,
-        eunki_kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] pinctrl: exynos: ack level-triggered interrupts before unmasking
-Date: Thu, 13 Jun 2013 09:38:42 -0700
-Message-Id: <1371141522-29255-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1371058399-31933-1-git-send-email-dianders@chromium.org>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+	id S1758665Ab3FMQtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:49:24 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:53599
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756653Ab3FMQtX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 12:49:23 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Date: Thu, 13 Jun 2013 11:49:17 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
+To: Rojhalat Ibrahim <imr@rtschenk.de>
+CC: Michael Guntsche <michael.guntsche@it-loops.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+References: <1370971739.18413.27@snotra> <34279395.MbRViMjbAR@pcimr>
+	<1371073826.18413.52@snotra> <7706620.VNI3PE9pqO@pcimr>
+In-Reply-To: <7706620.VNI3PE9pqO@pcimr> (from imr@rtschenk.de on Thu Jun 13
+	02:21:24 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1371142157.2028.9@snotra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A level-triggered interrupt should be acked after the interrupt line
-becomes inactive and before it is unmasked, or else another interrupt
-will be immediately triggered.  Acking before or after calling the
-handler is not enough.
+On 06/13/2013 02:21:24 AM, Rojhalat Ibrahim wrote:
+> On Wednesday 12 June 2013 16:50:26 Scott Wood wrote:
+> > On 06/12/2013 03:19:30 AM, Rojhalat Ibrahim wrote:
+> > > On Tuesday 11 June 2013 12:28:59 Scott Wood wrote:
+> > > > Yes, I figured it was non-PCIe because the code change that you  
+> said
+> > > > helped was on the non-PCIe branch of the if/else.  Generally  
+> it's
+> > >
+> > > good
+> > >
+> > > > to explicitly mention the chip you're using, though.
+> > > >
+> > > > fsl_setup_indirect_pci should be renamed to  
+> fsl_setup_indirect_pcie.
+> > > > Your patch above should be applied, and fsl_setup_indirect_pcie
+> > >
+> > > should
+> > >
+> > > > be moved into the booke/86xx ifdef to avoid an unused function
+> > >
+> > > warning.
+> > >
+> > > > -Scott
+> > >
+> > > How about this patch? It uses setup_indirect_pci for the PCI case  
+> in
+> > > mpc83xx_add_bridge. Additionally it adds a check in
+> > > fsl_setup_indirect_pci
+> > > to only use the modified read function in case of PCIe.
+> >
+> > If we're adding the check to fsl_setup_indirect_pci, there's no  
+> need to
+> > change the 83xx call back to setup_indirect_pci.  I see that 85xx is
+> > also callirng fsl_setup_indirect_pci for both; it'd be good to be
+> > consistent.
+> >
+> > In any case, can you send a proper patch with a signoff and commit
+> > message?
+> >
+> > -Scott
+> 
+> Where is it called for 85xx? As far as I can tell  
+> fsl_setup_indirect_pci is
+> called exactly once in fsl_add_bridge and nowhere else (after  
+> applying the
+> proposed patch).
 
-Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Greatly simplified using Tomasz's suggestion of irqd_get_trigger_type
-- Moved acking out of the bank spinlock since since it's not needed.
-- Linus W. has already applied parts 1 and 2, so not resending.
+fsl_add_bridge() is where it's called for 85xx.
 
- drivers/pinctrl/pinctrl-exynos.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+> For 83xx the decision between PCI and PCIe has already been made at
+> the point where the setup function is called. So IMO it doesn't make  
+> sense
+> to call fsl_setup_indirect_pci and do the check again. Moreover PCIe  
+> on 83xx
+> uses a completely different set of functions.
 
-diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
-index c0729a3..ef75321 100644
---- a/drivers/pinctrl/pinctrl-exynos.c
-+++ b/drivers/pinctrl/pinctrl-exynos.c
-@@ -84,6 +84,17 @@ static void exynos_gpio_irq_unmask(struct irq_data *irqd)
- 	unsigned long mask;
- 	unsigned long flags;
- 
-+	/*
-+	 * Ack level interrupts right before unmask
-+	 *
-+	 * If we don't do this we'll get a double-interrupt.  Level triggered
-+	 * interrupts must not fire an interrupt if the level is not
-+	 * _currently_ active, even if it was active while the interrupt was
-+	 * masked.
-+	 */
-+	if (irqd_get_trigger_type(irqd) & IRQ_TYPE_LEVEL_MASK)
-+		exynos_gpio_irq_ack(irqd);
-+
- 	spin_lock_irqsave(&bank->slock, flags);
- 
- 	mask = readl(d->virt_base + reg_mask);
-@@ -302,6 +313,17 @@ static void exynos_wkup_irq_unmask(struct irq_data *irqd)
- 	unsigned long mask;
- 	unsigned long flags;
- 
-+	/*
-+	 * Ack level interrupts right before unmask
-+	 *
-+	 * If we don't do this we'll get a double-interrupt.  Level triggered
-+	 * interrupts must not fire an interrupt if the level is not
-+	 * _currently_ active, even if it was active while the interrupt was
-+	 * masked.
-+	 */
-+	if (irqd_get_trigger_type(irqd) & IRQ_TYPE_LEVEL_MASK)
-+		exynos_wkup_irq_ack(irqd);
-+
- 	spin_lock_irqsave(&b->slock, flags);
- 
- 	mask = readl(d->virt_base + reg_mask);
--- 
-1.8.3
+My concern is consistency.  E.g. if 85xx is using  
+fsl_setup_indirect_pci for both, but 83xx isn't, then a developer using  
+83xx could end up breaking 85xx by introducing another PCIe dependency  
+in fsl_setup_indirect_pci.  Or an 85xx developer could put something  
+non-PCIe-related in fsl_setup_indirect_pci that 83xx would benefit from.
 
+Alternatively, you could call it fsl_setup_indirect_pcie, and move the  
+PCIe check into fsl_add_bridge().
+
+-Scott
