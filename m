@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759153Ab3FMSaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:30:17 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:62821 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759098Ab3FMSaN (ORCPT
+	id S932338Ab3FMSa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:30:27 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:39976 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759106Ab3FMSaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:30:13 -0400
+	Thu, 13 Jun 2013 14:30:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1371128132-18266-1-git-send-email-christian.ruppert@abilis.com>
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
-	<1371128132-18266-1-git-send-email-christian.ruppert@abilis.com>
-Date: Thu, 13 Jun 2013 20:30:12 +0200
-Message-ID: <CACRpkdaYFqv-soonRC37O-xOtscw6DxWmSW+8qKTiPOxwjVTcg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Add pin list based GPIO ranges
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
+In-Reply-To: <20130613173723.GK18614@n2100.arm.linux.org.uk>
+References: <1371089603-22601-1-git-send-email-ccross@android.com>
+	<20130613173723.GK18614@n2100.arm.linux.org.uk>
+Date: Thu, 13 Jun 2013 11:30:20 -0700
+X-Google-Sender-Auth: NFbI010ej72yUPf73uS3oCdLREo
+Message-ID: <CAMbhsRSmsq9-KC1i4yYO3FXoHQAcM8rVi-c5n8+Sz+FPFSL72w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: convert max_pfn and max_low_pfn to be relative to PFN0
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 2:55 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
-
-> Traditionally, GPIO ranges are based on consecutive ranges of both GPIO
-> and pin numbers. This patch allows for GPIO ranges with arbitrary lists
-> of pin numbers.
+On Thu, Jun 13, 2013 at 7:37 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Jun 12, 2013 at 07:13:23PM -0700, Colin Cross wrote:
+>> >From code inspection, I believe this will also improve block device
+>> performance where the bounce limit was set to BLK_BOUNCE_HIGH, which
+>> was bouncing unnecessarily for the top PHYS_PFN_OFFSET pages of low
+>> memory.
 >
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> This has the potential to break platforms.  The problem is the duality
+> of the dma_mask - is it a mask of the bits which the device can drive,
+> or a PFN limit.  The block layer interprets it as a PFN limit, because
+> of course everywhere starts their memory at physical address zero.
 
-I really like this patch and it seems to be useful for other purposes so I've
-applied it so we get some rotation on it.
+I've never come across a device with dma_mask set to anything but
+0xFFFFFFFF, and a quick search didn't find me any good examples.
+dma_mask set to the mask of bits the device can drive seems logical,
+and it doesn't seem hard to fix the block layer (and the few other
+users of max_pfn) to use min_low_pfn << PAGE_SHIFT + dma_mask.
 
-Yours,
-Linus Walleij
+> This gets into a world of pain if you have any of these conditions:
+> (a) RAM not starting at physical address zero
+The device I tested on has RAM at 0x40000000, which is what caused my problem.
+
+> (b) Any translation between physical addresses and bus addresses
+Is that just footbridge, integrator, and ks8695?  Those are the only
+machines that define __virt_to_bus
+
+> What we know is that the existing stuff works.  What we don't know is
+> whether changing it will break anything which falls into the above
+> two categories.
+
+The existing stuff breaks a userspace API, /proc/kpagecount and
+/proc/kpageflags.  It is currently impossible to read the page at
+max_pfn on ARM.  It is possible to read the pages after max_pfn
+because of an underflow in the kpagecount bounds check, which doesn't
+cause problems because it checks pfn_valid on every pfn.  Just taking
+out the bounds check against max_pfn in kpagecount and kpageflags
+would also fix my problem, but it seems correct on everything but ARM.
