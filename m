@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab3FMWgC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:36:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38205 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756931Ab3FMWgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:36:01 -0400
-Date: Thu, 13 Jun 2013 15:35:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-Id: <20130613153551.39ffdf595d989be10c773d23@linux-foundation.org>
-In-Reply-To: <20130613223028.GG13970@mtj.dyndns.org>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
-	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
-	<20130613020536.GA10979@localhost>
-	<20130612200311.7f9d938a.akpm@linux-foundation.org>
-	<20130613185318.GB12075@mtj.dyndns.org>
-	<20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
-	<20130613191507.GB13970@mtj.dyndns.org>
-	<20130613122339.239a721d097a64435817a780@linux-foundation.org>
-	<20130613193514.GD13970@mtj.dyndns.org>
-	<20130613151040.8e11da022519fff7d5e8ea77@linux-foundation.org>
-	<20130613223028.GG13970@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759298Ab3FMWhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:37:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33634 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757720Ab3FMWhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 18:37:46 -0400
+Date: Fri, 14 Jun 2013 00:37:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>, Borislav Petkov <bp@suse.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <20130613223740.GE32112@pd.tnic>
+References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
+ <51BA380A.1040009@semaphore.gr>
+ <20130613214007.GA32127@pd.tnic>
+ <1645236.hTWQPUhyIx@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1645236.hTWQPUhyIx@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013 15:30:28 -0700 Tejun Heo <tj@kernel.org> wrote:
+On Fri, Jun 14, 2013 at 12:15:36AM +0200, Rafael J. Wysocki wrote:
+> On Thursday, June 13, 2013 11:40:08 PM Borislav Petkov wrote:
 
-> Hello, Andrew.
-> 
-> On Thu, Jun 13, 2013 at 03:10:40PM -0700, Andrew Morton wrote:
-> > Look, we're falling into the age-old trap of trying to justify existing
-> > code just because it exists.
-> > 
-> > Stop.  Take a step back and pretend that the percpu tag allocator patch
-> > never existed.  Now, define the problem and propose solutions.
-> > 
-> > The absolute dead last and worst solution is "implement something new
-> > which largely duplicates existing code".  Such a step requires an
-> > extraordinary amount of justification and that hasn't happened.
-> 
-> I think you're looking at it from the complete opposite point from
-> mine.  That problem has always existed and the solutions implemented
-> many times over in the whole IO stack across aio, block layer proper,
-> SCSI and individual drivers, and most, if not all, suck.  If we can
-> consolidate those into a properly designed tag allocator, it's a win,
-> whether it's integrated into idr or not.  It's a well-known problem
-> with incomplete bad solutions implemented in multiple places.
+[ … ]
 
-Well that's news.  My awe at the dreadfulness of Kent's changelog
-continues to grow.  Please identify these duplicated allocators
-(function names will suffice).  That way, others can actually review
-this code :(
+> > Not bad. However, exec_test and fork_test are kinda unexpected with such
+> > a high improvement percentage. Happen to have an explanation?
+> > 
+> > FWIW, if we don't find any serious perf/power regressions with
+> > this patch, I'd say it is worth applying even solely for the code
+> > simplification it brings.
+> 
+> May I take this as an ACK? ;-)
+> 
+> Well, that's my opinion too, actually.
+
+I know - you told me and I like that aspect :-). And from the test
+results so far, the code simplification is maybe the most persuasive
+one. The slight improvements in perf/power are then the cherry on top.
+
+Although, I'm not sure we're exhaustive with the benchmarks and we
+should maybe run a couple more. Although, judging by the results,
+generally no serious outliers should be expected (except exec_test and
+fork_test funsies above), which are actually positive outliers.
+
+Judging by the code change, the only worry we should have, AFAIU, is
+any raise in power consumption due to spending longer periods in the
+intermediary P-states now and not going straight to the lowest P-state.
+But this compensates with improvement in runtime of the workloads.
+
+Hmm, I dunno - I'm just thinking out loud here...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
