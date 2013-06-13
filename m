@@ -1,148 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286Ab3FMViP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:38:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55065 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759241Ab3FMViN (ORCPT
+	id S932125Ab3FMVja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:39:30 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:47582 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759241Ab3FMVj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:38:13 -0400
-Message-ID: <51BA3BC1.3090109@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 15:38:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 17:39:28 -0400
+Date: Thu, 13 Jun 2013 23:39:25 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [RFC: PATCH] err.h: silence warning when using IS_ERR on void
+ __iomem *
+Message-ID: <20130613213920.GA32732@mithrandir>
+References: <1371072668-19027-1-git-send-email-mkl@pengutronix.de>
+ <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
+ <20130613182447.GB32574@mithrandir>
+ <20130613131415.aa4f675f151c586f5f6b2123@linux-foundation.org>
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com> <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
-In-Reply-To: <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <20130613131415.aa4f675f151c586f5f6b2123@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 06:55 AM, Christian Ruppert wrote:
-> This patch adds the infrastructure required to register non-linear gpio
-> ranges through gpiolib and the standard GPIO device tree bindings.
 
-That's not exactly true. The existing gpio-ranges property already
-allows non-linear ranges to be represented quite easily; each entry in
-the gpio-ranges list is <gpio-base> <pinctrl-base> <count>, so you can
-piece together any mapping you want.
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The potential advantage of this patch is that the pinctrl-side of the
-mapping can be a group name rather than pin IDs, which might reduce the
-size of the mapping list if you have an extremely sparse or non-linear
-mapping /and/ parts of that mapping just happen to align with the pin
-groups in the pin controller HW, since each entry in the gpio-ranges
-property can be sparse/non-linear, rather than being a small linear
-chunk of the mapping.
+On Thu, Jun 13, 2013 at 01:14:15PM -0700, Andrew Morton wrote:
+> On Thu, 13 Jun 2013 20:24:48 +0200 Thierry Reding <thierry.reding@gmail.c=
+om> wrote:
+>=20
+> > On Thu, Jun 13, 2013 at 10:55:17AM +0530, Sachin Kamat wrote:
+> > > On 13 June 2013 03:01, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
+> > > > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource(=
+)")
+> > > > introduced devm_ioremap_resource() and encourage to check its retur=
+n value with
+> > > > IS_ERR(). This however leads to the following sparse warnings, as
+> > > > devm_ioremap_resource() returns a void __iomem pointer:
+> > > >
+> > > > drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect t=
+ype in argument 1 (different address spaces)
+> > > > drivers/net/can/c_can/c_can_platform.c:205:32:    expected void con=
+st *ptr
+> > > > drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int =
+[noderef] [usertype] <asn:2>*raminit_ctrlreg
+> > >=20
+> > > CC ing Thierry who has solved this issue some time back.
+> >=20
+> > I had sent two patches, one against sparse, the other against the
+> > kernel, but none were picked up yet.
+>=20
+> I didn't know that.
+>=20
+> On May 8 I queued
+> http://ozlabs.org/~akpm/mmots/broken-out/errh-is_err-can-accept-__user-po=
+inters.patch.
+> Dan says that sparse v0.4.5-rc1 or later is also required.
 
-As an aside, for Tegra I solved this differently: In the pinctrl driver,
-I simply defined the pin IDs to exactly match the GPIO IDs in order, so
-the mapping is 100% linear. Of course, this only works if your pinctrl
-HW documentation doesn't define any kind of numbering/ordering for your
-pins, so you can pick any order you want for the pinctrl binding/driver.
-This was true for Tegra20, since the HW only used groups for muxing.
-Given more recent Tegra SoCs have moved to per-pin muxing, that might
-not have been the best decision though, since now the HW registers at
-least do have a defined ordering/ID for each pin. If only we'd started
-with Tegra30 support not Tegra20:-)
+So maybe latest sparse does have the patch. I didn't find it looking at
+the logs. But looking again it seems like an equivalent patch made it in
+recently. Also the above patch looks very much like what I posted back
+at the time. Shame that work was duplicated, maybe I should have pushed
+harder when I didn't get a response.
 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+Thierry
 
-> +In addition, named groups of pins can be mapped to pin groups of a given
-> +pin controller:
-> +
-> +	gpio_pio_g: gpio-controller@1480 {
-> +		#gpio-cells = <2>;
-> +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
-> +		reg = <0x1480 0x18>;
-> +		gpio-controller;
-> +		gpio-pingrps = <&pinctrl1 0>, <&pinctrl2 3>;
-> +		gpio-pingrp-names = "pctl1_gpio_g", "pctl2_gpio_g";
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature
 
-A few thoughts here:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-"gpio-pingrps" doesn't sound very similar to the existing "gpio-ranges".
-Can we make their equivalent purpose more obvious by renaming this
-"gpio-group-ranges"?
+iQIcBAEBAgAGBQJRujwIAAoJEN0jrNd/PrOhvKYP/0En05b7xldRCoaskMSZ8sAN
+VuR5+NJ2Wp8KvmQre8a4HpryNkwL8y1HxMg+Pz1jV7Du/CLZt0S8KTg2Oll/KTHH
+oo+TpYkxGDMDSu18wB8uTR89ZmYswniV581VGlkquJ2YXks7s/YvVilLk1sdX82C
+ZXs7RV88XBjA4rtkaFRcC1rs1rJItsRn1x1/p7jr+2qzog7dPka4GGtgV2OAir8o
+VEdnfS+8XS2F3ntyI2BITHxJb+bgnQeocrGKCAKC2LzOQSsyZEErKUeDBOfVHtZd
+sOpNndvdc5qch3qnY9MR67+KA2QpCosav/RESbGLTLZhh+xraI2Jibt+sF+jXUdF
+199gfaAcfssqUh5VcxXwqwHReSrhQfzhrBWRjhSw53FFO6D8QOCuyCoOvH4ZxosQ
+ofivlwv4ZVJsLZjQqbJZ6WWDEUXOdH1cxxwtc2xF37+jrtzvjOQo2VIQHDSZLs6k
+fN62SMq6wfUM7ks8fEJrcypNT2D2eFjxJbz9/Djz1OMDnVSrHmJmn7RdWPcCCvSI
+w5FLRoBbATh+HVp0bh4juOCO5ddpabjqjYh2nFOHA8HdHwB3SwFJ38RAQQ3HoFYr
+OgO/BpEl/ME0tgyM+QqMrGDPNRlEDsjq2gPQdU+660gISm8YJvqjptIG0mhjXUGq
+wtq0WnsJmmUnzvvAoOqf
+=r/w7
+-----END PGP SIGNATURE-----
 
-I'm not actually even sure we need a new property for this, except for
-the string group names. We could fold the new gpio-pingrps into the
-existing gpio-ranges, whose entries have the format:
-
-<gpio-base> <pinctrl-base> <count>
-
-... by saying that if count==0, it means to use a group name instead of
-a pinctrl-base value. We can insist that pinctrl-base==0 in this case
-too. If we go made, count==0 could mean "special" and pinctrl-base==0
-could mean "by pinctrl group name", and other values of pinctrl-base
-could be added later to mean other things!
-
-gpio-ranges =
-	<&pinctrl1 0 20 10>, /* Existing numeric style */
-	<&pinctrl2 10 0 0>,  /* Count==0, so group name style */
-	<&pinctrl1 0 20 10>, /* Existing numeric style */
-gpio-ranges-group-names =
-	"",    /* No group name required for entry 0 */
-	"gr1", /* Group name for entry 1 */
-	"";    /* No group name required for entry 2 */
-
-Does this seem better?
-
-> +		gpio-pingrp-names = "pctl1_gpio_g", "pctl2_gpio_g";
-
-I'm slightly worried that those example group names appear to be
-globally scoped. I would hope the group names are interpreted
-relative-to or within the pin controller that they are associated with.
-I wouldn't expect the pin controllers to include their own name in the
-names of the pin groups they expose. In other words, I'd expect that
-example to be more like:
-
-> +		gpio-pingrp-names = "foo", "bar";
-
-...
-> +The pinctrl node must have a "#gpio-pingrp-cells" property set to one to
-> +define the number of arguments to pass with the phandle.
-
-This shouldn't be required.
-
-Such properties are useful when one node references a second node, and
-that second node dictates the format of the reference. However, that is
-not the case here; the definition of gpio-pingrp-names itself always
-dictates its format entirely, and hence the value #gpio-pingrp-cells
-must always be 1, and hence there is no point requiring any referenced
-node to include this property.
-
-I realize this issue was inherited from the existing gpio-ranges
-documentation/implementation, but I've posted patches to solve that,
-triggered by thinking about this patch:
-
-https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/035462.html
-(the rest of the series will make it more clear, i.e. the new of_ API)
-
-> +Both methods can be combined in the same GPIO controller, e.g.
-
-In the proposal I have above, combining the mechanisms is slightly more
-cohesive, I think.
-
-> +	gpio_pio_i: gpio-controller@14B0 {
-> +		#gpio-cells = <2>;
-> +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
-> +		reg = <0x1480 0x18>;
-> +		gpio-controller;
-> +		gpio-ranges = <&pinctrl1 0 20 10>;
-> +		gpio-pingrps = <&pinctrl2 10>;
-> +		gpio-pingrp-names = "gpio_g_pins";
-> +	};
+--6TrnltStXW4iwmi0--
