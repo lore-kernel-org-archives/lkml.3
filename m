@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab3FMU0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 16:26:46 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:59294 "EHLO mail.ispras.ru"
+	id S1759252Ab3FMU1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 16:27:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758955Ab3FMU0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 16:26:44 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] orinoco_usb: fix memory leak in ezusb_access_ltv() when device disconnected
-Date: Fri, 14 Jun 2013 00:26:11 +0400
-Message-Id: <1371155171-15398-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1757735Ab3FMU1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 16:27:23 -0400
+Date: Thu, 13 Jun 2013 16:26:48 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 06/14] locks: don't walk inode->i_flock list in
+ locks_show
+Message-ID: <20130613162648.176979bc@tlielax.poochiereds.net>
+In-Reply-To: <20130613194545.GC19218@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+	<1370948948-31784-7-git-send-email-jlayton@redhat.com>
+	<20130613194545.GC19218@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If "device is disconnected" check occurs to be true in ezusb_access_ltv(),
-it just return -ENODEV. But that means request_context is leaked since
-there are no any references to it anymore.
-The patch adds a call to ezusb_request_context_put() before return.
+On Thu, 13 Jun 2013 15:45:46 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> On Tue, Jun 11, 2013 at 07:09:00AM -0400, Jeff Layton wrote:
+> > When we convert over to using the i_lock to protect the i_flock list,
+> > that will introduce a potential lock inversion problem in locks_show.
+> > When we want to walk the i_flock list, we'll need to take the i_lock.
+> > 
+> > Rather than do that, just walk the global blocked_locks list and print
+> > out any that are blocked on the given lock.
+> 
+> I'm OK with this as obviously /proc/locks shouldn't be the common case,
+> but it still bugs me a bit that we're suddenly making it something like
+> 
+> 	O(number of held locks * number of waiters)
+> 
+> where it used to be
+> 
+> 	O(number of held lock + number of waiters)
+> 
+> I wonder if there's any solution that's just as easy and avoids scanning
+> the blocked list each time.
+> 
+> --b.
+> 
+> > 
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/locks.c |    6 ++++--
+> >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index e451d18..3fd27f0 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -2249,8 +2249,10 @@ static int locks_show(struct seq_file *f, void *v)
+> >  
+> >  	lock_get_status(f, fl, *((loff_t *)f->private), "");
+> >  
+> > -	list_for_each_entry(bfl, &fl->fl_block, fl_block)
+> > -		lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> > +	list_for_each_entry(bfl, &blocked_list, fl_link) {
+> > +		if (bfl->fl_next == fl)
+> > +			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> > +	}
+> >  
+> >  	return 0;
+> >  }
+> > -- 
+> > 1.7.1
+> > 
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/wireless/orinoco/orinoco_usb.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Yeah, it's ugly, but I don't see a real alternative. We could try to
+use RCU for this, but that slows down the list manipulation at the cost
+of optimizing a rarely read procfile.
 
-diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
-index 1f9cb55..bdfe637 100644
---- a/drivers/net/wireless/orinoco/orinoco_usb.c
-+++ b/drivers/net/wireless/orinoco/orinoco_usb.c
-@@ -881,7 +881,8 @@ static int ezusb_access_ltv(struct ezusb_priv *upriv,
- 
- 	if (!upriv->udev) {
- 		dbg("Device disconnected");
--		return -ENODEV;
-+		retval = -ENODEV;
-+		goto exit;
- 	}
- 
- 	if (upriv->read_urb->status != -EINPROGRESS)
+Now that I look though...it occurs to me that we have a problem here
+anyway. Only blocked POSIX requests go onto that list currently, so
+this misses seeing any blocked flock requests.
+
+The only real solution I can think of is to put flock locks into the
+blocked_list/blocked_hash too, or maybe giving them a simple hlist to
+sit on.
+
+I'll fix that up in the next iteration. It'll probably make flock()
+tests run slower, but such is the cost of preserving this procfile...
+
 -- 
-1.8.1.2
-
+Jeff Layton <jlayton@redhat.com>
