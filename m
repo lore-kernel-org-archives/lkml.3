@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759079Ab3FMTyY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:54:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45411 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3FMTyX (ORCPT
+	id S1759006Ab3FMT47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:56:59 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:56192 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab3FMT46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:54:23 -0400
-Date: Thu, 13 Jun 2013 12:54:21 -0700 (PDT)
-Message-Id: <20130613.125421.1518137499194108848.davem@davemloft.net>
-To: joe@perches.com
-Cc: andy.shevchenko@gmail.com, Alexey.Brodkin@synopsys.com,
-        netdev@vger.kernel.org, romieu@fr.zoreil.com,
-        Vineet.Gupta1@synopsys.com, Mischa.Jonker@synopsys.com, arnd@arndb.de,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371148401.31941.20.camel@joe-AO722>
-References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
-	<CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
-	<1371148401.31941.20.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jun 2013 15:56:58 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        David Howells <dhowells@redhat.com>,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        Orion Poplawski <orion@cora.nwra.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] tty: Fix transient pty write() EIO
+Date: Thu, 13 Jun 2013 15:56:37 -0400
+Message-Id: <1371153397-3687-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <51B9F36B.6020802@hurleysoftware.com>
+References: <51B9F36B.6020802@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Thu, 13 Jun 2013 11:33:21 -0700
+Commit 699390354da6c258b65bf8fa79cfd5feaede50b6
+('pty: Ignore slave pty close() if never successfully opened')
+introduced a bug with ptys whereby a write() in parallel with an
+open() on an existing pty could mistakenly indicate an I/O error.
 
-> On Thu, 2013-06-13 at 21:25 +0300, Andy Shevchenko wrote:
->> On Thu, Jun 13, 2013 at 5:37 PM, Alexey Brodkin
->> > +               if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
->> > +                       /* BD is still owned by EMAC */
->> > +                       continue;
->> > +               }
->> 
->> Redundant braces.
-> 
-> Maybe not.  Braces can be a visual aid when there is
-> a comment in the test.
+Only indicate an I/O error if the condition on open() actually exists.
 
-Agreed.
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/pty.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 9c2f1bc..dd08d3d 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -238,14 +238,9 @@ static void pty_flush_buffer(struct tty_struct *tty)
+ 
+ static int pty_open(struct tty_struct *tty, struct file *filp)
+ {
+-	int	retval = -ENODEV;
+-
+ 	if (!tty || !tty->link)
+-		goto out;
+-
+-	set_bit(TTY_IO_ERROR, &tty->flags);
++		return -ENODEV;
+ 
+-	retval = -EIO;
+ 	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
+ 		goto out;
+ 	if (test_bit(TTY_PTY_LOCK, &tty->link->flags))
+@@ -256,9 +251,11 @@ static int pty_open(struct tty_struct *tty, struct file *filp)
+ 	clear_bit(TTY_IO_ERROR, &tty->flags);
+ 	clear_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+ 	set_bit(TTY_THROTTLED, &tty->flags);
+-	retval = 0;
++	return 0;
++
+ out:
+-	return retval;
++	set_bit(TTY_IO_ERROR, &tty->flags);
++	return -EIO;
+ }
+ 
+ static void pty_set_termios(struct tty_struct *tty,
+-- 
+1.8.1.2
+
