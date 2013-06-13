@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab3FMMCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:02:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52747 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab3FMMCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:02:51 -0400
-Date: Thu, 13 Jun 2013 14:02:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, hannes@cmpxchg.org
-Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
- pointer dereference at 00000000000001a8
-Message-ID: <20130613120248.GB23070@dhcp22.suse.cz>
-References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755466Ab3FMMEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:04:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40955 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab3FMMEK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 08:04:10 -0400
+X-AuditID: cbfee68e-b7f276d000002279-bd-51b9b53992a3
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>
+Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Simon Glass'" <sjg@chromium.org>,
+        "'Luigi Semenzato'" <semenzato@chromium.org>, ilho215.lee@samsung.com,
+        eunki_kim@samsung.com, linux-kernel@vger.kernel.org
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+ <1371058399-31933-3-git-send-email-dianders@chromium.org>
+In-reply-to: <1371058399-31933-3-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts before
+ unmasking
+Date: Thu, 13 Jun 2013 21:04:09 +0900
+Message-id: <150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5nkvaShSRgyCEKREqca56h3EqRrwAmsiow
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zA13LrTsDDb7eV7Q4u+wgm8WzO1eY
+	LY7+W8hoMeXPciaLy7vmsFmcuv6ZzeLz1S8sFt+2bGO0WLXrD6MDp8fshossHjtn3WX3uHNt
+	D5vHlRNNrB59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CVsencWsaCwywV/xYtYG1gvMfcxcjJ
+	ISFgInHw9D0mCFtM4sK99WwgtpDAMkaJJ1NLYWqO7ZnC2sXIBRSfzijRceAkE4Tzl1Fiecsj
+	sA42AQ2Jw++fsYPYIgKREhMOnGMGKWIWeANU9PwdVHsjo8TFOfvAqjgF3CR+Hb7PCmILC0RL
+	7Jj+FewOFgFViSs7jjKC2LwCthJnTvRB2YISPybfYwGxmQUMJN7P6mOFsLUlnry7AGRzAN2q
+	LvHory7EEUYS99dfhCoXkdj34h0jyA0SAq0cEq3TPjFC7BKQ+Db5EAtEr6zEpgPQYJGUOLji
+	BssERolZSDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjJL77djDe
+	PGB9iDEZaP1EZinR5HxgesgriTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUo
+	vqg0J7X4ECMTB6dUA6OgjPeO5238V9T+zD2gsOdSeqzzJK+O1xsl3u1/OJcxsDUhLrAuk3Xa
+	139feFSdFp+YMKt390fpfdy+tdMuL5Vc4Befoca4N9VXdM3BPQ375go1dDU1bIne5Ji/Sv+J
+	z708S8OX7BEl2224L5xIkN7hO6fzxZNH0g3mvzks/a4binC9ElxQ3qfEUpyRaKjFXFScCAA0
+	UOI5BQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jQV3LrTsDDU5Ok7U4u+wgm8WzO1eY
+	LY7+W8hoMeXPciaLy7vmsFmcuv6ZzeLz1S8sFt+2bGO0WLXrD6MDp8fshossHjtn3WX3uHNt
+	D5vHlRNNrB59W1YxenzeJBfAFtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGu
+	pJCXmJtqq+TiE6DrlpkDdJaSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCO
+	MWPTubWMBYdZKv4tWsDawHiPuYuRk0NCwETi2J4prBC2mMSFe+vZuhi5OIQEpjNKdBw4yQTh
+	/GWUWN7yiA2kik1AQ+Lw+2fsILaIQKTEhAPnmEGKmAXeABU9f8cK0dHIKHFxzj6wKk4BN4lf
+	h++D7RAWiJbYMf0rE4jNIqAqcWXHUUYQm1fAVuLMiT4oW1Dix+R7LCA2s4CBxPtZfawQtrbE
+	k3cXgGwOoFvVJR791YU4wkji/vqLUOUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVML
+	kguKk9JzjfSKE3OLS/PS9ZLzczcxgtPHM+kdjKsaLA4xCnAwKvHwvrywI1CINbGsuDL3EKME
+	B7OSCO/NqTsDhXhTEiurUovy44tKc1KLDzEmAz06kVlKNDkfmNrySuINjU3MjCyNzCyMTMzN
+	SRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoEx4cqCR7k/O2tfiz34enFGoEMei17bZ5fQ
+	74z7hT3Wf0zVfs1SwiNnanGx/tIVW9GPC7p/fY/bqHM6d09+HOePVys55z41Xt6jVfT+2+nA
+	nzWOJ1mNk1+7656LX+DGZ3fB0+HW5sLNPWIC+o7ftQ+7rzsoWFb6SvXny2lm+1oP2/QXBbpq
+	P3mmxFKckWioxVxUnAgAblpxnGMDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-06-13 13:48:27, richard -rw- weinberger wrote:
-> Hi!
+Doug Anderson wrote:
 > 
-> While playing with user namespaces my kernel crashed under heavy load.
-> Kernel is 3.9.0 plus some trivial patches.
-
-Could you post disassembly for mem_cgroup_page_lruvec?
-
-> [35355.882105] BUG: unable to handle kernel NULL pointer dereference
-> at 00000000000001a8
-> [35355.883056] IP: [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
-> [35355.883056] PGD 0
-> [35355.883056] Oops: 0000 [#1] SMP
-> [35355.883056] CPU 3
-> [35355.883056] Pid: 477, comm: kswapd0 Not tainted 3.9.0+ #12 Bochs Bochs
-> [35355.883056] RIP: 0010:[<ffffffff811297d9>]  [<ffffffff811297d9>]
-> mem_cgroup_page_lruvec+0x79/0x90
-> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
-> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
-> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
-> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
-> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
-> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
-> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
-> knlGS:0000000000000000
-> [35355.883056] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [35355.883056] CR2: 00000000000001a8 CR3: 0000000001a0b000 CR4: 00000000000006e0
-> [35355.883056] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [35355.883056] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [35355.883056] Process kswapd0 (pid: 477, threadinfo ffff88003d522000,
-> task ffff88003db6dc40)
-> [35355.883056] Stack:
-> [35355.883056]  0000000000000014 ffffea0000a14000 ffff88003d523b28
-> ffffffff810ea4c5
-> [35355.883056]  ffff88003d523b90 ffff88003fffa9c0 ffff88003d523b98
-> 0000000000000020
-> [35355.883056]  ffff88003fffa600 0000000200000003 ffff88003fffa600
-> ffff88003d523b98
-> [35355.883056] Call Trace:
-> [35355.883056]  [<ffffffff810ea4c5>] move_active_pages_to_lru+0x65/0x190
-> [35355.883056]  [<ffffffff810ec4e7>] shrink_active_list+0x297/0x380
-> [35355.883056]  [<ffffffff810ebff6>] ? shrink_inactive_list+0x1a6/0x400
-> [35355.883056]  [<ffffffff810ec815>] shrink_lruvec+0x245/0x4b0
-> [35355.883056]  [<ffffffff810ecae6>] shrink_zone+0x66/0x180
-> [35355.883056]  [<ffffffff810edcb4>] balance_pgdat+0x474/0x5b0
-> [35355.883056]  [<ffffffff810edf58>] kswapd+0x168/0x440
-> [35355.883056]  [<ffffffff8105d310>] ? abort_exclusive_wait+0xb0/0xb0
-> [35355.883056]  [<ffffffff810eddf0>] ? balance_pgdat+0x5b0/0x5b0
-> [35355.883056]  [<ffffffff8105c5fb>] kthread+0xbb/0xc0
-> [35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
-> [35355.883056]  [<ffffffff81748eac>] ret_from_fork+0x7c/0xb0
-> [35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
-> [35355.883056] Code: 89 50 08 48 89 d1 0f 1f 40 00 49 8b 04 24 48 89
-> c2 48 c1 e8 38 83 e0 03 48 c1 ea 3a 48 69 c0 38 01 00 00 48 03 84 d1
-> e0 02 00 00 <48> 3b 58 70 75 0a 48 8b 5d f0 4c 8b 65 f8 c9 c3 48 89 58
-> 70 eb
-> [35355.883056] RIP  [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
-> [35355.883056]  RSP <ffff88003d523aa8>
-> [35355.883056] CR2: 00000000000001a8
-> [35355.883056] ---[ end trace 2c9b8eec517f960d ]---
+> A level-triggered interrupt should be acked after the interrupt line
+> becomes inactive and before it is unmasked, or else another interrupt
+> will be immediately triggered.  Acking before or after calling the
+> handler is not enough.
 > 
-> 
-> --
-> Thanks,
-> //richard
+> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
--- 
-Michal Hocko
-SUSE Labs
+BTW, probably we need a similar fixing in the mach-exynos/common.c file
+before pinct±â for distro...
+
+Anyway,
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+
+Thanks,
+- Kukjin
+
