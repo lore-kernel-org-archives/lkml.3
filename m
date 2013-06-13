@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab3FMTfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:35:25 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:57428 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab3FMTfY (ORCPT
+	id S1758232Ab3FMTiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:38:19 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45065 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754694Ab3FMTiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:35:24 -0400
-Date: Thu, 13 Jun 2013 12:35:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613193514.GD13970@mtj.dyndns.org>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613020536.GA10979@localhost>
- <20130612200311.7f9d938a.akpm@linux-foundation.org>
- <20130613185318.GB12075@mtj.dyndns.org>
- <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
- <20130613191507.GB13970@mtj.dyndns.org>
- <20130613122339.239a721d097a64435817a780@linux-foundation.org>
+	Thu, 13 Jun 2013 15:38:18 -0400
+Message-ID: <51BA1FA6.8070207@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 13:38:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613122339.239a721d097a64435817a780@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: ext Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] drivers: pinctrl: add active state to core
+References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com> <51B75148.5080701@wwwdotorg.org> <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
+In-Reply-To: <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/11/2013 01:53 PM, Linus Walleij wrote:
+> On Tue, Jun 11, 2013 at 6:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/11/2013 02:16 AM, Linus Walleij wrote:
+>>> From: Linus Walleij <linus.walleij@linaro.org>
+>>>
+>>> In addition to the recently introduced pinctrl core
+>>> control, the PM runtime pin control for the OMAP platforms
+>>> require a fourth state in addtition to the default, idle and
+>>> sleep states already handled by the core: an explicit "active"
+>>> state. Let's introduce this to the core in addition to the
+>>> other states already defined.
 
-On Thu, Jun 13, 2013 at 12:23:39PM -0700, Andrew Morton wrote:
-> > The lowest number guarantee makes them different.  Maybe tag
-> > allocation can be layered on top as a caching layer, I don't know, but
-> > at any rate we need at least two different operation modes.
+...
+> Incidentally pinctrl-bindings.txt refers to the states
+> "active" and "idle" in the examples, but not "default".
+> (git blame tells me you wrote this ;-)
+
+Oops.
+
+> We should probably patch that document a bit to reflect
+> the semantics we agree upon here.
+
+Yes!
+
+>> It may be better for struct device, struct platform_driver, or similar,
+>> to contain a list of the states that are required by the driver or its
+>> binding. That way, the list of states (or states beyond the basic
+>> default) is driver-/DT-binding- specific, and custom stuff like this for
+>> OMAP wouldn't require explicit code in drivers/base/pinctrl.c, but
+>> rather simply iterating over a custom list.
 > 
-> Why?  Tag allocation doesn't care about the values - just that they be
-> unique.
-
-Hmmm?  Confused.  I was talking about other existing idr users which
-need lowest-available allocation.  Tag allocation doesn't care.  ID
-allocators do.
-
-> > Maybe we can layer things so that we have percpu layer on top of
-> > id[r|a] and, say, mapping id to point is still done by idr, or the
-> > percpu tag allocator uses ida for tag chunk allocations, but it's
-> > still gonna be something extra on top.
+> Hm, I was more out to nail down some common semantics
+> here, especially with these helper functions:
 > 
-> It's not obvious that explicit per-cpu is needed.  Get an ID from
-> ida_get_new_above(), multiply it by 16 and store that in device-local
-> storage, along with a 16-bit bitmap.  Blam, 30 lines of code and the
-> ida_get_new_above() cost is reduced 16x and it's off the map.
+> extern int pinctrl_pm_select_default_state(struct device *dev);
+> extern int pinctrl_pm_select_active_state(struct device *dev);
+> extern int pinctrl_pm_select_sleep_state(struct device *dev);
+> extern int pinctrl_pm_select_idle_state(struct device *dev);
+> 
+> I am intending this to be *all* for the PM consensual states.
+> Any other states will be up to the special cases and drivers to
+> handle still, I have no intention of retrieveing and caching all
+> possible states in the core.
 
-I'm fairly sure it'd have to be per-cpu.  The idr allocation is
-reduced 16x but now each of those 16 slots needs to be allocated.  The
-problem hasn't gone away and we do need some sort of utility to help
-that as drivers tend to resort to things like linear bitmap scan
-combined with test_and_set_bit() making one cacheline extremely hot.
+I have this dream that somehow the driver core can one day manage all
+resource acquisition, and handle all of deferred probe, etc.
+Unfortunately, this probably isn't going to happen in general, since
+e.g. DT bindings aren't general enough that code can parse the binding
+and automatically find all resources the device will need without
+explicit knowledge of the binding definition. No doubt similar problems
+exist for all forms of device representation.
 
-> Or perhaps you can think of something smarter, but first you have to
-> start thinking of solutions rather than trying to find problems :(
+So, perhaps this is a pipe dream.
 
-I don't know.  It's pretty clear to me that we at least need two
-different operation modes from the two conflicting requirements - one
-with strict allocation ordering and the other with very high
-scalability.  Please note that I'm not saying they both can't be built
-into id[r|a], but we *need* two different operation modes.
+Related to that, if you replaced pinctrl_pm_select_XXX_state(dev) with
+pinctrl_pm_select_state(dev, XXX), that'd make it generic enough that if
+the core could pre-parse all states, or auto-parse any new state name it
+hadn't seen before, then the API could in fact work for any state at all...
 
-Thanks.
+> I conjured the following doc patch as a starter:
 
--- 
-tejun
+I didn't really read this much, since I think we need to sort out
+exactly which set of core states there are first. Just a small comment
+below though:
+
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+
+> +A state-chart diagram would look like this:
+> +
+> +                +---------+                          +----------+
+> +    probe() ->  | default |  -> runtime_suspend() -> | idle     |
+> +                |         |  <- runtime_resume()  <- |          |
+> +                +---------+                          +----------+
+> +                                                        |     ^
+> +                                                        |     |
+> +                                                  suspend()  resume()
+> +                                                        |     |
+> +                                                        V     |
+> +                                                      +---------+
+> +                                                      |  sleep  |
+> +                                                      +---------+
+
+"active" isn't in that diagram.
+
