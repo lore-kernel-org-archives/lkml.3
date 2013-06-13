@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3FMN16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:27:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
+	id S932145Ab3FMN2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:28:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab3FMN1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:27:55 -0400
+	id S1758164Ab3FMN2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:04 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537670"
+   d="scan'208";a="7537688"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,45 +18,120 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part3 PATCH v2 3/4] mem-hotplug: Skip LOCAL_NODE_DATA pages in memory online procedure.
-Date: Thu, 13 Jun 2013 21:03:55 +0800
-Message-Id: <1371128636-9027-4-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part2 PATCH v4 14/15] x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher priority.
+Date: Thu, 13 Jun 2013 21:03:38 +0800
+Message-Id: <1371128619-8987-15-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:03,
+ 2013/06/13 20:58:46,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:04,
-	Serialize complete at 2013/06/13 20:59:04
+ 2013/06/13 20:59:03,
+	Serialize complete at 2013/06/13 20:59:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pages marked as LOCAL_NODE_DATA are skipped when we do memory offline.
-So we have to skip them again when we do memory online.
+Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance decreased
+because the kernel cannot use movable memory.
+
+For users who don't use memory hotplug and who don't want to lose their NUMA
+performance, they need a way to disable this functionality.
+
+So, if users specify "movablecore=acpi" in kernel commandline, the kernel will
+use SRAT to arrange ZONE_MOVABLE, and it has higher priority then original
+movablecore and kernelcore boot option.
+
+For those who don't want this, just specify nothing.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory_hotplug.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    5 +++++
+ mm/page_alloc.c          |   31 +++++++++++++++++++++++++++++--
+ 3 files changed, 35 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index c2017eb..3561048 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -843,6 +843,11 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
- 	if (PageReserved(pfn_to_page(start_pfn)))
- 		for (i = 0; i < nr_pages; i++) {
- 			page = pfn_to_page(start_pfn + i);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index d113175..a85ced9 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -66,6 +66,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
+ int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
+ int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
++bool memblock_is_hotpluggable(struct memblock_region *region);
+ void memblock_free_hotpluggable(void);
+ void memblock_trim_memory(phys_addr_t align);
+ void memblock_mark_kernel_nodes(void);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 9df0b5f..0c4a709 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -626,6 +626,11 @@ int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
+ 	return memblock_reserve_region(base, size, nid, MEMBLK_HOTPLUGGABLE);
+ }
+ 
++bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
++{
++	return region->flags & MEMBLK_HOTPLUGGABLE;
++}
 +
-+			/* Skip pages storing local node kernel data. */
-+			if (is_local_node_data(page))
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ee5ae49..10c85b1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4830,9 +4830,37 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 	nodemask_t saved_node_state = node_states[N_MEMORY];
+ 	unsigned long totalpages = early_calculate_totalpages();
+ 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
++	struct memblock_type *reserved = &memblock.reserved;
+ 
+ 	/*
+-	 * If movablecore was specified, calculate what size of
++	 * Need to find movable_zone earlier in case movablecore=acpi is
++	 * specified.
++	 */
++	find_usable_zone_for_movable();
++
++	/*
++	 * If movablecore=acpi was specified, then zone_movable_pfn[] has been
++	 * initialized, and no more work needs to do.
++	 * NOTE: In this case, we ignore kernelcore option.
++	 */
++	if (movablecore_enable_srat) {
++		for (i = 0; i < reserved->cnt; i++) {
++			if (!memblock_is_hotpluggable(&reserved->regions[i]))
 +				continue;
 +
- 			(*online_page_callback)(page);
- 			onlined_pages++;
- 		}
++			nid = reserved->regions[i].nid;
++
++			usable_startpfn = PFN_DOWN(reserved->regions[i].base);
++			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
++				min(usable_startpfn, zone_movable_pfn[nid]) :
++				usable_startpfn;
++		}
++
++		goto out;
++	}
++
++	/*
++	 * If movablecore=nn[KMG] was specified, calculate what size of
+ 	 * kernelcore that corresponds so that memory usable for
+ 	 * any allocation type is evenly spread. If both kernelcore
+ 	 * and movablecore are specified, then the value of kernelcore
+@@ -4858,7 +4886,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 		goto out;
+ 
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+-	find_usable_zone_for_movable();
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+ 
+ restart:
 -- 
 1.7.1
 
