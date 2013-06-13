@@ -1,96 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab3FMNf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:35:26 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57653 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758317Ab3FMNfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:35:21 -0400
-Date: Thu, 13 Jun 2013 09:35:17 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
-Subject: Re: ext4 extent status tree LRU locking
-Message-ID: <20130613133517.GA13429@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
-References: <51B7B128.60909@intel.com>
- <20130612071735.GB29898@gmail.com>
- <51B88F1A.5000909@intel.com>
- <20130612204854.GA12456@thunk.org>
- <20130613132715.GA12622@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613132715.GA12622@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1758732Ab3FMNez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:34:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758256Ab3FMN2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
+   d="scan'208";a="7537696"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [Part2 PATCH v4 06/15] memblock, numa: Introduce flag into memblock.
+Date: Thu, 13 Jun 2013 21:03:30 +0800
+Message-Id: <1371128619-8987-7-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:59:05,
+	Serialize complete at 2013/06/13 20:59:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 09:27:15PM +0800, Zheng Liu wrote:
-> Thanks for your suggestion.  But, sorry, I couldn't get your point here.
-> As you suggested above, we can tag each inode with the last access time
-> when ext4_map_blocks() is called.  Then we will get an unsorted list of
-> inodes with some extent entries.  When we tries to reclaim some entries
-> from extent cache, we can call list_sort() to get an sorted list of
-> inodes and try to reclaim some entries according to the last access
-> time.  My question is why do we need to drop all of the entries from all
-> inodes.
+There is no flag in memblock to describe what type the memory is.
+Sometimes, we may use memblock to reserve some memory for special usage.
+For example, as Yinghai did in his patch, allocate pagetables on local
+node before all the memory on the node is mapped.
+Please refer to Yinghai's patch:
+v1: https://lkml.org/lkml/2013/3/7/642
+v2: https://lkml.org/lkml/2013/3/10/47
+v3: https://lkml.org/lkml/2013/4/4/639
+v4: https://lkml.org/lkml/2013/4/11/829
 
-Sorry, what I meant to say is to drop all of the entries from a
-particular inode.  That is, instead of making the decision to drop one
-or two extents from inode A because they haven't been used in a long
-time, or one or two extents from inode B because they haven't been
-used in a long time, we make the decision on an inode by inode basis.
+In hotplug environment, there could be some problems when we hot-remove
+memory if we do so. Pagetable pages are kernel memory, which we cannot
+migrate. But we can put them in local node because their life-cycle is
+the same as the node.  So we need to free them all before memory hot-removing.
 
-> Af far as I understand, we can do the following improvement.  We tag the
-> last access time for each inode.  So that would avoid to move the inode
-> in lru list frequently.  When we try to reclaim some entries, we call
-> list_sort() to get a sorted lru list, and drop some entries from lru
-> list.  Please correct me if I misunderstood.
+Actually, data whose life cycle is the same as a node, such as pagetable
+pages, vmemmap pages, page_cgroup pages, all could be put on local node.
+They can be freed when we hot-removing a whole node.
 
-Yes, that's what I meant; although note that depending on how many
-items we need to drop, it might not be necesary to do a full sort of
-the list --- we could just look for the inode with the oldest time,
-which would be O(n) rather than O(n log n).
+In order to do so, we need to mark out these special pages in memblock.
+In this patch, we introduce a new "flags" member into memblock_region:
+   struct memblock_region {
+           phys_addr_t base;
+           phys_addr_t size;
+           unsigned long flags;
+   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+           int nid;
+   #endif
+   };
 
-If we are under enough memory pressure that the shrinker is getting
-called a lot, maybe it would be worthwhile keep a list of the oldest N
-inodes, which only gets updated every so many seconds.  (Since we can
-always validate whether or not an inode has been touched since it had
-been put on the oldest N inodes very easily.)
+This patch does the following things:
+1) Add "flags" member to memblock_region, and MEMBLK_DEFAULT flag for common usage.
+2) Modify the following APIs' prototype:
+	memblock_add_region()
+	memblock_insert_region()
+3) Add memblock_reserve_region() to support reserve memory with flags, and keep
+   memblock_reserve()'s prototype unmodified.
+4) Modify other APIs to support flags, but keep their prototype unmodified.
 
-> For creating all extent leaf blocks, that is another improvement.  I
-> will try to add it after I solve current problem that Dave reported.
+The idea is from Wen Congyang <wency@cn.fujitsu.com> and Liu Jiang <jiang.liu@huawei.com>.
 
-Yes, it's a separable issue, but it's related to the same idea.  We
-should drop items in the cache which can be easily instaniated at the
-time same time (i.e., drop all of the items related to a particular
-extent leaf block, or all of the items related to a particular inode).
+v3 -> v4: Define the flags with macro directly instead of bit shift.
 
-There are of course, other hueristics we could use, such as only
-searching inodes which have open file descriptors.  It's not clear the
-benefit is worth the cost of determining which inodes fit a particular
-criteria or not, though.
+Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
+Suggested-by: Liu Jiang <jiang.liu@huawei.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ include/linux/memblock.h |    4 +++
+ mm/memblock.c            |   55 +++++++++++++++++++++++++++++++++------------
+ 2 files changed, 44 insertions(+), 15 deletions(-)
 
-One other possibility while we're brainstorming is using hints from
-posix_fadvise or madvise to drop items from the extent cache.  The
-cautions with this idea are (a) not that many applications provide
-those hints, and (b) just because one process declares that it doesn't
-anticipate needing to access a particular file, doesn't mean that it
-is true for other users of the same file.  A related classical problem
-is the backup program which reads every single file in the file system
-once.  There's no particular good reason to have the backup program's
-activities affect the caches in the system, whether it be the page
-cache or the extent cache.  The trick is determining whether or not a
-particular program is behaving like a backup program or not, either
-via a hueristic or via an explicit hint/declaration from the program.
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index f388203..93f3453 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,9 +19,13 @@
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
+ 
++/* Definition of memblock flags. */
++#define MEMBLK_FLAGS_DEFAULT	0x0	/* default flag */
++
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
++	unsigned long flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	int nid;
+ #endif
+diff --git a/mm/memblock.c b/mm/memblock.c
+index c5fad93..9e871e9 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -157,6 +157,7 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+ 		type->cnt = 1;
+ 		type->regions[0].base = 0;
+ 		type->regions[0].size = 0;
++		type->regions[0].flags = 0;
+ 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
+ 	}
+ }
+@@ -307,7 +308,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+ 
+ 		if (this->base + this->size != next->base ||
+ 		    memblock_get_region_node(this) !=
+-		    memblock_get_region_node(next)) {
++		    memblock_get_region_node(next) ||
++		    this->flags != next->flags) {
+ 			BUG_ON(this->base + this->size > next->base);
+ 			i++;
+ 			continue;
+@@ -327,13 +329,15 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+  * @base:	base address of the new region
+  * @size:	size of the new region
+  * @nid:	node id of the new region
++ * @flags:	flags of the new region
+  *
+  * Insert new memblock region [@base,@base+@size) into @type at @idx.
+  * @type must already have extra room to accomodate the new region.
+  */
+ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 						   int idx, phys_addr_t base,
+-						   phys_addr_t size, int nid)
++						   phys_addr_t size,
++						   int nid, unsigned long flags)
+ {
+ 	struct memblock_region *rgn = &type->regions[idx];
+ 
+@@ -341,6 +345,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 	memmove(rgn + 1, rgn, (type->cnt - idx) * sizeof(*rgn));
+ 	rgn->base = base;
+ 	rgn->size = size;
++	rgn->flags = flags;
+ 	memblock_set_region_node(rgn, nid);
+ 	type->cnt++;
+ 	type->total_size += size;
+@@ -352,6 +357,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * @base: base address of the new region
+  * @size: size of the new region
+  * @nid: nid of the new region
++ * @flags: flags of the new region
+  *
+  * Add new memblock region [@base,@base+@size) into @type.  The new region
+  * is allowed to overlap with existing ones - overlaps don't affect already
+@@ -362,7 +368,8 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * 0 on success, -errno on failure.
+  */
+ static int __init_memblock memblock_add_region(struct memblock_type *type,
+-				phys_addr_t base, phys_addr_t size, int nid)
++				phys_addr_t base, phys_addr_t size,
++				int nid, unsigned long flags)
+ {
+ 	bool insert = false;
+ 	phys_addr_t obase = base;
+@@ -377,6 +384,7 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
+ 		WARN_ON(type->cnt != 1 || type->total_size);
+ 		type->regions[0].base = base;
+ 		type->regions[0].size = size;
++		type->regions[0].flags = flags;
+ 		memblock_set_region_node(&type->regions[0], nid);
+ 		type->total_size = size;
+ 		return 0;
+@@ -407,7 +415,8 @@ repeat:
+ 			nr_new++;
+ 			if (insert)
+ 				memblock_insert_region(type, i++, base,
+-						       rbase - base, nid);
++						       rbase - base, nid,
++						       flags);
+ 		}
+ 		/* area below @rend is dealt with, forget about it */
+ 		base = min(rend, end);
+@@ -417,7 +426,8 @@ repeat:
+ 	if (base < end) {
+ 		nr_new++;
+ 		if (insert)
+-			memblock_insert_region(type, i, base, end - base, nid);
++			memblock_insert_region(type, i, base, end - base,
++					       nid, flags);
+ 	}
+ 
+ 	/*
+@@ -439,12 +449,14 @@ repeat:
+ int __init_memblock memblock_add_node(phys_addr_t base, phys_addr_t size,
+ 				       int nid)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, nid);
++	return memblock_add_region(&memblock.memory, base, size,
++				   nid, MEMBLK_FLAGS_DEFAULT);
+ }
+ 
+ int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, MAX_NUMNODES);
++	return memblock_add_region(&memblock.memory, base, size,
++				   MAX_NUMNODES, MEMBLK_FLAGS_DEFAULT);
+ }
+ 
+ /**
+@@ -499,7 +511,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= base - rbase;
+ 			type->total_size -= base - rbase;
+ 			memblock_insert_region(type, i, rbase, base - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else if (rend > end) {
+ 			/*
+ 			 * @rgn intersects from above.  Split and redo the
+@@ -509,7 +522,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= end - rbase;
+ 			type->total_size -= end - rbase;
+ 			memblock_insert_region(type, i--, rbase, end - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else {
+ 			/* @rgn is fully contained, record it */
+ 			if (!*end_rgn)
+@@ -551,16 +565,25 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+ 
+-int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++static int __init_memblock memblock_reserve_region(phys_addr_t base,
++						   phys_addr_t size,
++						   int nid,
++						   unsigned long flags)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
+ 
+-	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
++	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] with flags %#016lx %pF\n",
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+-		     (void *)_RET_IP_);
++		     flags, (void *)_RET_IP_);
++
++	return memblock_add_region(_rgn, base, size, nid, flags);
++}
+ 
+-	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++{
++	return memblock_reserve_region(base, size, MAX_NUMNODES,
++				       MEMBLK_FLAGS_DEFAULT);
+ }
+ 
+ /**
+@@ -985,6 +1008,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+ 	unsigned long long base, size;
++	unsigned long flags;
+ 	int i;
+ 
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
+@@ -995,13 +1019,14 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ 
+ 		base = rgn->base;
+ 		size = rgn->size;
++		flags = rgn->flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
+ 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
+ 				 memblock_get_region_node(rgn));
+ #endif
+-		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
+-			name, i, base, base + size - 1, size, nid_buf);
++		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s flags: %#lx\n",
++			name, i, base, base + size - 1, size, nid_buf, flags);
+ 	}
+ }
+ 
+-- 
+1.7.1
 
-Cheers,
-
-      		       	  	   		    - Ted
