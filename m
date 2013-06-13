@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab3FMQfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:35:48 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:36405 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758736Ab3FMQfp (ORCPT
+	id S1758697Ab3FMQfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:35:34 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64379 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758658Ab3FMQfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:35:45 -0400
+	Thu, 13 Jun 2013 12:35:30 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
         Yinghai Lu <yinghai@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
         linux-acpi@vger.kernel.org
-Subject: [BUGFIX 6/9] ACPI, DOCK: mark initialization functions with __init
-Date: Fri, 14 Jun 2013 00:32:29 +0800
-Message-Id: <1371141152-9468-7-git-send-email-jiang.liu@huawei.com>
+Subject: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
+Date: Fri, 14 Jun 2013 00:32:26 +0800
+Message-Id: <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
 References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
@@ -27,8 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark all initialization functions with __init to reduce memory
-consumption at runtime.
+ACPI dock driver can't be built as a module any more, so clean up
+module related code.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Shaohua Li <shaohua.li@intel.com>
@@ -37,67 +37,72 @@ Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/dock.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/acpi/dock.c | 41 -----------------------------------------
+ 1 file changed, 41 deletions(-)
 
 diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index cd2d5df..da3314d 100644
+index 79c8d9e..50e38b7 100644
 --- a/drivers/acpi/dock.c
 +++ b/drivers/acpi/dock.c
-@@ -94,7 +94,7 @@ struct dock_dependent_device {
-  *
-  * Add the dependent device to the dock's dependent device list.
-  */
--static int
-+static int __init
- add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
- {
- 	struct dock_dependent_device *dd;
-@@ -192,7 +192,7 @@ static int is_dock(acpi_handle handle)
- 	return 1;
+@@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
+ 
+ static struct atomic_notifier_head dock_notifier_list;
+ 
+-static const struct acpi_device_id dock_device_ids[] = {
+-	{"LNXDOCK", 0},
+-	{"", 0},
+-};
+-MODULE_DEVICE_TABLE(acpi, dock_device_ids);
+-
+ struct dock_station {
+ 	acpi_handle handle;
+ 	unsigned long last_dock_time;
+@@ -1013,30 +1007,6 @@ err_unregister:
  }
  
--static int is_ejectable(acpi_handle handle)
-+static int __init is_ejectable(acpi_handle handle)
- {
- 	acpi_status status;
- 	acpi_handle tmp;
-@@ -203,7 +203,7 @@ static int is_ejectable(acpi_handle handle)
- 	return 1;
- }
- 
--static int is_ata(acpi_handle handle)
-+static int __init is_ata(acpi_handle handle)
- {
- 	acpi_handle tmp;
- 
-@@ -216,7 +216,7 @@ static int is_ata(acpi_handle handle)
+ /**
+- * dock_remove - free up resources related to the dock station
+- */
+-static int dock_remove(struct dock_station *ds)
+-{
+-	struct dock_dependent_device *dd, *tmp;
+-	struct platform_device *dock_device = ds->dock_device;
+-
+-	if (!dock_station_count)
+-		return 0;
+-
+-	/* remove dependent devices */
+-	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
+-		kfree(dd);
+-
+-	list_del(&ds->sibling);
+-
+-	/* cleanup sysfs */
+-	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
+-	platform_device_unregister(dock_device);
+-
+-	return 0;
+-}
+-
+-/**
+  * find_dock_and_bay - look for dock stations and bays
+  * @handle: acpi handle of a device
+  * @lvl: unused
+@@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
+ 		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
  	return 0;
  }
- 
--static int is_battery(acpi_handle handle)
-+static int __init is_battery(acpi_handle handle)
- {
- 	struct acpi_device_info *info;
- 	int ret = 1;
-@@ -232,7 +232,7 @@ static int is_battery(acpi_handle handle)
- 	return ret;
- }
- 
--static int is_ejectable_bay(acpi_handle handle)
-+static int __init is_ejectable_bay(acpi_handle handle)
- {
- 	acpi_handle phandle;
- 
-@@ -809,7 +809,7 @@ static struct notifier_block dock_acpi_notifier = {
-  * check to see if an object has an _EJD method.  If it does, then it
-  * will see if it is dependent on the dock station.
-  */
--static acpi_status
-+static acpi_status __init
- find_dock_devices(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
- 	acpi_status status;
+-
+-static void __exit dock_exit(void)
+-{
+-	struct dock_station *tmp, *dock_station;
+-
+-	unregister_acpi_bus_notifier(&dock_acpi_notifier);
+-	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
+-		dock_remove(dock_station);
+-}
+-
+-module_exit(dock_exit);
 -- 
 1.8.1.2
 
