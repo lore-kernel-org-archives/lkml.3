@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab3FMIlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:41:11 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48998 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab3FMIlJ (ORCPT
+	id S1758348Ab3FMIl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:41:58 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:54340 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab3FMIlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:41:09 -0400
-From: <ludovic.desroches@atmel.com>
-To: <vinod.koul@intel.com>, <arnd@arndb.de>, <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [PATCH v3 2/2] at_hdmac: add FIFO configuration parameter to DMA DT binding
-Date: Thu, 13 Jun 2013 10:39:39 +0200
-Message-ID: <1371112779-22738-3-git-send-email-ludovic.desroches@atmel.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1371112779-22738-1-git-send-email-ludovic.desroches@atmel.com>
-References: <1371112779-22738-1-git-send-email-ludovic.desroches@atmel.com>
+	Thu, 13 Jun 2013 04:41:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130612132713.GE4320@laptop>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	<20130612132713.GE4320@laptop>
+Date: Thu, 13 Jun 2013 10:41:54 +0200
+Message-ID: <CACRpkdYtocMN-qvhOX_uHw=zoJysjJhGjQv5gL_ijkR56QL4Bg@mail.gmail.com>
+Subject: Re: [PATCH 00/32] ARM: ux500: Enable clocks for Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+On Wed, Jun 12, 2013 at 3:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> After this patchset has been applied, we can request clocks directly
+>> from Device Tree without using any AUXDATA device-name hacks. We also
+>> take care to remove all of thos at the end of the set.
+>
+> So it looks like Mike and Grant have okayed the actual design of this
+> patch-set, which is great. Is there any chance on some proper Acks from
+> Linus and Mike please?
 
-For most devices the FIFO configuration is the same i.e. when half FIFO size is
-available/filled, a source/destination request is serviced. But USART devices
-have to do it when there is enough space/data available to perform a single
-AHB access so the ASAP configuration.
+I will get to it. Basically I don't see there is a hurry as this has
+no chance to hit the v3.11 merge window anyway so we'll have
+lots of time to discuss it.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
- .../devicetree/bindings/dma/atmel-dma.txt          |  7 ++++--
- drivers/dma/at_hdmac.c                             | 25 ++++++++++++++++++----
- 2 files changed, 26 insertions(+), 6 deletions(-)
+Why 3.12: my five pull request for ux500 stuff to ARM SoC is still
+outstanding, and this stuff will clash with that unless we get
+a common merge base. So we have to wait for ARM SoC
+to settle at this point.
 
-diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-index c80e8a3..c280a0e 100644
---- a/Documentation/devicetree/bindings/dma/atmel-dma.txt
-+++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-@@ -24,8 +24,11 @@ The three cells in order are:
- 1. A phandle pointing to the DMA controller.
- 2. The memory interface (16 most significant bits), the peripheral interface
- (16 less significant bits).
--3. The peripheral identifier for the hardware handshaking interface. The
--identifier can be different for tx and rx.
-+3. Parameters for the at91 DMA configuration register which are device
-+dependant:
-+  - bit 7-0: peripheral identifier for the hardware handshaking interface. The
-+  identifier can be different for tx and rx.
-+  - bit 11-8: FIFO configuration. 0 for half FIFO, 1 for ALAP, 1 for ASAP.
- 
- Example:
- 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 6db5228..b7050a4 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -14,6 +14,7 @@
-  * found on AT91SAM9263.
-  */
- 
-+#include <dt-bindings/dma/at91.h>
- #include <linux/clk.h>
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-@@ -1320,15 +1321,31 @@ static struct dma_chan *at_dma_xlate(struct of_phandle_args *dma_spec,
- 	atslave = devm_kzalloc(&dmac_pdev->dev, sizeof(*atslave), GFP_KERNEL);
- 	if (!atslave)
- 		return NULL;
-+
-+	atslave->cfg = ATC_DST_H2SEL_HW | ATC_SRC_H2SEL_HW;
- 	/*
- 	 * We can fill both SRC_PER and DST_PER, one of these fields will be
- 	 * ignored depending on DMA transfer direction.
- 	 */
--	per_id = dma_spec->args[1];
--	atslave->cfg = ATC_FIFOCFG_HALFFIFO
--		     | ATC_DST_H2SEL_HW | ATC_SRC_H2SEL_HW
--		     | ATC_DST_PER_MSB(per_id) | ATC_DST_PER(per_id)
-+	per_id = dma_spec->args[1] & AT91_DMA_CFG_PER_ID_MASK;
-+	atslave->cfg |= ATC_DST_PER_MSB(per_id) | ATC_DST_PER(per_id)
- 		     | ATC_SRC_PER_MSB(per_id) | ATC_SRC_PER(per_id);
-+	/*
-+	 * We have to translate the value we get from the device tree since
-+	 * the half FIFO configuration value had to be 0 to keep backward
-+	 * compatibility.
-+	 */
-+	switch (dma_spec->args[1] & AT91_DMA_CFG_FIFOCFG_MASK) {
-+	case AT91_DMA_CFG_FIFOCFG_ALAP:
-+		atslave->cfg |= ATC_FIFOCFG_LARGESTBURST;
-+		break;
-+	case AT91_DMA_CFG_FIFOCFG_ASAP:
-+		atslave->cfg |= ATC_FIFOCFG_ENOUGHSPACE;
-+		break;
-+	case AT91_DMA_CFG_FIFOCFG_HALF:
-+	default:
-+		atslave->cfg |= ATC_FIFOCFG_HALFFIFO;
-+	}
- 	atslave->dma_dev = &dmac_pdev->dev;
- 
- 	chan = dma_request_channel(mask, at_dma_filter, atslave);
--- 
-1.7.11.3
-
+Yours,
+Linus Walleij
