@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab3FMBdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 21:33:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47472 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab3FMBdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 21:33:13 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <51B92140.9050407@jp.fujitsu.com>
-Date: Thu, 13 Jun 2013 10:32:48 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1758228Ab3FMBej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 21:34:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34783 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756730Ab3FMBei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 21:34:38 -0400
+Date: Thu, 13 Jun 2013 04:33:17 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
+        <arnd@arndb.de>, <adrienverge@gmail.com>, <kishon@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] USB: PHY: Improve PHY selection logic
+Message-ID: <20130613013317.GA12078@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1369999743-11758-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-CC: HATAYAMA Daisuke <d.hatayama@gmail.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kexec@lists.infradead.org,
-        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com> <1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com> <CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com> <20130610173739.4d88d4ec@holzheu> <CABOkKT05VR3V9rEz1LWnEJSEvkevhBFfQVVX5_DS0Z4rBG9EyA@mail.gmail.com> <20130612111303.3323f24f@holzheu>
-In-Reply-To: <20130612111303.3323f24f@holzheu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <1369999743-11758-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/12 18:13), Michael Holzheu wrote:
-> On Tue, 11 Jun 2013 21:42:15 +0900
-> HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
->
->> 2013/6/11 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
->>> On Mon, 10 Jun 2013 22:40:24 +0900
->>> HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
->>>
->>>> 2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-<cut>
-> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct'vm_fault *vmf)
-> {
->          struct address_space *mapping = vma->vm_private_data;
->          pgoff_t index = vmf->pgoff;
->          struct page *page;
->          loff_t src;
->          char *buf;
->
->          page = find_or_create_page(mapping, index, GFP_KERNEL);
->          if (!page)
->                  return VM_FAULT_OOM;
->          if (!PageUptodate(page)) {
->                  src = index << PAGE_CACHE_SHIFT;
->                  buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
->                  if (__read_vmcore(buf, PAGE_SIZE, &src, 0) < 0) {
->                          unlock_page(page);
->                          return VM_FAULT_SIGBUS;
->                  }
->                  SetPageUptodate(page);
->          }
->          unlock_page(page);
->          vmf->page = page;
->          return 0;
-> }
->
-> Perhaps one open issue remains:
->
-> Can we remove the page from the page cache if __read_vmcore() fails?
->
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, use page_cache_release() after unlocking the page like:
+On Fri, May 31, 2013 at 02:29:01PM +0300, Roger Quadros wrote:
+> Hi,
+>=20
+> Improve Kconfig so that the relevant PHY driver can be explicitely
+> selected by the controller driver instead of relying on the user
+> to do so.
+>=20
+> Detailed description in patch 1.
+>=20
+> v2:
+> - Merge patches 3-5 into the first patch to prevent circular dependency
+> between the Kconfig options during bisection.
 
-                    if (__read_vmcore(buf, PAGE_SIZE, &src, 0) < 0) {
-                            unlock_page(page);
-+                          page_cache_release(page);
-                            return VM_FAULT_SIGBUS;
-                    }
+FYI, these patches were dropped because they cause linking issues as
+noted by Greg.
 
-BTW, you now keep file->f_mapping in vma->vm_private_data, but the vma already has the file object in its vma->vm_file member. You can get the mapping by vma->vm_file->f_mapping without necessity of vma->vm_private_data.
+--=20
+balbi
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuSFdAAoJEIaOsuA1yqREeUcP/RTWwOg3nsEv0pLqW4vyt4qi
++VYAWhf6Yb+SUePCuIJLhdpuI61KgsKwJ4F84uxWs4gChrgdHqigViMQeEAhTNsI
+QwbYBjQj2S/StszTYG1zRdseeBSL99Tvasqic9n7FP9MHg4QCkY8TR8VTzBKiHZ1
+x1y0yowEC5imcGtZjmyzI41hR29JU5dVAc7edImIztcNSoywmQTRGcSC/2Ga8dq2
+5yTuq0utqWv0Meumc0y2qVBbH1zZ/5bUFGfR91t4VxajEXYelC0sfuXpmDrX+hXD
+D9CLm68lOsuZFcTOzhqrfUjcsFFc8IoGrUyfxTDu4X7Kal4nOsp3C0B0utM/t2rp
+ybzXDsIif+hCY5h/K6g4Gb1rLSD8rakaEYNNezQCM/8qcTwMD8QJPr67wDKteYl1
+ghMwd4TNYKNfrv625JUIltzSJWmgCcZMBS7tRRB4gZVCGAkRkn+VxIB6nZa6+sOt
+vvEToa1EFIFjNJX3YFYhbmcMwj6SLDoNmfv1bJNV5K9ZxBf0O83CYIb6iV3W2V60
+bhdEouBPRIKxsjlw47Fj8erOo18S9b3mV40QSHWi3jpzfHbr3VtsVw5AxvciGwzI
+K3P/2MQmA39RUQ8V5vyZYqUITY83Xz+k61od61X8910FdYrCkIopIn0Y7E5NmFtN
+gDECdu2Tib29nyUpNu8h
+=aHBA
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
