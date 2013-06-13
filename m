@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab3FMSdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:33:25 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:37604 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759131Ab3FMSdU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:33:20 -0400
-Date: Thu, 13 Jun 2013 11:33:15 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	id S1759195Ab3FMSdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:33:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35530 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759121Ab3FMSdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:33:23 -0400
+Message-ID: <1371148401.31941.20.camel@joe-AO722>
+Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        netdev <netdev@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH] bio-integrity: Fix use of bs->bio_integrity_pool after
- free
-Message-ID: <20130613183315.GH10979@localhost>
-References: <20130529222955.10627.50429.stgit@bhelgaas-glaptop>
- <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Date: Thu, 13 Jun 2013 11:33:21 -0700
+In-Reply-To: <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+	 <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:14:54PM -0600, Bjorn Helgaas wrote:
-> On Wed, May 29, 2013 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > This fixes a copy and paste error introduced by 9f060e2231
-> > ("block: Convert integrity to bvec_alloc_bs()").
-> >
-> > Found by Coverity (CID 1020654).
-> >
-> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> > ---
-> >  fs/bio-integrity.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> > index 8fb4291..45e944f 100644
-> > --- a/fs/bio-integrity.c
-> > +++ b/fs/bio-integrity.c
-> > @@ -734,7 +734,7 @@ void bioset_integrity_free(struct bio_set *bs)
-> >                 mempool_destroy(bs->bio_integrity_pool);
-> >
-> >         if (bs->bvec_integrity_pool)
-> > -               mempool_destroy(bs->bio_integrity_pool);
-> > +               mempool_destroy(bs->bvec_integrity_pool);
-> >  }
-> >  EXPORT_SYMBOL(bioset_integrity_free);
+On Thu, 2013-06-13 at 21:25 +0300, Andy Shevchenko wrote:
+> On Thu, Jun 13, 2013 at 5:37 PM, Alexey Brodkin
+> <Alexey.Brodkin@synopsys.com> wrote:
+> > Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+> > instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+> > ARCAngel4/ML50x.
 > 
-> Kent, do you want to chime in on this?  Looks like an obvious error to
-> me, but maybe I'm missing something and we should teach Coverity to
-> shut up about it.
+> Much better. But still few comments below.
 
-Sorry - no, this is definitely a bug:
+Sensible comments save for this truly trivial one
 
-Acked-by: Kent Overstreet <koverstreet@google.com>
+> > +++ b/drivers/net/ethernet/arc/arc_emac.h
+[]
+> > +               if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
+> > +                       /* BD is still owned by EMAC */
+> > +                       continue;
+> > +               }
+> 
+> Redundant braces.
+
+Maybe not.  Braces can be a visual aid when there is
+a comment in the test.
+
+
