@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab3FMMpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:45:22 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:32300 "EHLO multi.imgtec.com"
+	id S1756946Ab3FMMpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:45:30 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:35767 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab3FMMpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:45:21 -0400
-Message-ID: <51B9BE95.6090604@imgtec.com>
-Date: Thu, 13 Jun 2013 13:44:05 +0100
+	id S1756718Ab3FMMpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 08:45:25 -0400
+Message-ID: <51B9BEBC.5040309@imgtec.com>
+Date: Thu, 13 Jun 2013 13:44:44 +0100
 From: James Hogan <james.hogan@imgtec.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: James Hogan <james.hogan@imgtec.com>
 CC: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Arnd Bergmann" <arnd@arndb.de>, <linux-doc@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 1/9] metag: of_platform_populate from arch generic
- code
-References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com> <1369412476-14245-2-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1369412476-14245-2-git-send-email-james.hogan@imgtec.com>
+Subject: Re: [PATCH v2 2/9] metag: minimal TZ1090 (Comet) SoC infrastructure
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com> <1369412476-14245-3-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1369412476-14245-3-git-send-email-james.hogan@imgtec.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
@@ -29,46 +29,200 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 24/05/13 17:21, James Hogan wrote:
-> If no init_machine callback is provided, call of_platform_populate()
-> instead. This allows a board/SoC that only needs to call
-> of_platform_populate to omit the callback altogether.
+> Add really minimal support for Toumaz Xenif TZ1090 SoC (A.K.A. Comet).
+> This consists of minimal build infrastructure, device tree files, and a
+> defconfig based on meta2_defconfig.
+> 
+> This SoC contains a 2-threaded HTP (Meta 2) as the main application
+> processor, and is found in a number of development boards and digital
+> radios, such as the Minimorph Development Platform.
 > 
 > Signed-off-by: James Hogan <james.hogan@imgtec.com>
 > Cc: Grant Likely <grant.likely@secretlab.ca>
 > Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
 > Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-doc@vger.kernel.org
 > Cc: devicetree-discuss@lists.ozlabs.org
+> ---
+> Changes in v2:
+>  - removed arch/metag/soc/ directory
 
 I've applied this patch for v3.11
 
 Cheers
 James
 
-> ---
->  arch/metag/kernel/setup.c | 4 ++++
->  1 file changed, 4 insertions(+)
 > 
-> diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-> index 4f5726f..e18cebb 100644
-> --- a/arch/metag/kernel/setup.c
-> +++ b/arch/metag/kernel/setup.c
-> @@ -20,6 +20,7 @@
->  #include <linux/memblock.h>
->  #include <linux/mm.h>
->  #include <linux/of_fdt.h>
-> +#include <linux/of_platform.h>
->  #include <linux/pfn.h>
->  #include <linux/root_dev.h>
->  #include <linux/sched.h>
-> @@ -424,6 +425,9 @@ static int __init customize_machine(void)
->  	/* customizes platform devices, or adds new ones */
->  	if (machine_desc->init_machine)
->  		machine_desc->init_machine();
-> +	else
-> +		of_platform_populate(NULL, of_default_bus_match_table, NULL,
-> +				     NULL);
->  	return 0;
->  }
->  arch_initcall(customize_machine);
+>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>  arch/metag/Kconfig.soc                             |  9 +++++
+>  arch/metag/Makefile                                |  2 +-
+>  arch/metag/boot/dts/Makefile                       |  2 ++
+>  arch/metag/boot/dts/tz1090.dtsi                    | 29 +++++++++++++++
+>  arch/metag/boot/dts/tz1090_generic.dts             | 10 ++++++
+>  arch/metag/configs/tz1090_defconfig                | 42 ++++++++++++++++++++++
+>  7 files changed, 94 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/metag/boot/dts/tz1090.dtsi
+>  create mode 100644 arch/metag/boot/dts/tz1090_generic.dts
+>  create mode 100644 arch/metag/configs/tz1090_defconfig
+> 
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 6931c43..be80992 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -57,6 +57,7 @@ snps 	Synopsys, Inc.
+>  st	STMicroelectronics
+>  ste	ST-Ericsson
+>  stericsson	ST-Ericsson
+> +toumaz	Toumaz
+>  ti	Texas Instruments
+>  toshiba	Toshiba Corporation
+>  via	VIA Technologies, Inc.
+> diff --git a/arch/metag/Kconfig.soc b/arch/metag/Kconfig.soc
+> index ec079cf..653b479 100644
+> --- a/arch/metag/Kconfig.soc
+> +++ b/arch/metag/Kconfig.soc
+> @@ -14,6 +14,15 @@ config META21_FPGA
+>  	help
+>  	  This is a Meta 2.1 FPGA bitstream, just a bare CPU.
+>  
+> +config SOC_TZ1090
+> +	bool "Toumaz Xenif TZ1090 SoC (Comet)"
+> +	select METAG_LNKGET_AROUND_CACHE
+> +	select METAG_META21
+> +	select METAG_SMP_WRITE_REORDERING
+> +	help
+> +	  This is a Toumaz Technology Xenif TZ1090 (A.K.A. Comet) SoC containing
+> +	  a 2-threaded HTP.
+> +
+>  endchoice
+>  
+>  menu "SoC configuration"
+> diff --git a/arch/metag/Makefile b/arch/metag/Makefile
+> index b566116..9739857 100644
+> --- a/arch/metag/Makefile
+> +++ b/arch/metag/Makefile
+> @@ -20,7 +20,7 @@ checkflags-$(CONFIG_METAG_META12)	+= -DMETAC_1_2
+>  checkflags-$(CONFIG_METAG_META21)	+= -DMETAC_2_1
+>  CHECKFLAGS				+= -D__metag__ $(checkflags-y)
+>  
+> -KBUILD_DEFCONFIG			:= meta2_defconfig
+> +KBUILD_DEFCONFIG			:= tz1090_defconfig
+>  
+>  sflags-$(CONFIG_METAG_META12)		+= -mmetac=1.2
+>  ifeq ($(CONFIG_METAG_META12),y)
+> diff --git a/arch/metag/boot/dts/Makefile b/arch/metag/boot/dts/Makefile
+> index dbd9521..72c1218 100644
+> --- a/arch/metag/boot/dts/Makefile
+> +++ b/arch/metag/boot/dts/Makefile
+> @@ -1,7 +1,9 @@
+>  dtb-y	+= skeleton.dtb
+> +dtb-y	+= tz1090_generic.dtb
+>  
+>  # Built-in dtb
+>  builtindtb-y				:= skeleton
+> +builtindtb-$(CONFIG_SOC_TZ1090)		:= tz1090_generic
+>  
+>  ifneq ($(CONFIG_METAG_BUILTIN_DTB_NAME),"")
+>  	builtindtb-y			:= $(patsubst "%",%,$(CONFIG_METAG_BUILTIN_DTB_NAME))
+> diff --git a/arch/metag/boot/dts/tz1090.dtsi b/arch/metag/boot/dts/tz1090.dtsi
+> new file mode 100644
+> index 0000000..ca057f0
+> --- /dev/null
+> +++ b/arch/metag/boot/dts/tz1090.dtsi
+> @@ -0,0 +1,29 @@
+> +/*
+> + * Copyright (C) 2012 Imagination Technologies Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible = "toumaz,tz1090", "img,meta";
+> +
+> +	interrupt-parent = <&intc>;
+> +
+> +	intc: interrupt-controller {
+> +		compatible = "img,meta-intc";
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +		num-banks = <2>;
+> +	};
+> +
+> +	soc {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		ranges;
+> +	};
+> +};
+> diff --git a/arch/metag/boot/dts/tz1090_generic.dts b/arch/metag/boot/dts/tz1090_generic.dts
+> new file mode 100644
+> index 0000000..aa826cb
+> --- /dev/null
+> +++ b/arch/metag/boot/dts/tz1090_generic.dts
+> @@ -0,0 +1,10 @@
+> +/*
+> + * Copyright (C) 2012 Imagination Technologies Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +/include/ "tz1090.dtsi"
+> diff --git a/arch/metag/configs/tz1090_defconfig b/arch/metag/configs/tz1090_defconfig
+> new file mode 100644
+> index 0000000..9f9316a
+> --- /dev/null
+> +++ b/arch/metag/configs/tz1090_defconfig
+> @@ -0,0 +1,42 @@
+> +# CONFIG_LOCALVERSION_AUTO is not set
+> +# CONFIG_SWAP is not set
+> +CONFIG_SYSVIPC=y
+> +CONFIG_SYSFS_DEPRECATED=y
+> +CONFIG_SYSFS_DEPRECATED_V2=y
+> +CONFIG_KALLSYMS_ALL=y
+> +# CONFIG_ELF_CORE is not set
+> +CONFIG_SLAB=y
+> +# CONFIG_BLK_DEV_BSG is not set
+> +CONFIG_PARTITION_ADVANCED=y
+> +# CONFIG_MSDOS_PARTITION is not set
+> +# CONFIG_IOSCHED_DEADLINE is not set
+> +# CONFIG_IOSCHED_CFQ is not set
+> +CONFIG_FLATMEM_MANUAL=y
+> +CONFIG_SOC_TZ1090=y
+> +CONFIG_METAG_HALT_ON_PANIC=y
+> +# CONFIG_METAG_FPU is not set
+> +CONFIG_METAG_DA=y
+> +CONFIG_HZ_100=y
+> +CONFIG_DEVTMPFS=y
+> +# CONFIG_STANDALONE is not set
+> +# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+> +# CONFIG_FW_LOADER is not set
+> +CONFIG_BLK_DEV_RAM=y
+> +CONFIG_BLK_DEV_RAM_COUNT=1
+> +CONFIG_BLK_DEV_RAM_SIZE=16384
+> +# CONFIG_INPUT is not set
+> +# CONFIG_SERIO is not set
+> +# CONFIG_VT is not set
+> +# CONFIG_LEGACY_PTYS is not set
+> +CONFIG_DA_TTY=y
+> +CONFIG_DA_CONSOLE=y
+> +# CONFIG_DEVKMEM is not set
+> +# CONFIG_HW_RANDOM is not set
+> +CONFIG_GPIOLIB=y
+> +# CONFIG_HWMON is not set
+> +# CONFIG_USB_SUPPORT is not set
+> +# CONFIG_DNOTIFY is not set
+> +CONFIG_TMPFS=y
+> +# CONFIG_MISC_FILESYSTEMS is not set
+> +# CONFIG_SCHED_DEBUG is not set
+> +CONFIG_DEBUG_INFO=y
 > 
 
