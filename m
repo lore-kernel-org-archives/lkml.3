@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab3FMN3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:29:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56200 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757150Ab3FMN3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:29:13 -0400
-Date: Thu, 13 Jun 2013 15:29:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Richard Weinberger <richard@nod.at>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, hannes@cmpxchg.org
-Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
- pointer dereference at 00000000000001a8
-Message-ID: <20130613132908.GC23070@dhcp22.suse.cz>
-References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
- <20130613120248.GB23070@dhcp22.suse.cz>
- <51B9B5BC.4090702@nod.at>
+	id S1758542Ab3FMNaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:30:07 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:44762 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419Ab3FMNaC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:30:02 -0400
+Date: Thu, 13 Jun 2013 22:29:57 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David McCullough <david_mccullough@au.securecomputing.com>,
+        Thorsten Glaser <tg@mirbsd.org>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: shmobile: Use POSIX "$((..))" instead of
+ bashism "$[...]"
+Message-ID: <20130613132957.GA22787@verge.net.au>
+References: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
+ <1371129052-31506-3-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51B9B5BC.4090702@nod.at>
+In-Reply-To: <1371129052-31506-3-git-send-email-geert@linux-m68k.org>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 13, 2013 at 03:10:51PM +0200, Geert Uytterhoeven wrote:
+> According to the bash 4.1 manpage, "$[...]" is deprecated, and will be
+> removed in upcoming versions of bash.
+> Hence replace the bash-specific "$[...]" by POSIX "$((..))" for arithmetic
+> expansion, which also allows to drop the forced use of bash.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/arm/mach-shmobile/Makefile.boot |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-shmobile/Makefile.boot b/arch/arm/mach-shmobile/Makefile.boot
+> index 95ebc7c..75a55e1 100644
+> --- a/arch/arm/mach-shmobile/Makefile.boot
+> +++ b/arch/arm/mach-shmobile/Makefile.boot
+> @@ -1,5 +1,5 @@
+> -__ZRELADDR	:= $(shell /bin/bash -c 'printf "0x%08x" \
+> -		     $$[$(CONFIG_MEMORY_START) + 0x8000]')
+> +__ZRELADDR	:= $(shell printf "0x%08x" \
+> +		     $$(($(CONFIG_MEMORY_START) + 0x8000)))
+>  
+>     zreladdr-y   += $(__ZRELADDR)
 
-On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
-[...]
-> All code
-> ========
->    0:   89 50 08                mov    %edx,0x8(%rax)
->    3:   48 89 d1                mov    %rdx,%rcx
->    6:   0f 1f 40 00             nopl   0x0(%rax)
->    a:   49 8b 04 24             mov    (%r12),%rax
->    e:   48 89 c2                mov    %rax,%rdx
->   11:   48 c1 e8 38             shr    $0x38,%rax
->   15:   83 e0 03                and    $0x3,%eax
-					nid = page_to_nid
->   18:   48 c1 ea 3a             shr    $0x3a,%rdx
-					zid = page_zonenum
+This code was (very) recently changed by a patch that I
+have queued up for v3.11 in the cleanup-boot branch of my renesas tree
+on kernel.org. I believe that patch removes the instance of $[..]].
 
->   1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
->   23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
-					&memcg->nodeinfo[nid]->zoneinfo[zid]
 
->   2a:   00
->   2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
+commit 12dca809ef785e451263351325d4806198040b40
+Author: Magnus Damm <damm@opensource.se>
+Date:   Mon Jun 10 18:28:57 2013 +0900
 
-OK, so this maps to:
-        if (unlikely(lruvec->zone != zone)) <<<
-                lruvec->zone = zone;
+    ARM: shmobile: uImage load address rework
+    
+    This is V2 of the mach-shmobile uImage load address rework patch.
+    
+    Rework the mach-shmobile uImage load address calculation by storing
+    the per-board load addresses in Makefile.boot. This removes the
+    CONFIG_MEMORY_START dependency from Makefile.boot, and it also makes
+    it possible to create safe kernel images that boot on multiple boards.
+    
+    This is one of several series of code that reworks code not to rely on
+    CONFIG_MEMORY_START/SIZE which in turn is needed for ARCH_MULTIPLATFORM.
+    
+    Signed-off-by: Magnus Damm <damm@opensource.se>
+    Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+    Reviewed-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+    Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 
-> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
-> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
-> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
-> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
-> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
-> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
-> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
+diff --git a/arch/arm/mach-shmobile/Makefile.boot b/arch/arm/mach-shmobile/Makefile.boot
+index 498efd9..6b147ea 100644
+--- a/arch/arm/mach-shmobile/Makefile.boot
++++ b/arch/arm/mach-shmobile/Makefile.boot
+@@ -1,6 +1,22 @@
+-__ZRELADDR	:= $(shell /bin/bash -c 'printf "0x%08x" \
+-		     $$[$(CONFIG_MEMORY_START) + 0x8000]')
++# per-board load address for uImage
++loadaddr-y	:=
++loadaddr-$(CONFIG_MACH_AG5EVM) += 0x40008000
++loadaddr-$(CONFIG_MACH_AP4EVB) += 0x40008000
++loadaddr-$(CONFIG_MACH_APE6EVM) += 0x40008000
++loadaddr-$(CONFIG_MACH_ARMADILLO800EVA) += 0x40008000
++loadaddr-$(CONFIG_MACH_ARMADILLO800EVA_REFERENCE) += 0x40008000
++loadaddr-$(CONFIG_MACH_BOCKW) += 0x60008000
++loadaddr-$(CONFIG_MACH_BONITO) += 0x40008000
++loadaddr-$(CONFIG_MACH_KOTA2) += 0x41008000
++loadaddr-$(CONFIG_MACH_KZM9D) += 0x40008000
++loadaddr-$(CONFIG_MACH_KZM9G) += 0x41008000
++loadaddr-$(CONFIG_MACH_KZM9G_REFERENCE) += 0x41008000
++loadaddr-$(CONFIG_MACH_LAGER) += 0x40008000
++loadaddr-$(CONFIG_MACH_MACKEREL) += 0x40008000
++loadaddr-$(CONFIG_MACH_MARZEN) += 0x60008000
++loadaddr-$(CONFIG_MACH_MARZEN_REFERENCE) += 0x60008000
+ 
++__ZRELADDR	:= $(sort $(loadaddr-y))
+    zreladdr-y   += $(__ZRELADDR)
+ 
+ # Unsupported legacy stuff
 
-RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
-contain an address at an offset from ffff88003e04a800 But there is 0x138 there
-instead.
-
-Is this easily reproducible? Could you configure kdump.
-
--- 
-Michal Hocko
-SUSE Labs
