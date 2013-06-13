@@ -1,290 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab3FMQOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:14:55 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:5317 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab3FMQNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:13:07 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v5 2/5] clk: move some parent related functions upwards
-Date: Thu, 13 Jun 2013 17:05:59 +0100
-Message-ID: <1371139562-305-3-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
-References: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
+	id S1756771Ab3FMQQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:16:10 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:35306 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3FMQQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 12:16:08 -0400
+Date: Thu, 13 Jun 2013 18:16:06 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Mikael Pettersson <mikpe@it.uu.se>,
+        David Howells <dhowells@redhat.com>,
+        Orion Poplawski <orion@cora.nwra.com>
+Subject: Re: [PATCH] tty: Debug EIO from write()
+Message-ID: <20130613161606.GA516@x4>
+References: <20130613145133.GC519@x4>
+ <1371137152-25916-1-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_06_13_17_13_05
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371137152-25916-1-git-send-email-peter@hurleysoftware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move some parent related functions up in clk.c so they can be used by
-the modifications in the following patch which enables clock reparenting
-during set_rate. No other changes are made so this patch makes no
-functional difference in isolation. This is separate from the following
-patch primarily to ease readability of that patch.
+I've reproduced the Mozilla build failure, but there's nothing exiting
+in the logs. The only strange thing is the single tty_write at
+1507.456817 (roughly at this point the Mozilla build failed):
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
----
-Changes in v5:
+...
+[ 1507.453547] tty_release: pts11 (tty count=4)...
+[ 1507.455695] tty_open: opening pts11...
+[ 1507.455699] tty_release: pts11 (tty count=4)...
+[ 1507.455854] tty_open: opening pts11...
+[ 1507.455858] tty_release: pts11 (tty count=4)...
+[ 1507.456815] tty_open: opening pts11...
+[ 1507.456817] tty_write: pts11: 0xa03
+[ 1507.456819] tty_release: pts11 (tty count=4)...
+[ 1507.457313] tty_open: opening pts11...
+[ 1507.457317] tty_release: pts11 (tty count=4)...
+[ 1507.458711] tty_open: opening pts11...
+[ 1507.458715] tty_release: pts11 (tty count=4)...
+[ 1507.458918] tty_open: opening pts11...
+[ 1507.458922] tty_release: pts11 (tty count=4)...
+[ 1507.459062] tty_open: opening pts11...
+[ 1507.459066] tty_release: pts11 (tty count=4)...
+...
 
-* Rebased on latest clk-next ("clk: tegra: Use common of_clk_init
-  function")
+Looking through my logs I see a few ldisc errors, but please note that they are
+all unrelated to the actual Mozilla failure.
 
-Changes in v4:
+Jun 13 17:31:07 x4 kernel: tty_open: opening pts11...
+Jun 13 17:31:07 x4 kernel: tty_release: pts11 (tty count=4)...
+Jun 13 17:31:08 x4 kernel: tty_release: ptm1 (tty count=1)...
+Jun 13 17:31:08 x4 kernel: tty_read: pts1: ldisc error (0xa05)
+Jun 13 17:31:08 x4 kernel: pts1 vhangup...
+Jun 13 17:31:08 x4 kernel: hung_up_tty_write: pts1: 0x200a05
+Jun 13 17:31:08 x4 kernel: tty_release: pts1 (tty count=2)...
+Jun 13 17:31:08 x4 kernel: tty_release: ptm1: final close
+Jun 13 17:31:08 x4 kernel: tty_release: ptm1: freeing structure...
+Jun 13 17:31:08 x4 kernel: tty_release: ptm0 (tty count=1)...
+Jun 13 17:31:08 x4 kernel: pts0 vhangup...
+Jun 13 17:31:08 x4 kernel: tty_release: pts0 (tty count=1)...
+Jun 13 17:31:08 x4 kernel: tty_release: pts0: final close
+Jun 13 17:31:08 x4 kernel: tty_release: pts0: freeing structure...
+Jun 13 17:31:08 x4 kernel: tty_release: tty1 (tty count=8)...
+Jun 13 17:31:08 x4 kernel: tty_release: tty3 (tty count=1)...
+Jun 13 17:31:08 x4 kernel: tty_release: tty3: final close
+Jun 13 17:31:08 x4 kernel: tty_release: tty3: freeing structure...
+Jun 13 17:31:11 x4 kernel: tty_open: opening tty1...
+Jun 13 17:31:11 x4 kernel: tty_open: opening tty1...
+Jun 13 17:31:11 x4 kernel: tty_release: tty1 (tty count=9)...
+Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=8)...
+Jun 13 17:31:13 x4 kernel: tty_release: tty2 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: tty_release: tty2: final close
+Jun 13 17:31:13 x4 kernel: tty_release: tty2: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_release: pts6 (tty count=2)...
+Jun 13 17:31:13 x4 kernel: tty1 vhangup session...
+Jun 13 17:31:13 x4 kernel: tty_open: opening pts2...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm5 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts5 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm6 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts6 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm6: final close
+Jun 13 17:31:13 x4 kernel: tty_release: ptm6: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm7 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts7 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_release: pts5 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: tty_release: pts5: final close
+Jun 13 17:31:13 x4 kernel: tty_release: pts5: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_read: pts7: ldisc error (0x200805)
+Jun 13 17:31:13 x4 kernel: tty_release: ptm8 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts8 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_read: pts8: ldisc error (0x200805)
+Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=7)...
+Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=6)...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm9 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts9 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm10 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts10 vhangup...
+Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts10: 0x40a04
+Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts10: 0x40a04
+Jun 13 17:31:13 x4 kernel: tty_open: opening tty1...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm3 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts3 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_read: pts3: ldisc error (0x200805)
+Jun 13 17:31:13 x4 kernel: tty_release: pts7 (tty count=2)...
+Jun 13 17:31:13 x4 kernel: tty_release: pts7 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: tty_release: pts7: final close
+Jun 13 17:31:13 x4 kernel: tty_release: pts7: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_release: pts4 (tty count=2)...
+Jun 13 17:31:13 x4 kernel: tty_open: opening tty2...
+Jun 13 17:31:13 x4 kernel: tty_release: tty2 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: tty_release: tty2: final close
+Jun 13 17:31:13 x4 kernel: tty_release: tty2: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_open: opening tty2...
+Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=6)...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm4 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts4 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm4: final close
+Jun 13 17:31:13 x4 kernel: tty_release: ptm4: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm11 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts11 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_read: pts11: ldisc error (0x200a05)
+Jun 13 17:31:13 x4 kernel: tty_release: pts11 (tty count=3)...
+Jun 13 17:31:13 x4 kernel: tty_release: pts11 (tty count=2)...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm11: final close
+Jun 13 17:31:13 x4 kernel: tty_release: ptm11: freeing structure...
+Jun 13 17:31:13 x4 kernel: tty_release: ptm2 (tty count=1)...
+Jun 13 17:31:13 x4 kernel: pts2 vhangup...
+Jun 13 17:31:13 x4 kernel: tty_read: pts2: ldisc error (0x200a05)
+Jun 13 17:31:13 x4 kernel: tty_release: pts2 (tty count=3)...
+Jun 13 17:31:13 x4 kernel: tty_release: pts3 (tty count=2)...
+Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts3: 0x40a06
+Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts3: 0x40a06
 
-* new patch (patch 2) split out of patch 3 to avoid having to declare
-  static __clk_set_parent() at the top of clk.c, and to ease readability
-  of patch 3.
 
- drivers/clk/clk.c | 208 +++++++++++++++++++++++++++---------------------------
- 1 file changed, 104 insertions(+), 104 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index ce74e91..06d2b5e 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1027,6 +1027,110 @@ unsigned long clk_get_rate(struct clk *clk)
- }
- EXPORT_SYMBOL_GPL(clk_get_rate);
- 
-+static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
-+{
-+	u8 i;
-+
-+	if (!clk->parents)
-+		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
-+								GFP_KERNEL);
-+
-+	/*
-+	 * find index of new parent clock using cached parent ptrs,
-+	 * or if not yet cached, use string name comparison and cache
-+	 * them now to avoid future calls to __clk_lookup.
-+	 */
-+	for (i = 0; i < clk->num_parents; i++) {
-+		if (clk->parents && clk->parents[i] == parent)
-+			break;
-+		else if (!strcmp(clk->parent_names[i], parent->name)) {
-+			if (clk->parents)
-+				clk->parents[i] = __clk_lookup(parent->name);
-+			break;
-+		}
-+	}
-+
-+	return i;
-+}
-+
-+static void clk_reparent(struct clk *clk, struct clk *new_parent)
-+{
-+	hlist_del(&clk->child_node);
-+
-+	if (new_parent)
-+		hlist_add_head(&clk->child_node, &new_parent->children);
-+	else
-+		hlist_add_head(&clk->child_node, &clk_orphan_list);
-+
-+	clk->parent = new_parent;
-+}
-+
-+static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-+{
-+	unsigned long flags;
-+	int ret = 0;
-+	struct clk *old_parent = clk->parent;
-+
-+	/*
-+	 * Migrate prepare state between parents and prevent race with
-+	 * clk_enable().
-+	 *
-+	 * If the clock is not prepared, then a race with
-+	 * clk_enable/disable() is impossible since we already have the
-+	 * prepare lock (future calls to clk_enable() need to be preceded by
-+	 * a clk_prepare()).
-+	 *
-+	 * If the clock is prepared, migrate the prepared state to the new
-+	 * parent and also protect against a race with clk_enable() by
-+	 * forcing the clock and the new parent on.  This ensures that all
-+	 * future calls to clk_enable() are practically NOPs with respect to
-+	 * hardware and software states.
-+	 *
-+	 * See also: Comment for clk_set_parent() below.
-+	 */
-+	if (clk->prepare_count) {
-+		__clk_prepare(parent);
-+		clk_enable(parent);
-+		clk_enable(clk);
-+	}
-+
-+	/* update the clk tree topology */
-+	flags = clk_enable_lock();
-+	clk_reparent(clk, parent);
-+	clk_enable_unlock(flags);
-+
-+	/* change clock input source */
-+	if (parent && clk->ops->set_parent)
-+		ret = clk->ops->set_parent(clk->hw, p_index);
-+
-+	if (ret) {
-+		flags = clk_enable_lock();
-+		clk_reparent(clk, old_parent);
-+		clk_enable_unlock(flags);
-+
-+		if (clk->prepare_count) {
-+			clk_disable(clk);
-+			clk_disable(parent);
-+			__clk_unprepare(parent);
-+		}
-+		return ret;
-+	}
-+
-+	/*
-+	 * Finish the migration of prepare state and undo the changes done
-+	 * for preventing a race with clk_enable().
-+	 */
-+	if (clk->prepare_count) {
-+		clk_disable(clk);
-+		clk_disable(old_parent);
-+		__clk_unprepare(old_parent);
-+	}
-+
-+	/* update debugfs with new clk tree topology */
-+	clk_debug_reparent(clk, parent);
-+	return 0;
-+}
-+
- /**
-  * __clk_speculate_rates
-  * @clk: first clk in the subtree
-@@ -1334,18 +1438,6 @@ out:
- 	return ret;
- }
- 
--static void clk_reparent(struct clk *clk, struct clk *new_parent)
--{
--	hlist_del(&clk->child_node);
--
--	if (new_parent)
--		hlist_add_head(&clk->child_node, &new_parent->children);
--	else
--		hlist_add_head(&clk->child_node, &clk_orphan_list);
--
--	clk->parent = new_parent;
--}
--
- void __clk_reparent(struct clk *clk, struct clk *new_parent)
- {
- 	clk_reparent(clk, new_parent);
-@@ -1353,98 +1445,6 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
- 	__clk_recalc_rates(clk, POST_RATE_CHANGE);
- }
- 
--static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
--{
--	u8 i;
--
--	if (!clk->parents)
--		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
--								GFP_KERNEL);
--
--	/*
--	 * find index of new parent clock using cached parent ptrs,
--	 * or if not yet cached, use string name comparison and cache
--	 * them now to avoid future calls to __clk_lookup.
--	 */
--	for (i = 0; i < clk->num_parents; i++) {
--		if (clk->parents && clk->parents[i] == parent)
--			break;
--		else if (!strcmp(clk->parent_names[i], parent->name)) {
--			if (clk->parents)
--				clk->parents[i] = __clk_lookup(parent->name);
--			break;
--		}
--	}
--
--	return i;
--}
--
--static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
--{
--	unsigned long flags;
--	int ret = 0;
--	struct clk *old_parent = clk->parent;
--
--	/*
--	 * Migrate prepare state between parents and prevent race with
--	 * clk_enable().
--	 *
--	 * If the clock is not prepared, then a race with
--	 * clk_enable/disable() is impossible since we already have the
--	 * prepare lock (future calls to clk_enable() need to be preceded by
--	 * a clk_prepare()).
--	 *
--	 * If the clock is prepared, migrate the prepared state to the new
--	 * parent and also protect against a race with clk_enable() by
--	 * forcing the clock and the new parent on.  This ensures that all
--	 * future calls to clk_enable() are practically NOPs with respect to
--	 * hardware and software states.
--	 *
--	 * See also: Comment for clk_set_parent() below.
--	 */
--	if (clk->prepare_count) {
--		__clk_prepare(parent);
--		clk_enable(parent);
--		clk_enable(clk);
--	}
--
--	/* update the clk tree topology */
--	flags = clk_enable_lock();
--	clk_reparent(clk, parent);
--	clk_enable_unlock(flags);
--
--	/* change clock input source */
--	if (parent && clk->ops->set_parent)
--		ret = clk->ops->set_parent(clk->hw, p_index);
--
--	if (ret) {
--		flags = clk_enable_lock();
--		clk_reparent(clk, old_parent);
--		clk_enable_unlock(flags);
--
--		if (clk->prepare_count) {
--			clk_disable(clk);
--			clk_disable(parent);
--			__clk_unprepare(parent);
--		}
--		return ret;
--	}
--
--	/*
--	 * Finish the migration of prepare state and undo the changes done
--	 * for preventing a race with clk_enable().
--	 */
--	if (clk->prepare_count) {
--		clk_disable(clk);
--		clk_disable(old_parent);
--		__clk_unprepare(old_parent);
--	}
--
--	/* update debugfs with new clk tree topology */
--	clk_debug_reparent(clk, parent);
--	return 0;
--}
--
- /**
-  * clk_set_parent - switch the parent of a mux clk
-  * @clk: the mux clk whose input we are switching
 -- 
-1.8.1.2
-
-
+Markus
