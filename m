@@ -1,117 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3FMOf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:35:28 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:48494 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab3FMOf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:35:27 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig properties from a dt node
-Date: Thu, 13 Jun 2013 16:35:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: James Hogan <james.hogan@imgtec.com>,
-        Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201306102139.32444.heiko@sntech.de> <201306130022.29341.heiko@sntech.de> <CACRpkdb-vbdQJOeZvCEsKLatK-0BhEfUTJqmGURJGf1NWx__Ew@mail.gmail.com>
-In-Reply-To: <CACRpkdb-vbdQJOeZvCEsKLatK-0BhEfUTJqmGURJGf1NWx__Ew@mail.gmail.com>
+	id S1757572Ab3FMOhI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:37:08 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:44953 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752642Ab3FMOhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:37:06 -0400
+Date: Thu, 13 Jun 2013 15:35:42 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>, gnurou@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] ARM: tegra: basic support for Trusted Foundations
+Message-ID: <20130613143536.GA18021@localhost.localdomain>
+References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com>
+ <1371114745-24710-2-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306131635.21446.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371114745-24710-2-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 13. Juni 2013, 10:11:28 schrieb Linus Walleij:
-> Tisdagen den 13:e Juni 2013 klock 12:22 AM, skrev Heiko Stübner
+On Thu, Jun 13, 2013 at 06:12:23PM +0900, Alexandre Courbot wrote:
+> Add basic support for booting secondary processors on Tegra devices
+> using the Trusted Foundations secure monitor.
 > 
-> <heiko@sntech.de>:
-> > Am Mittwoch, 12. Juni 2013, 16:55:12 schrieb James Hogan:
-> >> > +static struct pinconf_generic_dt_params dt_params[] = {
-> >> > +   { "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
-> >> > +   { "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
-> >> > +   { "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
-> >> > +   { "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
-> >> > +   { "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
-> >> > +   { "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
-> >> > +   { "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
-> >> > +   { "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
-> >> > +   { "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
-> >> > +   { "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
-> >> > +   { "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
-> >> > +   { "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
-> >> > +   { "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
-> >> > +   { "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
-> >> > +   { "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
-> >> > +   { "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
-> >> > +   { "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
-> >> > +   { "output-low", PIN_CONFIG_OUTPUT, 0, },
-> >> > +   { "output-high", PIN_CONFIG_OUTPUT, 1, },
-> >> 
-> >> shouldn't half of these default to 1 instead of 0? i.e. it's much nicer
-> >> for the lone flag "bias-pull-up" to enable pull up rather than disable
-> >> it (you even do this in the DT example in the bindings doc).
-> > 
-> > on closer inspection it seems that you may be right.
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  Documentation/devicetree/bindings/arm/tegra.txt    | 11 +++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>  arch/arm/configs/tegra_defconfig                   |  1 +
+>  arch/arm/mach-tegra/Kconfig                        | 14 ++++++
+>  arch/arm/mach-tegra/Makefile                       |  3 ++
+>  arch/arm/mach-tegra/common.c                       |  2 +
+>  arch/arm/mach-tegra/firmware.c                     | 40 +++++++++++++++++
+>  arch/arm/mach-tegra/firmware.h                     | 19 ++++++++
+>  arch/arm/mach-tegra/trusted_foundations.c          | 51 ++++++++++++++++++++++
+>  9 files changed, 142 insertions(+)
+>  create mode 100644 arch/arm/mach-tegra/firmware.c
+>  create mode 100644 arch/arm/mach-tegra/firmware.h
+>  create mode 100644 arch/arm/mach-tegra/trusted_foundations.c
 > 
-> Heiko can you write a patch for this? You can hit both this code and
-> the Rockchip driver at the same time for sure. Please check that
-> the bindings are consistent.
-> 
-> > The documentation to the
-> > options in the pinconf-generic header even tells that for example the
-> > pull options do have a 0 or 1 argument.
-> 
-> Yeah. Well.
-> 
-> Actually there has been plans to have the argument represent the
-> number of Ohms on the pull-up, but we haven't seen any hardware
-> that can actually select that.
-> 
-> Maybe we should add that now? It will still be that != 0 implies
-> enablement on platforms that does not support specifying the
-> pull up/down resistance.
+> diff --git a/Documentation/devicetree/bindings/arm/tegra.txt b/Documentation/devicetree/bindings/arm/tegra.txt
+> index ed9c853..d59bc19 100644
+> --- a/Documentation/devicetree/bindings/arm/tegra.txt
+> +++ b/Documentation/devicetree/bindings/arm/tegra.txt
+> @@ -32,3 +32,14 @@ board-specific compatible values:
+>    nvidia,whistler
+>    toradex,colibri_t20-512
+>    toradex,iris
+> +
+> +Optional nodes
+> +-------------------------------------------
+> +
+> +Trusted Foundations:
+> +Boards using the Trusted Foundations secure monitor should signal its
+> +presence by declaring a node compatible with "tl,trusted-foundations":
+> +
+> +	firmware {
 
-Ok, I'll see that I get this fixed :-)
+You need to make a clear statement about whether the node name is
+
+I think it shouldn't required to be exactly equal to "firmware", because
+that would lead to problems if there were multiple independent firmware
+APIs present (which is certainly possible, whether or not it is true
+on Tegra).
+
+> +		compatible = "tl,trusted-foundations";
+> +	};
+
+For now, it might make more sense to make this binding tegra-specific,
+and to interpret the node is only implying the presence of the low-
+level SoC functions you are using on Tegra, not TF as a whole. 
+
+Otherwise, it feels too generic.  There is no description of exactly
+what functionality will be available if this node it present: if
+this is going to be a generic binding for TF, then it needs to work
+for all deployments of TF, not just your specific case.  For example,
+how to you find out what functionality is present?  Will there be
+a standard probing ABI for all versions and deployments of TF, or
+would extra information need to be described in the DT?
+
+Partly, this depends on whether the TF_SET_CPU_BOOT_ADDR_SMC call will
+be present, working, and with compatible ABI and semantics, on every SoC
+where an implementation of TF is present.  Someone from Trusted Logic, or
+someone with visibility of the relevant ABI/API specs would need to
+judge on that -- do you have that info?
+
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 6931c43..c21e1e9 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -58,6 +58,7 @@ st	STMicroelectronics
+>  ste	ST-Ericsson
+>  stericsson	ST-Ericsson
+>  ti	Texas Instruments
+> +tl	Trusted Logic
+>  toshiba	Toshiba Corporation
+>  via	VIA Technologies, Inc.
+>  wlf	Wolfson Microelectronics
+> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+> index 4de3bce..3bf158a 100644
+> --- a/arch/arm/configs/tegra_defconfig
+> +++ b/arch/arm/configs/tegra_defconfig
+> @@ -28,6 +28,7 @@ CONFIG_ARCH_TEGRA_3x_SOC=y
+>  CONFIG_ARCH_TEGRA_114_SOC=y
+>  CONFIG_TEGRA_PCI=y
+>  CONFIG_TEGRA_EMC_SCALING_ENABLE=y
+> +CONFIG_TEGRA_TRUSTED_FOUNDATIONS=y
+>  CONFIG_SMP=y
+>  CONFIG_PREEMPT=y
+>  CONFIG_AEABI=y
+> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+> index 84d72fc..055f496 100644
+> --- a/arch/arm/mach-tegra/Kconfig
+> +++ b/arch/arm/mach-tegra/Kconfig
+> @@ -87,4 +87,18 @@ config TEGRA_AHB
+>  config TEGRA_EMC_SCALING_ENABLE
+>  	bool "Enable scaling the memory frequency"
+>  
+> +config TEGRA_TRUSTED_FOUNDATIONS
+> +	bool "Trusted Foundations secure monitor support"
+> +	help
+> +	  Many Tegra devices are booted with the Trusted Foundations secure
+> +	  monitor active, requiring some core operations to be performed by
+> +	  the secure monitor instead of the kernel.
+> +
+> +	  This option allows the kernel to invoke the secure monitor when
+> +	  required on devices using Trusted Foundations.
+> +
+> +	  Devices using Trusted Foundations should pass a device tree containing
+> +	  a node compatible with "tl,trusted-foundations" to signal the presence
+> +	  of the secure monitor.
+> +
+>  endmenu
+> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+> index d011f0a..9fdc004 100644
+> --- a/arch/arm/mach-tegra/Makefile
+> +++ b/arch/arm/mach-tegra/Makefile
+> @@ -12,6 +12,7 @@ obj-y					+= pm.o
+>  obj-y					+= reset.o
+>  obj-y					+= reset-handler.o
+>  obj-y					+= sleep.o
+> +obj-y					+= firmware.o
+>  obj-y					+= tegra.o
+>  obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
+>  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra20_speedo.o
+> @@ -37,3 +38,5 @@ endif
+>  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-harmony-pcie.o
+>  
+>  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-paz00.o
+> +
+> +obj-$(CONFIG_TEGRA_TRUSTED_FOUNDATIONS)	+= trusted_foundations.o
+> diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+> index 9f852c6..4796bb0 100644
+> --- a/arch/arm/mach-tegra/common.c
+> +++ b/arch/arm/mach-tegra/common.c
+> @@ -37,6 +37,7 @@
+>  #include "sleep.h"
+>  #include "pm.h"
+>  #include "reset.h"
+> +#include "firmware.h"
+>  
+>  /*
+>   * Storage for debug-macro.S's state.
+> @@ -97,6 +98,7 @@ static void __init tegra_init_cache(void)
+>  
+>  void __init tegra_init_early(void)
+>  {
+> +	tegra_init_firmware();
+>  	tegra_cpu_reset_handler_init();
+>  	tegra_apb_io_init();
+>  	tegra_init_fuse();
+> diff --git a/arch/arm/mach-tegra/firmware.c b/arch/arm/mach-tegra/firmware.c
+> new file mode 100644
+> index 0000000..ea861ca
+> --- /dev/null
+> +++ b/arch/arm/mach-tegra/firmware.c
+> @@ -0,0 +1,40 @@
+> +/*
+> + * SecureOS support for Tegra CPUs
+
+Should the name "SecureOS" change in these comment headers? (affects
+multiple files)
+
+> + *
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/printk.h>
+> +#include <linux/kconfig.h>
+> +#include <linux/of.h>
+> +#include <asm/firmware.h>
+> +
+> +#if IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS)
+> +extern const struct firmware_ops tegra_trusted_foundations_ops;
+> +#endif
+> +
+> +void __init tegra_init_firmware(void)
+> +{
+> +	struct device_node *node;
+> +
+> +	if (!of_have_populated_dt())
+> +		return;
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+> +	if (node && !IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))
+> +		pr_warn("Trusted Foundations detected but support missing!\n");
+
+Should this be more than just a warning?
+
+It looks to me like tegra_cpu_reset_handler_set() might either silently
+fail or trigger an external abort in this situation, depending on the
+hardware and on how TF sets things up.
+
+There seems to be no way to signal an error when attempting to set a
+CPU's reset address.
+
+> +#if IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS)
+> +	else if (node)
+> +		register_firmware_ops(&tegra_trusted_foundations_ops);
+> +#endif
+> +}
 
 
+IS_ENABLED() allows #ifdefs to be avoided -- maybe this would be clearer
+as:
+
+	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+	if (!node)
+		return;
+
+	if (WARN_ON(!IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))) {
+		pr_warn("Trusted Foundations detected but support missing!\n");
+		return;
+	}
+
+	register_firmware_ops(&tegra_trusted_foundations_ops);
+	
+
+> diff --git a/arch/arm/mach-tegra/firmware.h b/arch/arm/mach-tegra/firmware.h
+> new file mode 100644
+> index 0000000..77c62fb
+> --- /dev/null
+> +++ b/arch/arm/mach-tegra/firmware.h
+> @@ -0,0 +1,19 @@
+> +/*
+> + * Copyright (c) 2013, NVIDIA Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#ifndef __TEGRA_FIRMWARE_H
+> +#define __TEGRA_FIRMWARE_H
+> +
+> +void tegra_init_firmware(void);
+> +
+> +#endif
+> diff --git a/arch/arm/mach-tegra/trusted_foundations.c b/arch/arm/mach-tegra/trusted_foundations.c
+> new file mode 100644
+> index 0000000..411044f
+> --- /dev/null
+> +++ b/arch/arm/mach-tegra/trusted_foundations.c
+> @@ -0,0 +1,51 @@
+> +/*
+> + * SecureOS support for Tegra CPUs
+> + *
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/of.h>
+> +#include <asm/firmware.h>
+> +
+> +#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
+> +
+> +static void __attribute__((naked)) tegra_tf_generic_smc(u32 type, u32 subtype,
+> +							u32 arg)
+> +{
+> +	asm volatile(
+> +		".arch_extension	sec\n\t"
+> +		"stmfd	sp!, {r3 - r11, lr}\n\t"
+
+I think you don't need to save r3: the ARM PCS makes r3 caller-save, so
+it shouldn't matter if the SMC call causes it to get trashed.
+
+> +		__asmeq("%0", "r0")
+> +		__asmeq("%1", "r1")
+> +		__asmeq("%2", "r2")
+> +		"mov	r3, #0\n\t"
+> +		"mov	r4, #0\n\t"
+> +		"smc	#0\n\t"
+> +		"ldmfd	sp!, {r3 - r11, pc}"
+> +		:
+> +		: "r" (type), "r" (subtype), "r" (arg)
+> +		: "memory");
+> +}
+> +
+> +static int tegra_tf_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+> +{
+> +	tegra_tf_generic_smc(TF_SET_CPU_BOOT_ADDR_SMC, boot_addr, 0);
+> +
+> +	return 0;
+> +}
+> +
+> +const struct firmware_ops tegra_trusted_foundations_ops = {
+> +	.set_cpu_boot_addr = tegra_tf_set_cpu_boot_addr,
+> +};
+> -- 
+> 1.8.3
 > 
-> > But I'm not sure if I understand everything correctly :-) ... isn't the
-> > bias- disable the opposite of turning on a pull (like the sh-pfc/pinctrl
-> > does) and same with switching from one pull type to another, i.e.
-> > activating a pull up would turn off a pull down and on the whole making
-> > the argument redundant?
-> 
-> This is true, and the plan is surely for the core to not allow or print
-> a big fat warning if someone does something really stupid like
-> activate pull up and pull down at the same time (unless s/he's
-> constructing a heater radiator or something).
-> 
-> Currently we don't make any sanity checks like that, BUT your
-> generic parser could actually be extended to do that.
-> 
-> Patches welcome ;-)
-
-I don't seem to get of the hook here ;-)
-
-But I'll try to fix the issue above first.
-
-
-> > The only other candidate I could find was low-power-mode which really
-> > could use a "1" as default. All the other pinconf options either use
-> > custom arguments or ignore teir argument.
-> 
-> A "1" for what? Not quite following....
-
-According to the pinconf header docs, low-power-mode also expects an argument 
-of 1 or 0. So it's default value should change too ... or we could rename the 
-property, like "low-power-enable" and "low-power-disable", which might make 
-the dt more readable than an arbitary low-power-mode = <0>;
-
-
-Heiko
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
