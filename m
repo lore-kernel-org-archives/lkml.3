@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab3FMQfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:35:34 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:64379 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab3FMQfa (ORCPT
+	id S1758760Ab3FMQfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:35:44 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54007 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758736Ab3FMQfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:35:30 -0400
+	Thu, 13 Jun 2013 12:35:40 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
         Yinghai Lu <yinghai@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
         linux-acpi@vger.kernel.org
-Subject: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
-Date: Fri, 14 Jun 2013 00:32:26 +0800
-Message-Id: <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
+Subject: [BUGFIX 5/9] ACPI, DOCK: kill redundant spin lock in dock device object
+Date: Fri, 14 Jun 2013 00:32:28 +0800
+Message-Id: <1371141152-9468-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
 References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
@@ -27,8 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI dock driver can't be built as a module any more, so clean up
-module related code.
+All dock device related data structures are created during driver
+initialization, so kill the redundant spin lock in dock device object.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Shaohua Li <shaohua.li@intel.com>
@@ -37,72 +37,58 @@ Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/dock.c | 41 -----------------------------------------
- 1 file changed, 41 deletions(-)
+ drivers/acpi/dock.c | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index 79c8d9e..50e38b7 100644
+index 8e578aa..cd2d5df 100644
 --- a/drivers/acpi/dock.c
 +++ b/drivers/acpi/dock.c
-@@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
- 
- static struct atomic_notifier_head dock_notifier_list;
- 
--static const struct acpi_device_id dock_device_ids[] = {
--	{"LNXDOCK", 0},
--	{"", 0},
--};
--MODULE_DEVICE_TABLE(acpi, dock_device_ids);
--
- struct dock_station {
+@@ -57,7 +57,6 @@ struct dock_station {
  	acpi_handle handle;
  	unsigned long last_dock_time;
-@@ -1013,30 +1007,6 @@ err_unregister:
- }
+ 	u32 flags;
+-	spinlock_t dd_lock;
+ 	struct mutex hp_lock;
+ 	struct task_struct *owner;
+ 	struct list_head dependent_devices;
+@@ -107,10 +106,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+ 	dd->handle = handle;
+ 	INIT_LIST_HEAD(&dd->list);
+ 	INIT_LIST_HEAD(&dd->hotplug_list);
+-
+-	spin_lock(&ds->dd_lock);
+ 	list_add_tail(&dd->list, &ds->dependent_devices);
+-	spin_unlock(&ds->dd_lock);
  
- /**
-- * dock_remove - free up resources related to the dock station
-- */
--static int dock_remove(struct dock_station *ds)
--{
--	struct dock_dependent_device *dd, *tmp;
--	struct platform_device *dock_device = ds->dock_device;
--
--	if (!dock_station_count)
--		return 0;
--
--	/* remove dependent devices */
--	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
--		kfree(dd);
--
--	list_del(&ds->sibling);
--
--	/* cleanup sysfs */
--	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
--	platform_device_unregister(dock_device);
--
--	return 0;
--}
--
--/**
-  * find_dock_and_bay - look for dock stations and bays
-  * @handle: acpi handle of a device
-  * @lvl: unused
-@@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
- 		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
  	return 0;
  }
--
--static void __exit dock_exit(void)
--{
--	struct dock_station *tmp, *dock_station;
--
--	unregister_acpi_bus_notifier(&dock_acpi_notifier);
--	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
--		dock_remove(dock_station);
--}
--
--module_exit(dock_exit);
+@@ -168,14 +164,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+ {
+ 	struct dock_dependent_device *dd;
+ 
+-	spin_lock(&ds->dd_lock);
+-	list_for_each_entry(dd, &ds->dependent_devices, list) {
+-		if (handle == dd->handle) {
+-			spin_unlock(&ds->dd_lock);
++	list_for_each_entry(dd, &ds->dependent_devices, list)
++		if (handle == dd->handle)
+ 			return dd;
+-		}
+-	}
+-	spin_unlock(&ds->dd_lock);
++
+ 	return NULL;
+ }
+ 
+@@ -964,7 +956,6 @@ static int __init dock_add(acpi_handle handle)
+ 	dock_station->last_dock_time = jiffies - HZ;
+ 
+ 	mutex_init(&dock_station->hp_lock);
+-	spin_lock_init(&dock_station->dd_lock);
+ 	INIT_LIST_HEAD(&dock_station->sibling);
+ 	INIT_LIST_HEAD(&dock_station->hotplug_devices);
+ 	INIT_LIST_HEAD(&dock_station->dependent_devices);
 -- 
 1.8.1.2
 
