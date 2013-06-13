@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab3FMNcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:32:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56406 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758334Ab3FMNcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:32:46 -0400
-Date: Thu, 13 Jun 2013 15:32:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Richard Weinberger <richard@nod.at>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, hannes@cmpxchg.org
-Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
- pointer dereference at 00000000000001a8
-Message-ID: <20130613133244.GD23070@dhcp22.suse.cz>
-References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
- <20130613120248.GB23070@dhcp22.suse.cz>
- <51B9B5BC.4090702@nod.at>
- <20130613132908.GC23070@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613132908.GC23070@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756834Ab3FMN2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:28:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758213Ab3FMN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:05 -0400
+X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
+   d="scan'208";a="7537691"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+Date: Thu, 13 Jun 2013 21:02:47 +0800
+Message-Id: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/13 20:58:24,
+	Serialize complete at 2013/06/13 20:58:24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohh and could you post the config please? Sorry should have asked
-earlier.
+From: Yinghai Lu <yinghai@kernel.org>
 
-On Thu 13-06-13 15:29:08, Michal Hocko wrote:
-> 
-> On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
-> [...]
-> > All code
-> > ========
-> >    0:   89 50 08                mov    %edx,0x8(%rax)
-> >    3:   48 89 d1                mov    %rdx,%rcx
-> >    6:   0f 1f 40 00             nopl   0x0(%rax)
-> >    a:   49 8b 04 24             mov    (%r12),%rax
-> >    e:   48 89 c2                mov    %rax,%rdx
-> >   11:   48 c1 e8 38             shr    $0x38,%rax
-> >   15:   83 e0 03                and    $0x3,%eax
-> 					nid = page_to_nid
-> >   18:   48 c1 ea 3a             shr    $0x3a,%rdx
-> 					zid = page_zonenum
-> 
-> >   1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
-> >   23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
-> 					&memcg->nodeinfo[nid]->zoneinfo[zid]
-> 
-> >   2a:   00
-> >   2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
-> 
-> OK, so this maps to:
->         if (unlikely(lruvec->zone != zone)) <<<
->                 lruvec->zone = zone;
-> 
-> > [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
-> > [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
-> > [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
-> > [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
-> > [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
-> > [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
-> > [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
-> 
-> RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
-> contain an address at an offset from ffff88003e04a800 But there is 0x138 there
-> instead.
-> 
-> Is this easily reproducible? Could you configure kdump.
+No offence, just rebase and resend the patches from Yinghai to help
+to push this functionality faster.
+Also improve the comments in the patches' log.
 
--- 
-Michal Hocko
-SUSE Labs
+
+One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+
+| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+| Author: Tang Chen <tangchen@cn.fujitsu.com>
+| Date:   Fri Feb 22 16:33:44 2013 -0800
+|
+|    acpi, memory-hotplug: parse SRAT before memblock is ready
+
+It broke several things, like acpi override and fall back path etc.
+
+This patchset is clean implementation that will parse numa info early.
+1. keep the acpi table initrd override working by split finding with copying.
+   finding is done at head_32.S and head64.c stage,
+        in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
+        in head64.c, initrd is accessed via kernel low mapping address
+        with help of #PF set page table.
+   copying is done with early_ioremap just after memblock is setup.
+2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
+   seperate initmem_init to two stages.
+   early_initmem_init will only extract numa info early into numa_meminfo.
+   initmem_init will keep slit and emulation handling.
+3. keep other old code flow untouched like relocate_initrd and initmem_init.
+   early_initmem_init will take old init_mem_mapping position.
+   it call early_x86_numa_init and init_mem_mapping for every nodes.
+   For 64bit, we avoid having size limit on initrd, as relocate_initrd
+   is still after init_mem_mapping for all memory.
+4. last patch will try to put page table on local node, so that memory
+   hotplug will be happy.
+
+In short, early_initmem_init will parse numa info early and call
+init_mem_mapping to set page table for every nodes's mem.
+
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+
+and it is based on today's Linus tree.
+
+-v2: Address tj's review and split patches to small ones.
+-v3: Add some Acked-by from tj, also stop abusing cpio_data for acpi_files info
+-v4: fix one typo found by Tang Chen.
+     Also added tested-by from Thomas Renninger and Tony.
+-v5: Rebase to Linux-3.10.0-rc5 (patch 5 and 21 has been rebased)
+     Improve comments in patches' log.
+     Improve comment in init_mem_mapping() in patch21.
+
+Yinghai Lu (22):
+  x86: Change get_ramdisk_{image|size}() to global
+  x86, microcode: Use common get_ramdisk_{image|size}()
+  x86, ACPI, mm: Kill max_low_pfn_mapped
+  x86, ACPI: Search buffer above 4GB in a second try for acpi initrd
+    table override
+  x86, ACPI: Increase acpi initrd override tables number limit
+  x86, ACPI: Split acpi_initrd_override() into find/copy two steps
+  x86, ACPI: Store override acpi tables phys addr in cpio files info
+    array
+  x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
+  x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
+  x86, mm, numa: Move two functions calling on successful path later
+  x86, mm, numa: Call numa_meminfo_cover_memory() checking early
+  x86, mm, numa: Move node_map_pfn_alignment() to x86
+  x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
+  x86, mm, numa: Set memblock nid later
+  x86, mm, numa: Move node_possible_map setting later
+  x86, mm, numa: Move numa emulation handling down.
+  x86, ACPI, numa, ia64: split SLIT handling out
+  x86, mm, numa: Add early_initmem_init() stub
+  x86, mm: Parse numa info earlier
+  x86, mm: Add comments for step_size shift
+  x86, mm: Make init_mem_mapping be able to be called several times
+  x86, mm, numa: Put pagetable on local node ram for 64bit
+
+ arch/ia64/kernel/setup.c                |    4 +-
+ arch/x86/include/asm/acpi.h             |    3 +-
+ arch/x86/include/asm/page_types.h       |    2 +-
+ arch/x86/include/asm/pgtable.h          |    2 +-
+ arch/x86/include/asm/setup.h            |    9 ++
+ arch/x86/kernel/head64.c                |    2 +
+ arch/x86/kernel/head_32.S               |    4 +
+ arch/x86/kernel/microcode_intel_early.c |    8 +-
+ arch/x86/kernel/setup.c                 |   86 +++++++-----
+ arch/x86/mm/init.c                      |  121 +++++++++++-----
+ arch/x86/mm/numa.c                      |  240 ++++++++++++++++++++++++-------
+ arch/x86/mm/numa_emulation.c            |    2 +-
+ arch/x86/mm/numa_internal.h             |    2 +
+ arch/x86/mm/srat.c                      |   11 +-
+ drivers/acpi/numa.c                     |   13 +-
+ drivers/acpi/osl.c                      |  138 +++++++++++++------
+ include/linux/acpi.h                    |   20 ++--
+ include/linux/mm.h                      |    3 -
+ mm/page_alloc.c                         |   52 +-------
+ 19 files changed, 476 insertions(+), 246 deletions(-)
+
