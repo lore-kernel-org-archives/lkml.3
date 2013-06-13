@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab3FMNcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:32:54 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
+	id S1758725Ab3FMNcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:32:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758325Ab3FMN2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:09 -0400
+	id S1758213Ab3FMN2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:10 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537702"
+   d="scan'208";a="7537703"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,116 +17,101 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Subject: [Part1 PATCH v5 05/22] x86, ACPI: Increase acpi initrd override tables number limit
-Date: Thu, 13 Jun 2013 21:02:52 +0800
-Message-Id: <1371128589-8953-6-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [Part1 PATCH v5 22/22] x86, mm, numa: Put pagetable on local node ram for 64bit
+Date: Thu, 13 Jun 2013 21:03:09 +0800
+Message-Id: <1371128589-8953-23-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:16,
+ 2013/06/13 20:58:18,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:31,
-	Serialize complete at 2013/06/13 20:58:31
+ 2013/06/13 20:58:32,
+	Serialize complete at 2013/06/13 20:58:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yinghai Lu <yinghai@kernel.org>
 
-Current number of acpi tables in initrd is limited to 10, which is
-too small. 64 would be good enough as we have 35 sigs and could
-have several SSDTs.
+If node with ram is hotplugable, memory for local node page
+table and vmemmap should be on the local node ram.
 
-Two problems in current code prevent us from increasing the 10 tables limit:
-1. cpio file info array is put in stack, as every element is 32 bytes, we
-   could run out of stack if we increase the array size to 64.
-   So we can move it out from stack, and make it global and put it in
-   __initdata section.
-2. early_ioremap only can remap 256kb one time. Current code is mapping
-   10 tables one time. If we increase that limit, the whole size could be
-   more than 256kb, and early_ioremap will fail.
-   So we can map the tables one by one during copying, instead of mapping
-   all of them at one time.
+This patch is some kind of refreshment of
+| commit 1411e0ec3123ae4c4ead6bfc9fe3ee5a3ae5c327
+| Date:   Mon Dec 27 16:48:17 2010 -0800
+|
+|    x86-64, numa: Put pgtable to local node memory
+That was reverted before.
 
--v2: According to tj, split it out to separated patch, also
-     rename array name to acpi_initrd_files.
--v3: Add some comments about mapping table one by one during copying
-     per tj.
+We have reason to reintroduce it to improve performance when
+using memory hotplug.
 
-Signed-off-by: Yinghai <yinghai@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
+Calling init_mem_mapping() in early_initmem_init() for each
+node. alloc_low_pages() will allocate page table in following
+order:
+	BRK, local node, low range
+
+So page table will be on low range or local nodes.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/acpi/osl.c |   26 +++++++++++++++-----------
- 1 files changed, 15 insertions(+), 11 deletions(-)
+ arch/x86/mm/numa.c |   34 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 33 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 42c48fc..53dd490 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -569,8 +569,8 @@ static const char * const table_sigs[] = {
- 
- #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
- 
--/* Must not increase 10 or needs code modification below */
--#define ACPI_OVERRIDE_TABLES 10
-+#define ACPI_OVERRIDE_TABLES 64
-+static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
- 
- void __init acpi_initrd_override(void *data, size_t size)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 9b18ee8..5adf803 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -670,7 +670,39 @@ static void __init early_x86_numa_init(void)
+ #ifdef CONFIG_X86_64
+ static void __init early_x86_numa_init_mapping(void)
  {
-@@ -579,7 +579,6 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	struct acpi_table_header *table;
- 	char cpio_path[32] = "kernel/firmware/acpi/";
- 	struct cpio_data file;
--	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
- 	char *p;
- 
- 	if (data == NULL || size == 0)
-@@ -617,8 +616,8 @@ void __init acpi_initrd_override(void *data, size_t size)
- 			table->signature, cpio_path, file.name, table->length);
- 
- 		all_tables_size += table->length;
--		early_initrd_files[table_nr].data = file.data;
--		early_initrd_files[table_nr].size = file.size;
-+		acpi_initrd_files[table_nr].data = file.data;
-+		acpi_initrd_files[table_nr].size = file.size;
- 		table_nr++;
- 	}
- 	if (table_nr == 0)
-@@ -648,14 +647,19 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	memblock_reserve(acpi_tables_addr, all_tables_size);
- 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
- 
--	p = early_ioremap(acpi_tables_addr, all_tables_size);
--
-+	/*
-+	 * early_ioremap can only remap 256KB at one time. If we map all the
-+	 * tables at one time, we will hit the limit. So we need to map tables
-+	 * one by one during copying.
-+	 */
- 	for (no = 0; no < table_nr; no++) {
--		memcpy(p + total_offset, early_initrd_files[no].data,
--		       early_initrd_files[no].size);
--		total_offset += early_initrd_files[no].size;
-+		phys_addr_t size = acpi_initrd_files[no].size;
+-	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
++	unsigned long last_start = 0, last_end = 0;
++	struct numa_meminfo *mi = &numa_meminfo;
++	unsigned long start, end;
++	int last_nid = -1;
++	int i, nid;
 +
-+		p = early_ioremap(acpi_tables_addr + total_offset, size);
-+		memcpy(p, acpi_initrd_files[no].data, size);
-+		early_iounmap(p, size);
-+		total_offset += size;
- 	}
--	early_iounmap(p, all_tables_size);
++	for (i = 0; i < mi->nr_blks; i++) {
++		nid   = mi->blk[i].nid;
++		start = mi->blk[i].start;
++		end   = mi->blk[i].end;
++
++		if (last_nid == nid) {
++			last_end = end;
++			continue;
++		}
++
++		/* other nid now */
++		if (last_nid >= 0) {
++			printk(KERN_DEBUG "Node %d: [mem %#016lx-%#016lx]\n",
++					last_nid, last_start, last_end - 1);
++			init_mem_mapping(last_start, last_end);
++		}
++
++		/* for next nid */
++		last_nid   = nid;
++		last_start = start;
++		last_end   = end;
++	}
++	/* last one */
++	printk(KERN_DEBUG "Node %d: [mem %#016lx-%#016lx]\n",
++			last_nid, last_start, last_end - 1);
++	init_mem_mapping(last_start, last_end);
++
+ 	if (max_pfn > max_low_pfn)
+ 		max_low_pfn = max_pfn;
  }
- #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
 -- 
 1.7.1
 
