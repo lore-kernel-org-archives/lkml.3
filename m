@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab3FMSgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:36:24 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:62085 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3FMSgX (ORCPT
+	id S932156Ab3FMSgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:36:35 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22187 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759025Ab3FMSgd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:36:23 -0400
+	Thu, 13 Jun 2013 14:36:33 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1371128589-8953-22-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <1371128589-8953-22-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
-	<1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
-Date: Thu, 13 Jun 2013 20:36:22 +0200
-Message-ID: <CACRpkdbP6VUurFuWV_dzm=9pq+xEu9iDs0NZwinLJXZBNrVzFA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [Part1 PATCH v5 21/22] x86, mm: Make init_mem_mapping be able to be called several times
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 13 Jun 2013 14:35:28 -0400
+To: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
+CC: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>
+Message-ID: <aad34de7-8ff7-442d-ad8a-bed2a6e3edea@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 2:55 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-> This patch adds the infrastructure required to register non-linear gpio
-> ranges through gpiolib and the standard GPIO device tree bindings.
+>From: Yinghai Lu <yinghai@kernel.org>
 >
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+>Prepare to put page table on local nodes.
+>
+>Move calling of init_mem_mapping() to early_initmem_init().
+>
+>Rework alloc_low_pages to allocate page table in following order:
+>	BRK, local node, low range
+>
+>Still only load_cr3 one time, otherwise we would break xen 64bit again.
+>
 
-Splendid. I'll just wait some more time before applying so that others
-get a chance to comment on this, but I'm happy!
 
-Yours,
-Linus Walleij
+
+Sigh..  Can that comment on Xen be removed please.  The issue was fixed last release  and I believe I already asked to remove that comment as it is not true anymore. 
+-- 
+Sent from my Android phone. Please excuse my brevity.
