@@ -1,174 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab3FMDus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 23:50:48 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:63410 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab3FMDur (ORCPT
+	id S932583Ab3FMDvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 23:51:10 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:46215 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932569Ab3FMDvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 23:50:47 -0400
-Date: Wed, 12 Jun 2013 20:50:42 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tejun Heo <theo@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH v2 2/2] percpu-refcount: implement percpu_tryget() along with
- percpu_ref_kill_and_confirm()
-Message-ID: <20130613035042.GC9451@mtj.dyndns.org>
-References: <20130612204532.GB15092@htj.dyndns.org>
- <20130612204627.GC15092@htj.dyndns.org>
+	Wed, 12 Jun 2013 23:51:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612204627.GC15092@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com>
+References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
+ <CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
+ <CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
+ <CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com>
+ <CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com>
+ <20130329032200.GA11990@google.com> <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
+ <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
+ <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
+ <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
+ <20130401235256.GA31966@google.com> <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
+ <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com>
+ <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
+ <CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com> <CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 12 Jun 2013 21:50:45 -0600
+Message-ID: <CAErSpo7gL3Ds9oq8ZZ4zdt1uHy9xbkWJE+Ja=-0QXFQECjr40A@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Roman Yepishev <roman.yepishev@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement percpu_tryget() which stops giving out references once the
-percpu_ref is visible as killed.  Because the refcnt is per-cpu,
-different CPUs will start to see a refcnt as killed at different
-points in time and tryget() may continue to succeed on subset of cpus
-for a while after percpu_ref_kill() returns.
+On Wed, Jun 12, 2013 at 1:41 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Jun 12, 2013 at 10:05 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> current code from acpi_pci_root_add we have
+>>>   1. pci_acpi_scan_root
+>>>          ==> pci devices enumeration and bus scanning.
+>>>              ==> pci_alloc_child_bus
+>>>                  ==> pcibios_add_bus
+>>>                      ==> acpi_pci_add_bus
+>>>                          ==> acpiphp_enumerate_slots
+>>>                              ==> ...==> register_slot
+>>>                                   ==> device_is_managed_by_native_pciehp
+>>>                                         ==> check osc_set with
+>>> OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
+>>>    2. _OSC set request
+>>>
+>>> so we always have acpiphp hotplug slot registered at first.
+>>>
+>>> so either we need to
+>>> A. revert reverting about _OSC
+>>> B. move pcibios_add_bus down to pci_bus_add_devices()
+>>>     as acpiphp and apci pci slot driver are some kind of drivers for pci_bus
+>>> C. A+B
+>>
+>> It doesn't surprise me at all that there are problems in the _OSC code
+>> and the acpiphp/pciehp interaction.  That whole area is a complete
+>> disaster.  It'd really be nice if somebody stepped up and reworked it
+>> so it makes sense.
+>>
+>> But this report is useless to me.  I don't have time to work out what
+>> the problem is and how it affects users and come up with a fix.
+>
+> effects: without fix the problem, user can not use pcie native hotplug
+> if their system's firmware support acpihp and pciehp.
+> And make it worse, that acpiphp have to be built-in, so they have no
+> way to blacklist acpiphp in config.
+>
+>>
+>> My advice is to simplify the path first, and worry about fixing the
+>> bug afterwards.  We've already done several iterations of fiddling
+>> with things, and I think all we're doing is playing "whack-a-mole" and
+>> pushing the bugs around from one place to another.
+>
+> We need to address regression at first.
+> my suggestion is : revert the reverting and apply my -v3 version that will fix
+> regression that Roman Yepishev met.
+>
+> please check attached two patches, hope it could save your some time.
 
-For use cases where it's necessary to know when all CPUs start to see
-the refcnt as dead, percpu_ref_kill_and_confirm() is added.  The new
-function takes an extra argument @confirm_kill which is invoked when
-the refcnt is guaranteed to be viewed as killed on all CPUs.
+OK, you're right.  It's not reasonable to do anything more than a
+minimal fix when we're at -rc5.
 
-While this isn't the prettiest interface, it doesn't force synchronous
-wait and is much safer than requiring the caller to do its own
-call_rcu().
+Sigh.  I'll spend tomorrow trying to understand your patches and write
+changelogs for you.
 
-v2: Patch description rephrased to emphasize that tryget() may
-    continue to succeed on some CPUs after kill() returns as suggested
-    by Kent.
+I think you're saying that in systems that support both acpiphp and
+pciehp, we should be using pciehp, but we currently use acpiphp.  If
+so, that's certainly a bug.  How serious is it?  Is it a disaster if
+we use acpiphp until we can resolve this cleanly?  Are there a lot of
+systems that claim to support acpiphp but it doesn't actually work?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>
----
- include/linux/percpu-refcount.h |   50 +++++++++++++++++++++++++++++++++++++++-
- lib/percpu-refcount.c           |   23 +++++++++++++-----
- 2 files changed, 66 insertions(+), 7 deletions(-)
-
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -63,11 +63,28 @@ struct percpu_ref {
- 	 */
- 	unsigned __percpu	*pcpu_count;
- 	percpu_ref_func_t	*release;
-+	percpu_ref_func_t	*confirm_kill;
- 	struct rcu_head		rcu;
- };
- 
- int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release);
--void percpu_ref_kill(struct percpu_ref *ref);
-+void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
-+				 percpu_ref_func_t *confirm_kill);
-+
-+/**
-+ * percpu_ref_kill - drop the initial ref
-+ * @ref: percpu_ref to kill
-+ *
-+ * Must be used to drop the initial ref on a percpu refcount; must be called
-+ * precisely once before shutdown.
-+ *
-+ * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
-+ * percpu counters and dropping the initial ref.
-+ */
-+static inline void percpu_ref_kill(struct percpu_ref *ref)
-+{
-+	return percpu_ref_kill_and_confirm(ref, NULL);
-+}
- 
- #define PCPU_STATUS_BITS	2
- #define PCPU_STATUS_MASK	((1 << PCPU_STATUS_BITS) - 1)
-@@ -99,6 +116,37 @@ static inline void percpu_ref_get(struct
- }
- 
- /**
-+ * percpu_ref_tryget - try to increment a percpu refcount
-+ * @ref: percpu_ref to try-get
-+ *
-+ * Increment a percpu refcount unless it has already been killed.  Returns
-+ * %true on success; %false on failure.
-+ *
-+ * Completion of percpu_ref_kill() in itself doesn't guarantee that tryget
-+ * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
-+ * used.  After the confirm_kill callback is invoked, it's guaranteed that
-+ * no new reference will be given out by percpu_ref_tryget().
-+ */
-+static inline bool percpu_ref_tryget(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+	int ret = false;
-+
-+	rcu_read_lock();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
-+		__this_cpu_inc(*pcpu_count);
-+		ret = true;
-+	}
-+
-+	rcu_read_unlock();
-+
-+	return ret;
-+}
-+
-+/**
-  * percpu_ref_put - decrement a percpu refcount
-  * @ref: percpu_ref to put
-  *
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -89,6 +89,10 @@ static void percpu_ref_kill_rcu(struct r
- 
- 	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
- 
-+	/* @ref is viewed as dead on all CPUs, send out kill confirmation */
-+	if (ref->confirm_kill)
-+		ref->confirm_kill(ref);
-+
- 	/*
- 	 * Now we're in single atomic_t mode with a consistent refcount, so it's
- 	 * safe to drop our initial ref:
-@@ -97,22 +101,29 @@ static void percpu_ref_kill_rcu(struct r
- }
- 
- /**
-- * percpu_ref_kill - safely drop initial ref
-+ * percpu_ref_kill_and_confirm - drop the initial ref and schedule confirmation
-  * @ref: percpu_ref to kill
-+ * @confirm_kill: optional confirmation callback
-  *
-- * Must be used to drop the initial ref on a percpu refcount; must be called
-- * precisely once before shutdown.
-+ * Equivalent to percpu_ref_kill() but also schedules kill confirmation if
-+ * @confirm_kill is not NULL.  @confirm_kill, which may not block, will be
-+ * called after @ref is seen as dead from all CPUs - all further
-+ * invocations of percpu_ref_tryget() will fail.  See percpu_ref_tryget()
-+ * for more details.
-  *
-- * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
-- * percpu counters and dropping the initial ref.
-+ * It's guaranteed that there will be at least one full RCU grace period
-+ * between the invocation of this function and @confirm_kill and the caller
-+ * can piggy-back their RCU release on the callback.
-  */
--void percpu_ref_kill(struct percpu_ref *ref)
-+void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
-+				 percpu_ref_func_t *confirm_kill)
- {
- 	WARN_ONCE(REF_STATUS(ref->pcpu_count) == PCPU_REF_DEAD,
- 		  "percpu_ref_kill() called more than once!\n");
- 
- 	ref->pcpu_count = (unsigned __percpu *)
- 		(((unsigned long) ref->pcpu_count)|PCPU_REF_DEAD);
-+	ref->confirm_kill = confirm_kill;
- 
- 	call_rcu(&ref->rcu, percpu_ref_kill_rcu);
- }
+Bjorn
