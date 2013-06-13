@@ -1,100 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3FMPPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:15:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39062 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3FMPPC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:15:02 -0400
-Message-ID: <51B9E1F2.3090404@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 09:14:58 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756807Ab3FMPQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:16:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33050 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999Ab3FMPQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:16:05 -0400
+Date: Thu, 13 Jun 2013 17:16:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130613151602.GG23070@dhcp22.suse.cz>
+References: <20130603193147.GC23659@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com>
+ <20130604095514.GC31242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306042329320.20610@chino.kir.corp.google.com>
+ <20130605093937.GK15997@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306051657001.29626@chino.kir.corp.google.com>
+ <20130610142321.GE5138@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306111321360.32688@chino.kir.corp.google.com>
+ <20130612202348.GA17282@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306121408490.24902@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Mayuresh Kulkarni <mkulkarni@nvidia.com>
-CC: tbergstrom@nvidia.com, amerilainen@nvidia.com,
-        thierry.reding@avionic-design.de, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] gpu: host1x: add runtime pm support for gr2d
-References: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com> <1371117218-2326-3-git-send-email-mkulkarni@nvidia.com>
-In-Reply-To: <1371117218-2326-3-git-send-email-mkulkarni@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306121408490.24902@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 03:53 AM, Mayuresh Kulkarni wrote:
+On Wed 12-06-13 14:27:05, David Rientjes wrote:
+> On Wed, 12 Jun 2013, Michal Hocko wrote:
+> 
+> > But the objective is to handle oom deadlocks gracefully and you cannot
+> > possibly miss those as they are, well, _deadlocks_.
+> 
+> That's not at all the objective, the changelog quite explicitly states 
+> this is a deadlock as the result of userspace having disabled the oom 
+> killer so that its userspace oom handler can resolve the condition and it 
+> being unresponsive or unable to perform its job.
 
-Patch description?
+Ohh, so another round. Sigh. You insist on having user space handlers
+running in the context of the limited group. OK, I can understand your
+use case, although I think it is pushing the limits of the interface and
+it is dangerous.
+As the problems/deadlocks are unavoidable with this approach you really
+need a backup plan to reduce the damage once it happens. You insist on
+having in-kernel solution while there is a user space alternative
+possible IMO.
 
+> When you allow users to create their own memcgs, which we do and is 
+> possible by chowning the user's root to be owned by it, and implement 
+> their own userspace oom notifier, you must then rely on their 
+> implementation to work 100% of the time, otherwise all those gigabytes of 
+> memory go unfreed forever.  What you're insisting on is that this 
+> userspace is perfect
 
-> diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
+No, I am not saying that. You can let your untrusted users handle
+their OOMs as you like. The watchdog (your fallback solution) _has_
+to be trusted though and if you want it to do the job then you better
+implement it correctly. Is this requirement a problem?
 
-> +#ifdef CONFIG_PM_RUNTIME
-> +	pm_runtime_enable(&pdev->dev);
-> +	pm_runtime_get_sync(&pdev->dev);
-> +#else
->  	err = clk_prepare_enable(gr2d->clk);
->  	if (err) {
->  		dev_err(dev, "cannot turn on clock\n");
->  		return err;
->  	}
-> +#endif
+> and there is never any memory allocated (otherwise it may oom its own
+> user root memcg where the notifier is hosted)
 
-The #else block here is a cut/paste of the body of
-gr2d_runtime_resume(). It'd be better to call that function instead. The
-following is what I ended up with in the Tegra ASoC driver in order to
-support runtime PM on or off:
+If the watchdog runs under root memcg then there is no limit so the only
+OOM that might happen is the global one and you can protect the watchdog
+by oom_adj as I have mentioned earlier.
 
-        pm_runtime_enable(&pdev->dev);
-        if (!pm_runtime_enabled(&pdev->dev)) {
-                ret = tegra20_i2s_runtime_resume(&pdev->dev);
-                if (ret)
-                        goto err_pm_disable;
-        }
+> and it is always responsive and able to handle the situation.
 
-> @@ -328,10 +338,51 @@ static int __exit gr2d_remove(struct platform_device *pdev)
->  
->  	host1x_channel_free(gr2d->channel);
->  	clk_disable_unprepare(gr2d->clk);
+If it is a trusted code then it can run with a real time priority.
 
-Don't you need to remove that clk disable, or make it conditional upon
-!PM_RUNTIME?
+> This is not reality.
 
-> +#ifdef CONFIG_PM_RUNTIME
-> +	pm_runtime_disable(&pdev->dev);
-> +#endif
+It seems you just do not want to accept that there is other solution
+because the kernel solution sounds like an easier option for you.
 
-Similarly, perhaps something like the following here:
+> This is why the kernel has its own oom killer and doesn't wait for a user 
+> to go to kill something.  There's no option to disable the kernel oom 
+> killer.  It's because we don't want to leave the system in a state where 
+> no progress can be made.  The same intention is for memcgs to not be left 
+> in a state where no progress can be made even if userspace has the best 
+> intentions.
+> 
+> Your solution of a global entity to prevent these situations doesn't work 
+> for the same reason we can't implement the kernel oom killer in userspace.  
+> It's the exact same reason. 
 
-        pm_runtime_disable(&pdev->dev);
-        if (!pm_runtime_status_suspended(&pdev->dev))
-                tegra20_i2s_runtime_suspend(&pdev->dev);
+No it is not! The core difference is that there is _always_ some memory
+for the watchdog (because something else might be killed to free some
+memory) while there is none for the global OOM. So the watchdog even
+doesn't need to mlock everything in.
 
-> @ -591,10 +592,18 @@ int host1x_job_submit(struct host1x_job *job)
->  {
->  	struct host1x *host = dev_get_drvdata(job->channel->dev->parent);
->  
-> +#ifdef CONFIG_PM_RUNTIME
-> +	pm_runtime_get_sync(job->channel->dev);
-> +#endif
-> +
->  	return host1x_hw_channel_submit(host, job);
->  }
->  
->  int host1x_job_complete(struct host1x_job *job)
->  {
-> +#ifdef CONFIG_PM_RUNTIME
-> +	return pm_runtime_put(job->channel->dev);
-> +#else
->  	return 0;
-> +#endif
->  }
+> We also want to push patches that allow global oom conditions to
+> trigger an eventfd notification on the root memcg with the exact same
+> semantics of a memcg oom:
 
-I don't think you need any of those ifdefs; simply call the
-pm_runtime_*() functions all the time, and they'll be successful no-ops
-if !PM_RUNTIME.
+As already mentioned we have discussed this at LSF. I am still not
+sure it is the right thing to do though. The interface would be too
+tricky. There are other options to implement user defined policy for the
+global OOM and they should be considered before there is a decision to
+push it into memcg.
+
+> allow it time to respond but 
+> step in and kill something if it fails to respond.  Memcg happens to be 
+> the perfect place to implement such a userspace policy and we want to have 
+> a priority-based killing mechanism that is hierarchical and different from 
+> oom_score_adj.
+
+It might sound perfect for your use cases but we should be _really_
+careful to not pull another tricky interface into memcg that would fit
+a certain scenario.
+Remember use_hierarchy thingy? It sounded like a good idea at the time
+and it turned into a nightmare over time. It also aimed at solving a
+restriction at the time. The restriction is not here anymore AFAICT but
+we have a crippled hierarchy semantic.
+
+> For that to work properly, it cannot possibly allocate memory even on page 
+> fault so it must be mlocked in memory and have enough buffers to store the 
+> priorities of top-level memcgs.  Asking a global watchdog to sit there 
+> mlocked in memory to store thousands of memcgs, their priorities, their 
+> last oom, their timeouts, etc, is a non-starter.
+
+I have asked you about an estimation already. I do not think that the
+memory consumption would really matter here. We are talking about few
+megs at most and even that is exaggerated.
+
+> I don't buy your argument that we're pushing any interface to an extreme.  
+
+OK, call it a matter of taste but handling oom in the context of the
+oom itself without any requirements to the handler implementation and
+without access to any memory reserves because the handler is not trusted
+feels weird and scary to me.
+
+> Users having the ability to manipulate their own memcgs and subcontainers 
+> isn't extreme, it's explicitly allowed by cgroups! 
+
+Sure thing and no discussion about that. We are just arguing who should
+be responsible here. Admin who allows such a setup or kernel.
+
+> What we're asking for is that level of control for memcg is sane and
+
+I can argue that it _is_ quite sane in its current form. The interface
+allows you to handle the oom either by increasing the limit which
+doesn't allocate any kernel memory or by killing a task which doesn't
+allocate any memory either.
+If the handler fails to make the oom decision without allocating a
+memory and it is running under the restricted environment at the same
+time then it calls for troubles. If you, as an admin, want to allow such
+a setup then why not, but be aware of potential problems and handle them
+when they happen. If there was no sane way to implement such a stopgap
+measure then I wouldn't be objecting.
+
+I do not think that your oom_control at root group level argument really
+matters now because a) there is nothing like that in the kernel yet and
+b) it is questionable it will be ever (as the discussion hasn't started
+yet).
+Not mentioning that even if it was I think the watchdog could be still
+implemented (e.g. re-enable global oom after a timeout from a different
+thread in the global watchdog - you can certainly do that without any
+allocations).
+
+> that if userspace is unresponsive that we don't lose gigabytes of
+> memory forever.  And since we've supported this type of functionality
+> even before memcg was created for cpusets and have used and supported
+> it for six years, I have no problem supporting such a thing upstream.
+> 
+> I do understand that we're the largest user of memcg and use it unlike you 
+> or others on this thread do, but that doesn't mean our usecase is any less 
+> important or that we should aim for the most robust behavior possible.
+
+-- 
+Michal Hocko
+SUSE Labs
