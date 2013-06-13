@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab3FMNc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:32:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	id S1758741Ab3FMNcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:32:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758298Ab3FMN2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758325Ab3FMN2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 09:28:09 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537700"
+   d="scan'208";a="7537702"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,97 +17,115 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [Part1 PATCH v5 19/22] x86, mm: Parse numa info earlier
-Date: Thu, 13 Jun 2013 21:03:06 +0800
-Message-Id: <1371128589-8953-20-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: [Part1 PATCH v5 05/22] x86, ACPI: Increase acpi initrd override tables number limit
+Date: Thu, 13 Jun 2013 21:02:52 +0800
+Message-Id: <1371128589-8953-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:18,
+ 2013/06/13 20:58:16,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:28,
-	Serialize complete at 2013/06/13 20:58:28
+ 2013/06/13 20:58:31,
+	Serialize complete at 2013/06/13 20:58:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yinghai Lu <yinghai@kernel.org>
 
-Parsing numa info has been separated into two steps now.
+Current number of acpi tables in initrd is limited to 10, which is
+too small. 64 would be good enough as we have 35 sigs and could
+have several SSDTs.
 
-early_initmem_info() only parses info in numa_meminfo and
-nodes_parsed. still keep numaq, acpi_numa, amd_numa, dummy
-fall back sequence working.
+Two problems in current code prevent us from increasing the 10 tables limit:
+1. cpio file info array is put in stack, as every element is 32 bytes, we
+   could run out of stack if we increase the array size to 64.
+   So we can move it out from stack, and make it global and put it in
+   __initdata section.
+2. early_ioremap only can remap 256kb one time. Current code is mapping
+   10 tables one time. If we increase that limit, the whole size could be
+   more than 256kb, and early_ioremap will fail.
+   So we can map the tables one by one during copying, instead of mapping
+   all of them at one time.
 
-SLIT and numa emulation handling are still left in initmem_init().
+-v2: According to tj, split it out to separated patch, also
+     rename array name to acpi_initrd_files.
+-v3: Add some comments about mapping table one by one during copying
+     per tj.
 
-Call early_initmem_init before init_mem_mapping() to prepare
-to use numa_info with it.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
+Signed-off-by: Yinghai <yinghai@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
+Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/kernel/setup.c |   24 ++++++++++--------------
- 1 files changed, 10 insertions(+), 14 deletions(-)
+ drivers/acpi/osl.c |   26 +++++++++++++++-----------
+ 1 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 301165e..fd0d5be 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1125,13 +1125,21 @@ void __init setup_arch(char **cmdline_p)
- 	trim_platform_memory_ranges();
- 	trim_low_memory_range();
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 42c48fc..53dd490 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -569,8 +569,8 @@ static const char * const table_sigs[] = {
  
+ #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+ 
+-/* Must not increase 10 or needs code modification below */
+-#define ACPI_OVERRIDE_TABLES 10
++#define ACPI_OVERRIDE_TABLES 64
++static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+ 
+ void __init acpi_initrd_override(void *data, size_t size)
+ {
+@@ -579,7 +579,6 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
+-	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
+ 	char *p;
+ 
+ 	if (data == NULL || size == 0)
+@@ -617,8 +616,8 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 			table->signature, cpio_path, file.name, table->length);
+ 
+ 		all_tables_size += table->length;
+-		early_initrd_files[table_nr].data = file.data;
+-		early_initrd_files[table_nr].size = file.size;
++		acpi_initrd_files[table_nr].data = file.data;
++		acpi_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
+ 	}
+ 	if (table_nr == 0)
+@@ -648,14 +647,19 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	memblock_reserve(acpi_tables_addr, all_tables_size);
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+ 
+-	p = early_ioremap(acpi_tables_addr, all_tables_size);
+-
 +	/*
-+	 * Parse the ACPI tables for possible boot-time SMP configuration.
++	 * early_ioremap can only remap 256KB at one time. If we map all the
++	 * tables at one time, we will hit the limit. So we need to map tables
++	 * one by one during copying.
 +	 */
-+	acpi_initrd_override_copy();
-+	acpi_boot_table_init();
-+	early_acpi_boot_init();
-+	early_initmem_init();
- 	init_mem_mapping();
--
-+	memblock.current_limit = get_max_mapped();
- 	early_trap_pf_init();
- 
-+	reserve_initrd();
+ 	for (no = 0; no < table_nr; no++) {
+-		memcpy(p + total_offset, early_initrd_files[no].data,
+-		       early_initrd_files[no].size);
+-		total_offset += early_initrd_files[no].size;
++		phys_addr_t size = acpi_initrd_files[no].size;
 +
- 	setup_real_mode();
- 
--	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
- 	/*
-@@ -1145,24 +1153,12 @@ void __init setup_arch(char **cmdline_p)
- 	/* Allocate bigger log buffer */
- 	setup_log_buf(1);
- 
--	acpi_initrd_override_copy();
--
--	reserve_initrd();
--
- 	reserve_crashkernel();
- 
- 	vsmp_init();
- 
- 	io_delay_init();
- 
--	/*
--	 * Parse the ACPI tables for possible boot-time SMP configuration.
--	 */
--	acpi_boot_table_init();
--
--	early_acpi_boot_init();
--
--	early_initmem_init();
- 	initmem_init();
- 	memblock_find_dma_reserve();
++		p = early_ioremap(acpi_tables_addr + total_offset, size);
++		memcpy(p, acpi_initrd_files[no].data, size);
++		early_iounmap(p, size);
++		total_offset += size;
+ 	}
+-	early_iounmap(p, all_tables_size);
+ }
+ #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
  
 -- 
 1.7.1
