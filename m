@@ -1,1415 +1,839 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab3FMOkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:40:16 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:44885 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757816Ab3FMOkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:40:13 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: <netdev@vger.kernel.org>
-CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Joe Perches" <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: [PATCH v3] ethernet/arc/arc_emac - Add new driver
-Date: Thu, 13 Jun 2013 18:37:19 +0400
-Message-ID: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757948Ab3FMOma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:42:30 -0400
+Received: from fieldses.org ([174.143.236.118]:45040 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755225Ab3FMOm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:42:27 -0400
+Date: Thu, 13 Jun 2013 10:41:40 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 07/14] locks: convert to i_lock to protect i_flock list
+Message-ID: <20130613144140.GA20235@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+ <1370948948-31784-8-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.225.15.131]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370948948-31784-8-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-ARCAngel4/ML50x.
+On Tue, Jun 11, 2013 at 07:09:01AM -0400, Jeff Layton wrote:
+> Having a global lock that protects all of this code is a clear
+> scalability problem. Instead of doing that, move most of the code to be
+> protected by the i_lock instead.
+> 
+> The exceptions are the global lists that file_lock->fl_link sits on.
+> Those still need a global lock of some sort, so wrap just those accesses
+> in the file_lock_lock().
+> 
+> Note that this patch introduces a potential race in the deadlock
+> detection code which could result in either false positives or missed
+> file_lock loops. The blocked_list management needs to be done atomically
+> with the deadlock detection. This will be fixed in a later patch.
 
-This is based off of current Linus tree.
+Actually, the way I think I'd try this:
 
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-Reviewed-by: Vineet Gupta <vgupta@synopsys.com>
-Reviewed-by: Mischa Jonker <mjonker@synopsys.com>
+	1. Introduce a new spinlock global_lock_lists_lock and take it
+	   in all the places we need a global lock.
+	2. Do the big flock_lock-to-i_lock conversion, deleting flock_lock
+	   in the process.
 
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Mischa Jonker <mjonker@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
+Does that work?
 
----
-Hi all,
+Yeah, more patch-ordering bike-shedding, but...  I think that would be
+simple and bisectable and for a confusing long-untouched bit of code
+it's worth getting these little steps right if we can.
 
-this is 3rd re-spin of my patch.
+--b.
 
-It introduces pretty significant changes in comparison to v2.
-Those changes were inspiresd by very useful comments of:
- * Andy Shevchenko
- * Francois Romieu
- * Joe Perches
-
-I hope now driver looks simpler, cleaner and better complies to the most
-recent "standards" for network drivers in Linux kernel.
-
-Below is a list of main changes in this respin.
-
-1. Functional changes:
-1.1. Heavy re-work of "arc_emac_poll", "arc_emac_tx" and
-"arc_emac_intr". Now they look simpler and implement most of bullets
-below.
-1.2. Properly support DMA-API: dma_{map|unmap}_single, error checking
-etc.
-1.3. Rework "arc_emac_set_address" to be endian-friendly.
-1.4. Use "netdev_alloc_skb_ip_align" instead of "netdev_alloc_skb" +
-"skb_reserve".
-1.5. Move PHY connection from "arc_emac_open" to "arc_emac_probe".
-1.6. Merge EMAC and MDIO private structures into single one.
-1.7. Add use of "netif_{stop|resume}_queue".
-1.8. Add "max-speed" DT item for EMAC for proper PHY setup. Some systems
-have limited memory bandwidth so we need to limit incoming data-rate.
-1.9. Convert register accessors from macros into in-lined functions.
-
-2. Cosmetics:
-2.1. Remove change-log.
-2.2. With inverted logic saved 2 indentation levels.
-2.3. Merge multi-line text comments into 1 line.
-2.4. Use "ndev" instead of "net_dev".
-2.5. All functions in "arc_emac_main.c" are "static" now.
----
- Documentation/devicetree/bindings/net/arc_emac.txt |   38 +
- drivers/net/ethernet/Kconfig                       |    1 +
- drivers/net/ethernet/Makefile                      |    1 +
- drivers/net/ethernet/arc/Kconfig                   |   31 +
- drivers/net/ethernet/arc/Makefile                  |    6 +
- drivers/net/ethernet/arc/arc_emac.h                |  201 +++++
- drivers/net/ethernet/arc/arc_emac_main.c           |  813 ++++++++++++++++++++
- drivers/net/ethernet/arc/arc_emac_mdio.c           |  152 ++++
- 8 files changed, 1243 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/arc_emac.txt
- create mode 100644 drivers/net/ethernet/arc/Kconfig
- create mode 100644 drivers/net/ethernet/arc/Makefile
- create mode 100644 drivers/net/ethernet/arc/arc_emac.h
- create mode 100644 drivers/net/ethernet/arc/arc_emac_main.c
- create mode 100644 drivers/net/ethernet/arc/arc_emac_mdio.c
-
-diff --git a/Documentation/devicetree/bindings/net/arc_emac.txt b/Documentation/devicetree/bindings/net/arc_emac.txt
-new file mode 100644
-index 0000000..bcbc3f0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/arc_emac.txt
-@@ -0,0 +1,38 @@
-+* Synopsys ARC EMAC 10/100 Ethernet driver (EMAC)
-+
-+Required properties:
-+- compatible: Should be "snps,arc-emac"
-+- reg: Address and length of the register set for the device
-+- interrupts: Should contain the EMAC interrupts
-+- clock-frequency: CPU frequency. It is needed to calculate and set polling
-+period of EMAC.
-+- max-speed: Maximum supported data-rate in Mbit/s. In some HW configurations
-+bandwidth of external memory controller might be a limiting factor. That's why
-+it's required to specify which data-rate is supported on current SoC or FPGA.
-+For example if only 10 Mbit/s is supported (10BASE-T) set "10". If 100 Mbit/s is
-+supported (100BASE-TX) set "100".
-+- phy: PHY device attached to the EMAC via MDIO bus
-+
-+Child nodes of the driver are the individual PHY devices connected to the
-+MDIO bus. They must have a "reg" property given the PHY address on the MDIO bus.
-+
-+Optional properties:
-+- mac-address: 6 bytes, mac address
-+
-+Examples:
-+
-+	ethernet@c0fc2000 {
-+		compatible = "snps,arc-emac";
-+		reg = <0xc0fc2000 0x3c>;
-+		interrupts = <6>;
-+		mac-address = [ 00 11 22 33 44 55 ];
-+		clock-frequency = <80000000>;
-+		max-speed = <100>;
-+		phy = <&phy0>;
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		phy0: ethernet-phy@0 {
-+			reg = <1>;
-+		};
-+	};
-diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index 4bedae2..98eec48 100644
---- a/drivers/net/ethernet/Kconfig
-+++ b/drivers/net/ethernet/Kconfig
-@@ -23,6 +23,7 @@ source "drivers/net/ethernet/aeroflex/Kconfig"
- source "drivers/net/ethernet/alteon/Kconfig"
- source "drivers/net/ethernet/amd/Kconfig"
- source "drivers/net/ethernet/apple/Kconfig"
-+source "drivers/net/ethernet/arc/Kconfig"
- source "drivers/net/ethernet/atheros/Kconfig"
- source "drivers/net/ethernet/cadence/Kconfig"
- source "drivers/net/ethernet/adi/Kconfig"
-diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index 183e3f4..b764c73 100644
---- a/drivers/net/ethernet/Makefile
-+++ b/drivers/net/ethernet/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_GRETH) += aeroflex/
- obj-$(CONFIG_NET_VENDOR_ALTEON) += alteon/
- obj-$(CONFIG_NET_VENDOR_AMD) += amd/
- obj-$(CONFIG_NET_VENDOR_APPLE) += apple/
-+obj-$(CONFIG_NET_VENDOR_ARC) += arc/
- obj-$(CONFIG_NET_VENDOR_ATHEROS) += atheros/
- obj-$(CONFIG_NET_CADENCE) += cadence/
- obj-$(CONFIG_NET_BFIN) += adi/
-diff --git a/drivers/net/ethernet/arc/Kconfig b/drivers/net/ethernet/arc/Kconfig
-new file mode 100644
-index 0000000..514c57f
---- /dev/null
-+++ b/drivers/net/ethernet/arc/Kconfig
-@@ -0,0 +1,31 @@
-+#
-+# ARC EMAC network device configuration
-+#
-+
-+config NET_VENDOR_ARC
-+	bool "ARC devices"
-+	default y
-+	---help---
-+	  If you have a network (Ethernet) card belonging to this class, say Y
-+	  and read the Ethernet-HOWTO, available from
-+	  <http://www.tldp.org/docs.html#howto>.
-+
-+	  Note that the answer to this question doesn't directly affect the
-+	  kernel: saying N will just cause the configurator to skip all
-+	  the questions about ARC cards. If you say Y, you will be asked for
-+	  your specific card in the following questions.
-+
-+if NET_VENDOR_ARC
-+
-+config ARC_EMAC
-+	tristate "ARC EMAC support"
-+	select MII
-+	select PHYLIB
-+	depends on OF_IRQ
-+	depends on OF_NET
-+	---help---
-+	  On some legacy ARC (Synopsys) FPGA boards such as ARCAngel4/ML50x
-+	  non-standard on-chip ethernet device ARC EMAC 10/100 is used.
-+	  Say Y here if you have such a board.  If unsure, say N.
-+
-+endif # NET_VENDOR_ARC
-diff --git a/drivers/net/ethernet/arc/Makefile b/drivers/net/ethernet/arc/Makefile
-new file mode 100644
-index 0000000..f5b73e5
---- /dev/null
-+++ b/drivers/net/ethernet/arc/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for the ARC network device drivers.
-+#
-+
-+arc_emac-objs := arc_emac_main.o arc_emac_mdio.o
-+obj-$(CONFIG_ARC_EMAC) += arc_emac.o
-diff --git a/drivers/net/ethernet/arc/arc_emac.h b/drivers/net/ethernet/arc/arc_emac.h
-new file mode 100644
-index 0000000..6691db2
---- /dev/null
-+++ b/drivers/net/ethernet/arc/arc_emac.h
-@@ -0,0 +1,201 @@
-+/*
-+ * Copyright (C) 2004-2013 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * Registers and bits definitions of ARC EMAC
-+ */
-+
-+#ifndef ARC_EMAC_H
-+#define ARC_EMAC_H
-+
-+#include <linux/device.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/netdevice.h>
-+#include <linux/phy.h>
-+
-+/* STATUS and ENABLE Register bit masks */
-+#define TXINT_MASK	(1<<0)	/* Transmit interrupt */
-+#define RXINT_MASK	(1<<1)	/* Receive interrupt */
-+#define ERR_MASK	(1<<2)	/* Error interrupt */
-+#define TXCH_MASK	(1<<3)	/* Transmit chaining error interrupt */
-+#define MSER_MASK	(1<<4)	/* Missed packet counter error */
-+#define RXCR_MASK	(1<<8)	/* RXCRCERR counter rolled over  */
-+#define RXFR_MASK	(1<<9)	/* RXFRAMEERR counter rolled over */
-+#define RXFL_MASK	(1<<10)	/* RXOFLOWERR counter rolled over */
-+#define MDIO_MASK	(1<<12)	/* MDIO complete interrupt */
-+#define TXPL_MASK	(1<<31)	/* Force polling of BD by EMAC */
-+
-+/* CONTROL Register bit masks */
-+#define EN_MASK		(1<<0)	/* VMAC enable */
-+#define TXRN_MASK	(1<<3)	/* TX enable */
-+#define RXRN_MASK	(1<<4)	/* RX enable */
-+#define DSBC_MASK	(1<<8)	/* Disable receive broadcast */
-+#define ENFL_MASK	(1<<10)	/* Enable Full-duplex */
-+#define PROM_MASK	(1<<11)	/* Promiscuous mode */
-+
-+/* Buffer descriptor INFO bit masks */
-+#define OWN_MASK	(1<<31)	/* 0-CPU owns buffer, 1-EMAC owns buffer */
-+#define FRST_MASK	(1<<16)	/* First buffer in chain */
-+#define LAST_MASK	(1<<17)	/* Last buffer in chain */
-+#define LEN_MASK	0x000007FF	/* last 11 bits */
-+#define CRLS		(1<<21)
-+#define DEFR		(1<<22)
-+#define DROP		(1<<23)
-+#define RTRY		(1<<24)
-+#define LTCL		(1<<28)
-+#define UFLO		(1<<29)
-+
-+#define FOR_EMAC	OWN_MASK
-+#define FOR_CPU		0
-+
-+/* ARC EMAC register set combines entries for MAC and MDIO */
-+enum {
-+	R_ID = 0,
-+	R_STATUS,
-+	R_ENABLE,
-+	R_CTRL,
-+	R_POLLRATE,
-+	R_RXERR,
-+	R_MISS,
-+	R_TX_RING,
-+	R_RX_RING,
-+	R_ADDRL,
-+	R_ADDRH,
-+	R_LAFL,
-+	R_LAFH,
-+	R_MDIO,
-+};
-+
-+/* Transmission timeout */
-+#define TX_TIMEOUT (400*HZ/1000)
-+
-+#define ARC_EMAC_NAPI_WEIGHT 40	/* Workload for NAPI */
-+
-+#define TX_FIFO_SIZE 2048	/* EMAC Tx FIFO size */
-+
-+/* Assuming MTU=1500 (IP pkt: hdr+payload), we round off to next cache-line
-+ * boundary: 1536 % {32,64,128} == 0
-+ * This provides enough space for Ethernet header (14) and also ensures that
-+ * buf-size passed to EMAC > max pkt rx (1514). Latter is due to a EMAC quirk
-+ * wherein it can generate a chained pkt (with all data in first part, and
-+ * an empty 2nd part - albeit with last bit set) when Rx-pkt-sz is exactly
-+ * equal to buf-size: hence the need to keep buf-size slightly bigger than
-+ * largest pkt.
-+ */
-+#define	EMAC_BUFFER_PAD 36
-+
-+struct arc_emac_bd_t {
-+	unsigned int info;
-+	char *data;
-+};
-+
-+/* Number of Rx/Tx BD's */
-+#define RX_BD_NUM	128
-+#define TX_BD_NUM	128
-+
-+#define RX_RING_SZ  (RX_BD_NUM * sizeof(struct arc_emac_bd_t))
-+#define TX_RING_SZ  (TX_BD_NUM * sizeof(struct arc_emac_bd_t))
-+
-+struct buffer_state {
-+	struct sk_buff *skb;
-+	DEFINE_DMA_UNMAP_ADDR(addr);
-+	DEFINE_DMA_UNMAP_LEN(len);
-+};
-+
-+struct arc_emac_priv {
-+	struct net_device_stats stats;
-+	unsigned int clock_frequency;
-+	unsigned int max_speed;
-+
-+	/* Pointers to BD rings - CPU side */
-+	struct arc_emac_bd_t *rxbd;
-+	struct arc_emac_bd_t *txbd;
-+
-+	/* Pointers to BD rings - Device side */
-+	dma_addr_t rxbd_dma_hdl;
-+	dma_addr_t txbd_dma_hdl;
-+
-+	/* The actual socket buffers */
-+	struct buffer_state rx_buff[RX_BD_NUM];
-+	struct buffer_state tx_buff[TX_BD_NUM];
-+	unsigned int txbd_curr;
-+	unsigned int txbd_dirty;
-+
-+	/* Remember where driver last saw a packet, so next iteration it
-+	 * starts from here and not 0
-+	 */
-+	unsigned int last_rx_bd;
-+
-+	struct napi_struct napi;
-+
-+	/* Phy saved state */
-+	int duplex;
-+	int speed;
-+
-+	/* Devices */
-+	struct device *dev;
-+	struct device_node *phy_node;
-+	struct phy_device *phy_dev;
-+	struct net_device *ndev;
-+	struct mii_bus *bus;
-+
-+	/* EMAC registers base address */
-+	void __iomem *reg_base_addr;
-+};
-+
-+/**
-+ * arc_reg_set - Sets EMAC register with provided value.
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ * @reg:	Register offset from base address
-+ * @value:	Value to set in register
-+ */
-+static inline void arc_reg_set(struct arc_emac_priv *priv, int reg, int value)
-+{
-+	iowrite32(value, priv->reg_base_addr + reg * sizeof(int));
-+}
-+
-+/**
-+ * arc_reg_get - Gets value of specified EMAC register.
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ * @reg:	Register offset from base address
-+ *
-+ * returns:	Value of requested register
-+ */
-+static inline unsigned int arc_reg_get(struct arc_emac_priv *priv, int reg)
-+{
-+	return ioread32(priv->reg_base_addr + reg * sizeof(int));
-+}
-+
-+/**
-+ * arc_reg_or - Applies mask to specified EMAC register - ("reg" | "mask")
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ * @reg:	Register offset from base address
-+ * @mask:	Mask to apply to specified register
-+ *
-+ * This function reads initial register value, then applies provided mask
-+ * to it and then writes register back.
-+ */
-+static inline void arc_reg_or(struct arc_emac_priv *priv, int reg, int mask)
-+{
-+	unsigned int value = arc_reg_get(priv, reg);
-+	arc_reg_set(priv, reg, value | mask);
-+}
-+
-+/**
-+ * arc_reg_clr - Applies mask to specified EMAC register - ("reg" & ~"mask")
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ * @reg:	Register offset from base address
-+ * @mask:	Mask to apply to specified register
-+ *
-+ * This function reads initial register value, then applies provided mask
-+ * to it and then writes register back.
-+ */
-+static inline void arc_reg_clr(struct arc_emac_priv *priv, int reg, int mask)
-+{
-+	unsigned int value = arc_reg_get(priv, reg);
-+	arc_reg_set(priv, reg, value & ~mask);
-+}
-+
-+int arc_mdio_probe(struct device_node *np, struct arc_emac_priv *priv);
-+int arc_mdio_remove(struct arc_emac_priv *priv);
-+
-+#endif /* ARC_EMAC_H */
-diff --git a/drivers/net/ethernet/arc/arc_emac_main.c b/drivers/net/ethernet/arc/arc_emac_main.c
-new file mode 100644
-index 0000000..7ae759f
---- /dev/null
-+++ b/drivers/net/ethernet/arc/arc_emac_main.c
-@@ -0,0 +1,813 @@
-+/*
-+ * Copyright (C) 2004-2013 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Driver for the ARC EMAC 10100 (hardware revision 5)
-+ *
-+ * Contributors:
-+ *		Amit Bhor
-+ *		Sameer Dhavale
-+ *		Vineet Gupta
-+ */
-+
-+#include <linux/etherdevice.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_mdio.h>
-+#include <linux/of_net.h>
-+#include <linux/of_platform.h>
-+
-+#include "arc_emac.h"
-+
-+#define DRV_NAME	"arc_emac"
-+#define DRV_VERSION	"1.0"
-+
-+/**
-+ * arc_emac_adjust_link - Adjust the PHY link duplex.
-+ * @ndev:	Pointer to the net_device structure.
-+ *
-+ * This function is called to change the duplex setting after auto negotiation
-+ * is done by the PHY.
-+ */
-+static void arc_emac_adjust_link(struct net_device *ndev)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	struct phy_device *phy_dev = priv->phy_dev;
-+	unsigned int reg, state_changed = 0;
-+
-+	if (!phy_dev->link)
-+		return;
-+
-+	if (priv->duplex != phy_dev->duplex) {
-+		reg = arc_reg_get(priv, R_CTRL);
-+
-+		if (DUPLEX_FULL == phy_dev->duplex)
-+			reg |= ENFL_MASK;
-+		else
-+			reg &= ~ENFL_MASK;
-+
-+		arc_reg_set(priv, R_CTRL, reg);
-+		priv->duplex = phy_dev->duplex;
-+		state_changed = 1;
-+	}
-+
-+	if (priv->speed != phy_dev->speed) {
-+		priv->speed = phy_dev->speed;
-+		state_changed = 1;
-+	}
-+
-+	if (state_changed)
-+		phy_print_status(phy_dev);
-+}
-+
-+/**
-+ * arc_emac_get_settings - Get PHY settings.
-+ * @ndev:	Pointer to net_device structure.
-+ * @cmd:	Pointer to ethtool_cmd structure.
-+ *
-+ * This implements ethtool command for getting PHY settings. If PHY could
-+ * not be found, the function returns -ENODEV. This function calls the
-+ * relevant PHY ethtool API to get the PHY settings.
-+ * Issue "ethtool ethX" under linux prompt to execute this function.
-+ */
-+static int arc_emac_get_settings(struct net_device *ndev,
-+				 struct ethtool_cmd *cmd)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+
-+	if (priv->phy_dev)
-+		return phy_ethtool_gset(priv->phy_dev, cmd);
-+
-+	return -EINVAL;
-+}
-+
-+/**
-+ * arc_emac_set_settings - Set PHY settings as passed in the argument.
-+ * @ndev:	Pointer to net_device structure.
-+ * @cmd:	Pointer to ethtool_cmd structure.
-+ *
-+ * This implements ethtool command for setting various PHY settings. If PHY
-+ * could not be found, the function returns -ENODEV. This function calls the
-+ * relevant PHY ethtool API to set the PHY.
-+ * Issue e.g. "ethtool -s ethX speed 1000" under linux prompt to execute this
-+ * function.
-+ */
-+static int arc_emac_set_settings(struct net_device *ndev,
-+				 struct ethtool_cmd *cmd)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+
-+	if (!capable(CAP_NET_ADMIN))
-+		return -EPERM;
-+
-+	if (priv->phy_dev)
-+		return phy_ethtool_sset(priv->phy_dev, cmd);
-+
-+	return -EINVAL;
-+}
-+
-+/**
-+ * arc_emac_get_drvinfo - Get EMAC driver information.
-+ * @ndev:	Pointer to net_device structure.
-+ * @info:	Pointer to ethtool_drvinfo structure.
-+ *
-+ * This implements ethtool command for getting the driver information.
-+ * Issue "ethtool -i ethX" under linux prompt to execute this function.
-+ */
-+static void arc_emac_get_drvinfo(struct net_device *ndev,
-+				 struct ethtool_drvinfo *info)
-+{
-+	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
-+	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-+}
-+
-+static const struct ethtool_ops arc_emac_ethtool_ops = {
-+	.get_settings	= arc_emac_get_settings,
-+	.set_settings	= arc_emac_set_settings,
-+	.get_drvinfo	= arc_emac_get_drvinfo,
-+	.get_link	= ethtool_op_get_link,
-+};
-+
-+/**
-+ * arc_emac_poll - processing of incoming packets with NAPI.
-+ * @napi:	Pointer to napi_struct structure.
-+ * @budget:	How many BDs to process on 1 call.
-+ *
-+ * returns:	Number of processed BDs
-+ *
-+ * Iterate through Rx BDs and deliver received packages to upper layer.
-+ */
-+static int arc_emac_poll(struct napi_struct *napi, int budget)
-+{
-+	struct net_device *ndev = napi->dev;
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	unsigned int i, loop, work_done = 0;
-+	struct sk_buff *skb;
-+
-+	/* Loop thru the BD chain, but not always from 0.
-+	 * Start from right after where we last saw a packet.
-+	 */
-+	i = priv->last_rx_bd;
-+
-+	for (loop = 0; loop < RX_BD_NUM; loop++) {
-+		struct net_device_stats *stats = &priv->stats;
-+		struct buffer_state *rx_buff;
-+		struct arc_emac_bd_t *rxbd;
-+		dma_addr_t addr;
-+		unsigned int info, pktlen;
-+		unsigned int buflen = ndev->mtu + EMAC_BUFFER_PAD;
-+
-+		i = (i + 1) % RX_BD_NUM;
-+		rx_buff = &priv->rx_buff[i];
-+		rxbd = &priv->rxbd[i];
-+		info = rxbd->info;
-+
-+		/* Process current BD */
-+
-+		if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
-+			/* BD is still owned by EMAC */
-+			continue;
-+		}
-+
-+		/* Make a note that we saw a packet at this BD.
-+		 * So next time, driver starts from this + 1
-+		 */
-+		priv->last_rx_bd = i;
-+
-+#define FRST_OR_LAST_MASK	(FRST_MASK | LAST_MASK)
-+
-+		if (unlikely((info & FRST_OR_LAST_MASK) != FRST_OR_LAST_MASK)) {
-+			/* Buffer chaining results in a significant
-+			 * amount of additional bus overhead and thus
-+			 * a higher CLK frequency or larger FIFOs are required.
-+			 * Because of that fact we don't support
-+			 * chaining of receive packets. We pre-allocate
-+			 * buffers of MTU size so incoming packets
-+			 * won't be chained.
-+			 */
-+			if (net_ratelimit())
-+				netdev_err(ndev,
-+					   "incomplete packed received\n");
-+
-+			/* Return ownership to EMAC */
-+			rxbd->info = FOR_EMAC | buflen;
-+			stats->rx_errors++;
-+			stats->rx_length_errors++;
-+			continue;
-+		}
-+
-+		pktlen = info & LEN_MASK;
-+		stats->rx_packets++;
-+		stats->rx_bytes += pktlen;
-+		skb = rx_buff->skb;
-+		skb_put(skb, pktlen);
-+		skb->dev = ndev;
-+		skb->protocol = eth_type_trans(skb, ndev);
-+		netif_receive_skb(skb);
-+
-+		dma_unmap_single(&ndev->dev,
-+				 dma_unmap_addr(&rx_buff, addr),
-+				 dma_unmap_len(&rx_buff, len),
-+				 DMA_FROM_DEVICE);
-+
-+		/* Prepare the BD for next cycle */
-+		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
-+		if (unlikely(!rx_buff->skb)) {
-+			if (net_ratelimit())
-+				netdev_err(ndev, "cannot allocate skb\n");
-+			stats->rx_errors++;
-+			continue;
-+		}
-+
-+		addr = dma_map_single(&ndev->dev, (void *)rx_buff->skb->data,
-+				      buflen, DMA_FROM_DEVICE);
-+		if (dma_mapping_error(&ndev->dev, addr)) {
-+			if (net_ratelimit())
-+				if (net_ratelimit())
-+					netdev_err(ndev, "cannot dma map\n");
-+			dev_kfree_skb(rx_buff->skb);
-+			stats->rx_errors++;
-+			continue;
-+		}
-+		dma_unmap_addr_set(&rx_buff, mapping, addr);
-+		dma_unmap_len_set(&rx_buff, len, buflen);
-+
-+		rxbd->data = rx_buff->skb->data;
-+
-+		/* Return ownership to EMAC */
-+		rxbd->info = FOR_EMAC | buflen;
-+
-+		work_done++;
-+		if (work_done >= budget)
-+			break;
-+	}
-+
-+	if (work_done < budget) {
-+		napi_complete(napi);
-+		arc_reg_or(priv, R_ENABLE, RXINT_MASK);
-+	}
-+
-+	return work_done;
-+}
-+
-+/**
-+ * arc_emac_intr - Global interrupt handler for EMAC.
-+ * @irq:		irq number.
-+ * @dev_instance:	device instance.
-+ *
-+ * returns: IRQ_HANDLED for all cases.
-+ *
-+ * ARC EMAC has only 1 interrupt line, and depending on bits raised in
-+ * STATUS register we may tell what is a reason for interrupt to fire.
-+ */
-+static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
-+{
-+	struct net_device *ndev = dev_instance;
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	struct net_device_stats *stats = &priv->stats;
-+	unsigned int status;
-+
-+	status = arc_reg_get(priv, R_STATUS);
-+	status &= ~MDIO_MASK;
-+
-+	/* Reset all flags except "MDIO complete"*/
-+	arc_reg_set(priv, R_STATUS, status);
-+
-+	if (status & RXINT_MASK) {
-+		if (likely(napi_schedule_prep(&priv->napi))) {
-+			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
-+			__napi_schedule(&priv->napi);
-+		}
-+	}
-+
-+	if (status & TXINT_MASK) {
-+		unsigned int i;
-+
-+		for (i = 0; i < TX_BD_NUM; i++) {
-+			unsigned int *txbd_dirty = &priv->txbd_dirty;
-+			struct arc_emac_bd_t *txbd = &priv->txbd[*txbd_dirty];
-+			struct buffer_state *tx_buff = &priv->tx_buff[*txbd_dirty];
-+			struct sk_buff *skb = tx_buff->skb;
-+			unsigned int info = txbd->info;
-+
-+			/* EMAC owns this buffer, cannot touch it now */
-+			if (info & FOR_EMAC)
-+				continue;
-+
-+			/* Buffer is not in use currently, skip it */
-+			if (!txbd->data)
-+				continue;
-+
-+			if (unlikely(info & (DROP | DEFR | LTCL | UFLO))) {
-+				stats->tx_errors++;
-+				stats->tx_dropped++;
-+
-+				if (info & DEFR)
-+					stats->tx_carrier_errors++;
-+
-+				if (info & LTCL)
-+					stats->collisions++;
-+
-+				if (info & UFLO)
-+					stats->tx_fifo_errors++;
-+			} else if (likely(info & (FRST_MASK | LAST_MASK))) {
-+				stats->tx_packets++;
-+				stats->tx_bytes += skb->len;
-+			}
-+
-+			dma_unmap_single(&ndev->dev,
-+					 dma_unmap_addr(&tx_buff, addr),
-+					 dma_unmap_len(&tx_buff, len),
-+					 DMA_TO_DEVICE);
-+
-+			/* return the sk_buff to system */
-+			dev_kfree_skb_irq(skb);
-+
-+			txbd->data = 0x0;
-+			txbd->info = 0x0;
-+
-+			*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
-+
-+			if (netif_queue_stopped(ndev))
-+				netif_wake_queue(ndev);
-+		}
-+	}
-+
-+	if (status & ERR_MASK) {
-+		/* MSER/RXCR/RXFR/RXFL interrupt fires on corresponding
-+		 * 8-bit error counter overrun.
-+		 * Because of this fact we add 256 (0x100) items each time
-+		 * overrun interrupt happens.
-+		 */
-+
-+		if (status & MSER_MASK) {
-+			stats->rx_missed_errors += 0x100;
-+			stats->rx_errors += 0x100;
-+		}
-+
-+		if (status & RXCR_MASK) {
-+			stats->rx_crc_errors += 0x100;
-+			stats->rx_errors += 0x100;
-+		}
-+
-+		if (status & RXFR_MASK) {
-+			stats->rx_frame_errors += 0x100;
-+			stats->rx_errors += 0x100;
-+		}
-+
-+		if (status & RXFL_MASK) {
-+			stats->rx_over_errors += 0x100;
-+			stats->rx_errors += 0x100;
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * arc_emac_open - Open the network device.
-+ * @ndev:	Pointer to the network device.
-+ *
-+ * returns: 0, on success or non-zero error value on failure.
-+ *
-+ * This function sets the MAC address, requests and enables an IRQ
-+ * for the EMAC device and starts the Tx queue.
-+ * It also connects to the phy device.
-+ */
-+static int arc_emac_open(struct net_device *ndev)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	struct phy_device *phy_dev = priv->phy_dev;
-+	struct arc_emac_bd_t *bd;
-+	struct sk_buff *skb;
-+	int i;
-+
-+	phy_dev->autoneg = AUTONEG_ENABLE;
-+	phy_dev->speed = 0;
-+	phy_dev->duplex = 0;
-+	phy_dev->advertising = phy_dev->supported;
-+
-+	if (priv->max_speed > 100) {
-+		phy_dev->advertising &= PHY_GBIT_FEATURES;
-+	} else if (priv->max_speed <= 100) {
-+		phy_dev->advertising &= PHY_BASIC_FEATURES;
-+		if (priv->max_speed <= 10) {
-+			phy_dev->advertising &= ~SUPPORTED_100baseT_Half;
-+			phy_dev->advertising &= ~SUPPORTED_100baseT_Full;
-+		}
-+	}
-+
-+	/* Allocate and set buffers for Rx BD's */
-+	bd = priv->rxbd;
-+	for (i = 0; i < RX_BD_NUM; i++) {
-+		skb = netdev_alloc_skb_ip_align(ndev, ndev->mtu +
-+						EMAC_BUFFER_PAD);
-+
-+		priv->rx_buff[i].skb = skb;
-+		bd->data = skb->data;
-+
-+		/* Set ownership to EMAC */
-+		bd->info = FOR_EMAC | (ndev->mtu + EMAC_BUFFER_PAD);
-+		bd++;
-+	}
-+
-+	/* setup last seen to MAX, so driver starts from 0 */
-+	priv->last_rx_bd = RX_BD_NUM - 1;
-+
-+	/* Allocate Tx BD's similar to Rx BD's. All Tx BD's owned by CPU */
-+	bd = priv->txbd;
-+	for (i = 0; i < TX_BD_NUM; i++) {
-+		bd->data = 0;
-+		bd->info = 0;
-+		bd++;
-+	}
-+
-+	/* Initialize logical address filter */
-+	arc_reg_set(priv, R_LAFL, 0);
-+	arc_reg_set(priv, R_LAFH, 0);
-+
-+	/* Set BD ring pointers for device side */
-+	arc_reg_set(priv, R_RX_RING,
-+		     (unsigned int)priv->rxbd_dma_hdl);
-+
-+	arc_reg_set(priv, R_TX_RING,
-+		     (unsigned int)priv->rxbd_dma_hdl + RX_RING_SZ);
-+
-+	/* Set Poll rate so that it polls every 1 ms */
-+	arc_reg_set(priv, R_POLLRATE,
-+		     priv->clock_frequency / 1000000);
-+
-+	/* Enable interrupts */
-+	arc_reg_set(priv, R_ENABLE,
-+		     TXINT_MASK | RXINT_MASK | ERR_MASK);
-+
-+	/* Set CONTROL */
-+	arc_reg_set(priv, R_CTRL,
-+		     (RX_BD_NUM << 24) |	/* RX BD table length */
-+		     (TX_BD_NUM << 16) |	/* TX BD table length */
-+		     TXRN_MASK | RXRN_MASK);
-+
-+	/* Enable EMAC */
-+	arc_reg_or(priv, R_CTRL, EN_MASK);
-+
-+	phy_start_aneg(priv->phy_dev);
-+
-+	netif_start_queue(ndev);
-+	napi_enable(&priv->napi);
-+
-+	return 0;
-+}
-+
-+/**
-+ * arc_emac_stop - Close the network device.
-+ * @ndev:	Pointer to the network device.
-+ *
-+ * This function stops the Tx queue, disables interrupts and frees the IRQ for
-+ * the EMAC device.
-+ * It also disconnects the PHY device associated with the EMAC device.
-+ */
-+static int arc_emac_stop(struct net_device *ndev)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+
-+	napi_disable(&priv->napi);
-+	netif_stop_queue(ndev);
-+
-+	/* Disable interrupts */
-+	arc_reg_clr(priv, R_ENABLE, TXINT_MASK | RXINT_MASK | ERR_MASK);
-+
-+	/* Disable EMAC */
-+	arc_reg_clr(priv, R_CTRL, EN_MASK);
-+
-+	return 0;
-+}
-+
-+/**
-+ * arc_emac_stats - Get system network statistics.
-+ * @ndev:	Pointer to net_device structure.
-+ *
-+ * Returns the address of the device statistics structure.
-+ * Statistics are updated in interrupt handler.
-+ */
-+static struct net_device_stats *arc_emac_stats(struct net_device *ndev)
-+{
-+	unsigned long miss, rxerr, rxfram, rxcrc, rxoflow;
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	struct net_device_stats *stats = &priv->stats;
-+
-+	rxerr = arc_reg_get(priv, R_RXERR);
-+	miss = arc_reg_get(priv, R_MISS);
-+
-+	rxcrc = rxerr & 0xff;
-+	rxfram = rxerr >> 8 & 0xff;
-+	rxoflow = rxerr >> 16 & 0xff;
-+
-+	stats->rx_errors += miss;
-+	stats->rx_errors += rxcrc + rxfram + rxoflow;
-+
-+	stats->rx_over_errors += rxoflow;
-+	stats->rx_frame_errors += rxfram;
-+	stats->rx_crc_errors += rxcrc;
-+	stats->rx_missed_errors += miss;
-+
-+	return stats;
-+}
-+
-+/**
-+ * arc_emac_tx - Starts the data transmission.
-+ * @skb:	sk_buff pointer that contains data to be Transmitted.
-+ * @ndev:	Pointer to net_device structure.
-+ *
-+ * returns: NETDEV_TX_OK, on success
-+ *		NETDEV_TX_BUSY, if any of the descriptors are not free.
-+ *
-+ * This function is invoked from upper layers to initiate transmission.
-+ */
-+static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	unsigned int info, len, *txbd_curr = &priv->txbd_curr;
-+	dma_addr_t addr;
-+	char *pkt = skb->data;
-+
-+	len = max_t(unsigned int, ETH_ZLEN, skb->len);
-+	info = priv->txbd[*txbd_curr].info;
-+
-+	/* EMAC still holds this buffer in its possession.
-+	 * CPU must not modify this buffer descriptor
-+	 */
-+	if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
-+		netif_stop_queue(ndev);
-+		return NETDEV_TX_BUSY;
-+	}
-+
-+	addr = dma_map_single(&ndev->dev, (void *)pkt, len, DMA_TO_DEVICE);
-+	if (unlikely(dma_mapping_error(&ndev->dev, addr))) {
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
-+	}
-+	dma_unmap_addr_set(&priv->tx_buff[*txbd_curr], mapping, addr);
-+	dma_unmap_len_set(&priv->tx_buff[*txbd_curr], len, len);
-+
-+	priv->tx_buff[*txbd_curr].skb = skb;
-+	priv->txbd[*txbd_curr].data = pkt;
-+	priv->txbd[*txbd_curr].info = FOR_EMAC | FRST_MASK | LAST_MASK | len;
-+
-+	*txbd_curr = (*txbd_curr + 1) % TX_BD_NUM;
-+
-+	arc_reg_set(priv, R_STATUS, TXPL_MASK);
-+
-+	skb_tx_timestamp(skb);
-+
-+	return NETDEV_TX_OK;
-+}
-+
-+/**
-+ * arc_emac_set_address - Set the MAC address for this device.
-+ * @ndev:	Pointer to net_device structure.
-+ * @p:		6 byte Address to be written as MAC address.
-+ *
-+ * This function copies the HW address from the sockaddr structure to the
-+ * net_device structure and updates the address in HW.
-+ *
-+ * returns:	-EBUSY if the net device is busy or 0 if the address is set
-+ *		successfully.
-+ */
-+static int arc_emac_set_address(struct net_device *ndev, void *p)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	struct sockaddr *addr = p;
-+	unsigned int addr_low, addr_hi;
-+
-+	if (netif_running(ndev))
-+		return -EBUSY;
-+
-+	if (!is_valid_ether_addr(addr->sa_data))
-+		return -EADDRNOTAVAIL;
-+
-+	memcpy(ndev->dev_addr, addr->sa_data, ndev->addr_len);
-+
-+	addr_low = le32_to_cpu(*(__le32 *) &ndev->dev_addr[0]);
-+	addr_hi = le16_to_cpu(*(__le16 *) &ndev->dev_addr[4]);
-+
-+	arc_reg_set(priv, R_ADDRL, addr_low);
-+	arc_reg_set(priv, R_ADDRH, addr_hi);
-+
-+	return 0;
-+}
-+
-+static const struct net_device_ops arc_emac_netdev_ops = {
-+	.ndo_open		= arc_emac_open,
-+	.ndo_stop		= arc_emac_stop,
-+	.ndo_start_xmit		= arc_emac_tx,
-+	.ndo_set_mac_address	= arc_emac_set_address,
-+	.ndo_get_stats		= arc_emac_stats,
-+};
-+
-+static int arc_emac_probe(struct platform_device *pdev)
-+{
-+	struct net_device *ndev;
-+	struct arc_emac_priv *priv;
-+	int err;
-+	unsigned int id;
-+	struct resource res_regs, res_irq;
-+	const char *mac_addr;
-+
-+	/* no device tree device */
-+	if (!pdev->dev.of_node)
-+		return -ENODEV;
-+
-+	ndev = alloc_etherdev(sizeof(struct arc_emac_priv));
-+	if (!ndev) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	SET_NETDEV_DEV(ndev, &pdev->dev);
-+
-+	/* Populate our net_device structure */
-+	ndev->netdev_ops = &arc_emac_netdev_ops;
-+	ndev->ethtool_ops = &arc_emac_ethtool_ops;
-+	ndev->watchdog_timeo = TX_TIMEOUT;
-+	/* FIXME :: no multicast support yet */
-+	ndev->flags &= ~IFF_MULTICAST;
-+
-+	priv = netdev_priv(ndev);
-+	priv->dev = &pdev->dev;
-+	priv->ndev = ndev;
-+
-+	/* Get PHY from device tree */
-+	priv->phy_node = of_parse_phandle(pdev->dev.of_node, "phy", 0);
-+	if (!priv->phy_node) {
-+		dev_err(&pdev->dev, "failed to retrieve phy description from device tree\n");
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
-+	/* Get EMAC registers base address from device tree */
-+	err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to retrieve registers base from device tree\n");
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
-+	priv->reg_base_addr = devm_ioremap_resource(&pdev->dev, &res_regs);
-+	if (IS_ERR(priv->reg_base_addr)) {
-+		err = PTR_ERR(priv->reg_base_addr);
-+		goto out;
-+	}
-+	dev_dbg(&pdev->dev, "Registers base address is 0x%p\n",
-+		priv->reg_base_addr);
-+
-+	id = arc_reg_get(priv, R_ID);
-+	/* Check for EMAC revision 5 or 7, magic number */
-+	if (!(id == 0x0005fd02 || id == 0x0007fd02)) {
-+		dev_err(&pdev->dev, "ARC EMAC not detected, id=0x%x\n", id);
-+		err = -ENODEV;
-+		goto out;
-+	}
-+	dev_info(&pdev->dev, "ARC EMAC detected with id: 0x%x\n", id);
-+
-+	/* Get CPU clock frequency from device tree */
-+	if (of_property_read_u32(pdev->dev.of_node, "clock-frequency",
-+				 &priv->clock_frequency)) {
-+		dev_err(&pdev->dev, "failed to retrieve <clock-frequency> from device tree\n");
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Get max speed of operation from device tree */
-+	if (of_property_read_u32(pdev->dev.of_node, "max-speed",
-+				 &priv->max_speed)) {
-+		dev_err(&pdev->dev, "failed to retrieve <max-speed> from device tree\n");
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Get IRQ from device tree */
-+	err = of_irq_to_resource(pdev->dev.of_node, 0, &res_irq);
-+	if (!err) {
-+		dev_err(&pdev->dev, "failed to retrieve <irq> value from device tree\n");
-+		err = -ENODEV;
-+		goto out;
-+	}
-+	ndev->irq = res_irq.start;
-+	dev_info(&pdev->dev, "IRQ is %d\n", ndev->irq);
-+
-+	/* Register interrupt handler for device */
-+	err = devm_request_irq(&pdev->dev, ndev->irq, arc_emac_intr, 0,
-+			       ndev->name, ndev);
-+	if (err) {
-+		dev_err(&pdev->dev, "could not allocate IRQ\n");
-+		goto out;
-+	}
-+
-+	/* Get MAC address from device tree */
-+	mac_addr = of_get_mac_address(pdev->dev.of_node);
-+
-+	if (!mac_addr || !is_valid_ether_addr(mac_addr))
-+		eth_hw_addr_random(ndev);
-+	else
-+		memcpy(ndev->dev_addr, mac_addr, ETH_ALEN);
-+
-+	dev_info(&pdev->dev, "MAC address is now %pM\n", ndev->dev_addr);
-+
-+	/* Allocate cache coherent memory for BD Rings - to avoid need to do
-+	 * explicit uncached ".di" accesses, which can potentially screw-up
-+	 */
-+	priv->rxbd = dmam_alloc_coherent(&pdev->dev, RX_RING_SZ + TX_RING_SZ,
-+					 &priv->rxbd_dma_hdl, GFP_KERNEL);
-+
-+	if (!priv->rxbd) {
-+		dev_err(&pdev->dev, "failed to allocate data buffers\n");
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	priv->txbd = priv->rxbd + RX_BD_NUM;
-+
-+	/* To keep things simple - we just do 1 big allocation, instead of 2
-+	 * separate ones for Rx and Tx Rings responsively
-+	 */
-+	priv->txbd_dma_hdl = priv->rxbd_dma_hdl + RX_RING_SZ;
-+	dev_dbg(&pdev->dev, "EMAC Device addr: Rx Ring [0x%x], Tx Ring[%x]\n",
-+		(unsigned int)priv->rxbd_dma_hdl,
-+		(unsigned int)priv->txbd_dma_hdl);
-+
-+	err = arc_mdio_probe(pdev->dev.of_node, priv);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to probe MII bus\n");
-+		goto out;
-+	}
-+
-+
-+	priv->phy_dev = of_phy_connect(ndev, priv->phy_node,
-+				       arc_emac_adjust_link, 0,
-+				       PHY_INTERFACE_MODE_MII);
-+	if (!priv->phy_dev) {
-+		netdev_err(ndev, "of_phy_connect() failed\n");
-+		return -ENODEV;
-+	}
-+
-+	dev_info(&pdev->dev, "connected to %s phy with id 0x%x\n",
-+		 priv->phy_dev->drv->name, priv->phy_dev->phy_id);
-+
-+	netif_napi_add(ndev, &priv->napi, arc_emac_poll, ARC_EMAC_NAPI_WEIGHT);
-+
-+	err = register_netdev(ndev);
-+	if (err) {
-+		netif_napi_del(&priv->napi);
-+		dev_err(&pdev->dev, "failed to register network device\n");
-+		goto out;
-+	}
-+
-+	return 0;
-+
-+out:
-+	free_netdev(ndev);
-+	return err;
-+}
-+
-+static int arc_emac_remove(struct platform_device *pdev)
-+{
-+	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+
-+	phy_disconnect(priv->phy_dev);
-+	priv->phy_dev = NULL;
-+	arc_mdio_remove(priv);
-+	unregister_netdev(ndev);
-+	netif_napi_del(&priv->napi);
-+	free_netdev(ndev);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id arc_emac_dt_ids[] = {
-+	{ .compatible = "snps,arc-emac" },
-+	{ /* Sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, arc_emac_dt_ids);
-+
-+static struct platform_driver arc_emac_driver = {
-+	.probe = arc_emac_probe,
-+	.remove = arc_emac_remove,
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table  = arc_emac_dt_ids,
-+		},
-+};
-+
-+module_platform_driver(arc_emac_driver);
-+
-+MODULE_AUTHOR("Alexey Brodkin <abrodkin@synopsys.com>");
-+MODULE_DESCRIPTION("ARC EMAC driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/net/ethernet/arc/arc_emac_mdio.c b/drivers/net/ethernet/arc/arc_emac_mdio.c
-new file mode 100644
-index 0000000..3ae48d4
---- /dev/null
-+++ b/drivers/net/ethernet/arc/arc_emac_mdio.c
-@@ -0,0 +1,152 @@
-+/*
-+ * Copyright (C) 2004-2013 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * MDIO implementation for ARC EMAC
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/of_mdio.h>
-+
-+#include "arc_emac.h"
-+
-+/* Number of seconds we wait for "MDIO complete" flag to appear */
-+#define ARC_MDIO_COMPLETE_POLL_COUNT	1
-+
-+/**
-+ * arc_mdio_complete_wait - Waits until MDIO transaction is completed.
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ *
-+ * returns:	0 on success, -ETIMEDOUT on a timeout.
-+ */
-+static int arc_mdio_complete_wait(struct arc_emac_priv *priv)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < ARC_MDIO_COMPLETE_POLL_COUNT * 40; i++) {
-+		unsigned int status = arc_reg_get(priv, R_STATUS);
-+
-+		status &= MDIO_MASK;
-+
-+		if (status) {
-+			/* Reset "MDIO complete" flag */
-+			arc_reg_set(priv, R_STATUS, status);
-+			return 0;
-+		}
-+
-+		msleep(25);
-+	}
-+
-+	return -ETIMEDOUT;
-+}
-+
-+/**
-+ * arc_mdio_read - MDIO interface read function.
-+ * @bus:	Pointer to MII bus structure.
-+ * @phy_addr:	Address of the PHY device.
-+ * @reg_num:	PHY register to read.
-+ *
-+ * returns:	The register contents on success, -ETIMEDOUT on a timeout.
-+ *
-+ * Reads the contents of the requested register from the requested PHY
-+ * address.
-+ */
-+static int arc_mdio_read(struct mii_bus *bus, int phy_addr, int reg_num)
-+{
-+	struct arc_emac_priv *priv = bus->priv;
-+	unsigned int value;
-+	int error;
-+
-+	arc_reg_set(priv, R_MDIO,
-+		    0x60020000 | (phy_addr << 23) | (reg_num << 18));
-+
-+	error = arc_mdio_complete_wait(priv);
-+	if (error < 0)
-+		return error;
-+
-+	value = arc_reg_get(priv, R_MDIO) & 0xffff;
-+
-+	dev_dbg(priv->dev, "arc_mdio_read(phy_addr=%i, reg_num=%x) = %x\n",
-+		phy_addr, reg_num, value);
-+
-+	return value;
-+}
-+
-+/**
-+ * arc_mdio_write - MDIO interface write function.
-+ * @bus:	Pointer to MII bus structure.
-+ * @phy_addr:	Address of the PHY device.
-+ * @reg_num:	PHY register to write to.
-+ * @value:	Value to be written into the register.
-+ *
-+ * returns:	0 on success, -ETIMEDOUT on a timeout.
-+ *
-+ * Writes the value to the requested register.
-+ */
-+static int arc_mdio_write(struct mii_bus *bus, int phy_addr,
-+			  int reg_num, u16 value)
-+{
-+	struct arc_emac_priv *priv = bus->priv;
-+
-+	dev_dbg(priv->dev,
-+		"arc_mdio_write(phy_addr=%i, reg_num=%x, value=%x)\n",
-+		phy_addr, reg_num, value);
-+
-+	arc_reg_set(priv, R_MDIO,
-+		     0x50020000 | (phy_addr << 23) | (reg_num << 18) | value);
-+
-+	return arc_mdio_complete_wait(priv);
-+}
-+
-+/**
-+ * arc_mdio_probe - MDIO probe function.
-+ * @dev_node:	Pointer to device node.
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ *
-+ * returns:	0 on success, -ENOMEM when mdiobus_alloc
-+ * (to allocate memory for MII bus structure) fails.
-+ *
-+ * Sets up and registers the MDIO interface.
-+ */
-+int arc_mdio_probe(struct device_node *dev_node, struct arc_emac_priv *priv)
-+{
-+	struct mii_bus *bus;
-+	int error;
-+
-+	bus = mdiobus_alloc();
-+	if (!bus)
-+		return -ENOMEM;
-+
-+	priv->bus = bus;
-+	bus->priv = priv;
-+	bus->parent = priv->dev;
-+	bus->name = "Synopsys MII Bus",
-+	bus->read = &arc_mdio_read;
-+	bus->write = &arc_mdio_write;
-+
-+	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8x",
-+		 (unsigned int)priv->reg_base_addr);
-+
-+	error = of_mdiobus_register(bus, dev_node);
-+	if (error) {
-+		dev_err(priv->dev, "cannot register MDIO bus %s\n", bus->name);
-+		mdiobus_free(bus);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * arc_mdio_remove - MDIO remove function.
-+ * @priv:	Pointer to ARC EMAC private data structure.
-+ *
-+ * Unregisters the MDIO and frees any associate memory for MII bus.
-+ */
-+int arc_mdio_remove(struct arc_emac_priv *priv)
-+{
-+	mdiobus_unregister(priv->bus);
-+	mdiobus_free(priv->bus);
-+	priv->bus = NULL;
-+
-+	return 0;
-+}
--- 
-1.7.10.4
-
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> ---
+>  Documentation/filesystems/Locking |   23 +++++--
+>  fs/afs/flock.c                    |    5 +-
+>  fs/ceph/locks.c                   |    2 +-
+>  fs/ceph/mds_client.c              |    8 +-
+>  fs/cifs/cifsfs.c                  |    2 +-
+>  fs/cifs/file.c                    |   13 ++--
+>  fs/gfs2/file.c                    |    2 +-
+>  fs/lockd/svcsubs.c                |   12 ++--
+>  fs/locks.c                        |  110 ++++++++++++++++++++-----------------
+>  fs/nfs/delegation.c               |   11 ++--
+>  fs/nfs/nfs4state.c                |    8 +-
+>  fs/nfsd/nfs4state.c               |    8 +-
+>  include/linux/fs.h                |   11 ----
+>  13 files changed, 113 insertions(+), 102 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> index 0706d32..13f91ab 100644
+> --- a/Documentation/filesystems/Locking
+> +++ b/Documentation/filesystems/Locking
+> @@ -344,7 +344,7 @@ prototypes:
+>  
+>  
+>  locking rules:
+> -			file_lock_lock	may block
+> +			inode->i_lock	may block
+>  fl_copy_lock:		yes		no
+>  fl_release_private:	maybe		no
+>  
+> @@ -357,12 +357,21 @@ prototypes:
+>  	int (*lm_change)(struct file_lock **, int);
+>  
+>  locking rules:
+> -			file_lock_lock	may block
+> -lm_compare_owner:	yes		no
+> -lm_notify:		yes		no
+> -lm_grant:		no		no
+> -lm_break:		yes		no
+> -lm_change		yes		no
+> +
+> +			inode->i_lock	file_lock_lock	may block
+> +lm_compare_owner:	yes		maybe		no
+> +lm_notify:		yes		no		no
+> +lm_grant:		no		no		no
+> +lm_break:		yes		no		no
+> +lm_change		yes		no		no
+> +
+> +	->lm_compare_owner is generally called with *an* inode->i_lock
+> +held. It may not be the i_lock of the inode for either file_lock being
+> +compared! This is the case with deadlock detection, since the code has
+> +to chase down the owners of locks that may be entirely unrelated to the
+> +one on which the lock is being acquired. For deadlock detection however,
+> +the file_lock_lock is also held. The locks primarily ensure that neither
+> +file_lock disappear out from under you while doing the comparison.
+>  
+>  --------------------------- buffer_head -----------------------------------
+>  prototypes:
+> diff --git a/fs/afs/flock.c b/fs/afs/flock.c
+> index 2497bf3..03fc0d1 100644
+> --- a/fs/afs/flock.c
+> +++ b/fs/afs/flock.c
+> @@ -252,6 +252,7 @@ static void afs_defer_unlock(struct afs_vnode *vnode, struct key *key)
+>   */
+>  static int afs_do_setlk(struct file *file, struct file_lock *fl)
+>  {
+> +	struct inode = file_inode(file);
+>  	struct afs_vnode *vnode = AFS_FS_I(file->f_mapping->host);
+>  	afs_lock_type_t type;
+>  	struct key *key = file->private_data;
+> @@ -273,7 +274,7 @@ static int afs_do_setlk(struct file *file, struct file_lock *fl)
+>  
+>  	type = (fl->fl_type == F_RDLCK) ? AFS_LOCK_READ : AFS_LOCK_WRITE;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  
+>  	/* make sure we've got a callback on this file and that our view of the
+>  	 * data version is up to date */
+> @@ -420,7 +421,7 @@ given_lock:
+>  	afs_vnode_fetch_status(vnode, NULL, key);
+>  
+>  error:
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	_leave(" = %d", ret);
+>  	return ret;
+>  
+> diff --git a/fs/ceph/locks.c b/fs/ceph/locks.c
+> index 202dd3d..cd0a664 100644
+> --- a/fs/ceph/locks.c
+> +++ b/fs/ceph/locks.c
+> @@ -194,7 +194,7 @@ void ceph_count_locks(struct inode *inode, int *fcntl_count, int *flock_count)
+>   * Encode the flock and fcntl locks for the given inode into the pagelist.
+>   * Format is: #fcntl locks, sequential fcntl locks, #flock locks,
+>   * sequential flock locks.
+> - * Must be called with lock_flocks() already held.
+> + * Must be called with inode->i_lock already held.
+>   * If we encounter more of a specific lock type than expected,
+>   * we return the value 1.
+>   */
+> diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+> index 4f22671..ae621b5 100644
+> --- a/fs/ceph/mds_client.c
+> +++ b/fs/ceph/mds_client.c
+> @@ -2482,13 +2482,13 @@ static int encode_caps_cb(struct inode *inode, struct ceph_cap *cap,
+>  
+>  		ceph_pagelist_set_cursor(pagelist, &trunc_point);
+>  		do {
+> -			lock_flocks();
+> +			spin_lock(&inode->i_lock);
+>  			ceph_count_locks(inode, &num_fcntl_locks,
+>  					 &num_flock_locks);
+>  			rec.v2.flock_len = (2*sizeof(u32) +
+>  					    (num_fcntl_locks+num_flock_locks) *
+>  					    sizeof(struct ceph_filelock));
+> -			unlock_flocks();
+> +			spin_unlock(&inode->i_lock);
+>  
+>  			/* pre-alloc pagelist */
+>  			ceph_pagelist_truncate(pagelist, &trunc_point);
+> @@ -2499,12 +2499,12 @@ static int encode_caps_cb(struct inode *inode, struct ceph_cap *cap,
+>  
+>  			/* encode locks */
+>  			if (!err) {
+> -				lock_flocks();
+> +				spin_lock(&inode->i_lock);
+>  				err = ceph_encode_locks(inode,
+>  							pagelist,
+>  							num_fcntl_locks,
+>  							num_flock_locks);
+> -				unlock_flocks();
+> +				spin_unlock(&inode->i_lock);
+>  			}
+>  		} while (err == -ENOSPC);
+>  	} else {
+> diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+> index 3752b9f..e81655c 100644
+> --- a/fs/cifs/cifsfs.c
+> +++ b/fs/cifs/cifsfs.c
+> @@ -765,7 +765,7 @@ static loff_t cifs_llseek(struct file *file, loff_t offset, int whence)
+>  
+>  static int cifs_setlease(struct file *file, long arg, struct file_lock **lease)
+>  {
+> -	/* note that this is called by vfs setlease with lock_flocks held
+> +	/* note that this is called by vfs setlease with i_lock held
+>  	   to protect *lease from going away */
+>  	struct inode *inode = file_inode(file);
+>  	struct cifsFileInfo *cfile = file->private_data;
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 44a4f18..0dd10cd 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -1092,6 +1092,7 @@ struct lock_to_push {
+>  static int
+>  cifs_push_posix_locks(struct cifsFileInfo *cfile)
+>  {
+> +	struct inode *inode = cfile->dentry->d_inode;
+>  	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
+>  	struct file_lock *flock, **before;
+>  	unsigned int count = 0, i = 0;
+> @@ -1102,12 +1103,12 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
+>  
+>  	xid = get_xid();
+>  
+> -	lock_flocks();
+> -	cifs_for_each_lock(cfile->dentry->d_inode, before) {
+> +	spin_lock(&inode->i_lock);
+> +	cifs_for_each_lock(inode, before) {
+>  		if ((*before)->fl_flags & FL_POSIX)
+>  			count++;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  
+>  	INIT_LIST_HEAD(&locks_to_send);
+>  
+> @@ -1126,8 +1127,8 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
+>  	}
+>  
+>  	el = locks_to_send.next;
+> -	lock_flocks();
+> -	cifs_for_each_lock(cfile->dentry->d_inode, before) {
+> +	spin_lock(&inode->i_lock);
+> +	cifs_for_each_lock(inode, before) {
+>  		flock = *before;
+>  		if ((flock->fl_flags & FL_POSIX) == 0)
+>  			continue;
+> @@ -1152,7 +1153,7 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
+>  		lck->offset = flock->fl_start;
+>  		el = el->next;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  
+>  	list_for_each_entry_safe(lck, tmp, &locks_to_send, llist) {
+>  		int stored_rc;
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index acd1676..9e634e0 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -889,7 +889,7 @@ out_uninit:
+>   * cluster; until we do, disable leases (by just returning -EINVAL),
+>   * unless the administrator has requested purely local locking.
+>   *
+> - * Locking: called under lock_flocks
+> + * Locking: called under i_lock
+>   *
+>   * Returns: errno
+>   */
+> diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+> index 97e8741..dc5c759 100644
+> --- a/fs/lockd/svcsubs.c
+> +++ b/fs/lockd/svcsubs.c
+> @@ -169,7 +169,7 @@ nlm_traverse_locks(struct nlm_host *host, struct nlm_file *file,
+>  
+>  again:
+>  	file->f_locks = 0;
+> -	lock_flocks(); /* protects i_flock list */
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl; fl = fl->fl_next) {
+>  		if (fl->fl_lmops != &nlmsvc_lock_operations)
+>  			continue;
+> @@ -181,7 +181,7 @@ again:
+>  		if (match(lockhost, host)) {
+>  			struct file_lock lock = *fl;
+>  
+> -			unlock_flocks();
+> +			spin_unlock(&inode->i_lock);
+>  			lock.fl_type  = F_UNLCK;
+>  			lock.fl_start = 0;
+>  			lock.fl_end   = OFFSET_MAX;
+> @@ -193,7 +193,7 @@ again:
+>  			goto again;
+>  		}
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  
+>  	return 0;
+>  }
+> @@ -228,14 +228,14 @@ nlm_file_inuse(struct nlm_file *file)
+>  	if (file->f_count || !list_empty(&file->f_blocks) || file->f_shares)
+>  		return 1;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl; fl = fl->fl_next) {
+>  		if (fl->fl_lmops == &nlmsvc_lock_operations) {
+> -			unlock_flocks();
+> +			spin_unlock(&inode->i_lock);
+>  			return 1;
+>  		}
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	file->f_locks = 0;
+>  	return 0;
+>  }
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 3fd27f0..d7342a3 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -155,22 +155,9 @@ int lease_break_time = 45;
+>  
+>  static LIST_HEAD(file_lock_list);
+>  static LIST_HEAD(blocked_list);
+> -static DEFINE_SPINLOCK(file_lock_lock);
+> -
+> -/*
+> - * Protects the two list heads above, plus the inode->i_flock list
+> - */
+> -void lock_flocks(void)
+> -{
+> -	spin_lock(&file_lock_lock);
+> -}
+> -EXPORT_SYMBOL_GPL(lock_flocks);
+>  
+> -void unlock_flocks(void)
+> -{
+> -	spin_unlock(&file_lock_lock);
+> -}
+> -EXPORT_SYMBOL_GPL(unlock_flocks);
+> +/* Protects the two list heads above */
+> +static DEFINE_SPINLOCK(file_lock_lock);
+>  
+>  static struct kmem_cache *filelock_cache __read_mostly;
+>  
+> @@ -488,25 +475,33 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
+>  static inline void
+>  locks_insert_global_blocked(struct file_lock *waiter)
+>  {
+> +	spin_lock(&file_lock_lock);
+>  	list_add(&waiter->fl_link, &blocked_list);
+> +	spin_unlock(&file_lock_lock);
+>  }
+>  
+>  static inline void
+>  locks_delete_global_blocked(struct file_lock *waiter)
+>  {
+> +	spin_lock(&file_lock_lock);
+>  	list_del_init(&waiter->fl_link);
+> +	spin_unlock(&file_lock_lock);
+>  }
+>  
+>  static inline void
+>  locks_insert_global_locks(struct file_lock *waiter)
+>  {
+> +	spin_lock(&file_lock_lock);
+>  	list_add_tail(&waiter->fl_link, &file_lock_list);
+> +	spin_unlock(&file_lock_lock);
+>  }
+>  
+>  static inline void
+>  locks_delete_global_locks(struct file_lock *waiter)
+>  {
+> +	spin_lock(&file_lock_lock);
+>  	list_del_init(&waiter->fl_link);
+> +	spin_unlock(&file_lock_lock);
+>  }
+>  
+>  /* Remove waiter from blocker's block list.
+> @@ -523,9 +518,11 @@ static void __locks_delete_block(struct file_lock *waiter)
+>   */
+>  static void locks_delete_block(struct file_lock *waiter)
+>  {
+> -	lock_flocks();
+> +	struct inode *inode = file_inode(waiter->fl_file);
+> +
+> +	spin_lock(&inode->i_lock);
+>  	__locks_delete_block(waiter);
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  }
+>  
+>  /* Insert waiter into blocker's block list.
+> @@ -544,7 +541,7 @@ static void locks_insert_block(struct file_lock *blocker,
+>  /*
+>   * Wake up processes blocked waiting for blocker.
+>   *
+> - * Must be called with the file_lock_lock held!
+> + * Must be called with the inode->i_lock of the blocker held!
+>   */
+>  static void locks_wake_up_blocks(struct file_lock *blocker)
+>  {
+> @@ -649,8 +646,9 @@ void
+>  posix_test_lock(struct file *filp, struct file_lock *fl)
+>  {
+>  	struct file_lock *cfl;
+> +	struct inode *inode = file_inode(filp);
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	for (cfl = file_inode(filp)->i_flock; cfl; cfl = cfl->fl_next) {
+>  		if (!IS_POSIX(cfl))
+>  			continue;
+> @@ -663,7 +661,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
+>  			fl->fl_pid = pid_vnr(cfl->fl_nspid);
+>  	} else
+>  		fl->fl_type = F_UNLCK;
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return;
+>  }
+>  EXPORT_SYMBOL(posix_test_lock);
+> @@ -742,7 +740,7 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+>  			return -ENOMEM;
+>  	}
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	if (request->fl_flags & FL_ACCESS)
+>  		goto find_conflict;
+>  
+> @@ -772,9 +770,9 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+>  	 * give it the opportunity to lock the file.
+>  	 */
+>  	if (found) {
+> -		unlock_flocks();
+> +		spin_unlock(&inode->i_lock);
+>  		cond_resched();
+> -		lock_flocks();
+> +		spin_lock(&inode->i_lock);
+>  	}
+>  
+>  find_conflict:
+> @@ -801,7 +799,7 @@ find_conflict:
+>  	error = 0;
+>  
+>  out:
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	if (new_fl)
+>  		locks_free_lock(new_fl);
+>  	return error;
+> @@ -831,7 +829,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  		new_fl2 = locks_alloc_lock();
+>  	}
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	/*
+>  	 * New lock request. Walk all POSIX locks and look for conflicts. If
+>  	 * there are any, either return error or put the request on the
+> @@ -850,8 +848,14 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  			if (!(request->fl_flags & FL_SLEEP))
+>  				goto out;
+>  			error = -EDEADLK;
+> +			/*
+> +			 * XXX: potential race here. We should be adding the
+> +			 * file_lock to the global list before releasing lock.
+> +			 */
+> +			spin_lock(&file_lock_lock);
+>  			if (posix_locks_deadlock(request, fl))
+>  				goto out;
+> +			spin_unlock(&file_lock_lock);
+>  			error = FILE_LOCK_DEFERRED;
+>  			locks_insert_block(fl, request);
+>  			locks_insert_global_blocked(request);
+> @@ -1004,7 +1008,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  		locks_wake_up_blocks(left);
+>  	}
+>   out:
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	/*
+>  	 * Free any unused locks.
+>  	 */
+> @@ -1079,14 +1083,14 @@ int locks_mandatory_locked(struct inode *inode)
+>  	/*
+>  	 * Search the lock list for this inode for any POSIX locks.
+>  	 */
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+>  		if (!IS_POSIX(fl))
+>  			continue;
+>  		if (fl->fl_owner != owner)
+>  			break;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return fl ? -EAGAIN : 0;
+>  }
+>  
+> @@ -1229,7 +1233,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
+>  	if (IS_ERR(new_fl))
+>  		return PTR_ERR(new_fl);
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  
+>  	time_out_leases(inode);
+>  
+> @@ -1279,10 +1283,10 @@ restart:
+>  			break_time++;
+>  	}
+>  	locks_insert_block(flock, new_fl);
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+>  						!new_fl->fl_next, break_time);
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	__locks_delete_block(new_fl);
+>  	if (error >= 0) {
+>  		if (error == 0)
+> @@ -1300,7 +1304,7 @@ restart:
+>  	}
+>  
+>  out:
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	locks_free_lock(new_fl);
+>  	return error;
+>  }
+> @@ -1353,9 +1357,10 @@ EXPORT_SYMBOL(lease_get_mtime);
+>  int fcntl_getlease(struct file *filp)
+>  {
+>  	struct file_lock *fl;
+> +	struct inode *inode = file_inode(filp);
+>  	int type = F_UNLCK;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	time_out_leases(file_inode(filp));
+>  	for (fl = file_inode(filp)->i_flock; fl && IS_LEASE(fl);
+>  			fl = fl->fl_next) {
+> @@ -1364,7 +1369,7 @@ int fcntl_getlease(struct file *filp)
+>  			break;
+>  		}
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return type;
+>  }
+>  
+> @@ -1458,7 +1463,7 @@ static int generic_delete_lease(struct file *filp, struct file_lock **flp)
+>   *	The (input) flp->fl_lmops->lm_break function is required
+>   *	by break_lease().
+>   *
+> - *	Called with file_lock_lock held.
+> + *	Called with inode->i_lock held.
+>   */
+>  int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+>  {
+> @@ -1527,11 +1532,12 @@ static int __vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
+>  
+>  int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
+>  {
+> +	struct inode *inode = file_inode(filp);
+>  	int error;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	error = __vfs_setlease(filp, arg, lease);
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  
+>  	return error;
+>  }
+> @@ -1549,6 +1555,7 @@ static int do_fcntl_delete_lease(struct file *filp)
+>  static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+>  {
+>  	struct file_lock *fl, *ret;
+> +	struct inode *inode = file_inode(filp);
+>  	struct fasync_struct *new;
+>  	int error;
+>  
+> @@ -1562,10 +1569,10 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+>  		return -ENOMEM;
+>  	}
+>  	ret = fl;
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	error = __vfs_setlease(filp, arg, &ret);
+>  	if (error) {
+> -		unlock_flocks();
+> +		spin_unlock(&inode->i_lock);
+>  		locks_free_lock(fl);
+>  		goto out_free_fasync;
+>  	}
+> @@ -1582,7 +1589,7 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+>  		new = NULL;
+>  
+>  	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  
+>  out_free_fasync:
+>  	if (new)
+> @@ -2106,7 +2113,7 @@ void locks_remove_flock(struct file *filp)
+>  			fl.fl_ops->fl_release_private(&fl);
+>  	}
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	before = &inode->i_flock;
+>  
+>  	while ((fl = *before) != NULL) {
+> @@ -2124,7 +2131,7 @@ void locks_remove_flock(struct file *filp)
+>   		}
+>  		before = &fl->fl_next;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  }
+>  
+>  /**
+> @@ -2137,14 +2144,15 @@ void locks_remove_flock(struct file *filp)
+>  int
+>  posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+>  {
+> +	struct inode *inode = file_inode(filp);
+>  	int status = 0;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	if (waiter->fl_next)
+>  		__locks_delete_block(waiter);
+>  	else
+>  		status = -ENOENT;
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return status;
+>  }
+>  
+> @@ -2261,7 +2269,7 @@ static void *locks_start(struct seq_file *f, loff_t *pos)
+>  {
+>  	loff_t *p = f->private;
+>  
+> -	lock_flocks();
+> +	spin_lock(&file_lock_lock);
+>  	*p = (*pos + 1);
+>  	return seq_list_start(&file_lock_list, *pos);
+>  }
+> @@ -2275,7 +2283,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+>  
+>  static void locks_stop(struct seq_file *f, void *v)
+>  {
+> -	unlock_flocks();
+> +	spin_unlock(&file_lock_lock);
+>  }
+>  
+>  static const struct seq_operations locks_seq_operations = {
+> @@ -2322,7 +2330,8 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+>  {
+>  	struct file_lock *fl;
+>  	int result = 1;
+> -	lock_flocks();
+> +
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+>  		if (IS_POSIX(fl)) {
+>  			if (fl->fl_type == F_RDLCK)
+> @@ -2339,7 +2348,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+>  		result = 0;
+>  		break;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return result;
+>  }
+>  
+> @@ -2362,7 +2371,8 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+>  {
+>  	struct file_lock *fl;
+>  	int result = 1;
+> -	lock_flocks();
+> +
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+>  		if (IS_POSIX(fl)) {
+>  			if ((fl->fl_end < start) || (fl->fl_start > (start + len)))
+> @@ -2377,7 +2387,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+>  		result = 0;
+>  		break;
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return result;
+>  }
+>  
+> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> index 57db324..43ee7f9 100644
+> --- a/fs/nfs/delegation.c
+> +++ b/fs/nfs/delegation.c
+> @@ -73,20 +73,21 @@ static int nfs_delegation_claim_locks(struct nfs_open_context *ctx, struct nfs4_
+>  	if (inode->i_flock == NULL)
+>  		goto out;
+>  
+> -	/* Protect inode->i_flock using the file locks lock */
+> -	lock_flocks();
+> +	/* Protect inode->i_flock using the i_lock */
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+>  		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+>  			continue;
+>  		if (nfs_file_open_context(fl->fl_file) != ctx)
+>  			continue;
+> -		unlock_flocks();
+> +		/* FIXME: safe to drop lock here while walking list? */
+> +		spin_unlock(&inode->i_lock);
+>  		status = nfs4_lock_delegation_recall(fl, state, stateid);
+>  		if (status < 0)
+>  			goto out;
+> -		lock_flocks();
+> +		spin_lock(&inode->i_lock);
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  out:
+>  	return status;
+>  }
+> diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+> index 1fab140..ff10b4a 100644
+> --- a/fs/nfs/nfs4state.c
+> +++ b/fs/nfs/nfs4state.c
+> @@ -1373,13 +1373,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+>  	/* Guard against delegation returns and new lock/unlock calls */
+>  	down_write(&nfsi->rwsem);
+>  	/* Protect inode->i_flock using the BKL */
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+>  		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+>  			continue;
+>  		if (nfs_file_open_context(fl->fl_file)->state != state)
+>  			continue;
+> -		unlock_flocks();
+> +		spin_unlock(&inode->i_lock);
+>  		status = ops->recover_lock(state, fl);
+>  		switch (status) {
+>  			case 0:
+> @@ -1406,9 +1406,9 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+>  				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+>  				status = 0;
+>  		}
+> -		lock_flocks();
+> +		spin_lock(&inode->i_lock);
+>  	}
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  out:
+>  	up_write(&nfsi->rwsem);
+>  	return status;
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 316ec84..f170518 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -2645,13 +2645,13 @@ static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
+>  
+>  	list_add_tail(&dp->dl_recall_lru, &nn->del_recall_lru);
+>  
+> -	/* only place dl_time is set. protected by lock_flocks*/
+> +	/* Only place dl_time is set; protected by i_lock: */
+>  	dp->dl_time = get_seconds();
+>  
+>  	nfsd4_cb_recall(dp);
+>  }
+>  
+> -/* Called from break_lease() with lock_flocks() held. */
+> +/* Called from break_lease() with i_lock held. */
+>  static void nfsd_break_deleg_cb(struct file_lock *fl)
+>  {
+>  	struct nfs4_file *fp = (struct nfs4_file *)fl->fl_owner;
+> @@ -4520,7 +4520,7 @@ check_for_locks(struct nfs4_file *filp, struct nfs4_lockowner *lowner)
+>  	struct inode *inode = filp->fi_inode;
+>  	int status = 0;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	for (flpp = &inode->i_flock; *flpp != NULL; flpp = &(*flpp)->fl_next) {
+>  		if ((*flpp)->fl_owner == (fl_owner_t)lowner) {
+>  			status = 1;
+> @@ -4528,7 +4528,7 @@ check_for_locks(struct nfs4_file *filp, struct nfs4_lockowner *lowner)
+>  		}
+>  	}
+>  out:
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return status;
+>  }
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 94105d2..e2f896d 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1024,8 +1024,6 @@ extern int vfs_setlease(struct file *, long, struct file_lock **);
+>  extern int lease_modify(struct file_lock **, int);
+>  extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+>  extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
+> -extern void lock_flocks(void);
+> -extern void unlock_flocks(void);
+>  #else /* !CONFIG_FILE_LOCKING */
+>  static inline int fcntl_getlk(struct file *file, struct flock __user *user)
+>  {
+> @@ -1167,15 +1165,6 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+>  {
+>  	return 1;
+>  }
+> -
+> -static inline void lock_flocks(void)
+> -{
+> -}
+> -
+> -static inline void unlock_flocks(void)
+> -{
+> -}
+> -
+>  #endif /* !CONFIG_FILE_LOCKING */
+>  
+>  
+> -- 
+> 1.7.1
+> 
