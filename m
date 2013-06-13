@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab3FMVja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:39:30 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:47582 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759241Ab3FMVj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:39:28 -0400
-Date: Thu, 13 Jun 2013 23:39:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [RFC: PATCH] err.h: silence warning when using IS_ERR on void
- __iomem *
-Message-ID: <20130613213920.GA32732@mithrandir>
-References: <1371072668-19027-1-git-send-email-mkl@pengutronix.de>
- <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
- <20130613182447.GB32574@mithrandir>
- <20130613131415.aa4f675f151c586f5f6b2123@linux-foundation.org>
+	id S1759312Ab3FMVkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:40:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41406 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759300Ab3FMVkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 17:40:12 -0400
+Date: Thu, 13 Jun 2013 23:40:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@suse.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <20130613214007.GA32127@pd.tnic>
+References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
+ <7661669.NhG4BEI8zO@vostro.rjw.lan>
+ <51B64BC6.6040400@semaphore.gr>
+ <16929930.1G36b4NkSe@vostro.rjw.lan>
+ <51BA380A.1040009@semaphore.gr>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130613131415.aa4f675f151c586f5f6b2123@linux-foundation.org>
+In-Reply-To: <51BA380A.1040009@semaphore.gr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 14, 2013 at 12:22:18AM +0300, Stratos Karafotis wrote:
+> Please let me share some more test results using aim9 benchmark suite:
+> https://docs.google.com/spreadsheet/ccc?key=0AnMfNYUV1k0ddDdGdlJyUHpqT2xGY1lBOEt2UEVnNlE&usp=sharing
+> 
+> Each test was running for 10sec. 
+> Total execution time with and without the patch was almost identical, which is
+> expected since the tests in aim9 run for a specific period.
+> The energy during the test run was increased by 0.43% with the patch.
+> The performance was increased by 1.25% (average) with this patch.
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Not bad. However, exec_test and fork_test are kinda unexpected with such
+a high improvement percentage. Happen to have an explanation?
 
-On Thu, Jun 13, 2013 at 01:14:15PM -0700, Andrew Morton wrote:
-> On Thu, 13 Jun 2013 20:24:48 +0200 Thierry Reding <thierry.reding@gmail.c=
-om> wrote:
->=20
-> > On Thu, Jun 13, 2013 at 10:55:17AM +0530, Sachin Kamat wrote:
-> > > On 13 June 2013 03:01, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
-> > > > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource(=
-)")
-> > > > introduced devm_ioremap_resource() and encourage to check its retur=
-n value with
-> > > > IS_ERR(). This however leads to the following sparse warnings, as
-> > > > devm_ioremap_resource() returns a void __iomem pointer:
-> > > >
-> > > > drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect t=
-ype in argument 1 (different address spaces)
-> > > > drivers/net/can/c_can/c_can_platform.c:205:32:    expected void con=
-st *ptr
-> > > > drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int =
-[noderef] [usertype] <asn:2>*raminit_ctrlreg
-> > >=20
-> > > CC ing Thierry who has solved this issue some time back.
-> >=20
-> > I had sent two patches, one against sparse, the other against the
-> > kernel, but none were picked up yet.
->=20
-> I didn't know that.
->=20
-> On May 8 I queued
-> http://ozlabs.org/~akpm/mmots/broken-out/errh-is_err-can-accept-__user-po=
-inters.patch.
-> Dan says that sparse v0.4.5-rc1 or later is also required.
+FWIW, if we don't find any serious perf/power regressions with
+this patch, I'd say it is worth applying even solely for the code
+simplification it brings.
 
-So maybe latest sparse does have the patch. I didn't find it looking at
-the logs. But looking again it seems like an equivalent patch made it in
-recently. Also the above patch looks very much like what I posted back
-at the time. Shame that work was duplicated, maybe I should have pushed
-harder when I didn't get a response.
+Thanks.
 
-Thierry
+-- 
+Regards/Gruss,
+    Boris.
 
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRujwIAAoJEN0jrNd/PrOhvKYP/0En05b7xldRCoaskMSZ8sAN
-VuR5+NJ2Wp8KvmQre8a4HpryNkwL8y1HxMg+Pz1jV7Du/CLZt0S8KTg2Oll/KTHH
-oo+TpYkxGDMDSu18wB8uTR89ZmYswniV581VGlkquJ2YXks7s/YvVilLk1sdX82C
-ZXs7RV88XBjA4rtkaFRcC1rs1rJItsRn1x1/p7jr+2qzog7dPka4GGtgV2OAir8o
-VEdnfS+8XS2F3ntyI2BITHxJb+bgnQeocrGKCAKC2LzOQSsyZEErKUeDBOfVHtZd
-sOpNndvdc5qch3qnY9MR67+KA2QpCosav/RESbGLTLZhh+xraI2Jibt+sF+jXUdF
-199gfaAcfssqUh5VcxXwqwHReSrhQfzhrBWRjhSw53FFO6D8QOCuyCoOvH4ZxosQ
-ofivlwv4ZVJsLZjQqbJZ6WWDEUXOdH1cxxwtc2xF37+jrtzvjOQo2VIQHDSZLs6k
-fN62SMq6wfUM7ks8fEJrcypNT2D2eFjxJbz9/Djz1OMDnVSrHmJmn7RdWPcCCvSI
-w5FLRoBbATh+HVp0bh4juOCO5ddpabjqjYh2nFOHA8HdHwB3SwFJ38RAQQ3HoFYr
-OgO/BpEl/ME0tgyM+QqMrGDPNRlEDsjq2gPQdU+660gISm8YJvqjptIG0mhjXUGq
-wtq0WnsJmmUnzvvAoOqf
-=r/w7
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
+Sent from a fat crate under my desk. Formatting is fine.
+--
