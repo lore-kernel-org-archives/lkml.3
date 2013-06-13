@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab3FMBvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 21:51:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41161 "EHLO
+	id S932515Ab3FMBvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 21:51:39 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41176 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab3FMBtP (ORCPT
+	with ESMTP id S932373Ab3FMBtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 21:49:15 -0400
+	Wed, 12 Jun 2013 21:49:16 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Mike Turquette <mturquette@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [RFC/PATCH 05/13] clk: msm: Add support for phase locked loops (PLLs)
-Date: Wed, 12 Jun 2013 18:49:01 -0700
-Message-Id: <1371088149-22562-6-git-send-email-sboyd@codeaurora.org>
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [RFC/PATCH 08/13] clk: msm: Add MSM clock driver
+Date: Wed, 12 Jun 2013 18:49:04 -0700
+Message-Id: <1371088149-22562-9-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.1.378.g9926f66
 In-Reply-To: <1371088149-22562-1-git-send-email-sboyd@codeaurora.org>
 References: <1371088149-22562-1-git-send-email-sboyd@codeaurora.org>
@@ -23,123 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for MSM's PLLs (phase locked loops). This is
-sufficient enough to be able to determine the rate the PLL is
-running at.
+Add a clock driver that registers clocks from a DT node's
+'clocks' child. Each new SoC will add a file describing the
+software interface and frequency plan to drivers/clk/msm/ and
+then hook that into the msm_cc_match_table by means of a
+compatible string and an msm_clk_match table.
 
-Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/devicetree/bindings/clock/msm.txt |  40 ++++
- drivers/clk/Kconfig                             |   2 +
- drivers/clk/Makefile                            |   1 +
- drivers/clk/msm/Kconfig                         |   4 +
- drivers/clk/msm/Makefile                        |   3 +
- drivers/clk/msm/clk-pll.c                       | 233 ++++++++++++++++++++++++
- drivers/clk/msm/clk-pll.h                       |  43 +++++
- 7 files changed, 326 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/msm.txt
- create mode 100644 drivers/clk/msm/Kconfig
- create mode 100644 drivers/clk/msm/Makefile
- create mode 100644 drivers/clk/msm/clk-pll.c
- create mode 100644 drivers/clk/msm/clk-pll.h
+ drivers/clk/msm/Makefile   |   2 +
+ drivers/clk/msm/core.c     | 265 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/msm/internal.h |  24 ++++
+ 3 files changed, 291 insertions(+)
+ create mode 100644 drivers/clk/msm/core.c
+ create mode 100644 drivers/clk/msm/internal.h
 
-diff --git a/Documentation/devicetree/bindings/clock/msm.txt b/Documentation/devicetree/bindings/clock/msm.txt
-new file mode 100644
-index 0000000..2192621
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/msm.txt
-@@ -0,0 +1,40 @@
-+Bindings for Qualcomm's clock controllers
-+
-+These bindings use the common clock binding
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+PLL Binding
-+-----------
-+
-+Required properties:
-+- compatible : shall be "qcom,pll".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : from common clock binding; shall be set to the reference clock
-+
-+Example:
-+	pll8: pll8 {
-+		#clock-cells = <0>;
-+		compatible = "qcom,pll";
-+		clocks = <&pxo>;
-+	};
-+
-+Voteable PLL Binding
-+--------------------
-+
-+Voteable PLLs are PLLs surrounded by a voting wrapper that aggregates
-+votes from multiple masters in the system and enables or disables the
-+PLL according to the current vote.
-+
-+Required properties:
-+- compatible: shall be "qcom,pll-vote"
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : from common clock binding; shall be set to the pll that is wrapped
-+  in voting logic
-+
-+Example:
-+	vpll8: vpll8 {
-+		#clock-cells = <0>;
-+		compatible = "qcom,pll-vote";
-+		clocks = <&pll8>;
-+	};
-+
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 0357ac4..acdb826 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -81,6 +81,8 @@ config COMMON_CLK_AXI_CLKGEN
- 	  Support for the Analog Devices axi-clkgen pcore clock generator for Xilinx
- 	  FPGAs. It is commonly used in Analog Devices' reference designs.
- 
-+source "drivers/clk/msm/Kconfig"
-+
- endmenu
- 
- source "drivers/clk/mvebu/Kconfig"
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 137d3e7..c9e768b 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_COMMON_CLK_VERSATILE) += versatile/
- obj-$(CONFIG_ARCH_PRIMA2)	+= clk-prima2.o
-+obj-$(CONFIG_COMMON_CLK_MSM)	+= msm/
- obj-$(CONFIG_PLAT_ORION)	+= mvebu/
- ifeq ($(CONFIG_COMMON_CLK), y)
- obj-$(CONFIG_ARCH_MMP)		+= mmp/
-diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
-new file mode 100644
-index 0000000..bf7e3d2
---- /dev/null
-+++ b/drivers/clk/msm/Kconfig
-@@ -0,0 +1,4 @@
-+menuconfig COMMON_CLK_MSM
-+	tristate "Support for Qualcomm's MSM designs"
-+	depends on OF
-+
 diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-new file mode 100644
-index 0000000..16b750f
---- /dev/null
+index e1cee29..9cfd0d7 100644
+--- a/drivers/clk/msm/Makefile
 +++ b/drivers/clk/msm/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
+@@ -4,3 +4,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
 +
-+clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
-diff --git a/drivers/clk/msm/clk-pll.c b/drivers/clk/msm/clk-pll.c
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
+diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
 new file mode 100644
-index 0000000..03c2c41
+index 0000000..b1904c0
 --- /dev/null
-+++ b/drivers/clk/msm/clk-pll.c
-@@ -0,0 +1,233 @@
++++ b/drivers/clk/msm/core.c
+@@ -0,0 +1,265 @@
 +/*
 + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
@@ -153,232 +66,264 @@ index 0000000..03c2c41
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
 +#include <linux/module.h>
-+#include <linux/spinlock.h>
 +#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/spinlock.h>
 +
-+#include <asm/div64.h>
-+
++#include "internal.h"
 +#include "clk-pll.h"
++#include "clk-rcg.h"
++#include "clk-branch.h"
 +
-+/**
-+ * struct clk_pll - phase locked loop (PLL)
-+ * @l_reg: L register
-+ * @m_reg: M register
-+ * @n_reg: N register
-+ * @config_reg: config register
-+ * @mode_reg: mode register
-+ * @status_reg: status register
-+ * @status_bit: ANDed with @status_reg to determine if PLL is enabled
-+ * @hw: handle between common and hardware-specific interfaces
-+ */
-+struct clk_pll {
-+	void __iomem *l_reg;
-+	void __iomem *m_reg;
-+	void __iomem *n_reg;
-+	void __iomem *config_reg;
-+	void __iomem *mode_reg;
-+	void __iomem *status_reg;
-+	u8 status_bit;
-+
-+	struct clk_hw	hw;
++struct cc_data {
++	void __iomem *base;
++	spinlock_t lock;
 +};
 +
-+#define to_clk_pll(_hw) container_of(_hw, struct clk_pll, hw)
-+
-+#define PLL_OUTCTRL	BIT(0)
-+#define PLL_BYPASSNL	BIT(1)
-+#define PLL_RESET_N	BIT(2)
-+
-+static int clk_pll_enable(struct clk_hw *hw)
++static struct clk *
++dispatch_fixed_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
 +{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 mode;
++	u32 rate;
++	const char *name = m->init_data->name;
 +
-+	mode = readl_relaxed(pll->mode_reg);
-+	/* Disable PLL bypass mode. */
-+	mode |= PLL_BYPASSNL;
-+	writel(mode, pll->mode_reg);
++	if (of_property_read_u32(m->of_node, "clock-frequency", &rate))
++		return ERR_PTR(-EINVAL);
 +
-+	/*
-+	 * H/W requires a 5us delay between disabling the bypass and
-+	 * de-asserting the reset. Delay 10us just to be safe.
-+	 */
-+	udelay(10);
++	return clk_register_fixed_rate(dev, name, NULL, CLK_IS_ROOT, rate);
++}
 +
-+	/* De-assert active-low PLL reset. */
-+	mode |= PLL_RESET_N;
-+	writel(mode, pll->mode_reg);
++static struct clk *
++dispatch_pll_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct pll_desc *desc = m->driver_data;
 +
-+	/* Wait until PLL is locked. */
-+	udelay(50);
++	desc->base = cc->base;
 +
-+	/* Enable PLL output. */
-+	mode |= PLL_OUTCTRL;
-+	writel(mode, pll->mode_reg);
++	return pll_clk_register(dev, desc, m->init_data);
++}
++
++static struct clk *
++dispatch_pll_vote_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct pll_vote_desc *desc = m->driver_data;
++
++	desc->base = cc->base;
++
++	return pll_vote_clk_register(dev, desc, m->init_data);
++}
++
++static struct clk *
++dispatch_rcg_p2mn16_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg_desc *desc = m->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_p2mn16_clk_register(dev, desc, &cc->lock, m->init_data);
++}
++
++static struct clk *
++dispatch_rcg_p2mn8_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg_desc *desc = m->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_p2mn8_clk_register(dev, desc, &cc->lock, m->init_data);
++}
++
++static struct clk *
++dispatch_rcg_mn8_dyn_clk(struct of_clk_match *match, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg_dyn_desc *desc = match->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_mn8_dyn_clk_register(dev, desc, &cc->lock,
++			match->init_data);
++}
++
++static struct clk *
++dispatch_rcg_p4_dyn_clk(struct of_clk_match *match, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg_dyn_desc *desc = match->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_p4_dyn_clk_register(dev, desc, &cc->lock,
++			match->init_data);
++}
++
++static struct clk *
++dispatch_rcg_h5mn8_clk(struct of_clk_match *match, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg2_desc *desc = match->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_h5mn8_clk_register(dev, desc, &cc->lock, match->init_data);
++}
++
++static struct clk *
++dispatch_rcg_h5mn16_clk(struct of_clk_match *match, struct device *dev,
++		struct cc_data *cc)
++{
++	struct rcg2_desc *desc = match->driver_data;
++
++	desc->base = cc->base;
++
++	return rcg_h5mn16_clk_register(dev, desc, &cc->lock, match->init_data);
++}
++
++static struct clk *
++dispatch_branch_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct branch_desc *desc = m->driver_data;
++
++	desc->base = cc->base;
++
++	return branch_clk_register(dev, desc, &cc->lock, m->init_data);
++}
++
++static struct clk *
++dispatch_branch_hg_clk(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc)
++{
++	struct branch_desc *desc = m->driver_data;
++
++	desc->base = cc->base;
++
++	return branch_hg_clk_register(dev, desc, &cc->lock, m->init_data);
++}
++
++static const struct of_device_id dispatch_table[] = {
++	{ .compatible = "fixed-clock", .data = dispatch_fixed_clk },
++	{ .compatible = "qcom,pll", .data = dispatch_pll_clk },
++	{ .compatible = "qcom,pll-vote", .data = dispatch_pll_vote_clk },
++	{ .compatible = "qcom,p2-mn8-clock", .data = dispatch_rcg_p2mn8_clk },
++	{ .compatible = "qcom,p2-mn16-clock", .data = dispatch_rcg_p2mn16_clk },
++	{ .compatible = "qcom,mn8-dyn-clock", .data = dispatch_rcg_mn8_dyn_clk },
++	{ .compatible = "qcom,p4-dyn-clock", .data = dispatch_rcg_p4_dyn_clk },
++	{ .compatible = "qcom,h5-mn8-clock", .data = dispatch_rcg_h5mn8_clk },
++	{ .compatible = "qcom,h5-mn16-clock", .data = dispatch_rcg_h5mn16_clk },
++	{ .compatible = "qcom,cxc-clock", .data = dispatch_branch_clk },
++	{ .compatible = "qcom,cxc-hg-clock", .data = dispatch_branch_hg_clk },
++};
++
++typedef struct clk *
++(*clk_dispatch_fn)(struct of_clk_match *m, struct device *dev,
++		struct cc_data *cc);
++
++static const struct of_device_id msm_cc_match_table[] = {
++	{ }
++};
++MODULE_DEVICE_TABLE(of, msm_cc_match_table);
++
++static int msm_cc_probe(struct platform_device *pdev)
++{
++	struct cc_data *cc;
++	void __iomem *base;
++	struct resource *res;
++	int count, i;
++	const struct of_device_id *id_entry;
++	const struct msm_clk_match *m;
++	struct of_clk_match *matches;
++	size_t size;
++
++	id_entry = of_match_device(msm_cc_match_table, &pdev->dev);
++	m = id_entry->data;
++	matches = m->matches;
++	size = m->size;
++
++	cc = devm_kzalloc(&pdev->dev, sizeof(*cc), GFP_KERNEL);
++	if (!cc)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	cc->base = base;
++	spin_lock_init(&cc->lock);
++
++	count = of_clk_match(&pdev->dev, matches, size);
++	if (count < 0)
++		return count;
++
++	for (i = 0; i < size; i++) {
++		struct of_clk_match *match;
++		const struct of_device_id *id;
++		struct device_node *np;
++		clk_dispatch_fn fn;
++		struct clk *clk;
++		int err;
++
++		match = &matches[i];
++		np = match->of_node;
++		if (!np)
++			continue;
++
++		id = of_match_node(dispatch_table, match->of_node);
++		if (!id)
++			continue;
++
++		fn = id->data;
++		clk = fn(match, &pdev->dev, cc);
++		if (IS_ERR(clk))
++			return PTR_ERR(clk);
++
++		err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
++		if (err)
++			return err;
++	}
 +
 +	return 0;
 +}
 +
-+static void clk_pll_disable(struct clk_hw *hw)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 mode;
-+
-+	mode = readl_relaxed(pll->mode_reg);
-+	mode &= ~(PLL_OUTCTRL | PLL_RESET_N | PLL_BYPASSNL);
-+	writel_relaxed(mode, pll->mode_reg);
-+}
-+
-+static unsigned long
-+clk_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 l, m, n;
-+	unsigned long rate;
-+	u64 tmp;
-+
-+	l = readl_relaxed(pll->l_reg) & 0x3ff;
-+	m = readl_relaxed(pll->m_reg) & 0x7ffff;
-+	n = readl_relaxed(pll->n_reg) & 0x7ffff;
-+
-+	rate = parent_rate * l;
-+	if (n) {
-+		tmp = parent_rate;
-+		tmp *= m;
-+		do_div(tmp, n);
-+		rate += tmp;
-+	}
-+	return rate;
-+}
-+
-+static const struct clk_ops clk_pll_ops = {
-+	.enable = clk_pll_enable,
-+	.disable = clk_pll_disable,
-+	.recalc_rate = clk_pll_recalc_rate,
++static struct platform_driver msm_cc_driver = {
++	.probe		= msm_cc_probe,
++	.driver		= {
++		.name	= "msm-clock",
++		.owner	= THIS_MODULE,
++		.of_match_table = msm_cc_match_table,
++	},
 +};
 +
-+struct clk *pll_clk_register(struct device *dev, struct pll_desc *desc,
-+		struct clk_init_data *init)
++static int __init msm_cc_init(void)
 +{
-+	struct clk_pll *p;
-+
-+	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
-+	if (!p)
-+		return ERR_PTR(-ENOMEM);
-+
-+	p->l_reg = desc->base + desc->l_reg;
-+	p->m_reg = desc->base + desc->m_reg;
-+	p->n_reg = desc->base + desc->n_reg;
-+	p->config_reg = desc->base + desc->config_reg;
-+	p->mode_reg = desc->base + desc->mode_reg;
-+	p->status_reg = desc->base + desc->status_reg;
-+	p->status_bit = desc->status_bit;
-+
-+	init->ops = &clk_pll_ops;
-+	p->hw.init = init;
-+
-+	return devm_clk_register(dev, &p->hw);
++	return platform_driver_register(&msm_cc_driver);
 +}
++core_initcall(msm_cc_init);
 +
-+/**
-+ * struct clk_pll_vote - phase locked loop (PLL) with hardware voting wrapper
-+ * @vote_reg: Voting register
-+ * @vote_bit: ORed into @vote_reg to enable PLL
-+ * @hw: handle between common and hardware-specific interfaces
-+ */
-+struct clk_pll_vote {
-+	void __iomem	*vote_reg;
-+	u8		vote_bit;
-+	struct clk_hw	hw;
-+};
-+
-+#define to_clk_pll_vote(_hw) container_of(_hw, struct clk_pll_vote, hw)
-+
-+static DEFINE_SPINLOCK(pll_vote_lock);
-+
-+static int wait_for_pll(struct clk_pll *pll)
++static void __exit msm_cc_exit(void)
 +{
-+	int count;
-+	const char *name = __clk_get_name(pll->hw.clk);
-+
-+	/* Wait for pll to enable. */
-+	for (count = 200; count > 0; count--) {
-+		if (readl_relaxed(pll->status_reg) & BIT(pll->status_bit))
-+			return 0;
-+		udelay(1);
-+	}
-+
-+	WARN("%s didn't enable after voting for it!\n", name);
-+	return -ETIMEDOUT;
++	platform_driver_unregister(&msm_cc_driver);
 +}
++module_exit(msm_cc_exit);
 +
-+static int clk_pll_vote_enable(struct clk_hw *hw)
-+{
-+	u32 val;
-+	unsigned long flags;
-+	struct clk_pll_vote *pll = to_clk_pll_vote(hw);
-+	struct clk_pll *p = to_clk_pll(__clk_get_hw(__clk_get_parent(hw->clk)));
-+
-+	spin_lock_irqsave(&pll_vote_lock, flags);
-+
-+	val = readl_relaxed(pll->vote_reg);
-+	val |= BIT(pll->vote_bit);
-+	writel(val, pll->vote_reg);
-+
-+	spin_unlock_irqrestore(&pll_vote_lock, flags);
-+
-+	return wait_for_pll(p);
-+}
-+
-+static void clk_pll_vote_disable(struct clk_hw *hw)
-+{
-+	u32 val;
-+	unsigned long flags;
-+	struct clk_pll_vote *pll = to_clk_pll_vote(hw);
-+
-+	spin_lock_irqsave(&pll_vote_lock, flags);
-+
-+	val = readl_relaxed(pll->vote_reg);
-+	val &= ~BIT(pll->vote_bit);
-+	writel_relaxed(val, pll->vote_reg);
-+
-+	spin_unlock_irqrestore(&pll_vote_lock, flags);
-+}
-+
-+static const struct clk_ops clk_pll_vote_ops = {
-+	.enable = clk_pll_vote_enable,
-+	.disable = clk_pll_vote_disable,
-+};
-+
-+struct clk *pll_vote_clk_register(struct device *dev,
-+		struct pll_vote_desc *desc, struct clk_init_data *init)
-+{
-+	struct clk_pll_vote *p;
-+
-+	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
-+	if (!p)
-+		return ERR_PTR(-ENOMEM);
-+
-+	p->vote_reg = desc->base + desc->vote_reg;
-+	p->vote_bit = desc->vote_bit;
-+
-+	init->ops = &clk_pll_vote_ops;
-+	p->hw.init = init;
-+
-+	return devm_clk_register(dev, &p->hw);
-+}
-diff --git a/drivers/clk/msm/clk-pll.h b/drivers/clk/msm/clk-pll.h
++MODULE_DESCRIPTION("MSM Clock Driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:msm-cc");
+diff --git a/drivers/clk/msm/internal.h b/drivers/clk/msm/internal.h
 new file mode 100644
-index 0000000..4e63a5e
+index 0000000..177bd3b
 --- /dev/null
-+++ b/drivers/clk/msm/clk-pll.h
-@@ -0,0 +1,43 @@
++++ b/drivers/clk/msm/internal.h
+@@ -0,0 +1,24 @@
 +/*
 + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
@@ -392,34 +337,15 @@ index 0000000..4e63a5e
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef __MSM_CLK_PLL_H__
-+#define __MSM_CLK_PLL_H__
++#ifndef __MSM_CLK_INTERNAL_H__
++#define __MSM_CLK_INTERNAL_H__
 +
-+struct device;
-+struct clk;
-+struct clk_init_data;
++struct of_clk_match;
 +
-+struct pll_desc {
-+	void __iomem *base;
-+	u16 l_reg;
-+	u16 m_reg;
-+	u16 n_reg;
-+	u16 config_reg;
-+	u16 mode_reg;
-+	u16 status_reg;
-+	u8 status_bit;
++struct msm_clk_match {
++	struct of_clk_match *matches;
++	size_t size;
 +};
-+
-+struct pll_vote_desc {
-+	void __iomem *base;
-+	u16 vote_reg;
-+	u8 vote_bit;
-+};
-+
-+extern struct clk *pll_clk_register(struct device *dev, struct pll_desc *desc,
-+		struct clk_init_data *init);
-+extern struct clk *pll_vote_clk_register(struct device *dev,
-+		struct pll_vote_desc *desc, struct clk_init_data *init);
 +
 +#endif
 -- 
