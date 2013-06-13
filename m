@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab3FMFkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 01:40:20 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:51971 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab3FMFkS (ORCPT
+	id S932606Ab3FMFlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 01:41:12 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:59123 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002Ab3FMFlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 01:40:18 -0400
+	Thu, 13 Jun 2013 01:41:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohponeWuaXPah4s9GjO-fLwQNuyKidUFosN1iE+e7bngDPdQ@mail.gmail.com>
-References: <1371028189-15758-1-git-send-email-chenxg@marvell.com>
-	<CAKohponeWuaXPah4s9GjO-fLwQNuyKidUFosN1iE+e7bngDPdQ@mail.gmail.com>
-Date: Thu, 13 Jun 2013 13:40:16 +0800
-Message-ID: <CAFgnuDeeU5qALyqN4Akpi5SoHRXPWaq_PLYSSmjxkq9V5N=qag@mail.gmail.com>
-Subject: Re: [PATCH v4] cpufreq: fix governor start/stop race condition
-From: Xiaoguang Chen <chenxg.marvell@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Xiaoguang Chen <chenxg@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
+In-Reply-To: <51B958D8.2070804@linaro.org>
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+	<1370864113-17895-10-git-send-email-tushar.behera@linaro.org>
+	<51B958D8.2070804@linaro.org>
+Date: Thu, 13 Jun 2013 11:11:09 +0530
+Message-ID: <CAK9yfHzAkca-YxFoSv=vyxgOQMyi8adgeABi3ZHW=Jiw2Z51dg@mail.gmail.com>
+Subject: Re: [PATCH 09/15] net: can: Convert to use devm_ioremap_resource
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        netdev@vger.kernel.org, linux-can@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/12 Viresh Kumar <viresh.kumar@linaro.org>:
-> On 12 June 2013 14:39, Xiaoguang Chen <chenxg@marvell.com> wrote:
+On 13 June 2013 11:00, Tushar Behera <tushar.behera@linaro.org> wrote:
+> On 06/10/2013 05:05 PM, Tushar Behera wrote:
+>> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+>> introduced devm_ioremap_resource() and deprecated the use of
+>> devm_request_and_ioremap().
+>>
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> CC: netdev@vger.kernel.org
+>> CC: linux-can@vger.kernel.org
+>> CC: Marc Kleine-Budde <mkl@pengutronix.de>
+>> CC: Wolfgang Grandegger <wg@grandegger.com>
+>> ---
+>>  drivers/net/can/c_can/c_can_platform.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
+>> index 6b6130b..b918c73 100644
+>> --- a/drivers/net/can/c_can/c_can_platform.c
+>> +++ b/drivers/net/can/c_can/c_can_platform.c
+>> @@ -201,8 +201,8 @@ static int c_can_plat_probe(struct platform_device *pdev)
+>>                       priv->instance = pdev->id;
+>>
+>>               res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+>> -             priv->raminit_ctrlreg = devm_request_and_ioremap(&pdev->dev, res);
+>> -             if (!priv->raminit_ctrlreg || priv->instance < 0)
+>> +             priv->raminit_ctrlreg = devm_ioremap_resource(&pdev->dev, res);
+>> +             if (IS_ERR(priv->raminit_ctrlreg) || priv->instance < 0)
+>>                       dev_info(&pdev->dev, "control memory is not used for raminit\n");
+>>               else
+>>                       priv->raminit = c_can_hw_raminit;
+>>
 >
->>         ret = policy->governor->governor(policy, event);
+> IS_ERR() check on the return value of devm_ioremap_resource produces
+> following sparse warning. This is because of the __iomem address space
+> attribute. How should we fix this?
 >
-> We again reached to the same problem. We shouldn't call
-> this between taking locks, otherwise recursive locks problems
-> would be seen again.
+> drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect type
+> in argument 1 (different address spaces)
+> drivers/net/can/c_can/c_can_platform.c:205:32:    expected void const *ptr
+> drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int
+> [noderef] [usertype] <asn:2>*raminit_ctrlreg
+>
 
-But this is not the same lock as the deadlock case, it is a new lock,
-and only used in this function. no other functions use this lock.
-I don't know how can we get dead lock again?
+This is a known issue since the time devm_ioremap_resource was
+introduced. Thierry had already submitted some fixes for this.
+I am not sure if they have been applied yet.
+More details here:
+https://patchwork.kernel.org/patch/2071361/
 
-Thanks
-Xiaoguang
+-- 
+With warm regards,
+Sachin
