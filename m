@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab3FMTN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:13:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37269 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab3FMTNZ (ORCPT
+	id S1758617Ab3FMTPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:15:16 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:62697 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab3FMTPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:13:25 -0400
-Date: Thu, 13 Jun 2013 12:13:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
+	Thu, 13 Jun 2013 15:15:14 -0400
+Date: Thu, 13 Jun 2013 12:15:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
 Subject: Re: [PATCH] Percpu tag allocator
-Message-Id: <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
-In-Reply-To: <20130613190610.GA13970@mtj.dyndns.org>
+Message-ID: <20130613191507.GB13970@mtj.dyndns.org>
 References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
-	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
-	<20130613190610.GA13970@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+ <20130613020536.GA10979@localhost>
+ <20130612200311.7f9d938a.akpm@linux-foundation.org>
+ <20130613185318.GB12075@mtj.dyndns.org>
+ <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013 12:06:10 -0700 Tejun Heo <tj@kernel.org> wrote:
+Hello, Andrew.
 
-> Hello, Andrew, Kent.
+On Thu, Jun 13, 2013 at 12:04:39PM -0700, Andrew Morton wrote:
+> > The thing is that id[r|a] guarantee that the lowest available slot is
+> > allocated
 > 
-> On Wed, Jun 12, 2013 at 04:38:54PM -0700, Andrew Morton wrote:
-> ...
-> > > +unsigned percpu_tag_alloc(struct percpu_tag_pool *pool, gfp_t gfp)
-> > > +{
-> > > +	DEFINE_WAIT(wait);
-> > > +	struct percpu_tag_cpu_freelist *tags;
-> > > +	unsigned long flags;
-> > > +	unsigned tag, this_cpu;
-> > > +
-> > > +	while (1) {
-> > > +		local_irq_save(flags);
-> ...
-> > > +		schedule();
-> > > +	}
-> > 
-> > Does this loop need a try_to_freeze()?
+> That isn't the case for ida_get_new_above() - the caller gets to
+> control the starting index.
+
+Hmmm?  get_new_above() is the same, it must allocate the first
+available ID above the given low bound - used to exclude unused or
+reserved IDs.
+
+> The worst outcome here is that idr.c remains unimproved and we merge a
+> new allocator which does basically the same thing.
+
+The lowest number guarantee makes them different.  Maybe tag
+allocation can be layered on top as a caching layer, I don't know, but
+at any rate we need at least two different operation modes.
+
+> The best outcome is that idr.c gets improved and we don't have to merge
+> duplicative code.
+>
+> So please, let's put aside the shiny new thing for now and work out how
+> we can use the existing tag allocator for these applications.  If we
+> make a genuine effort to do this and decide that it's fundamentally
+> hopeless then this is the time to start looking at new implementations.
 > 
-> I don't think so.  Kernel tasks should never enter freezer without it
-> explicitly knowing it.  It should be something evident in the
-> top-level control flow.  Freezer acts as a giant lock and entering
-> freezer deep underneath where the task could be holding random number
-> of resources and locks can easily develop into a deadlock.
+> (I can think of at least two ways of making ida_get_new_above() an
+> order of magnitude faster for this application and I'm sure you guys
+> can as well.)
 
-As I understand it, if a task is stuck in this loop at freeze time, the
-whole freeze attempt will fail.  But it's been a long time since I
-thought about or worked on this stuff.
+Oh, I'm sure the current id[r|a] can be improved upon a lot but I'm
+very skeptical one can reach the level of scalability necessary for,
+say, pci-e attached extremely high-iops devices while still keeping
+the lowest number allocation, which can't be achieved without strong
+synchronization on each alloc/free.
 
-Another issue is device takedown ordering - this thread is blocked
-waiting for tags to be returned by IO completion, so there may be
-issues where the hardware has been shut down.
+Maybe we can layer things so that we have percpu layer on top of
+id[r|a] and, say, mapping id to point is still done by idr, or the
+percpu tag allocator uses ida for tag chunk allocations, but it's
+still gonna be something extra on top.
 
-I really don't know - I'm flagging it as something which should be
-thought about, tested, etc.
+Thanks.
 
-> If this allocation wait is gonna be visible to userland, what's
-> necessary probably would be making the sleeping interruptible.  The
-> freezer will then make the alloc fail and control should return to the
-> signal delivery path where it'll be frozen without holding any
-> resources.
-
-Maybe.  Interruptible sleeps here will be a bit of a nuisance with
-signals.  Poke Rafael ;)
-
+-- 
+tejun
