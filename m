@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab3FML56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 07:57:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42601 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3FML55 (ORCPT
+	id S1755746Ab3FML7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 07:59:54 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:45918 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab3FML7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 07:57:57 -0400
-Date: Thu, 13 Jun 2013 12:56:40 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Michal Simek <monstr@monstr.eu>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH v2 06/11] ARM:stixxxx: Add STiH415 SOC support
-Message-ID: <20130613115640.GC18614@n2100.arm.linux.org.uk>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856381-6644-1-git-send-email-srinivas.kandagatla@st.com> <CAHTX3d+dk3W_9b7SVUokWq4KYXnj=Z1=WPj5zJ-gUvJqqwE=+Q@mail.gmail.com> <51B5BCB3.3060405@st.com> <20130610231934.GG18614@n2100.arm.linux.org.uk> <51B6C8B7.50807@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B6C8B7.50807@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 13 Jun 2013 07:59:53 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: Andreas Schwab <schwab@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k/uaccess: Fix asm constraints for userspace access
+Date: Thu, 13 Jun 2013 13:59:44 +0200
+Message-Id: <1371124784-13306-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 07:50:31AM +0100, Srinivas KANDAGATLA wrote:
-> You are right, It does not make sense to use BIT() macro for field which
-> has more than 1 bit. I think using mix of both BIT() and the old style
-> will make code look bit confusing to reader, Also no other mach code in
-> the kernel use BIT while configuring L2 controller. So am going to drop
-> the idea of using BIT here and leave the code as it is.
+When compiling a MMU kernel with CPU_HAS_ADDRESS_SPACES=n (e.g. "MMU=y
+allnoconfig": "echo CONFIG_MMU=y > allno.config && make KCONFIG_ALLCONFIG=1
+allnoconfig"), we use plain "move" instead of "moves", and I got:
 
-I'd suggest putting a comment in the code to that effect.  With the way
-"cleanups" get done, I wouldn't be surprised if this attracts a lot of
-people wanting to do a trivial "1 << bit" -> "BIT(bit)" conversions.
+  CC      arch/m68k/lib/uaccess.o
+{standard input}: Assembler messages:
+{standard input}:47: Error: operands mismatch -- statement `move.b %a0,(%a1)' ignored
 
-One of the problems of open source is that you can say "no" to a patch
-like that until you're blue in the face, but it will eventually make
-its way in via some path.
+This happens because plain "move" doesn't support byte transfers between
+memory and address registers, while "moves" does.
 
-Just one of the reasons I consider BIT() to be evil and an inappropriate
-macro.
+Fix the asm constraints for __generic_copy_from_user(),
+__generic_copy_to_user(), and __clear_user() to only use data registers
+when accessing userspace.
+
+Also, relax the asm constraints for 16-bit userspace accesses in
+__put_user() and __get_user(), as both "move" and "moves" do support
+such transfers between memory and address registers.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/uaccess_mm.h |    4 ++--
+ arch/m68k/lib/uaccess.c            |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/m68k/include/asm/uaccess_mm.h b/arch/m68k/include/asm/uaccess_mm.h
+index 472c891..7aa681b 100644
+--- a/arch/m68k/include/asm/uaccess_mm.h
++++ b/arch/m68k/include/asm/uaccess_mm.h
+@@ -90,7 +90,7 @@ asm volatile ("\n"					\
+ 		__put_user_asm(__pu_err, __pu_val, ptr, b, d, -EFAULT);	\
+ 		break;							\
+ 	case 2:								\
+-		__put_user_asm(__pu_err, __pu_val, ptr, w, d, -EFAULT);	\
++		__put_user_asm(__pu_err, __pu_val, ptr, w, r, -EFAULT);	\
+ 		break;							\
+ 	case 4:								\
+ 		__put_user_asm(__pu_err, __pu_val, ptr, l, r, -EFAULT);	\
+@@ -158,7 +158,7 @@ asm volatile ("\n"					\
+ 		__get_user_asm(__gu_err, x, ptr, u8, b, d, -EFAULT);	\
+ 		break;							\
+ 	case 2:								\
+-		__get_user_asm(__gu_err, x, ptr, u16, w, d, -EFAULT);	\
++		__get_user_asm(__gu_err, x, ptr, u16, w, r, -EFAULT);	\
+ 		break;							\
+ 	case 4:								\
+ 		__get_user_asm(__gu_err, x, ptr, u32, l, r, -EFAULT);	\
+diff --git a/arch/m68k/lib/uaccess.c b/arch/m68k/lib/uaccess.c
+index 5e97f2e..35d1442 100644
+--- a/arch/m68k/lib/uaccess.c
++++ b/arch/m68k/lib/uaccess.c
+@@ -52,7 +52,7 @@ unsigned long __generic_copy_from_user(void *to, const void __user *from,
+ 		"	.long	3b,30b\n"
+ 		"	.long	5b,50b\n"
+ 		"	.previous"
+-		: "=d" (res), "+a" (from), "+a" (to), "=&r" (tmp)
++		: "=d" (res), "+a" (from), "+a" (to), "=&d" (tmp)
+ 		: "0" (n / 4), "d" (n & 3));
+ 
+ 	return res;
+@@ -96,7 +96,7 @@ unsigned long __generic_copy_to_user(void __user *to, const void *from,
+ 		"	.long	7b,50b\n"
+ 		"	.long	8b,50b\n"
+ 		"	.previous"
+-		: "=d" (res), "+a" (from), "+a" (to), "=&r" (tmp)
++		: "=d" (res), "+a" (from), "+a" (to), "=&d" (tmp)
+ 		: "0" (n / 4), "d" (n & 3));
+ 
+ 	return res;
+@@ -141,7 +141,7 @@ unsigned long __clear_user(void __user *to, unsigned long n)
+ 		"	.long	7b,40b\n"
+ 		"	.previous"
+ 		: "=d" (res), "+a" (to)
+-		: "r" (0), "0" (n / 4), "d" (n & 3));
++		: "d" (0), "0" (n / 4), "d" (n & 3));
+ 
+     return res;
+ }
+-- 
+1.7.0.4
+
