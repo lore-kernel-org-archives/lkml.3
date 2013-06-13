@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab3FMOqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:46:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62422 "EHLO mx1.redhat.com"
+	id S1758066Ab3FMOqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:46:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50845 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756794Ab3FMOqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:46:03 -0400
-Date: Thu, 13 Jun 2013 10:45:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130613144515.GX133453@redhat.com>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
- <20130613131057.GA15997@somewhere>
- <20130613140207.GW133453@redhat.com>
- <20130613142210.GD16339@somewhere>
+	id S1756383Ab3FMOqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:46:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,859,1363158000"; 
+   d="scan'208";a="352722526"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v3 net-next 0/4] net: low latency sockets follow ups
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Thu, 13 Jun 2013 17:46:13 +0300
+Message-ID: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613142210.GD16339@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 04:22:12PM +0200, Frederic Weisbecker wrote:
-> On Thu, Jun 13, 2013 at 10:02:07AM -0400, Don Zickus wrote:
-> > On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
-> > > On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
-> > > > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
-> > > > > When the watchdog runs, it prevents the full dynticks
-> > > > > CPUs from stopping their tick because the hard lockup
-> > > > > detector uses perf events internally, which in turn
-> > > > > rely on the periodic tick.
-> > > > > 
-> > > > > Since this is a rather confusing behaviour that is not
-> > > > > easy to track down and identify for those who want to
-> > > > > test CONFIG_NO_HZ_FULL, let's default disable the
-> > > > > watchdog on boot time when full dynticks is enabled.
-> > > > > 
-> > > > > The user can still enable it later on runtime using
-> > > > > proc or sysctl.
-> > > > 
-> > > > I thought we had a conversation awhile ago, where we agreed this was going
-> > > > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
-> > > > tree?  I am confused why this is still needed?
-> > > 
-> > > We agreed on the patch but it hasn't been applied yet. I'm trying to get
-> > > a sane series of nohz patches before sending to Ingo.
-> > 
-> > Peter,
-> > 
-> > Where is this patch?
-> 
-> Which patch? The old version of the current one? It was part of a previous series
-> that needed improvements so it hasn't been applied yet.
+David,
 
-I guess I am confused.  I thought Peter said in an email awhile ago, that
-he found Stephan's patch (that converted perf to use hrtimers) and applied
-it to his tree.  Are you saying it was unapplied because it needed
-improvements?
+Here are three clean up patches, plus one that adds a socket option for LLS.
 
-Cheers,
-Don
+Patch 1 converts low latency sockets to sched_clock.
+Patch 2 removes the config menu for NET_LL_RX_POLL and defaults to y.
+Patch 3 converts sysctl_net_ll_poll into an unsigned int
+Patch 4 adds an SO_LL socket option to allow per-socket control of busy polling.
+
+I will reply to this thread with a patch to sockperf that enables
+the socket option. (unchanged from v2)
+
+Again, thanks to everyone for their comments.
+
+-Eliezer
+
+
+Change log:
+
+v3
+- Suggested by David Miller and Stephen Hemminger:
+  added a patch to covert from get_cycles() to sched_clock(),
+  remove dependency on X86_TSC.
+- Suggested by Eric Dumazet:
+  un-exported sysctl_net_ll_poll since for now it's not needed in modules.
+
+v2
+- added a patch to convert sysctl_net_ll_poll into an unsigned int.
+- suggested by Eric Dimazet: treat sk_ll_usec as a u_int rather than a u_long.
+- suggested by Ben Huchings: allow unprivileged user to decrease SO_LL value,
+  correct return value when operation is not allowed.
 
