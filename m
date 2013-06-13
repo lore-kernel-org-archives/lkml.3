@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab3FMKRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 06:17:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42484 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119Ab3FMKRV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 06:17:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Jh8B6/ahrUqMSkiHiZd3Y
-Date: Thu, 13 Jun 2013 03:17:17 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Mohammed, Afzal" <afzal@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
-Message-ID: <20130613101716.GA8164@atomide.com>
-References: <cover.1369658705.git.afzal@ti.com>
- <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
- <20130612171200.GL8164@atomide.com>
- <C8443D0743D26F4388EA172BF4E2A7A93EB1DEB2@DBDE04.ent.ti.com>
- <20130613095454.GY8164@atomide.com>
- <C8443D0743D26F4388EA172BF4E2A7A93EB1E196@DBDE04.ent.ti.com>
+	id S1758623Ab3FMKV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 06:21:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46271 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756194Ab3FMKV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 06:21:28 -0400
+Message-ID: <51B99D0D.4050603@ti.com>
+Date: Thu, 13 Jun 2013 13:21:01 +0300
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EB1E196@DBDE04.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: <gg@slimlogic.co.uk>
+CC: Mark Brown <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <sameo@linux.intel.com>,
+        <lgirdwood@gmail.com>, <balbi@ti.com>, <peter.ujfalusi@ti.com>,
+        <t-kristo@ti.com>, <tony@atomide.com>
+Subject: Re: [RFC v1] MFD: Change TWL6025 references to TWL6032
+References: <1370602390-12306-1-git-send-email-oleksandr.kozaruk@ti.com> <20130607143649.GS31367@sirena.org.uk> <c73c260b90be6e1640a430e8cbba6cac@slimlogic.co.uk>
+In-Reply-To: <c73c260b90be6e1640a430e8cbba6cac@slimlogic.co.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.163]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mohammed, Afzal <afzal@ti.com> [130613 03:08]:
-> Hi Tony,
-> 
-> On Thu, Jun 13, 2013 at 15:24:54, Tony Lindgren wrote:
-> > * Mohammed, Afzal <afzal@ti.com> [130613 00:04]:
-> 
-> > > Patch 10 "ARM: OMAP2+: AM43x: basic dt support" is missing in
-> > > omap-for-v3.11/soc branch and omap soc pull request, can you
-> > > please help patch 10 also to go upstream.
-> > 
-> > Hmm if that's .dts changes, Benoit needs to queue that.
-> 
-> It is not dts change.
-> 
-> Patch 10 patches board-generic.c for DT boot (Benoit has already
-> picked up dts, that is patch 14).
+On 06/07/2013 05:44 PM, gg@slimlogic.co.uk wrote:
+> On 2013-06-07 15:36, Mark Brown wrote:
+>> On Fri, Jun 07, 2013 at 01:53:10PM +0300, Oleksandr Kozaruk wrote:
+>>> From: Graeme Gregory <gg@slimlogic.co.uk>
+>>>
+>>> The TWL6025 was never released beyond sample form and was replaced by
+>>> the PhoenixLite range of chips - TWL6032. Change the references to
+>>> reference the TWL6032 class and name the registers to twl6032 in 
+>>> line with
+>>> an actual released chip name to avoid confusion.
+>>>
+>>> Currently there is no users of TWL6025 in the code.
+>>
+>> Given that the chip exists even if not widely distributed it seems as
+>> well to keep the twl6025 references in there at least in the device ID
+>> table - it won't do any harm to people using the twl6032 name and might
+>> help someone who happens to pick up an old board for whatever reason.
+>
+> I do not think any "old boards" exist, it really was a limited run!
+>
+> Graeme
+>
+Hello Mark, Graeme,
 
-Oops OK sorry I must have miscounted the patches that looked
-ready to apply. Will apply.
+Taking in account that:
+- there is no hardware to test twl6025, testing is not possible;
+- there is no documentation for twl6025, and if there are any changes to 
+twl6032 is not known;
+- twl6032 is available, and in production, twl6025 is not even found on 
+ti.com <http://ti.com>
 
-Regards,
+So, what do you think, can this change be accepted?
 
-Tony
+// I apologize for sending personal e-mails, not to the mail list
