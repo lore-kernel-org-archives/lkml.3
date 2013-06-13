@@ -1,187 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3FMGZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 02:25:23 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:65200 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3FMGZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 02:25:21 -0400
+	id S932577Ab3FMG2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 02:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752476Ab3FMG2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 02:28:08 -0400
+Message-ID: <51B9666C.7090108@redhat.com>
+Date: Thu, 13 Jun 2013 14:27:56 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130612132820.992E73E0A56@localhost>
-References: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
-	<20130612132820.992E73E0A56@localhost>
-Date: Thu, 13 Jun 2013 11:55:20 +0530
-Message-ID: <CAAHg+HhhVOLn1DXizWAKOqZXczq9YR8dOXM+u=ywbEakw6A6ZQ@mail.gmail.com>
-Subject: Re: [PATCH] arm64: Add support to pass earlyprintk argument via
- device tree
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anup Patel <anup.patel@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next PATCH 1/2] macvtap: slient sparse warnings
+References: <1371097294-5626-1-git-send-email-jasowang@redhat.com> <1371102507.3252.96.camel@edumazet-glaptop>
+In-Reply-To: <1371102507.3252.96.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On 12 June 2013 18:58, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon,  3 Jun 2013 21:21:11 +0530, Pranavkumar Sawargaonkar <pranavkumar@linaro.org> wrote:
->> This patch adds support for defining and passing earlyprintk
->> related information i.e. device and address information via
->> device tree by adding it inside "chosen" node.
+On 06/13/2013 01:48 PM, Eric Dumazet wrote:
+> On Thu, 2013-06-13 at 12:21 +0800, Jason Wang wrote:
+>> This patch silents the following sparse warnings:
 >>
->> This will help user to just specify "earlyprintk" from bootargs
->> without actually knowing the address and device to enable
->> earlyprintk.
->>
->> Mechanism:
->>
->> One can just append earlyprintk=device-type,address (same as we pass
->> through command line) in "/chosen" node to notify kernel which is the
->> earlyprintk device and what is its address.
->>
->> Backward Compatibility:
->>
->> This patch also allows existing method of specifying earlyprintk
->> parameter via bootargs.
->>
->> Existing method i.e. passing via bootargs will still have precedence
->> over device tree i.e. if one specifies earlyprintk=device-type,address
->> in bootargs then kernel will use information from bootargs instead of
->> device tree.
->>
->> If user just specifies earlyprintk (without =...) then kernel will
->> look for device tree earlyprintk parameter.
->>
->> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
->> Signed-off-by: Anup Patel <anup.patel@linaro.org>
->
-> I'm not a big fan of this. It seems to be short-circuiting around
-> existing properties.
-
-Agreed, but intention was to have a simple solution since it is just
-to be used for early printing/debugging.
-and also keep that in sync with existing method of specifying
-earlyprintk from command line.
-
-The kernel /should/ be able to use the
-> linux,stdout-path property to determine what the earlyprintk device to
-> use is.
-
-For this there are two problems:
-
-1. Early printk code gets initialized before un-flattening of a device tree.
-Hence trying to find out node from stdout-path is tricky as we do not have
-of_find_node_by_path available.
-
-2. Current compatible strings in arm64 early printk code are not in
-synced (or different)
-from actual compatible strings used in drivers -
-e.g. for PL011
-In earlyprintk code match name is just pl011 but in dts it is
-specified as "arm,pl011"
-Hence we will need multiple changes to implement it.
-
->
-> g.
-
-Thanks,
-Pranav
-
->
+>> dr
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
 >> ---
->>  arch/arm64/kernel/early_printk.c |    7 +++++++
->>  arch/arm64/kernel/setup.c        |   21 ++++++++++++++++++++-
->>  2 files changed, 27 insertions(+), 1 deletion(-)
+>>  drivers/net/macvtap.c      |    2 +-
+>>  include/linux/if_macvlan.h |    2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
 >>
->> diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
->> index fbb6e18..4e6f845 100644
->> --- a/arch/arm64/kernel/early_printk.c
->> +++ b/arch/arm64/kernel/early_printk.c
->> @@ -29,6 +29,8 @@
->>  static void __iomem *early_base;
->>  static void (*printch)(char ch);
->>
->> +extern char *earlyprintk_dt_args;
->> +
->>  /*
->>   * PL011 single character TX.
->>   */
->> @@ -116,6 +118,11 @@ static int __init setup_early_printk(char *buf)
->>       phys_addr_t paddr = 0;
->>
->>       if (!buf) {
->> +             /* Try to check if Device Tree has this argument or not ? */
->> +             buf = earlyprintk_dt_args;
->> +     }
->> +
->> +     if (!buf) {
->>               pr_warning("No earlyprintk arguments passed.\n");
->>               return 0;
->>       }
->> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
->> index 6a9a532..fb2d56f 100644
->> --- a/arch/arm64/kernel/setup.c
->> +++ b/arch/arm64/kernel/setup.c
->> @@ -60,6 +60,8 @@ EXPORT_SYMBOL(processor_id);
->>  unsigned int elf_hwcap __read_mostly;
->>  EXPORT_SYMBOL_GPL(elf_hwcap);
->>
->> +char *earlyprintk_dt_args;
->> +
->>  static const char *cpu_name;
->>  static const char *machine_name;
->>  phys_addr_t __fdt_pointer __initdata;
->> @@ -122,6 +124,23 @@ static void __init setup_processor(void)
->>       elf_hwcap = 0;
->>  }
->>
->> +int __init early_init_dt_scan_chosen_arm64(unsigned long node,
->> +                                        const char *uname,
->> +                                        int depth, void *data)
->> +{
->> +     char *prop;
->> +
->> +     /* Check if this is chosen node */
->> +     if (early_init_dt_scan_chosen(node, uname, depth, data) == 0)
->> +             return 0;
->> +
->> +     prop = of_get_flat_dt_prop(node, "earlyprintk", NULL);
->> +     if (prop)
->> +             earlyprintk_dt_args = prop;
->> +
->> +     return 1;
->> +}
->> +
->>  static void __init setup_machine_fdt(phys_addr_t dt_phys)
->>  {
->>       struct boot_param_header *devtree;
->> @@ -165,7 +184,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
->>       pr_info("Machine: %s\n", machine_name);
->>
->>       /* Retrieve various information from the /chosen node */
->> -     of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
->> +     of_scan_flat_dt(early_init_dt_scan_chosen_arm64, boot_command_line);
->>       /* Initialize {size,address}-cells info */
->>       of_scan_flat_dt(early_init_dt_scan_root, NULL);
->>       /* Setup memory, calling early_init_dt_add_memory_arch */
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+>> index 992151c..acf55ba 100644
+>> --- a/drivers/net/macvtap.c
+>> +++ b/drivers/net/macvtap.c
+>> @@ -429,7 +429,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+>>  	if (!q)
+>>  		goto out;
+>>  
+>> -	q->sock.wq = &q->wq;
+>> +	rcu_assign_pointer(q->sock.wq, &q->wq);
+> Since nobody but you [1] can access this object at that time, you could
+> rather use
+> 	RCU_INIT_POINTER(q->sock.wq, &q->wq);
+>
+> rcu_assign_pointer() is also a documentation point (memory barrier)
+>
+> By using RCU_INIT_POINTER() you clearly show that you know you need no
+> memory barrier.
+>
+
+True.
+>>  	init_waitqueue_head(&q->wq.wait);
+> [1] :
+> or else, this init_waitqueue_head() should be done _before_ the
+> rcu_asign_pointer()
+
+Thanks, I will send v2 by using RCU_INIT_POINTER().
+>
+>>  	q->sock.type = SOCK_RAW;
+>>  	q->sock.state = SS_CONNECTED;
 >
 > --
-> Grant Likely, B.Sc, P.Eng.
-> Secret Lab Technologies, Ltd.
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
