@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab3FMNia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:38:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	id S932121Ab3FMNiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:38:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758094Ab3FMN2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754858Ab3FMN2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 09:28:01 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537684"
+   d="scan'208";a="7537682"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,104 +18,102 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part2 PATCH v4 11/15] x86, numa, memblock: Introduce MEMBLK_LOCAL_NODE to mark and reserve node-life-cycle data.
-Date: Thu, 13 Jun 2013 21:03:35 +0800
-Message-Id: <1371128619-8987-12-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part2 PATCH v4 07/15] x86, numa: Synchronize nid info in memblock.reserve with numa_meminfo.
+Date: Thu, 13 Jun 2013 21:03:31 +0800
+Message-Id: <1371128619-8987-8-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/06/13 20:58:46,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:20,
-	Serialize complete at 2013/06/13 20:59:20
+ 2013/06/13 20:59:05,
+	Serialize complete at 2013/06/13 20:59:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-node-life-cycle data (whose life cycle is the same as a node)
-allocated by memblock should be marked so that when we free usable
-memory to buddy system, we can skip them.
+Vasilis Liaskovitis found that before we parse SRAT and fulfill
+numa_meminfo, the nids of all the regions in memblock.reserve[]
+are MAX_NUMNODES. In this case, we cannot mark the nodes which
+the kernel resides in correctly.
 
-This patch introduces a flag MEMBLK_LOCAL_NODE for memblock to reserve
-node-life-cycle data. For now, it is only kernel direct mapping pagetable
-pages, based on Yinghai's patch.
+So after we parse SRAT and fulfill nume_meminfo, synchronize the
+nid info to memblock.reserve[] immediately.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
 ---
- arch/x86/mm/init.c       |   16 ++++++++++++----
- include/linux/memblock.h |    2 ++
- mm/memblock.c            |    6 ++++++
- 3 files changed, 20 insertions(+), 4 deletions(-)
+ arch/x86/mm/numa.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 9ff71ff..63abb46 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -62,14 +62,22 @@ __ref void *alloc_low_pages(unsigned int num)
- 					low_min_pfn_mapped << PAGE_SHIFT,
- 					low_max_pfn_mapped << PAGE_SHIFT,
- 					PAGE_SIZE * num , PAGE_SIZE);
--		} else
-+			if (!ret)
-+				panic("alloc_low_page: can not alloc memory");
-+
-+			memblock_reserve(ret, PAGE_SIZE * num);
-+		} else {
- 			ret = memblock_find_in_range(
- 					local_min_pfn_mapped << PAGE_SHIFT,
- 					local_max_pfn_mapped << PAGE_SHIFT,
- 					PAGE_SIZE * num , PAGE_SIZE);
--		if (!ret)
--			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE * num);
-+			if (!ret)
-+				panic("alloc_low_page: can not alloc memory");
-+
-+			memblock_reserve_local_node(ret, PAGE_SIZE * num,
-+					memory_add_physaddr_to_nid(ret));
-+		}
-+
- 		pfn = ret >> PAGE_SHIFT;
- 	} else {
- 		pfn = pgt_buf_end;
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 5a52f37..517c027 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -21,6 +21,7 @@
- 
- /* Definition of memblock flags. */
- #define MEMBLK_FLAGS_DEFAULT	0x0	/* default flag */
-+#define	MEMBLK_LOCAL_NODE	0x1	/* node-life-cycle data */
- 
- struct memblock_region {
- 	phys_addr_t base;
-@@ -62,6 +63,7 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
- int memblock_free(phys_addr_t base, phys_addr_t size);
- int memblock_reserve(phys_addr_t base, phys_addr_t size);
- int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
-+int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
- void memblock_trim_memory(phys_addr_t align);
- void memblock_mark_kernel_nodes(void);
- 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index bb53c54..e747bc6 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -597,6 +597,12 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
- 				       MEMBLK_FLAGS_DEFAULT);
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 05e4443..005a422 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -595,6 +595,48 @@ static void __init numa_init_array(void)
+ 	}
  }
  
-+int __init_memblock memblock_reserve_local_node(phys_addr_t base,
-+					phys_addr_t size, int nid)
++/*
++ * early_numa_find_range_nid - Find nid for a memory range at early time.
++ * @start: start address of the memory range (physaddr)
++ * @size: size of the memory range
++ *
++ * Return nid of the memory range, or MAX_NUMNODES if it failed to find the nid.
++ *
++ * NOTE: This function uses numa_meminfo to find the range's nid, so it should
++ *       be called after numa_meminfo has been initialized.
++ */
++int __init early_numa_find_range_nid(u64 start, u64 size)
 +{
-+	return memblock_reserve_region(base, size, nid, MEMBLK_LOCAL_NODE);
++	int i;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	for (i = 0; i < mi->nr_blks; i++)
++		if (start >= mi->blk[i].start &&
++		    (start + size - 1) <= mi->blk[i].end)
++			return mi->blk[i].nid;
++
++	return MAX_NUMNODES;
 +}
 +
- /**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
++/*
++ * numa_sync_memblock_nid - Synchronize nid info in memblock.reserve[] to
++ *                          numa_meminfo.
++ *
++ * This function will synchronize the nid fields of regions in
++ * memblock.reserve[] to numa_meminfo.
++ */
++static void __init numa_sync_memblock_nid()
++{
++	int i, nid;
++	struct memblock_type *res = &memblock.reserved;
++
++	for (i = 0; i < res->cnt; i++) {
++		nid = early_numa_find_range_nid(res->regions[i].base,
++						res->regions[i].size);
++		memblock_set_region_node(&res->regions[i], nid);
++	}
++}
++
+ static int __init numa_init(int (*init_func)(void))
+ {
+ 	int i;
+@@ -617,6 +659,13 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
+ 
++	/*
++	 * Before fulfilling numa_meminfo, all regions allocated by memblock
++	 * are reserved with nid MAX_NUMNODES because there is no numa node
++	 * info at such an early time. Now, fill the correct nid into memblock.
++	 */
++	numa_sync_memblock_nid();
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.1
 
