@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab3FMP2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:28:09 -0400
-Received: from fieldses.org ([174.143.236.118]:47304 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757337Ab3FMP2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:28:06 -0400
-Date: Thu, 13 Jun 2013 11:27:39 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v2 13/14] seq_file: add seq_list_*_percpu helpers
-Message-ID: <20130613152739.GD20666@fieldses.org>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
- <1370948948-31784-14-git-send-email-jlayton@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370948948-31784-14-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757618Ab3FMP3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:29:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:34273 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049Ab3FMP32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:29:28 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-47-51b9e55732e0
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+To: linux-security-module@vger.kernel.org
+Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
+        linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: [RFC 0/5] Optimizations for memory handling in smk_write_rules_list()
+Date: Thu, 13 Jun 2013 17:29:07 +0200
+Message-id: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t9jAd3wpzsDDbZt4rK4t+0Xm8XZpjfs
+	Fpd3zWGz+NDziM1i7ZG77BZvJ61gtpjX/pLVgd2jb8sqRo+j+xexeXzeJBfAHMVlk5Kak1mW
+	WqRvl8CVMam/l7Hgv0TFrf+8DYwTRboYOTgkBEwkNn0r6WLkBDLFJC7cW8/WxcjFISSwiFFi
+	4pUNjBBOF5PErcM72UCq2IAaji35zAhiiwhoShybDtHBLLCNUaLjxVQmkISwgJ/EwgmnwIpY
+	BFQlZu+eC9bMK+Ah0T7lIDPEOnmJp/f72CYwci9gZFjFKJpakFxQnJSea6hXnJhbXJqXrpec
+	n7uJERwQz6R2MK5ssDjEKMDBqMTDm3BhZ6AQa2JZcWXuIUYJDmYlEV71h0Ah3pTEyqrUovz4
+	otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjL3/qn4Jhu/4f6FVx3hlyKfg
+	1OamFoV9Pq2NFsxH977+4PJK+5i0guAF/3Bjn+enVe7rXW1juNo9QaXuVrDYJBPn6Qk8NUGz
+	DP7xSiu6TIzaUxVl8OuI69pZa1fOl/2iw3g5J+Gh+p5HR/2VXOZYmSt/MXojLzi1+aCK6wWV
+	oBNLVd8YHD0upsRSnJFoqMVcVJwIAA065+wEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 07:09:07AM -0400, Jeff Layton wrote:
-> When we convert the file_lock_list to a set of percpu lists, we'll need
-> a way to iterate over them in order to output /proc/locks info. Add
-> some seq_list_*_percpu helpers to handle that.
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/seq_file.c            |   54 ++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/seq_file.h |    6 +++++
->  2 files changed, 60 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 774c1eb..ce9f97a 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -921,3 +921,57 @@ struct hlist_node *seq_hlist_next_rcu(void *v,
->  		return rcu_dereference(node->next);
->  }
->  EXPORT_SYMBOL(seq_hlist_next_rcu);
-> +
-> +/**
-> + * seq_hlist_start_precpu - start an iteration of a hlist
+Hi everyone,
+This patchset focuses on optimizations for memory handling done in
+smk_write_rules_list().  Basically, all the patches try to avoid calling
+kmalloc().  I expect that there might be some controversy about these patches.
 
-Should be "of a percpu array of hlists"?
+The first patch introduces a limit for length if SMACK rules in 'long' format.
+The limit was chosen to handle two long labels (SMK_LONGLABEL) plus access
+flags plus two separators.  Passing a longer rule is likely an error due to too
+long labels or having a rule string that contains a ridiculous amount of
+whitespaces.  Introducing the limit helps to protect the kernel if userspace
+(maybe privileged but still userspace) passed too large write(). Calling
+kmalloc() for a large size wull trigger a significant number of page reclaim
+actions or even OOM.  Moreover, such an allocation is very likely to fail and
+it should be avoided. Calling vmalloc() would be a much safer idea.  Anyway,
+the buffer is valid only during smk_write_rules_list() therefore allocating a
+buffer on stack simplifies memory management.
 
-> + * @head: pointer to percpu array of struct hlist_heads
-> + * @cpu:  pointer to cpu "cursor"
-> + * @pos:  start position of sequence
-> + *
-> + * Called at seq_file->op->start().
-> + */
-> +struct hlist_node *
-> +seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos)
-> +{
-> +	struct hlist_node *node;
-> +
-> +	for_each_possible_cpu(*cpu) {
-> +		hlist_for_each(node, per_cpu_ptr(head, *cpu)) {
-> +			if (pos-- == 0)
-> +				return node;
-> +		}
-> +	}
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(seq_hlist_start_percpu);
-> +
-> +/**
-> + * seq_hlist_next_percpu - move to the next position of the hlist
+The second patch simplifies memory management in smk_parse_long_rule() and
+speeds up parsing.
 
-Ditto?
+The third patch fixes a potential memory leak in smk_write_rules_list().  I was
+not able to find any reference to smack_parsed_rule after the function is
+finished. Notice that smk_user_access() does not use dynamic any allocation for
+smack_parsed_rule.  I kindly ask you to review the patch.
 
-Just thinking if the doc scripts collected up a bunch of these summaries
-into an index somewhere it'd be confusing for these to have some
-description as seq_hlist_start/next.
+The last two patches uses kmem_cache to avoid wasting memory for padding bytes
+for the most frequently allocated structures in SMACK.
 
-Otherwise, ACK.
+The patchset provides a small but observable performance improvement of SMACK
+initialization phase.  The results below were collected for 17K rules and 500
+labels using command 'time smackctl apply'.
 
---b.
+        |  Run1 |  Run2 |  Run3 |  Run4 |  Run5 |  Avg  | Gain [ms]
+--------------------------------------------------------------
+Ref     | 1.177 | 1.174 | 1.177 | 1.179 | 1.171 | 1.176 | 0
+patch1  | 1.165 | 1.177 | 1.178 | 1.167 | 1.175 | 1.172 | 3
+patch2  | 1.145 | 1.142 | 1.140 | 1.139 | 1.137 | 1.141 | 35
+patch3  | 1.117 | 1.128 | 1.126 | 1.129 | 1.124 | 1.125 | 51
+patch4  | 1.097 | 1.120 | 1.119 | 1.112 | 1.120 | 1.114 | 62
+patch5  | 1.092 | 1.102 | 1.090 | 1.108 | 1.091 | 1.097 | 79
 
-> + * @v:    pointer to current hlist_node
-> + * @head: pointer to percpu array of struct hlist_heads
-> + * @cpu:  pointer to cpu "cursor"
-> + * @pos:  start position of sequence
-> + *
-> + * Called at seq_file->op->next().
-> + */
-> +struct hlist_node *
-> +seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head,
-> +			int *cpu, loff_t *pos)
-> +{
-> +	struct hlist_node *node = v;
-> +
-> +	++*pos;
-> +
-> +	if (node->next)
-> +		return node->next;
-> +
-> +	for (*cpu = cpumask_next(*cpu, cpu_possible_mask); *cpu < nr_cpu_ids;
-> +	     *cpu = cpumask_next(*cpu, cpu_possible_mask)) {
-> +		struct hlist_head *bucket = per_cpu_ptr(head, *cpu);
-> +
-> +		if (!hlist_empty(bucket))
-> +			return bucket->first;
-> +	}
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(seq_hlist_next_percpu);
-> diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-> index 2da29ac..4e32edc 100644
-> --- a/include/linux/seq_file.h
-> +++ b/include/linux/seq_file.h
-> @@ -173,4 +173,10 @@ extern struct hlist_node *seq_hlist_start_head_rcu(struct hlist_head *head,
->  extern struct hlist_node *seq_hlist_next_rcu(void *v,
->  						   struct hlist_head *head,
->  						   loff_t *ppos);
-> +
-> +/* Helpers for iterating over per-cpu hlist_head-s in seq_files */
-> +extern struct hlist_node *seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos);
-> +
-> +extern struct hlist_node *seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head, int *cpu, loff_t *pos);
-> +
->  #endif
-> -- 
-> 1.7.1
-> 
+Every patch introduces a tiny bit of speed improvement.  Total gain is 7%.
+It will increase to 15% if the patch for label hashing [1] is applied.
+
+I hope you find this patchset useful.
+Regards,
+Tomasz Stanislawski
+
+References:
+[1] http://thread.gmane.org/gmane.linux.kernel.lsm/19609
+
+
+Tomasz Stanislawski (5):
+  security: smack: avoid kmalloc allocations while loading a rule
+    string
+  security: smack: avoid kmalloc() in smk_parse_long_rule()
+  security: smack: fix memleak in smk_write_rules_list()
+  security: smack: add kmem_cache for smack_rule allocations
+  security: smack: add kmem_cache for smack_master_list allocations
+
+ security/smack/smack.h     |   10 ++++
+ security/smack/smack_lsm.c |   19 ++++++-
+ security/smack/smackfs.c   |  122 +++++++++++++++++++-------------------------
+ 3 files changed, 80 insertions(+), 71 deletions(-)
+
+-- 
+1.7.9.5
+
