@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab3FMPwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:52:44 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40803 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565Ab3FMPwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:52:42 -0400
-Date: Thu, 13 Jun 2013 17:52:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: N900 device tree conversion: how to do first step
-Message-ID: <20130613155240.GB3775@amd.pavel.ucw.cz>
-References: <20130609015944.GA23559@amd.pavel.ucw.cz>
- <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
- <20130613132624.GA3464@amd.pavel.ucw.cz>
- <20130613141001.GF8164@atomide.com>
- <20130613142809.GA3775@amd.pavel.ucw.cz>
- <20130613145724.GH8164@atomide.com>
+	id S1758624Ab3FMPxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:53:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35113 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754748Ab3FMPxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:53:24 -0400
+Date: Thu, 13 Jun 2013 17:53:19 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 5/9] memcg: use css_get/put when charging/uncharging
+ kmem
+Message-ID: <20130613155319.GJ23070@dhcp22.suse.cz>
+References: <51B98D17.2050902@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130613145724.GH8164@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51B98D17.2050902@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> * Pavel Machek <pavel@ucw.cz> [130613 07:34]:
-> > On Thu 2013-06-13 07:10:01, Tony Lindgren wrote:
-> > > * Pavel Machek <pavel@ucw.cz> [130613 06:32]:
-> > >  
-> > > > If I init spi manually (and some more hacks), it works in the
-> > > > qemu. But I have not tested on real hw for a while.
-> > > 
-> > > You should be able to initialize spi by adding the .dts entry,
-> > > or is there something missing in drivers/spi/spi-omap2-mcspi.c?
-> > 
-> > Not sure, I guess I'll find out soon. Do you have example dts that
-> > uses drivers/spi/spi-omap2-mcspi.c? Grepping spi in dts/ was not too
-> > successful.
+On Thu 13-06-13 17:12:55, Li Zefan wrote:
+> Sorry for updating the patchset so late.
 > 
-> Hmm I think all we have is what's written in
-> Documentation/devicetree/bindings/spi/omap-spi.txt and
-> omap4-sdp.dts.
+> I've made some changes for the memory barrier thing, and I agree with
+> Michal that there can be improvement but can be a separate patch.
+> 
+> If this version is ok for everyone, I'll send the whole patchset out
+> to Andrew.
+> 
+> =========================
+> 
+> Use css_get/put instead of mem_cgroup_get/put.
+> 
+> We can't do a simple replacement, because here mem_cgroup_put()
+> is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
+> won't be called until css refcnt goes down to 0.
+> 
+> Instead we increment css refcnt in mem_cgroup_css_offline(), and
+> then check if there's still kmem charges. If not, css refcnt will
+> be decremented immediately, 
 
-Ok, this was easier than expected.
+> otherwise the refcnt won't be decremented when kmem charges goes down
+> to 0.
 
-Now, by chance, any idea what is DT equivalent of 
+This is a bit confusing. What about "otherwise the css refcount will be
+released after the last kmem allocation is uncharged."
 
-omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+> 
+> v3:
+> - changed wmb() to smp_smb(), and moved it to memcg_kmem_mark_dead(),
+>   and added comment.
+> 
+> v2:
+> - added wmb() in kmem_cgroup_css_offline(), pointed out by Michal
+> - revised comments as suggested by Michal
+> - fixed to check if kmem is activated in kmem_cgroup_css_offline()
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c | 70 ++++++++++++++++++++++++++++++++++++---------------------
+>  1 file changed, 45 insertions(+), 25 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 466c595..76dcd0e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -416,6 +416,11 @@ static void memcg_kmem_clear_activated(struct mem_cgroup *memcg)
+>  
+>  static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+>  {
+> +	/*
+> +	 * We need to call css_get() first, because memcg_uncharge_kmem()
+> +	 * will call css_put() if it sees the memcg is dead.
+> +	 */
+> +	smb_wmb();
+>  	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
+>  		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
 
-?
+I do not feel strongly about that but maybe open coding this in
+mem_cgroup_css_offline would be even better. There is only single caller
+and there is smaller chance somebody will use the function incorrectly
+later on.
 
-(Plus I'll still have to figure out why it works on emulator but not
-on hw).
+So I leave the decision on you because this doesn't matter much.
 
-Thanks,
-									Pavel
-
-
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 10a880f..3918ae1 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -65,6 +65,14 @@
- 	status = "disabled";
- };
- 
-+&mcspi1 {
-+	mipid@2 {
-+		compatible = "acx565akm";
-+		spi-max-frequency = <6000000>;
-+		reg = <2>;
-+	};
-+};
-+
- /*
- &usb_otg_hs {
- 	interface-type = <0>;
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 996ffc3..597ade9 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -130,9 +130,10 @@ void __init omap_generic_init(void)
- 		regulator_use_dummy_regulator();
- 
- 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
--
-+#if 0
- 		spi_register_board_info(rx51_peripherals_spi_board_info,
- 				ARRAY_SIZE(rx51_peripherals_spi_board_info));
-+#endif
- #else
- 		rx51_video_init();
- #endif
-
-
+[...]
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Michal Hocko
+SUSE Labs
