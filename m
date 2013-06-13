@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab3FMSQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:16:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36331 "EHLO hydra.sisk.pl"
+	id S1758894Ab3FMSSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:18:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36334 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756078Ab3FMSQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:16:57 -0400
+	id S1756270Ab3FMSSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:18:35 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jiang Liu <jiang.liu@huawei.com>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,12 +15,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
         linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
-Date: Thu, 13 Jun 2013 20:26:10 +0200
-Message-ID: <1841512.D0ScSNfNgy@vostro.rjw.lan>
+Subject: Re: [BUGFIX 4/9] ACPI, DOCK: avoid initializing acpi_dock_notifier_list multiple times
+Date: Thu, 13 Jun 2013 20:27:48 +0200
+Message-ID: <5386268.Rav0V0b5qK@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1371141152-9468-5-git-send-email-jiang.liu@huawei.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-5-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,97 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 12:32:26 AM Jiang Liu wrote:
-> ACPI dock driver can't be built as a module any more, so clean up
-> module related code.
-> 
+On Friday, June 14, 2013 12:32:27 AM Jiang Liu wrote:
+> Initialize acpi_dock_notifier_list from function acpi_dock_init()
+> instead of dock_add() to avoid initializing it multiple times.
+
+Well, makes sense.
+
+Thanks,
+Rafael
+
+
 > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 > Cc: Shaohua Li <shaohua.li@intel.com>
 > Cc: Len Brown <lenb@kernel.org>
 > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 > Cc: linux-acpi@vger.kernel.org
 > Cc: linux-kernel@vger.kernel.org
-
-How exactly does this depend on [2/9]?  If it doesn't at all, it should go
-after [1/9].
-
 > ---
->  drivers/acpi/dock.c | 41 -----------------------------------------
->  1 file changed, 41 deletions(-)
+>  drivers/acpi/dock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
 > diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index 79c8d9e..50e38b7 100644
+> index 50e38b7..8e578aa 100644
 > --- a/drivers/acpi/dock.c
 > +++ b/drivers/acpi/dock.c
-> @@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
+> @@ -967,7 +967,6 @@ static int __init dock_add(acpi_handle handle)
+>  	spin_lock_init(&dock_station->dd_lock);
+>  	INIT_LIST_HEAD(&dock_station->sibling);
+>  	INIT_LIST_HEAD(&dock_station->hotplug_devices);
+> -	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+>  	INIT_LIST_HEAD(&dock_station->dependent_devices);
 >  
->  static struct atomic_notifier_head dock_notifier_list;
+>  	/* we want the dock device to send uevents */
+> @@ -1038,6 +1037,7 @@ int __init acpi_dock_init(void)
+>  		return 0;
+>  	}
 >  
-> -static const struct acpi_device_id dock_device_ids[] = {
-> -	{"LNXDOCK", 0},
-> -	{"", 0},
-> -};
-> -MODULE_DEVICE_TABLE(acpi, dock_device_ids);
-> -
-
-Don't we actually need the device IDs?
-
->  struct dock_station {
->  	acpi_handle handle;
->  	unsigned long last_dock_time;
-> @@ -1013,30 +1007,6 @@ err_unregister:
->  }
->  
->  /**
-> - * dock_remove - free up resources related to the dock station
-> - */
-> -static int dock_remove(struct dock_station *ds)
-> -{
-> -	struct dock_dependent_device *dd, *tmp;
-> -	struct platform_device *dock_device = ds->dock_device;
-> -
-> -	if (!dock_station_count)
-> -		return 0;
-> -
-> -	/* remove dependent devices */
-> -	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
-> -		kfree(dd);
-> -
-> -	list_del(&ds->sibling);
-> -
-> -	/* cleanup sysfs */
-> -	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
-> -	platform_device_unregister(dock_device);
-> -
-> -	return 0;
-> -}
-> -
-> -/**
->   * find_dock_and_bay - look for dock stations and bays
->   * @handle: acpi handle of a device
->   * @lvl: unused
-> @@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
+> +	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+>  	register_acpi_bus_notifier(&dock_acpi_notifier);
+>  	pr_info(PREFIX "%s: %d docks/bays found\n",
 >  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
->  	return 0;
->  }
-> -
-> -static void __exit dock_exit(void)
-> -{
-> -	struct dock_station *tmp, *dock_station;
-> -
-> -	unregister_acpi_bus_notifier(&dock_acpi_notifier);
-> -	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
-> -		dock_remove(dock_station);
-> -}
-> -
-> -module_exit(dock_exit);
-
-The other changes look OK to me.
-
-Thanks,
-Rafael
-
-
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
