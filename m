@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3FMMW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:22:57 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:31977 "EHLO multi.imgtec.com"
+	id S1756544Ab3FMMV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:21:28 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:31965 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557Ab3FMMV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:21:29 -0400
+	id S1754834Ab3FMMV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 08:21:27 -0400
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
-CC: Markos Chandras <markos.chandras@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 04/10] metag/asm/irq.h: Declare init_IRQ
-Date: Thu, 13 Jun 2013 13:19:35 +0100
-Message-ID: <1371125981-5184-5-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 02/10] metag: log core and timer frequencies from arch code
+Date: Thu, 13 Jun 2013 13:19:33 +0100
+Message-ID: <1371125981-5184-3-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371125981-5184-1-git-send-email-james.hogan@imgtec.com>
 References: <1371125981-5184-1-git-send-email-james.hogan@imgtec.com>
@@ -23,30 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+Log core clock and Meta timer frequencies during init in architecture
+generic code, removing the need for equivalent log messages in SoC
+specific code.
 
-Fixes the following sparce warning:
-
-warning: symbol 'init_IRQ' was not declared. Should it be static?
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/metag/include/asm/irq.h | 1 +
- 1 file changed, 1 insertion(+)
+ arch/metag/kernel/clock.c           | 2 ++
+ drivers/clocksource/metag_generic.c | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/arch/metag/include/asm/irq.h b/arch/metag/include/asm/irq.h
-index be0c8f3..ad6bd0e 100644
---- a/arch/metag/include/asm/irq.h
-+++ b/arch/metag/include/asm/irq.h
-@@ -17,6 +17,7 @@ struct pt_regs;
+diff --git a/arch/metag/kernel/clock.c b/arch/metag/kernel/clock.c
+index 8bfd6a5..6339c9c 100644
+--- a/arch/metag/kernel/clock.c
++++ b/arch/metag/kernel/clock.c
+@@ -87,6 +87,8 @@ static void __init init_metag_core_clock(void)
+ void __init init_metag_clocks(void)
+ {
+ 	init_metag_core_clock();
++
++	pr_info("Core clock frequency: %lu Hz\n", get_coreclock());
+ }
  
- int tbisig_map(unsigned int hw);
- extern void do_IRQ(int irq, struct pt_regs *regs);
-+extern void init_IRQ(void);
+ /**
+diff --git a/drivers/clocksource/metag_generic.c b/drivers/clocksource/metag_generic.c
+index ade7513..6722f0e 100644
+--- a/drivers/clocksource/metag_generic.c
++++ b/drivers/clocksource/metag_generic.c
+@@ -184,6 +184,8 @@ int __init metag_generic_timer_init(void)
+ #ifdef CONFIG_METAG_META21
+ 	hwtimer_freq = get_coreclock() / (metag_in32(EXPAND_TIMER_DIV) + 1);
+ #endif
++	pr_info("Timer frequency: %u Hz\n", hwtimer_freq);
++
+ 	clocksource_register_hz(&clocksource_metag, hwtimer_freq);
  
- #ifdef CONFIG_METAG_SUSPEND_MEM
- int traps_save_context(void);
+ 	setup_irq(tbisig_map(TBID_SIGNUM_TRT), &metag_timer_irq);
 -- 
 1.8.1.2
 
