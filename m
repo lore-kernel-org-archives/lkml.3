@@ -1,175 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab3FMOS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:18:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3FMOS4 (ORCPT
+	id S1757410Ab3FMOUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:20:35 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43252 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab3FMOUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:18:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Subject: Re: [PATCH V4 1/3] pci: Add PCIe driver for Samsung Exynos
-Date: Thu, 13 Jun 2013 16:18:47 +0200
-Message-ID: <28355406.ThqqvnG0Yj@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <000901ce6838$8b514720$a1f3d560$@samsung.com>
-References: <003601ce6756$444e8cd0$cceba670$@samsung.com> <2061566.hRLrhtBK6z@wuerfel> <000901ce6838$8b514720$a1f3d560$@samsung.com>
+	Thu, 13 Jun 2013 10:20:33 -0400
+Date: Thu, 13 Jun 2013 16:20:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 1/2] hw_breakpoint: Fix cpu check in task_bp_pinned(cpu)
+Message-ID: <20130613142026.GC16339@somewhere>
+References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu>
+ <20130601182057.GA4861@redhat.com>
+ <20130601182120.GB4861@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:kMAMbgNUCjjZ2gxV/SQ649WNUpTZOYQWbxMJSiYKcW6
- uwbqtbCw+yepiGnd6kKAVsrsCzqLLjsVb4xpC/RupWrwNmSLMI
- PpdeIWodHWGHdJ4BuWjCZT1VCy3nJX2olIJA1aLD+FVLSkUYmW
- MNYVGBS0bEzXZVyNfYbPmCTxjMyA7Z1hIY9xSgL3/I2kcd2+oN
- U0TtZHjCkNqOPLODtkS6Y/utOLcAypNRW9tS6P4johODvzaMgn
- 6Btrq2poa26kR986KAHp1ePs3/psLM5TklAOPyTaXtWwIKRn+3
- icotJ8uWINLGGpUpt+qZkt1Wz237swVOi8tP3SiOnOnqcy7+VB
- tKgIk3pSKffiyfeJhK/8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130601182120.GB4861@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 June 2013 22:18:50 Jingoo Han wrote:
-> On Wednesday, June 12, 2013 8:23 PM, Arnd Bergmann wrote:
-> > On Wednesday 12 June 2013 19:19:05 Jingoo Han wrote:
-
-> > > +
-> > > +/* synopsis specific PCIE configuration registers*/
-> > > +#define PCIE_PORT_LINK_CONTROL		0x710
-> > > +#define PORT_LINK_MODE_MASK		(0x3f << 16)
-> > > +#define PORT_LINK_MODE_4_LANES		(0x7 << 16)
-> > 
-> > Do you mean this is a "Synopsys" designware part? In that case it
-> > should really not be called "exynos-pcie" but "designware-pcie"
-> > and you should make sure that the driver makes no assumptions about
-> > the platform. A lot of other platforms also use designware
-> > parts and should be able to reuse this driver.
+On Sat, Jun 01, 2013 at 08:21:20PM +0200, Oleg Nesterov wrote:
+> trinity fuzzer triggered WARN_ONCE("Can't find any breakpoint slot")
+> in arch_install_hw_breakpoint() but the problem is not arch-specific.
 > 
-> Sorry, I don't think so.
-> Only core block is a "Synopsys" designware part IP block,
-> other parts are Exynos-specific.
-> So, it is hard to share with other PCIe IPs using synopsis core.
-
-Just call it synopsys anyway and put a comment in to explain this.
-That should be enough for the next person with a synopsys PCI core
-to reuse your code and split out the exynos specific parts into a
-separate file.
-
-> > I think you should not assume that the physical base address is a 32
-> > bit value. The hardware clearly supports "lower" and "upper" halves
-> > for the address window, so when resource_size_t is 64 bit, you should
-> > set the upper half accordingly. Since the hardware is always 64 bit,
-> > you can use a "u64" type rather than resource_size_t to simplify the
-> > code here.
+> The problem is, task_bp_pinned(cpu) checks "cpu == iter->cpu" but
+> this doesn't account the "all cpus" events with iter->cpu < 0.
 > 
-> OK, I will replace "u32" with "u64".
-
-Not what I meant, please read it again.
-
-> > > +static void exynos_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
-> > > +{
-> > > +	u32 val;
-> > > +	void __iomem *dbi_base = pp->dbi_base;
-> > > +
-> > > +	/* Program viewport 1 : OUTBOUND : IO */
-> > > +	val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1;
-> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> > > +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
-> > > +	val = PCIE_ATU_ENABLE;
-> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> > > +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> > > +	writel_rc(pp, (u32)(pp->io_base + pp->config.io_size - 1),
-> > > +			dbi_base + PCIE_ATU_LIMIT);
-> > > +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_TARGET);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> > > +}
-> > 
-> > You don't actually map the I/O space anywhere into virtual memory.
-> > I think you need to call pci_ioremap_io with the pp->io_base at
-> > boot time.
+> This means that, say, register_user_hw_breakpoint(tsk) can happily
+> create the arbitrary number > HBP_NUM of breakpoints which can not
+> be activated. toggle_bp_task_slot() is equally wrong by the same
+> reason and nr_task_bp_pinned[] can have negative entries.
 > 
-> Sorry, when pci_ioremap_io() is used, Exynos5440 hangs.
-> I don't know how to deal this.
-
-You have to call it, there is no way around that. You will have to debug
-this yourself, I'm sure there is an easy solution.
-
-> > 
-> > You hardcode the in_mem_size to 256 MB. Does that mean you only allow
-> > PCI bus master DMA on the first part of RAM? Shouldn't it get
-> > computed from the actual location and size of RAM?
+> Simple test:
 > 
-> I will remove the hard-coded in_mem_size, instead use the size of MEM region.
-
-This should be system RAM, not the PCI memory space. What good would
-it be to have an inbound window that only redirects back to the bus?
-
-> > > +static void exynos_pcie_prog_viewport_io_inbound(struct pcie_port *pp)
-> > > +{
-> > > +	u32 val;
-> > > +	void __iomem *dbi_base = pp->dbi_base;
-> > > +	struct pcie_port_info *config = &pp->config;
-> > > +
-> > > +	/* Program viewport 1 : INBOUND : IO */
-> > > +	val = PCIE_ATU_REGION_INBOUND | PCIE_ATU_REGION_INDEX1;
-> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> > > +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
-> > > +	val = PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE;
-> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_BASE);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> > > +	writel_rc(pp, config->in_mem_size - 1, dbi_base + PCIE_ATU_LIMIT);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_TARGET);
-> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> > > +}
-> > 
-> > I don't understand what in inbound I/O access actually means. What
-> > does this do, is it for PCI target emulation?
+> 	# perl -e 'sleep 1 while 1' &
+> 	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10,mem:0x10 -p `pidof perl`
 > 
-> I reviewed the manual, and I will fix it.
-> I will add bus addresses and host physical addresses to
-> PCIE_ATU_LOWER_BASE/ PCIE_ATU_LOWER_TARGET.
- 
-You have not answered my question.
-
-> > > +static int exynos_pcie_setup(int nr, struct pci_sys_data *sys)
-> > > +{
-> > > +	struct pcie_port *pp;
-> > > +
-> > > +	pp = sys_to_pcie(sys);
-> > > +
-> > > +	if (!pp)
-> > > +		return 0;
-> > > +
-> > > +	pci_add_resource_offset(&sys->resources, &pp->io, sys->io_offset);
-> > > +	pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
-> > > +
-> > > +	return 1;
-> > > +}
-> > 
-> > You don't actually set up io_offset and mem_offset, right?
+> Before this patch this triggers the same problem/WARN_ON(), after
+> the patch it correctly fails with -ENOSPC.
 > 
-> OK, I will replace pci_add_resource_offset() with pci_add_resource().
+> Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: <stable@vger.kernel.org>
 
-No, you have to set up the offsets.
+Looks good, thanks!
 
-Please don't post another version until you actually understand what
-you need to do. If you don't understand the comments, ask back rather
-than picking a random interpretation.
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-	Arnd
+
+> ---
+>  kernel/events/hw_breakpoint.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> index ed1c897..29d3abe 100644
+> --- a/kernel/events/hw_breakpoint.c
+> +++ b/kernel/events/hw_breakpoint.c
+> @@ -120,7 +120,7 @@ static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
+>  	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
+>  		if (iter->hw.bp_target == tsk &&
+>  		    find_slot_idx(iter) == type &&
+> -		    cpu == iter->cpu)
+> +		    (iter->cpu < 0 || cpu == iter->cpu))
+>  			count += hw_breakpoint_weight(iter);
+>  	}
+>  
+> -- 
+> 1.5.5.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
