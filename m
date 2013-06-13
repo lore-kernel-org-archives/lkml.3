@@ -1,97 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab3FMEyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:54:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5866 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3FMEyM convert rfc822-to-8bit (ORCPT
+	id S1754940Ab3FMFFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 01:05:33 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:44993 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab3FMFFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:54:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,856,1363158000"; 
-   d="scan'208";a="352659665"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-CC: Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] thermal: consider emul_temperature while computing
- trend
-Thread-Topic: [PATCH 1/1] thermal: consider emul_temperature while computing
- trend
-Thread-Index: AQHOXLS6rG3cYdy7SUGERNmcCGTdpJkzKlQg
-Date: Thu, 13 Jun 2013 04:54:01 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59CB35F7@BGSMSX101.gar.corp.intel.com>
-References: <1369863420-21913-1-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1369863420-21913-1-git-send-email-eduardo.valentin@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Jun 2013 01:05:31 -0400
+Message-ID: <51B9527B.904@monstr.eu>
+Date: Thu, 13 Jun 2013 07:02:51 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>, Olof Johansson <olof@lixom.net>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v2 3/3] arm: dt: zynq: Add support for the zed platform
+References: <1371055268-32337-1-git-send-email-soren.brinkmann@xilinx.com> <1371055268-32337-4-git-send-email-soren.brinkmann@xilinx.com> <20130612182345.GA1656@pengutronix.de> <2433e1d1-7d2e-4b23-a76e-2085e3aef1a6@DB9EHSMHS010.ehs.local> <20130612193358.GA21585@pengutronix.de> <d7057a7e-fc92-4e24-bf7b-137e873f871b@VA3EHSMHS011.ehs.local>
+In-Reply-To: <d7057a7e-fc92-4e24-bf7b-137e873f871b@VA3EHSMHS011.ehs.local>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2SXGKJOTPGHTHFJTDPRJO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
-> Sent: Thursday, May 30, 2013 3:07 AM
-> To: Zhang, Rui
-> Cc: Eduardo Valentin; Amit Daniel Kachhap; R, Durgadoss; linux-
-> pm@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 1/1] thermal: consider emul_temperature while computing
-> trend
-> 
-> In case emulated temperature is in use, using the trend
-> provided by driver layer can lead to bogus situation.
-> In this case, debugger user would set a temperature value,
-> but the trend would be from driver computation.
-> 
-> To avoid this situation, this patch changes the get_tz_trend()
-> to consider the emulated temperature whenever that is in use.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2SXGKJOTPGHTHFJTDPRJO
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Nice catch.
-Sorry, I missed looking at it earlier. Just got woken up by Rui's reply
-on this. The patch looks fine to me.
+On 06/12/2013 10:16 PM, S=C3=B6ren Brinkmann wrote:
+> On Wed, Jun 12, 2013 at 09:33:58PM +0200, Steffen Trumtrar wrote:
+>> On Wed, Jun 12, 2013 at 11:26:34AM -0700, S=C3=B6ren Brinkmann wrote:
+>>> On Wed, Jun 12, 2013 at 08:23:45PM +0200, Steffen Trumtrar wrote:
+>>>> On Wed, Jun 12, 2013 at 09:41:08AM -0700, Soren Brinkmann wrote:
+>>>>> Add a DT fragment for the Zed Zynq platform and a corresponding
+>>>>> target to the Makefile
+>>>>>
+>>>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>>>> ---
+>>>>> I used the 'xlnx,...' compat strings since it seems this is what is=
+
+>>>>> used in the Xilinx and Digilent vendor trees.
+>>>>>
+>>>>> +/include/ "zynq-7000.dtsi"
+>>>>> +
+>>>>> +/ {
+>>>>> +	model =3D "Zynq Zed Development Board";
+>>>>> +	compatible =3D "xlnx,zynq-zed", "xlnx,zynq-7000";
+>>>>> +
+>>>>> +	memory {
+>>>>> +		device_type =3D "memory";
+>>>>> +		reg =3D <0 0x20000000>;
+>>>>> +	};
+>>>>> +
+>>>>> +	chosen {
+>>>>> +		bootargs =3D "console=3DttyPS1,115200 earlyprintk";
+>>>>> +	};
+>>>>> +
+>>>>> +};
+>>>>
+>>>> Hi!
+>>>>
+>>>> This looks a little bit to basic. No?! Not even an UART?
+>>> The UART is imported from the common zynq-7000.dtsi.
+>>
+>> Hm, you are actually right, although I think that you shouldn't be.
+>> It is possible to NOT use the UARTs, isn't it? So, default on for both=
+ UARTs is wrong.
+> Well, in that case the dtsi has to be fixed to add the 'status =3D "dis=
+abled"
+> property to the UARTs which then can be overridden in the board dts fil=
+es
+> as needed. I guess I'll prepare another patch for a v3 for adding statu=
+s
+> properties to the UART nodes.
+
+I am ok with this. Just to be sure that we will probably need to start
+to use port-number to reflect which port is first, second.
+
+
+>>>> The compatible should include digilent or avnet. Digilent only sells=
+ to academic
+>>>> customers, Avnet doesn't.
+>>> I don't care at all. So, who makes the decision which one is the corr=
+ect
+>>> one? Actually we could even drop the zed specific one completely and =
+go
+>>> with 'xlnx,zynq-7000' only.
+>>
+>> I'm okay with that.
+> Okay, let's wait a little and see if there are other opinions and then =
+I
+> can prepare a v3.
+
+AFAIK Digilent is producer, Avnet is reseller. I think it is enough to wr=
+ite
+in description ZedBoard and don't mentioned manufacturer.
+
+By my previous comment I thought to have there just zynq-7000 compatible =
+string
+without any additional zc702/zc706 or zed board properties.
 
 Thanks,
-Durga
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Cc: Durgadoss R <durgadoss.r@intel.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  drivers/thermal/thermal_core.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/thermal_core.c
-> b/drivers/thermal/thermal_core.c
-> index d755440..c00dc92 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -155,7 +155,8 @@ int get_tz_trend(struct thermal_zone_device *tz, int
-> trip)
->  {
->  	enum thermal_trend trend;
-> 
-> -	if (!tz->ops->get_trend || tz->ops->get_trend(tz, trip, &trend)) {
-> +	if (tz->emul_temperature || !tz->ops->get_trend ||
-> +	    tz->ops->get_trend(tz, trip, &trend)) {
->  		if (tz->temperature > tz->last_temperature)
->  			trend = THERMAL_TREND_RAISING;
->  		else if (tz->temperature < tz->last_temperature)
-> --
-> 1.8.2.1.342.gfa7285d
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2SXGKJOTPGHTHFJTDPRJO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG5UnwACgkQykllyylKDCGlzACaA/ocqzwEM5m1Zr/JcwlkcI/J
+GLgAnj72D5Go+QZx4BJ5hVxxJ4B+mXav
+=4Unl
+-----END PGP SIGNATURE-----
+
+------enig2SXGKJOTPGHTHFJTDPRJO--
