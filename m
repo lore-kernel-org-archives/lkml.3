@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696Ab3FMNew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:34:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
+	id S1758398Ab3FMNgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:36:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758281Ab3FMN2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:07 -0400
+	id S1758217Ab3FMN2G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:06 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537697"
+   d="scan'208";a="7537694"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,69 +18,143 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: [Part1 PATCH v5 02/22] x86, microcode: Use common get_ramdisk_{image|size}()
-Date: Thu, 13 Jun 2013 21:02:49 +0800
-Message-Id: <1371128589-8953-3-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org
+Subject: =?UTF-8?q?=5BPart2=20PATCH=20v4=2000/15=5D=20Arrange=20hotpluggable=20memory=20in=20SRAT=20as=20ZONE=5FMOVABLE=2E?=
+Date: Thu, 13 Jun 2013 21:03:24 +0800
+Message-Id: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:16,
+ 2013/06/13 20:58:45,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:25,
-	Serialize complete at 2013/06/13 20:58:25
+ 2013/06/13 20:59:02
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+In memory hotplug situation, the hotpluggable memory should be
+arranged in ZONE_MOVABLE because memory in ZONE_NORMAL may be
+used by kernel, and Linux cannot migrate pages used by kernel.
 
-In patch1, we change get_ramdisk_image() and get_ramdisk_size()
-to global, so we can use them instead of using global variable
-boot_params.
+So we need a way to specify hotpluggable memory as movable. It
+should be as easy as possible.
 
-We need this to get correct ramdisk adress for 64bits bzImage
-that initrd can be loaded above 4G by kexec-tools.
+According to ACPI spec 5.0, SRAT table has memory affinity
+structure and the structure has Hot Pluggable Filed. 
+See "5.2.16.2 Memory Affinity Structure".
 
--v2: fix one typo that is found by Tang Chen
+If we use the information, we might be able to specify hotpluggable
+memory by firmware. For example, if Hot Pluggable Filed is enabled,
+kernel sets the memory as movable memory.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kernel/microcode_intel_early.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+To achieve this goal, we need to do the following:
+1. Prevent memblock from allocating hotpluggable memroy for kernel.
+   This is done by reserving hotpluggable memory in memblock as the
+   folowing steps:
+   1) Parse SRAT early enough so that memblock knows which memory
+      is hotpluggable.
+   2) Add a "flags" member to memblock so that it is able to tell
+      which memory is hotpluggable when freeing it to buddy.
 
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index 2e9e128..54575a9 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
- 	struct boot_params *boot_params_p;
- 
- 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
--	ramdisk_image = boot_params_p->hdr.ramdisk_image;
--	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
- 	initrd_start_early = ramdisk_image;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
-@@ -753,8 +753,8 @@ load_ucode_intel_bsp(void)
- 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
- 		initrd_start_early, initrd_end_early, &uci);
- #else
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
--- 
-1.7.1
+2. Free hotpluggable memory to buddy system when memory initialization
+   is done.
+
+3. Arrange hotpluggable memory in ZONE_MOVABLE.
+   (This will cause NUMA performance decreased)
+
+4. Provide a user interface to enable/disable this functionality.
+   (This is useful for those who don't use memory hotplug and who don't
+    want to lose their NUMA performance.)
+
+
+This patch-set does the following:
+patch1:        Fix a little problem.
+patch2:        Have Hot-Pluggable Field in SRAT printed when parsing SRAT.
+patch4,5:      Introduce hotpluggable field to numa_meminfo.
+patch6~9:      Introduce flags to memblock, and keep the public APIs prototype
+               unmodified.
+patch10,11:      Reserve node-life-cycle memory as MEMBLK_LOCAL_NODE with memblock.
+patch12,13:    Reserve hotpluggable memory as MEMBLK_HOTPLUGGABLE with memblock,
+               and free it to buddy when memory initialization is done.
+patch3,14,15:  Improve "movablecore" boot option to support "movablecore=acpi".
+
+
+Change log v3 -> v4:
+1. Define flags in memblock as macro directly instead of bit shift.
+2. Fix a bug found by Vasilis Liaskovitis, mark nodes which the 
+   kernel resides in correctly.
+
+Change log v2 -> v3:
+1. As Chen Gong <gong.chen@linux.intel.com> noticed that 
+   memblock_alloc_try_nid() will call panic() if it fails to
+   allocate memory, so remove the return value check in 
+   setup_node_data() in patch1.
+2. Did not movable find_usable_zone_for_movable() forward 
+   to initialize movable_zone. Fixed in patch12.
+3. Did not transform reserved->regions[i].base to its PFN 
+   in find_zone_movable_pfns_for_nodes(). Fixed in patch12.
+
+Change log v1 -> v2:
+1. Fix a bug in patch10: forgot to update start and end value.
+2. Add new patch8: make alloc_low_pages be able to call
+   memory_add_physaddr_to_nid().
+
+
+This patch-set is based on Yinghai's
+"x86, ACPI, numa: Parse numa info early" patch-set.
+Please refer to:
+v1: https://lkml.org/lkml/2013/3/7/642
+v2: https://lkml.org/lkml/2013/3/10/47
+v3: https://lkml.org/lkml/2013/4/4/639
+v4: https://lkml.org/lkml/2013/4/11/829
+
+And Yinghai's patch did the following things:
+1) Parse SRAT early enough.
+2）Allocate pagetable pages in local node.
+
+Tang Chen (14):
+  acpi: Print Hot-Pluggable Field in SRAT.
+  page_alloc, mem-hotplug: Improve movablecore to {en|dis}able using
+    SRAT.
+  x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct
+    numa_meminfo.
+  x86, numa, acpi, memory-hotplug: Consider hotplug info when cleanup
+    numa_meminfo.
+  memblock, numa: Introduce flag into memblock.
+  x86, numa: Synchronize nid info in memblock.reserve with
+    numa_meminfo.
+  x86, numa: Save nid when reserve memory into memblock.reserved[].
+  x86, numa, mem-hotplug: Mark nodes which the kernel resides in.
+  x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
+  x86, numa, memblock: Introduce MEMBLK_LOCAL_NODE to mark and reserve
+    node-life-cycle data.
+  x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE to mark
+    and reserve hotpluggable memory.
+  x86, memblock, mem-hotplug: Free hotpluggable memory reserved by
+    memblock.
+  x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher
+    priority.
+  doc, page_alloc, acpi, mem-hotplug: Add doc for movablecore=acpi boot
+    option.
+
+Yasuaki Ishimatsu (1):
+  x86: get pg_data_t's memory from other node
+
+ Documentation/kernel-parameters.txt |    8 ++
+ arch/x86/include/asm/numa.h         |    3 +-
+ arch/x86/kernel/apic/numaq_32.c     |    2 +-
+ arch/x86/mm/amdtopology.c           |    3 +-
+ arch/x86/mm/init.c                  |   16 +++-
+ arch/x86/mm/numa.c                  |  118 +++++++++++++++++++++++++++++---
+ arch/x86/mm/numa_internal.h         |    1 +
+ arch/x86/mm/srat.c                  |   13 ++--
+ include/linux/memblock.h            |   13 ++++
+ include/linux/memory_hotplug.h      |    3 +
+ include/linux/mm.h                  |    9 +++
+ mm/memblock.c                       |  129 +++++++++++++++++++++++++++++++----
+ mm/nobootmem.c                      |    3 +
+ mm/page_alloc.c                     |   44 +++++++++++-
+ 14 files changed, 325 insertions(+), 40 deletions(-)
 
