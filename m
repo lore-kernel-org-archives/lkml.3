@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab3FMURp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 16:17:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31919 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab3FMURV (ORCPT
+	id S1759043Ab3FMUZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 16:25:10 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:34237 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756489Ab3FMUZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 16:17:21 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Joshua Covington <joshuacov@googlemail.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH v3 1/2] x86, mtrr: Fix original mtrr range get for mtrr_cleanup
-Date: Thu, 13 Jun 2013 13:17:01 -0700
-Message-Id: <1371154622-8929-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
-References: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 13 Jun 2013 16:25:07 -0400
+Message-ID: <51BA2A9E.2070905@gmail.com>
+Date: Thu, 13 Jun 2013 22:25:02 +0200
+From: Gabriel de Perthuis <g2p.code@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Kent Overstreet <koverstreet@google.com>
+CC: linux-bcache@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] bcache: Set the logical block size to a sensible value
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
-during add range) broke mtrr cleanup on his setup in 3.9.5.
-corresponding commit in upstream is fbe06b7bae7c.
+Preserve the backing device's logical size, use 512 byte
+sectors when there is no backing device.
 
-  *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
+The logical block size has no impact on performance, but
+it alters the meaning of on-disk structures like partition
+tables.  Preserve the backing device's sector size to keep
+bcache transparent, and use 512 byte sectors like everyone
+else when no backing device is present.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59491
-
-So it rejects new var mtrr layout.
-
-It turns out we have some problem with initial mtrr range retrievel.
-current sequence is:
-	x86_get_mtrr_mem_range
-		==> bunchs of add_range_with_merge
-		==> bunchs of subract_range
-		==> clean_sort_range
-	add_range_with_merge for [0,1M)
-	sort_range()
-
-add_range_with_merge could have blank slots, so we can not just
-sort only, that will have final result have extra blank slot in head.
-
-So move that calling add_range_with_merge for [0,1M), with that we
-could avoid extra clean_sort_range calling.
-
-Reported-by: Joshua Covington <joshuacov@googlemail.com>
-Tested-by: Joshua Covington <joshuacov@googlemail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: <stable@vger.kernel.org> v3.9
-
+Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
 ---
- arch/x86/kernel/cpu/mtrr/cleanup.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/bcache/super.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,15 +714,15 @@ int __init mtrr_cleanup(unsigned address
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 1e3bc4c..94fad70 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -745,11 +745,12 @@ static void bcache_device_free(struct bcache_device *d)
+ 		bioset_free(d->bio_split);
  
--	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
- 	 * and fixed mtrrs should take effect before var mtrr for it:
- 	 */
--	nr_range = add_range_with_merge(range, RANGE_NUM, nr_range, 0,
-+	nr_range = add_range_with_merge(range, RANGE_NUM, 0, 0,
- 					1ULL<<(20 - PAGE_SHIFT));
--	/* Sort the ranges: */
--	sort_range(range, nr_range);
-+	/* add from var mtrr at last */
-+	nr_range = x86_get_mtrr_mem_range(range, nr_range,
-+					  x_remove_base, x_remove_size);
+ 	closure_debug_destroy(&d->cl);
+ }
  
- 	range_sums = sum_ranges(range, nr_range);
- 	printk(KERN_INFO "total RAM covered: %ldM\n",
+-static int bcache_device_init(struct bcache_device *d, unsigned block_size)
++static int bcache_device_init(struct bcache_device *d, unsigned block_size,
++			      unsigned logical_size)
+ {
+ 	struct request_queue *q;
+ 
+ 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+ 	    !(d->unaligned_bvec = mempool_create_kmalloc_pool(1,
+@@ -774,11 +775,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size)
+ 	q->limits.max_sectors		= UINT_MAX;
+ 	q->limits.max_segment_size	= UINT_MAX;
+ 	q->limits.max_segments		= BIO_MAX_PAGES;
+ 	q->limits.max_discard_sectors	= UINT_MAX;
+ 	q->limits.io_min		= block_size;
+-	q->limits.logical_block_size	= block_size;
++	q->limits.logical_block_size	= logical_size;
+ 	q->limits.physical_block_size	= block_size;
+ 	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
+ 	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
+ 
+ 	return 0;
+@@ -1064,11 +1065,11 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+ 	for (io = dc->io; io < dc->io + RECENT_IO; io++) {
+ 		list_add(&io->lru, &dc->io_lru);
+ 		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
+ 	}
+ 
+-	ret = bcache_device_init(&dc->disk, block_size);
++	ret = bcache_device_init(&dc->disk, block_size, q->limits.logical_block_size);
+ 	if (ret)
+ 		return ret;
+ 
+ 	set_capacity(dc->disk.disk,
+ 		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
+@@ -1163,11 +1164,11 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 	closure_init(&d->cl, NULL);
+ 	set_closure_fn(&d->cl, flash_dev_flush, system_wq);
+ 
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+-	if (bcache_device_init(d, block_bytes(c)))
++	if (bcache_device_init(d, block_bytes(c), 512))
+ 		goto err;
+ 
+ 	bcache_device_attach(d, c, u - c->uuids);
+ 	set_capacity(d->disk, u->sectors);
+ 	bch_flash_dev_request_init(d);
+-- 
+1.8.3.222.g430da9e
+
