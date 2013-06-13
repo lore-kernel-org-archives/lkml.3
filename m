@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab3FMTJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:09:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43205 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756785Ab3FMTJj (ORCPT
+	id S1758014Ab3FMTLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:11:01 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:56539 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab3FMTK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:09:39 -0400
-Message-ID: <51BA18EF.4090302@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 13:09:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 15:10:59 -0400
+Message-ID: <51BA193F.9040504@suse.cz>
+Date: Thu, 13 Jun 2013 21:10:55 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Mayuresh Kulkarni <mkulkarni@nvidia.com>, tbergstrom@nvidia.com,
-        amerilainen@nvidia.com, thierry.reding@avionic-design.de,
-        airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] gpu: host1x: add runtime pm support for dc
-References: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com> <1371117218-2326-4-git-send-email-mkulkarni@nvidia.com> <20130613184938.GE32574@mithrandir>
-In-Reply-To: <20130613184938.GE32574@mithrandir>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Re: Linux 3.9.6
+References: <20130613175502.GA9768@kroah.com>
+In-Reply-To: <20130613175502.GA9768@kroah.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 12:49 PM, Thierry Reding wrote:
-> On Thu, Jun 13, 2013 at 03:23:37PM +0530, Mayuresh Kulkarni wrote: 
-> [...]
->> diff --git a/drivers/gpu/host1x/drm/dc.c
->> b/drivers/gpu/host1x/drm/dc.c
-> [...]
->> @@ -1128,9 +1129,7 @@ static int tegra_dc_probe(struct
->> platform_device *pdev) return PTR_ERR(dc->clk); }
->> 
->> -	err = clk_prepare_enable(dc->clk); -	if (err < 0) -		return
->> err; +	platform_set_drvdata(pdev, dc);
-> 
-> Why do you move the call to platform_set_drvdata() up here?
+On 06/13/2013 07:55 PM, Greg KH wrote:
+> I'm announcing the release of the 3.9.6 kernel.
 
-Presumably the suspend/resume functions need to get the value out of
-the device they're passed, so it needs to be set up early?
+Greg,
 
+did you forget to push? 3.0 and 3.4 appeared on the mirrors, unlike 3.9...
+
+thanks,
+-- 
+js
+suse labs
