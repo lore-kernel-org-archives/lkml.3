@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab3FMRZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 13:25:06 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:61660 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755998Ab3FMRZE (ORCPT
+	id S1756725Ab3FMRaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 13:30:17 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33955 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3FMRaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 13:25:04 -0400
+	Thu, 13 Jun 2013 13:30:15 -0400
+Date: Thu, 13 Jun 2013 13:17:12 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2013-06-13
+Message-ID: <20130613171711.GB3246@tuxdriver.com>
+References: <20130613112228.GB17870@joana>
 MIME-Version: 1.0
-In-Reply-To: <9948950.GZ51yJYkxQ@flatron>
-References: <1371143144-31764-1-git-send-email-dianders@chromium.org>
-	<9948950.GZ51yJYkxQ@flatron>
-Date: Thu, 13 Jun 2013 10:25:02 -0700
-X-Google-Sender-Auth: c_tKl9R0NsxGcTuGmf9_aXl-DDM
-Message-ID: <CAD=FV=Un+Ti8atZLUbK+5w=dB7vX7HoxVacEGkjvCboVo4mNpA@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613112228.GB17870@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
+On Thu, Jun 13, 2013 at 12:22:28PM +0100, Gustavo Padovan wrote:
+> Hi John,
+> 
+> A few important fixes to 3.10. The first one is a crash fix and talks by itself.
+> Then we have the support for a device id, it should be fine if you want to
+> remove this. Next there are two btmrvl fixes, one for a potential race
+> condition that could make its main thread never stop and the other to fix the
+> return code when a memory allocation fails. It was returning 0 instead of
+> -ENOMEM. Last is a fix to an issue that affects at least some Thinkpad X60,
+> Initialization on those laptops were failing due by unsupported cmd we were
+> sending to the device. The patch fixes this by checking if the cmd is
+> supported first.
+> 
+> Please pull or let me know of any concerns you may have.
+> 
+> 	Gustavo
+> 
+> ---
+> The following changes since commit d90b9e29ec5fe7a08eb7965386ebb47615306584:
+> 
+>   Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-fixes (2013-06-12 14:28:21 -0400)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+> 
+> for you to fetch changes up to 0e1aba9361bf292fbdca781d419dca67d6b9911f:
+> 
+>   Bluetooth: btmrvl: fix thread stopping race (2013-06-13 11:48:38 +0100)
+> 
+> ----------------------------------------------------------------
 
-On Thu, Jun 13, 2013 at 10:13 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Thursday 13 of June 2013 10:05:44 Doug Anderson wrote:
->> It's convenient if get_maintainer suggests sending samsung/exynos
->> pinctrl changes to linux-samsung-soc and to Kukjin.  Add an entry for
->> that.
->
-> Well, if we are already at it, we could list the actual maintainers of the
-> driver.
->
-> The original maintainer was Thomas Abraham <thomas.abraham@linaro.org>
-> (added to CC) and after joining to development of this driver last year I
-> have become a de facto maintainer as well, so...
->
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  MAINTAINERS | 10 ++++++++++
->>  1 file changed, 10 insertions(+)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 8d97b3e..d026e38 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -6284,6 +6284,16 @@ L:     linux-arm-kernel@lists.infradead.org
->> (moderated for non-subscribers) S:    Maintained
->>  F:   drivers/pinctrl/pinctrl-at91.c
->>
->> +PIN CONTROLLER - SAMSUNG
->> +M:   Linus Walleij <linus.walleij@linaro.org>
->> +M:   Kukjin Kim <kgene.kim@samsung.com>
->
-> So actually this would be:
-> M:      Thomas Abraham <thomas.abraham@linaro.org>
-> M:      Tomasz Figa <t.figa@samsung.com>
->
-> Thomas, do you agree on this?
+I applied these manually to the wireless tree:
 
-Ah.  Wasn't sure where the official maintainership should lie.  ;)  If
-Thomas is happy with this then I'll spin and re-send.  Shall I remove
-Kukjin and Linus, then?  It's convenient to have Linus on the list
-since he tends to be the one applying the patches...
+> Anderson Lizardo (1):
+>       Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
+> 
+> Daniel Drake (1):
+>       Bluetooth: btmrvl: fix thread stopping race
+> 
+> Johan Hedberg (1):
+>       Bluetooth: Fix conditions for HCI_Delete_Stored_Link_Key
 
--Doug
+These I will manually apply to wireless-next:
+
+> Cho, Yu-Chen (1):
+>       Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
+> 
+> Wei Yongjun (1):
+>       Bluetooth: btmrvl: fix error return code in btmrvl_sdio_card_to_host()
+
+The device ID one might be OK, but it can wait for now.  The error
+return code patch fixes the return code for a function whose return
+code isn't actually checked, so it doesn't seem to need a quick fix.
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
