@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab3FMNn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:43:59 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50145 "EHLO
+	id S1757902Ab3FMNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:44:09 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50151 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756949Ab3FMNn5 (ORCPT
+	with ESMTP id S1754228Ab3FMNn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:43:57 -0400
+	Thu, 13 Jun 2013 09:43:58 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Shawn Guo <shawn.guo@linaro.org>
 Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Brian Lilly <brian@crystalfontz.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 3/4] ARM: mxs: dt: Add the Crystalfontz CFA-10055 device tree
-Date: Thu, 13 Jun 2013 15:43:44 +0200
-Message-Id: <1371131025-12200-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 4/4] ARM: mxs: dt: Add Crystalfontz CFA-10057 device tree
+Date: Thu, 13 Jun 2013 15:43:45 +0200
+Message-Id: <1371131025-12200-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,40 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Brian Lilly <brian@crystalfontz.com>
 
-The CFA-10055 is yet another breakout board for the CFA-10036, and is
-basically a CFA-10037, with the screen and LCD controller found on the
-CFA-10049.
+The CFA-10057 is a breakout board for the CFA-10036 that has Ethernet,
+USB and a 4.3" LCD screen on it.
 
 Signed-off-by: Brian Lilly <brian@crystalfontz.com>
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
  arch/arm/boot/dts/Makefile           |   1 +
- arch/arm/boot/dts/imx28-cfa10055.dts | 179 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-mxs/mach-mxs.c         |  15 +--
- 3 files changed, 185 insertions(+), 10 deletions(-)
- create mode 100644 arch/arm/boot/dts/imx28-cfa10055.dts
+ arch/arm/boot/dts/imx28-cfa10057.dts | 191 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mxs/mach-mxs.c         |   3 +-
+ 3 files changed, 194 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/imx28-cfa10057.dts
 
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b9f7121..e26c504 100644
+index e26c504..1560a09 100644
 --- a/arch/arm/boot/dts/Makefile
 +++ b/arch/arm/boot/dts/Makefile
-@@ -130,6 +130,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-cfa10036.dtb \
+@@ -131,6 +131,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
  	imx28-cfa10037.dtb \
  	imx28-cfa10049.dtb \
-+	imx28-cfa10055.dtb \
+ 	imx28-cfa10055.dtb \
++	imx28-cfa10057.dtb \
  	imx28-evk.dtb \
  	imx28-m28evk.dtb \
  	imx28-sps1.dtb \
-diff --git a/arch/arm/boot/dts/imx28-cfa10055.dts b/arch/arm/boot/dts/imx28-cfa10055.dts
+diff --git a/arch/arm/boot/dts/imx28-cfa10057.dts b/arch/arm/boot/dts/imx28-cfa10057.dts
 new file mode 100644
-index 0000000..1581112
+index 0000000..2da713c
 --- /dev/null
-+++ b/arch/arm/boot/dts/imx28-cfa10055.dts
-@@ -0,0 +1,179 @@
++++ b/arch/arm/boot/dts/imx28-cfa10057.dts
+@@ -0,0 +1,191 @@
 +/*
 + * Copyright 2013 Crystalfontz America, Inc.
-+ * 				  Free Electrons
++ * Copyright 2012 Free Electrons
 + *
 + * The code contained herein is licensed under the GNU General Public
 + * License. You may obtain a copy of the GNU General Public License
@@ -69,25 +68,26 @@ index 0000000..1581112
 + */
 +
 +/*
-+ * The CFA-10055 is an expansion board for the CFA-10036 module and
-+ * CFA-10037, thus we need to include the CFA-10037 DTS.
++ * The CFA-10057 is an expansion board for the CFA-10036 module, thus we
++ * need to include the CFA-10036 DTS.
 + */
-+/include/ "imx28-cfa10037.dts"
++/include/ "imx28-cfa10036.dts"
 +
 +/ {
-+	model = "Crystalfontz CFA-10055 Board";
-+	compatible = "crystalfontz,cfa10055", "crystalfontz,cfa10037", "crystalfontz,cfa10036", "fsl,imx28";
++	model = "Crystalfontz CFA-10057 Board";
++	compatible = "crystalfontz,cfa10057", "crystalfontz,cfa10036", "fsl,imx28";
 +
 +	apb@80000000 {
 +		apbh@80000000 {
 +			pinctrl@80018000 {
 +				pinctrl-names = "default", "default";
-+				pinctrl-1 = <&hog_pins_cfa10055
-+					&hog_pins_cfa10055_pullup>;
++				pinctrl-1 = <&hog_pins_cfa10057
++					&hog_pins_cfa10057_pullup>;
 +
-+				hog_pins_cfa10055: hog-10055@0 {
++				hog_pins_cfa10057: hog-10057@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
++						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
 +						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
 +					>;
 +					fsl,drive-strength = <0>;
@@ -95,9 +95,13 @@ index 0000000..1581112
 +					fsl,pull-up = <0>;
 +				};
 +
-+				hog_pins_cfa10055_pullup: hog-10055-pullup@0 {
++				hog_pins_cfa10057_pullup: hog-10057-pullup@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
++						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
++						0x3183 /* MX28_PAD_I2C0_SCL__GPIO_3_24 */
++						0x3193 /* MX28_PAD_I2C0_SDA__GPIO_3_25 */
++						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
 +						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
 +					>;
 +					fsl,drive-strength = <0>;
@@ -105,19 +109,7 @@ index 0000000..1581112
 +					fsl,pull-up = <1>;
 +				};
 +
-+				spi2_pins_cfa10055: spi2-cfa10055@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
-+						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
-+						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
-+					>;
-+					fsl,drive-strength = <1>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <1>;
-+				};
-+
-+				lcdif_18bit_pins_cfa10055: lcdif-18bit@0 {
++				lcdif_18bit_pins_cfa10057: lcdif-18bit@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
 +						0x1000 /* MX28_PAD_LCD_D00__LCD_D0 */
@@ -144,7 +136,7 @@ index 0000000..1581112
 +					fsl,pull-up = <0>;
 +				};
 +
-+				lcdif_pins_cfa10055: lcdif-evk@0 {
++				lcdif_pins_cfa10057: lcdif-evk@0 {
 +					reg = <0>;
 +					fsl,pinmux-ids = <
 +						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
@@ -160,8 +152,8 @@ index 0000000..1581112
 +
 +			lcdif@80030000 {
 +				pinctrl-names = "default";
-+				pinctrl-0 = <&lcdif_18bit_pins_cfa10055
-+					     &lcdif_pins_cfa10055>;
++				pinctrl-0 = <&lcdif_18bit_pins_cfa10057
++					     &lcdif_pins_cfa10057>;
 +				display = <&display>;
 +				status = "okay";
 +
@@ -172,15 +164,15 @@ index 0000000..1581112
 +					display-timings {
 +						native-mode = <&timing0>;
 +						timing0: timing0 {
-+							clock-frequency = <9216000>;
-+							hactive = <320>;
-+							vactive = <480>;
++							clock-frequency = <30000000>;
++							hactive = <480>;
++							vactive = <800>;
++							hfront-porch = <12>;
 +							hback-porch = <2>;
-+							hfront-porch = <2>;
-+							vback-porch = <2>;
-+							vfront-porch = <2>;
-+							hsync-len = <15>;
-+							vsync-len = <15>;
++							vfront-porch = <5>;
++							vback-porch = <3>;
++							hsync-len = <2>;
++							vsync-len = <2>;
 +							hsync-active = <0>;
 +							vsync-active = <0>;
 +							de-active = <1>;
@@ -202,29 +194,48 @@ index 0000000..1581112
 +				pinctrl-0 = <&pwm3_pins_b>;
 +				status = "okay";
 +			};
++
++			i2c1: i2c@8005a000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&i2c1_pins_a>;
++				status = "okay";
++			};
++
++			usbphy1: usbphy@8007e000 {
++				status = "okay";
++			};
 +		};
 +	};
 +
-+	spi2 {
-+		compatible = "spi-gpio";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&spi2_pins_cfa10055>;
-+		status = "okay";
-+		gpio-sck = <&gpio2 16 0>;
-+		gpio-mosi = <&gpio2 17 0>;
-+		gpio-miso = <&gpio2 18 0>;
-+		cs-gpios = <&gpio3 5 0>;
-+		num-chipselects = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++	ahb@80080000 {
++		usb1: usb@80090000 {
++			vbus-supply = <&reg_usb1_vbus>;
++			pinctrl-0 = <&usbphy1_pins_a>;
++			pinctrl-names = "default";
++			status = "okay";
++		};
++	};
 +
-+		hx8357: hx8357@0 {
-+			compatible = "himax,hx8357b", "himax,hx8357";
-+			reg = <0>;
-+			spi-max-frequency = <100000>;
-+			spi-cpol;
-+			spi-cpha;
-+			gpios-reset = <&gpio3 30 0>;
++	regulators {
++		compatible = "simple-bus";
++
++		reg_usb1_vbus: usb1_vbus {
++			compatible = "regulator-fixed";
++			regulator-name = "usb1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&gpio0 7 1>;
++		};
++	};
++
++	ahb@80080000 {
++		mac0: ethernet@800f0000 {
++			phy-mode = "rmii";
++			pinctrl-names = "default";
++			pinctrl-0 = <&mac0_pins_a>;
++			phy-reset-gpios = <&gpio2 21 0>;
++			phy-reset-duration = <100>;
++			status = "okay";
 +		};
 +	};
 +
@@ -232,42 +243,23 @@ index 0000000..1581112
 +		compatible = "pwm-backlight";
 +		pwms = <&pwm 3 5000000>;
 +		brightness-levels = <0 4 8 16 32 64 128 255>;
-+		default-brightness-level = <6>;
++		default-brightness-level = <7>;
 +	};
 +};
 diff --git a/arch/arm/mach-mxs/mach-mxs.c b/arch/arm/mach-mxs/mach-mxs.c
-index 5b62b64..60b26c6 100644
+index 60b26c6..77280c6 100644
 --- a/arch/arm/mach-mxs/mach-mxs.c
 +++ b/arch/arm/mach-mxs/mach-mxs.c
-@@ -352,12 +352,7 @@ static void __init tx28_post_init(void)
- 	pinctrl_put(pctl);
- }
- 
--static void __init cfa10049_init(void)
--{
--	update_fec_mac_prop(OUI_CRYSTALFONTZ);
--}
--
--static void __init cfa10037_init(void)
-+static void __init crystalfontz_init(void)
- {
- 	update_fec_mac_prop(OUI_CRYSTALFONTZ);
- }
-@@ -368,10 +363,10 @@ static void __init mxs_machine_init(void)
- 		imx28_evk_init();
- 	else if (of_machine_is_compatible("bluegiga,apx4devkit"))
+@@ -365,7 +365,8 @@ static void __init mxs_machine_init(void)
  		apx4devkit_init();
--	else if (of_machine_is_compatible("crystalfontz,cfa10037"))
--		cfa10037_init();
--	else if (of_machine_is_compatible("crystalfontz,cfa10049"))
--		cfa10049_init();
-+	else if (of_machine_is_compatible("crystalfontz,cfa10037") ||
-+		 of_machine_is_compatible("crystalfontz,cfa10049") ||
-+		 of_machine_is_compatible("crystalfontz,cfa10055"))
-+		crystalfontz_init();
+ 	else if (of_machine_is_compatible("crystalfontz,cfa10037") ||
+ 		 of_machine_is_compatible("crystalfontz,cfa10049") ||
+-		 of_machine_is_compatible("crystalfontz,cfa10055"))
++		 of_machine_is_compatible("crystalfontz,cfa10055") ||
++		 of_machine_is_compatible("crystalfontz,cfa10057"))
+ 		crystalfontz_init();
  
  	of_platform_populate(NULL, of_default_bus_match_table,
- 			     mxs_auxdata_lookup, NULL);
 -- 
 1.8.3
 
