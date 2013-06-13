@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab3FMACY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 20:02:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29903 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756952Ab3FMACX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 20:02:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,855,1363158000"; 
-   d="scan'208";a="328536688"
-Date: Thu, 13 Jun 2013 02:01:43 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Pawel Moll <pawel.moll@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v3 2/2] drivers: mfd: vexpress: add Serial Power
- Controller (SPC) support
-Message-ID: <20130613000143.GB4567@zurbaran>
-References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1370512763-32200-3-git-send-email-lorenzo.pieralisi@arm.com>
+	id S932204Ab3FMAFE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 20:05:04 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:53878 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758091Ab3FMAFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 20:05:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370512763-32200-3-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQWfpK6oVaeY8tv+TrTq0pu-s1BMVsQ91E10XF6qTAv5mw@mail.gmail.com>
+References: <20130611184113.GA2288@www.outflux.net>
+	<CAE9FiQXCj+H=h+SPcfW82dBK5n6aDGuX+pmg7zr+6mKtdD4nMg@mail.gmail.com>
+	<CAGXu5jLnHTuMSQbLUPbJXAADMwOZAeNv_WyknuEiggCaqA5gpw@mail.gmail.com>
+	<CAE9FiQWfpK6oVaeY8tv+TrTq0pu-s1BMVsQ91E10XF6qTAv5mw@mail.gmail.com>
+Date: Wed, 12 Jun 2013 17:05:00 -0700
+X-Google-Sender-Auth: dllKFm9ZWJKwBgXfkS6K-OYxWjE
+Message-ID: <CAGXu5jL5v1ddQEqwDLkxQj=Ryf+9Omw2Vg2xTaih9mrXLMDttA@mail.gmail.com>
+Subject: Re: [PATCH] x86, boot: access cmdline when loaded high
+From: Kees Cook <keescook@chromium.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo,
+On Tue, Jun 11, 2013 at 1:54 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Jun 11, 2013 at 12:26 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Tue, Jun 11, 2013 at 12:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Tue, Jun 11, 2013 at 11:41 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>> The __cmdline_find_option routine requires that the kernel cmdline be
+>>>> located under 0x10000. When running the compressed boot code, if the
+>>>> cmdline is loaded above this range, it will be ignored. This breaks
+>>>> recognition of things like "earlyprintk=...". Since the compressed boot
+>>>> code is already tricking the cmdline routines about locations, take it all
+>>>> the way and access the cmdline via offset instead of via actual location.
+>>>
+>>> Hi,
+>>>
+>>> What is point of the patch?
+>>> It looks like it try to fix one bug, but it doesn't,
+>>> as there is no bug out there.
+>>>
+>>> Before the patch, command line that is loaded high
+>>> can be processed correctly in arch/x86/boot/compressed/cmdline.c.
+>>
+>> It can't. Here is the code from arch/x86/boot/cmdline.c:
+>
+> Are you sure?
+>
+> I tested that with kexec loaded second kernel high.
+>
+> How do you test that?
+>
+>>
+>> int __cmdline_find_option(unsigned long cmdline_ptr, const char
+>> *option, char *buffer, int bufsize)
+>> ...
+>>         if (!cmdline_ptr)
+>>                 return -1;      /* No command line */
+>>
+>>         cptr = cmdline_ptr & 0xf;
+>>         set_fs(cmdline_ptr >> 4);
+>>
+>>         while (cptr < 0x10000 && (c = rdfs8(cptr++))) {
+>>
+>>
+>> This means that if get_cmd_line_ptr() returns an address >= 0x10000,
+>> __cmdline_find_option will simply ignore the cmdline.
+>
+> No, you read the code wrong. you miss the
+>
+> cptr = cmdline_ptr & 0xf;
 
-I don't particularily like this code, but I guess most of my dislike
-comes from the whole bridge interface API and how that forces you into
-implementing pretty much static code.
-A few nitpicks:
+Ah-ha! I see what I missed. I didn't notice 16a4baa6 which did this:
+-       if (!cmdline_ptr || cmdline_ptr >= 0x100000)
+-               return -1;      /* No command line, or inaccessible */
++       if (!cmdline_ptr)
++               return -1;      /* No command line */
 
-On Thu, Jun 06, 2013 at 10:59:23AM +0100, Lorenzo Pieralisi wrote:
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index d54e985..391eda1 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -1148,3 +1148,10 @@ config VEXPRESS_CONFIG
->  	help
->  	  Platform configuration infrastructure for the ARM Ltd.
->  	  Versatile Express.
-> +
-> +config VEXPRESS_SPC
-> +	bool "Versatile Express SPC driver support"
-> +	depends on ARM
-> +	depends on VEXPRESS_CONFIG
-> +	help
-Please provide a detailed help entry here. 
+That fixes the problem I was seeing. :)
 
+Thanks!
 
-> +	  Serial Power Controller driver for ARM Ltd. test chips.
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 718e94a..3a01203 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -153,5 +153,6 @@ obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
->  obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
->  obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
->  obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
-> +obj-$(CONFIG_VEXPRESS_SPC)	+= vexpress-spc.o
-So you have Versatile Express platforms that will not need SPC ? i.e.
-why isn't all that stuff under a generic CONFIG_VEXPRESS symbol ?
+-Kees
 
-
-
-> +static struct vexpress_spc_drvdata *info;
-> +static u32 *vexpress_spc_config_data;
-> +static struct vexpress_config_bridge *vexpress_spc_config_bridge;
-> +static struct vexpress_config_func *opp_func, *perf_func;
-> +
-> +static int vexpress_spc_load_result = -EAGAIN;
-As I said, quite static...
-
-> +irqreturn_t vexpress_spc_irq_handler(int irq, void *data)
-missing a static here ?
-
-
-> +static bool __init __vexpress_spc_check_loaded(void);
-> +/*
-> + * Pointer spc_check_loaded is swapped after init hence it is safe
-> + * to initialize it to a function in the __init section
-> + */
-> +static bool (*spc_check_loaded)(void) __refdata = &__vexpress_spc_check_loaded;
-> +
-> +static bool __init __vexpress_spc_check_loaded(void)
-> +{
-> +	if (vexpress_spc_load_result == -EAGAIN)
-> +		vexpress_spc_load_result = vexpress_spc_init();
-> +	spc_check_loaded = &vexpress_spc_initialized;
-> +	return vexpress_spc_initialized();
-> +}
-> +
-> +/*
-> + * Function exported to manage early_initcall ordering.
-> + * SPC code is needed very early in the boot process
-> + * to bring CPUs out of reset and initialize power
-> + * management back-end. After boot swap pointers to
-> + * make the functionality check available to loadable
-> + * modules, when early boot init functions have been
-> + * already freed from kernel address space.
-> + */
-> +bool vexpress_spc_check_loaded(void)
-> +{
-> +	return spc_check_loaded();
-> +}
-> +EXPORT_SYMBOL_GPL(vexpress_spc_check_loaded);
-That one and the previous function look really nasty to me.
-The simple fact that you need a static variable in your code to check if
-your module is loaded sounds really fishy.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--
+Kees Cook
+Chrome OS Security
