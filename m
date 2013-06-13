@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3FMWhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:37:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33634 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757720Ab3FMWhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:37:46 -0400
-Date: Fri, 14 Jun 2013 00:37:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, Borislav Petkov <bp@suse.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130613223740.GE32112@pd.tnic>
-References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
- <51BA380A.1040009@semaphore.gr>
- <20130613214007.GA32127@pd.tnic>
- <1645236.hTWQPUhyIx@vostro.rjw.lan>
+	id S1759351Ab3FMWiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:38:25 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39617 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756798Ab3FMWiX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 18:38:23 -0400
+X-Sasl-enc: hnCip1VyyITPPH0jbQGwkgdHydYUDj6iYDEJVFfq855W 1371163103
+From: Simon Brown <smb@700c.org>
+To: JA =?ISO-8859-1?Q?Magall=F3n?= <jamagallon@ono.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Accessing more than 2GB of memory with a 32 bit kernel
+Date: Thu, 13 Jun 2013 23:38:22 +0100
+Message-ID: <1401958.8pblrLFpVU@phaedrus>
+User-Agent: KMail/4.10.4 (Linux/3.8.0-25-generic; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51B8E926.3030504@ono.com>
+References: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com> <51B8D59B.1040801@redhat.com> <51B8E926.3030504@ono.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1645236.hTWQPUhyIx@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 12:15:36AM +0200, Rafael J. Wysocki wrote:
-> On Thursday, June 13, 2013 11:40:08 PM Borislav Petkov wrote:
-
-[ â€¦ ]
-
-> > Not bad. However, exec_test and fork_test are kinda unexpected with such
-> > a high improvement percentage. Happen to have an explanation?
+On Wednesday 12 Jun 2013 23:33:26 JA Magallón wrote:
+> On 06/12/2013 10:10 PM, Rik van Riel wrote:
+> > On 06/12/2013 12:54 PM, Simon Brown wrote:
+> >> Hello,
+> >> 
+> >> For the sake of an old prototype peripheral I'm using a non PAE 32 bit
+> >> x86 kernel and I'm having trouble accessing memory above 2 GB. The
+> >> system has 4GB installed and all is well with a PAE kernel.
+> >> 
+> >> I'm obviously expecting to lose some memory due to memory mapped devices
+> >> but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
+> >> The system reports:
+> >> free -m
+> >> 
+> >>               total       used       free     shared    buffers
+> >>               cached
+> >> 
+> >> Mem:          2012        491       1521          0         40
+> >> 277
+> >> 
+> >> The mtrr table looked odd so I enabled sanitisation:
+> >> [    0.000000] original variable MTRRs
+> >> [    0.000000] reg 0, base: 2GB, range: 2GB, type UC
+> >> [    0.000000] reg 1, base: 0GB, range: 4GB, type WB
+> >> [    0.000000] reg 2, base: 4GB, range: 2GB, type WB
+> >> [    0.000000] total RAM covered: 4096M
+> >> [    0.000000] Found optimal setting for mtrr clean up
+> >> [    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2
+> >> lose cover RAM: 0G
+> >> [    0.000000] New variable MTRRs
+> >> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
+> >> [    0.000000] reg 1, base: 4GB, range: 2GB, type WB
+> >> 
+> >> I don't understand the gap in the new table.
 > > 
-> > FWIW, if we don't find any serious perf/power regressions with
-> > this patch, I'd say it is worth applying even solely for the code
-> > simplification it brings.
+> > Check the e820 table. Chances are the BIOS is reserving 2GB to
+> > map various devices (especially video cards) below the 4GB limit.
 > 
-> May I take this as an ACK? ;-)
-> 
-> Well, that's my opinion too, actually.
+> Acording to manual, that mobo has an option to "Memory remap feature"
+> in BIOS that looks like that...
 
-I know - you told me and I like that aspect :-). And from the test
-results so far, the code simplification is maybe the most persuasive
-one. The slight improvements in perf/power are then the cherry on top.
+I don't understand that option in the BIOS. If I disable the option the e820 
+table is the same as before except missing the last line and the BIOS boot 
+screen only reports 2GB. The choice seems to be map it high or lose it.
 
-Although, I'm not sure we're exhaustive with the benchmarks and we
-should maybe run a couple more. Although, judging by the results,
-generally no serious outliers should be expected (except exec_test and
-fork_test funsies above), which are actually positive outliers.
+  [    0.000000] BIOS-provided physical RAM map:
+  [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+  [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+  [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+  [    0.000000]  BIOS-e820: 0000000000100000 - 000000007ff80000 (usable)
+  [    0.000000]  BIOS-e820: 000000007ff80000 - 000000007ff8e000 (ACPI data)
+  [    0.000000]  BIOS-e820: 000000007ff8e000 - 000000007ffe0000 (ACPI NVS)
+  [    0.000000]  BIOS-e820: 000000007ffe0000 - 0000000080000000 (reserved)
+  [    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
+  [    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
 
-Judging by the code change, the only worry we should have, AFAIU, is
-any raise in power consumption due to spending longer periods in the
-intermediary P-states now and not going straight to the lowest P-state.
-But this compensates with improvement in runtime of the workloads.
+Apologies for the slow follow up,
 
-Hmm, I dunno - I'm just thinking out loud here...
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Simon
