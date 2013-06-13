@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3FML0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 07:26:16 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:30210
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752088Ab3FML0O (ORCPT
+	id S1755240Ab3FMLsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 07:48:30 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:34708 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab3FMLs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 07:26:14 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1de2h1dfeh1dffh1155h)
-Date: Thu, 13 Jun 2013 19:25:52 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powerpc/sysfs: disable hotplug for the boot cpu
-Message-ID: <20130613112552.GC7536@localhost.localdomain>
-References: <1369727984-21505-1-git-send-email-chenhui.zhao@freescale.com>
- <1369727984-21505-2-git-send-email-chenhui.zhao@freescale.com>
- <1370036984.3928.144.camel@pasglop>
- <20130603104315.GA1365@localhost.localdomain>
- <1371007522.8250.169.camel@pasglop>
+	Thu, 13 Jun 2013 07:48:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1371007522.8250.169.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+Date: Thu, 13 Jun 2013 13:48:27 +0200
+Message-ID: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
+Subject: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL pointer
+ dereference at 00000000000001a8
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        bsingharora@gmail.com, Michal Hocko <mhocko@suse.cz>,
+        hannes@cmpxchg.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 01:25:22PM +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2013-06-03 at 18:43 +0800, Zhao Chenhui wrote:
-> > On Sat, Jun 01, 2013 at 07:49:44AM +1000, Benjamin Herrenschmidt wrote:
-> > > On Tue, 2013-05-28 at 15:59 +0800, Zhao Chenhui wrote:
-> > > > Some features depend on the boot cpu, for instance, hibernate/suspend.
-> > > > So disable hotplug for the boot cpu.
-> > > 
-> > > Don't we have code to "move" the boot CPU around when that happens ?
-> > > 
-> > > Ben.
-> > > 
-> > 
-> > Currently, the code in generic_cpu_disable() likes this:
-> > 
-> >         if (cpu == boot_cpuid)                                                 
-> > 	                return -EBUSY;
-> 
-> But the code in pseries/hotplug-cpu.c doesn't, we just "move" the boot
-> CPU around when that happens. Any reason we can't do that generically ?
-> 
-> Cheers,
-> Ben.
-> 
+Hi!
 
-Some multicore SoCs firstly boot up the cpu0 after warm reset.
-In some suspend/resume cases, SoC will do a warm reset when resuming.
-In order to ensure that the suspending and resuming is running
-on a same cpu, cpu0 should be the last cpu to suspend. Here, cpu0 is
-the boot_cpuid.
+While playing with user namespaces my kernel crashed under heavy load.
+Kernel is 3.9.0 plus some trivial patches.
 
--Chenhui
+[35355.882105] BUG: unable to handle kernel NULL pointer dereference
+at 00000000000001a8
+[35355.883056] IP: [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
+[35355.883056] PGD 0
+[35355.883056] Oops: 0000 [#1] SMP
+[35355.883056] CPU 3
+[35355.883056] Pid: 477, comm: kswapd0 Not tainted 3.9.0+ #12 Bochs Bochs
+[35355.883056] RIP: 0010:[<ffffffff811297d9>]  [<ffffffff811297d9>]
+mem_cgroup_page_lruvec+0x79/0x90
+[35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
+[35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
+[35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
+[35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
+[35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
+[35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
+[35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
+knlGS:0000000000000000
+[35355.883056] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[35355.883056] CR2: 00000000000001a8 CR3: 0000000001a0b000 CR4: 00000000000006e0
+[35355.883056] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[35355.883056] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[35355.883056] Process kswapd0 (pid: 477, threadinfo ffff88003d522000,
+task ffff88003db6dc40)
+[35355.883056] Stack:
+[35355.883056]  0000000000000014 ffffea0000a14000 ffff88003d523b28
+ffffffff810ea4c5
+[35355.883056]  ffff88003d523b90 ffff88003fffa9c0 ffff88003d523b98
+0000000000000020
+[35355.883056]  ffff88003fffa600 0000000200000003 ffff88003fffa600
+ffff88003d523b98
+[35355.883056] Call Trace:
+[35355.883056]  [<ffffffff810ea4c5>] move_active_pages_to_lru+0x65/0x190
+[35355.883056]  [<ffffffff810ec4e7>] shrink_active_list+0x297/0x380
+[35355.883056]  [<ffffffff810ebff6>] ? shrink_inactive_list+0x1a6/0x400
+[35355.883056]  [<ffffffff810ec815>] shrink_lruvec+0x245/0x4b0
+[35355.883056]  [<ffffffff810ecae6>] shrink_zone+0x66/0x180
+[35355.883056]  [<ffffffff810edcb4>] balance_pgdat+0x474/0x5b0
+[35355.883056]  [<ffffffff810edf58>] kswapd+0x168/0x440
+[35355.883056]  [<ffffffff8105d310>] ? abort_exclusive_wait+0xb0/0xb0
+[35355.883056]  [<ffffffff810eddf0>] ? balance_pgdat+0x5b0/0x5b0
+[35355.883056]  [<ffffffff8105c5fb>] kthread+0xbb/0xc0
+[35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
+[35355.883056]  [<ffffffff81748eac>] ret_from_fork+0x7c/0xb0
+[35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
+[35355.883056] Code: 89 50 08 48 89 d1 0f 1f 40 00 49 8b 04 24 48 89
+c2 48 c1 e8 38 83 e0 03 48 c1 ea 3a 48 69 c0 38 01 00 00 48 03 84 d1
+e0 02 00 00 <48> 3b 58 70 75 0a 48 8b 5d f0 4c 8b 65 f8 c9 c3 48 89 58
+70 eb
+[35355.883056] RIP  [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
+[35355.883056]  RSP <ffff88003d523aa8>
+[35355.883056] CR2: 00000000000001a8
+[35355.883056] ---[ end trace 2c9b8eec517f960d ]---
 
-> > If the dying cpu is the boot cpu, it will return -EBUSY. In the subsequent error handling,
-> > cpu_notify_nofail(CPU_DOWN_FAILED) in _cpu_down() will be called. Unfortunately, some
-> > cpu notifier callbacks handled CPU_DOWN_PREPARE, but not CPU_DOWN_FAILED, such as sched_cpu_inactive().
-> > So it will cause issues.
-> > 
-> > If we set the hotpluggable for the boot cpu, we can prevent user applications from disabling the boot cpu.
-> > 
-> > -Chenhui
-> > 
 
+--
+Thanks,
+//richard
