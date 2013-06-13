@@ -1,104 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab3FMPgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:36:36 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:27032 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab3FMPgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:36:33 -0400
-Message-ID: <1371137776.21540.13.camel@misato.fc.hp.com>
-Subject: Re: cpu hotplug: possible_cpus broken (again?) next-20130607
-From: Toshi Kani <toshi.kani@hp.com>
-To: Youquan Song <youquan.song@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Dave Hansen <dave@sr71.net>,
-        Youquan Song <youquan.song@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 13 Jun 2013 09:36:16 -0600
-In-Reply-To: <20130613013609.GA6348@linux-youquan.bj.intel.com>
-References: <51B79BE5.80804@sr71.net>
-	 <20130612123248.GA23978@linux-youquan.bj.intel.com>
-	 <CAE9FiQXWi7mn6AM=A2qrHO=3S_oLT7wBRLm19rP987hGzwdqKA@mail.gmail.com>
-	 <4005805.V3phb1agMs@vostro.rjw.lan>
-	 <20130613013609.GA6348@linux-youquan.bj.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756395Ab3FMPiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:38:12 -0400
+Received: from fieldses.org ([174.143.236.118]:35403 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab3FMPiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:38:09 -0400
+Date: Thu, 13 Jun 2013 11:37:42 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 14/14] locks: move file_lock_list to a set of percpu
+ hlist_heads and convert file_lock_lock to an lglock
+Message-ID: <20130613153742.GE20666@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+ <1370948948-31784-15-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370948948-31784-15-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 21:36 -0400, Youquan Song wrote:
-> > > Interesting, you are changing long standing meaning of maxcpus=
-> > > 
-> > > We always use maxcpus=1 to have one cpu up, and later in user space
-> > > to online other cpus like
-> > > echo 1 > /sys/devices/system/cpuX/online.
-> > > 
-> > > aka maxcpus= is a soft limit or initial online nr.
-> > > 
-> > > we already have nr_cpus= for hard limit.
-> > > 
-> > > So need to drop
-> > >  commit 3e275a5ba367ab74b3a4e49114307baed989fcac
-> > >  Author: Youquan Song <youquan.song@intel.com>
-> > >  Date:   Fri Jun 7 10:07:08 2013 +1000
-> > > 
-> > >      drivers/base/cpu.c: fix maxcpus boot option
-> > 
-> > Agreed.
+On Tue, Jun 11, 2013 at 07:09:08AM -0400, Jeff Layton wrote:
+> The file_lock_list is only used for /proc/locks. The vastly common case
+> is for locks to be put onto the list and come off again, without ever
+> being traversed.
 > 
-> Yes. I also agree to drop it and the fix need more consideration.
-
-Agreed.
-
-> I try use maxcpus to limit cpu number to debug a well known applition 
-> because it fail to run when cpu number is larger to > 69. 
-> When I use maxcpus at to limit the boot CPUs number, but udev will 
-> enable all of the CPUs at 3.10 kernel automatically. 
-> I also try maxcpus at 3.0 kernel, it does not show the maxcpus issue. 
-
-I tested Linus's 3.10-rc5 kernel on Fedora 18, but I did not see such
-behavior.  Could this be related with your environment?
-
-> I have digged out recently, it is the commit at 3.2 kernel
-> 8a25a2fd126c621f44f3aeaef80d51f00fc11639 "cpu: convert 'cpu' and
-> 'machinecheck' sysdev_class to a regular subsystem" result in udev
-> automatically enable all of CPUs though maxcpus has been provided.
+> Help optimize for this use-case by moving to percpu hlist_head-s. At the
+> same time, we can make the locking less contentious by moving to an
+> lglock. When iterating over the lists for /proc/locks, we must take the
+> global lock and then iterate over each CPU's list in turn.
 > 
-> So the next, I need look at udev try to enable all of CPUs though
-> maxcpus provided.  Possibly, it can also fix it in udev daemon.
+> This change necessitates a new fl_link_cpu field to keep track of which
+> CPU the entry is on. On x86_64 at least, this field is placed within an
+> existing hole in the struct to avoid growing its real size.
+
+ACK.--b.
+
 > 
-> Secondly, I think that the maxcpus= option description is too confused in
-> Documentation/kernel-parameters.txt. The maxcpus and nr_cpus option need
-> switch their name.
-
-I am fine with the clarification.
-
-> Currently:
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c         |   57 +++++++++++++++++++++++++++++++++++----------------
+>  include/linux/fs.h |    1 +
+>  2 files changed, 40 insertions(+), 18 deletions(-)
 > 
-> 	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
-> 			should make use of.  maxcpus=n : n >= 0 limits the
-> 			kernel to using 'n' processors.  n=0 is a special case,
-> 			it is equivalent to "nosmp", which also disables
-> 			the IO APIC.
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 8124fc1..094eb4d 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -127,6 +127,8 @@
+>  #include <linux/rcupdate.h>
+>  #include <linux/pid_namespace.h>
+>  #include <linux/hashtable.h>
+> +#include <linux/percpu.h>
+> +#include <linux/lglock.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -165,8 +167,8 @@ int lease_break_time = 45;
+>  static DEFINE_SPINLOCK(blocked_hash_lock);
+>  static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+>  
+> -static DEFINE_SPINLOCK(file_lock_lock);
+> -static HLIST_HEAD(file_lock_list);
+> +DEFINE_STATIC_LGLOCK(file_lock_lglock);
+> +static DEFINE_PER_CPU(struct hlist_head, file_lock_list);
+>  
+>  static struct kmem_cache *filelock_cache __read_mostly;
+>  
+> @@ -512,17 +514,21 @@ locks_delete_global_blocked(struct file_lock *waiter)
+>  static inline void
+>  locks_insert_global_locks(struct file_lock *waiter)
+>  {
+> -	spin_lock(&file_lock_lock);
+> -	hlist_add_head(&waiter->fl_link, &file_lock_list);
+> -	spin_unlock(&file_lock_lock);
+> +	lg_local_lock(&file_lock_lglock);
+> +	waiter->fl_link_cpu = smp_processor_id();
+> +	hlist_add_head(&waiter->fl_link, this_cpu_ptr(&file_lock_list));
+> +	lg_local_unlock(&file_lock_lglock);
+>  }
+>  
+>  static inline void
+>  locks_delete_global_locks(struct file_lock *waiter)
+>  {
+> -	spin_lock(&file_lock_lock);
+> +	/* avoid taking lock if already unhashed */
+> +	if (hlist_unhashed(&waiter->fl_link))
+> +		return;
+> +	lg_local_lock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
+>  	hlist_del_init(&waiter->fl_link);
+> -	spin_unlock(&file_lock_lock);
+> +	lg_local_unlock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
+>  }
+>  
+>  /* Remove waiter from blocker's block list.
+> @@ -2228,6 +2234,11 @@ EXPORT_SYMBOL_GPL(vfs_cancel_lock);
+>  #include <linux/proc_fs.h>
+>  #include <linux/seq_file.h>
+>  
+> +struct locks_iterator {
+> +	int	li_cpu;
+> +	loff_t	li_pos;
+> +};
+> +
+>  static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+>  			    loff_t id, char *pfx)
+>  {
+> @@ -2302,16 +2313,17 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+>  static int locks_show(struct seq_file *f, void *v)
+>  {
+>  	int bkt;
+> +	struct locks_iterator *iter = f->private;
+>  	struct file_lock *fl, *bfl;
+>  
+>  	fl = hlist_entry(v, struct file_lock, fl_link);
+>  
+> -	lock_get_status(f, fl, *((loff_t *)f->private), "");
+> +	lock_get_status(f, fl, iter->li_pos, "");
+>  
+>  	spin_lock(&blocked_hash_lock);
+>  	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
+>  		if (bfl->fl_next == fl)
+> -			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> +			lock_get_status(f, bfl, iter->li_pos, " ->");
+>  	}
+>  	spin_unlock(&blocked_hash_lock);
+>  
+> @@ -2320,23 +2332,24 @@ static int locks_show(struct seq_file *f, void *v)
+>  
+>  static void *locks_start(struct seq_file *f, loff_t *pos)
+>  {
+> -	loff_t *p = f->private;
+> +	struct locks_iterator *iter = f->private;
+>  
+> -	spin_lock(&file_lock_lock);
+> -	*p = (*pos + 1);
+> -	return seq_hlist_start(&file_lock_list, *pos);
+> +	iter->li_pos = *pos + 1;
+> +	lg_global_lock(&file_lock_lglock);
+> +	return seq_hlist_start_percpu(&file_lock_list, &iter->li_cpu, *pos);
+>  }
+>  
+>  static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+>  {
+> -	loff_t *p = f->private;
+> -	++*p;
+> -	return seq_hlist_next(v, &file_lock_list, pos);
+> +	struct locks_iterator *iter = f->private;
+> +
+> +	++iter->li_pos;
+> +	return seq_hlist_next_percpu(v, &file_lock_list, &iter->li_cpu, pos);
+>  }
+>  
+>  static void locks_stop(struct seq_file *f, void *v)
+>  {
+> -	spin_unlock(&file_lock_lock);
+> +	lg_global_unlock(&file_lock_lglock);
+>  }
+>  
+>  static const struct seq_operations locks_seq_operations = {
+> @@ -2348,7 +2361,8 @@ static const struct seq_operations locks_seq_operations = {
+>  
+>  static int locks_open(struct inode *inode, struct file *filp)
+>  {
+> -	return seq_open_private(filp, &locks_seq_operations, sizeof(loff_t));
+> +	return seq_open_private(filp, &locks_seq_operations,
+> +					sizeof(struct locks_iterator));
+>  }
+>  
+>  static const struct file_operations proc_locks_operations = {
+> @@ -2448,9 +2462,16 @@ EXPORT_SYMBOL(lock_may_write);
+>  
+>  static int __init filelock_init(void)
+>  {
+> +	int i;
+> +
+>  	filelock_cache = kmem_cache_create("file_lock_cache",
+>  			sizeof(struct file_lock), 0, SLAB_PANIC, NULL);
+>  
+> +	lg_lock_init(&file_lock_lglock, "file_lock_lglock");
+> +
+> +	for_each_possible_cpu(i)
+> +		INIT_HLIST_HEAD(per_cpu_ptr(&file_lock_list, i));
+> +
+>  	return 0;
+>  }
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 232a345..18e59b8 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -953,6 +953,7 @@ struct file_lock {
+>  	unsigned int fl_flags;
+>  	unsigned char fl_type;
+>  	unsigned int fl_pid;
+> +	int fl_link_cpu;		/* what cpu's list is this on? */
+>  	struct pid *fl_nspid;
+>  	wait_queue_head_t fl_wait;
+>  	struct file *fl_file;
+> -- 
+> 1.7.1
 > 
-> How about change to 
-> 
-> 	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
-> 			bring up during booting.  maxcpus=n : n >= 0 limits the
-
-bring -> brings
-
-> 			kernel to using 'n' processors.  n=0 is a special case,
-> 			it is equivalent to "nosmp", which also disables
-> 			the IO APIC.
-
-
-Thanks,
--Toshi
-
