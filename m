@@ -1,156 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab3FMIE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:04:57 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59889 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3FMIEx (ORCPT
+	id S932639Ab3FMILc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:11:32 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:64193 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757269Ab3FMIL3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:04:53 -0400
-Date: Thu, 13 Jun 2013 11:04:42 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
-        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
-Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
-Message-ID: <20130613080442.GA14677@x220>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
-	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
-References: <20130610100519.GA9816@x220.ger.corp.intel.com>
- <20130610110423.GA8834@amd.pavel.ucw.cz>
- <20130610115938.GA12892@x220.ger.corp.intel.com>
- <20130610133834.GA4058@amd.pavel.ucw.cz>
- <20130610160723.GA18282@x220.P-661HNU-F1>
- <20130610193746.GA30801@amd.pavel.ucw.cz>
- <20130611072245.GA12463@x220>
- <20130611102025.GA5580@x220>
- <20130612112326.GA4237@amd.pavel.ucw.cz>
- <20130613072327.GA12951@x220>
+	Thu, 13 Jun 2013 04:11:29 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="M9NhX3UHpAaciwkO"
-Content-Disposition: inline
-In-Reply-To: <20130613072327.GA12951@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201306130022.29341.heiko@sntech.de>
+References: <201306102139.32444.heiko@sntech.de>
+	<201306102140.29918.heiko@sntech.de>
+	<51B88BD0.805@imgtec.com>
+	<201306130022.29341.heiko@sntech.de>
+Date: Thu, 13 Jun 2013 10:11:28 +0200
+Message-ID: <CACRpkdb-vbdQJOeZvCEsKLatK-0BhEfUTJqmGURJGf1NWx__Ew@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig
+ properties from a dt node
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tisdagen den 13:e Juni 2013 klock 12:22 AM, skrev Heiko Stübner
+<heiko@sntech.de>:
+> Am Mittwoch, 12. Juni 2013, 16:55:12 schrieb James Hogan:
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> > +static struct pinconf_generic_dt_params dt_params[] = {
+>> > +   { "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
+>> > +   { "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
+>> > +   { "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
+>> > +   { "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
+>> > +   { "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
+>> > +   { "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
+>> > +   { "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
+>> > +   { "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
+>> > +   { "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
+>> > +   { "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
+>> > +   { "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
+>> > +   { "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
+>> > +   { "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
+>> > +   { "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
+>> > +   { "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
+>> > +   { "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
+>> > +   { "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
+>> > +   { "output-low", PIN_CONFIG_OUTPUT, 0, },
+>> > +   { "output-high", PIN_CONFIG_OUTPUT, 1, },
+>>
+>> shouldn't half of these default to 1 instead of 0? i.e. it's much nicer
+>> for the lone flag "bias-pull-up" to enable pull up rather than disable
+>> it (you even do this in the DT example in the bindings doc).
+>
+> on closer inspection it seems that you may be right.
 
-Hi Pavel,
+Heiko can you write a patch for this? You can hit both this code and
+the Rockchip driver at the same time for sure. Please check that
+the bindings are consistent.
 
-On Thu, Jun 13, 2013, Johan Hedberg wrote:
-> On Wed, Jun 12, 2013, Pavel Machek wrote:
-> > < HCI Command: Read Local Supported Commands (0x04|0x0002) plen 0
-> > > HCI Event: Command Complete (0x0e) plen 68
-> >     Read Local Supported Commands (0x04|0x0002) ncmd 1
-> >     status 0x00
-> >     Commands: ffffffffffff1ffffffffffff30fffff3f
-> 
-> As I suspected, even though the Delete Stored Link Key command is
-> mandatory from Bluetooth version 1.1 onwards (this controller supports
-> 2.0) this controller doesn't have it mentioned in its supported commands
-> response (counting from 0 it should be bit 7 of octet 6). Therefore, it
-> might be possible to just move sending of this problematic command to
-> after receiving the supported commands response and making it
-> conditional to having its respective bit set in the mask. I'll be
-> sending another patch proposal soon.
+> The documentation to the
+> options in the pinconf-generic header even tells that for example the pull
+> options do have a 0 or 1 argument.
 
-I just sent a patch to linux-bluetooth for this. It would be nice if you
-could revert the previous patch, apply this one instead (also attached
-to this email) and let us know if it works fine.
+Yeah. Well.
 
-Johan
+Actually there has been plans to have the argument represent the
+number of Ohms on the pull-up, but we haven't seen any hardware
+that can actually select that.
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-Bluetooth-Fix-conditions-for-HCI_Delete_Stored_Link_.patch"
+Maybe we should add that now? It will still be that != 0 implies
+enablement on platforms that does not support specifying the
+pull up/down resistance.
 
->From b7b3eb3d3cf615d1249dc9387a619f2729cf0d84 Mon Sep 17 00:00:00 2001
-From: Johan Hedberg <johan.hedberg@intel.com>
-Date: Thu, 13 Jun 2013 10:53:48 +0300
-Subject: [PATCH] Bluetooth: Fix conditions for HCI_Delete_Stored_Link_Key
+> But I'm not sure if I understand everything correctly :-) ... isn't the bias-
+> disable the opposite of turning on a pull (like the sh-pfc/pinctrl does) and
+> same with switching from one pull type to another, i.e. activating a pull up
+> would turn off a pull down and on the whole making the argument redundant?
 
-Even though the HCI_Delete_Stored_Link_Key command is mandatory for 1.1
-and later controllers some controllers do not seem to support it
-properly as was witnessed by one Broadcom based controller:
+This is true, and the plan is surely for the core to not allow or print
+a big fat warning if someone does something really stupid like
+activate pull up and pull down at the same time (unless s/he's
+constructing a heater radiator or something).
 
-< HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
-    bdaddr 00:00:00:00:00:00 all 1
-> HCI Event: Command Complete (0x0e) plen 4
-    Delete Stored Link Key (0x03|0x0012) ncmd 1
-    status 0x11 deleted 0
-    Error: Unsupported Feature or Parameter Value
+Currently we don't make any sanity checks like that, BUT your
+generic parser could actually be extended to do that.
 
-Luckily this same controller also doesn't list the command in its
-supported commands bit mask (counting from 0 bit 7 of octet 6):
+Patches welcome ;-)
 
-< HCI Command: Read Local Supported Commands (0x04|0x0002) plen 0
-> HCI Event: Command Complete (0x0e) plen 68
-    Read Local Supported Commands (0x04|0x0002) ncmd 1
-    status 0x00
-    Commands: ffffffffffff1ffffffffffff30fffff3f
+> The only other candidate I could find was low-power-mode which really could
+> use a "1" as default. All the other pinconf options either use custom
+> arguments or ignore teir argument.
 
-Therefore, it makes sense to move sending of HCI_Delete_Stored_Link_Key
-to after receiving the supported commands response and to only send it
-if its respective bit in the mask is set. The downside of this is that
-we no longer send the HCI_Delete_Stored_Link_Key command for Bluetooth
-1.1 controllers since HCI_Read_Local_Supported_Command was introduced in
-version 1.2, but this is an acceptable penalty as the command in
-question shouldn't affect critical behavior.
+A "1" for what? Not quite following....
 
-Reported-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
----
- net/bluetooth/hci_core.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index d817c93..d68425c 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -341,7 +341,6 @@ static void hci_init1_req(struct hci_request *req, unsigned long opt)
- 
- static void bredr_setup(struct hci_request *req)
- {
--	struct hci_cp_delete_stored_link_key cp;
- 	__le16 param;
- 	__u8 flt_type;
- 
-@@ -365,10 +364,6 @@ static void bredr_setup(struct hci_request *req)
- 	param = __constant_cpu_to_le16(0x7d00);
- 	hci_req_add(req, HCI_OP_WRITE_CA_TIMEOUT, 2, &param);
- 
--	bacpy(&cp.bdaddr, BDADDR_ANY);
--	cp.delete_all = 0x01;
--	hci_req_add(req, HCI_OP_DELETE_STORED_LINK_KEY, sizeof(cp), &cp);
--
- 	/* Read page scan parameters */
- 	if (req->hdev->hci_ver > BLUETOOTH_VER_1_1) {
- 		hci_req_add(req, HCI_OP_READ_PAGE_SCAN_ACTIVITY, 0, NULL);
-@@ -602,6 +597,15 @@ static void hci_init3_req(struct hci_request *req, unsigned long opt)
- 	struct hci_dev *hdev = req->hdev;
- 	u8 p;
- 
-+	if (hdev->commands[6] & 0x80) {
-+		struct hci_cp_delete_stored_link_key cp;
-+
-+		bacpy(&cp.bdaddr, BDADDR_ANY);
-+		cp.delete_all = 0x01;
-+		hci_req_add(req, HCI_OP_DELETE_STORED_LINK_KEY,
-+			    sizeof(cp), &cp);
-+	}
-+
- 	if (hdev->commands[5] & 0x10)
- 		hci_setup_link_policy(req);
- 
--- 
-1.7.10.4
-
-
---M9NhX3UHpAaciwkO--
+Yours,
+Linus Walleij
