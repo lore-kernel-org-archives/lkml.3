@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab3FMTbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:31:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36166 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab3FMTbW (ORCPT
+	id S1758943Ab3FMTbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:31:34 -0400
+Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:22350 "EHLO
+	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758232Ab3FMTbc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:31:22 -0400
-Message-ID: <51BA1E06.6020705@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 13:31:18 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 15:31:32 -0400
+X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jun 2013 15:31:31 EDT
+Date: Thu, 13 Jun 2013 19:16:26 +0000 (UTC)
+From: Thorsten Glaser <tg@mirbsd.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David McCullough <david_mccullough@au.securecomputing.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 0/3] Use POSIX "$((..))" instead of bashism "$[...]"
+In-Reply-To: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <Pine.BSM.4.64L.1306131908240.22801@herc.mirbsd.org>
+References: <1371129052-31506-1-git-send-email-geert@linux-m68k.org>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] drivers: pinctrl: add active state to core
-References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com> <51B75148.5080701@wwwdotorg.org> <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com> <20130612183345.GU8164@atomide.com>
-In-Reply-To: <20130612183345.GU8164@atomide.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 12:33 PM, Tony Lindgren wrote:
-> * Linus Walleij <linus.walleij@linaro.org> [130611 12:59]:
->> On Tue, Jun 11, 2013 at 6:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 06/11/2013 02:16 AM, Linus Walleij wrote:
->>>> From: Linus Walleij <linus.walleij@linaro.org>
->>>>
->>>> In addition to the recently introduced pinctrl core
->>>> control, the PM runtime pin control for the OMAP platforms
->>>> require a fourth state in addtition to the default, idle and
->>>> sleep states already handled by the core: an explicit "active"
->>>> state. Let's introduce this to the core in addition to the
->>>> other states already defined.
->>>
->>> Surely "default" /is/ "active"? That's what it's meant so far.
->>
->> I thought so too, until Tony informed us that in the OMAP world
->> this state is not always the active one.
->>
->> But I don't know the exact reasons for.
->>
->> I guess that some "default" states on the OMAP may mean these
->> are configured as decoupled, inactive, until explicitly activated
->> or something like that.
-> 
-> The main reason is that remuxing all the pins for a device for
-> PM runtime suspend and resume is not necessary. Most pins are
-> static and configured once during the consumer driver probe.
-> And in most cases, remuxing only one pin for the rx line is
-> needed. This is performance critical as it may need to be done
-> constantly while entering and exiting idle, and remuxing all the
-> pins is just a waste of cycles.
+Geert Uytterhoeven dixit:
 
-Then isn't the correct solution to optimize the code that switches
-between states, so that it only reprograms the pins/groups necessary?
-Inventing extra states just to work around that issue seems quite wrong.
+>Should these be truncated to 32-bit explicitly, or is this a bug in mksh?
 
-So, I think you're relying on:
+mksh in “mksh mode” operates specifically on 32-bit integer data
+types with defined wraparound and other guarantees beyond what
+POSIX does. There is an “lksh” binary in the mksh binary package
+in Debian and derivates now, which is the “legacy mode” that uses
+the host system’s “long” data type, as POSIX demands, and is now
+(mksh_46-2) used for /bin/sh.
 
-default: Set up everything static.
-active: flip just a few pins to active state.
-idle: flip just a few pins to idle state.
+However, on mixed 32/64-bit systems, /bin/sh can have either bit
+size. Additionally, it is not possible, in POSIX, without invoking
+ISO C “Undefined Behaviour”, to find out the bitsize of the shell
+arithmetics.
 
-... and assuming that the default->active or default->idle transitions
-will not affect any pins that are used in default, but not used in
-active/idle.
+Furthermore, Linux can be cross-compiled, so when building kernels
+for 64-bit platforms on 32-bit systems, the arithmetics used MUST
+NOT overflow beyond a signed 32-bit “long”.
 
-However, that very specifically isn't the case; pinctrl drivers are
-allowed to force unused pins back to some default unused state when the
-pinctrl state that's being switched to doesn't mention them, and hence
-this concept won't work in general.
+>  [1/3] h8300/boot: Use POSIX "$((..))" instead of bashism "$[...]"
+>  [2/3] ARM: shmobile: Use POSIX "$((..))" instead of bashism "$[...]"
+>  [3/3] sh/boot: Use POSIX "$((..))" instead of bashism "$[...]"
 
-Also, if default uses more pins that active, when you switch to active,
-those pins won't be marked as owned any more, I think, so something else
-could in theory grab them. At least, debugfs wouldn't be entirely
-accurate any more.
+Independent of the above, I’ve verified all three and can state
+that they
+ⓐ are no regression relative to existing behaviour
+ⓑ do not invoke any features not in POSIX $((…)) arithmetics
+ⓒ do not invoke any features not in mksh $((…)) arithmetics
+
+This means you can add my
+Signed-off: Thorsten Glaser <tg@mirbsd.org>
+
+However, I urge you to check whether any of these arithmetics
+can go beyond 32 bit. If they have even the slightest chance
+to do that, you MUST replace them by something different. One
+method could be to use bc(1):
+
+$(shell printf 'obase=16\nibase=16\n%s+%s\n' $(FOO) $(BAR) | bc)
+
+Another method could be to operate on the upper half and the
+lower half of the 64-bit quantities separately, assuming that
+calculations do not overflow (in POSIX sh, overflow is, like
+in ISO C, Undefined Behaviour; a C compiler is permitted to
+compile the source code in the shell that invokes it to run
+“rm -rf ~ /” instead) or carry over (e.g. if it’s known that
+the first half is always 0x7FFFFFFF or the last half always
+00000000 you can just add that as “string”).
+
+bye,
+//mirabilos
+-- 
+FWIW, I'm quite impressed with mksh interactively. I thought it was much
+*much* more bare bones. But it turns out it beats the living hell out of
+ksh93 in that respect. I'd even consider it for my daily use if I hadn't
+wasted half my life on my zsh setup. :-) -- Frank Terbeck in #!/bin/mksh
