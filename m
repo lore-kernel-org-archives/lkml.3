@@ -1,214 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3FMPiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:38:12 -0400
-Received: from fieldses.org ([174.143.236.118]:35403 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab3FMPiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:38:09 -0400
-Date: Thu, 13 Jun 2013 11:37:42 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v2 14/14] locks: move file_lock_list to a set of percpu
- hlist_heads and convert file_lock_lock to an lglock
-Message-ID: <20130613153742.GE20666@fieldses.org>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
- <1370948948-31784-15-git-send-email-jlayton@redhat.com>
+	id S1757260Ab3FMPin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:38:43 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:50200 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333Ab3FMPil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:38:41 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH v3 0/5] Renesas TPU PWM support
+Date: Thu, 13 Jun 2013 17:38:51 +0200
+Message-ID: <4097084.Y91d0ZYkWB@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <20130612101250.GB30841@mithrandir>
+References: <1370958344-19470-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <20130612101250.GB30841@mithrandir>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370948948-31784-15-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart7071856.evoBBcrJJv"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 07:09:08AM -0400, Jeff Layton wrote:
-> The file_lock_list is only used for /proc/locks. The vastly common case
-> is for locks to be put onto the list and come off again, without ever
-> being traversed.
-> 
-> Help optimize for this use-case by moving to percpu hlist_head-s. At the
-> same time, we can make the locking less contentious by moving to an
-> lglock. When iterating over the lists for /proc/locks, we must take the
-> global lock and then iterate over each CPU's list in turn.
-> 
-> This change necessitates a new fl_link_cpu field to keep track of which
-> CPU the entry is on. On x86_64 at least, this field is placed within an
-> existing hole in the struct to avoid growing its real size.
 
-ACK.--b.
+--nextPart7071856.evoBBcrJJv
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
+Hi Thierry,
+
+On Wednesday 12 June 2013 12:12:51 Thierry Reding wrote:
+> On Tue, Jun 11, 2013 at 03:45:39PM +0200, Laurent Pinchart wrote:
+> [...]
 > 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c         |   57 +++++++++++++++++++++++++++++++++++----------------
->  include/linux/fs.h |    1 +
->  2 files changed, 40 insertions(+), 18 deletions(-)
+> > I believe I've addressed most comments received in response to v2, with
+> > the exception of channel allocation at .request() time for which I haven't
+> > received any answer to my questions. That will hopefully not be a
+> > showstopper.
+>
+> I totally forgot to reply to that mail. Done now. Irrespective of my
+> comments, I think that cleanup could also be done as a follow-up patch after
+> 3.11.
+
+I'll address your comments and sent a v4. Hopefully it will be the last one.
+
+Given the dependencies between the PWM TPU driver and board code, should I ask 
+Simon to take the series in the SH Mobile tree (after receiving your ack of 
+course) ?
+
+> Thierry
 > 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 8124fc1..094eb4d 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -127,6 +127,8 @@
->  #include <linux/rcupdate.h>
->  #include <linux/pid_namespace.h>
->  #include <linux/hashtable.h>
-> +#include <linux/percpu.h>
-> +#include <linux/lglock.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -165,8 +167,8 @@ int lease_break_time = 45;
->  static DEFINE_SPINLOCK(blocked_hash_lock);
->  static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
->  
-> -static DEFINE_SPINLOCK(file_lock_lock);
-> -static HLIST_HEAD(file_lock_list);
-> +DEFINE_STATIC_LGLOCK(file_lock_lglock);
-> +static DEFINE_PER_CPU(struct hlist_head, file_lock_list);
->  
->  static struct kmem_cache *filelock_cache __read_mostly;
->  
-> @@ -512,17 +514,21 @@ locks_delete_global_blocked(struct file_lock *waiter)
->  static inline void
->  locks_insert_global_locks(struct file_lock *waiter)
->  {
-> -	spin_lock(&file_lock_lock);
-> -	hlist_add_head(&waiter->fl_link, &file_lock_list);
-> -	spin_unlock(&file_lock_lock);
-> +	lg_local_lock(&file_lock_lglock);
-> +	waiter->fl_link_cpu = smp_processor_id();
-> +	hlist_add_head(&waiter->fl_link, this_cpu_ptr(&file_lock_list));
-> +	lg_local_unlock(&file_lock_lglock);
->  }
->  
->  static inline void
->  locks_delete_global_locks(struct file_lock *waiter)
->  {
-> -	spin_lock(&file_lock_lock);
-> +	/* avoid taking lock if already unhashed */
-> +	if (hlist_unhashed(&waiter->fl_link))
-> +		return;
-> +	lg_local_lock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
->  	hlist_del_init(&waiter->fl_link);
-> -	spin_unlock(&file_lock_lock);
-> +	lg_local_unlock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
->  }
->  
->  /* Remove waiter from blocker's block list.
-> @@ -2228,6 +2234,11 @@ EXPORT_SYMBOL_GPL(vfs_cancel_lock);
->  #include <linux/proc_fs.h>
->  #include <linux/seq_file.h>
->  
-> +struct locks_iterator {
-> +	int	li_cpu;
-> +	loff_t	li_pos;
-> +};
-> +
->  static void lock_get_status(struct seq_file *f, struct file_lock *fl,
->  			    loff_t id, char *pfx)
->  {
-> @@ -2302,16 +2313,17 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
->  static int locks_show(struct seq_file *f, void *v)
->  {
->  	int bkt;
-> +	struct locks_iterator *iter = f->private;
->  	struct file_lock *fl, *bfl;
->  
->  	fl = hlist_entry(v, struct file_lock, fl_link);
->  
-> -	lock_get_status(f, fl, *((loff_t *)f->private), "");
-> +	lock_get_status(f, fl, iter->li_pos, "");
->  
->  	spin_lock(&blocked_hash_lock);
->  	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
->  		if (bfl->fl_next == fl)
-> -			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
-> +			lock_get_status(f, bfl, iter->li_pos, " ->");
->  	}
->  	spin_unlock(&blocked_hash_lock);
->  
-> @@ -2320,23 +2332,24 @@ static int locks_show(struct seq_file *f, void *v)
->  
->  static void *locks_start(struct seq_file *f, loff_t *pos)
->  {
-> -	loff_t *p = f->private;
-> +	struct locks_iterator *iter = f->private;
->  
-> -	spin_lock(&file_lock_lock);
-> -	*p = (*pos + 1);
-> -	return seq_hlist_start(&file_lock_list, *pos);
-> +	iter->li_pos = *pos + 1;
-> +	lg_global_lock(&file_lock_lglock);
-> +	return seq_hlist_start_percpu(&file_lock_list, &iter->li_cpu, *pos);
->  }
->  
->  static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
->  {
-> -	loff_t *p = f->private;
-> -	++*p;
-> -	return seq_hlist_next(v, &file_lock_list, pos);
-> +	struct locks_iterator *iter = f->private;
-> +
-> +	++iter->li_pos;
-> +	return seq_hlist_next_percpu(v, &file_lock_list, &iter->li_cpu, pos);
->  }
->  
->  static void locks_stop(struct seq_file *f, void *v)
->  {
-> -	spin_unlock(&file_lock_lock);
-> +	lg_global_unlock(&file_lock_lglock);
->  }
->  
->  static const struct seq_operations locks_seq_operations = {
-> @@ -2348,7 +2361,8 @@ static const struct seq_operations locks_seq_operations = {
->  
->  static int locks_open(struct inode *inode, struct file *filp)
->  {
-> -	return seq_open_private(filp, &locks_seq_operations, sizeof(loff_t));
-> +	return seq_open_private(filp, &locks_seq_operations,
-> +					sizeof(struct locks_iterator));
->  }
->  
->  static const struct file_operations proc_locks_operations = {
-> @@ -2448,9 +2462,16 @@ EXPORT_SYMBOL(lock_may_write);
->  
->  static int __init filelock_init(void)
->  {
-> +	int i;
-> +
->  	filelock_cache = kmem_cache_create("file_lock_cache",
->  			sizeof(struct file_lock), 0, SLAB_PANIC, NULL);
->  
-> +	lg_lock_init(&file_lock_lglock, "file_lock_lglock");
-> +
-> +	for_each_possible_cpu(i)
-> +		INIT_HLIST_HEAD(per_cpu_ptr(&file_lock_list, i));
-> +
->  	return 0;
->  }
->  
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 232a345..18e59b8 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -953,6 +953,7 @@ struct file_lock {
->  	unsigned int fl_flags;
->  	unsigned char fl_type;
->  	unsigned int fl_pid;
-> +	int fl_link_cpu;		/* what cpu's list is this on? */
->  	struct pid *fl_nspid;
->  	wait_queue_head_t fl_wait;
->  	struct file *fl_file;
-> -- 
-> 1.7.1
-> 
+> P.S.: please not that I've switched email addresses and there's also a
+> linux-pwm mailing list that you should Cc on PWM subsystem related
+> patches. The info should have propagated to linux-next's MAINTAINERS.
+
+OK, I'll make sure to CC the right addresses.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
+--nextPart7071856.evoBBcrJJv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAABAgAGBQJRueeLAAoJEIkPb2GL7hl1qTMH/1JoAGPOpSsH4Aox50hKTNqK
+coa8r5Xyz5S12B1JDbOVv78/mkMD967Rmw9Eq50lzSCD+9wAYiXfJYnpI62+hlzC
+g/48MtoQtGQp5c9gIAVQ2EUbl5yX+WSfWHB4ZRjvGbPo/dhp4YEokYJmGVD5K+3d
+1AzTwsMy/EVwSIaoGRebEoP1pudZ5zxNNc8xT1AfVQMOPv9QuWQ+qr+kgdB5goRd
+5k6nRoLn8AYtV7jtSQprqnmGrI/KfAR+QXPvUCA5ZEnleT8UXzv5EGQTVZKAv0bQ
+vCTsnMKcyv1NKYgyvnR4LXyMRgi/WA8uhHlu4YOc9gF5NNNG+OeNZhIyyEIpN2c=
+=u6Ng
+-----END PGP SIGNATURE-----
+
+--nextPart7071856.evoBBcrJJv--
+
