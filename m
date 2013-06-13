@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab3FMTQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:16:51 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:57826 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab3FMTQt (ORCPT
+	id S1758583Ab3FMTTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:19:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab3FMTTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:16:49 -0400
+	Thu, 13 Jun 2013 15:19:17 -0400
+Date: Thu, 13 Jun 2013 12:19:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.9.6
+Message-ID: <20130613191954.GA14548@kroah.com>
+References: <20130613175502.GA9768@kroah.com>
+ <51BA193F.9040504@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1371148401.31941.20.camel@joe-AO722>
-References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
-	<CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
-	<1371148401.31941.20.camel@joe-AO722>
-Date: Thu, 13 Jun 2013 22:16:48 +0300
-Message-ID: <CAHp75VdNpJ3x59+dV06rb29N=46W_GaDCc9EER3w8R6aSBZqnQ@mail.gmail.com>
-Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        netdev <netdev@vger.kernel.org>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BA193F.9040504@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 9:33 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2013-06-13 at 21:25 +0300, Andy Shevchenko wrote:
->> On Thu, Jun 13, 2013 at 5:37 PM, Alexey Brodkin
->> <Alexey.Brodkin@synopsys.com> wrote:
->> > Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
->> > instantiated in some legacy ARC (Synopsys) FPGA Boards such as
->> > ARCAngel4/ML50x.
+On Thu, Jun 13, 2013 at 09:10:55PM +0200, Jiri Slaby wrote:
+> On 06/13/2013 07:55 PM, Greg KH wrote:
+> > I'm announcing the release of the 3.9.6 kernel.
+> 
+> Greg,
+> 
+> did you forget to push? 3.0 and 3.4 appeared on the mirrors, unlike 3.9...
 
->> > +++ b/drivers/net/ethernet/arc/arc_emac.h
-> []
->> > +               if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
->> > +                       /* BD is still owned by EMAC */
->> > +                       continue;
->> > +               }
->>
->> Redundant braces.
->
-> Maybe not.  Braces can be a visual aid when there is
-> a comment in the test.
+Ick, you are right, I forgot to push the git tree, which made the
+generation of the larger linux tarballs to fail, but the patch files
+should be on kernel.org already.  I've now pushed the git tree, and the
+other files are being generated, so it should all be there in a few
+minutes, thanks for letting me know.
 
-I'm okay with both approaches. If author considers the comment is
-useful in that form, I agree with him.
-
---
-With Best Regards,
-Andy Shevchenko
+greg k-h
