@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab3FMN2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:14 -0400
+	id S1758616Ab3FMNbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:31:09 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758174Ab3FMN2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:04 -0400
+	id S932088Ab3FMN2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:13 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537689"
+   d="scan'208";a="7537711"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -17,169 +17,212 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [Part1 PATCH v5 10/22] x86, mm, numa: Move two functions calling on successful path later
-Date: Thu, 13 Jun 2013 21:02:57 +0800
-Message-Id: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [Part1 PATCH v5 17/22] x86, ACPI, numa, ia64: split SLIT handling out
+Date: Thu, 13 Jun 2013 21:03:04 +0800
+Message-Id: <1371128589-8953-18-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:17,
+ 2013/06/13 20:58:18,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:31,
-	Serialize complete at 2013/06/13 20:58:31
+ 2013/06/13 20:58:27,
+	Serialize complete at 2013/06/13 20:58:27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yinghai Lu <yinghai@kernel.org>
 
-We need to have numa info ready before init_mem_mappingi(), so that we
-can call init_mem_mapping per node, and alse trim node memory ranges to
-big alignment.
+We need to handle slit later, as it need to allocate buffer for distance
+matrix. Also we do not need SLIT info before init_mem_mapping. So move
+SLIT parsing procedure later.
 
-Currently, parsing numa info needs to allocate some buffer and need to be
-called after init_mem_mapping. So try to split parsing numa info procedure
-into two steps:
-	- The first step will be called before init_mem_mapping, and it
-	  should not need allocate buffers.
-	- The second step will cantain all the buffer related code and be
-	  executed later.
+x86_acpi_numa_init() will be splited into x86_acpi_numa_init_srat() and
+x86_acpi_numa_init_slit().
 
-At last we will have early_initmem_init() and initmem_init().
+It should not break ia64 by replacing acpi_numa_init with
+acpi_numa_init_srat/acpi_numa_init_slit/acpi_num_arch_fixup.
 
-This patch implements only the first step.
-
-setup_node_data() and numa_init_array() are only called for successful
-path, so we can move these two callings to x86_numa_init(). That will also
-make numa_init() smaller and more readable.
-
--v2: remove online_node_map clear in numa_init(), as it is only
-     set in setup_node_data() at last in successful path.
+-v2: Change name to acpi_numa_init_srat/acpi_numa_init_slit according tj.
+     remove the reset_numa_distance() in numa_init(), as get we only set
+     distance in slit handling.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+Tested-by: Tony Luck <tony.luck@intel.com>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |   69 +++++++++++++++++++++++++++++----------------------
- 1 files changed, 39 insertions(+), 30 deletions(-)
+ arch/ia64/kernel/setup.c    |    4 +++-
+ arch/x86/include/asm/acpi.h |    3 ++-
+ arch/x86/mm/numa.c          |   14 ++++++++++++--
+ arch/x86/mm/srat.c          |   11 +++++++----
+ drivers/acpi/numa.c         |   13 +++++++------
+ include/linux/acpi.h        |    3 ++-
+ 6 files changed, 33 insertions(+), 15 deletions(-)
 
+diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+index 13bfdd2..5f7db4a 100644
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -558,7 +558,9 @@ setup_arch (char **cmdline_p)
+ 	acpi_table_init();
+ 	early_acpi_boot_init();
+ # ifdef CONFIG_ACPI_NUMA
+-	acpi_numa_init();
++	acpi_numa_init_srat();
++	acpi_numa_init_slit();
++	acpi_numa_arch_fixup();
+ #  ifdef CONFIG_ACPI_HOTPLUG_CPU
+ 	prefill_possible_map();
+ #  endif
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index b31bf97..651db0b 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -178,7 +178,8 @@ static inline void disable_acpi(void) { }
+ 
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+-extern int x86_acpi_numa_init(void);
++int x86_acpi_numa_init_srat(void);
++void x86_acpi_numa_init_slit(void);
+ #endif /* CONFIG_ACPI_NUMA */
+ 
+ #define acpi_unlazy_tlb(x)	leave_mm(x)
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a71c4e2..07ae800 100644
+index 3254f22..630e09f 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -477,7 +477,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
--	int i, nid;
-+	int i;
- 
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -506,24 +506,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	/* Finally register nodes. */
--	for_each_node_mask(nid, node_possible_map) {
--		u64 start = PFN_PHYS(max_pfn);
--		u64 end = 0;
--
--		for (i = 0; i < mi->nr_blks; i++) {
--			if (nid != mi->blk[i].nid)
--				continue;
--			start = min(mi->blk[i].start, start);
--			end = max(mi->blk[i].end, end);
--		}
--
--		if (start < end)
--			setup_node_data(nid, start, end);
--	}
--
--	/* Dump memblock with node info and return. */
--	memblock_dump_all();
- 	return 0;
- }
- 
-@@ -559,7 +541,6 @@ static int __init numa_init(int (*init_func)(void))
+@@ -595,7 +595,6 @@ static int __init numa_init(int (*init_func)(void))
  
  	nodes_clear(numa_nodes_parsed);
- 	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
  	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
- 	numa_reset_distance();
-@@ -577,15 +558,6 @@ static int __init numa_init(int (*init_func)(void))
- 	if (ret < 0)
- 		return ret;
+-	numa_reset_distance();
  
--	for (i = 0; i < nr_cpu_ids; i++) {
--		int nid = early_cpu_to_node(i);
--
--		if (nid == NUMA_NO_NODE)
--			continue;
--		if (!node_online(nid))
--			numa_clear_node(i);
--	}
--	numa_init_array();
+ 	ret = init_func();
+ 	if (ret < 0)
+@@ -633,6 +632,10 @@ static int __init dummy_numa_init(void)
  	return 0;
  }
  
-@@ -618,7 +590,7 @@ static int __init dummy_numa_init(void)
-  * last fallback is dummy single node config encomapssing whole memory and
-  * never fails.
-  */
--void __init x86_numa_init(void)
-+static void __init early_x86_numa_init(void)
- {
- 	if (!numa_off) {
- #ifdef CONFIG_X86_NUMAQ
-@@ -638,6 +610,43 @@ void __init x86_numa_init(void)
- 	numa_init(dummy_numa_init);
++#ifdef CONFIG_ACPI_NUMA
++static bool srat_used __initdata;
++#endif
++
+ /**
+  * x86_numa_init - Initialize NUMA
+  *
+@@ -648,8 +651,10 @@ static void __init early_x86_numa_init(void)
+ 			return;
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+-		if (!numa_init(x86_acpi_numa_init))
++		if (!numa_init(x86_acpi_numa_init_srat)) {
++			srat_used = true;
+ 			return;
++		}
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 		if (!numa_init(amd_numa_init))
+@@ -667,6 +672,11 @@ void __init x86_numa_init(void)
+ 
+ 	early_x86_numa_init();
+ 
++#ifdef CONFIG_ACPI_NUMA
++	if (srat_used)
++		x86_acpi_numa_init_slit();
++#endif
++
+ 	numa_emulation(&numa_meminfo, numa_distance_cnt);
+ 
+ 	node_possible_map = numa_nodes_parsed;
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index cdd0da9..443f9ef 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -185,14 +185,17 @@ out_err:
+ 	return -1;
  }
  
-+void __init x86_numa_init(void)
+-void __init acpi_numa_arch_fixup(void) {}
+-
+-int __init x86_acpi_numa_init(void)
++int __init x86_acpi_numa_init_srat(void)
+ {
+ 	int ret;
+ 
+-	ret = acpi_numa_init();
++	ret = acpi_numa_init_srat();
+ 	if (ret < 0)
+ 		return ret;
+ 	return srat_disabled() ? -EINVAL : 0;
+ }
++
++void __init x86_acpi_numa_init_slit(void)
 +{
-+	int i, nid;
-+	struct numa_meminfo *mi = &numa_meminfo;
-+
-+	early_x86_numa_init();
-+
-+	/* Finally register nodes. */
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = PFN_PHYS(max_pfn);
-+		u64 end = 0;
-+
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
-+				continue;
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
-+		}
-+
-+		if (start < end)
-+			setup_node_data(nid, start, end); /* online is set */
-+	}
-+
-+	/* Dump memblock with node info */
-+	memblock_dump_all();
-+
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		int nid = early_cpu_to_node(i);
-+
-+		if (nid == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(nid))
-+			numa_clear_node(i);
-+	}
-+	numa_init_array();
++	acpi_numa_init_slit();
++}
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 33e609f..6460db4 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -282,7 +282,7 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ 					    handler, max_entries);
+ }
+ 
+-int __init acpi_numa_init(void)
++int __init acpi_numa_init_srat(void)
+ {
+ 	int cnt = 0;
+ 
+@@ -303,11 +303,6 @@ int __init acpi_numa_init(void)
+ 					    NR_NODE_MEMBLKS);
+ 	}
+ 
+-	/* SLIT: System Locality Information Table */
+-	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
+-
+-	acpi_numa_arch_fixup();
+-
+ 	if (cnt < 0)
+ 		return cnt;
+ 	else if (!parsed_numa_memblks)
+@@ -315,6 +310,12 @@ int __init acpi_numa_init(void)
+ 	return 0;
+ }
+ 
++void __init acpi_numa_init_slit(void)
++{
++	/* SLIT: System Locality Information Table */
++	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
 +}
 +
- static __init int find_near_online_node(int node)
+ int acpi_get_pxm(acpi_handle h)
  {
- 	int n, val;
+ 	unsigned long long pxm;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 4e3731b..92463b5 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -85,7 +85,8 @@ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
+ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+-int acpi_numa_init (void);
++int acpi_numa_init_srat(void);
++void acpi_numa_init_slit(void);
+ 
+ int acpi_table_init (void);
+ int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
 -- 
 1.7.1
 
