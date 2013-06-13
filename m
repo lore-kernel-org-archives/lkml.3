@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab3FMST3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:19:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36343 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab3FMST0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:19:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 5/9] ACPI, DOCK: kill redundant spin lock in dock device object
-Date: Thu, 13 Jun 2013 20:28:40 +0200
-Message-ID: <1490442.eFer0nddaj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371141152-9468-6-git-send-email-jiang.liu@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-6-git-send-email-jiang.liu@huawei.com>
+	id S1758929Ab3FMSUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:20:09 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:61321 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab3FMSUH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:20:07 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1371141522-29255-3-git-send-email-dianders@chromium.org>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+	<1371141522-29255-3-git-send-email-dianders@chromium.org>
+Date: Thu, 13 Jun 2013 20:20:06 +0200
+Message-ID: <CACRpkdZT_jvUzMmOrmwLOR5Gc2TWEp85kWa+yyMAp1bG3xrWXw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] pinctrl: exynos: ack level-triggered interrupts
+ before unmasking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>, ilho215.lee@samsung.com,
+        Eunki Kim <eunki_kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 12:32:28 AM Jiang Liu wrote:
-> All dock device related data structures are created during driver
-> initialization, so kill the redundant spin lock in dock device object.
+On Thu, Jun 13, 2013 at 6:38 PM, Doug Anderson <dianders@chromium.org> wrote:
 
-As a cleanup, it definitely makes sense, but does it fix anything?
-
-Rafael
-
-
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Shaohua Li <shaohua.li@intel.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
+> A level-triggered interrupt should be acked after the interrupt line
+> becomes inactive and before it is unmasked, or else another interrupt
+> will be immediately triggered.  Acking before or after calling the
+> handler is not enough.
+>
+> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 > ---
->  drivers/acpi/dock.c | 15 +++------------
->  1 file changed, 3 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index 8e578aa..cd2d5df 100644
-> --- a/drivers/acpi/dock.c
-> +++ b/drivers/acpi/dock.c
-> @@ -57,7 +57,6 @@ struct dock_station {
->  	acpi_handle handle;
->  	unsigned long last_dock_time;
->  	u32 flags;
-> -	spinlock_t dd_lock;
->  	struct mutex hp_lock;
->  	struct task_struct *owner;
->  	struct list_head dependent_devices;
-> @@ -107,10 +106,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
->  	dd->handle = handle;
->  	INIT_LIST_HEAD(&dd->list);
->  	INIT_LIST_HEAD(&dd->hotplug_list);
-> -
-> -	spin_lock(&ds->dd_lock);
->  	list_add_tail(&dd->list, &ds->dependent_devices);
-> -	spin_unlock(&ds->dd_lock);
->  
->  	return 0;
->  }
-> @@ -168,14 +164,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
->  {
->  	struct dock_dependent_device *dd;
->  
-> -	spin_lock(&ds->dd_lock);
-> -	list_for_each_entry(dd, &ds->dependent_devices, list) {
-> -		if (handle == dd->handle) {
-> -			spin_unlock(&ds->dd_lock);
-> +	list_for_each_entry(dd, &ds->dependent_devices, list)
-> +		if (handle == dd->handle)
->  			return dd;
-> -		}
-> -	}
-> -	spin_unlock(&ds->dd_lock);
-> +
->  	return NULL;
->  }
->  
-> @@ -964,7 +956,6 @@ static int __init dock_add(acpi_handle handle)
->  	dock_station->last_dock_time = jiffies - HZ;
->  
->  	mutex_init(&dock_station->hp_lock);
-> -	spin_lock_init(&dock_station->dd_lock);
->  	INIT_LIST_HEAD(&dock_station->sibling);
->  	INIT_LIST_HEAD(&dock_station->hotplug_devices);
->  	INIT_LIST_HEAD(&dock_station->dependent_devices);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Changes in v2:
+> - Greatly simplified using Tomasz's suggestion of irqd_get_trigger_type
+> - Moved acking out of the bank spinlock since since it's not needed.
+> - Linus W. has already applied parts 1 and 2, so not resending.
+
+Thanks, this v2 version applied with Tomasz ACK.
+
+Yours,
+Linus Walleij
