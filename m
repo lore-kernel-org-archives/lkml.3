@@ -1,106 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab3FMNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:39:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758028Ab3FMN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:27:59 -0400
-X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537681"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [Part2 PATCH v4 08/15] x86, numa: Save nid when reserve memory into memblock.reserved[].
-Date: Thu, 13 Jun 2013 21:03:32 +0800
-Message-Id: <1371128619-8987-9-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:05,
-	Serialize complete at 2013/06/13 20:59:05
+	id S1758311Ab3FMNk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:40:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40784 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757001Ab3FMNkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:40:21 -0400
+Date: Thu, 13 Jun 2013 08:39:50 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Tony Lindgren <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [RFC PATCH 1/4] regulator: Introduce OMAP regulator to control
+ PMIC over VC/VP
+Message-ID: <20130613133950.GA32174@kahuna>
+References: <1369246717-4167-1-git-send-email-nm@ti.com>
+ <1369246717-4167-2-git-send-email-nm@ti.com>
+ <20130610103131.GR31367@sirena.org.uk>
+ <CAGo_u6qTiPpd0DDe3jnPh_UxTwox22azhcMGy=fftL8H+DGeyw@mail.gmail.com>
+ <20130610164905.GJ1403@sirena.org.uk>
+ <CAGo_u6ov=yaCwt8apbvW57ErAvhgUBHHw9gwADBC1fJUrfucUQ@mail.gmail.com>
+ <20130610180150.GQ1403@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130610180150.GQ1403@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we introduced numa_sync_memblock_nid synchronize nid info in
-memblock.reserved[] and numa_meminfo, when numa_meminfo has been
-initialized, we need to save the nid into memblock.reserved[] when
-we reserve memory.
+On 19:01-20130610, Mark Brown wrote:
+> On Mon, Jun 10, 2013 at 12:51:42PM -0500, Nishanth Menon wrote:
+> 
+> > a) Tegra seems to use Lookup Table for sending predefinied voltage
+> > values to PMIC. OMAP has no concept of lookup table.
+> 
+> They seem to be doing basically the same thing here, you've got a linear
+> map of selector to voltage too AFAICT.
+> 
+> > b) Tegra and OMAP h/w blocks seem to use I2C - that is good.
+> > c) How about the i2c slave and register addresses, slew rates, start,
+> > end voltages, max voltages that SoC can support etc, I am yet to
+> > understand those.
+> > d) OMAP has 3 modules - AVS (SmartReflex), Voltage Processor(VP),
+> > Voltage Controller(VC) - I am not yet sure about the Tegra hardware
+> > blocks involved.
+> 
+> This all seems like it's at the implementation detail level - the bit
+> that seems like we should be able to share it is the big picture bit for
+> how we describe how the AP side stuff and PMIC are hooked up without
+> having to have a bunch of completely non-framework stuff for things
+> like describing the PMIC.
 
-Reported-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- include/linux/memblock.h |    1 +
- include/linux/mm.h       |    9 +++++++++
- mm/memblock.c            |   10 +++++++++-
- 3 files changed, 19 insertions(+), 1 deletions(-)
+I am having a bit of a difficulty trying to understand your concern
+here.
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 93f3453..f558590 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -61,6 +61,7 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
- int memblock_remove(phys_addr_t base, phys_addr_t size);
- int memblock_free(phys_addr_t base, phys_addr_t size);
- int memblock_reserve(phys_addr_t base, phys_addr_t size);
-+int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
- void memblock_trim_memory(phys_addr_t align);
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b827743..4a94b56 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1662,6 +1662,15 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
- 			unsigned long start, unsigned long end);
- #endif
- 
-+#ifdef CONFIG_NUMA
-+int __init early_numa_find_range_nid(u64 start, u64 size);
-+#else
-+static inline int __init early_numa_find_range_nid(u64 start, u64 size)
-+{
-+	return 0;
-+}
-+#endif
-+
- struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
- int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
- 			unsigned long pfn, unsigned long size, pgprot_t);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 9e871e9..cc55ff0 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -580,9 +580,17 @@ static int __init_memblock memblock_reserve_region(phys_addr_t base,
- 	return memblock_add_region(_rgn, base, size, nid, flags);
- }
- 
-+int __init_memblock memblock_reserve_node(phys_addr_t base,
-+					  phys_addr_t size, int nid)
-+{
-+	return memblock_reserve_region(base, size, nid,
-+				       MEMBLK_FLAGS_DEFAULT);
-+}
-+
- int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
- {
--	return memblock_reserve_region(base, size, MAX_NUMNODES,
-+	int nid = early_numa_find_range_nid(base, size);
-+	return memblock_reserve_region(base, size, nid,
- 				       MEMBLK_FLAGS_DEFAULT);
- }
- 
+Problem statement:
+OMAP has this weird custom h/w where one programs the voltage and that
+voltage is send over i2c - this is not same as Tegra's lookup table
+array which automatically sends out entries, in OMAP, software has to trigger
+the voltage transition
+This path is split into 3 different modules - AVS, VC, VP -> This is
+implementation detail as you already mentioned.
+
+Anyhow, to recap, the overview of the hardware interface is as follows:
+PMIC that OMAP interfaces to are of two categories:
+a) ones that talk only on the custom OMAP VC path
+b) ones that talk both custom OMAP VC and regular i2c (e.g.
+   twl4030,6030,palmas)
+
+The voltage control for a voltage rail (e.g. vdd_mpu) is again PMIC
+specific
+a) 6030 will not allow voltage to be set over regular i2c
+b) 4030 allows either custom i2c path OR regular i2c path (only 1 at a
+   time).
+c) palmas allows both custom i2c path AND regular i2c path to set
+   voltage!
+
+>From a Linux angle, when using regular i2c, it is a piece of cake. Standard
+regulator uses regular i2c, vc-vp angle avoided
+Example: Palmas: we'd use the regular palmas driver to do this.
+
+When using custom i2c path(vc/vp/avs), it gets a bit complex
+We'd like (if possible) drivers like cpufreq to be ignorant of regulator
+and transfer path used ofcourse as this depends on the board component
+selection.
+E.g. 4030/palmas/6030 vdd_mpu can be represented as a regulator, which in turn
+uses custom OMAP data transfer path to set voltage
+
+I was trying to understand your statement as to what Paul was doing
+(which was basically pull out the vsel values and put them in his
+ hardware lookup table for h/w to auto send the voltage) Vs what I was
+attempting to do (describe OMAP's view of the PMIC and provide data
+path).
+In my view, we were trying to do "voltage scale" in two completely
+different ways depending on the SoC we were working on.
+
+If your concern was describing PMIC parameters in dts, I can easily move
+them inside the omap_pmic driver and provide required compatible flags.
+If, on the other hand, the entire approach followed is flawed, I'd like to
+understand the rationale for the same.
+
 -- 
-1.7.1
-
+Regards,
+Nishanth Menon
