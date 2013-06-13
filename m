@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab3FMPpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:45:52 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:49123 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab3FMPpv (ORCPT
+	id S1757955Ab3FMPqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:46:08 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:53928 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab3FMPqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:45:51 -0400
+	Thu, 13 Jun 2013 11:46:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com>
-Date: Thu, 13 Jun 2013 17:45:50 +0200
-Message-ID: <CACRpkdbuGeciwhh=FC=ekZ4di11rdPve7g79aG5wNvJAbAxx1g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/1] gpio driver for Intel Baytrail platforms
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <51B9E8BB.9020104@wwwdotorg.org>
+References: <cover.1371022830.git.viresh.kumar@linaro.org>
+	<881257c10f24b5ca8721b561726bac8887dc922e.1371022830.git.viresh.kumar@linaro.org>
+	<51B898B6.8070103@wwwdotorg.org>
+	<CAKohponC5pKABTi=t64ZXrHxi-Y6cbvAXtjY=_aMkka4s-MCiQ@mail.gmail.com>
+	<51B9E8BB.9020104@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 21:16:05 +0530
+Message-ID: <CAKohpokNPR5aZ=WnOeZZD9RCY98_eS1-=dohzVBwyoAwP4ackg@mail.gmail.com>
+Subject: Re: [PATCH 10/11] cpufreq: tegra: select CPU_FREQ_TABLE for ARCH_TEGRA
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
+        Stephen Warren <swarren@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 5:06 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-
-> After looking at the pinctrl subsystem that Linus W. suggested I think
-> pinctrl suits platforms that don't have firmware configuring the pins
-> before the operating system is started, or when pins need to be configured
-> on the fly.
+On 13 June 2013 21:13, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/12/2013 10:24 PM, Viresh Kumar wrote:
+>> On 12 June 2013 21:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> On 06/12/2013 02:15 AM, Viresh Kumar wrote:
+>>>> ARCH_TEGRA selects ARCH_HAS_CPUFREQ, so CPUFREQ will be enabled for all variants
+>>>> of TEGRA. CPUFreq driver for tegra is enabled if ARCH_TEGRA is selected. Driver
+>>>> uses APIs from freq_table.c and so we must select CPU_FREQ_TABLE for ARCH_TEGRA.
+>>>>
+>>>> This also removes select CPU_FREQ_TABLE from individual tegra variants.
+>>>
+>>> I guess the real issue here is that drivers/cpufreq/tegra-cpufreq.c gets
+>>> built based on ARCH_TEGRA, which doesn't depend on nor select CPU_FREQ
+>>> itself, so:
+>>>
+>>>         select CPU_FREQ_TABLE if CPU_FREQ
+>>>
+>>> ... isn't guaranteed to fire.
+>>>
+>>> The correct solution seems to be:
+>>>
+>>> * Add CONFIG_ARM_TEGRA_CPUFREQ to drivers/cpufreq/Kconfig.arm.
+>>> * Make that Kconfig option selct CPU_FREQ_TABLE.
+>>> * Make that Kconfig option be def_bool ARCH_TEGRA.
+>>> * Modify drivers/cpufreq/Makefile to build tegra-cpufreq.c based on that.
+>>> * Remove all the cpufreq-related stuff from arch/arm/mach-tegra/Kconfig.
+>>>
+>>> That way, tegra-cpufreq.c can't be built if !CPU_FREQ, and Tegra's
+>>> cpufreq works the same way as all the other cpufreq drivers.
+>>
+>> Hmmm. check this out (attached too for you to test):
 >
-> I'd still keep this driver under GPIO. Adding it to pinctrl
-> feels like adding more complexity without any bigger use for the features.
+> This certainly generates the correct .config when I "make
+> tegra_defconfig" after applying it, and a build after disabling CPU_FREQ
+> links OK, so,
+
+Yeah, I also compile tested it.
+
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 >
-> We expect BIOS to set all pin configurations correctly.
-> The comments about pin muxing capabilities are removed from the driver.
-> The same firmware is anyway listing gpio resources in ACPI tables, so pin
-> configurations should be correct. (The previous indication in the driver
-> about the need to configure pins was mostly because we're working with early
-> develpment stage firmwares which still have small hickups)
+> (I assume this patch would go through the cpufreq tree?)
 
-This does not address the issue that you're reimplementing
-the GPIO ranges from the pinctrl subsystem, and just hours ago
-on the mailing list Christian Ruppert sent a patch making these
-more flexible I think.
-
-Subject "Add pin-list based GPIO ranges", please check this
-patch, isn't that exactly the helper infrastructure you need?
-
-Of course you can make an argument that is is a good idea to
-duplicate this, but I want that to be explicit. To me it is still
-quite obvious that these gpio to pad mappings are laid out
-according to the actual hardware registers, and that the actual
-hardware registers pertain to pads rather than what we call
-"GPIOs", which in kernel terms are only some line.
-
-I would still vote to put the thing in drivers/pinctrl anyway,
-I am perfectly happy to house pure GPIO drivers there,
-especially if they're obviously masking something more
-pinctrl-like in reality, it will be way more flexible the day that
-you just want to add "this one little quirk for this pin config
-thing", then it'll fit just fine.
-
-Yours,
-Linus Walleij
+Yes. Via my ARM cpufreq tree.
