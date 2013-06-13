@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab3FMTIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:08:46 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:46598 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab3FMTIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:08:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <9686208.vxkaqkMmr5@vostro.rjw.lan>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQX1xVJA3MZc4LndWU7kx0mxC-YPE1R8JD4W2-Gg9zq3Zw@mail.gmail.com>
-	<9686208.vxkaqkMmr5@vostro.rjw.lan>
-Date: Thu, 13 Jun 2013 12:08:42 -0700
-X-Google-Sender-Auth: LO0iH6iUZdXMpbX5qlzhWGIa1cI
-Message-ID: <CAE9FiQVOvA8HB6QNBO5XxGGyO0bsfnHA6e-3yYFC0nXesKfkUg@mail.gmail.com>
-Subject: Re: [BUGFIX 0/9] Fix bug 59501 and code improvement for dock driver
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758376Ab3FMTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:09:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454Ab3FMTJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 15:09:25 -0400
+Date: Thu, 13 Jun 2013 15:09:00 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130613150900.4c56f2f0@tlielax.poochiereds.net>
+In-Reply-To: <20130613185318.GB12075@mtj.dyndns.org>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+	<20130613020536.GA10979@localhost>
+	<20130612200311.7f9d938a.akpm@linux-foundation.org>
+	<20130613185318.GB12075@mtj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:02 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, June 13, 2013 11:42:16 AM Yinghai Lu wrote:
->> On Thu, Jun 13, 2013 at 9:32 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
->> > Alexander E. Patrakov <patrakov@gmail.com> reports two bugs related to
->> > dock station support on Sony VAIO VPCZ23A4R. Actually there are at least
->> > four bugs related to Sony VAIO VPCZ23A4R dock support.
->> > 1) can't correctly detect hotplug slot for dock state
->> > 2) resource leak on undocking
->> > 3) resource allocation failure for dock devices
->> > 4) one bug in intel_snd_hda driver
->> >
->> > The first patch fixes issue 1, and the second patch fixes issue 2.
->> > These two patches, if accepted, should be material for stable branches
->> > too.
->> > Patch 3-9 are code improvement for ACPI and dock driver.
->> >
->> > I have found the root cause for issue three, but still working on
->> > solutions, and seems can't be solve in short time. So please help
->> > to review and test patches for issue 1) and 2) first.
->>
->> the 3) is about pci resource allocation?
->> because pcibios_add_bus is called too early?
->>
->> If that is case, we should have something like attached patch for it.
->
-> I'm including the patch below to make it easier to comment.
->
->> With that, we will not need to worry about _OSC set for 3.10 etc.
->
->> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
->> index b1ff02a..68ed5d8 100644
->> --- a/drivers/pci/bus.c
->> +++ b/drivers/pci/bus.c
->> @@ -186,6 +186,14 @@ int pci_bus_add_device(struct pci_dev *dev)
->>       return 0;
->>  }
->>
->> +void __weak pcibios_add_bus(struct pci_bus *bus)
->> +{
->> +}
->> +
->> +void __weak pcibios_remove_bus(struct pci_bus *bus)
->> +{
->> +}
->> +
->>  /**
->>   * pci_bus_add_devices - start driver for PCI devices
->>   * @bus: bus to check for new devices
->> @@ -198,6 +206,11 @@ void pci_bus_add_devices(const struct pci_bus *bus)
->>       struct pci_bus *child;
->>       int retval;
->>
->> +     if (bus->is_added == 1) {
->> +             pcibios_add_bus(bus);
->> +             bus->is_added++;
->> +     }
->
-> Do we need that in all of the places pci_bus_add_devices() is called?
+On Thu, 13 Jun 2013 11:53:18 -0700
+Tejun Heo <tj@kernel.org> wrote:
 
-Yes.
+> Hello, Andrew, Kent.
+> 
+> (cc'ing NFS folks for id[r|a] discussion)
+> 
+> On Wed, Jun 12, 2013 at 08:03:11PM -0700, Andrew Morton wrote:
+> > They all sound like pretty crappy reasons ;) If the idr/ida interface
+> > is nasty then it can be wrapped to provide the same interface as the
+> > percpu tag allocator.
+> > 
+> > I could understand performance being an issue, but diligence demands
+> > that we test that, or at least provide a convincing argument.
+> 
+> The thing is that id[r|a] guarantee that the lowest available slot is
+> allocated and this is important because it's used to name things which
+> are visible to userland - things like block device minor number,
+> device indicies and so on.  That alone pretty much ensures that
+> alloc/free paths can't be very scalable which usually is fine for most
+> id[r|a] use cases as long as lookup is fast.  I'm doubtful that it's a
+> good idea to push per-cpu tag allocation into id[r|a].  The use cases
+> are quite different.
+> 
+> In fact, maybe what we can do is adding some features on top of the
+> tag allocator and moving id[r|a] users which don't require strict
+> in-order allocation to it.  For example, NFS allocates an ID for each
+> transaction it performs and uses it to index the associate command
+> structure (Jeff, Bruce, please correct me if I'm getting it wrong).
 
->
-> It looks like pci_scan_child_bus() might be a better place for adding this,
-> or am I overlooking something?
+> The only requirement on IDs is that they shouldn't be recycled too
+> fast.  Currently, idr implements cyclic mode for it but it can easily
+> be replaced with per-cpu tag allocator like this one and it'd be a lot
+> more scalable.  There are a couple things to worry about tho - it
+> probably should use the highbits as generation number as a tag is
+> given out so that the actual ID doesn't get recycled quickly, and some
+> form dynamic tag sizing would be nice too.
+> 
+> Thanks.
+> 
 
-acpiphp and acpi_pci_slot used to get attached when pci devices
-get enumerated and pci resources get assigned unallocated...
+Actually, nfsd just uses idr to allocate stateids, which sort of
+correspond to an open or locked file state. This is not a terribly
+high-performance codepath -- we allocate one of these roughly on the
+frequency of one (or sometimes two) per open() or fcntl() call on the
+client.
 
-they some kind of pci drivers to pci bus  (comparing with real pci diver to
-pci devices).
+Anyway...you have the important piece right. The main constraint is
+that we don't recycle these too quickly. We'd be fine with totally
+random IDs as long as we can be ensured that we don't reuse any until
+we've used all 2^31 possible values once.
 
-in dock case, could be, we just got bus, and do not scan pci devices under it.
-then we try to scan dock pci devices too early...
-
->
-> [Hint: the bus->is_added++ hack is <explicit content> ugly.]
-
-Yeah,  if we could move pcibios_fixup_bus to right place, we can move
-bus->is_added setting to same place like we set pci_dev->is_added.
-
-Yinghai
+-- 
+Jeff Layton <jlayton@redhat.com>
