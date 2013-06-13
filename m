@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab3FMAoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 20:44:20 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:23432 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756927Ab3FMAoT (ORCPT
+	id S1758172Ab3FMAt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 20:49:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54396 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab3FMAt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 20:44:19 -0400
-Message-ID: <51B91599.5070006@hp.com>
-Date: Thu, 13 Jun 2013 08:43:05 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+	Wed, 12 Jun 2013 20:49:56 -0400
+Date: Thu, 13 Jun 2013 01:49:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, ????????? <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>, Waiman Long <Waiman.Long@hp.com>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130613004941.GJ4165@ZenIV.linux.org.uk>
+References: <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
+ <1370974231.9844.212.camel@gandalf.local.home>
+ <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
+ <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
+ <20130612233224.GH4165@ZenIV.linux.org.uk>
+ <CA+55aFw2=3ua32vkpWc_9ckCNweFmmH3c0d-VqoaUD86rkR-=w@mail.gmail.com>
+ <20130613002058.GI4165@ZenIV.linux.org.uk>
+ <CA+55aFxEnNvj1SoOL+ChVQqK+ouSNgsM+6cQt+=PpmTGdcFggg@mail.gmail.com>
 MIME-Version: 1.0
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>, David Woodhouse <dwmw2@infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86/iommu: fix dma pte address size error
-References: <1369355756-1030-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1369355756-1030-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxEnNvj1SoOL+ChVQqK+ouSNgsM+6cQt+=PpmTGdcFggg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-     I think this patch is necessary. Please take a look at it.
+On Wed, Jun 12, 2013 at 05:38:13PM -0700, Linus Torvalds wrote:
+> On Wed, Jun 12, 2013 at 5:20 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Actually, dget_parent() change might be broken; the thing is, the assumptions
+> > are more subtle than "zero -> non-zero only happens under ->d_lock".  It's
+> > actually "new references are grabbed by somebody who's either already holding
+> > one on the same dentry _or_ holding ->d_lock".  That's what d_invalidate()
+> > check for ->d_count needs for correctness - caller holds one reference, so
+> > comparing ->d_count with 2 under ->d_lock means checking that there's no other
+> > holders _and_ there won't be any new ones appearing.
+> 
+> For the particular case of dget_parent() maybe dget_parent() should
+> just double-check the original dentry->d_parent pointer after getting
+> the refcount on it (and if the parent has changed, drop the refcount
+> again and go to the locked version). That might be a good idea anyway,
+> and should fix the possible race (which would be with another cpu
+> having to first rename the child to some other parent, and the
+> d_invalidate() the original parent)
 
-Thanks
-Zhen-Hua
+Yes, but...  Then we'd need to dput() that sucker if we decide we shouldn't
+have grabbed that reference, after all, which would make dget_parent()
+potentially blocking.
 
-On 05/24/2013 08:35 AM, Li, Zhen-Hua wrote:
-> In Intel Vt-D specs, Chapter 9.3 Page-Table Entry,
-> The size of ADDR(address) field is 12:51, but the function dma_pte_addr
->   treats it as 12:63.
->
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->   drivers/iommu/intel-iommu.c   |    4 ++--
->   include/linux/dma_remapping.h |    2 ++
->   2 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index b4f0e28..c6d2847 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -311,10 +311,10 @@ static inline void dma_set_pte_prot(struct dma_pte *pte, unsigned long prot)
->   static inline u64 dma_pte_addr(struct dma_pte *pte)
->   {
->   #ifdef CONFIG_64BIT
-> -	return pte->val & VTD_PAGE_MASK;
-> +	return pte->val & DMA_PTE_MASK;
->   #else
->   	/* Must have a full atomic 64-bit read */
-> -	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
-> +	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & DMA_PTE_MASK;
->   #endif
->   }
->   
-> diff --git a/include/linux/dma_remapping.h b/include/linux/dma_remapping.h
-> index 57c9a8a..7a1e212 100644
-> --- a/include/linux/dma_remapping.h
-> +++ b/include/linux/dma_remapping.h
-> @@ -16,6 +16,8 @@
->   #define DMA_PTE_WRITE (2)
->   #define DMA_PTE_LARGE_PAGE (1 << 7)
->   #define DMA_PTE_SNP (1 << 11)
-> +#define DMA_PTE_ADD_LENGTH (40)
-> +#define DMA_PTE_MASK	((((u64)1 << DMA_PTE_ADD_LENGTH) - 1) << VTD_PAGE_SHIFT)
->   
->   #define CONTEXT_TT_MULTI_LEVEL	0
->   #define CONTEXT_TT_DEV_IOTLB	1
+> That said, the case we'd really want to fix isn't dget_parent(), but
+> just the normal RCU lookup finishing touches (the__d_rcu_to_refcount()
+> case you already mentioned) . *If* we could do that without ever
+> taking the d_lock on the target, that would be lovely. But it would
+> seem to have the exact same issue. Although maybe the
+> dentry_rcuwalk_barrier() thing ends up solving it (ie if we had a
+> lookup at a bad time, we know it will fail the sequence count test, so
+> we're ok).
 
+Maybe, but that would require dentry_rcuwalk_barrier() between any such
+check and corresponding grabbing of ->d_lock done for it, so it's not
+just d_invalidate().
+
+> Subtle, subtle.
+
+Yes ;-/  The current variant is using ->d_lock as a brute-force mechanism
+for avoiding all that fun, and I'm not sure that getting rid of it would
+buy us enough to make it worth the trouble.  I'm absolutely sure that if
+we go for that, we _MUST_ document the entire scheme as explicitly as
+possible, or we'll end up with the shitload of recurring bugs in that
+area.  Preferably with the formal proof of correctness spelled out somewhere...
