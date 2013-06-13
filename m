@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3FMKJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 06:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43465 "EHLO mx1.redhat.com"
+	id S1758591Ab3FMKJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 06:09:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12265 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758491Ab3FMKJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 06:09:38 -0400
-Date: Thu, 13 Jun 2013 12:09:17 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Linux PCI development list <linux-pci@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>
-Subject: Re: pcie aspm link setup, grandparent instead of parent?
-Message-ID: <20130613100917.GA14089@hpx.cz>
-References: <20130612172132.GG27284@hpx.cz>
- <CAErSpo5XvTHFf+ZO0GAxKm0xk+fo9Hm_G6Ebz1UmMkLUi8CPyw@mail.gmail.com>
+	id S1758491Ab3FMKJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 06:09:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,857,1363158000"; 
+   d="scan'208";a="352778122"
+Message-ID: <51B99A60.6010605@linux.intel.com>
+Date: Thu, 13 Jun 2013 13:09:36 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo5XvTHFf+ZO0GAxKm0xk+fo9Hm_G6Ebz1UmMkLUi8CPyw@mail.gmail.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+        donald.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, erdnetdev@gmail.com, bhutchings@solarflare.com,
+        andi@firstfloor.org, hpa@zytor.com, eilong@broadcom.com,
+        or.gerlitz@gmail.com, amirv@mellanox.com, eliezer@tamir.org.il
+Subject: Re: [PATCH net-next 1/2] net: remove NET_LL_RX_POLL config menue
+References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com> <20130611142428.17879.33582.stgit@ladj378.jer.intel.com> <20130612.151205.1822920389019274346.davem@davemloft.net> <20130612190103.1545e310@nehalam.linuxnetplumber.net> <51B92ACE.7000307@linux.intel.com> <51B97C1A.8000302@redhat.com>
+In-Reply-To: <51B97C1A.8000302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-06-12 15:54-0600, Bjorn Helgaas:
-> [+cc linux-pci, Myron, Joe]
+On 13/06/2013 11:00, Daniel Borkmann wrote:
+> On 06/13/2013 04:13 AM, Eliezer Tamir wrote:
+>> On 13/06/2013 05:01, Stephen Hemminger wrote:
+>>> On Wed, 12 Jun 2013 15:12:05 -0700 (PDT)
+>>> David Miller <davem@davemloft.net> wrote:
+>>>
+>>>> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+>>>> Date: Tue, 11 Jun 2013 17:24:28 +0300
+>>>>
+>>>>>       depends on X86_TSC
+>>>>
+>>>> Wait a second, I didn't notice this before.  There needs to be a better
+>>>> way to test for the accuracy you need, or if the issue is lack of a
+>>>> proper
+>>>> API for cycle counter reading, fix that rather than add ugly arch
+>>>> specific dependencies to generic networking code.
+>>>
+>>> This should be sched_clock(), rather than direct TSC access.
+>>> Also any code using TSC or sched_clock has to be carefully audited to
+>>> deal with
+>>> clocks running at different rates on different CPU's. Basically value
+>>> is only
+>>> meaning full on same CPU.
+>>
+>> OK,
+>>
+>> If we covert to sched_clock(), would adding a define such as
+>> HAVE_HIGH_PRECISION_CLOCK to architectures that have both a high
+>> precision clock and a 64 bit cycles_t be a good solution?
+>>
+>> (if not any other suggestion?)
+>
+> Hm, probably cpu_clock() and similar might be better, since they use
+> sched_clock() in the background when !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+> (meaning when sched_clock() provides synchronized highres time source from
+> the architecture), and, quoting ....
 
-I'll remember it.
+I don't think we want the overhead of disabling IRQs
+that cpu_clock() adds.
 
-> On Wed, Jun 12, 2013 at 11:21 AM, Radim Krčmář <rkrcmar@redhat.com> wrote:
-> > Hello,
-> >
-> > as a consequence of hitting a NULL dereference bug[1] while downstream
-> > aspm is setting up link_state, I started to wonder why is the code
-> > skipping its parent bus in favour of grandparent's link_state.[2]
-> >
-> > Is this right? (I have no device to test on ...)
+We don't really care about precise measurement.
+All we need is a sane cut-off for busy polling.
+It's no big deal if on a rare occasion we poll less,
+or even poll twice the time.
+As long as it's rare it should not matter.
 
-No,
-pcie_link_state covers both upstream and downstream port, so we skip
-upstream port of current device.
+Maybe the answer is not to use cycle counting at all?
+Maybe just wait the full sk_rcvtimo?
+(resched() when proper, bail out if signal pending, etc.)
 
-Must the "parent device" (grandparent) have valid "->self"?
-(qemu allows even topologies without the upstream port, so it does not
-count for much ...)
+This could only be a safe/sane thing to do after we add
+a socket option, because this can't be a global setting.
 
-> > Thanks.
-> >
-> > ---
-> > 1: https://bugzilla.redhat.com/show_bug.cgi?id=972381
-> >    The bug is hit because "pdev->bus->parent" has NULL "->parent" and thus
-> >    NULL "->self".
-> > 2: "pdev = bus->self", so "pdev->bus->parent == bus->parent->parent"
-> >
-> >
-> > diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> > index 403a443..d58e282 100644
-> > --- a/drivers/pci/pcie/aspm.c
-> > +++ b/drivers/pci/pcie/aspm.c
-> > @@ -527,7 +527,7 @@ static struct pcie_link_state *alloc_pcie_link_state(struct pci_dev *pdev)
-> >         link->pdev = pdev;
-> >         if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM) {
-> >                 struct pcie_link_state *parent;
-> > -               parent = pdev->bus->parent->self->link_state;
-> > +               parent = pdev->bus->self->link_state;
-> >                 if (!parent) {
-> >                         kfree(link);
-> >                         return NULL;
+This would of course turn the option into a flag.
+If it's set (and !nonblock), busy wait up to sk_recvtimo.
+
+Opinions?
