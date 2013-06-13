@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab3FMOvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:51:36 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:57050 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab3FMOvf (ORCPT
+	id S1755931Ab3FMO4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:56:09 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:58426 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab3FMO4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:51:35 -0400
-Date: Thu, 13 Jun 2013 16:51:33 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, David Howells <dhowells@redhat.com>,
-        Orion Poplawski <orion@cora.nwra.com>
-Subject: Re: Strange intermittent EIO error when writing to stdout since
- v3.8.0
-Message-ID: <20130613145133.GC519@x4>
-References: <20130606115417.GA520@x4>
- <51B09A26.3080603@hurleysoftware.com>
- <20130606143750.GB520@x4>
- <51B1FEB1.8040103@hurleysoftware.com>
- <20914.9444.867518.719403@pilspetsen.it.uu.se>
- <20130613103950.GB519@x4>
- <51B9D43D.6000008@hurleysoftware.com>
+	Thu, 13 Jun 2013 10:56:08 -0400
+Date: Thu, 13 Jun 2013 16:56:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130613145601.GE16339@somewhere>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+ <20130613131057.GA15997@somewhere>
+ <20130613140207.GW133453@redhat.com>
+ <20130613142210.GD16339@somewhere>
+ <20130613144515.GX133453@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51B9D43D.6000008@hurleysoftware.com>
+In-Reply-To: <20130613144515.GX133453@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.06.13 at 10:16 -0400, Peter Hurley wrote:
-> On 06/13/2013 06:39 AM, Markus Trippelsdorf wrote:
-> > On 2013.06.07 at 20:22 +0200, Mikael Pettersson wrote:
-> >> Peter Hurley writes:
-> >>   > Based on the other reports from Mikael and David, I suspect this problem
-> >>   > may have to do with my commit 699390354da6c258b65bf8fa79cfd5feaede50b6:
-> >>   >
-> >>   >    pty: Ignore slave pty close() if never successfully opened
-> >>   >
-> >>   > This commit poisons the pty under certain error conditions that may
-> >>   > occur from parallel open()s (or parallel close() with pending write()).
-> >>   >
-> >>   > It's unclear to me which error condition is triggered and how user-space
-> >>   > got an open file descriptor but that seems the most likely. Is the problem
-> >>   > reproducible enough that a debug patch would likely trigger?
-> >>
-> >> In my case the problem occurred frequently enough that I've been forced
-> >> to change my build procedures to avoid it.  I'd welcome a debug patch.
-> >
-> > Since apparently no debugging patch is forthcoming, maybe it's time to
-> > test the simple revert of commit 699390354da.
+On Thu, Jun 13, 2013 at 10:45:15AM -0400, Don Zickus wrote:
+> On Thu, Jun 13, 2013 at 04:22:12PM +0200, Frederic Weisbecker wrote:
+> > On Thu, Jun 13, 2013 at 10:02:07AM -0400, Don Zickus wrote:
+> > > On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
+> > > > On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
+> > > > > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
+> > > > > > When the watchdog runs, it prevents the full dynticks
+> > > > > > CPUs from stopping their tick because the hard lockup
+> > > > > > detector uses perf events internally, which in turn
+> > > > > > rely on the periodic tick.
+> > > > > > 
+> > > > > > Since this is a rather confusing behaviour that is not
+> > > > > > easy to track down and identify for those who want to
+> > > > > > test CONFIG_NO_HZ_FULL, let's default disable the
+> > > > > > watchdog on boot time when full dynticks is enabled.
+> > > > > > 
+> > > > > > The user can still enable it later on runtime using
+> > > > > > proc or sysctl.
+> > > > > 
+> > > > > I thought we had a conversation awhile ago, where we agreed this was going
+> > > > > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
+> > > > > tree?  I am confused why this is still needed?
+> > > > 
+> > > > We agreed on the patch but it hasn't been applied yet. I'm trying to get
+> > > > a sane series of nohz patches before sending to Ingo.
+> > > 
+> > > Peter,
+> > > 
+> > > Where is this patch?
+> > 
+> > Which patch? The old version of the current one? It was part of a previous series
+> > that needed improvements so it hasn't been applied yet.
 > 
-> I apologize for the delay.
-> 
-> Here's a debug patch which I hope will narrow down the circumstances of
-> this error condition.
+> I guess I am confused.  I thought Peter said in an email awhile ago, that
+> he found Stephan's patch (that converted perf to use hrtimers) and applied
+> it to his tree.  Are you saying it was unapplied because it needed
+> improvements?
 
-Unfortunately it doesn't apply:
-
-markus@x4 linux % git describe
-v3.10-rc5-167-g26e0446
-markus@x4 linux % patch -p1 --dry-run < /home/markus/tty.patch
-checking file drivers/tty/pty.c
-Hunk #1 succeeded at 25 with fuzz 2.
-Hunk #2 FAILED at 256.
-1 out of 2 hunks FAILED
-checking file drivers/tty/tty_io.c
-Hunk #1 FAILED at 105.
-Hunk #2 FAILED at 424.
-Hunk #3 FAILED at 448.
-Hunk #4 FAILED at 1020.
-Hunk #5 FAILED at 1197.
-5 out of 5 hunks FAILED
-
--- 
-Markus
+I think it doesn't completely remove the perf tick. Besides it doesn't really
+solve the problem since perf events will require periodic hrtimers to work,
+which still defeats the purpose of full dynticks.
