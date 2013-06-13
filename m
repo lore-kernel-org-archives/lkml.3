@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3FMGCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 02:02:23 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62817 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab3FMGCV (ORCPT
+	id S932403Ab3FMGEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 02:04:13 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49867 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3FMGEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 02:02:21 -0400
-Message-ID: <51B96059.4070104@gmail.com>
-Date: Wed, 12 Jun 2013 23:02:01 -0700
-From: John Fastabend <john.fastabend@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 13 Jun 2013 02:04:12 -0400
+Message-ID: <51B960D6.7080901@linaro.org>
+Date: Thu, 13 Jun 2013 11:34:06 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Roopa Prabhu <roprabhu@cisco.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH net] macvlan: don't touch promisc without passthrough
-References: <1371035949-29471-1-git-send-email-mst@redhat.com> <51B87E0D.8040009@cogentembedded.com>
-In-Reply-To: <51B87E0D.8040009@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com
+CC: arnd@arndb.de, olof@lixom.net, patches@linaro.org
+Subject: Re: [PATCH v2 2/3] ARM: SAMSUNG: Consolidate uncompress subroutine
+References: <1370319552-17694-1-git-send-email-tushar.behera@linaro.org> <1370319552-17694-3-git-send-email-tushar.behera@linaro.org>
+In-Reply-To: <1370319552-17694-3-git-send-email-tushar.behera@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 06:56 AM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 12-06-2013 15:34, Michael S. Tsirkin wrote:
->
->> commit df8ef8f3aaa6692970a436204c4429210addb23a in linux 3.5 added a way
->
->     Please also specify that commit's summary line in parens.
->
->> to control NOPROMISC macvlan flag through netlink.
->
->> However, with a non passthrough device we don't set promisc on open or
->> clear it on stop, even if NOPROMISC is off.  As a result:
->
->> If userspace clears NOPROMISC on open, then does not clear it on a
->> netlink command, promisc counter is not decremented on stop and there
->> will be no way to clear it once macvlan is detached.
->
->> If userspace does not clear NOPROMISC on open, then sets NOPROMISC on a
->> netlink command, promisc counter will be decremented from 0 and overflow
->> to fffffffff with no way to clear promisc afterwards.
->
->> To fix, simply ignore NOPROMISC flag in a netlink command for
->> non-passthrough devices, same as we do at open/stop.
->
->> While at it - since we touch this code anyway - check
->> dev_set_promiscuity return code and pass it to users (though an error
->> here is unlikely).
->
->> Cc: "David S. Miller" <davem@davemloft.net>
->> CC: Roopa Prabhu <roprabhu@cisco.com>
->> Cc: John Fastabend <john.r.fastabend@intel.com>
->> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> ---
->
->> Please review, and consider for 3.10 and -stable.
->
+On 06/04/2013 09:49 AM, Tushar Behera wrote:
+> For mach-exynos, uart_base is a pointer and the value is calculated
+> in the machine folder. For other machines, uart_base is defined as
+> a macro in platform directory. For symmetry, the uart_base macro
+> definition is removed and the uart_base calculation is moved to
+> specific machine folders.
+> 
+> This would help us consolidating uncompress subroutine for s5p64x0.
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+> Changes for v2:
+> * Remove ifdef's while calculating uart_base value.
+> 
 
-Other than those few nits looks good to me thanks!
+Kukjin,
 
-Reviewed-by: John Fastabend <john.r.fastabend@intel.com>
+Would you please queue this up for 3.11?
+
+Thanks.
 
 -- 
-John Fastabend         Intel Corporation
+Tushar Behera
