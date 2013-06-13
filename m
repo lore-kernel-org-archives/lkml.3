@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab3FMHV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 03:21:29 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:36169 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3FMHV2 (ORCPT
+	id S1756984Ab3FMHXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:23:38 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36881 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3FMHXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 03:21:28 -0400
-From: Rojhalat Ibrahim <imr@rtschenk.de>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Michael Guntsche <michael.guntsche@it-loops.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-Date: Thu, 13 Jun 2013 09:21:24 +0200
-Message-ID: <7706620.VNI3PE9pqO@pcimr>
-User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1371073826.18413.52@snotra>
-References: <1370971739.18413.27@snotra> <34279395.MbRViMjbAR@pcimr> <1371073826.18413.52@snotra>
+	Thu, 13 Jun 2013 03:23:36 -0400
+Date: Thu, 13 Jun 2013 10:23:27 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130613072327.GA12951@x220>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
+ <20130610160723.GA18282@x220.P-661HNU-F1>
+ <20130610193746.GA30801@amd.pavel.ucw.cz>
+ <20130611072245.GA12463@x220>
+ <20130611102025.GA5580@x220>
+ <20130612112326.GA4237@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612112326.GA4237@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 June 2013 16:50:26 Scott Wood wrote:
-> On 06/12/2013 03:19:30 AM, Rojhalat Ibrahim wrote:
-> > On Tuesday 11 June 2013 12:28:59 Scott Wood wrote:
-> > > Yes, I figured it was non-PCIe because the code change that you said
-> > > helped was on the non-PCIe branch of the if/else.  Generally it's
-> > 
-> > good
-> > 
-> > > to explicitly mention the chip you're using, though.
-> > > 
-> > > fsl_setup_indirect_pci should be renamed to fsl_setup_indirect_pcie.
-> > > Your patch above should be applied, and fsl_setup_indirect_pcie
-> > 
-> > should
-> > 
-> > > be moved into the booke/86xx ifdef to avoid an unused function
-> > 
-> > warning.
-> > 
-> > > -Scott
-> > 
-> > How about this patch? It uses setup_indirect_pci for the PCI case in
-> > mpc83xx_add_bridge. Additionally it adds a check in
-> > fsl_setup_indirect_pci
-> > to only use the modified read function in case of PCIe.
-> 
-> If we're adding the check to fsl_setup_indirect_pci, there's no need to
-> change the 83xx call back to setup_indirect_pci.  I see that 85xx is
-> also callirng fsl_setup_indirect_pci for both; it'd be good to be
-> consistent.
-> 
-> In any case, can you send a proper patch with a signoff and commit
-> message?
-> 
-> -Scott
+Hi Pavel,
 
-Where is it called for 85xx? As far as I can tell fsl_setup_indirect_pci is 
-called exactly once in fsl_add_bridge and nowhere else (after applying the
-proposed patch).
-For 83xx the decision between PCI and PCIe has already been made at
-the point where the setup function is called. So IMO it doesn't make sense
-to call fsl_setup_indirect_pci and do the check again. Moreover PCIe on 83xx
-uses a completely different set of functions.
+On Wed, Jun 12, 2013, Pavel Machek wrote:
+> < HCI Command: Read Local Supported Commands (0x04|0x0002) plen 0
+> > HCI Event: Command Complete (0x0e) plen 68
+>     Read Local Supported Commands (0x04|0x0002) ncmd 1
+>     status 0x00
+>     Commands: ffffffffffff1ffffffffffff30fffff3f
 
-I'll send the proper patch in a separate mail.
+As I suspected, even though the Delete Stored Link Key command is
+mandatory from Bluetooth version 1.1 onwards (this controller supports
+2.0) this controller doesn't have it mentioned in its supported commands
+response (counting from 0 it should be bit 7 of octet 6). Therefore, it
+might be possible to just move sending of this problematic command to
+after receiving the supported commands response and making it
+conditional to having its respective bit set in the mask. I'll be
+sending another patch proposal soon.
 
-   Rojhalat
-
-
-
+Johan
