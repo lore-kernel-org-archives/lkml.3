@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab3FMJdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:33:37 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:52084 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab3FMJdf (ORCPT
+	id S1758517Ab3FMJeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:34:18 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:63806 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756822Ab3FMJeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:33:35 -0400
-Message-ID: <51B991EF.70800@linaro.org>
-Date: Thu, 13 Jun 2013 11:33:35 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 05:34:16 -0400
+Date: Thu, 13 Jun 2013 10:34:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 00/32] ARM: ux500: Enable clocks for Device Tree
+Message-ID: <20130613093410.GB16677@laptop>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <20130612132713.GE4320@laptop>
+ <CACRpkdYtocMN-qvhOX_uHw=zoJysjJhGjQv5gL_ijkR56QL4Bg@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over global
- devices
-References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org> <1370291642-13259-2-git-send-email-sboyd@codeaurora.org> <51B0A6E8.20909@linaro.org> <20130606180425.GQ599@codeaurora.org> <51B10D85.1060507@linaro.org> <20130606223848.GR599@codeaurora.org> <20130612214435.GE10823@codeaurora.org>
-In-Reply-To: <20130612214435.GE10823@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYtocMN-qvhOX_uHw=zoJysjJhGjQv5gL_ijkR56QL4Bg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 11:44 PM, Stephen Boyd wrote:
-> On 06/06, Stephen Boyd wrote:
->> On 06/07, Daniel Lezcano wrote:
->>> On 06/06/2013 08:04 PM, Stephen Boyd wrote:
->>>> On 06/06, Daniel Lezcano wrote:
->>>>> On 06/03/2013 10:33 PM, Stephen Boyd wrote:
->>>>>> On an SMP system with only one global clockevent and a dummy
->>>>>> clockevent per CPU we run into problems. We want the dummy
->>>>>> clockevents to be registered as the per CPU tick devices, but
->>>>>> we can only achieve that if we register the dummy clockevents
->>>>>> before the global clockevent or if we artificially inflate the
->>>>>> rating of the dummy clockevents to be higher than the rating
->>>>>> of the global clockevent. Failure to do so leads to boot
->>>>>> hangs when the dummy timers are registered on all other CPUs
->>>>>> besides the CPU that accepted the global clockevent as its tick
->>>>>> device and there is no broadcast timer to poke the dummy
->>>>>> devices.
->>>>>>
->>>>>> If we're registering multiple clockevents and one clockevent is
->>>>>> global and the other is local to a particular CPU we should
->>>>>> choose to use the local clockevent regardless of the rating of
->>>>>> the device. This way, if the clockevent is a dummy it will take
->>>>>> the tick device duty as long as there isn't a higher rated tick
->>>>>> device and any global clockevent will be bumped out into
->>>>>> broadcast mode, fixing the problem described above.
->>>>>
->>>>> It is not clear the connection between the changelog, the patch and the
->>>>> comment. Could you clarify a bit ?
->>>>>
->>>>
->>>> There is one tick device per-cpu and one broadcast device. The
->>>> broadcast device can only be a global clockevent, whereas the
->>>> per-cpu tick device can be a global clockevent or a per-cpu
->>>> clockevent. The code tries hard to keep per-cpu clockevents in
->>>> the tick device slots but it has an ordering/rating requirement
->>>> that doesn't work when there are only dummy per-cpu devices and
->>>> one global device.
->>>>
->>>> Perhaps an example will help. Let's say you only have one global
->>>> clockevent such as the sp804, and you have SMP enabled. To
->>>> support SMP we have to register dummy clockevents on each CPU so
->>>> that the sp804 can go into broadcast mode. If we don't do this,
->>>> only the CPU that registered the sp804 will get interrupts while
->>>> the other CPUs will be left with no tick device and thus no
->>>> scheduling. To fix this we register dummy clockevents on all the
->>>> CPUs _before_ we register the sp804 to force the sp804 into the
->>>> broadcast slot. Or we give the dummy clockevents a higher rating
->>>> than the sp804 so that when we register them after the sp804 the
->>>> sp804 is bumped out to broadcast duty.
->>>>
->>>> If the dummy devices are registered before the sp804 we can give
->>>> the dummies a low rating and the sp804 will still go into the
->>>> broadcast slot due to this code:
->>>>
->>>> 	/*
->>>> 	 * If we have a cpu local device already, do not replace it
->>>> 	 * by a non cpu local device
->>>> 	 */
->>>> 	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
->>>> 		goto out_bc;
->>>>
->>>> If we register the sp804 before the dummies we're also fine as
->>>> long as the rating of the dummy is more than the sp804.  Playing
->>>> games with the dummy rating is not very nice so this patch fixes
->>>> it by allowing the per-cpu device to replace the global device no
->>>> matter what the rating of the global device is.
->>>>
->>>> This fixes the sp804 case when the dummy is rated lower than
->>>> sp804 and it removes any ordering requirement from the
->>>> registration of clockevents. It also completes the logic above
->>>> where we prefer cpu local devices over non cpu local devices.
->>>
->>> Thanks for the detailed explanation.
->>>
->>> Did Thomas reacted to this patch ?
->>>
->>
->> So far there has been no response from Thomas.
->>
+On Thu, 13 Jun 2013, Linus Walleij wrote:
+
+> On Wed, Jun 12, 2013 at 3:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> After this patchset has been applied, we can request clocks directly
+> >> from Device Tree without using any AUXDATA device-name hacks. We also
+> >> take care to remove all of thos at the end of the set.
+> >
+> > So it looks like Mike and Grant have okayed the actual design of this
+> > patch-set, which is great. Is there any chance on some proper Acks from
+> > Linus and Mike please?
 > 
-> Will you ack this patch anyway? Or do we need Thomas to review
-> this patch? It seems that this patch series has stalled again.
+> I will get to it. Basically I don't see there is a hurry as this has
+> no chance to hit the v3.11 merge window anyway so we'll have
+> lots of time to discuss it.
+> 
+> Why 3.12: my five pull request for ux500 stuff to ARM SoC is still
+> outstanding, and this stuff will clash with that unless we get
+> a common merge base. So we have to wait for ARM SoC
+> to settle at this point.
 
-I prefer Thomas to have a look at it and ack it. I changed Cc to To for
-Thomas.
+I understand, thanks for the clarification.
 
-Thanks
-  -- Daniel
-
+I'm fairly sure the semantics are sound, so I'll duplicate them for
+the u8540 - working on that now.
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
