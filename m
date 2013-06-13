@@ -1,209 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab3FMR4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 13:56:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:38592 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab3FMR4s (ORCPT
+	id S1758832Ab3FMSJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:09:32 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:46053 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3FMSJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 13:56:48 -0400
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mmc@vger.kernel.org, Zoran Markovic <zoran.markovic@linaro.org>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        John Stultz <john.stultz@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-Date: Thu, 13 Jun 2013 10:56:30 -0700
-Message-Id: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 13 Jun 2013 14:09:31 -0400
+Date: Thu, 13 Jun 2013 11:09:24 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH percpu/for-3.11 2/2] percpu-refcount: implement
+ percpu_ref_cancel_init()
+Message-ID: <20130613180924.GA12075@mtj.dyndns.org>
+References: <20130613035201.GD9451@mtj.dyndns.org>
+ <20130613035235.GE9451@mtj.dyndns.org>
+ <20130613035636.GF10979@localhost>
+ <20130613035831.GF9451@mtj.dyndns.org>
+ <20130613040019.GG10979@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613040019.GG10979@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a reworked implementation of wakelocks for the MMC core from
-Android kernel, originally authored by Colin Cross and San Mehat.
-The patch makes sure that whenever a MMC device is inserted/removed,
-the system stays awake until it's reconfigured for the new state.
-It is assumed that 1/2 second is sufficient for the system to start
-the configuration action for the newly detected MMC device, which might
-include e.g. mounting the hosted file system(s).
+On Wed, Jun 12, 2013 at 09:00:19PM -0700, Kent Overstreet wrote:
+> On Wed, Jun 12, 2013 at 08:58:31PM -0700, Tejun Heo wrote:
+> > At first I named it percpu_ref_free() but it looked too symmetric to
+> > init, more so than kill, so I was worried that people might get
+> > confused that this is the normal interface to shutdown a percpu
+> > refcnt, so the weird cancel_init name and further restriction on its
+> > usage.
+> 
+> ...Yeah, confusion with _kill() is a good point. Ok, cancel_init() it
+> is.
 
-The implementation uses wakeup_sources instead of wake_locks.
+Applied both patches to percpu/for-3.11.  Added a paragraph explaining
+the weird naming and usage restriction just in case.
 
-Feedback on the approach is greatly appreciated, in particular for the
-1/2 second extension peroid.
+Thanks.
 
-Cc: San Mehat <san@google.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Johan Rudholm <johan.rudholm@stericsson.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Konstantin Dorfman <kdorfman@codeaurora.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[<zoran.markovic@linaro.org>: tweaked commit message, reworked to use
-wakeup_source_register/unregister instead of wakeup_source_init/trash,
-added the missing __pm_relax() for non-removable devices in mmc_rescan().]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- drivers/mmc/core/core.c  |   31 +++++++++++++++++++++++++------
- drivers/mmc/core/host.c  |    7 +++++++
- include/linux/mmc/host.h |    2 ++
- 3 files changed, 34 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index c40396f..d5230c7 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -23,6 +23,7 @@
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pm_wakeup.h>
- #include <linux/suspend.h>
- #include <linux/fault-inject.h>
- #include <linux/random.h>
-@@ -1656,6 +1657,7 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
- 	spin_unlock_irqrestore(&host->lock, flags);
- #endif
- 	host->detect_change = 1;
-+	__pm_stay_awake(host->ws);
- 	mmc_schedule_delayed_work(&host->detect, delay);
- }
- 
-@@ -2351,13 +2353,16 @@ void mmc_rescan(struct work_struct *work)
- 	struct mmc_host *host =
- 		container_of(work, struct mmc_host, detect.work);
- 	int i;
-+	bool extend_wakeup = false;
- 
- 	if (host->rescan_disable)
- 		return;
- 
- 	/* If there is a non-removable card registered, only scan once */
--	if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered)
-+	if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered) {
-+		__pm_relax(host->ws);
- 		return;
-+	}
- 	host->rescan_entered = 1;
- 
- 	mmc_bus_get(host);
-@@ -2400,16 +2405,27 @@ void mmc_rescan(struct work_struct *work)
- 
- 	mmc_claim_host(host);
- 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
--		if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min)))
-+		if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min))) {
-+			/* stay awake extra time to process detected device */
-+			extend_wakeup = true;
- 			break;
-+		}
- 		if (freqs[i] <= host->f_min)
- 			break;
- 	}
- 	mmc_release_host(host);
- 
-  out:
--	if (host->caps & MMC_CAP_NEEDS_POLL)
-+	if (extend_wakeup)
-+		/* extra 1/2 second should be enough, hopefully */
-+		__pm_wakeup_event(host->ws, MSEC_PER_SEC/2);
-+	else
-+		__pm_relax(host->ws);
-+
-+	if (host->caps & MMC_CAP_NEEDS_POLL) {
-+		__pm_stay_awake(host->ws);
- 		mmc_schedule_delayed_work(&host->detect, HZ);
-+	}
- }
- 
- void mmc_start_host(struct mmc_host *host)
-@@ -2433,7 +2449,8 @@ void mmc_stop_host(struct mmc_host *host)
- #endif
- 
- 	host->rescan_disable = 1;
--	cancel_delayed_work_sync(&host->detect);
-+	if (cancel_delayed_work_sync(&host->detect))
-+		__pm_relax(host->ws);
- 	mmc_flush_scheduled_work();
- 
- 	/* clear pm flags now and let card drivers set them as needed */
-@@ -2628,7 +2645,8 @@ int mmc_suspend_host(struct mmc_host *host)
- {
- 	int err = 0;
- 
--	cancel_delayed_work(&host->detect);
-+	if (cancel_delayed_work(&host->detect))
-+		__pm_relax(host->ws);
- 	mmc_flush_scheduled_work();
- 
- 	mmc_bus_get(host);
-@@ -2741,7 +2759,8 @@ int mmc_pm_notify(struct notifier_block *notify_block,
- 		spin_lock_irqsave(&host->lock, flags);
- 		host->rescan_disable = 1;
- 		spin_unlock_irqrestore(&host->lock, flags);
--		cancel_delayed_work_sync(&host->detect);
-+		if (cancel_delayed_work_sync(&host->detect))
-+			__pm_relax(host->ws);
- 
- 		if (!host->bus_ops || host->bus_ops->suspend)
- 			break;
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 2a3593d..3cbb3d7 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -452,6 +452,11 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	host->class_dev.class = &mmc_host_class;
- 	device_initialize(&host->class_dev);
- 
-+	host->ws = wakeup_source_register(
-+		kasprintf(GFP_KERNEL, "%s_detect", mmc_hostname(host)));
-+	if (!host->ws)
-+		goto free;
-+
- 	mmc_host_clk_init(host);
- 
- 	mutex_init(&host->slot.lock);
-@@ -555,6 +560,8 @@ void mmc_free_host(struct mmc_host *host)
- 	spin_lock(&mmc_host_lock);
- 	idr_remove(&mmc_host_idr, host->index);
- 	spin_unlock(&mmc_host_lock);
-+	wakeup_source_unregister(host->ws);
-+	host->ws = NULL;
- 
- 	put_device(&host->class_dev);
- }
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index e326ae2..9dc2dd6 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -15,6 +15,7 @@
- #include <linux/sched.h>
- #include <linux/device.h>
- #include <linux/fault-inject.h>
-+#include <linux/pm_wakeup.h>
- 
- #include <linux/mmc/core.h>
- #include <linux/mmc/pm.h>
-@@ -329,6 +330,7 @@ struct mmc_host {
- 	int			claim_cnt;	/* "claim" nesting count */
- 
- 	struct delayed_work	detect;
-+	struct wakeup_source	*ws;
- 	int			detect_change;	/* card detect flag */
- 	struct mmc_slot		slot;
- 
 -- 
-1.7.9.5
-
+tejun
