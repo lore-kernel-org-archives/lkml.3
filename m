@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab3FMNqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:46:52 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44845 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751622Ab3FMNqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:46:50 -0400
-Date: Thu, 13 Jun 2013 14:46:46 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
+	id S1756949Ab3FMNsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:48:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab3FMNs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:48:28 -0400
+Date: Thu, 13 Jun 2013 15:48:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI changes for v3.11
-Message-ID: <20130613134646.GU31198@console-pimps.org>
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
+ charge context
+Message-ID: <20130613134826.GE23070@dhcp22.suse.cz>
+References: <20130606173355.GB27226@cmpxchg.org>
+ <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
+ <20130606215425.GM15721@cmpxchg.org>
+ <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
+ <20130607000222.GT15576@cmpxchg.org>
+ <alpine.DEB.2.02.1306111454030.4803@chino.kir.corp.google.com>
+ <20130612082817.GA6706@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306121309500.23348@chino.kir.corp.google.com>
+ <20130612203705.GB17282@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306121343500.24902@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306121343500.24902@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+On Wed 12-06-13 13:49:47, David Rientjes wrote:
+> On Wed, 12 Jun 2013, Michal Hocko wrote:
+> 
+> > The patch is a big improvement with a minimum code overhead. Blocking
+> > any task which sits on top of an unpredictable amount of locks is just
+> > broken. So regardless how many users are affected we should merge it and
+> > backport to stable trees. The problem is there since ever. We seem to
+> > be surprisingly lucky to not hit this more often.
+> > 
+> 
+> Right now it appears that that number of users is 0 and we're talking 
+> about a problem that was reported in 3.2 that was released a year and a 
+> half ago.  The rules of inclusion in stable also prohibit such a change 
+> from being backported, specifically "It must fix a real bug that bothers 
+> people (not a, "This could be a problem..." type thing)".
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+As you can see there is an user seeing this in 3.2. The bug is _real_ and
+I do not see what you are objecting against. Do you really think that
+sitting on a time bomb is preferred more?
 
-are available in the git repository at:
+> We have deployed memcg on a very large number of machines and I can run a 
+> query over all software watchdog timeouts that have occurred by 
+> deadlocking on i_mutex during memcg oom.  It returns 0 results.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+Do you capture /prc/<pid>/stack for each of them to find that your
+deadlock (and you have reported that they happen) was in fact caused by
+a locking issue? These kind of deadlocks might got unnoticed especially
+when the oom is handled by userspace by increasing the limit (my mmecg
+is stuck and increasing the limit a bit always helped).
 
-for you to fetch changes up to d3768d885c6ccbf8a137276843177d76c49033a7:
+> > I am not quite sure I understand your reservation about the patch to be
+> > honest. Andrew still hasn't merged this one although 1/2 is in.
+> 
+> Perhaps he is as unconvinced?  The patch adds 100 lines of code, including 
+> fields to task_struct for memcg, for a problem that nobody can reproduce.  
+> My question still stands: can anybody, even with an instrumented kernel to 
+> make it more probable, reproduce the issue this is addressing?
 
-  x86, efi: retry ExitBootServices() on failure (2013-06-11 07:51:54 +0100)
-
-----------------------------------------------------------------
- * Only pass memory regions that are marked as required for runtime to
-   SetVirtualAddressMap() - Matthew Garrett
-
- * A small cleanup to get rid of all the void * casting that is
-   prevalent in the EFI code - Borislav Petkov
-
- * Handle the case where ExitBootServices() wants us to call it a second
-   time because some of the firmware signal handlers have changed the
-   memory map - Zach Bobroff
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      efi: Convert runtime services function ptrs
-
-Matthew Garrett (1):
-      UEFI: Don't pass boot services regions to SetVirtualAddressMap()
-
-Zach Bobroff (1):
-      x86, efi: retry ExitBootServices() on failure
-
- arch/x86/boot/compressed/eboot.c | 20 +++++++++++++++++---
- arch/x86/include/asm/efi.h       | 28 ++++++++++++++--------------
- arch/x86/platform/efi/efi.c      |  7 +++++++
- include/linux/efi.h              | 28 ++++++++++++++--------------
- 4 files changed, 52 insertions(+), 31 deletions(-)
+So the referenced discussion is not sufficient?
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Michal Hocko
+SUSE Labs
