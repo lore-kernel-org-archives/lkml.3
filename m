@@ -1,144 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab3FMOuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:50:40 -0400
-Received: from fieldses.org ([174.143.236.118]:52677 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756395Ab3FMOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:50:38 -0400
-Date: Thu, 13 Jun 2013 10:50:09 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v2 10/14] locks: turn the blocked_list into a hashtable
-Message-ID: <20130613145009.GB20235@fieldses.org>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
- <1370948948-31784-11-git-send-email-jlayton@redhat.com>
+	id S1757564Ab3FMOvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:51:36 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:57050 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab3FMOvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:51:35 -0400
+Date: Thu, 13 Jun 2013 16:51:33 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, David Howells <dhowells@redhat.com>,
+        Orion Poplawski <orion@cora.nwra.com>
+Subject: Re: Strange intermittent EIO error when writing to stdout since
+ v3.8.0
+Message-ID: <20130613145133.GC519@x4>
+References: <20130606115417.GA520@x4>
+ <51B09A26.3080603@hurleysoftware.com>
+ <20130606143750.GB520@x4>
+ <51B1FEB1.8040103@hurleysoftware.com>
+ <20914.9444.867518.719403@pilspetsen.it.uu.se>
+ <20130613103950.GB519@x4>
+ <51B9D43D.6000008@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370948948-31784-11-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51B9D43D.6000008@hurleysoftware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 07:09:04AM -0400, Jeff Layton wrote:
-> Break up the blocked_list into a hashtable, using the fl_owner as a key.
-> This speeds up searching the hash chains, which is especially significant
-> for deadlock detection.
+On 2013.06.13 at 10:16 -0400, Peter Hurley wrote:
+> On 06/13/2013 06:39 AM, Markus Trippelsdorf wrote:
+> > On 2013.06.07 at 20:22 +0200, Mikael Pettersson wrote:
+> >> Peter Hurley writes:
+> >>   > Based on the other reports from Mikael and David, I suspect this problem
+> >>   > may have to do with my commit 699390354da6c258b65bf8fa79cfd5feaede50b6:
+> >>   >
+> >>   >    pty: Ignore slave pty close() if never successfully opened
+> >>   >
+> >>   > This commit poisons the pty under certain error conditions that may
+> >>   > occur from parallel open()s (or parallel close() with pending write()).
+> >>   >
+> >>   > It's unclear to me which error condition is triggered and how user-space
+> >>   > got an open file descriptor but that seems the most likely. Is the problem
+> >>   > reproducible enough that a debug patch would likely trigger?
+> >>
+> >> In my case the problem occurred frequently enough that I've been forced
+> >> to change my build procedures to avoid it.  I'd welcome a debug patch.
+> >
+> > Since apparently no debugging patch is forthcoming, maybe it's time to
+> > test the simple revert of commit 699390354da.
 > 
-> Note that the initial implementation assumes that hashing on fl_owner is
-> sufficient. In most cases it should be, with the notable exception being
-> server-side lockd, which compares ownership using a tuple of the
-> nlm_host and the pid sent in the lock request. So, this may degrade to a
-> single hash bucket when you only have a single NFS client. That will be
-> addressed in a later patch.
+> I apologize for the delay.
 > 
-> The careful observer may note that this patch leaves the file_lock_list
-> alone. There's much less of a case for turning the file_lock_list into a
-> hashtable. The only user of that list is the code that generates
-> /proc/locks, and it always walks the entire list.
+> Here's a debug patch which I hope will narrow down the circumstances of
+> this error condition.
 
-Makes sense to me, ACK to this and the previous patch.--b.
+Unfortunately it doesn't apply:
 
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c |   25 ++++++++++++++++++-------
->  1 files changed, 18 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 28959bc..76fb7af 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -126,6 +126,7 @@
->  #include <linux/time.h>
->  #include <linux/rcupdate.h>
->  #include <linux/pid_namespace.h>
-> +#include <linux/hashtable.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -153,10 +154,19 @@ int lease_break_time = 45;
->  #define for_each_lock(inode, lockp) \
->  	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
->  
-> +/*
-> + * By breaking up the blocked locks list into a hashtable, we speed up the
-> + * deadlock detection.
-> + *
-> + * FIXME: make this value scale via some heuristic?
-> + */
-> +#define BLOCKED_HASH_BITS	7
-> +
-> +static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
-> +
->  static HLIST_HEAD(file_lock_list);
-> -static HLIST_HEAD(blocked_list);
->  
-> -/* Protects the two list heads above */
-> +/* Protects the file_lock_list and the blocked_hash */
->  static DEFINE_SPINLOCK(file_lock_lock);
->  
->  static struct kmem_cache *filelock_cache __read_mostly;
-> @@ -475,13 +485,13 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
->  static inline void
->  locks_insert_global_blocked(struct file_lock *waiter)
->  {
-> -	hlist_add_head(&waiter->fl_link, &blocked_list);
-> +	hash_add(blocked_hash, &waiter->fl_link, (unsigned long)waiter->fl_owner);
->  }
->  
->  static inline void
->  __locks_delete_global_blocked(struct file_lock *waiter)
->  {
-> -	hlist_del_init(&waiter->fl_link);
-> +	hash_del(&waiter->fl_link);
->  }
->  
->  static inline void
-> @@ -729,7 +739,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
->  {
->  	struct file_lock *fl;
->  
-> -	hlist_for_each_entry(fl, &blocked_list, fl_link) {
-> +	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
->  		if (posix_same_owner(fl, block_fl))
->  			return fl->fl_next;
->  	}
-> @@ -865,7 +875,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  	/*
->  	 * New lock request. Walk all POSIX locks and look for conflicts. If
->  	 * there are any, either return error or put the request on the
-> -	 * blocker's list of waiters and the global blocked_list.
-> +	 * blocker's list of waiters and the global blocked_hash.
->  	 */
->  	if (request->fl_type != F_UNLCK) {
->  		for_each_lock(inode, before) {
-> @@ -2284,13 +2294,14 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
->  
->  static int locks_show(struct seq_file *f, void *v)
->  {
-> +	int bkt;
->  	struct file_lock *fl, *bfl;
->  
->  	fl = hlist_entry(v, struct file_lock, fl_link);
->  
->  	lock_get_status(f, fl, *((loff_t *)f->private), "");
->  
-> -	hlist_for_each_entry(bfl, &blocked_list, fl_link) {
-> +	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
->  		if (bfl->fl_next == fl)
->  			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
->  	}
-> -- 
-> 1.7.1
-> 
+markus@x4 linux % git describe
+v3.10-rc5-167-g26e0446
+markus@x4 linux % patch -p1 --dry-run < /home/markus/tty.patch
+checking file drivers/tty/pty.c
+Hunk #1 succeeded at 25 with fuzz 2.
+Hunk #2 FAILED at 256.
+1 out of 2 hunks FAILED
+checking file drivers/tty/tty_io.c
+Hunk #1 FAILED at 105.
+Hunk #2 FAILED at 424.
+Hunk #3 FAILED at 448.
+Hunk #4 FAILED at 1020.
+Hunk #5 FAILED at 1197.
+5 out of 5 hunks FAILED
+
+-- 
+Markus
