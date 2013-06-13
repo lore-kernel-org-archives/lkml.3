@@ -1,67 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758411Ab3FMJQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:16:33 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:40890 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab3FMJQb (ORCPT
+	id S1758460Ab3FMJTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:19:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:27502 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758371Ab3FMJT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:16:31 -0400
+	Thu, 13 Jun 2013 05:19:29 -0400
+Message-ID: <51B98D17.2050902@huawei.com>
+Date: Thu, 13 Jun 2013 17:12:55 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
-References: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
-Date: Thu, 13 Jun 2013 14:46:31 +0530
-Message-ID: <CAKohpomDXmQ_DWpHgm1mD5WWUvBTjWXBPDp1KOWb1mff4UdX=g@mail.gmail.com>
-Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Xiaoguang Chen <chenxg@marvell.com>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, njiang1@marvell.com, zjwu@marvell.com,
-        ylmao@marvell.com, chenxg.marvell@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v3 5/9] memcg: use css_get/put when charging/uncharging kmem
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2013 14:31, Xiaoguang Chen <chenxg@marvell.com> wrote:
-> cpufreq governor stop and start should be kept in sequence.
-> If not, there will be unexpected behavior, for example:
->
-> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
-> the normal sequence is as below:
->
-> 1) Current governor is userspace, one application tries to set
-> governor to ondemand. it will call __cpufreq_set_policy in which it
-> will stop userspace governor and then start ondemand governor.
->
-> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
-> call cpufreq_add_policy_cpu. on which it first stops userspace
-> governor, and then starts userspace governor.
->
-> Now if the sequence of above two cases interleaves, it becames
-> below sequence:
->
-> 1) application stops userspace governor
-> 2)                                      hotplug stops userspace governor
-> 3) application starts ondemand governor
-> 4)                                      hotplug starts a governor
->
-> in step 4, hotplug is supposed to start userspace governor, but now
-> the governor has been changed by application to ondemand, so hotplug
-> starts ondemand governor again !!!!
->
-> The solution is: do not allow stop one policy's governor multi-times
-> Governor stop should only do once for one policy, after it is stopped,
-> no other governor stop should be executed. also add one mutext to
-> protect __cpufreq_governor so governor operation can be kept in sequence.
->
-> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-> ---
->  drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
->  include/linux/cpufreq.h   |  1 +
->  2 files changed, 25 insertions(+)
+Sorry for updating the patchset so late.
 
-I forgot to tell you earlier but please update changelog everytime you
-send a new version.
+I've made some changes for the memory barrier thing, and I agree with
+Michal that there can be improvement but can be a separate patch.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+If this version is ok for everyone, I'll send the whole patchset out
+to Andrew.
+
+=========================
+
+Use css_get/put instead of mem_cgroup_get/put.
+
+We can't do a simple replacement, because here mem_cgroup_put()
+is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
+won't be called until css refcnt goes down to 0.
+
+Instead we increment css refcnt in mem_cgroup_css_offline(), and
+then check if there's still kmem charges. If not, css refcnt will
+be decremented immediately, otherwise the refcnt won't be decremented
+when kmem charges goes down to 0.
+
+v3:
+- changed wmb() to smp_smb(), and moved it to memcg_kmem_mark_dead(),
+  and added comment.
+
+v2:
+- added wmb() in kmem_cgroup_css_offline(), pointed out by Michal
+- revised comments as suggested by Michal
+- fixed to check if kmem is activated in kmem_cgroup_css_offline()
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c | 70 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 45 insertions(+), 25 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 466c595..76dcd0e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -416,6 +416,11 @@ static void memcg_kmem_clear_activated(struct mem_cgroup *memcg)
+ 
+ static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+ {
++	/*
++	 * We need to call css_get() first, because memcg_uncharge_kmem()
++	 * will call css_put() if it sees the memcg is dead.
++	 */
++	smb_wmb();
+ 	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
+ 		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
+ }
+@@ -3060,8 +3065,16 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+ 	if (res_counter_uncharge(&memcg->kmem, size))
+ 		return;
+ 
++	/*
++	 * Releases a reference taken in kmem_cgroup_css_offline in case
++	 * this last uncharge is racing with the offlining code or it is
++	 * outliving the memcg existence.
++	 *
++	 * The memory barrier imposed by test&clear is paired with the
++	 * explicit one in memcg_kmem_mark_dead().
++	 */
+ 	if (memcg_kmem_test_and_clear_dead(memcg))
+-		mem_cgroup_put(memcg);
++		css_put(&memcg->css);
+ }
+ 
+ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+@@ -5165,14 +5178,6 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ 		 * starts accounting before all call sites are patched
+ 		 */
+ 		memcg_kmem_set_active(memcg);
+-
+-		/*
+-		 * kmem charges can outlive the cgroup. In the case of slab
+-		 * pages, for instance, a page contain objects from various
+-		 * processes, so it is unfeasible to migrate them away. We
+-		 * need to reference count the memcg because of that.
+-		 */
+-		mem_cgroup_get(memcg);
+ 	} else
+ 		ret = res_counter_set_limit(&memcg->kmem, val);
+ out:
+@@ -5205,12 +5210,10 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+ 		goto out;
+ 
+ 	/*
+-	 * destroy(), called if we fail, will issue static_key_slow_inc() and
+-	 * mem_cgroup_put() if kmem is enabled. We have to either call them
+-	 * unconditionally, or clear the KMEM_ACTIVE flag. I personally find
+-	 * this more consistent, since it always leads to the same destroy path
++	 * __mem_cgroup_free() will issue static_key_slow_dec() because this
++	 * memcg is active already. If the later initialization fails then the
++	 * cgroup core triggers the cleanup so we do not have to do it here.
+ 	 */
+-	mem_cgroup_get(memcg);
+ 	static_key_slow_inc(&memcg_kmem_enabled_key);
+ 
+ 	mutex_lock(&set_limit_mutex);
+@@ -5893,23 +5896,38 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	return mem_cgroup_sockets_init(memcg, ss);
+ }
+ 
+-static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
++static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ {
+-	mem_cgroup_sockets_destroy(memcg);
++	if (!memcg_kmem_is_active(memcg))
++		return;
++
++	/*
++	 * kmem charges can outlive the cgroup. In the case of slab
++	 * pages, for instance, a page contain objects from various
++	 * processes. As we prevent from taking a reference for every
++	 * such allocation we have to be careful when doing uncharge
++	 * (see memcg_uncharge_kmem) and here during offlining.
++	 *
++	 * The idea is that that only the _last_ uncharge which sees
++	 * the dead memcg will drop the last reference. An additional
++	 * reference is taken here before the group is marked dead
++	 * which is then paired with css_put during uncharge resp. here.
++	 *
++	 * Although this might sound strange as this path is called from
++	 * css_offline() when the referencemight have dropped down to 0
++	 * and shouldn't be incremented anymore (css_tryget would fail)
++	 * we do not have other options because of the kmem allocations
++	 * lifetime.
++	 */
++	css_get(&memcg->css);
+ 
+ 	memcg_kmem_mark_dead(memcg);
+ 
+ 	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
+ 		return;
+ 
+-	/*
+-	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
+-	 * path here, being careful not to race with memcg_uncharge_kmem: it is
+-	 * possible that the charges went down to 0 between mark_dead and the
+-	 * res_counter read, so in that case, we don't need the put
+-	 */
+ 	if (memcg_kmem_test_and_clear_dead(memcg))
+-		mem_cgroup_put(memcg);
++		css_put(&memcg->css);
+ }
+ #else
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+@@ -5917,7 +5935,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	return 0;
+ }
+ 
+-static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
++static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ {
+ }
+ #endif
+@@ -6350,6 +6368,8 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
++	kmem_cgroup_css_offline(memcg);
++
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
+@@ -6359,7 +6379,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
+-	kmem_cgroup_destroy(memcg);
++	mem_cgroup_sockets_destroy(memcg);
+ 
+ 	mem_cgroup_put(memcg);
+ }
+-- 
+1.8.0.2
