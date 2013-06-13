@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab3FMBej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 21:34:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34783 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756730Ab3FMBei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 21:34:38 -0400
-Date: Thu, 13 Jun 2013 04:33:17 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
-        <arnd@arndb.de>, <adrienverge@gmail.com>, <kishon@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] USB: PHY: Improve PHY selection logic
-Message-ID: <20130613013317.GA12078@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1369999743-11758-1-git-send-email-rogerq@ti.com>
+	id S932295Ab3FMBfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 21:35:17 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40677 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab3FMBfP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 21:35:15 -0400
+Message-ID: <51B921D2.2030700@codeaurora.org>
+Date: Wed, 12 Jun 2013 18:35:14 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
-Content-Disposition: inline
-In-Reply-To: <1369999743-11758-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Hogan <james.hogan@imgtec.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v4 0/5] clk: implement remuxing during set_rate
+References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/20/13 06:28, James Hogan wrote:
+> This patchset adds support for automatic selection of the best parent
+> for a clock mux, i.e. the one which can provide the closest clock rate
+> to that requested. It can be disabled by a new CLK_SET_RATE_NO_REPARENT
+> flag (which is set for all uses of clk_register_mux().
+>
+> This works by way of adding a new op, determine_rate, similar to
+> round_rate but with an extra parameter to allow the clock driver to
+> optionally select a different parent clock. This is used in
+> clk_calc_new_rates to decide whether to initiate a set_parent operation.
 
-On Fri, May 31, 2013 at 02:29:01PM +0300, Roger Quadros wrote:
-> Hi,
->=20
-> Improve Kconfig so that the relevant PHY driver can be explicitely
-> selected by the controller driver instead of relying on the user
-> to do so.
->=20
-> Detailed description in patch 1.
->=20
-> v2:
-> - Merge patches 3-5 into the first patch to prevent circular dependency
-> between the Kconfig options during bisection.
+I'd like to see this go into 3.11. We can tackle the larger problem that
+Saravana brought up later on since we're no worse off than we already
+are without these patches.
 
-FYI, these patches were dropped because they cause linking issues as
-noted by Greg.
+Feel free to add my reviewed-by to all patches.
 
---=20
-balbi
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuSFdAAoJEIaOsuA1yqREeUcP/RTWwOg3nsEv0pLqW4vyt4qi
-+VYAWhf6Yb+SUePCuIJLhdpuI61KgsKwJ4F84uxWs4gChrgdHqigViMQeEAhTNsI
-QwbYBjQj2S/StszTYG1zRdseeBSL99Tvasqic9n7FP9MHg4QCkY8TR8VTzBKiHZ1
-x1y0yowEC5imcGtZjmyzI41hR29JU5dVAc7edImIztcNSoywmQTRGcSC/2Ga8dq2
-5yTuq0utqWv0Meumc0y2qVBbH1zZ/5bUFGfR91t4VxajEXYelC0sfuXpmDrX+hXD
-D9CLm68lOsuZFcTOzhqrfUjcsFFc8IoGrUyfxTDu4X7Kal4nOsp3C0B0utM/t2rp
-ybzXDsIif+hCY5h/K6g4Gb1rLSD8rakaEYNNezQCM/8qcTwMD8QJPr67wDKteYl1
-ghMwd4TNYKNfrv625JUIltzSJWmgCcZMBS7tRRB4gZVCGAkRkn+VxIB6nZa6+sOt
-vvEToa1EFIFjNJX3YFYhbmcMwj6SLDoNmfv1bJNV5K9ZxBf0O83CYIb6iV3W2V60
-bhdEouBPRIKxsjlw47Fj8erOo18S9b3mV40QSHWi3jpzfHbr3VtsVw5AxvciGwzI
-K3P/2MQmA39RUQ8V5vyZYqUITY83Xz+k61od61X8910FdYrCkIopIn0Y7E5NmFtN
-gDECdu2Tib29nyUpNu8h
-=aHBA
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
