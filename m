@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936Ab3FMSUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:20:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36356 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab3FMSUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:20:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 6/9] ACPI, DOCK: mark initialization functions with __init
-Date: Thu, 13 Jun 2013 20:29:59 +0200
-Message-ID: <4725934.hjsbtR4hAr@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371141152-9468-7-git-send-email-jiang.liu@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-7-git-send-email-jiang.liu@huawei.com>
+	id S1758947Ab3FMSVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:21:19 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:32806 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758780Ab3FMSVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:21:17 -0400
+Date: Thu, 13 Jun 2013 11:21:14 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Oded Gabbay <ogabbay@advaoptical.com>
+Cc: cjb@laptop.org, Chang-Ming.Huang@freescale.com, gregkh@linuxfoundation.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] MMC: P2020 SDHC: Fix bug when writing to
+ SDHCI_HOST_CONTROL register
+Message-ID: <20130613182114.GB27040@teo>
+References: <1371045277-3270-1-git-send-email-ogabbay@advaoptical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1371045277-3270-1-git-send-email-ogabbay@advaoptical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 12:32:29 AM Jiang Liu wrote:
-> Mark all initialization functions with __init to reduce memory
-> consumption at runtime.
-
-Again, this is a *cleanup*, not a fix.  Please don't mix cleanups with fixes,
-especially with ones you want to go into 3.10, because the cleanups aren't
-3.10 material for sure.
-
-Thanks,
-Rafael
-
-
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Shaohua Li <shaohua.li@intel.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
+On Wed, Jun 12, 2013 at 04:54:37PM +0300, Oded Gabbay wrote:
+> The P2020 has a non-standard implementation of the SDHCI_HOST_CONTROL
+> register. This patch adds a QUIRK in the SDHCI header to signal that
+> a host controller has a non-standard SDHCI_HOST_CONTROL register. The
+> patch adds a check to the function esdhc_writeb in file
+> sdhci-of-esdhc.c, where it checks if the write is done to the
+> SDHCI_HOST_CONTROL register and th host has the above mentioned QUIRK,
+> then the function simply returns instead of writing to the register.
+> The patch also detects if the processor is P2020 (by looking in dev
+> tree) and if so, adds the QUIRK to the host->quirk2
+> 
+> This patch depends on the first patch of this set (total of 2 patches)
+> 
+> Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
 > ---
->  drivers/acpi/dock.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+>  drivers/mmc/host/sdhci-of-esdhc.c | 14 ++++++++++++++
+>  include/linux/mmc/sdhci.h         |  2 ++
+>  2 files changed, 16 insertions(+)
 > 
-> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index cd2d5df..da3314d 100644
-> --- a/drivers/acpi/dock.c
-> +++ b/drivers/acpi/dock.c
-> @@ -94,7 +94,7 @@ struct dock_dependent_device {
->   *
->   * Add the dependent device to the dock's dependent device list.
->   */
-> -static int
-> +static int __init
->  add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
->  {
->  	struct dock_dependent_device *dd;
-> @@ -192,7 +192,7 @@ static int is_dock(acpi_handle handle)
->  	return 1;
->  }
+> diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
+> index fd149a0..ca88529 100644
+> --- a/drivers/mmc/host/sdhci-of-esdhc.c
+> +++ b/drivers/mmc/host/sdhci-of-esdhc.c
+> @@ -121,6 +121,11 @@ static void esdhc_writeb(struct sdhci_host *host, u8 val, int reg)
+>  	if (reg == SDHCI_HOST_CONTROL) {
+>  		u32 dma_bits;
 >  
-> -static int is_ejectable(acpi_handle handle)
-> +static int __init is_ejectable(acpi_handle handle)
+> +		/* If host control register is not standard, exit
+> +		 * this function */
+
+Broken comments.
+
+> +		if (host->quirks2 & SDHCI_QUIRK2_BROKEN_HOST_CONTROL)
+> +			return;
+> +
+>  		/* DMA select is 22,23 bits in Protocol Control Register */
+>  		dma_bits = (val & SDHCI_CTRL_DMA_MASK) << 5;
+>  		clrsetbits_be32(host->ioaddr + reg , SDHCI_CTRL_DMA_MASK << 5,
+> @@ -289,6 +294,7 @@ static const struct sdhci_pltfm_data sdhci_esdhc_pdata = {
+>  static int sdhci_esdhc_probe(struct platform_device *pdev)
 >  {
->  	acpi_status status;
->  	acpi_handle tmp;
-> @@ -203,7 +203,7 @@ static int is_ejectable(acpi_handle handle)
->  	return 1;
->  }
+>  	struct sdhci_host *host;
+> +	struct device_node *np;
+>  	int ret = 0;
 >  
-> -static int is_ata(acpi_handle handle)
-> +static int __init is_ata(acpi_handle handle)
->  {
->  	acpi_handle tmp;
+>  	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_pdata);
+> @@ -297,6 +303,14 @@ static int sdhci_esdhc_probe(struct platform_device *pdev)
 >  
-> @@ -216,7 +216,7 @@ static int is_ata(acpi_handle handle)
->  	return 0;
->  }
+>  	sdhci_get_of_property(pdev);
 >  
-> -static int is_battery(acpi_handle handle)
-> +static int __init is_battery(acpi_handle handle)
->  {
->  	struct acpi_device_info *info;
->  	int ret = 1;
-> @@ -232,7 +232,7 @@ static int is_battery(acpi_handle handle)
->  	return ret;
->  }
+> +	np = pdev->dev.of_node;
+> +	if (of_device_is_compatible(np, "fsl,p2020-esdhc")) {
+> +		/* Freescale messed up with P2020 as it has a non-standard
+> +		* host control register
+> +		*/
+
+Ditto.
+
+Otherwise, it looks good. Thanks!
+
+Reviewed-by: Anton Vorontsov <anton@enomsg.org>
+
+> +		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HOST_CONTROL;
+> +	}
+> +
+>  	/* call to generic mmc_of_parse to support additional capabilities */
+>  	mmc_of_parse(host->mmc);
 >  
-> -static int is_ejectable_bay(acpi_handle handle)
-> +static int __init is_ejectable_bay(acpi_handle handle)
->  {
->  	acpi_handle phandle;
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index b838ffc..b73dbdd 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -95,6 +95,8 @@ struct sdhci_host {
+>  /* The system physically doesn't support 1.8v, even if the host does */
+>  #define SDHCI_QUIRK2_NO_1_8_V				(1<<2)
+>  #define SDHCI_QUIRK2_PRESET_VALUE_BROKEN		(1<<3)
+> +/* Controller has a non-standard host control register */
+> +#define SDHCI_QUIRK2_BROKEN_HOST_CONTROL		(1<<4)
 >  
-> @@ -809,7 +809,7 @@ static struct notifier_block dock_acpi_notifier = {
->   * check to see if an object has an _EJD method.  If it does, then it
->   * will see if it is dependent on the dock station.
->   */
-> -static acpi_status
-> +static acpi_status __init
->  find_dock_devices(acpi_handle handle, u32 lvl, void *context, void **rv)
->  {
->  	acpi_status status;
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  	int irq;		/* Device IRQ */
+>  	void __iomem *ioaddr;	/* Mapped address */
+> -- 
+> 1.8.3.1
