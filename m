@@ -1,220 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab3FMWdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:33:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19687 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab3FMWdr (ORCPT
+	id S1758961Ab3FMWgC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:36:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38205 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931Ab3FMWgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:33:47 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH v2] x86: Fix /proc/mtrr with base/size more than 44bits
-Date: Thu, 13 Jun 2013 15:33:35 -0700
-Message-Id: <1371162815-29931-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 13 Jun 2013 18:36:01 -0400
+Date: Thu, 13 Jun 2013 15:35:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-Id: <20130613153551.39ffdf595d989be10c773d23@linux-foundation.org>
+In-Reply-To: <20130613223028.GG13970@mtj.dyndns.org>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+	<20130613020536.GA10979@localhost>
+	<20130612200311.7f9d938a.akpm@linux-foundation.org>
+	<20130613185318.GB12075@mtj.dyndns.org>
+	<20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+	<20130613191507.GB13970@mtj.dyndns.org>
+	<20130613122339.239a721d097a64435817a780@linux-foundation.org>
+	<20130613193514.GD13970@mtj.dyndns.org>
+	<20130613151040.8e11da022519fff7d5e8ea77@linux-foundation.org>
+	<20130613223028.GG13970@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one sytem that mtrr range is more then 44bits, in dmesg we have
-[    0.000000] MTRR default type: write-back
-[    0.000000] MTRR fixed ranges enabled:
-[    0.000000]   00000-9FFFF write-back
-[    0.000000]   A0000-BFFFF uncachable
-[    0.000000]   C0000-DFFFF write-through
-[    0.000000]   E0000-FFFFF write-protect
-[    0.000000] MTRR variable ranges enabled:
-[    0.000000]   0 [000080000000-0000FFFFFFFF] mask 3FFF80000000 uncachable
-[    0.000000]   1 [380000000000-38FFFFFFFFFF] mask 3F0000000000 uncachable
-[    0.000000]   2 [000099000000-000099FFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   3 [00009A000000-00009AFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   4 [381FFA000000-381FFBFFFFFF] mask 3FFFFE000000 write-through
-[    0.000000]   5 [381FFC000000-381FFC0FFFFF] mask 3FFFFFF00000 write-through
-[    0.000000]   6 [0000AD000000-0000ADFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   7 [0000BD000000-0000BDFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   8 disabled
-[    0.000000]   9 disabled
+On Thu, 13 Jun 2013 15:30:28 -0700 Tejun Heo <tj@kernel.org> wrote:
 
-but /proc/mtrr report wrong:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x80000000000 (8388608MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x81ffa000000 (8519584MB), size=   32MB, count=1: write-through
-reg05: base=0x81ffc000000 (8519616MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
+> Hello, Andrew.
+> 
+> On Thu, Jun 13, 2013 at 03:10:40PM -0700, Andrew Morton wrote:
+> > Look, we're falling into the age-old trap of trying to justify existing
+> > code just because it exists.
+> > 
+> > Stop.  Take a step back and pretend that the percpu tag allocator patch
+> > never existed.  Now, define the problem and propose solutions.
+> > 
+> > The absolute dead last and worst solution is "implement something new
+> > which largely duplicates existing code".  Such a step requires an
+> > extraordinary amount of justification and that hasn't happened.
+> 
+> I think you're looking at it from the complete opposite point from
+> mine.  That problem has always existed and the solutions implemented
+> many times over in the whole IO stack across aio, block layer proper,
+> SCSI and individual drivers, and most, if not all, suck.  If we can
+> consolidate those into a properly designed tag allocator, it's a win,
+> whether it's integrated into idr or not.  It's a well-known problem
+> with incomplete bad solutions implemented in multiple places.
 
-so bit 44 and bit 45 get cut off.
-
-We have problems in arch/x86/kernel/cpu/mtrr/generic.c::generic_get_mtrr().
-1. for base, we miss cast base_lo to 64bit before shifting.
-Fix that by adding u64 casting.
-
-2. for size, it only can handle 44 bits aka 32bits + page_shift
-Fix that with 64bit mask instead of 32bit mask_lo, then range could be
-more than 44bits.
-At the same time, we need to update size_or_mask for old cpus that does
-support cpuid 0x80000008 to get phys_addr. Need to set high 32bits
-to all 1s, otherwise will not get correct size for them.
-
-Also fix mtrr_add_page: it should check base and (base + size - 1)
-instead of base and size, as base and size could be small but
-base + size could bigger enough to be out of boundary. We can
-use boot_cpu_data.x86_phys_bits directly to avoid size_or_mask.
-
-So When are we going to have size more than 44bits? that is 16TiB.
-
-after patch we have right ouput:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x380000000000 (58720256MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x381ffa000000 (58851232MB), size=   32MB, count=1: write-through
-reg05: base=0x381ffc000000 (58851264MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
-
--v2: simply checking in mtrr_add_page according to hpa.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: <stable@vger.kernel.org>
-
----
- arch/x86/kernel/cpu/mtrr/generic.c |   21 +++++++++++----------
- arch/x86/kernel/cpu/mtrr/main.c    |   16 +++++++++-------
- 2 files changed, 20 insertions(+), 17 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/cpu/mtrr/generic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/generic.c
-+++ linux-2.6/arch/x86/kernel/cpu/mtrr/generic.c
-@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long ba
- static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 			     unsigned long *size, mtrr_type *type)
- {
--	unsigned int mask_lo, mask_hi, base_lo, base_hi;
--	unsigned int tmp, hi;
-+	u32 mask_lo, mask_hi, base_lo, base_hi;
-+	unsigned int hi;
-+	u64 tmp, mask;
- 
- 	/*
- 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
-@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned in
- 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
- 
- 	/* Work out the shifted address mask: */
--	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
--	mask_lo = size_or_mask | tmp;
-+	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
-+	mask = size_or_mask | tmp;
- 
- 	/* Expand tmp with high bits to all 1s: */
--	hi = fls(tmp);
-+	hi = fls64(tmp);
- 	if (hi > 0) {
--		tmp |= ~((1<<(hi - 1)) - 1);
-+		tmp |= ~((1ULL<<(hi - 1)) - 1);
- 
--		if (tmp != mask_lo) {
-+		if (tmp != mask) {
- 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
- 			add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
--			mask_lo = tmp;
-+			mask = tmp;
- 		}
- 	}
- 
-@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned in
- 	 * This works correctly if size is a power of two, i.e. a
- 	 * contiguous range:
- 	 */
--	*size = -mask_lo;
--	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
-+	*size = -mask;
-+	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
- 	*type = base_lo & 0xff;
- 
- out_put_cpu:
-Index: linux-2.6/arch/x86/kernel/cpu/mtrr/main.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/main.c
-+++ linux-2.6/arch/x86/kernel/cpu/mtrr/main.c
-@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, un
- 		return -EINVAL;
- 	}
- 
--	if (base & size_or_mask || size & size_or_mask) {
-+	if ((base | (base + size - 1)) >>
-+	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
- 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
- 		return -EINVAL;
- 	}
-@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_o
- 
- int __initdata changed_by_mtrr_cleanup;
- 
-+#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
- /**
-  * mtrr_bp_init - initialize mtrrs on the boot CPU
-  *
-@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
- 
- 	if (cpu_has_mtrr) {
- 		mtrr_if = &generic_mtrr_ops;
--		size_or_mask = 0xff000000;			/* 36 bits */
-+		size_or_mask = SIZE_OR_MASK_BITS(36);
- 		size_and_mask = 0x00f00000;
- 		phys_addr = 36;
- 
-@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
- 			     boot_cpu_data.x86_mask == 0x4))
- 				phys_addr = 36;
- 
--			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-+			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
- 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
- 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
- 			   boot_cpu_data.x86 == 6) {
-@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
- 			 * VIA C* family have Intel style MTRRs,
- 			 * but don't support PAE
- 			 */
--			size_or_mask = 0xfff00000;		/* 32 bits */
-+			size_or_mask = SIZE_OR_MASK_BITS(32);
- 			size_and_mask = 0;
- 			phys_addr = 32;
- 		}
-@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
- 			if (cpu_has_k6_mtrr) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
- 			if (cpu_has_centaur_mcr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
- 			if (cpu_has_cyrix_arr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
+Well that's news.  My awe at the dreadfulness of Kent's changelog
+continues to grow.  Please identify these duplicated allocators
+(function names will suffice).  That way, others can actually review
+this code :(
