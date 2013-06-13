@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3FMMZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:25:32 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:33179 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756455Ab3FMMZa (ORCPT
+	id S1756689Ab3FMM3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:29:47 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:41686 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3FMM3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:25:30 -0400
-X-Auth-Info: i1IOr6FbMm7wkW4EtCWXDdHMTqeZPjrvKqm9+q1LpP4=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k/uaccess: Fix asm constraints for userspace access
-References: <1371124784-13306-1-git-send-email-geert@linux-m68k.org>
-X-Yow: I know how to get the hostesses released!  Give them their own
- television series!
-Date: Thu, 13 Jun 2013 14:25:20 +0200
-In-Reply-To: <1371124784-13306-1-git-send-email-geert@linux-m68k.org> (Geert
-	Uytterhoeven's message of "Thu, 13 Jun 2013 13:59:44 +0200")
-Message-ID: <mvm7ghyrydr.fsf@hawking.suse.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 13 Jun 2013 08:29:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+Date: Thu, 13 Jun 2013 14:29:45 +0200
+Message-ID: <CACRpkdbLH2nFBgBDu0NkzbJmr8mFSsR_WuvRvO6G1YfZ=DqPEA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: exynos: Add spinlocks to irq_mask and irq_unmask
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>, ilho215.lee@samsung.com,
+        Eunki Kim <eunki_kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On Wed, Jun 12, 2013 at 7:33 PM, Doug Anderson <dianders@chromium.org> wrote:
 
-> Also, relax the asm constraints for 16-bit userspace accesses in
-> __put_user() and __get_user(), as both "move" and "moves" do support
-> such transfers between memory and address registers.
+> The patch:
+>   1984695 pinctrl: samsung: Protect bank registers with a spinlock
+>
+> ...added spinlocks to protect many accesses.  However, the irq_mask
+> and irq_unmask functions still do an unprotected read/modify/write.
+> Add the spinlock there.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-There's another occurrence in __constant_copy_from_user and
-__constant_copy_to_user.
+Patch applied with Tomasz and Kukjin's ACKs.
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Thanks!
+Linus Walleij
