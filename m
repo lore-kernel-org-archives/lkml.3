@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab3FMMer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:34:47 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:60415 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3FMMeq (ORCPT
+	id S1756470Ab3FMMj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:39:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37020 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3FMMj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:34:46 -0400
+	Thu, 13 Jun 2013 08:39:27 -0400
+Message-ID: <51B9BC5E.6060407@oracle.com>
+Date: Thu, 13 Jun 2013 20:34:38 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <1371058399-31933-3-git-send-email-dianders@chromium.org>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
-	<1371058399-31933-3-git-send-email-dianders@chromium.org>
-Date: Thu, 13 Jun 2013 14:34:45 +0200
-Message-ID: <CACRpkdYyReM7fLjYM4wnuCN5xZt_2hPDXaM9A0yuRhOoEBZm5g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts
- before unmasking
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>, ilho215.lee@samsung.com,
-        Eunki Kim <eunki_kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv13 0/4] zswap: compressed swap caching
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 7:33 PM, Doug Anderson <dianders@chromium.org> wrote:
+Hi Seth,
 
-> A level-triggered interrupt should be acked after the interrupt line
-> becomes inactive and before it is unmasked, or else another interrupt
-> will be immediately triggered.  Acking before or after calling the
-> handler is not enough.
->
-> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On 06/04/2013 04:33 AM, Seth Jennings wrote:
+> This is the latest version of the zswap patchset for compressed swap caching.
+> This is submitted for merging into linux-next and inclusion in v3.11.
+> 
 
-I'm holding this off until Tomasz' comments are addressed.
+Have you noticed that pool_pages >> stored_pages, like this:
+[root@ca-dev32 zswap]# cat *
+0
+424057
+99538
+0
+2749448
+0
+24
+60018
+16837
+[root@ca-dev32 zswap]# cat pool_pages
+97372
+[root@ca-dev32 zswap]# cat stored_pages
+53701
+[root@ca-dev32 zswap]#
 
-Yours,
-Linus Walleij
+I think it's unreasonable to use more pool pages than stored pages!
+
+Regards,
+-Bob
