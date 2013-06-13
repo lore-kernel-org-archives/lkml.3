@@ -1,81 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759046Ab3FMV3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:29:15 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:28905 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3FMV3N (ORCPT
+	id S1759286Ab3FMViP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:38:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55065 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759241Ab3FMViN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:29:13 -0400
-Message-ID: <1371158939.21540.39.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container
- hotplug with other scan handlers
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, Aaron Lu <aaron.lu@intel.com>
-Date: Thu, 13 Jun 2013 15:28:59 -0600
-In-Reply-To: <1417592.vuSG0cUIGo@vostro.rjw.lan>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 13 Jun 2013 17:38:13 -0400
+Message-ID: <51BA3BC1.3090109@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 15:38:09 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com> <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+In-Reply-To: <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-13 at 01:23 +0200, Rafael J. Wysocki wrote:
-> Hi All,
-> 
-> It turns out that some BIOSes add container device IDs as _CIDs to device
-> object that in principle may be matched against the other scan handlers (or
-> ACPI drivers, but that's not a problem, because the container scan handler
-> can co-exist with an ACPI driver).  That's why our recent fix for an issue
-> related to the ACPI video driver had to be reverted right before -rc5.
+On 06/13/2013 06:55 AM, Christian Ruppert wrote:
+> This patch adds the infrastructure required to register non-linear gpio
+> ranges through gpiolib and the standard GPIO device tree bindings.
 
-I am familiar with this firmware, although I no longer have access to
-the systems.  An SBA device object has _HID with an HP-specific PNPID
-and _CID with a generic container PNPID.  The _HID allows an OS with the
-HP SBA driver (which recognizes the _HID) to enable the SBA's I/O TLB
-functionality, while the _CID allows an OS without the HP SBA driver to
-boot-up by treating this SBA as a container.  The _CID is needed because
-some OS skips scanning underneath when it finds an unrecognized object.
+That's not exactly true. The existing gpio-ranges property already
+allows non-linear ranges to be represented quite easily; each entry in
+the gpio-ranges list is <gpio-base> <pinctrl-base> <count>, so you can
+piece together any mapping you want.
 
-> Although I submitted an alternative fix for that bug, I think the problem
-> with the container scan handler possibly matching devices already having
-> some other scan handlers attached needs addressing, because we may need to
-> use the container hotplug profile for those devices.  The following patch
-> series is supposed to address it.
+The potential advantage of this patch is that the pinctrl-side of the
+mapping can be a group name rather than pin IDs, which might reduce the
+size of the mapping list if you have an extremely sparse or non-linear
+mapping /and/ parts of that mapping just happen to align with the pin
+groups in the pin controller HW, since each entry in the gpio-ranges
+property can be sparse/non-linear, rather than being a small linear
+chunk of the mapping.
 
-When the HP SBA driver is bound to the SBA object, this driver needs to
-handle a hotplug request when it is supported.  This is because the I/O
-TLB functionality requires its hot-delete operation as well.  The
-container scan handler can be used only when this driver is bound to the
-SBA object as a container and therefore its I/O TLB functionality is not
-used. 
+As an aside, for Tegra I solved this differently: In the pinctrl driver,
+I simply defined the pin IDs to exactly match the GPIO IDs in order, so
+the mapping is 100% linear. Of course, this only works if your pinctrl
+HW documentation doesn't define any kind of numbering/ordering for your
+pins, so you can pick any order you want for the pinctrl binding/driver.
+This was true for Tegra20, since the HW only used groups for muxing.
+Given more recent Tegra SoCs have moved to per-pin muxing, that might
+not have been the best decision though, since now the HW registers at
+least do have a defined ordering/ID for each pin. If only we'd started
+with Tegra30 support not Tegra20:-)
 
-> [1/5] ACPI / scan: Do not bind ACPI drivers to objects with scan handlers
->    (this version shouldn't break the Tony's IA64 HP box the previous one broke)
-> [2/5] ACPI / scan: Separate hotplug profiles from scan handlers
-> [3/5] ACPI / scan: Add hotplug profile pointer to struct acpi_device
-> [4/5] ACPI / scan: Use container hotplug profile for matching device objects
-> [5/5] ACPI / ia64 / sba_iommu: Use ACPI scan handler for discovery
-> 
-> Patches [1-4/5] were run on my Toshiba test box and didn't break it, but it
-> really doesn't do any ACPI hotplug notifications.
-> 
-> Patch [5/5] is kind of additional, but it wouldn't work correctly without the
-> previous ones (to be honest, I haven't tried to compile it yet, but here it
-> goes for completness).
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
 
-I think we only need patch [5/5] to address the problem.  We have
-enhanced the match function of scan handlers to match a proper driver
-with respect to their priority order, i.e. matching with _HID first and
-then with _CIDs.  Patch [5/5] should assure that the HP SBA driver is
-bound to an SBA object when this driver is configured to the kernel.
+> +In addition, named groups of pins can be mapped to pin groups of a given
+> +pin controller:
+> +
+> +	gpio_pio_g: gpio-controller@1480 {
+> +		#gpio-cells = <2>;
+> +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
+> +		reg = <0x1480 0x18>;
+> +		gpio-controller;
+> +		gpio-pingrps = <&pinctrl1 0>, <&pinctrl2 3>;
+> +		gpio-pingrp-names = "pctl1_gpio_g", "pctl2_gpio_g";
 
-Thanks,
--Toshi
+A few thoughts here:
 
+"gpio-pingrps" doesn't sound very similar to the existing "gpio-ranges".
+Can we make their equivalent purpose more obvious by renaming this
+"gpio-group-ranges"?
+
+I'm not actually even sure we need a new property for this, except for
+the string group names. We could fold the new gpio-pingrps into the
+existing gpio-ranges, whose entries have the format:
+
+<gpio-base> <pinctrl-base> <count>
+
+... by saying that if count==0, it means to use a group name instead of
+a pinctrl-base value. We can insist that pinctrl-base==0 in this case
+too. If we go made, count==0 could mean "special" and pinctrl-base==0
+could mean "by pinctrl group name", and other values of pinctrl-base
+could be added later to mean other things!
+
+gpio-ranges =
+	<&pinctrl1 0 20 10>, /* Existing numeric style */
+	<&pinctrl2 10 0 0>,  /* Count==0, so group name style */
+	<&pinctrl1 0 20 10>, /* Existing numeric style */
+gpio-ranges-group-names =
+	"",    /* No group name required for entry 0 */
+	"gr1", /* Group name for entry 1 */
+	"";    /* No group name required for entry 2 */
+
+Does this seem better?
+
+> +		gpio-pingrp-names = "pctl1_gpio_g", "pctl2_gpio_g";
+
+I'm slightly worried that those example group names appear to be
+globally scoped. I would hope the group names are interpreted
+relative-to or within the pin controller that they are associated with.
+I wouldn't expect the pin controllers to include their own name in the
+names of the pin groups they expose. In other words, I'd expect that
+example to be more like:
+
+> +		gpio-pingrp-names = "foo", "bar";
+
+...
+> +The pinctrl node must have a "#gpio-pingrp-cells" property set to one to
+> +define the number of arguments to pass with the phandle.
+
+This shouldn't be required.
+
+Such properties are useful when one node references a second node, and
+that second node dictates the format of the reference. However, that is
+not the case here; the definition of gpio-pingrp-names itself always
+dictates its format entirely, and hence the value #gpio-pingrp-cells
+must always be 1, and hence there is no point requiring any referenced
+node to include this property.
+
+I realize this issue was inherited from the existing gpio-ranges
+documentation/implementation, but I've posted patches to solve that,
+triggered by thinking about this patch:
+
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/035462.html
+(the rest of the series will make it more clear, i.e. the new of_ API)
+
+> +Both methods can be combined in the same GPIO controller, e.g.
+
+In the proposal I have above, combining the mechanisms is slightly more
+cohesive, I think.
+
+> +	gpio_pio_i: gpio-controller@14B0 {
+> +		#gpio-cells = <2>;
+> +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
+> +		reg = <0x1480 0x18>;
+> +		gpio-controller;
+> +		gpio-ranges = <&pinctrl1 0 20 10>;
+> +		gpio-pingrps = <&pinctrl2 10>;
+> +		gpio-pingrp-names = "gpio_g_pins";
+> +	};
