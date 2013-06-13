@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3FMPvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:51:40 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:48112 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757257Ab3FMPvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:51:39 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] RAPIDIO: Fix idt_gen2.c build
-Thread-Topic: [PATCH] RAPIDIO: Fix idt_gen2.c build
-Thread-Index: AQHOaE0Shbtjgbiyn0epBaetwfLi2pkzyu8w
-Date: Thu, 13 Jun 2013 15:51:19 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC37BC9@corpmail1.na.ads.idt.com>
-References: <20130613154231.GA27745@linux-mips.org>
-In-Reply-To: <20130613154231.GA27745@linux-mips.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.29]
-Content-Type: text/plain; charset="utf-8"
+	id S1758533Ab3FMPwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:52:44 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40803 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab3FMPwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:52:42 -0400
+Date: Thu, 13 Jun 2013 17:52:40 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: N900 device tree conversion: how to do first step
+Message-ID: <20130613155240.GB3775@amd.pavel.ucw.cz>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+ <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
+ <20130613132624.GA3464@amd.pavel.ucw.cz>
+ <20130613141001.GF8164@atomide.com>
+ <20130613142809.GA3775@amd.pavel.ucw.cz>
+ <20130613145724.GH8164@atomide.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613145724.GH8164@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5DFpkPH030593
 
-Looks good to me.
+Hi!
 
-> -----Original Message-----
-> From: Ralf Baechle [mailto:ralf@linux-mips.org]
-> Sent: Thursday, June 13, 2013 11:43 AM
-> To: Matt Porter; Bounine, Alexandre; linux-kernel@vger.kernel.org
-> Subject: [PATCH] RAPIDIO: Fix idt_gen2.c build
+> * Pavel Machek <pavel@ucw.cz> [130613 07:34]:
+> > On Thu 2013-06-13 07:10:01, Tony Lindgren wrote:
+> > > * Pavel Machek <pavel@ucw.cz> [130613 06:32]:
+> > >  
+> > > > If I init spi manually (and some more hacks), it works in the
+> > > > qemu. But I have not tested on real hw for a while.
+> > > 
+> > > You should be able to initialize spi by adding the .dts entry,
+> > > or is there something missing in drivers/spi/spi-omap2-mcspi.c?
+> > 
+> > Not sure, I guess I'll find out soon. Do you have example dts that
+> > uses drivers/spi/spi-omap2-mcspi.c? Grepping spi in dts/ was not too
+> > successful.
 > 
-> idt_gen2.c relies that one of the header files used will include
-> <asm/page.h> which will define the required symbol PAGE_SIZE.  On MIPS
-> for example <asm/page.h> will not be included implicitly which will
-> result in the following build error:
-> 
->   CC      drivers/rapidio/switches/idt_gen2.o
-> drivers/rapidio/switches/idt_gen2.c: In function â€˜idtg2_show_errlogâ€™:
-> drivers/rapidio/switches/idt_gen2.c:379:30: error: â€˜PAGE_SIZEâ€™
-> undeclared (first use in this function)
-> drivers/rapidio/switches/idt_gen2.c:379:30: note: each undeclared
-> identifier is reported only once for each function it appears in
-> 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> ---
-> 
-> If you're ok with this patch I can put it into my next pull request for
-> Linux.  Thanks!
-> 
-> 
->  drivers/rapidio/switches/idt_gen2.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/rapidio/switches/idt_gen2.c
-> b/drivers/rapidio/switches/idt_gen2.c
-> index 809b7a3..5d3b0f0 100644
-> --- a/drivers/rapidio/switches/idt_gen2.c
-> +++ b/drivers/rapidio/switches/idt_gen2.c
-> @@ -15,6 +15,8 @@
->  #include <linux/rio_drv.h>
->  #include <linux/rio_ids.h>
->  #include <linux/delay.h>
-> +
-> +#include <asm/page.h>
->  #include "../rio.h"
-> 
->  #define LOCAL_RTE_CONF_DESTID_SEL	0x010070
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Hmm I think all we have is what's written in
+> Documentation/devicetree/bindings/spi/omap-spi.txt and
+> omap4-sdp.dts.
+
+Ok, this was easier than expected.
+
+Now, by chance, any idea what is DT equivalent of 
+
+omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+
+?
+
+(Plus I'll still have to figure out why it works on emulator but not
+on hw).
+
+Thanks,
+									Pavel
+
+
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 10a880f..3918ae1 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -65,6 +65,14 @@
+ 	status = "disabled";
+ };
+ 
++&mcspi1 {
++	mipid@2 {
++		compatible = "acx565akm";
++		spi-max-frequency = <6000000>;
++		reg = <2>;
++	};
++};
++
+ /*
+ &usb_otg_hs {
+ 	interface-type = <0>;
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 996ffc3..597ade9 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -130,9 +130,10 @@ void __init omap_generic_init(void)
+ 		regulator_use_dummy_regulator();
+ 
+ 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+-
++#if 0
+ 		spi_register_board_info(rx51_peripherals_spi_board_info,
+ 				ARRAY_SIZE(rx51_peripherals_spi_board_info));
++#endif
+ #else
+ 		rx51_video_init();
+ #endif
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
