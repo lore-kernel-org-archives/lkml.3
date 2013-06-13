@@ -1,113 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab3FMPTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:19:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33169 "EHLO mx2.suse.de"
+	id S1757574Ab3FMPTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:19:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab3FMPTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:19:02 -0400
-Date: Thu, 13 Jun 2013 17:19:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Richard Weinberger <richard@nod.at>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, hannes@cmpxchg.org
-Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
- pointer dereference at 00000000000001a8
-Message-ID: <20130613151900.GH23070@dhcp22.suse.cz>
-References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
- <20130613120248.GB23070@dhcp22.suse.cz>
- <51B9B5BC.4090702@nod.at>
- <20130613132908.GC23070@dhcp22.suse.cz>
- <20130613133244.GD23070@dhcp22.suse.cz>
- <51B9CA83.9070001@nod.at>
- <20130613143946.GF23070@dhcp22.suse.cz>
- <51B9DB23.7010609@nod.at>
- <51B9DDD3.3000107@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B9DDD3.3000107@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751999Ab3FMPTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:19:20 -0400
+Date: Thu, 13 Jun 2013 11:18:44 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 12/14] locks: give the blocked_hash its own spinlock
+Message-ID: <20130613111844.59421622@corrin.poochiereds.net>
+In-Reply-To: <20130613150247.GB20666@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+	<1370948948-31784-13-git-send-email-jlayton@redhat.com>
+	<20130613150247.GB20666@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-06-13 16:57:23, Richard Weinberger wrote:
-> Am 13.06.2013 16:45, schrieb Richard Weinberger:
-> >Am 13.06.2013 16:39, schrieb Michal Hocko:
-> >>On Thu 13-06-13 15:34:59, Richard Weinberger wrote:
-> >>>Am 13.06.2013 15:32, schrieb Michal Hocko:
-> >>>>Ohh and could you post the config please? Sorry should have asked
-> >>>>earlier.
-> >>>
-> >>>See attachment.
-> >>
-> >>Nothing unusual there. Could you enable CONFIG_DEBUG_VM maybe it will
-> >>help too catch the problem earlier.
-> >
-> >OK
-> >
-> >>>>On Thu 13-06-13 15:29:08, Michal Hocko wrote:
-> >>>>>
-> >>>>>On Thu 13-06-13 14:06:20, Richard Weinberger wrote:
-> >>>>>[...]
-> >>>>>>All code
-> >>>>>>========
-> >>>>>>    0:   89 50 08                mov    %edx,0x8(%rax)
-> >>>>>>    3:   48 89 d1                mov    %rdx,%rcx
-> >>>>>>    6:   0f 1f 40 00             nopl   0x0(%rax)
-> >>>>>>    a:   49 8b 04 24             mov    (%r12),%rax
-> >>>>>>    e:   48 89 c2                mov    %rax,%rdx
-> >>>>>>   11:   48 c1 e8 38             shr    $0x38,%rax
-> >>>>>>   15:   83 e0 03                and    $0x3,%eax
-> >>>>>                    nid = page_to_nid
-> >>>>>>   18:   48 c1 ea 3a             shr    $0x3a,%rdx
-> >>>>>                    zid = page_zonenum
-> >>
-> >>Ohh, I am wrong here. rdx should be nid and eax the zid.
-> >>
-> >>>>>
-> >>>>>>   1c:   48 69 c0 38 01 00 00    imul   $0x138,%rax,%rax
-> >>>>>>   23:   48 03 84 d1 e0 02 00    add    0x2e0(%rcx,%rdx,8),%rax
-> >>>>>                    &memcg->nodeinfo[nid]->zoneinfo[zid]
-> >>>>>
-> >>>>>>   2a:   00
-> >>>>>>   2b:*  48 3b 58 70             cmp    0x70(%rax),%rbx     <-- trapping instruction
-> >>>>>
-> >>>>>OK, so this maps to:
-> >>>>>         if (unlikely(lruvec->zone != zone)) <<<
-> >>>>>                 lruvec->zone = zone;
-> >>>>>
-> >>>>>>[35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
-> >>>>>>[35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
-> >>>>>>[35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
-> >>>>>>[35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
-> >>>>>>[35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
-> >>>>>>[35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
-> >>>>>>[35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
-> >>>>>
-> >>>>>RAX (lruvec) is obviously incorrect and it doesn't make any sense. rax should
-> >>>>>contain an address at an offset from ffff88003e04a800 But there is 0x138 there
-> >>>>>instead.
-> >>
-> >>Hmm, now that I am looking at the registers again. RDX which should be
-> >>nid seems to be quite big. It says this is node 32. Does the machine
-> >>have really so many NUMA nodes?
-> >
-> >No. It's a KVM guest with two CPUs. Nothing special.
-> >qemu command line:
-> >qemu-kvm -m 1G -drive file=lxc_host.qcow2,if=virtio -nographic -kernel linux/arch/x86/boot/bzImage -append console=ttyS0 root=/dev/vda2 -net user,hostfwd=tcp::5555-:22 -net
-> >nic,model=e1000 -smp 4
+On Thu, 13 Jun 2013 11:02:47 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-OK, then something probably overwrites page->flags. I would be more
-inclined to blame some other code ;)
-Maybe DEBUG_VM will start shouting earlier
- 
-> Errr, I meant four CPUs. :)
+> On Tue, Jun 11, 2013 at 07:09:06AM -0400, Jeff Layton wrote:
+> > There's no reason we have to protect the blocked_hash and file_lock_list
+> > with the same spinlock. With the tests I have, breaking it in two gives
+> > a barely measurable performance benefit, but it seems reasonable to make
+> > this locking as granular as possible.
+> 
+> Out of curiosity...  In the typical case when adding/removing a lock,
+> aren't both lists being modified in rapid succession?
+> 
+> I wonder if it would be better to instead stick with one lock and take
+> care to acquire it only once to cover both manipulations.
+> 
+> --b.
+> 
+
+That's not really the case...
+
+Typically, when doing a call into __posix_lock_file with FL_SLEEP set,
+we either end up blocking on the lock or acquiring it. In either case,
+we'll only end up taking one of the global spinlocks. The reason for
+this is that blocker is what dequeues a waiter from the blocked_hash
+before waking it up (in locks_wake_up_posix_blocks).
+
+Also, while this patch description doesn't spell it out, we require a
+truly global lock for deadlock detection. In a later patch though, I
+convert the file_lock_lock to a per-cpu spinlock. So we really do need
+to separate the locks here in order to make the per-cpu file_lock_list
+worthwhile.
+
+> > 
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  Documentation/filesystems/Locking |   16 ++++++++--------
+> >  fs/locks.c                        |   25 +++++++++++++------------
+> >  2 files changed, 21 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> > index ee351ac..8d8d040 100644
+> > --- a/Documentation/filesystems/Locking
+> > +++ b/Documentation/filesystems/Locking
+> > @@ -359,20 +359,20 @@ prototypes:
+> >  
+> >  locking rules:
+> >  
+> > -			inode->i_lock	file_lock_lock	may block
+> > -lm_compare_owner:	yes		maybe		no
+> > -lm_owner_key		yes		yes		no
+> > -lm_notify:		yes		no		no
+> > -lm_grant:		no		no		no
+> > -lm_break:		yes		no		no
+> > -lm_change		yes		no		no
+> > +			inode->i_lock	blocked_hash_lock	may block
+> > +lm_compare_owner:	yes		maybe			no
+> > +lm_owner_key		yes		yes			no
+> > +lm_notify:		yes		no			no
+> > +lm_grant:		no		no			no
+> > +lm_break:		yes		no			no
+> > +lm_change		yes		no			no
+> >  
+> >  	->lm_compare_owner and ->lm_owner_key are generally called with
+> >  *an* inode->i_lock held. It may not be the i_lock of the inode
+> >  associated with either file_lock argument! This is the case with deadlock
+> >  detection, since the code has to chase down the owners of locks that may
+> >  be entirely unrelated to the one on which the lock is being acquired.
+> > -For deadlock detection however, the file_lock_lock is also held. The
+> > +For deadlock detection however, the blocked_hash_lock is also held. The
+> >  fact that these locks are held ensures that the file_locks do not
+> >  disappear out from under you while doing the comparison or generating an
+> >  owner key.
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index 11e7784..8124fc1 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -162,12 +162,11 @@ int lease_break_time = 45;
+> >   */
+> >  #define BLOCKED_HASH_BITS	7
+> >  
+> > +static DEFINE_SPINLOCK(blocked_hash_lock);
+> >  static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+> >  
+> > -static HLIST_HEAD(file_lock_list);
+> > -
+> > -/* Protects the file_lock_list and the blocked_hash */
+> >  static DEFINE_SPINLOCK(file_lock_lock);
+> > +static HLIST_HEAD(file_lock_list);
+> >  
+> >  static struct kmem_cache *filelock_cache __read_mostly;
+> >  
+> > @@ -505,9 +504,9 @@ __locks_delete_global_blocked(struct file_lock *waiter)
+> >  static inline void
+> >  locks_delete_global_blocked(struct file_lock *waiter)
+> >  {
+> > -	spin_lock(&file_lock_lock);
+> > +	spin_lock(&blocked_hash_lock);
+> >  	__locks_delete_global_blocked(waiter);
+> > -	spin_unlock(&file_lock_lock);
+> > +	spin_unlock(&blocked_hash_lock);
+> >  }
+> >  
+> >  static inline void
+> > @@ -581,14 +580,14 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
+> >  
+> >  /*
+> >   * Wake up processes blocked waiting for blocker. In the FL_POSIX case, we must
+> > - * also take the global file_lock_lock and dequeue it from the global blocked
+> > - * list as we wake the processes.
+> > + * also take the global blocked_hash_lock and dequeue it from the global
+> > + * blocked list as we wake the processes.
+> >   *
+> >   * Must be called with the inode->i_lock of the blocker held!
+> >   */
+> >  static void locks_wake_up_posix_blocks(struct file_lock *blocker)
+> >  {
+> > -	spin_lock(&file_lock_lock);
+> > +	spin_lock(&blocked_hash_lock);
+> >  	while (!list_empty(&blocker->fl_block)) {
+> >  		struct file_lock *waiter;
+> >  
+> > @@ -601,7 +600,7 @@ static void locks_wake_up_posix_blocks(struct file_lock *blocker)
+> >  		else
+> >  			wake_up(&waiter->fl_wait);
+> >  	}
+> > -	spin_unlock(&file_lock_lock);
+> > +	spin_unlock(&blocked_hash_lock);
+> >  }
+> >  /* Insert file lock fl into an inode's lock list at the position indicated
+> >   * by pos. At the same time add the lock to the global file lock list.
+> > @@ -754,7 +753,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+> >  	return NULL;
+> >  }
+> >  
+> > -/* Must be called with the file_lock_lock held! */
+> > +/* Must be called with the blocked_hash_lock held! */
+> >  static int posix_locks_deadlock(struct file_lock *caller_fl,
+> >  				struct file_lock *block_fl)
+> >  {
+> > @@ -898,13 +897,13 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  			if (!(request->fl_flags & FL_SLEEP))
+> >  				goto out;
+> >  			error = -EDEADLK;
+> > -			spin_lock(&file_lock_lock);
+> > +			spin_lock(&blocked_hash_lock);
+> >  			if (likely(!posix_locks_deadlock(request, fl))) {
+> >  				error = FILE_LOCK_DEFERRED;
+> >  				locks_insert_block(fl, request);
+> >  				locks_insert_global_blocked(request);
+> >  			}
+> > -			spin_unlock(&file_lock_lock);
+> > +			spin_unlock(&blocked_hash_lock);
+> >  			goto out;
+> >    		}
+> >    	}
+> > @@ -2309,10 +2308,12 @@ static int locks_show(struct seq_file *f, void *v)
+> >  
+> >  	lock_get_status(f, fl, *((loff_t *)f->private), "");
+> >  
+> > +	spin_lock(&blocked_hash_lock);
+> >  	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
+> >  		if (bfl->fl_next == fl)
+> >  			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> >  	}
+> > +	spin_unlock(&blocked_hash_lock);
+> >  
+> >  	return 0;
+> >  }
+> > -- 
+> > 1.7.1
+> > 
+
 
 -- 
-Michal Hocko
-SUSE Labs
+Jeff Layton <jlayton@redhat.com>
