@@ -1,218 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab3FMORL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:17:11 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45255 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab3FMORH (ORCPT
+	id S1757096Ab3FMOS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:18:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57133 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3FMOS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:17:07 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part3 PATCH v2 1/4] bootmem, mem-hotplug: Register local pagetable pages with LOCAL_NODE_DATA when freeing bootmem.
-In-Reply-To: <1371128636-9027-2-git-send-email-tangchen@cn.fujitsu.com>
-Organization: http://mina86.com/
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com> <1371128636-9027-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.10 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:130613:jiang.liu@huawei.com::Is7M7ITRGsSjX0tS:000000000000000000000000000000000000000000GSv
-X-Hashcash: 1:20:130613:akpm@linux-foundation.org::8d4glBN25AqmPDSa:00000000000000000000000000000000000009oU
-X-Hashcash: 1:20:130613:jweiner@redhat.com::P7fqu8Oua5yXn+WK:00000000000000000000000000000000000000000001k4h
-X-Hashcash: 1:20:130613:riel@redhat.com::/ST+q/w9ieJc5xHr:001qyt
-X-Hashcash: 1:20:130613:gong.chen@linux.intel.com::gEcG3dHAU5lAslnB:0000000000000000000000000000000000000Ntb
-X-Hashcash: 1:20:130613:mgorman@suse.de::rSOneEzB0ASJIbpz:001+5J
-X-Hashcash: 1:20:130613:isimatu.yasuaki@jp.fujitsu.com::7yH1eduMmUyk6dgZ:00000000000000000000000000000000TaH
-X-Hashcash: 1:20:130613:laijs@cn.fujitsu.com::YY0fX58bb7jfKmMo:000000000000000000000000000000000000000000Sgl
-X-Hashcash: 1:20:130613:hpa@zytor.com::dWYjwPxuzbRsMizT:00001hsJ
-X-Hashcash: 1:20:130613:wency@cn.fujitsu.com::/GGdfLx7nKqKxzgx:000000000000000000000000000000000000000002J0K
-X-Hashcash: 1:20:130613:prarit@redhat.com::F4sar5vNxgAlIDJj:000000000000000000000000000000000000000000002HKp
-X-Hashcash: 1:20:130613:tj@kernel.org::N3NErBRhNIgCsWOv:00002Qde
-X-Hashcash: 1:20:130613:linux-doc@vger.kernel.org::lTVvmDzrlcsrDr4y:0000000000000000000000000000000000002chg
-X-Hashcash: 1:20:130613:trenn@suse.de::7ScL+3WWfNkWNc/z:00002uBm
-X-Hashcash: 1:20:130613:linux-kernel@vger.kernel.org::02+FltXg2NTfqZMk:0000000000000000000000000000000002iz+
-X-Hashcash: 1:20:130613:vasilis.liaskovitis@profitbricks.com::C2Z4qb8OTgpGJpMM:000000000000000000000000037G0
-X-Hashcash: 1:20:130613:tangchen@cn.fujitsu.com::avFJua3NdL8MxXw7:000000000000000000000000000000000000003jUA
-X-Hashcash: 1:20:130613:x86@kernel.org::TXWekbe2xSTC9+ip:00042vi
-X-Hashcash: 1:20:130613:tglx@linutronix.de::FfxcDviKhy04z8aS:00000000000000000000000000000000000000000005w5a
-X-Hashcash: 1:20:130613:lwoodman@redhat.com::nnb0PNb7SRajHCgs:0000000000000000000000000000000000000000004FzZ
-X-Hashcash: 1:20:130613:mingo@elte.hu::TPsljwnc1q6mkrhe:00006HC7
-X-Hashcash: 1:20:130613:linux-mm@kvack.org::GzK79FxSBU9mbcy9:00000000000000000000000000000000000000000008jJB
-X-Hashcash: 1:20:130613:yinghai@kernel.org::H2+hYPzY+HWeDBwV:00000000000000000000000000000000000000000008xsU
-X-Hashcash: 1:20:130613:minchan@kernel.org::TMUtHYfE8RQXK9lM:0000000000000000000000000000000000000000000Gp+k
-Date: Thu, 13 Jun 2013 16:16:58 +0200
-Message-ID: <xa1tli6ef63p.fsf@mina86.com>
+	Thu, 13 Jun 2013 10:18:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: Re: [PATCH V4 1/3] pci: Add PCIe driver for Samsung Exynos
+Date: Thu, 13 Jun 2013 16:18:47 +0200
+Message-ID: <28355406.ThqqvnG0Yj@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <000901ce6838$8b514720$a1f3d560$@samsung.com>
+References: <003601ce6756$444e8cd0$cceba670$@samsung.com> <2061566.hRLrhtBK6z@wuerfel> <000901ce6838$8b514720$a1f3d560$@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:kMAMbgNUCjjZ2gxV/SQ649WNUpTZOYQWbxMJSiYKcW6
+ uwbqtbCw+yepiGnd6kKAVsrsCzqLLjsVb4xpC/RupWrwNmSLMI
+ PpdeIWodHWGHdJ4BuWjCZT1VCy3nJX2olIJA1aLD+FVLSkUYmW
+ MNYVGBS0bEzXZVyNfYbPmCTxjMyA7Z1hIY9xSgL3/I2kcd2+oN
+ U0TtZHjCkNqOPLODtkS6Y/utOLcAypNRW9tS6P4johODvzaMgn
+ 6Btrq2poa26kR986KAHp1ePs3/psLM5TklAOPyTaXtWwIKRn+3
+ icotJ8uWINLGGpUpt+qZkt1Wz237swVOi8tP3SiOnOnqcy7+VB
+ tKgIk3pSKffiyfeJhK/8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Thursday 13 June 2013 22:18:50 Jingoo Han wrote:
+> On Wednesday, June 12, 2013 8:23 PM, Arnd Bergmann wrote:
+> > On Wednesday 12 June 2013 19:19:05 Jingoo Han wrote:
 
-On Thu, Jun 13 2013, Tang Chen wrote:
-> As Yinghai suggested, even if a node is movable node, which has only
-> ZONE_MOVABLE, pagetables should be put in the local node.
->
-> In memory hot-remove logic, it offlines all pages first, and then
-> removes pagetables. But the local pagetable pages cannot be offlined
-> because they are used by kernel.
->
-> So we should skip this kind of pages in offline procedure. But first
-> of all, we need to mark them.
->
-> This patch marks local node data pages in the same way as we mark the
-> SECTION_INFO and MIX_SECTION_INFO data pages. We introduce a new type
-> of bootmem: LOCAL_NODE_DATA. And use page->lru.next to mark this type
-> of memory.
->
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/mm/init_64.c          |    2 +
->  include/linux/memblock.h       |   22 +++++++++++++++++
->  include/linux/memory_hotplug.h |   13 ++++++++-
->  mm/memblock.c                  |   52 ++++++++++++++++++++++++++++++++++=
-++++++
->  mm/memory_hotplug.c            |   26 ++++++++++++++++++++
->  5 files changed, 113 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index bb00c46..25de304 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -1053,6 +1053,8 @@ static void __init register_page_bootmem_info(void)
->=20=20
->  	for_each_online_node(i)
->  		register_page_bootmem_info_node(NODE_DATA(i));
-> +
-> +	register_page_bootmem_local_node();
->  #endif
->  }
->=20=20
-> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-> index a85ced9..8a38eef 100644
-> --- a/include/linux/memblock.h
-> +++ b/include/linux/memblock.h
-> @@ -131,6 +131,28 @@ void __next_free_mem_range_rev(u64 *idx, int nid, ph=
-ys_addr_t *out_start,
->  	     i !=3D (u64)ULLONG_MAX;					\
->  	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
->=20=20
-> +void __next_local_node_mem_range(int *idx, int nid, phys_addr_t *out_sta=
-rt,
-> +				 phys_addr_t *out_end, int *out_nid);
+> > > +
+> > > +/* synopsis specific PCIE configuration registers*/
+> > > +#define PCIE_PORT_LINK_CONTROL		0x710
+> > > +#define PORT_LINK_MODE_MASK		(0x3f << 16)
+> > > +#define PORT_LINK_MODE_4_LANES		(0x7 << 16)
+> > 
+> > Do you mean this is a "Synopsys" designware part? In that case it
+> > should really not be called "exynos-pcie" but "designware-pcie"
+> > and you should make sure that the driver makes no assumptions about
+> > the platform. A lot of other platforms also use designware
+> > parts and should be able to reuse this driver.
+> 
+> Sorry, I don't think so.
+> Only core block is a "Synopsys" designware part IP block,
+> other parts are Exynos-specific.
+> So, it is hard to share with other PCIe IPs using synopsis core.
 
-Why not make it return int?
+Just call it synopsys anyway and put a comment in to explain this.
+That should be enough for the next person with a synopsys PCI core
+to reuse your code and split out the exynos specific parts into a
+separate file.
 
-> +
-> +/**
-> + * for_each_local_node_mem_range - iterate memblock areas storing local =
-node
-> + *                                 data
-> + * @i: int used as loop variable
-> + * @nid: node selector, %MAX_NUMNODES for all nodes
-> + * @p_start: ptr to phys_addr_t for start address of the range, can be %=
-NULL
-> + * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
-> + * @p_nid: ptr to int for nid of the range, can be %NULL
-> + *
-> + * Walks over memblock areas storing local node data. Since all the loca=
-l node
-> + * areas will be reserved by memblock, this iterator will only iterate
-> + * memblock.reserve. Available as soon as memblock is initialized.
-> + */
-> +#define for_each_local_node_mem_range(i, nid, p_start, p_end, p_nid)	   =
- \
-> +	for (i =3D -1,							    \
-> +	     __next_local_node_mem_range(&i, nid, p_start, p_end, p_nid);   \
-> +	     i !=3D -1;							    \
-> +	     __next_local_node_mem_range(&i, nid, p_start, p_end, p_nid))
-> +
+> > I think you should not assume that the physical base address is a 32
+> > bit value. The hardware clearly supports "lower" and "upper" halves
+> > for the address window, so when resource_size_t is 64 bit, you should
+> > set the upper half accordingly. Since the hardware is always 64 bit,
+> > you can use a "u64" type rather than resource_size_t to simplify the
+> > code here.
+> 
+> OK, I will replace "u32" with "u64".
 
-If __next_local_node_mem_range() returned int, this would be easier:
+Not what I meant, please read it again.
 
-+#define for_each_local_node_mem_range(i, nid, p_start, p_end, p_nid)	     =
- \
-+	for (i =3D -1;
-+	     (i =3D __next_local_node_mem_range(i, nid, p_start, p_end, p_nid)) !=
-=3D -1; )
+> > > +static void exynos_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
+> > > +{
+> > > +	u32 val;
+> > > +	void __iomem *dbi_base = pp->dbi_base;
+> > > +
+> > > +	/* Program viewport 1 : OUTBOUND : IO */
+> > > +	val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1;
+> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
+> > > +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
+> > > +	val = PCIE_ATU_ENABLE;
+> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
+> > > +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_BASE);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
+> > > +	writel_rc(pp, (u32)(pp->io_base + pp->config.io_size - 1),
+> > > +			dbi_base + PCIE_ATU_LIMIT);
+> > > +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_TARGET);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
+> > > +}
+> > 
+> > You don't actually map the I/O space anywhere into virtual memory.
+> > I think you need to call pci_ioremap_io with the pp->io_base at
+> > boot time.
+> 
+> Sorry, when pci_ioremap_io() is used, Exynos5440 hangs.
+> I don't know how to deal this.
 
->  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->  int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
->=20=20
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplu=
-g.h
-> index 0b21e54..c0c4107 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
+You have to call it, there is no way around that. You will have to debug
+this yourself, I'm sure there is an easy solution.
 
-> +/**
-> + * __next_local_node_mem_range - next function for
-> + *                               for_each_local_node_mem_range()
-> + * @idx: pointer to int loop variable
-> + * @nid: node selector, %MAX_NUMNODES for all nodes
-> + * @out_start: ptr to phys_addr_t for start address of the range, can be=
- %NULL
-> + * @out_end: ptr to phys_addr_t for end address of the range, can be %NU=
-LL
-> + * @out_nid: ptr to int for nid of the range, can be %NULL
-> + */
-> +void __init_memblock __next_local_node_mem_range(int *idx, int nid,
-> +					phys_addr_t *out_start,
-> +					phys_addr_t *out_end, int *out_nid)
-> +{
-> +	__next_flag_mem_range(idx, nid, MEMBLK_LOCAL_NODE,
-> +			      out_start, out_end, out_nid);
-> +}
+> > 
+> > You hardcode the in_mem_size to 256 MB. Does that mean you only allow
+> > PCI bus master DMA on the first part of RAM? Shouldn't it get
+> > computed from the actual location and size of RAM?
+> 
+> I will remove the hard-coded in_mem_size, instead use the size of MEM region.
 
-static inline in a header file perhaps?
+This should be system RAM, not the PCI memory space. What good would
+it be to have an inbound window that only redirects back to the bus?
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+> > > +static void exynos_pcie_prog_viewport_io_inbound(struct pcie_port *pp)
+> > > +{
+> > > +	u32 val;
+> > > +	void __iomem *dbi_base = pp->dbi_base;
+> > > +	struct pcie_port_info *config = &pp->config;
+> > > +
+> > > +	/* Program viewport 1 : INBOUND : IO */
+> > > +	val = PCIE_ATU_REGION_INBOUND | PCIE_ATU_REGION_INDEX1;
+> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
+> > > +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
+> > > +	val = PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE;
+> > > +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_BASE);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
+> > > +	writel_rc(pp, config->in_mem_size - 1, dbi_base + PCIE_ATU_LIMIT);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_TARGET);
+> > > +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
+> > > +}
+> > 
+> > I don't understand what in inbound I/O access actually means. What
+> > does this do, is it for PCI target emulation?
+> 
+> I reviewed the manual, and I will fix it.
+> I will add bus addresses and host physical addresses to
+> PCIE_ATU_LOWER_BASE/ PCIE_ATU_LOWER_TARGET.
+ 
+You have not answered my question.
 
---==-=-=
-Content-Type: text/plain
+> > > +static int exynos_pcie_setup(int nr, struct pci_sys_data *sys)
+> > > +{
+> > > +	struct pcie_port *pp;
+> > > +
+> > > +	pp = sys_to_pcie(sys);
+> > > +
+> > > +	if (!pp)
+> > > +		return 0;
+> > > +
+> > > +	pci_add_resource_offset(&sys->resources, &pp->io, sys->io_offset);
+> > > +	pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
+> > > +
+> > > +	return 1;
+> > > +}
+> > 
+> > You don't actually set up io_offset and mem_offset, right?
+> 
+> OK, I will replace pci_add_resource_offset() with pci_add_resource().
 
+No, you have to set up the offsets.
 
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
+Please don't post another version until you actually understand what
+you need to do. If you don't understand the comments, ask back rather
+than picking a random interpretation.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRudRaAAoJECBgQBJQdR/0WPwP/1dgJxcQSzLTWaUb1P4pkJA9
-SMs6dBSola+wGugLvaLxZ6IQXmpMUZj+lXZiO0H1iXo+A9WVLbDae8BTUGgjLVAD
-MAi0nMfcbjzxuVQAB53xV0N2Yoc1uuZf6eUlCD8WAEdrH3vn4DR3o8XRVNAvVY+S
-WmLDWk8LdSsF78mqR0NRyT8YvmpdnKTZTu5ffI/0/BVwhJu+8Jz/GtC4QB5v8red
-CJNrLIQmuAS+mIi6721RsvuYjaqYDfd3r4gIJjhxw5pMv97tHFgEXfZOuvO3RuBy
-zg0NzLbJ8q6uD8BVxQPA559tMJ5rmFneksnhHkFIuAI3imuw+B2gQt8vRbz06EZL
-VdiRzp6THTp8GDK+BmdxtvjDRblD6g83/kxeLTbIEoGLg+5qzXuBePpoQfTeK4+H
-ThxLTkW59Xs1s+xc0bqiDiTBzKmBrUDojcrAq2DFFuUR7ub9TU6WhOv1FDygZRB1
-ZNctpc0EyNkm++cYS5/ARCMA5v6vRPwdFI9TgbOXiRC/uIjhksalsBz839NDCbxG
-0fy84YJPdXTImxyRdfgl+ECaDDrIMpFK5Jrvc6MCiV/YM57AYdBToHZ0/zJ6Tq1i
-7Q0vdotsVZ2vgNlh0rXBwlTV6Si0NIqZuwe6ezWzLHUPP0e5kE197TGokpCp5k3U
-kG1Sd3zHCdgF7OVBvNFB
-=udWL
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+	Arnd
