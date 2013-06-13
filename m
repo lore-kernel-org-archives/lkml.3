@@ -1,90 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab3FMH4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 03:56:19 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28860 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755531Ab3FMH4S (ORCPT
+	id S932618Ab3FMH4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:56:25 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:55727 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3FMH4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 03:56:18 -0400
-X-IronPort-AV: E=Sophos;i="4.87,857,1363129200"; 
-   d="scan'208";a="21612731"
-Date: Thu, 13 Jun 2013 09:56:11 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>, Julia Lawall <julia.lawall@lip6.fr>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Thomas Meyer <thomas@m3y3r.de>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] PTR_ERR: return 0 if ptr isn't an error value.
-In-Reply-To: <20130613073046.GB10326@redhat.com>
-Message-ID: <alpine.DEB.2.02.1306130955380.2260@hadrien>
-References: <1370080565.29224.29.camel@localhost.localdomain> <87mwr8sz9g.fsf@rustcorp.com.au> <20130603071526.GA5483@pengutronix.de> <alpine.DEB.2.02.1306082305220.1968@localhost6.localdomain6> <87mwquzkvf.fsf@rustcorp.com.au>
- <20130613073046.GB10326@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Jun 2013 03:56:22 -0400
+Date: Thu, 13 Jun 2013 08:56:15 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: Julian Anastasov <ja@ssi.bg>, lvs-devel@vger.kernel.org
+Cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipvs: sloppy TCP and SCTP
+Message-ID: <20130613075615.GA29773@eldamar.org.uk>
+References: <20130612104754.GA29327@eldamar.org.uk>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-818502900-1371110171=:2260"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612104754.GA29327@eldamar.org.uk>
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 15:21:49 up 31 days, 46 min,  9 users,  load average: 0.43, 0.42,
+ 0.41
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This adds support for sloppy TCP and SCTP modes to IPVS.
 
---8323329-818502900-1371110171=:2260
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+When enabled (sysctls net.ipv4.vs.sloppy_tcp and
+net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
+packet, not just a TCP SYN (or SCTP INIT).
 
-On Thu, 13 Jun 2013, Michael S. Tsirkin wrote:
+This allows connections to fail over from one IPVS director to another
+mid-flight.
 
-> On Thu, Jun 13, 2013 at 02:07:40PM +0930, Rusty Russell wrote:
-> > Julia Lawall <julia.lawall@lip6.fr> writes:
-> > > On Mon, 3 Jun 2013, Uwe Kleine-König wrote:
-> > > For a random example, here is a function that currently uses PTR_RET:
-> >
-> > Heheh, nice choice: I think I wrote that code originally :)
-> >
-> > > static int __net_init iptable_raw_net_init(struct net *net)
-> > > {
-> > >         struct ipt_replace *repl;
-> > >
-> > >         repl = ipt_alloc_initial_table(&packet_raw);
-> > > 	if (repl == NULL)
-> > >                 return -ENOMEM;
-> > >         net->ipv4.iptable_raw =
-> > >                 ipt_register_table(net, &packet_raw, repl);
-> > > 	kfree(repl);
-> > >         return PTR_RET(net->ipv4.iptable_raw);
-> > > }
-> > >
-> > > If it becomes return PTR_ERR(...); at the end, won't it look like the
-> > > function always fails?
-> >
-> > That is a valid point, though in this case the reader will know that
-> > can't be the case.
-> >
-> > On the other hand, there's an incremental learning curve cost to every
-> > convenience function we add.  There are only 50 places where we use
-> > PTR_RET(), so it's not saving us very much typing over the clearest
-> > solution: open-coding the test.
-> >
-> > I think using PTR_ERR() is a less bad solution than promoting PTR_RET,
-> > which has a non-obvious name.
-> >
-> > Cheers,
-> > Rusty.
->
-> Will a longer name make the function more obvious?
-> 	PTR_ERR_OR_ZERO() ?
-> 	PTR_ERR0() ?
-> PTR_ERR() can then stay simple for cases where we know we
-> are on the error path.
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+---
+The patch is against the ipvs-next tree.
 
-I was thinking of something along those lines.  And in that case, PTR_ERR
-could stay without the additional test.
-
-julia
---8323329-818502900-1371110171=:2260--
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index 4405886..22bea5d 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -1002,6 +1002,8 @@ struct netns_ipvs {
+ 	int			sysctl_sync_sock_size;
+ 	int			sysctl_cache_bypass;
+ 	int			sysctl_expire_nodest_conn;
++	int			sysctl_sloppy_tcp;
++	int			sysctl_sloppy_sctp;
+ 	int			sysctl_expire_quiescent_template;
+ 	int			sysctl_sync_threshold[2];
+ 	unsigned int		sysctl_sync_refresh_period;
+@@ -1044,6 +1046,8 @@ struct netns_ipvs {
+ #define DEFAULT_SYNC_THRESHOLD	3
+ #define DEFAULT_SYNC_PERIOD	50
+ #define DEFAULT_SYNC_VER	1
++#define DEFAULT_SLOPPY_TCP	0
++#define DEFAULT_SLOPPY_SCTP	0
+ #define DEFAULT_SYNC_REFRESH_PERIOD	(0U * HZ)
+ #define DEFAULT_SYNC_RETRIES		0
+ #define IPVS_SYNC_WAKEUP_RATE	8
+@@ -1080,6 +1084,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+ 	return ipvs->sysctl_sync_ver;
+ }
+ 
++static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
++{
++	return ipvs->sysctl_sloppy_tcp;
++}
++
++static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
++{
++	return ipvs->sysctl_sloppy_sctp;
++}
++
+ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ {
+ 	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
+@@ -1133,6 +1147,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+ 	return DEFAULT_SYNC_VER;
+ }
+ 
++static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
++{
++	return DEFAULT_SLOPPY_TCP;
++}
++
++static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
++{
++	return DEFAULT_SLOPPY_SCTP;
++}
++
+ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ {
+ 	return 1;
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 7014649..04f8cbc 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1739,6 +1739,18 @@ static struct ctl_table vs_vars[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sloppy_tcp",
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
++		.procname	= "sloppy_sctp",
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "expire_quiescent_template",
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+@@ -3722,6 +3734,8 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ 	tbl[idx++].data = &ipvs->sysctl_sync_sock_size;
+ 	tbl[idx++].data = &ipvs->sysctl_cache_bypass;
+ 	tbl[idx++].data = &ipvs->sysctl_expire_nodest_conn;
++	tbl[idx++].data = &ipvs->sysctl_sloppy_tcp;
++	tbl[idx++].data = &ipvs->sysctl_sloppy_sctp;
+ 	tbl[idx++].data = &ipvs->sysctl_expire_quiescent_template;
+ 	ipvs->sysctl_sync_threshold[0] = DEFAULT_SYNC_THRESHOLD;
+ 	ipvs->sysctl_sync_threshold[1] = DEFAULT_SYNC_PERIOD;
+diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+index 8646488..df29d64 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+@@ -15,6 +15,7 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ {
+ 	struct net *net;
+ 	struct ip_vs_service *svc;
++	struct netns_ipvs *ipvs;
+ 	sctp_chunkhdr_t _schunkh, *sch;
+ 	sctp_sctphdr_t *sh, _sctph;
+ 
+@@ -27,13 +28,14 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 	if (sch == NULL)
+ 		return 0;
+ 	net = skb_net(skb);
++	ipvs = net_ipvs(net);
+ 	rcu_read_lock();
+-	if ((sch->type == SCTP_CID_INIT) &&
++	if ((sch->type == SCTP_CID_INIT || sysctl_sloppy_sctp(ipvs)) &&
+ 	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+ 				      &iph->daddr, sh->dest))) {
+ 		int ignored;
+ 
+-		if (ip_vs_todrop(net_ipvs(net))) {
++		if (ip_vs_todrop(ipvs)) {
+ 			/*
+ 			 * It seems that we are very loaded.
+ 			 * We have to drop this packet :(
+@@ -232,21 +234,21 @@ static struct ipvs_sctp_nextstate
+ 	 * STATE : IP_VS_SCTP_S_NONE
+ 	 */
+ 	/*next state *//*event */
+-	{{IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_CLI */ },
++	{{IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_DATA_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_SER */ },
+ 	 {IP_VS_SCTP_S_INIT_CLI /* IP_VS_SCTP_EVE_INIT_CLI */ },
+ 	 {IP_VS_SCTP_S_INIT_SER /* IP_VS_SCTP_EVE_INIT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
++	 {IP_VS_SCTP_S_INIT_ACK_CLI /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
++	 {IP_VS_SCTP_S_ECHO_CLI /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
++	 {IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_SER */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_CLI */ },
++	 {IP_VS_SCTP_S_SHUT_CLI /* IP_VS_SCTP_EVE_SHUT_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
++	 {IP_VS_SCTP_S_SHUT_ACK_CLI /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_SER */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_SER */ },
+diff --git a/net/netfilter/ipvs/ip_vs_proto_tcp.c b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+index 50a1594..e3a6972 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_tcp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+@@ -39,6 +39,7 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 	struct net *net;
+ 	struct ip_vs_service *svc;
+ 	struct tcphdr _tcph, *th;
++	struct netns_ipvs *ipvs;
+ 
+ 	th = skb_header_pointer(skb, iph->len, sizeof(_tcph), &_tcph);
+ 	if (th == NULL) {
+@@ -46,14 +47,15 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 		return 0;
+ 	}
+ 	net = skb_net(skb);
++	ipvs = net_ipvs(net);
+ 	/* No !th->ack check to allow scheduling on SYN+ACK for Active FTP */
+ 	rcu_read_lock();
+-	if (th->syn &&
++	if ((th->syn || sysctl_sloppy_tcp(ipvs)) && !th->rst &&
+ 	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+ 				      &iph->daddr, th->dest))) {
+ 		int ignored;
+ 
+-		if (ip_vs_todrop(net_ipvs(net))) {
++		if (ip_vs_todrop(ipvs)) {
+ 			/*
+ 			 * It seems that we are very loaded.
+ 			 * We have to drop this packet :(
+@@ -401,7 +403,7 @@ static struct tcp_states_t tcp_states [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+ /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sSR }},
+ 
+ /*	OUTPUT */
+@@ -415,7 +417,7 @@ static struct tcp_states_t tcp_states [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+ /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ };
+ 
+@@ -424,7 +426,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSA }},
+ /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sSA }},
+-/*ack*/ {{sCL, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
++/*ack*/ {{sES, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ 
+ /*	OUTPUT */
+@@ -438,7 +440,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSA, sES, sES, sSR, sSA, sSA, sSA, sSA, sSA, sSA, sSA }},
+ /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ };
+ 
