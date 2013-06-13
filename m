@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3FMN2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	id S1758486Ab3FMN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:28:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6846 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758164Ab3FMN2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:04 -0400
+	id S1755053Ab3FMN2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:20 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537688"
+   d="scan'208";a="7537718"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,9 +18,9 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part2 PATCH v4 14/15] x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher priority.
-Date: Thu, 13 Jun 2013 21:03:38 +0800
-Message-Id: <1371128619-8987-15-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part2 PATCH v4 10/15] x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
+Date: Thu, 13 Jun 2013 21:03:34 +0800
+Message-Id: <1371128619-8987-11-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -33,105 +33,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance decreased
-because the kernel cannot use movable memory.
+memory_add_physaddr_to_nid() is declared in include/linux/memory_hotplug.h,
+protected by CONFIG_NUMA. And in x86, the definitions are protected by
+CONFIG_MEMORY_HOTPLUG.
 
-For users who don't use memory hotplug and who don't want to lose their NUMA
-performance, they need a way to disable this functionality.
+memory_add_physaddr_to_nid() uses numa_meminfo to find the physical address's
+nid. It has nothing to do with memory hotplug. And also, it can be used by
+alloc_low_pages() to obtain nid of the allocated memory.
 
-So, if users specify "movablecore=acpi" in kernel commandline, the kernel will
-use SRAT to arrange ZONE_MOVABLE, and it has higher priority then original
-movablecore and kernelcore boot option.
-
-For those who don't want this, just specify nothing.
+So in x86, also use CONFIG_NUMA to protect it.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- include/linux/memblock.h |    1 +
- mm/memblock.c            |    5 +++++
- mm/page_alloc.c          |   31 +++++++++++++++++++++++++++++--
- 3 files changed, 35 insertions(+), 2 deletions(-)
+ arch/x86/mm/numa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d113175..a85ced9 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -66,6 +66,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
- int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
-+bool memblock_is_hotpluggable(struct memblock_region *region);
- void memblock_free_hotpluggable(void);
- void memblock_trim_memory(phys_addr_t align);
- void memblock_mark_kernel_nodes(void);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 9df0b5f..0c4a709 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -626,6 +626,11 @@ int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
- 	return memblock_reserve_region(base, size, nid, MEMBLK_HOTPLUGGABLE);
- }
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1242190..2b5057f 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -1009,7 +1009,7 @@ EXPORT_SYMBOL(cpumask_of_node);
  
-+bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
-+{
-+	return region->flags & MEMBLK_HOTPLUGGABLE;
-+}
-+
- /**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ee5ae49..10c85b1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4830,9 +4830,37 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 	nodemask_t saved_node_state = node_states[N_MEMORY];
- 	unsigned long totalpages = early_calculate_totalpages();
- 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
-+	struct memblock_type *reserved = &memblock.reserved;
+ #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
  
- 	/*
--	 * If movablecore was specified, calculate what size of
-+	 * Need to find movable_zone earlier in case movablecore=acpi is
-+	 * specified.
-+	 */
-+	find_usable_zone_for_movable();
-+
-+	/*
-+	 * If movablecore=acpi was specified, then zone_movable_pfn[] has been
-+	 * initialized, and no more work needs to do.
-+	 * NOTE: In this case, we ignore kernelcore option.
-+	 */
-+	if (movablecore_enable_srat) {
-+		for (i = 0; i < reserved->cnt; i++) {
-+			if (!memblock_is_hotpluggable(&reserved->regions[i]))
-+				continue;
-+
-+			nid = reserved->regions[i].nid;
-+
-+			usable_startpfn = PFN_DOWN(reserved->regions[i].base);
-+			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
-+				min(usable_startpfn, zone_movable_pfn[nid]) :
-+				usable_startpfn;
-+		}
-+
-+		goto out;
-+	}
-+
-+	/*
-+	 * If movablecore=nn[KMG] was specified, calculate what size of
- 	 * kernelcore that corresponds so that memory usable for
- 	 * any allocation type is evenly spread. If both kernelcore
- 	 * and movablecore are specified, then the value of kernelcore
-@@ -4858,7 +4886,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 		goto out;
- 
- 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
--	find_usable_zone_for_movable();
- 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
- 
- restart:
+-#ifdef CONFIG_MEMORY_HOTPLUG
++#ifdef CONFIG_NUMA
+ int memory_add_physaddr_to_nid(u64 start)
+ {
+ 	struct numa_meminfo *mi = &numa_meminfo;
 -- 
 1.7.1
 
