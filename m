@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab3FMKBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 06:01:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38753 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab3FMKBa (ORCPT
+	id S1758552Ab3FMKDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 06:03:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57210 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758374Ab3FMKDB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 06:01:30 -0400
-Date: Thu, 13 Jun 2013 03:01:29 -0700 (PDT)
-Message-Id: <20130613.030129.858604303672324590.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: rostedt@goodmis.org, sgunderson@bigfoot.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rusty@rustcorp.com.au
-Subject: Re: NULL pointer dereference when loading the gre module
- (3.10.0-rc4)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1370577588.24311.407.camel@edumazet-glaptop>
-References: <20130606221656.GA11475@uio.no>
-	<20130607030648.GA28618@home.goodmis.org>
-	<1370577588.24311.407.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jun 2013 06:03:01 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Benoit Cousson" <benoit.cousson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: RE: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
+Thread-Topic: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
+Thread-Index: AQHOWuhABF2KqV8mJ0y1adAsGP8LuZkx4/kAgAFoeoD//6+7AIAAhlWA
+Date: Thu, 13 Jun 2013 10:02:18 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EB1E196@DBDE04.ent.ti.com>
+References: <cover.1369658705.git.afzal@ti.com>
+ <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
+ <20130612171200.GL8164@atomide.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EB1DEB2@DBDE04.ent.ti.com>
+ <20130613095454.GY8164@atomide.com>
+In-Reply-To: <20130613095454.GY8164@atomide.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Thu, 06 Jun 2013 20:59:48 -0700
+Hi Tony,
 
-> On Thu, 2013-06-06 at 23:06 -0400, Steven Rostedt wrote:
->> On Fri, Jun 07, 2013 at 12:16:56AM +0200, Steinar H. Gunderson wrote:
->> > Hi,
->> > 
->> > In 3.10.0-rc4, I get this on boot:
->> > 
->> > [   16.871043] BUG: unable to handle kernel NULL pointer dereference at 0000000000000003
->> > [   16.879453] IP: [<ffffffffa0e52002>] 0xffffffffa0e52001
->> 
->> Strange, kallsyms should have registered the address already, even if it
->> crashed on early module load. Not sure why it's not reporting it. Well,
->> it seems to have reported some of the symbols of ip_gre below. Maybe
->> this pointer is just totally screwed up.
-> 
-> I could not reproduce this here.
-> 
-> Steinar, please make sure you recompiled your modules, because this
-> looks like you loaded old modules.
+On Thu, Jun 13, 2013 at 15:24:54, Tony Lindgren wrote:
+> * Mohammed, Afzal <afzal@ti.com> [130613 00:04]:
 
-I applied Eric's fixed version of the patch, thanks.
+> > Patch 10 "ARM: OMAP2+: AM43x: basic dt support" is missing in
+> > omap-for-v3.11/soc branch and omap soc pull request, can you
+> > please help patch 10 also to go upstream.
+> 
+> Hmm if that's .dts changes, Benoit needs to queue that.
+
+It is not dts change.
+
+Patch 10 patches board-generic.c for DT boot (Benoit has already
+picked up dts, that is patch 14).
+
+Regards
+Afzal
+
