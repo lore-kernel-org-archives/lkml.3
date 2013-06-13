@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3FMQhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:37:51 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:55216 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758723Ab3FMQhs (ORCPT
+	id S1758746Ab3FMQii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:38:38 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53771 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab3FMQif convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:37:48 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Dinh Nguyen <dinguyen@altera.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3 3/4] arm: dt: zynq: Add support for the zc706 platform
-Date: Thu, 13 Jun 2013 09:37:17 -0700
-Message-Id: <1371141438-16553-4-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1371141438-16553-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1371141438-16553-1-git-send-email-soren.brinkmann@xilinx.com>
+	Thu, 13 Jun 2013 12:38:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+	<1371058399-31933-3-git-send-email-dianders@chromium.org>
+	<150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
+Date: Thu, 13 Jun 2013 09:38:33 -0700
+X-Google-Sender-Auth: e-N-qrkqKjliTmbzB26aKS4xzxs
+Message-ID: <CAD=FV=U9V-rgjcCusCvgw-SeUH-kDbozr_T-i1DcaXNXv48vxw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts
+ before unmasking
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Simon Glass <sjg@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Ilho Lee <ilho215.lee@samsung.com>,
+        =?UTF-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DT fragment for the zc706 Zynq platform and a corresponding
-target to the Makefile.
+Kukjin,
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-v3:
- - adding the 'status' override for the UART node
- - changing the console device to ttyPS0
+On Thu, Jun 13, 2013 at 5:04 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Doug Anderson wrote:
+>>
+>> A level-triggered interrupt should be acked after the interrupt line
+>> becomes inactive and before it is unmasked, or else another interrupt
+>> will be immediately triggered.  Acking before or after calling the
+>> handler is not enough.
+>>
+>> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>
+> BTW, probably we need a similar fixing in the mach-exynos/common.c file
+> before pinct기 for distro...
 
- arch/arm/boot/dts/Makefile       |  3 ++-
- arch/arm/boot/dts/zynq-zc706.dts | 35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/zynq-zc706.dts
+Is anyone using the functions in mach-exynos/common.c file anymore?  I
+thought that non-dt exynos support was going away and then we could
+just delete a whole lot of code from that file.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f0895c5..2823027 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -208,7 +208,8 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
- 	wm8505-ref.dtb \
- 	wm8650-mid.dtb \
- 	wm8850-w70v2.dtb
--dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
-+dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
-+	zynq-zc706.dtb
- 
- targets += dtbs
- targets += $(dtb-y)
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-new file mode 100644
-index 0000000..79009e0
---- /dev/null
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -0,0 +1,35 @@
-+/*
-+ *  Copyright (C) 2011 Xilinx
-+ *  Copyright (C) 2012 National Instruments Corp.
-+ *  Copyright (C) 2013 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+/dts-v1/;
-+/include/ "zynq-7000.dtsi"
-+
-+/ {
-+	model = "Zynq ZC706 Development Board";
-+	compatible = "xlnx,zynq-zc706", "xlnx,zynq-7000";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyPS0,115200 earlyprintk";
-+	};
-+
-+};
-+
-+&uart1 {
-+	status = "okay";
-+};
--- 
-1.8.3
-
+-Doug
