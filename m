@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3FMHqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 03:46:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37180 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab3FMHqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 03:46:10 -0400
-Date: Thu, 13 Jun 2013 00:46:07 -0700 (PDT)
-Message-Id: <20130613.004607.546745883080814853.davem@davemloft.net>
-To: gaofeng@cn.fujitsu.com
-Cc: fengguang.wu@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] netlink: make compare exist all the time
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371089138-4990-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <20130613012216.GA6788@localhost>
-	<1371089138-4990-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932603Ab3FMHqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:46:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755611Ab3FMHqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 03:46:42 -0400
+Date: Thu, 13 Jun 2013 10:30:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Thomas Meyer <thomas@m3y3r.de>, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] PTR_ERR: return 0 if ptr isn't an error value.
+Message-ID: <20130613073046.GB10326@redhat.com>
+References: <1370080565.29224.29.camel@localhost.localdomain>
+ <87mwr8sz9g.fsf@rustcorp.com.au>
+ <20130603071526.GA5483@pengutronix.de>
+ <alpine.DEB.2.02.1306082305220.1968@localhost6.localdomain6>
+ <87mwquzkvf.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87mwquzkvf.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
-Date: Thu, 13 Jun 2013 10:05:38 +0800
-
-> Commit da12c90e099789a63073fc82a19542ce54d4efb9
-> "netlink: Add compare function for netlink_table"
-> only set compare at the time we create kernel netlink,
-> and reset compare to NULL at the time we finially
-> release netlink socket, but netlink_lookup wants
-> the compare exist always.
+On Thu, Jun 13, 2013 at 02:07:40PM +0930, Rusty Russell wrote:
+> Julia Lawall <julia.lawall@lip6.fr> writes:
+> > On Mon, 3 Jun 2013, Uwe Kleine-König wrote:
+> > For a random example, here is a function that currently uses PTR_RET:
 > 
-> So we should set compare after we allocate nl_table,
-> and never reset it. make comapre exist all the time.
+> Heheh, nice choice: I think I wrote that code originally :)
 > 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> > static int __net_init iptable_raw_net_init(struct net *net)
+> > {
+> >         struct ipt_replace *repl;
+> >
+> >         repl = ipt_alloc_initial_table(&packet_raw);
+> > 	if (repl == NULL)
+> >                 return -ENOMEM;
+> >         net->ipv4.iptable_raw =
+> >                 ipt_register_table(net, &packet_raw, repl);
+> > 	kfree(repl);
+> >         return PTR_RET(net->ipv4.iptable_raw);
+> > }
+> >
+> > If it becomes return PTR_ERR(...); at the end, won't it look like the 
+> > function always fails?
+> 
+> That is a valid point, though in this case the reader will know that
+> can't be the case.
+> 
+> On the other hand, there's an incremental learning curve cost to every
+> convenience function we add.  There are only 50 places where we use
+> PTR_RET(), so it's not saving us very much typing over the clearest
+> solution: open-coding the test.
+> 
+> I think using PTR_ERR() is a less bad solution than promoting PTR_RET,
+> which has a non-obvious name.
+> 
+> Cheers,
+> Rusty.
 
-Applied, thanks.
+Will a longer name make the function more obvious?
+	PTR_ERR_OR_ZERO() ?
+	PTR_ERR0() ?
+PTR_ERR() can then stay simple for cases where we know we
+are on the error path.
+
+-- 
+MST
