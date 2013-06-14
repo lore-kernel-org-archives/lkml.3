@@ -1,1135 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab3FNEQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 00:16:10 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61712 "EHLO
+	id S1751479Ab3FNEQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 00:16:51 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63510 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3FNEQI (ORCPT
+	with ESMTP id S1751058Ab3FNEQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 00:16:08 -0400
+	Fri, 14 Jun 2013 00:16:50 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Thu, 13 Jun 2013 22:55:32 -0500
 X-Originating-IP: 108.223.40.66
-Date: Thu, 13 Jun 2013 20:45:17 -0700
+Date: Thu, 13 Jun 2013 20:55:33 -0700
 From: Guenter Roeck <linux@roeck-us.net>
-To: Reinhard Pfau <reinhard.pfau@gdsys.cc>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Jean Delvare <khali@linux-fr.org>, Dirk Eibach <eibach@gdsys.de>,
-        Dirk Eibach <dirk.eibach@gdsys.cc>, Reinhard Pfau <pfau@gdsys.de>
-Subject: Re: [PATCH] hwmon: add support for SMSC EMC2305/03/02/01 fan
- controller
-Message-ID: <20130614034517.GB6980@roeck-us.net>
-References: <1371120019-1744-1-git-send-email-reinhard.pfau@gdsys.cc>
- <1371120019-1744-2-git-send-email-reinhard.pfau@gdsys.cc>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: wim@iguana.be, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, guenter@roeck-us.net
+Subject: Re: [PATCH v8] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130614035533.GC6980@roeck-us.net>
+References: <20130531114037.GA13533@roeck-us.net>
+ <20130603143453.GA14251@jtlinux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371120019-1744-2-git-send-email-reinhard.pfau@gdsys.cc>
+In-Reply-To: <20130603143453.GA14251@jtlinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:40:19PM +0200, Reinhard Pfau wrote:
-> From: Reinhard Pfau <pfau@gdsys.de>
+On Mon, Jun 03, 2013 at 04:34:59PM +0200, Johannes Thumshirn wrote:
+> This patch adds the driver for the watchdog devices found on MEN Mikro
+> Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
+> watchdog framework.
 > 
-> Add support for SMSC EMC2305, EMC2303, EMC2302, EMC2301 fan controller
-> chips.
-> The driver primary supports the EMC2305 chip which provides RPM-based
-> PWM control and monitoring for up to 5 fans.
+> Revision 2:
+> * Removed unneeded open flag in struct a21_wdt_drv
+> * Corrected 3bit reason code from gpio
+> * Additional sysfs files are now part of watchdog sysfs
+> * Changed OFF/ON delay in ping from 400ms to 10ns
+> * Reworked timeout setting
+> * Removed a21_wdt_ioctl(...)
 > 
-> According to the SMSC data sheets the EMC2303, EMC2302 and EMC2301 chips
-> have basically the same functionality and register layout, but support
-> less fans and (in case of EMC2302 and EMC2301) less possible I2C addresses.
-> The driver supports them, too.
+> Revision 3:
+> * Changed pr_{err,info} to dev_{err,info}
+> * Removed out of memory error print
+> * Transition from "fast" to "slow" mode not allowed by chip
 > 
-> The driver supports configuration via devicetree. This can also be used
-> to restrict the fans exposed via sysfs (see doc for details).
+> Revision 4:
+> * Remove reboot_notifier and place disable code into platform_device's shutdown function
+> * Removed sysfs interface
 > 
-> Signed-off-by: Reinhard Pfau <pfau@gdsys.de>
+> Revision 5:
+> * Added setting of .bootstatus on driver init
+> * Added initial timeout on driver init
+> 
+> Revision 6:
+> * Use watchdog_init_timeout() to initialize timeout
+> 
+> Revision 7:
+> * Fix possible get_bootstatus race condition
+> 
+> Revision 8:
+> * a21_wdt_get_bootstatus() should return reset code
+> * GPIOs are supplied via DT instead of being hardcoded. Code derived from
+>   (drivers/hwmon/gpio-fan.c)
+> * Added Devicetree binding document
+> * Driver now depends on GPIOLIB
+> 
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
 
-Comments inline.
+Almost good. One comment below.
 
+Thanks,
 Guenter
 
 > ---
->  .../devicetree/bindings/hwmon/emc2305.txt          |   61 ++
->  Documentation/hwmon/emc2305                        |   33 +
->  MAINTAINERS                                        |    8 +
->  drivers/hwmon/Kconfig                              |   10 +
->  drivers/hwmon/Makefile                             |    1 +
->  drivers/hwmon/emc2305.c                            |  800 ++++++++++++++++++++
->  6 files changed, 913 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/emc2305.txt
->  create mode 100644 Documentation/hwmon/emc2305
->  create mode 100644 drivers/hwmon/emc2305.c
+>  .../devicetree/bindings/gpio/men-a021-wdt.txt      |   25 ++
+>  MAINTAINERS                                        |    6 +
+>  drivers/watchdog/Kconfig                           |   12 +
+>  drivers/watchdog/Makefile                          |    1 +
+>  drivers/watchdog/mena21_wdt.c                      |  277 ++++++++++++++++++++
+>  5 files changed, 321 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
+>  create mode 100644 drivers/watchdog/mena21_wdt.c
 > 
-> diff --git a/Documentation/devicetree/bindings/hwmon/emc2305.txt b/Documentation/devicetree/bindings/hwmon/emc2305.txt
+> diff --git a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
 > new file mode 100644
-> index 0000000..8e0c0dd
+> index 0000000..370dee3
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/emc2305.txt
-> @@ -0,0 +1,61 @@
-> +EMC2305 (I2C)
+> +++ b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
+> @@ -0,0 +1,25 @@
+> +Bindings for MEN A21 Watchdog device connected to GPIO lines
 > +
-> +This device is a RPM-based PWM Fan Speed Controller for up to 5 fans.
+> +Required properties:
+> +- compatible: "men,a021-wdt"
+> +- gpios: Specifies the pins that control the Watchdog, order:
+> +  1: Watchdog enable
+> +  2: Watchdog fast-mode
+> +  3: Watchdog trigger
+> +  4: Watchdog reset cause bit 0
+> +  5: Watchdog reset cause bit 1
+> +  6: Watchdog reset cause bit 2
 > +
-> +Each fan can beconfigured individually:
+> +Optional properties:
+> +- None
 > +
-> + - pwm-enable defines the PWM mode:
-> +    0: PWM is disabled
-> +    3: RPM based PWM
-> +
-> +  - fan-div sets the fan divisor (for RPM mesaurement)
-> +    1, 2 ,4 or 8
-> +
-> +  - fan-target sets the target RPM speed (for RPM based PWM mode)
-> +    max 16000 (according to data sheet)
-> +
-> +
-> +1) The /emc2305 node
-> +
-> +  Required properties:
-> +
-> +   - compatible : must be "smsc,emc2305"
-> +   - reg : I2C bus address of the device
-> +   - #address-cells : must be <1>
-> +   - #size-cells : must be <0>
-> +
-> +  The node may contain child nodes for each fan that the platform uses.
-> +  If no child nodes are given, all possible fan control channels are exposed.
-> +  If at least one child node is given, only the configured fans are exposed.
-> +
-> +  Example EMC2305 node:
-> +
-> +    emc2305@2C {
-> +	    compatible = "smsc,emc2305";
-> +	    reg = <0x2C>;
-> +	    #address-cells = <1>;
-> +	    #size-cells = <0>;
-> +
-> +	    [ child node definitions... ]
-> +    }
-> +
-> +2) fan nodes
-> +
-> +  Required properties:
-> +
-> +   - reg : the fan number (0 based)
-> +
-> +  Optional properties:
-> +
-> +   - fan-div : the fan divisor setting
-> +   - fan-target : the fan target speed
-> +   - pwm-enable : PWM mode
-> +
-> +  Example EMC2305 fan node:
-> +
-> +    fan@1 {
-> +	    reg = <1>;
-> +	    fan-div = <4>;
-> +	    pwm-enable = <0>;
-> +    };
-> +
-All those properties can and should be set through sysfs. I have done that
-myself a lot even in embedded systems; either use "sensors -s" with appropriate
-configuration file or a startup script which sets the desired values.
-
-I am not sure if supporting the same through devicetree at some point makes
-sense or not, but if we ever do it I would want to have a unified implementation
-in the hwmon subsystem, not per-driver code.
-
-I am fine with initialization data in devicetre, but that should be data
-necessary for chip initialization, not data to pre-set sysfs attributes.
-
-So please drop this.
-
-> diff --git a/Documentation/hwmon/emc2305 b/Documentation/hwmon/emc2305
-> new file mode 100644
-> index 0000000..4de033b
-> --- /dev/null
-> +++ b/Documentation/hwmon/emc2305
-> @@ -0,0 +1,33 @@
-> +Kernel driver emc2305
-> +=====================
-> +
-> +Supported chips:
-> +  * SMSC EMC2305, EMC2303, EMC2302, EMC2301
-> +    Adresses scanned: I2C 0x2c, 0x2d, 0x2e, 0x2f, 0x4c, 0x4d
-> +    Prefixes: 'emc2305', 'emc2303', 'emc2302', 'emc2301'
-> +    Datasheet: Publicly available at the SMSC website :
-> +        http://www.smsc.com/Products/Thermal_and_Power_Management/Fan_Controllers
-> +
-> +Authors:
-> +        Reinhard Pfau, Guntermann & Drunck GmbH <pfau@gdsys.de>
-> +
-> +Description
-> +-----------
-> +
-> +The SMSC EMC2305 is a fan controller for up to 5 fans.
-> +The EMC2303 has the same functionality but supports only up to 3 fans.
-> +
-> +The EMC2302 supports 2 fans and the EMC2301 1 fan. These chips support less
-> +possible I2C addresses.
-> +
-> +Fan rotation speeds are reported in RPM.
-> +The driver supports the RPM based PWM control to keep a fan at a desired speed.
-> +To enable this function for a fan, write 3 to pwm<num>_enable and the desired
-> +fan speed to fan<num>_target.
-> +
-> +
-> +Devicetree
-> +----------
-> +
-> +Configuration is also possible via devicetree:
-> +Documentation/devicetree/bindings/hwmon/emc2305.txt
+> +Example:
+> +	watchdog {
+> +		compatible ="men,a021-wdt";
+> +		gpios = <&gpio3 9  1	/* WD_EN */
+> +			 &gpio3 10 1	/* WD_FAST */
+> +			 &gpio3 11 1	/* WD_TRIG */
+> +			 &gpio3 6  1	/* RST_CAUSE[0] */
+> +			 &gpio3 7  1	/* RST_CAUSE[1] */
+> +			 &gpio3 8  1>;	/* RST_CAUSE[2] */
+> +	};
 > diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0c9dc71..41ddd67 100644
+> index f35a259..bd86661 100644
 > --- a/MAINTAINERS
 > +++ b/MAINTAINERS
-> @@ -7435,6 +7435,14 @@ S:	Maintained
->  F:	Documentation/hwmon/emc2103
->  F:	drivers/hwmon/emc2103.c
->  
-> +SMSC EMC2305 HARDWARE MONITOR DRIVER
-> +M:	Reinhard Pfau <pfau@gdsys.de>
-> +L:	lm-sensors@lm-sensors.org
-> +S:	Maintained
-> +F:	Documentation/hwmon/emc2305
-> +F:	Documentation/devicetree/bindings/hwmon/emc2305.txt
-> +F:	drivers/hwmon/emc2305.c
+> @@ -5307,6 +5307,12 @@ F:	drivers/mtd/
+>  F:	include/linux/mtd/
+>  F:	include/uapi/mtd/
+> 
+> +MEN A21 WATCHDOG DRIVER
+> +M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
+> +L:	linux-watchdog@vger.kernel.org
+> +S:	Supported
+> +F:	drivers/watchdog/mena21_wdt.c
 > +
->  SMSC SCH5627 HARDWARE MONITOR DRIVER
->  M:	Hans de Goede <hdegoede@redhat.com>
->  L:	lm-sensors@lm-sensors.org
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 0428e8a..6c72441 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -1094,6 +1094,16 @@ config SENSORS_EMC2103
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called emc2103.
->  
-> +config SENSORS_EMC2305
-> +	tristate "SMSC EMC2305"
-> +	depends on I2C
-> +	help
-> +	  If you say yes here you get support for the SMSC EMC2305/EMC2303
-> +	  fan controller chips.
+>  METAG ARCHITECTURE
+>  M:	James Hogan <james.hogan@imgtec.com>
+>  S:	Supported
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index e89fc31..8b143ee 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1172,6 +1172,18 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+> 
+>  	  The value can be overridden by the wdt_period command-line parameter.
+> 
+> +config MEN_A21_WDT
+> +       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
+> +       select WATCHDOG_CORE
+> +       depends on GPIOLIB
+> +       help
+> +        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
 > +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called emc2305.
+> +	The driver can also be built as a module. If so, the module will be
+> +	called mena21_wdt.
 > +
->  config SENSORS_EMC6W201
->  	tristate "SMSC EMC6W201"
->  	depends on I2C
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index d17d3e6..982752a 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -53,6 +53,7 @@ obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
->  obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
->  obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
->  obj-$(CONFIG_SENSORS_EMC2103)	+= emc2103.o
-> +obj-$(CONFIG_SENSORS_EMC2305)	+= emc2305.o
->  obj-$(CONFIG_SENSORS_EMC6W201)	+= emc6w201.o
->  obj-$(CONFIG_SENSORS_F71805F)	+= f71805f.o
->  obj-$(CONFIG_SENSORS_F71882FG)	+= f71882fg.o
-> diff --git a/drivers/hwmon/emc2305.c b/drivers/hwmon/emc2305.c
+> +	If unsure select N here.
+> +
+>  # PPC64 Architecture
+> 
+>  config WATCHDOG_RTAS
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index a300b94..bffdcb1 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
+>  obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
+>  obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
+>  obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
+> +obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
+> 
+>  # PPC64 Architecture
+>  obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
+> diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
 > new file mode 100644
-> index 0000000..29acead
+> index 0000000..29f9c0d
 > --- /dev/null
-> +++ b/drivers/hwmon/emc2305.c
-> @@ -0,0 +1,800 @@
+> +++ b/drivers/watchdog/mena21_wdt.c
+> @@ -0,0 +1,277 @@
 > +/*
-> + * emc2305.c - hwmon driver for SMSC EMC2305 fan controller
-> + * (C) Copyright 2013
-> + * Reinhard Pfau, Guntermann & Drunck GmbH <pfau@gdsys.de>
+> + * Watchdog driver for the A21 VME CPU Boards
 > + *
-> + * Based on emc2103 driver by SMSC.
+> + * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
 > + *
-> + * Datasheet available at:
-> + * http://www.smsc.com/Downloads/SMSC/Downloads_Public/Data_Sheets/2305.pdf
-> + *
-> + * Also supports the EMC2303 fan controller which has the same functionality
-> + * and register layout as EMC2305, but supports only up to 3 fans instead of 5.
-> + *
-> + * Also supports EMC2302 (up to 2 fans) and EMC2301 (1 fan) fan controller.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation
 > + */
-> +
-> +/*
-> + * TODO / IDEAS:
-> + * - expose more of the configuration and features
-> + */
-> +
 > +#include <linux/module.h>
-> +#include <linux/init.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/types.h>
+> +#include <linux/kernel.h>
 > +#include <linux/slab.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/i2c.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/err.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/gpio.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/delay.h>
+> +#include <linux/bitops.h>
 > +
-> +/*
-> + * Addresses scanned.
-> + * Listed in the same order as they appear in the EMC2305, EMC2303 data sheets.
-> + *
-> + * Note: these are the I2C adresses which are possible for EMC2305 and EMC2303
-> + * chips.
-> + * The EMC2302 supports only 0x2e (EMC2302-1) and 0x2f (EMC2302-2).
-> + * The EMC2301 supports only 0x2f.
-> + */
-> +static const unsigned short i2c_adresses[] = {
-> +	0x2E,
-> +	0x2F,
-> +	0x2C,
-> +	0x2D,
-> +	0x4C,
-> +	0x4D,
-> +	I2C_CLIENT_END
-
-Usually we keep those in order.
-
+> +enum a21_wdt_gpios {
+> +	GPIO_WD_ENAB,
+> +	GPIO_WD_FAST,
+> +	GPIO_WD_TRIG,
+> +	GPIO_WD_RST0,
+> +	GPIO_WD_RST1,
+> +	GPIO_WD_RST2,
 > +};
 > +
-> +/*
-> + * global registers
-> + */
-> +enum {
-> +	REG_CONFIGURATION = 0x20,
-> +	REG_FAN_STATUS = 0x24,
-> +	REG_FAN_STALL_STATUS = 0x25,
-> +	REG_FAN_SPIN_STATUS = 0x26,
-> +	REG_DRIVE_FAIL_STATUS = 0x27,
-> +	REG_FAN_INTERRUPT_ENABLE = 0x29,
-> +	REG_PWM_POLARITY_CONFIG = 0x2a,
-> +	REG_PWM_OUTPUT_CONFIG = 0x2b,
-> +	REG_PWM_BASE_FREQ_1 = 0x2c,
-> +	REG_PWM_BASE_FREQ_2 = 0x2d,
-> +	REG_SOFTWARE_LOCK = 0xef,
-> +	REG_PRODUCT_FEATURES = 0xfc,
-> +	REG_PRODUCT_ID = 0xfd,
-> +	REG_MANUFACTURER_ID = 0xfe,
-> +	REG_REVISION = 0xff
+> +struct a21_wdt_drv {
+> +	struct watchdog_device wdt;
+> +	struct mutex lock;
+> +	int num_gpios;
+> +	unsigned *gpios;
 > +};
 > +
-> +/*
-> + * fan specific registers
-> + */
-> +enum {
-> +	REG_FAN_SETTING = 0x30,
-> +	REG_PWM_DIVIDE = 0x31,
-> +	REG_FAN_CONFIGURATION_1 = 0x32,
-> +	REG_FAN_CONFIGURATION_2 = 0x33,
-> +	REG_GAIN = 0x35,
-> +	REG_FAN_SPIN_UP_CONFIG = 0x36,
-> +	REG_FAN_MAX_STEP = 0x37,
-> +	REG_FAN_MINIMUM_DRIVE = 0x38,
-> +	REG_FAN_VALID_TACH_COUNT = 0x39,
-> +	REG_FAN_DRIVE_FAIL_BAND_LOW = 0x3a,
-> +	REG_FAN_DRIVE_FAIL_BAND_HIGH = 0x3b,
-> +	REG_TACH_TARGET_LOW = 0x3c,
-> +	REG_TACH_TARGET_HIGH = 0x3d,
-> +	REG_TACH_READ_HIGH = 0x3e,
-> +	REG_TACH_READ_LOW = 0x3f,
-> +};
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
 > +
-> +#define SEL_FAN(fan, reg) (reg + fan * 0x10)
-> +
-> +/*
-> + * Factor by equations [2] and [3] from data sheet; valid for fans where the
-> + * number of edges equals (poles * 2 + 1).
-> + */
-> +#define FAN_RPM_FACTOR 3932160
-> +
-> +
-Only one empty line, please
-
-> +struct emc2305_fan_data {
-> +	bool		enabled;
-> +	bool		valid;
-> +	unsigned long	last_updated;
-> +	bool		rpm_control;
-> +	u8		multiplier;
-> +	u8		poles;
-> +	u16		target;
-> +	u16		tach;
-> +	u16		rpm_factor;
-> +};
-> +
-> +struct emc2305_data {
-> +	struct device		*hwmon_dev;
-> +	struct mutex		update_lock;
-> +	int			fans;
-> +	struct emc2305_fan_data	fan[5];
-> +};
-> +
-> +static int read_u8_from_i2c(struct i2c_client *client, u8 i2c_reg, u8 *output)
+> +static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
 > +{
-> +	int status = i2c_smbus_read_byte_data(client, i2c_reg);
-> +	if (status < 0) {
-> +		dev_warn(&client->dev, "reg 0x%02x, err %d\n",
-> +			i2c_reg, status);
-> +	} else {
-> +		*output = status;
-> +	}
-> +	return status;
-> +}
-
-I am not in favor of this kind of code, where error return and return value are
-split and the return value is passed through a pointer.
-
-I won't complain about the waring, though I find it unnecessary, but there is no
-value in separating error code (negative) from value (u8), and I won't accept
-it.
-
+> +	int reset = 0;
 > +
-> +static void read_fan_from_i2c(struct i2c_client *client, u16 *output,
-> +			      u8 hi_addr, u8 lo_addr)
-> +{
-> +	u8 high_byte, lo_byte;
+> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST0]) ? (1 << 0) : 0;
+> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST1]) ? (1 << 1) : 0;
+> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST2]) ? (1 << 2) : 0;
 > +
-> +	if (read_u8_from_i2c(client, hi_addr, &high_byte) < 0)
-> +		return;
-> +
-> +	if (read_u8_from_i2c(client, lo_addr, &lo_byte) < 0)
-> +		return;
-> +
-> +	*output = ((u16)high_byte << 5) | (lo_byte >> 3);
-
-Same here. Even worse, you are hiding the error returns here, meaning the
-calling process won't notice. As you find it important enough to fill the log
-with the error, I assume you'll want to notify userspace as well.
-
+> +	return reset;
 > +}
 > +
-> +static void write_fan_target_to_i2c(struct i2c_client *client, int fan,
-> +				    u16 new_target)
+> +static int a21_wdt_start(struct watchdog_device *wdt)
 > +{
-> +	const u8 lo_reg = SEL_FAN(fan, REG_TACH_TARGET_LOW);
-> +	const u8 hi_reg = SEL_FAN(fan, REG_TACH_TARGET_HIGH);
-> +	u8 high_byte = (new_target & 0x1fe0) >> 5;
-> +	u8 low_byte = (new_target & 0x001f) << 3;
-
-an empty line doesn't hurt here.
-
-> +	i2c_smbus_write_byte_data(client, lo_reg, low_byte);
-> +	i2c_smbus_write_byte_data(client, hi_reg, high_byte);
-
-No error check here ? Then what is the point of error checking the reads and
-creating a log entry ?
-
-> +}
+> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
 > +
-> +static void read_fan_config_from_i2c(struct i2c_client *client, int fan)
+> +	mutex_lock(&drv->lock);
 > +
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	u8 conf1;
+> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 1);
 > +
-> +	if (read_u8_from_i2c(client, SEL_FAN(fan, REG_FAN_CONFIGURATION_1),
-> +			     &conf1) < 0)
-> +		return;
+> +	mutex_unlock(&drv->lock);
 > +
-> +	data->fan[fan].rpm_control = (conf1 & 0x80) != 0;
-
-	rpm_control is bool, so != 0 is unnecessary.
-
-> +	data->fan[fan].multiplier = 1 << ((conf1 & 0x60) >> 5);
-> +	data->fan[fan].poles = ((conf1 & 0x18) >> 3) + 1;
-> +}
-> +
-> +static void read_fan_data(struct i2c_client *client, int fan_idx)
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +
-> +	read_fan_from_i2c(client, &data->fan[fan_idx].target,
-> +			  SEL_FAN(fan_idx, REG_TACH_TARGET_HIGH),
-> +			  SEL_FAN(fan_idx, REG_TACH_TARGET_LOW));
-> +	read_fan_from_i2c(client, &data->fan[fan_idx].tach,
-> +			  SEL_FAN(fan_idx, REG_TACH_READ_HIGH),
-> +			  SEL_FAN(fan_idx, REG_TACH_READ_LOW));
-> +}
-> +
-> +static struct emc2305_fan_data *
-> +emc2305_update_fan(struct i2c_client *client, int fan_idx)
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	struct emc2305_fan_data *fan_data = &data->fan[fan_idx];
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	if (time_after(jiffies, fan_data->last_updated + HZ + HZ / 2)
-> +	    || !fan_data->valid) {
-> +		read_fan_config_from_i2c(client, fan_idx);
-> +		read_fan_data(client, fan_idx);
-
-Since the underlying code checks for error returns, you expect those to happen,
-and should return those errors to user space.
-
-> +		fan_data->valid = true;
-> +		fan_data->last_updated = jiffies;
-> +	}
-> +
-> +	mutex_unlock(&data->update_lock);
-> +	return fan_data;
-> +}
-> +
-> +static struct emc2305_fan_data *
-> +emc2305_update_device_fan(struct device *dev, struct device_attribute *da)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int fan_idx = to_sensor_dev_attr(da)->index;
-> +
-> +	return emc2305_update_fan(client, fan_idx);
-> +}
-> +
-> +/*
-> + * set/ config functions
-> + */
-> +
-> +/*
-> + * Note: we also update the fan target here, because its value is
-> + * determined in part by the fan clock divider.  This follows the principle
-> + * of least surprise; the user doesn't expect the fan target to change just
-> + * because the divider changed.
-> + */
-> +static int
-> +emc2305_set_fan_div(struct i2c_client *client, int fan_idx, long new_div)
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	struct emc2305_fan_data *fan = emc2305_update_fan(client, fan_idx);
-> +	const u8 reg_conf1 = SEL_FAN(fan_idx, REG_FAN_CONFIGURATION_1);
-> +	int new_range_bits, old_div = 8 / fan->multiplier;
-> +	int status = 0;
-> +
-> +	if (new_div == old_div) /* No change */
-> +		return 0;
-> +
-> +	switch (new_div) {
-> +	case 1:
-> +		new_range_bits = 3;
-> +		break;
-> +	case 2:
-> +		new_range_bits = 2;
-> +		break;
-> +	case 4:
-> +		new_range_bits = 1;
-> +		break;
-> +	case 8:
-> +		new_range_bits = 0;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	status = i2c_smbus_read_byte_data(client, reg_conf1);
-> +	if (status < 0) {
-> +		dev_dbg(&client->dev, "reg 0x%02x, err %d\n",
-> +			reg_conf1, status);
-> +		status = -EIO;
-
-Please don't replace error codes.
-
-> +		goto exit_unlock;
-> +	}
-> +	status &= 0x9F;
-> +	status |= (new_range_bits << 5);
-> +	status = i2c_smbus_write_byte_data(client, reg_conf1, status);
-> +	if (status < 0) {
-> +		status = -EIO;
-
-Please don't replace error codes.
-
-> +		goto exit_invalidate;
-> +	}
-> +
-> +	fan->multiplier = 8 / new_div;
-> +
-> +	/* update fan target if high byte is not disabled */
-> +	if ((fan->target & 0x1fe0) != 0x1fe0) {
-> +		u16 new_target = (fan->target * old_div) / new_div;
-> +		fan->target = min_t(u16, new_target, 0x1fff);
-> +		write_fan_target_to_i2c(client, fan_idx, fan->target);
-> +	}
-> +
-> +exit_invalidate:
-> +	/* invalidate fan data to force re-read from hardware */
-> +	fan->valid = false;
-> +exit_unlock:
-> +	mutex_unlock(&data->update_lock);
-> +	return status;
-> +}
-> +
-> +static int
-> +emc2305_set_fan_target(struct i2c_client *client, int fan_idx, long rpm_target)
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	struct emc2305_fan_data *fan = emc2305_update_fan(client, fan_idx);
-> +
-> +	/*
-> +	 * Datasheet states 16000 as maximum RPM target
-> +	 * (table 2.2 and section 4.3)
-> +	 */
-> +	if ((rpm_target < 0) || (rpm_target > 16000))
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	if (rpm_target == 0)
-> +		fan->target = 0x1fff;
-> +	else
-> +		fan->target = clamp_val(
-> +			(FAN_RPM_FACTOR * fan->multiplier) / rpm_target,
-
-Nitpick, but the ( ) is unnecessary here.
-
-> +			0, 0x1fff);
-> +
-> +	write_fan_target_to_i2c(client, fan_idx, fan->target);
-> +
-> +	mutex_unlock(&data->update_lock);
 > +	return 0;
 > +}
 > +
-> +static int
-> +emc2305_set_pwm_enable(struct i2c_client *client, int fan_idx, long enable)
+> +static int a21_wdt_stop(struct watchdog_device *wdt)
 > +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	struct emc2305_fan_data *fan = emc2305_update_fan(client, fan_idx);
-> +	const u8 reg_fan_conf1 = SEL_FAN(fan_idx, REG_FAN_CONFIGURATION_1);
-> +	int status = 0;
-> +	u8 conf_reg;
+> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
 > +
-> +	mutex_lock(&data->update_lock);
-> +	switch (enable) {
-> +	case 0:
-> +		fan->rpm_control = false;
-> +		break;
-> +	case 3:
-> +		fan->rpm_control = true;
-> +		break;
-> +	default:
-> +		status = -EINVAL;
-> +		goto exit_unlock;
-> +	}
-> +
-> +	status = read_u8_from_i2c(client, reg_fan_conf1, &conf_reg);
-> +	if (status < 0) {
-> +		status = -EIO;
-
-Same as before and everywhere else. Don't ever replace error codes.
-
-> +		goto exit_unlock;
-> +	}
-> +
-> +	if (fan->rpm_control)
-> +		conf_reg |= 0x80;
-> +	else
-> +		conf_reg &= ~0x80;
-> +
-> +	status = i2c_smbus_write_byte_data(client, reg_fan_conf1, conf_reg);
-> +	if (status < 0)
-> +		status = -EIO;
-> +
-> +exit_unlock:
-> +	mutex_unlock(&data->update_lock);
-> +	return status;
-> +}
-> +
-> +
-> +/*
-> + * sysfs callback functions
-> + *
-> + * Note:
-> + * Naming of the funcs is modelled after the naming scheme described in
-> + * Documentation/hwmon/sysfs-interface:
-> + *
-> + * For a sysfs file <type><number>_<item> the functions are named like this:
-> + *    the show function: show_<type>_<item>
-> + *    the store function: set_<type>_<item>
-> + * For read only (RO) attributes of course only the show func is required.
-> + *
-> + * This convention allows us to define the sysfs attributes by using macros.
-
-Umm ... isn't this what every hwmon driver is doing ? Doesn't need an extra
-explanation.
-
-> + */
-> +
-> +static ssize_t
-> +show_fan_input(struct device *dev, struct device_attribute *da, char *buf)
-> +{
-> +	struct emc2305_fan_data *fan = emc2305_update_device_fan(dev, da);
-> +	int rpm = 0;
-> +	if (fan->tach != 0)
-> +		rpm = (FAN_RPM_FACTOR * fan->multiplier) / fan->tach;
-> +	return sprintf(buf, "%d\n", rpm);
-> +}
-> +
-> +static ssize_t
-> +show_fan_fault(struct device *dev, struct device_attribute *da, char *buf)
-> +{
-> +	struct emc2305_fan_data *fan = emc2305_update_device_fan(dev, da);
-> +	bool fault = ((fan->tach & 0x1fe0) == 0x1fe0);
-
-Extra ( )
-
-> +	return sprintf(buf, "%d\n", fault ? 1 : 0);
-
-fault is already 1 or 0. You could shorten the code to something like
-	return sprintf(buf, "%d\n", (fan->tach & 0x1fe0) == 0x1fe0);
-if you like, but just printing fault is fine.
-
-> +}
-> +
-> +static ssize_t
-> +show_fan_div(struct device *dev, struct device_attribute *da, char *buf)
-> +{
-> +	struct emc2305_fan_data *fan = emc2305_update_device_fan(dev, da);
-> +	int fan_div = 8 / fan->multiplier;
-
-I like seeing an empty line after variable declarations. Sometimes you do it,
-sometimes not. Consistency is better.
-
-> +	return sprintf(buf, "%d\n", fan_div);
-
-Variable is really unnecessary here. your call, though - code should be the same.
-
-> +}
-> +
-> +static ssize_t
-> +set_fan_div(struct device *dev, struct device_attribute *da,
-> +	    const char *buf, size_t count)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int fan_idx = to_sensor_dev_attr(da)->index;
-> +	long new_div;
-> +	int status;
-> +
-> +	status = kstrtol(buf, 10, &new_div);
-> +	if (status < 0)
+> +	/* We don't stop if WDOG_NO_WAY_OUT is set */
+> +	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
 > +		return -EINVAL;
 > +
-		return status;
-
-> +	status = emc2305_set_fan_div(client, fan_idx, new_div);
-> +	if (status < 0)
-> +		return status;
+> +	mutex_lock(&drv->lock);
 > +
-> +	return count;
-> +}
+> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
 > +
-> +static ssize_t
-> +show_fan_target(struct device *dev, struct device_attribute *da, char *buf)
-> +{
-> +	struct emc2305_fan_data *fan = emc2305_update_device_fan(dev, da);
-> +	int rpm = 0;
+> +	mutex_unlock(&drv->lock);
 > +
-> +	/* high byte of 0xff indicates disabled so return 0 */
-> +	if ((fan->target != 0) && ((fan->target & 0x1fe0) != 0x1fe0))
-
-Unnecessary ( )
-
-> +		rpm = (FAN_RPM_FACTOR * fan->multiplier)
-> +			/ fan->target;
-> +
-> +	return sprintf(buf, "%d\n", rpm);
-> +}
-> +
-> +static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
-> +			      const char *buf, size_t count)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int fan_idx = to_sensor_dev_attr(da)->index;
-> +	long rpm_target;
-> +	int status;
-> +
-> +	status = kstrtol(buf, 10, &rpm_target);
-> +	if (status < 0)
-> +		return -EINVAL;
-> +
-> +	status = emc2305_set_fan_target(client, fan_idx, rpm_target);
-> +	if (status < 0)
-> +		return status;
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t
-> +show_pwm_enable(struct device *dev, struct device_attribute *da, char *buf)
-> +{
-> +	struct emc2305_fan_data *fan = emc2305_update_device_fan(dev, da);
-> +	return sprintf(buf, "%d\n", fan->rpm_control ? 3 : 0);
-> +}
-> +
-> +static ssize_t set_pwm_enable(struct device *dev, struct device_attribute *da,
-> +			      const char *buf, size_t count)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int fan_idx = to_sensor_dev_attr(da)->index;
-> +	long new_value;
-> +	int status;
-> +
-> +	status = kstrtol(buf, 10, &new_value);
-> +	if (status < 0)
-> +		return -EINVAL;
-> +	status = emc2305_set_pwm_enable(client, fan_idx, new_value);
-> +	return count;
-> +}
-> +
-> +/* define a read only attribute */
-> +#define EMC2305_ATTR_RO(_type, _item, _num)			\
-> +	SENSOR_ATTR(_type ## _num ## _ ## _item, S_IRUGO,	\
-> +		    show_## _type ## _ ## _item, NULL, _num - 1)
-> +
-> +/* define a read/write attribute */
-> +#define EMC2305_ATTR_RW(_type, _item, _num)				\
-> +	SENSOR_ATTR(_type ## _num ## _ ## _item, S_IRUGO | S_IWUSR,	\
-> +		    show_## _type ##_ ## _item,				\
-> +		    set_## _type ## _ ## _item, _num - 1)
-> +
-> +/* defines the attributes for a single fan */
-> +#define EMC2305_DEFINE_FAN_ATTRS(_num)					\
-> +	static const							\
-> +	struct sensor_device_attribute emc2305_attr_fan ## _num[] = {	\
-> +		EMC2305_ATTR_RO(fan, input, _num),			\
-> +		EMC2305_ATTR_RO(fan, fault, _num),			\
-> +		EMC2305_ATTR_RW(fan, div, _num),			\
-> +		EMC2305_ATTR_RW(fan, target, _num),			\
-> +		EMC2305_ATTR_RW(pwm, enable, _num)			\
-> +	}
-> +
-Please just use the standard defines for the attributes. Much easier to understand,
-and code is the same.
-
-> +#define EMC2305_NUM_FAN_ATTRS ARRAY_SIZE(emc2305_attr_fan1)
-> +
-> +/* common attributes for EMC2303 and EMC2305 */
-> +static const struct sensor_device_attribute emc2305_attr_common[] = {
-> +};
-> +
-> +/* fan attributes for the single fans */
-> +EMC2305_DEFINE_FAN_ATTRS(1);
-> +EMC2305_DEFINE_FAN_ATTRS(2);
-> +EMC2305_DEFINE_FAN_ATTRS(3);
-> +EMC2305_DEFINE_FAN_ATTRS(4);
-> +EMC2305_DEFINE_FAN_ATTRS(5);
-> +
-> +/* fan attributes */
-> +static const struct sensor_device_attribute *emc2305_fan_attrs[] = {
-> +	emc2305_attr_fan1,
-> +	emc2305_attr_fan2,
-> +	emc2305_attr_fan3,
-> +	emc2305_attr_fan4,
-> +	emc2305_attr_fan5,
-> +};
-> +
-> +/*
-> + * driver interface
-> + */
-> +
-> +static int emc2305_remove(struct i2c_client *client)
-> +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
-> +	int fan_idx, i;
-> +
-> +	hwmon_device_unregister(data->hwmon_dev);
-> +
-> +	for (fan_idx = 0; fan_idx < data->fans; ++fan_idx)
-> +		for (i = 0; i < EMC2305_NUM_FAN_ATTRS; ++i)
-> +			device_remove_file(
-> +				&client->dev,
-> +				&emc2305_fan_attrs[fan_idx][i].dev_attr);
-> +
-> +	for (i = 0; i < ARRAY_SIZE(emc2305_attr_common); ++i)
-> +		device_remove_file(&client->dev,
-> +				   &emc2305_attr_common[i].dev_attr);
-> +
-> +	kfree(data);
 > +	return 0;
 > +}
 > +
-> +
-> +#ifdef CONFIG_OF
-> +/*
-> + * device tree support
-> + */
-> +
-> +struct of_fan_attribute {
-> +	const char *name;
-> +	int (*set)(struct i2c_client*, int, long);
-> +};
-> +
-> +struct of_fan_attribute of_fan_attributes[] = {
-> +	{"fan-div", emc2305_set_fan_div},
-> +	{"fan-target", emc2305_set_fan_target},
-> +	{"pwm-enable", emc2305_set_pwm_enable},
-> +	{NULL, NULL}
-> +};
-> +
-> +static int emc2305_config_of(struct i2c_client *client)
+> +static int a21_wdt_ping(struct watchdog_device *wdt)
 > +{
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
+> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> +
+> +	mutex_lock(&drv->lock);
+> +
+> +	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 0);
+> +	ndelay(10);
+> +	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 1);
+> +
+> +	mutex_unlock(&drv->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static int a21_wdt_set_timeout(struct watchdog_device *wdt,
+> +			       unsigned int timeout)
+> +{
+> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> +
+> +	if (timeout != 1 && timeout != 30) {
+> +		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (timeout == 30 && wdt->timeout == 1) {
+> +		dev_err(wdt->dev,
+> +			"Transition from fast to slow mode not allowed\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	mutex_lock(&drv->lock);
+> +
+> +	if (timeout == 1)
+> +		gpio_set_value(drv->gpios[GPIO_WD_FAST], 1);
+> +	else
+> +		gpio_set_value(drv->gpios[GPIO_WD_FAST], 0);
+> +
+> +	wdt->timeout = timeout;
+> +
+> +	mutex_unlock(&drv->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct watchdog_info a21_wdt_info = {
+> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
+> +	.identity = "MEN A21 Watchdog",
+> +};
+> +
+> +static const struct watchdog_ops a21_wdt_ops = {
+> +	.owner = THIS_MODULE,
+> +	.start = a21_wdt_start,
+> +	.stop = a21_wdt_stop,
+> +	.ping = a21_wdt_ping,
+> +	.set_timeout = a21_wdt_set_timeout,
+> +};
+> +
+> +static struct watchdog_device a21_wdt = {
+> +	.info = &a21_wdt_info,
+> +	.ops = &a21_wdt_ops,
+> +	.min_timeout = 1,
+> +	.max_timeout = 30,
+> +};
+> +
+> +static int a21_wdt_probe(struct platform_device *pdev)
+> +{
 > +	struct device_node *node;
-> +	unsigned int fan_idx;
-> +
-> +	if (!client->dev.of_node)
-> +		return -EINVAL;
-> +	if (!of_get_next_child(client->dev.of_node, NULL))
-> +		return  0;
-> +
-> +	for (fan_idx = 0; fan_idx < data->fans; ++fan_idx)
-> +		data->fan[fan_idx].enabled = false;
-> +
-> +	for_each_child_of_node(client->dev.of_node, node) {
-> +		const __be32 *property;
-> +		int len;
-> +		struct of_fan_attribute *attr;
-> +
-> +		property = of_get_property(node, "reg", &len);
-> +		if (!property || len != sizeof(int)) {
-> +			dev_err(&client->dev, "invalid reg on %s\n",
-> +				node->full_name);
-> +			continue;
-> +		}
-> +
-> +		fan_idx = be32_to_cpup(property);
-> +		if (fan_idx >= data->fans) {
-> +			dev_err(&client->dev,
-> +				"invalid fan index %d on %s\n",
-> +				fan_idx, node->full_name);
-> +			continue;
-> +		}
-> +
-> +		data->fan[fan_idx].enabled = true;
-> +
-> +		for (attr = of_fan_attributes; attr->name; ++attr) {
-> +			int status = 0;
-> +			long value;
-> +			property = of_get_property(node, attr->name, &len);
-> +			if (!property)
-> +				continue;
-> +			if (len != sizeof(int)) {
-> +				dev_err(&client->dev, "invalid %s on %s\n",
-> +					attr->name, node->full_name);
-> +				continue;
-> +			}
-> +			value = be32_to_cpup(property);
-> +			status = attr->set(client, fan_idx, value);
-> +			if (status == -EINVAL) {
-> +				dev_err(&client->dev,
-> +					"invalid value for %s on %s\n",
-> +					attr->name, node->full_name);
-> +			}
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +#endif
-> +
-> +static void emc2305_get_config(struct i2c_client *client)
-> +{
+> +	struct a21_wdt_drv *drv;
+> +	unsigned int reset = 0;
+> +	unsigned *gpios;
+> +	int ret;
 > +	int i;
-> +	struct emc2305_data *data = i2c_get_clientdata(client);
 > +
-> +	for (i = 0; i < data->fans; ++i) {
-> +		data->fan[i].enabled = true;
-> +		emc2305_update_fan(client, i);
-> +	}
+> +	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
 > +
-> +#ifdef CONFIG_OF
-> +	emc2305_config_of(client);
-> +#endif
-> +
-> +}
-> +
-> +static int
-> +emc2305_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> +{
-> +	struct emc2305_data *data;
-> +	int status;
-> +	int i;
-> +	int fan_idx;
-> +
-> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-> +		return -EIO;
-> +
-> +	data = kzalloc(sizeof(struct emc2305_data), GFP_KERNEL);
-
-Please use devm_kzalloc().
-
-> +	if (!data)
+> +	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
+> +	if (!drv)
 > +		return -ENOMEM;
 > +
-> +	i2c_set_clientdata(client, data);
-> +	mutex_init(&data->update_lock);
+> +	/* Fill GPIO pin array */
+> +	node = pdev->dev.of_node;
 > +
-> +	status = i2c_smbus_read_byte_data(client, REG_PRODUCT_ID);
-> +	switch (status) {
-> +	case 0x34: /* EMC2305 */
-> +		data->fans = 5;
-> +		break;
-> +	case 0x35: /* EMC2303 */
-> +		data->fans = 3;
-> +		break;
-> +	case 0x36: /* EMC2302 */
-> +		data->fans = 2;
-> +		break;
-> +	case 0x37: /* EMC2301 */
-> +		data->fans = 1;
-> +		break;
-> +	default:
-> +		if (status >= 0)
-> +			status = -EINVAL;
-> +		goto exit_free;
+> +	drv->num_gpios = of_gpio_count(node);
+> +	if (drv->num_gpios <= 0) {
+> +		dev_err(&pdev->dev, "gpios DT property empty / missing");
+> +		return -ENODEV;
+> +	}
+
+Not happy with this. Code accepts one gpio pin, but then assumes throughout the
+driver that all pins are defined. I am quite sure I can get it to crash if I
+specify only a single gpio pin. num_gpios will be 1, you allocate a single
+entry, but then access all 6 of them.
+
+I think it would be easier if you expect a fixed number of gpio pins (6) and abort
+if it is not correct. You can then make drv->gpios an array and don't have to
+allocate it separately, and you don't need drv->num_gpios (which you don't need
+anyway as it is not used outside this function).
+
+> +
+> +	gpios = devm_kzalloc(&pdev->dev, drv->num_gpios * sizeof(unsigned),
+> +			     GFP_KERNEL);
+> +	if (!gpios)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < drv->num_gpios; i++) {
+> +		int val;
+> +
+> +		val = of_get_gpio(node, i);
+> +		if (val < 0)
+> +			return val;
+> +
+> +		gpios[i] = val;
+> +	}
+> +	drv->gpios = gpios;
+> +
+> +	/* Request the used GPIOs */
+> +	for (i = 0; i < drv->num_gpios; i++) {
+> +		ret = devm_gpio_request(&pdev->dev, drv->gpios[i],
+> +					"MEN A21 Watchdog");
+> +		if (ret)
+> +			return ret;
+> +
+> +		ret = gpio_direction_output(drv->gpios[i],
+> +					    gpio_get_value(drv->gpios[i]));
+> +		if (ret)
+> +			return ret;
 > +	}
 > +
-> +	emc2305_get_config(client);
+> +	mutex_init(&drv->lock);
+> +	watchdog_init_timeout(&a21_wdt, 30, &pdev->dev);
+> +	watchdog_set_nowayout(&a21_wdt, nowayout);
+> +	watchdog_set_drvdata(&a21_wdt, drv);
 > +
-> +	for (i = 0; i < ARRAY_SIZE(emc2305_attr_common); ++i) {
-> +		status = device_create_file(&client->dev,
-> +					    &emc2305_attr_common[i].dev_attr);
-> +		if (status)
-> +			goto exit_remove;
-> +	}
-> +	for (fan_idx = 0; fan_idx < data->fans; ++fan_idx)
-> +		for (i = 0; i < EMC2305_NUM_FAN_ATTRS; ++i) {
-> +			if (!data->fan[fan_idx].enabled)
-> +				continue;
-> +			status = device_create_file(
-> +				&client->dev,
-> +				&emc2305_fan_attrs[fan_idx][i].dev_attr);
-> +			if (status)
-> +				goto exit_remove_fans;
-> +		}
-
-Using sysfs_create_group() and is_visible would make a lot of sense here.
-
+> +	reset = a21_wdt_get_bootstatus(drv);
+> +	if (reset == 2)
+> +		a21_wdt.bootstatus |= WDIOF_EXTERN1;
+> +	else if (reset == 4)
+> +		a21_wdt.bootstatus |= WDIOF_CARDRESET;
+> +	else if (reset == 5)
+> +		a21_wdt.bootstatus |= WDIOF_POWERUNDER;
+> +	else if (reset == 7)
+> +		a21_wdt.bootstatus |= WDIOF_EXTERN2;
 > +
-> +	data->hwmon_dev = hwmon_device_register(&client->dev);
-> +	if (IS_ERR(data->hwmon_dev)) {
-> +		status = PTR_ERR(data->hwmon_dev);
-> +		goto exit_remove_fans;
+> +
+> +	ret = watchdog_register_device(&a21_wdt);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Cannot register watchdog device\n");
+> +		goto err_register_wd;
 > +	}
 > +
-> +	dev_info(&client->dev, "%s: sensor '%s'\n",
-> +		 dev_name(data->hwmon_dev), client->name);
-
-dev_info already prints the device name.
-
+> +	dev_set_drvdata(&pdev->dev, drv);
 > +
 > +	return 0;
 > +
-> +exit_remove_fans:
-> +	for (fan_idx = 0; fan_idx < data->fans; ++fan_idx)
-> +		for (i = 0; i < EMC2305_NUM_FAN_ATTRS; ++i)
-> +			device_remove_file(
-> +				&client->dev,
-> +				&emc2305_fan_attrs[fan_idx][i].dev_attr);
+> +err_register_wd:
+> +	mutex_destroy(&drv->lock);
 > +
-> +exit_remove:
-> +	for (i = 0; i < ARRAY_SIZE(emc2305_attr_common); ++i)
-> +		device_remove_file(&client->dev,
-> +				   &emc2305_attr_common[i].dev_attr);
-> +exit_free:
-> +	kfree(data);
-> +	return status;
+> +	return ret;
 > +}
 > +
-> +static const struct i2c_device_id emc2305_id[] = {
-> +	{ "emc2305", 0 },
-> +	{ "emc2303", 0 },
-> +	{ "emc2302", 0 },
-> +	{ "emc2301", 0 },
-
-It is customary to use device IDs here, and then to use that device id in the
-probe function to select per-device functionality.
-
-You should have a detect function to identify the device instead of identifying
-it in the probe function.
-
-Oh ... you do. Then identifying it again in the probe function is simply
-unnecessary.
-
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, emc2305_id);
-> +
-> +/* Return 0 if detection is successful, -ENODEV otherwise */
-> +static int
-> +emc2305_detect(struct i2c_client *new_client, struct i2c_board_info *info)
+> +static int a21_wdt_remove(struct platform_device *pdev)
 > +{
-> +	struct i2c_adapter *adapter = new_client->adapter;
-> +	int manufacturer, product;
+> +	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
 > +
-> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-> +		return -ENODEV;
+> +	dev_warn(&pdev->dev,
+> +		"Unregistering A21 watchdog driver, board may reboot\n");
 > +
-> +	manufacturer =
-> +		i2c_smbus_read_byte_data(new_client, REG_MANUFACTURER_ID);
-> +	if (manufacturer != 0x5D)
-> +		return -ENODEV;
 > +
-> +	product = i2c_smbus_read_byte_data(new_client, REG_PRODUCT_ID);
+> +	watchdog_unregister_device(&drv->wdt);
 > +
-> +	switch (product) {
-> +	case 0x34:
-> +		strlcpy(info->type, "emc2305", I2C_NAME_SIZE);
-> +		break;
-> +	case 0x35:
-> +		strlcpy(info->type, "emc2303", I2C_NAME_SIZE);
-> +		break;
-> +	case 0x36:
-> +		strlcpy(info->type, "emc2302", I2C_NAME_SIZE);
-> +		break;
-> +	case 0x37:
-> +		strlcpy(info->type, "emc2301", I2C_NAME_SIZE);
-> +		break;
-> +	default:
-> +		return -ENODEV;
-> +	}
+> +	mutex_destroy(&drv->lock);
 > +
 > +	return 0;
 > +}
 > +
-> +static struct i2c_driver emc2305_driver = {
-> +	.class		= I2C_CLASS_HWMON,
-> +	.driver = {
-> +		.name	= "emc2305",
-> +	},
-> +	.probe		= emc2305_probe,
-> +	.remove		= emc2305_remove,
-> +	.id_table	= emc2305_id,
-> +	.detect		= emc2305_detect,
-> +	.address_list	= i2c_adresses,
+> +static void a21_wdt_shutdown(struct platform_device *pdev)
+> +{
+> +	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
+> +
+> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
+> +}
+> +
+> +static const struct of_device_id a21_wdt_ids[] = {
+> +	{ .compatible = "men,a021-wdt" },
+> +	{ },
 > +};
 > +
-> +module_i2c_driver(emc2305_driver);
+> +static struct platform_driver a21_wdt_driver = {
+> +	.probe = a21_wdt_probe,
+> +	.remove = a21_wdt_remove,
+> +	.shutdown = a21_wdt_shutdown,
+> +	.driver = {
+> +		.name = "a21-watchdog",
+> +		.of_match_table = a21_wdt_ids,
+> +	},
+> +};
 > +
-> +MODULE_AUTHOR("Reinhard Pfau <pfau@gdsys.de>");
-> +MODULE_DESCRIPTION("SMSC EMC2305 hwmon driver");
+> +module_platform_driver(a21_wdt_driver);
+> +
+> +MODULE_AUTHOR("MEN Mikro Elektronik");
+> +MODULE_DESCRIPTION("MEN A21 Watchdog");
 > +MODULE_LICENSE("GPL");
-> -- 
-> 1.7.2.5
+> +MODULE_ALIAS("platform:a21-watchdog");
+> --
+> 1.7.9.5
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
