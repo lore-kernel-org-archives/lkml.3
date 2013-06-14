@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3FNWS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:18:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37776 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab3FNWS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:18:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] PCI / ACPI / PM: Use correct power state strings in messages
-Date: Sat, 15 Jun 2013 00:28:12 +0200
-Message-ID: <1701924.fhYB0ilm4Z@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo7Q8H5wmMUPKqquerp_zbFwnac95Gbezd2=STBjtUrnvw@mail.gmail.com>
-References: <2491625.TQ1FFQeR38@vostro.rjw.lan> <CAErSpo7Q8H5wmMUPKqquerp_zbFwnac95Gbezd2=STBjtUrnvw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753429Ab3FNWYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:24:47 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:49644 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNWYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 18:24:46 -0400
+From: Ross Lagerwall <rosslagerwall@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Jones <davej@redhat.com>, Peter Hurley <peter@hurleysoftware.com>,
+        linux-serial@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Ross Lagerwall <rosslagerwall@gmail.com>
+Subject: [PATCH] tty/vt: Return EBUSY if deallocating VT1 and it is busy
+Date: Fri, 14 Jun 2013 23:24:25 +0100
+Message-Id: <1371248665-1176-1-git-send-email-rosslagerwall@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <20130614213543.GA1896@kroah.com>
+References: <20130614213543.GA1896@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 11:08:44 AM Bjorn Helgaas wrote:
-> On Thu, Jun 13, 2013 at 4:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Make acpi_pci_set_power_state() print the name of the ACPI device
-> > power state the device has been actually put into instead of printing
-> > the name of the requested PCI device power state, which need not be
-> > the same.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >
-> > For 3.11.
-> >
-> > Thanks,
-> > Rafael
-> >
-> > ---
-> >  drivers/pci/pci-acpi.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > Index: linux-pm/drivers/pci/pci-acpi.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/pci-acpi.c
-> > +++ linux-pm/drivers/pci/pci-acpi.c
-> > @@ -211,7 +211,7 @@ static int acpi_pci_set_power_state(stru
-> >
-> >         if (!error)
-> >                 dev_info(&dev->dev, "power state changed by ACPI to %s\n",
-> > -                        pci_power_name(state));
-> > +                        acpi_power_state_string(state_conv[state]));
-> >
-> >         return error;
-> >  }
-> >
-> 
-> Just to double-check this, it *looks* like the effective change is
-> that for PCI_D3hot and PCI_D3cold, we'll print "(unknown)" instead of
-> "D3hot" and "D3cold" because state_conv[] folds both PCI_D3hot and
-> PCI_D3cold into ACPI_STATE_D3, and acpi_power_state_string() doesn't
-> have a case for ACPI_STATE_D3.
+Commit 421b40a6286e ("tty/vt: Fix vc_deallocate() lock order") changed
+the behavior when deallocating VT 1.  Previously if trying to
+deallocate VT1 and it is busy, we would return EBUSY.  The commit
+changed this to return 0 (success).
 
-No, it won't work like this, because ACPI_STATE_D3 == ACPI_STATE_D3_COLD. :-)
+This commit restores the old behavior.
 
-So, actually, "D3cold" will be printed for both PCI_D3hot and PCI_D3cold
-(and I have tested this).
+Signed-off-by: Ross Lagerwall <rosslagerwall@gmail.com>
+---
+On 06/14/2013 05:35 PM, Greg KH wrote:
+> p.s. In the future, please cc: the people who handled the patch you are
+> asking about, otherwise stuff like this often gets missed in the noise
+> of lkml.
 
-Well, I think it's better to actually replace ACPI_STATE_D3 everywhere in
-pci-acpi.c with ACPI_STATE_D3_COLD to avoid that confusion.  Do you want me
-to prepare a patch?
+Yes, sorry about that.  I only remembered after I sent the email.
 
-Rafael
+ drivers/tty/vt/vt_ioctl.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-
+diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+index fc2c06c..2bd78e2 100644
+--- a/drivers/tty/vt/vt_ioctl.c
++++ b/drivers/tty/vt/vt_ioctl.c
+@@ -289,13 +289,10 @@ static int vt_disallocate(unsigned int vc_num)
+ 	struct vc_data *vc = NULL;
+ 	int ret = 0;
+ 
+-	if (!vc_num)
+-		return 0;
+-
+ 	console_lock();
+ 	if (VT_BUSY(vc_num))
+ 		ret = -EBUSY;
+-	else
++	else if (vc_num)
+ 		vc = vc_deallocate(vc_num);
+ 	console_unlock();
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
