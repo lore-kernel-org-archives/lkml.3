@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab3FNIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:46:57 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57019 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750889Ab3FNIqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:46:54 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ORMP8/oGiWW50EIiv4KDH
-Date: Fri, 14 Jun 2013 01:46:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] drivers: pinctrl: add active state to core
-Message-ID: <20130614084644.GD20992@atomide.com>
-References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
- <51B75148.5080701@wwwdotorg.org>
- <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
- <20130612183345.GU8164@atomide.com>
- <51BA1E06.6020705@wwwdotorg.org>
+	id S1751283Ab3FNIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:49:59 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:22192 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab3FNIt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 04:49:57 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Andrey Smirnov <andrey.smirnov@convergeddevices.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>
+Subject: [PATCH] ASoc: si476x: Do not use binary constants
+Date: Fri, 14 Jun 2013 09:49:34 +0100
+Message-ID: <1371199774-3946-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BA1E06.6020705@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_14_09_49_45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [130613 12:37]:
-> On 06/12/2013 12:33 PM, Tony Lindgren wrote:
-> > * Linus Walleij <linus.walleij@linaro.org> [130611 12:59]:
-> >> On Tue, Jun 11, 2013 at 6:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >>> On 06/11/2013 02:16 AM, Linus Walleij wrote:
-> >>>> From: Linus Walleij <linus.walleij@linaro.org>
-> >>>>
-> >>>> In addition to the recently introduced pinctrl core
-> >>>> control, the PM runtime pin control for the OMAP platforms
-> >>>> require a fourth state in addtition to the default, idle and
-> >>>> sleep states already handled by the core: an explicit "active"
-> >>>> state. Let's introduce this to the core in addition to the
-> >>>> other states already defined.
-> >>>
-> >>> Surely "default" /is/ "active"? That's what it's meant so far.
-> >>
-> >> I thought so too, until Tony informed us that in the OMAP world
-> >> this state is not always the active one.
-> >>
-> >> But I don't know the exact reasons for.
-> >>
-> >> I guess that some "default" states on the OMAP may mean these
-> >> are configured as decoupled, inactive, until explicitly activated
-> >> or something like that.
-> > 
-> > The main reason is that remuxing all the pins for a device for
-> > PM runtime suspend and resume is not necessary. Most pins are
-> > static and configured once during the consumer driver probe.
-> > And in most cases, remuxing only one pin for the rx line is
-> > needed. This is performance critical as it may need to be done
-> > constantly while entering and exiting idle, and remuxing all the
-> > pins is just a waste of cycles.
-> 
-> Then isn't the correct solution to optimize the code that switches
-> between states, so that it only reprograms the pins/groups necessary?
-> Inventing extra states just to work around that issue seems quite wrong.
+Gcc < 4.3 doesn't understand binary constants (0b*):
 
-Hmm how would the pinctrl subsystem know which pins to reprogram and
-which ones are static?
+sound/soc/codecs/si476x.c:172:8: error: invalid suffix "b1111110" on integer constant
+sound/soc/codecs/si476x.c:219:9: error: invalid suffix "b111" on integer constant
+sound/soc/codecs/si476x.c:219:56: error: invalid suffix "b111" on integer constant
+
+So use hexadecimal constants (0x*) instead.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org
+---
+ sound/soc/codecs/si476x.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/codecs/si476x.c b/sound/soc/codecs/si476x.c
+index 721587c..73e205c 100644
+--- a/sound/soc/codecs/si476x.c
++++ b/sound/soc/codecs/si476x.c
+@@ -38,9 +38,9 @@ enum si476x_digital_io_output_format {
+ 	SI476X_DIGITAL_IO_SAMPLE_SIZE_SHIFT	= 8,
+ };
  
-> So, I think you're relying on:
-> 
-> default: Set up everything static.
-> active: flip just a few pins to active state.
-> idle: flip just a few pins to idle state.
-> 
-> ... and assuming that the default->active or default->idle transitions
-> will not affect any pins that are used in default, but not used in
-> active/idle.
-
-Yes except the default pins are not touched after probe at all.
+-#define SI476X_DIGITAL_IO_OUTPUT_WIDTH_MASK	((0b111 << SI476X_DIGITAL_IO_SLOT_SIZE_SHIFT) | \
+-						  (0b111 << SI476X_DIGITAL_IO_SAMPLE_SIZE_SHIFT))
+-#define SI476X_DIGITAL_IO_OUTPUT_FORMAT_MASK	(0b1111110)
++#define SI476X_DIGITAL_IO_OUTPUT_WIDTH_MASK	((0x7 << SI476X_DIGITAL_IO_SLOT_SIZE_SHIFT) | \
++						  (0x7 << SI476X_DIGITAL_IO_SAMPLE_SIZE_SHIFT))
++#define SI476X_DIGITAL_IO_OUTPUT_FORMAT_MASK	(0x7e)
  
-> However, that very specifically isn't the case; pinctrl drivers are
-> allowed to force unused pins back to some default unused state when the
-> pinctrl state that's being switched to doesn't mention them, and hence
-> this concept won't work in general.
+ enum si476x_daudio_formats {
+ 	SI476X_DAUDIO_MODE_I2S		= (0x0 << 1),
+-- 
+1.8.1.2
 
-We don't have any default state for pins for omaps at least and pinctrl
-single does not not set them to anything when disable is called unless
-function-off is specified.
 
-But even if the pinctrl driver does something to the pins in disable,
-that should work too. It's just an extra step between toggling between
-two named pin states.
-
-> Also, if default uses more pins that active, when you switch to active,
-> those pins won't be marked as owned any more, I think, so something else
-> could in theory grab them. At least, debugfs wouldn't be entirely
-> accurate any more.
-
-I think you're misunderstanding. The default pins are held for as long
-as the device is loaded. We're not touching the default pins at all
-after probe. Active and idle pins are not subsets of default.
-
-Regards,
-
-Tony
