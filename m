@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab3FNGqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:46:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29473 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab3FNGqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:46:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
-   d="scan'208";a="316879139"
-Message-ID: <51BABC6F.3050201@intel.com>
-Date: Fri, 14 Jun 2013 14:47:11 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751904Ab3FNGtE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:49:04 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:57422
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751409Ab3FNGtC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 02:49:02 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 14 Jun 2013 14:39:59 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: cfa10036: Add USB0 OTG port
+Message-ID: <20130614063956.GA13600@S2101-09.ap.freescale.net>
+References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1371131025-12200-2-git-send-email-maxime.ripard@free-electrons.com>
+ <24013808.T2v7Fa5NMK@wuerfel>
+ <20130614063051.GE20513@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: linux-acpi@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Aaron Lu <aaron.lwe@gmail.com>, Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware
- expects Windows 8
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130614063051.GE20513@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 07:01 AM, Matthew Garrett wrote:
-> Windows 8 leaves backlight control up to individual graphics drivers rather
-> than making ACPI calls itself. There's plenty of evidence to suggest that
-> the Intel driver for Windows doesn't use the ACPI interface, including the
-> fact that it's broken on a bunch of machines when the OS claims to support
-> Windows 8. The simplest thing to do appears to be to disable the ACPI
-> backlight interface on these systems.
+On Fri, Jun 14, 2013 at 02:30:53PM +0800, Shawn Guo wrote:
+> On Fri, Jun 14, 2013 at 12:06:51AM +0200, Arnd Bergmann wrote:
+> > On Thursday 13 June 2013 15:43:42 Maxime Ripard wrote:
+> > > +
+> > > +       ahb@80080000 {
+> > > +               usb0: usb@80080000 {
+> > > +                       pinctrl-names = "default";
+> > > +                       pinctrl-0 = <&usb0_otg_cfa10036>;
+> > > +                       status = "okay";
+> > >                 };
+> > >         };
+> > > 
+> > 
+> > The patches all look good, just one trivial comment about the fragment above:
+> > 
+> > There is already a "usb0" label in the imx28.dtsi file for the same
+> > node. When you refer to the node from a board.dts file, either leave
+> > out the redundant label, or use it to simplify the statements above
+> > to the brief version:
+> > 
+> > 	&usb0 {
+> > 		pinctrl-names = "default";
+> > 		pinctrl-0 = <&usb0_otg_cfa10036>;
+> > 		status = "okay";
+> > 	};
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  drivers/gpu/drm/i915/i915_dma.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 3b315ba..23b6292 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  		/* Must be done after probing outputs */
->  		intel_opregion_init(dev);
->  		acpi_video_register();
-> +		/* Don't use ACPI backlight functions on Windows 8 platforms */
-> +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
-> +			acpi_video_backlight_unregister();
+> Yeah, I moved all imx board level dts files to use this.  But I was told
+> by Olof that the change does not gain too much and looks like a churn.
+> That's why I haven't made the same move for mxs.  So I will remove the
+> redundant label when applying this patch.
 
-What about the platform driver created backlight interface? Oh right,
-thinkpad_acpi will not create backlight interface for them since they
-are not in DMI table, so acpi_video_backlight_support() will return
-true and thinkspad_acpi thinks ACPI video driver is controlling
-backlight so it will not create backlight interface for them.
+I would have the label stay there, because I found it's there like a
+comment telling the controller instance.
 
-Then we will need to remember not to add any of those systems into
-the DMI table of video_detect.c, or thinkpad_acpi module will create
-backlight interface for them and according to reporter, that interface
-does not work either.
+Shawn
 
-What about a priority based solution? We can introduce a new field named
-priority to backlight_device and instead of calling another module's
-function like the unregister one here(which cause unnecessary module
-dependency), we only need to boost priority for its own interface. This
-field will be exported to sysfs, so user can change it during runtime
-too. And we can also introduce a new kernel command line as
-backlight.force_interface=raw/firmware/platform, to overcome the limited
-functionality provided by acpi_backlight=video/vendor, which does not
-involve GPU's interface.
-
-And we can place the quirk code in backlight layer instead of individual
-backlight functionality provider module. Suppose we have a backlight
-manager there, for all win8 systems, we can boost the raw type's
-priority on its registration, so no need to add code in
-intel/amd/etc./'s GPU driver code.
-
-With priority based solution, all backlight control interfaces stay,
-the priority field is an indication given by kernel to user space.
-
-For a complete description on backlight control background and the
-proposed solution, please take a look at:
-https://gist.github.com/aaronlu/5779828
-
-It would be good to know your opinions, thanks.
-
--Aaron
