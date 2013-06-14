@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3FNXLb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 19:11:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37823 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab3FNXL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 19:11:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
-Date: Sat, 15 Jun 2013 01:20:43 +0200
-Message-ID: <3321228.vG97AE80O6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+8MBbKZBvqVA+wKTK7GpXorpBvDLGCJURc+PQz+QfDiwA1a8A@mail.gmail.com>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan> <3168584.RRBYoY5UXf@vostro.rjw.lan> <CA+8MBbKZBvqVA+wKTK7GpXorpBvDLGCJURc+PQz+QfDiwA1a8A@mail.gmail.com>
+	id S1753806Ab3FNXNi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 19:13:38 -0400
+Received: from p90.bluecatnetworks.com ([38.99.150.90]:62513 "EHLO
+	p90.bluecatnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab3FNXNh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 19:13:37 -0400
+From: Fernando Soto <fsoto@bluecatnetworks.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Haiyang Zhang <haiyangz@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
+Subject: [PATCH v2] Drivers: hv: vmbus: incorrect device name is printed
+ when child device is unregistered
+Thread-Topic: [PATCH v2] Drivers: hv: vmbus: incorrect device name is
+ printed when child device is unregistered
+Thread-Index: Ac5pU48P+9pU60c1SYeKRdNDlua1+w==
+Date: Fri, 14 Jun 2013 23:13:35 +0000
+Message-ID: <88E08D85EE353144A618C55479FE1117411FEE44@TORMBXW01.bluecatnetworks.corp>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [209.195.99.198]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 03:32:42 PM Tony Luck wrote:
-> On Fri, Jun 14, 2013 at 3:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Can you please just test patch [5/5] alone without patches [1-4/5]?  We believe
-> > that this should work too and if that's the case, we'll only need that patch
-> > and a reworked [1/5].
-> 
-> Your belief is sound - I popped all five patches and then applied just
-> 5/5 ... and
-> the system still works.
+From: Fernando Soto <fsoto@bluecatnetworks.com> 
+Please CC me, I am not subscribed to the list.
 
-Great, thanks!
+Whenever a device is unregistered in vmbus_device_unregister (drivers/hv/vmbus_drv.c), the device name in the log message may contain garbage as the memory has already been freed by the time pr_info is called. Log example:
+ [ 3149.170475] hv_vmbus: child device ахsии0_5 unregistered
 
-Can you please apply the appended patch on top of it and see if the system
-still works then?
+By logging the message just before calling device_unregister, the correct device name is printed:
+[ 3145.034652] hv_vmbus: child device vmbus_0_5 unregistered
 
-Rafael
+Also changing register & unregister messages to debug to avoid unnecessarily cluttering the kernel log.
 
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / scan: Do not bind ACPI drivers to objects with scan handlers
-
-ACPI drivers must not be bound to device objects having scan handlers
-attatched to them, so make acpi_device_probe() fail with -EINVAL if the
-device object being probed has an ACPI scan handler.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c  |    3 +++
- drivers/acpi/video.c |    3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -939,6 +939,9 @@ static int acpi_device_probe(struct devi
- 	struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
- 	int ret;
+Signed-off-by: Fernando M Soto <fsoto@bluecatnetworks.com>
+--- linux-3.10-rc5/drivers/hv/vmbus_drv.c.orig	2013-06-13 19:20:55.359511352 -0400
++++ linux-3.10-rc5/drivers/hv/vmbus_drv.c	2013-06-14 19:00:21.722105728 -0400
+@@ -686,7 +686,7 @@ int vmbus_device_register(struct hv_devi
+ 	if (ret)
+ 		pr_err("Unable to register child device\n");
+ 	else
+-		pr_info("child device %s registered\n",
++		pr_debug("child device %s registered\n",
+ 			dev_name(&child_device_obj->device));
  
-+	if (acpi_dev->handler)
-+		return -EINVAL;
+ 	return ret;
+@@ -698,14 +698,14 @@ int vmbus_device_register(struct hv_devi
+  */
+ void vmbus_device_unregister(struct hv_device *device_obj)
+ {
++	pr_debug("child device %s unregistered\n",
++		dev_name(&device_obj->device));
 +
- 	if (!acpi_drv->ops.add)
- 		return -ENOSYS;
- 
-Index: linux-pm/drivers/acpi/video.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video.c
-+++ linux-pm/drivers/acpi/video.c
-@@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
- 	int error;
- 	acpi_status status;
- 
--	if (device->handler)
--		return -EINVAL;
+ 	/*
+ 	 * Kick off the process of unregistering the device.
+ 	 * This will call vmbus_remove() and eventually vmbus_device_release()
+ 	 */
+ 	device_unregister(&device_obj->device);
 -
- 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
- 				device->parent->handle, 1,
- 				acpi_video_bus_match, NULL,
-
+-	pr_info("child device %s unregistered\n",
+-		dev_name(&device_obj->device));
+ }
+ 
+ 
+--
