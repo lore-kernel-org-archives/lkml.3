@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3FNWME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:12:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:53552 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3FNWMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:12:02 -0400
-Message-ID: <51BB952C.2070209@atmel.com>
-Date: Sat, 15 Jun 2013 00:11:56 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752898Ab3FNWOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:14:39 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37771 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab3FNWOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 18:14:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
+Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
+Date: Sat, 15 Jun 2013 00:23:52 +0200
+Message-ID: <3168584.RRBYoY5UXf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA7C18E@ORSMSX106.amr.corp.intel.com>
+References: <1417592.vuSG0cUIGo@vostro.rjw.lan> <1371162234.21540.43.camel@misato.fc.hp.com> <3908561D78D1C84285E8C5FCA982C28F2DA7C18E@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-To: <ludovic.desroches@atmel.com>, <vinod.koul@intel.com>, <arnd@arndb.de>,
-        <olof@lixom.net>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v3 1/2] ARM: at91: dt: add header to define at_hdmac configuration
-References: <1371112779-22738-1-git-send-email-ludovic.desroches@atmel.com> <1371112779-22738-2-git-send-email-ludovic.desroches@atmel.com>
-In-Reply-To: <1371112779-22738-2-git-send-email-ludovic.desroches@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/2013 10:39, ludovic.desroches@atmel.com :
-> From: Ludovic Desroches <ludovic.desroches@atmel.com>
->
-> DMA-cell content is a concatenation of several values. In order to keep this
-> stuff human readable, macros are introduced.
->
-> The values for the FIFO configuration are not the same as the ones used in the
-> configuration register in order to keep backward compatibility. Most devices
-> use the half FIFO configuration but USART ones have to use the ASAP
-> configuration. This parameter was not initially planed to be into the at91 dma
-> dt binding. The third cell will be used to store this parameter, it will
-> become a concatenation of the FIFO configuration and of the peripheral ID. In
-> order to keep backward compatibility i.e. FIFO configuration is equal to 0, we
-> have to perform a translation since the value to put in the register to set
-> half FIFO is 1.
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+On Friday, June 14, 2013 06:01:41 PM Luck, Tony wrote:
+> >> Tony promised me to test those patches on his box, so we'll know for sure
+> >> in a while.
+> 
+> Tested this series - and the box boots just fine with no unexpected messages.
 
-Of course:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Thanks!
 
-In addition to going through slave-dma Vinod's git tree, I also stack it 
-on the AT91 DT branch so that it can go in arm-soc and prevent a 
-dependency between the two trees that could lead to a build error...
+> But I should note that this box doesn't have anything that is hot pluggable, so I
+> couldn't test hotplug (which seems to be deeply involved with things that this
+> patch is touching).
+> 
+> Of course that means that I haven't been testing hotplug - so it might have been
+> broken for years and I'd never have noticed.
 
-Best regards,
+Can you please just test patch [5/5] alone without patches [1-4/5]?  We believe
+that this should work too and if that's the case, we'll only need that patch
+and a reworked [1/5].
 
-> ---
->   include/dt-bindings/dma/at91.h | 27 +++++++++++++++++++++++++++
->   1 file changed, 27 insertions(+)
->   create mode 100644 include/dt-bindings/dma/at91.h
->
-> diff --git a/include/dt-bindings/dma/at91.h b/include/dt-bindings/dma/at91.h
-> new file mode 100644
-> index 0000000..e835037
-> --- /dev/null
-> +++ b/include/dt-bindings/dma/at91.h
-> @@ -0,0 +1,27 @@
-> +/*
-> + * This header provides macros for at91 dma bindings.
-> + *
-> + * Copyright (C) 2013 Ludovic Desroches <ludovic.desroches@atmel.com>
-> + *
-> + * GPLv2 only
-> + */
-> +
-> +#ifndef __DT_BINDINGS_AT91_DMA_H__
-> +#define __DT_BINDINGS_AT91_DMA_H__
-> +
-> +/*
-> + * Source and/or destination peripheral ID
-> + */
-> +#define AT91_DMA_CFG_PER_ID_MASK	(0xff)
-> +#define AT91_DMA_CFG_PER_ID(id)		(id & AT91_DMA_CFG_PER_ID_MASK)
-> +
-> +/*
-> + * FIFO configuration: it defines when a request is serviced.
-> + */
-> +#define AT91_DMA_CFG_FIFOCFG_OFFSET	(8)
-> +#define AT91_DMA_CFG_FIFOCFG_MASK	(0xf << AT91_DMA_CFG_FIFOCFG_OFFSET)
-> +#define AT91_DMA_CFG_FIFOCFG_HALF	(0x0 << AT91_DMA_CFG_FIFOCFG_OFFSET)	/* half FIFO (default behavior) */
-> +#define AT91_DMA_CFG_FIFOCFG_ALAP	(0x1 << AT91_DMA_CFG_FIFOCFG_OFFSET)	/* largest defined AHB burst */
-> +#define AT91_DMA_CFG_FIFOCFG_ASAP	(0x2 << AT91_DMA_CFG_FIFOCFG_OFFSET)	/* single AHB access */
-> +
-> +#endif /* __DT_BINDINGS_AT91_DMA_H__ */
->
+Thanks,
+Rafael
 
 
 -- 
-Nicolas Ferre
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
