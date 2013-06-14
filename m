@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3FNMzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:55:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51782 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab3FNMzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:55:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: Neil Zhang <zhangwm@marvell.com>, Chao Xie <cxie4@marvell.com>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: mmp: bring up pxa988 with device tree support
-Date: Fri, 14 Jun 2013 14:56:15 +0200
-Message-ID: <2766142.mFu63TyH69@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <CADApbeh9EJDetkvx9Sq=y58mkhU_X1oo-e_hgZqeBV9nriqTiQ@mail.gmail.com>
-References: <1369969115-4279-1-git-send-email-zhangwm@marvell.com> <201306101035.20924.arnd@arndb.de> <CADApbeh9EJDetkvx9Sq=y58mkhU_X1oo-e_hgZqeBV9nriqTiQ@mail.gmail.com>
+	id S1752599Ab3FNMzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:55:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45434 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779Ab3FNMzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 08:55:42 -0400
+Date: Fri, 14 Jun 2013 14:55:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@gmail.com>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, koverstreet@google.com,
+        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        Mike Snitzer <snitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Alasdair G. Kergon" <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 11/11] cgroup: use percpu refcnt for cgroup_subsys_states
+Message-ID: <20130614125539.GC10084@dhcp22.suse.cz>
+References: <1371096298-24402-1-git-send-email-tj@kernel.org>
+ <1371096298-24402-12-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:mGizQJYKlrdMmyGCqwIwFrW9QHMBWp9IUSm4ztUQJUA
- HCXlOM7ugtXZgpyyTFQ25dN7m8IJMBECk1XTZGCNQXXbPKxC0t
- IpfoAOjvjz18qwdsmlVvX5duUlsHpXy69npEmbcUnrff2waiZ1
- Cln0kqaT8p53l9C4oKV47hgkAqbHkZNMnT0+ClIZU8VUh5cnZ0
- S5S8wME4cwHGocS9czeU0fYv7nFH0J6xO1iSb7u6f6Wq69y7XA
- r0Vu1RmykDm0K1ZFcriMzF4VdlJVINdhTc4qiHEtX886Av6LxZ
- xu/lacNB7K+kxBsttMyzeCbngShyGucmAsJ+dMw6r9LU8gYWPW
- qQTvaqOU92txM/nxad+8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371096298-24402-12-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 June 2013 17:15:33 Chao Xie wrote:
-> On Mon, Jun 10, 2013 at 4:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Wed 12-06-13 21:04:58, Tejun Heo wrote:
+[...]
+> +/**
+> + * cgroup_destroy_locked - the first stage of cgroup destruction
+> + * @cgrp: cgroup to be destroyed
+> + *
+> + * css's make use of percpu refcnts whose killing latency shouldn't be
+> + * exposed to userland and are RCU protected.  Also, cgroup core needs to
+> + * guarantee that css_tryget() won't succeed by the time ->css_offline() is
+> + * invoked.  To satisfy all the requirements, destruction is implemented in
+> + * the following two steps.
+> + *
+> + * s1. Verify @cgrp can be destroyed and mark it dying.  Remove all
+> + *     userland visible parts and start killing the percpu refcnts of
+> + *     css's.  Set up so that the next stage will be kicked off once all
+> + *     the percpu refcnts are confirmed to be killed.
+> + *
+> + * s2. Invoke ->css_offline(), mark the cgroup dead and proceed with the
+> + *     rest of destruction.  Once all cgroup references are gone, the
+> + *     cgroup is RCU-freed.
+> + *
+> + * This function implements s1.  After this step, @cgrp is gone as far as
+> + * the userland is concerned and a new cgroup with the same name may be
+> + * created.  As cgroup doesn't care about the names internally, this
+> + * doesn't cause any problem.
 
-> > I guess that is a problem we have on other platforms as well, we should
-> > find a generic solution for that. It would be nice to reserve a page
-> > in "fixmap" and have common code map the SCU page into that.
-> >
-> 
-> So you mean that reserve a page in arch/arm/asm/include/fixmap.h?
+Glauber is this asumption correct for kmem caches naming scheme?
+I guess it should, but I would rather be sure this won't blow up later
+specially when caches might live longer than css_offline.
 
-Yes.
-
-> This reserve will depend on the cpu type beacuse only A9 will have SCU part.
-
-I think A5 and ARM11MPCore as well.
-
-> I do not know that in fixmap, the #ifdef is acceptable or not.
-
-Yes, it is. We don't really use fixmap on ARM for anything other than
-kmap_atomic at the moment. Please have a look at the powerpc and x86
-implementations.
-
-> For the common code to map the SCU page, where do you suggest to put it?
-
-arch/arm/kernel/smp_scu.c.
-
-	Arnd
+> + */
+>  static int cgroup_destroy_locked(struct cgroup *cgrp)
+>  	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
+>  {
+-- 
+Michal Hocko
+SUSE Labs
