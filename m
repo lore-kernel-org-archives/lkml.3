@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab3FNFr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 01:47:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:34286 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3FNFrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 01:47:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18St9sx9txV96ardkDaJec6
-Date: Thu, 13 Jun 2013 22:47:20 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [RFC PATCH 1/4] arm: omap: Add phy binding info for musb in
- plat data
-Message-ID: <20130614054720.GL8164@atomide.com>
-References: <1368796954-3499-1-git-send-email-kishon@ti.com>
- <51A43E0A.8090201@ti.com>
- <51B9C3B6.1080707@ti.com>
- <51BAABB0.5060107@ti.com>
-MIME-Version: 1.0
+	id S1751796Ab3FNFyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 01:54:13 -0400
+Received: from 1wt.eu ([62.212.114.60]:36327 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320Ab3FNFyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 01:54:11 -0400
+Date: Fri, 14 Jun 2013 07:54:06 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: Linux 2.6.32.61
+Message-ID: <20130614055406.GA880@1wt.eu>
+References: <20130610101557.GA3235@1wt.eu> <1371183115.10688.78.camel@deadeye.wl.decadent.org.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51BAABB0.5060107@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1371183115.10688.78.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kishon Vijay Abraham I <kishon@ti.com> [130613 22:41]:
-> Hi,
+Hi Ben,
+
+On Fri, Jun 14, 2013 at 05:11:55AM +0100, Ben Hutchings wrote:
+> On Mon, 2013-06-10 at 12:15 +0200, Willy Tarreau wrote:
+> [...]
+> > Eric Dumazet (8):
+> [...]
+> >       softirq: reduce latencies
+> [...]
 > 
-> On Thursday 13 June 2013 06:35 PM, Tomi Valkeinen wrote:
-> >Hi,
-> >
-> >On 28/05/13 08:18, Kishon Vijay Abraham I wrote:
-> >>Hi Tony,
-> >>
-> >>On Friday 17 May 2013 06:52 PM, Kishon Vijay Abraham I wrote:
-> >>>In order for controllers to get PHY in case of non dt boot, the phy
-> >>>binding information (phy label) should be added in the platform
-> >>>data of the controller.
-> >>
-> >>This series would be needed to get MUSB working in OMAP3 boards for
-> >>non-dt boot case. Do you think this is good enough to go in this rc cycle?
-> >
-> >Did this or some other solution go forward? I'm still unable to boot
-> >with usb-gadget-ethernet with v3.10-rc5.
+> This one apparently introduces a regression, fixed in mainline by commit
+> 34376a50fb1f 'Fix lockup related to stop_machine being stuck in
+> __do_softirq.'
 > 
-> No. I think Tony is ok to take this only during next merge window.
+> I'm a bit surprised that you picked it for 2.6.32 as it wasn't applied
+> to any other branch older than 3.9.
 
-Yes I'll apply them to omap-for-v3.11/fixes-non-critical. We really
-should have basic functionaly tested and working always before the
-merge window so we only need to do minimal fixes during the -rc cycle.
+Interesting. It was discussed on stable@ in March between Eric and Paul
+about the pertinence of merging it into 2.6.32 and 2.6.34 (both CCed).
+The thread was '[PATCH] net: reduce net_rx_action() latency to 2 HZ'.
+It is supposed to fix a but introduced in 2.6.29 by commit 24f8b2385
+(net: increase receive packet quantum).
 
-Regards,
+I didn't notice that it was not in more recent versions.
 
-Tony
+Eric, do you suggest that I revert this patch or that I also include the
+mainline fix above to fix the regression ? If the latter, should Paul and
+Greg also take the two patches ?
+
+Thanks,
+Willy
+
