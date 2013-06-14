@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab3FNPlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:41:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55047 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3FNPlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:41:05 -0400
-Message-ID: <51BB398D.6040403@linutronix.de>
-Date: Fri, 14 Jun 2013 17:41:01 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1752200Ab3FNPlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:41:50 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:34397 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab3FNPlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 11:41:49 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/5] pinctrl: fix some issues with new pinconfig dt parsing
+Date: Fri, 14 Jun 2013 17:41:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Clark Williams <clark@redhat.com>,
-        stable-rt@vger.kernel.org
-Subject: Re: [PATCH RT 2/4] acpi/rt: Convert acpi_gbl_hardware lock back to
- a raw_spinlock_t
-References: <20130219053116.706325380@goodmis.org>  <20130219053159.965355809@goodmis.org> <1371223012.9844.317.camel@gandalf.local.home>
-In-Reply-To: <1371223012.9844.317.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Message-Id: <201306141741.46077.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 05:16 PM, Steven Rostedt wrote:
-> Hi Sebastian,
+Some issues with the recently submitted generic pinconfig parsing from dt
+came up, so fix these in this follow-up series.
 
-Hi Steven,
+Hopefully I did catch all of them.
 
-> 
-> Any reason that this patch was dropped for 3.8? We hit this exact same
-> bug recently with a 3.8-rt kernel.
+Tested on my rk3066 device.
 
-No particular reason. Going through my log of the queue I have to say
-that it was never in the queue starting v3.8.
+Heiko Stuebner (5):
+  pinctrl: update the documentation for some pinconfig params
+  pinctrl: clarify some dt pinconfig options
+  pinctrl: handle zero found dt pinconfig properties better
+  pinctrl: dynamically alloc temp array when parsing dt pinconf options
+  pinctrl: rockchip: correctly handle arguments of pinconf options
 
-The only ACPI patches that were dropped are:
+ .../bindings/pinctrl/pinctrl-bindings.txt          |   22 +++++++++++-
+ drivers/pinctrl/pinconf-generic.c                  |   38 +++++++++++++++-----
+ drivers/pinctrl/pinctrl-rockchip.c                 |   37 ++++++++++++++++---
+ include/linux/pinctrl/pinconf-generic.h            |   18 ++++++----
+ 4 files changed, 93 insertions(+), 22 deletions(-)
 
- # ACPI
- # Dropped those two as they cause a scheduling in atomic failure and
- # we have no clue why we made those locks raw in the first place.
- # acpi-make-gbl-hardware-lock-raw.patch
- # acpi-make-ec-lock-raw-as-well.patch
+-- 
+1.7.10.4
 
- # This one is just a follow up to the raw spin locks
- # Simple raw spinlock based waitqueue
- # wait-simple-version.patch
- # acpi-gpe-use-wait-simple.patch
-
-but that wasn't me.
-
-In that case I try to bring it back in.
-
-> -- Steve
-
-Sebastian
