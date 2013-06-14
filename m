@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3FNWcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:32:22 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:36029 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3FNWcU (ORCPT
+	id S1753824Ab3FNWco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:32:44 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:33833 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab3FNWcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:32:20 -0400
-Message-ID: <51BB99F0.6030607@gmail.com>
-Date: Fri, 14 Jun 2013 17:32:16 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 18:32:42 -0400
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Kees Cook <keescook@chromium.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] pstore/ram for 3.11
-References: <51B9402C.5070300@gmail.com> <CA+8MBbKPr_y4rTBArcmz315y0f2-07Qu6DsM2cj-XW7-U=L56Q@mail.gmail.com>
-In-Reply-To: <CA+8MBbKPr_y4rTBArcmz315y0f2-07Qu6DsM2cj-XW7-U=L56Q@mail.gmail.com>
+In-Reply-To: <3168584.RRBYoY5UXf@vostro.rjw.lan>
+References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
+	<1371162234.21540.43.camel@misato.fc.hp.com>
+	<3908561D78D1C84285E8C5FCA982C28F2DA7C18E@ORSMSX106.amr.corp.intel.com>
+	<3168584.RRBYoY5UXf@vostro.rjw.lan>
+Date: Fri, 14 Jun 2013 15:32:42 -0700
+Message-ID: <CA+8MBbKZBvqVA+wKTK7GpXorpBvDLGCJURc+PQz+QfDiwA1a8A@mail.gmail.com>
+Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container
+ hotplug with other scan handlers
+From: Tony Luck <tony.luck@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 05:18 PM, Tony Luck wrote:
-> On Wed, Jun 12, 2013 at 8:44 PM, Rob Herring <robherring2@gmail.com> wrote:
->> Not sure who takes this, but please pull these 2 changes for pstore for
->> 3.11. These are necessary to get pstore to work with on-chip RAM on
->> Calxeda highbank platform.
-> 
-> Were these posted for discussion and review?  Is there anyone who should
-> be providing {Acked,Reviewed,Tested}-by: tags for them?  I haven't ever had
-> a sub-maintained tree to pull from - so I'm being double-extra cautious before
-> doing something with this as it all feels new and strange.
+On Fri, Jun 14, 2013 at 3:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Can you please just test patch [5/5] alone without patches [1-4/5]?  We believe
+> that this should work too and if that's the case, we'll only need that patch
+> and a reworked [1/5].
 
-Yes, here:
+Your belief is sound - I popped all five patches and then applied just
+5/5 ... and
+the system still works.
 
-https://lkml.org/lkml/2013/4/9/831
-
-The main discussion was around the write-combining change which I
-dropped. You can pick patches 2 and 3 off the mail list if you prefer. I
-would assume they only require an ack from one of the 4 of you which
-pulling the tree implicitly does.
-
-Rob
+-Tony
