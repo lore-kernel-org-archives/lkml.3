@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3FNOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:02:27 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57985 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930Ab3FNOCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:02:25 -0400
-Date: Fri, 14 Jun 2013 10:02:15 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
-Subject: Re: ext4 extent status tree LRU locking
-Message-ID: <20130614140215.GA1017@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
-References: <51B7B128.60909@intel.com>
- <20130614140940.GA20401@gmail.com>
+	id S1753122Ab3FNODJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:03:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37343 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363Ab3FNODF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:03:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when handling dock notification
+Date: Fri, 14 Jun 2013 16:12:19 +0200
+Message-ID: <9088362.uF3gIllFWp@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51BB213B.7010807@gmail.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <2301639.HY0nSRLtah@vostro.rjw.lan> <51BB213B.7010807@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130614140940.GA20401@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 10:09:40PM +0800, Zheng Liu wrote:
-> This commit tries to fix this problem.  Now a new member called
-> i_touch_when is added into ext4_inode_info to record the last access
-> time for an inode.  Meanwhile we never need to keep a proper in-order
-> LRU list.  So this can avoid to burns some CPU time.  When we try to
-> reclaim some entries from extent status tree, we use list_sort() to get
-> a proper in-order list.  Then we traverse this list to discard some
-> entries.
+On Friday, June 14, 2013 09:57:15 PM Jiang Liu wrote:
+> On 06/14/2013 08:23 PM, Rafael J. Wysocki wrote:
+> > On Thursday, June 13, 2013 09:59:44 PM Rafael J. Wysocki wrote:
+> >> On Friday, June 14, 2013 12:32:25 AM Jiang Liu wrote:
+> >>> Current ACPI glue logic expects that physical devices are destroyed
+> >>> before destroying companion ACPI devices, otherwise it will break the
+> >>> ACPI unbind logic and cause following warning messages:
+> >>> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
+> >>> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
+> >>> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
+> >>> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
+> >>> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
+> >>> for full log message.
+> >>
+> >> So my question is, did we have this problem before commit 3b63aaa70e1?
+> >>
+> >> If we did, then when did it start?  Or was it present forever?
+> >>
+> >>> Above warning messages are caused by following scenario:
+> >>> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
+> >>> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
+> >>>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
+> >>> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
+> >>>    destroy physical devices, then destroys all affected ACPI devices.
+> >>>    Everything seems perfect until now. But the acpiphp dock notification
+> >>>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
+> >>>    destroy affected physical devices.
+> >>
+> >> Would not the solution be to modify it so that it didn't spawn the other
+> >> task (T2), but removed the affected physical devices synchronously?
+> >>
+> >>> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
+> >>>    been destroyed.
+> >>> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
+> >>>    devices.
+> >>>
+> >>> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
+> >>> in step 3 and physical devices are destroyed in step 5.
+> >>>
+> >>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> >>> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+> >>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >>> Cc: Yinghai Lu <yinghai@kernel.org>
+> >>> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> >>> Cc: linux-pci@vger.kernel.org
+> >>> Cc: linux-kernel@vger.kernel.org
+> >>> Cc: stable@vger.kernel.org
+> >>> ---
+> >>> Hi Bjorn and Rafael,
+> >>>      The recursive lock changes haven't been tested yet, need help
+> >>> from Alexander for testing.
+> >>
+> >> Well, let's just say I'm not a fan of recursive locks.  Is that unavoidable
+> >> here?
+> > 
+> > What about the appended patch (on top of [1/9], untested)?
+> > 
+> > Rafael
+> It should have similar effect as patch 2/9, and it will encounter the
+> same deadlock scenario as 2/9 too.
 
-I think this approach is very sound.  I have one reservation, however.
-If there are a large number of inodes on this list, list_sort() could
-burn a lot of CPU time, especially if the shrinker is called a very
-large number of times in a short time period (i.e., when the system is
-thrashing, or when one or more memory containers are under a large
-amount of memory pressure).
+And why exactly?
 
-I have a suggestion for how to address this: Keep a timestamp of when
-the list last has been sorted in struct ext4_super_info.  When
-iterating over the list, looking for a candidate inode, if inode's
-i_touch_when is greater than the last time sorted, skip the inode.  If
-there are no inodes left in the list, or more than some threshold
-inodes have been skipped, only then resort the list (and update the
-timestamp in the ext4_super_info structure).
+I'm looking at acpiphp_disable_slot() and I'm not seeing where the
+problematic lock is taken.  Similarly for power_off_slot().
 
-What do you think?
+It should take the ACPI scan lock, but that's a different matter.
 
-					- Ted
+Thanks,
+Rafael
+
+
+> > ---
+> >  drivers/pci/hotplug/acpiphp_glue.c |   13 ++++++++++++-
+> >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > @@ -145,9 +145,20 @@ static int post_dock_fixups(struct notif
+> >  	return NOTIFY_OK;
+> >  }
+> >  
+> > +static void handle_dock_event_func(acpi_handle handle, u32 event, void *context)
+> > +{
+> > +	if (event == ACPI_NOTIFY_EJECT_REQUEST) {
+> > +		struct acpiphp_func *func = context;
+> > +
+> > +		if (!acpiphp_disable_slot(func->slot))
+> > +			acpiphp_eject_slot(func->slot);
+> > +	} else {
+> > +		handle_hotplug_event_func(handle, event, context);
+> > +	}
+> > +}
+> >  
+> >  static const struct acpi_dock_ops acpiphp_dock_ops = {
+> > -	.handler = handle_hotplug_event_func,
+> > +	.handler = handle_dock_event_func,
+> >  };
+> >  
+> >  /* Check whether the PCI device is managed by native PCIe hotplug driver */
+> > 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
