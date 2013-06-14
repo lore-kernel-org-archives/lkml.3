@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab3FNPoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:44:00 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:34469 "EHLO gloria.sntech.de"
+	id S1752622Ab3FNPo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:44:26 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:34488 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab3FNPn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:43:58 -0400
+	id S1752083Ab3FNPoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 11:44:25 -0400
 From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/5] pinctrl: dynamically alloc temp array when parsing dt pinconf options
-Date: Fri, 14 Jun 2013 17:43:55 +0200
+Subject: [PATCH 5/5] pinctrl: rockchip: correctly handle arguments of pinconf options
+Date: Fri, 14 Jun 2013 17:44:20 +0200
 User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
@@ -24,82 +24,89 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306141743.55811.heiko@sntech.de>
+Message-Id: <201306141744.21117.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocating the temorary array in pinconf_generic_parse_dt_config on stack
-might cause problems later on, when the number of options grows over time.
-Therefore also allocate this array dynamically to be on the safe side.
+Change the rockchip pinctrl driver to handle the arguments of 0 or 1 to
+the pull pinconfig options correctly, so that the pull gets disabled when
+either the bias_disable options is set or the pull option has the argument 0.
 
-Suggested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
- drivers/pinctrl/pinconf-generic.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ drivers/pinctrl/pinctrl-rockchip.c |   37 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index ea9da17..794dad7 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -182,7 +182,7 @@ int pinconf_generic_parse_dt_config(struct device_node *np,
- 				    unsigned long **configs,
- 				    unsigned int *nconfigs)
- {
--	unsigned long cfg[ARRAY_SIZE(dt_params)];
-+	unsigned long *cfg;
- 	unsigned int ncfg = 0;
- 	int ret;
- 	int i;
-@@ -191,6 +191,11 @@ int pinconf_generic_parse_dt_config(struct device_node *np,
- 	if (!np)
- 		return -EINVAL;
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index c605b63..2568afc 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -563,6 +563,25 @@ static const struct pinmux_ops rockchip_pmx_ops = {
+  * Pinconf_ops handling
+  */
  
-+	/* allocate a temporary array big enough to hold one of each option */
-+	cfg = kzalloc(sizeof(*cfg) * ARRAY_SIZE(dt_params), GFP_KERNEL);
-+	if (!cfg)
-+		return -ENOMEM;
++static bool rockchip_pinconf_pull_valid(struct rockchip_pin_ctrl *ctrl,
++					enum pin_config_param pull)
++{
++	/* rk3066b does support any pulls */
++	if (!ctrl->pull_offset)
++		return pull ? false : true;
 +
- 	for (i = 0; i < ARRAY_SIZE(dt_params); i++) {
- 		struct pinconf_generic_dt_params *par = &dt_params[i];
- 		ret = of_property_read_u32(np, par->property, &val);
-@@ -208,11 +213,13 @@ int pinconf_generic_parse_dt_config(struct device_node *np,
- 		ncfg++;
- 	}
- 
-+	ret = 0;
-+
- 	/* no configs found at all */
- 	if (ncfg == 0) {
- 		*configs = NULL;
- 		*nconfigs = 0;
--		return 0;
-+		goto out;
- 	}
- 
- 	/*
-@@ -220,11 +227,16 @@ int pinconf_generic_parse_dt_config(struct device_node *np,
- 	 * found properties.
- 	 */
- 	*configs = kzalloc(ncfg * sizeof(unsigned long), GFP_KERNEL);
--	if (!*configs)
--		return -ENOMEM;
-+	if (!*configs) {
-+		ret = -ENOMEM;
-+		goto out;
++	if (ctrl->pull_auto) {
++		if (pull != PIN_CONFIG_BIAS_PULL_PIN_DEFAULT &&
++					pull != PIN_CONFIG_BIAS_DISABLE)
++			return false;
++	} else {
++		if (pull == PIN_CONFIG_BIAS_PULL_PIN_DEFAULT)
++			return false;
 +	}
- 
--	memcpy(*configs, &cfg, ncfg * sizeof(unsigned long));
-+	memcpy(*configs, cfg, ncfg * sizeof(unsigned long));
- 	*nconfigs = ncfg;
--	return 0;
 +
-+out:
-+	kfree(cfg);
-+	return ret;
- }
- #endif
++	return true;
++}
++
+ /* set the pin config settings for a specified pin */
+ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
+ 							unsigned long config)
+@@ -570,12 +589,21 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
+ 	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
+ 	struct rockchip_pin_bank *bank = pin_to_bank(info, pin);
+ 	enum pin_config_param param = pinconf_to_config_param(config);
++	u16 arg = pinconf_to_config_argument(config);
+ 
+ 	switch (param) {
+ 	case PIN_CONFIG_BIAS_DISABLE:
++		return rockchip_set_pull(bank, pin - bank->pin_base, param);
++		break;
+ 	case PIN_CONFIG_BIAS_PULL_UP:
+ 	case PIN_CONFIG_BIAS_PULL_DOWN:
+ 	case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
++		if (!rockchip_pinconf_pull_valid(info->ctrl, param))
++			return -ENOTSUPP;
++
++		if (!arg)
++			param = PIN_CONFIG_BIAS_DISABLE;
++
+ 		return rockchip_set_pull(bank, pin - bank->pin_base, param);
+ 		break;
+ 	default:
+@@ -600,12 +628,11 @@ static int rockchip_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
+ 	case PIN_CONFIG_BIAS_PULL_UP:
+ 	case PIN_CONFIG_BIAS_PULL_DOWN:
+ 	case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
+-		pull = rockchip_get_pull(bank, pin - bank->pin_base);
+-
+-		if (pull != param)
+-			return -EINVAL;
++		if (!rockchip_pinconf_pull_valid(info->ctrl, param))
++			return -ENOTSUPP;
+ 
+-		*config = 0;
++		pull = rockchip_get_pull(bank, pin - bank->pin_base);
++		*config = (pull == param) ? 1 : 0;
+ 		break;
+ 	default:
+ 		return -ENOTSUPP;
 -- 
 1.7.10.4
 
