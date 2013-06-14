@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab3FNU1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 16:27:00 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54796 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3FNU07 (ORCPT
+	id S1753898Ab3FNUdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 16:33:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50861 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab3FNUdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 16:26:59 -0400
-Date: Fri, 14 Jun 2013 13:26:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@gentwo.org>
-cc: Roman Gushchin <klamm@yandex-team.ru>, penberg@kernel.org, mpm@selenic.com,
-        akpm@linux-foundation.org, mgorman@suse.de, glommer@parallels.com,
-        hannes@cmpxchg.org, minchan@kernel.org, jiang.liu@huawei.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slub: Avoid direct compaction if possible
-In-Reply-To: <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.02.1306141322490.17237@chino.kir.corp.google.com>
-References: <51BB1802.8050108@yandex-team.ru> <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 14 Jun 2013 16:33:03 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 2/2] ARM: mmu: Introduce iotable_init_caller()
+Date: Fri, 14 Jun 2013 13:32:58 -0700
+Message-Id: <1371241978-6224-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.1.378.g9926f66
+In-Reply-To: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
+References: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jun 2013, Christoph Lameter wrote:
+Now that debug_ll_io_init() maps memory via iotable_init() we
+don't get much information in vmallocinfo about what the mapping
+corresponds to. Introduce iotable_init_caller() that does the
+same thing as iotable_init() except that it allows us to specify
+the function that should appear in vmallocinfo. This allows us to
+differentiate the debug_ll mapping from the other iotable_init()
+mappings.
 
-> > It's possible to avoid such problems (or at least to make them less probable)
-> > by avoiding direct compaction. If it's not possible to allocate a contiguous
-> > page without compaction, slub will fall back to order 0 page(s). In this case
-> > kswapd will be woken to perform asynchronous compaction. So, slub can return
-> > to default order allocations as soon as memory will be de-fragmented.
-> 
-> Sounds like a good idea. Do you have some numbers to show the effect of
-> this patch?
-> 
+Cc: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-I'm surprised you like this patch, it basically makes slub allocations to 
-be atomic and doesn't try memory compaction nor reclaim.  Asynchronous 
-compaction certainly isn't aggressive enough to mimick the effects of the 
-old lumpy reclaim that would have resulted in less fragmented memory.  If 
-slub is the only thing that is doing high-order allocations, it will start 
-falling back to the smallest page order much much more often.
+I'm ok without this patch. Using __builtin_return_address(0) seems
+to do alright on framepointer builds but fails on unwind table
+builds so I went with this approach.
 
-I agree that this doesn't seem like a slub issue at all but rather a page 
-allocator issue; if we have many simultaneous thp faults at the same time 
-and /sys/kernel/mm/transparent_hugepage/defrag is "always" then you'll get 
-the same problem if deferred compaction isn't helping.
+ arch/arm/mm/mmu.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-So I don't think we should be patching slub in any special way here.
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 18b8aeb..0699bee 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -811,10 +811,8 @@ static void __init create_mapping(struct map_desc *md)
+ 	} while (pgd++, addr != end);
+ }
+ 
+-/*
+- * Create the architecture specific mappings
+- */
+-void __init iotable_init(struct map_desc *io_desc, int nr)
++static void __init
++iotable_init_caller(struct map_desc *io_desc, int nr, void *caller)
+ {
+ 	struct map_desc *md;
+ 	struct vm_struct *vm;
+@@ -834,11 +832,19 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
+ 		vm->phys_addr = __pfn_to_phys(md->pfn);
+ 		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+ 		vm->flags |= VM_ARM_MTYPE(md->type);
+-		vm->caller = iotable_init;
++		vm->caller = caller;
+ 		add_static_vm_early(svm++);
+ 	}
+ }
+ 
++/*
++ * Create the architecture specific mappings
++ */
++void __init iotable_init(struct map_desc *io_desc, int nr)
++{
++	iotable_init_caller(io_desc, nr, iotable_init);
++}
++
+ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
+ 				  void *caller)
+ {
+@@ -947,7 +953,7 @@ void __init debug_ll_io_init(void)
+ 	map.virtual &= PAGE_MASK;
+ 	map.length = PAGE_SIZE;
+ 	map.type = MT_DEVICE;
+-	iotable_init(&map, 1);
++	iotable_init_caller(&map, 1, debug_ll_io_init);
+ }
+ #endif
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Roman, are you using the latest kernel?  If so, what does
-grep compact_ /proc/vmstat show after one or more of these events?
