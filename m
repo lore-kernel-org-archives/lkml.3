@@ -1,103 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab3FNKxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 06:53:18 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:47551 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3FNKxQ (ORCPT
+	id S1752383Ab3FNKzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 06:55:38 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:14925 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752290Ab3FNKzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 06:53:16 -0400
-Date: Fri, 14 Jun 2013 12:53:11 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
-Message-ID: <20130614105310.GA19060@manwe>
-References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com>
- <13685067.uPzcc2y1CU@wuerfel>
- <000001ce68d7$ca762200$5f626600$@samsung.com>
+	Fri, 14 Jun 2013 06:55:36 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-12.tower-178.messagelabs.com!1371207333!25497022!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 14 Jun 2013 12:55:33 +0200
+Date: Fri, 14 Jun 2013 12:58:37 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: <wim@iguana.be>
+CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
+Subject: [PATCH v9] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130614105831.GA9334@jtlinux>
+References: <20130603143453.GA14251@jtlinux>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <000001ce68d7$ca762200$5f626600$@samsung.com>
+In-Reply-To: <20130603143453.GA14251@jtlinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 14 Jun 2013 10:55:33.0132 (UTC) FILETIME=[B14AA4C0:01CE68ED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds the driver for the watchdog devices found on MEN Mikro
+Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
+watchdog framework.
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
 
-On Fri, Jun 14, 2013 at 05:18:46PM +0900, Jingoo Han wrote:
-> On Thursday, June 13, 2013 11:14 PM, Arnd Bergmann wrote:
-> > On Thursday 13 June 2013 22:22:31 Jingoo Han wrote:
-[...]
-> > > +static int __exit exynos_pcie_remove(struct platform_device *pdev)
-> > > +{
-> > > +	struct pcie_port *pp =3D platform_get_drvdata(pdev);
-> > > +
-> > > +	clk_disable_unprepare(pp->bus_clk);
-> > > +	clk_disable_unprepare(pp->clk);
-> > > +
-> > > +	return 0;
-> > > +}
-> >=20
-> > You also don't remove the PCI devices here, as mentioned in an earlier
-> > review.
->=20
-> I reviewed Marvell PCIe driver and Tegra PCIe driver; however,
-> I cannot know what you mean.
->=20
-> Could let me know which additional functions are needed?
+ Revision 2:
+ * Removed unneeded open flag in struct a21_wdt_drv
+ * Corrected 3bit reason code from gpio
+ * Additional sysfs files are now part of watchdog sysfs
+ * Changed OFF/ON delay in ping from 400ms to 10ns
+ * Reworked timeout setting
+ * Removed a21_wdt_ioctl(...)
 
-We don't currently do that on Tegra either. pci-mvebu doesn't do that
-either, but they don't implement the driver's .remove() in the first
-place.
+ Revision 3:
+ * Changed pr_{err,info} to dev_{err,info}
+ * Removed out of memory error print
+ * Transition from "fast" to "slow" mode not allowed by chip
 
-I think the biggest missing piece is pci_common_exit(), the counterpart
-of pci_common_init(), to cleanup a host bridge on ARM. I haven't looked
-in detail at the other architectures, but I suspect there must be some
-code to call when a host bridge is removed.
+ Revision 4:
+ * Remove reboot_notifier and place disable code into platform_device's shutdown function
+ * Removed sysfs interface
 
-Looking at drivers/pci/remove.c, it seems like pci_remove_root_bus()
-might be what we're looking at. It isn't exported so it can't be used by
-modules, but that can be changed. Is that how a host bridge is typically
-removed from the system?
+ Revision 5:
+ * Added setting of .bootstatus on driver init
+ * Added initial timeout on driver init
 
-Thierry
+ Revision 6:
+ * Use watchdog_init_timeout() to initialize timeout
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: application/pgp-signature
+ Revision 7:
+ * Fix possible get_bootstatus race condition
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ Revision 8:
+ * a21_wdt_get_bootstatus() should return reset code
+ * GPIOs are supplied via DT instead of being hardcoded. Code derived from
+   (drivers/hwmon/gpio-fan.c)
+ * Added Devicetree binding document
+ * Driver now depends on GPIOLIB
 
-iQIcBAEBAgAGBQJRuvYWAAoJEN0jrNd/PrOhkAgQAJTtOn0GJ8ho/oFuRmDVC/bk
-sc2guYC3/M2NK6JHpZFjb5Etylru0j6dC+8ivPH7uQlYg6AOZuOpSGk1bwmE8geM
-rzy0nRQw3JiPwtCY9rNT1NC9d4pVlfTRjzJJ6b4kfazE9ia0SyHFodbdbZER0dU0
-WuL+F2cWHYYDtYibEHRlBxG7fGPSrXnETE68kvMUCErBwMnyzsv+DXVhz1aN+F4c
-ZugaoEx3FFREGByxrS8msFjaoLca38ZRqA7mVRiaz+3ArghRwTGo+KTO2ArGsb5e
-J3gGqgJTUEWB3sDj3XLxaUQvCYHcd0dgHRDiAKE1iGZ3s3M8eQ/EaqemL9Utxx/w
-75LFWUhOaMjFFfQZJ2L+KA2FS/XQyUC4G4CVh0CtLoOaJMw2HbgqMy6fSUd9Cm5s
-jVDaxbtYGULrYpywxhgxQi1UwkjsGgA3Yq0hWowlKTqBtE3elZ8l2BqbMzMf+Yko
-DUKBVRahRl+PB7Wc5OZsoWrnQ64LeErhzDW15018+Cdrq6QOr5QzQUqvl6yMBl08
-C/Rk45vLkTpwmzUkVw8ZafybmKH4qCG6XUFkLnMON1BgxE1lvkcbTDqsOW0IREQs
-gpFKyCpkbJV1xzRzf7w+Fg53ezNXtE1Xu8Gq2WWV052boBCvMq/bIb4juINceBpI
-QbE9icw15Vwu5aW7b/Eb
-=MlcV
------END PGP SIGNATURE-----
+ Revision 9:
+ * We need 6 GPIOs not only 1 to work
+ * GPIO_WD_RST[0..2] are inputs
 
---Nq2Wo0NMKNjxTN9z--
+ .../devicetree/bindings/gpio/men-a021-wdt.txt      |   25 ++
+ MAINTAINERS                                        |    6 +
+ drivers/watchdog/Kconfig                           |   12 +
+ drivers/watchdog/Makefile                          |    1 +
+ drivers/watchdog/mena21_wdt.c                      |  276 ++++++++++++++++++++
+ 5 files changed, 320 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
+ create mode 100644 drivers/watchdog/mena21_wdt.c
+
+diff --git a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
+new file mode 100644
+index 0000000..370dee3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
+@@ -0,0 +1,25 @@
++Bindings for MEN A21 Watchdog device connected to GPIO lines
++
++Required properties:
++- compatible: "men,a021-wdt"
++- gpios: Specifies the pins that control the Watchdog, order:
++  1: Watchdog enable
++  2: Watchdog fast-mode
++  3: Watchdog trigger
++  4: Watchdog reset cause bit 0
++  5: Watchdog reset cause bit 1
++  6: Watchdog reset cause bit 2
++
++Optional properties:
++- None
++
++Example:
++	watchdog {
++		compatible ="men,a021-wdt";
++		gpios = <&gpio3 9  1	/* WD_EN */
++			 &gpio3 10 1	/* WD_FAST */
++			 &gpio3 11 1	/* WD_TRIG */
++			 &gpio3 6  1	/* RST_CAUSE[0] */
++			 &gpio3 7  1	/* RST_CAUSE[1] */
++			 &gpio3 8  1>;	/* RST_CAUSE[2] */
++	};
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5be702c..824261e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5317,6 +5317,12 @@ F:	drivers/mtd/
+ F:	include/linux/mtd/
+ F:	include/uapi/mtd/
+
++MEN A21 WATCHDOG DRIVER
++M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
++L:	linux-watchdog@vger.kernel.org
++S:	Supported
++F:	drivers/watchdog/mena21_wdt.c
++
+ METAG ARCHITECTURE
+ M:	James Hogan <james.hogan@imgtec.com>
+ S:	Supported
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index e89fc31..8b143ee 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1172,6 +1172,18 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+
+ 	  The value can be overridden by the wdt_period command-line parameter.
+
++config MEN_A21_WDT
++       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
++       select WATCHDOG_CORE
++       depends on GPIOLIB
++       help
++        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
++
++	The driver can also be built as a module. If so, the module will be
++	called mena21_wdt.
++
++	If unsure select N here.
++
+ # PPC64 Architecture
+
+ config WATCHDOG_RTAS
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index a300b94..bffdcb1 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
+ obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
+ obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
+ obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
++obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
+
+ # PPC64 Architecture
+ obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
+diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
+new file mode 100644
+index 0000000..0d3409a
+--- /dev/null
++++ b/drivers/watchdog/mena21_wdt.c
+@@ -0,0 +1,276 @@
++/*
++ * Watchdog driver for the A21 VME CPU Boards
++ *
++ * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation
++ */
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/watchdog.h>
++#include <linux/uaccess.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/delay.h>
++#include <linux/bitops.h>
++
++#define NUM_GPIOS 6
++
++enum a21_wdt_gpios {
++	GPIO_WD_ENAB,
++	GPIO_WD_FAST,
++	GPIO_WD_TRIG,
++	GPIO_WD_RST0,
++	GPIO_WD_RST1,
++	GPIO_WD_RST2,
++};
++
++struct a21_wdt_drv {
++	struct watchdog_device wdt;
++	struct mutex lock;
++	unsigned gpios[NUM_GPIOS];
++};
++
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
++			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
++{
++	int reset = 0;
++
++	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST0]) ? (1 << 0) : 0;
++	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST1]) ? (1 << 1) : 0;
++	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST2]) ? (1 << 2) : 0;
++
++	return reset;
++}
++
++static int a21_wdt_start(struct watchdog_device *wdt)
++{
++	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
++
++	mutex_lock(&drv->lock);
++
++	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 1);
++
++	mutex_unlock(&drv->lock);
++
++	return 0;
++}
++
++static int a21_wdt_stop(struct watchdog_device *wdt)
++{
++	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
++
++	/* We don't stop if WDOG_NO_WAY_OUT is set */
++	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
++		return -EINVAL;
++
++	mutex_lock(&drv->lock);
++
++	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
++
++	mutex_unlock(&drv->lock);
++
++	return 0;
++}
++
++static int a21_wdt_ping(struct watchdog_device *wdt)
++{
++	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
++
++	mutex_lock(&drv->lock);
++
++	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 0);
++	ndelay(10);
++	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 1);
++
++	mutex_unlock(&drv->lock);
++
++	return 0;
++}
++
++static int a21_wdt_set_timeout(struct watchdog_device *wdt,
++			       unsigned int timeout)
++{
++	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
++
++	if (timeout != 1 && timeout != 30) {
++		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
++		return -EINVAL;
++	}
++
++	if (timeout == 30 && wdt->timeout == 1) {
++		dev_err(wdt->dev,
++			"Transition from fast to slow mode not allowed\n");
++		return -EINVAL;
++	}
++
++	mutex_lock(&drv->lock);
++
++	if (timeout == 1)
++		gpio_set_value(drv->gpios[GPIO_WD_FAST], 1);
++	else
++		gpio_set_value(drv->gpios[GPIO_WD_FAST], 0);
++
++	wdt->timeout = timeout;
++
++	mutex_unlock(&drv->lock);
++
++	return 0;
++}
++
++static const struct watchdog_info a21_wdt_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
++	.identity = "MEN A21 Watchdog",
++};
++
++static const struct watchdog_ops a21_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = a21_wdt_start,
++	.stop = a21_wdt_stop,
++	.ping = a21_wdt_ping,
++	.set_timeout = a21_wdt_set_timeout,
++};
++
++static struct watchdog_device a21_wdt = {
++	.info = &a21_wdt_info,
++	.ops = &a21_wdt_ops,
++	.min_timeout = 1,
++	.max_timeout = 30,
++};
++
++static int a21_wdt_probe(struct platform_device *pdev)
++{
++	struct device_node *node;
++	struct a21_wdt_drv *drv;
++	unsigned int reset = 0;
++	int num_gpios;
++	int ret;
++	int i;
++
++	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
++
++	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
++	if (!drv)
++		return -ENOMEM;
++
++	/* Fill GPIO pin array */
++	node = pdev->dev.of_node;
++
++	num_gpios = of_gpio_count(node);
++	if (num_gpios != NUM_GPIOS) {
++		dev_err(&pdev->dev, "gpios DT property wrong, got %d want %d",
++			num_gpios, NUM_GPIOS);
++		return -ENODEV;
++	}
++
++	for (i = 0; i < num_gpios; i++) {
++		int val;
++
++		val = of_get_gpio(node, i);
++		if (val < 0)
++			return val;
++
++		drv->gpios[i] = val;
++	}
++
++	/* Request the used GPIOs */
++	for (i = 0; i < num_gpios; i++) {
++		ret = devm_gpio_request(&pdev->dev, drv->gpios[i],
++					"MEN A21 Watchdog");
++		if (ret)
++			return ret;
++
++		if (i < GPIO_WD_RST0)
++			ret = gpio_direction_output(drv->gpios[i],
++						gpio_get_value(drv->gpios[i]));
++		else		/* GPIO_WD_RST[0..2] are inputs */
++			ret = gpio_direction_input(drv->gpios[i]);
++		if (ret)
++			return ret;
++	}
++
++	mutex_init(&drv->lock);
++	watchdog_init_timeout(&a21_wdt, 30, &pdev->dev);
++	watchdog_set_nowayout(&a21_wdt, nowayout);
++	watchdog_set_drvdata(&a21_wdt, drv);
++
++	reset = a21_wdt_get_bootstatus(drv);
++	if (reset == 2)
++		a21_wdt.bootstatus |= WDIOF_EXTERN1;
++	else if (reset == 4)
++		a21_wdt.bootstatus |= WDIOF_CARDRESET;
++	else if (reset == 5)
++		a21_wdt.bootstatus |= WDIOF_POWERUNDER;
++	else if (reset == 7)
++		a21_wdt.bootstatus |= WDIOF_EXTERN2;
++
++
++	ret = watchdog_register_device(&a21_wdt);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot register watchdog device\n");
++		goto err_register_wd;
++	}
++
++	dev_set_drvdata(&pdev->dev, drv);
++
++	return 0;
++
++err_register_wd:
++	mutex_destroy(&drv->lock);
++
++	return ret;
++}
++
++static int a21_wdt_remove(struct platform_device *pdev)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
++
++	dev_warn(&pdev->dev,
++		"Unregistering A21 watchdog driver, board may reboot\n");
++
++
++	watchdog_unregister_device(&drv->wdt);
++
++	mutex_destroy(&drv->lock);
++
++	return 0;
++}
++
++static void a21_wdt_shutdown(struct platform_device *pdev)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
++
++	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
++}
++
++static const struct of_device_id a21_wdt_ids[] = {
++	{ .compatible = "men,a021-wdt" },
++	{ },
++};
++
++static struct platform_driver a21_wdt_driver = {
++	.probe = a21_wdt_probe,
++	.remove = a21_wdt_remove,
++	.shutdown = a21_wdt_shutdown,
++	.driver = {
++		.name = "a21-watchdog",
++		.of_match_table = a21_wdt_ids,
++	},
++};
++
++module_platform_driver(a21_wdt_driver);
++
++MODULE_AUTHOR("MEN Mikro Elektronik");
++MODULE_DESCRIPTION("MEN A21 Watchdog");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:a21-watchdog");
+--
+1.7.9.5
+
