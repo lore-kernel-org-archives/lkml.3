@@ -1,52 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab3FNWOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:14:39 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37771 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3FNWOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:14:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
-Date: Sat, 15 Jun 2013 00:23:52 +0200
-Message-ID: <3168584.RRBYoY5UXf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA7C18E@ORSMSX106.amr.corp.intel.com>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan> <1371162234.21540.43.camel@misato.fc.hp.com> <3908561D78D1C84285E8C5FCA982C28F2DA7C18E@ORSMSX106.amr.corp.intel.com>
+	id S1753340Ab3FNWSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:18:03 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:65351 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab3FNWSA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 18:18:00 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAErSpo66qtgg8=BqX+4sm4h1vXD5gR6aiH7hHK7gvz1x3rEQZA@mail.gmail.com>
+References: <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
+	<CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
+	<CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
+	<CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
+	<20130401235256.GA31966@google.com>
+	<CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
+	<CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com>
+	<CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
+	<CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com>
+	<CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com>
+	<20130614141101.GA29452@google.com>
+	<CAE9FiQVr-OWeqEHFXn0MjNiSD0WM=FNO_DFo6m9UbbG60uonpw@mail.gmail.com>
+	<CAErSpo7grN-93zZfBJOHZH-pR1wDYrojTwt=B=++QqA0rPb3Rg@mail.gmail.com>
+	<CAE9FiQUO350kqrXB5=yQ-OxOeSJj4+P6WPg4gGgXxFEvfoLyng@mail.gmail.com>
+	<CAErSpo6vEOw10YV=Sou6wjjSc2GWr-oX=Dvbt7Xt=RJKi4RELw@mail.gmail.com>
+	<CAE9FiQWevd6ZNDdqGkqbLrGujKYuTiwibPAT+30VPpC_H-rLJA@mail.gmail.com>
+	<CAErSpo66qtgg8=BqX+4sm4h1vXD5gR6aiH7hHK7gvz1x3rEQZA@mail.gmail.com>
+Date: Fri, 14 Jun 2013 15:17:59 -0700
+X-Google-Sender-Auth: qtOh7pZdAxxEUNv3dsPAwJlRL9c
+Message-ID: <CAE9FiQWxDhagFNAYc2eNDe_1jYtVTa5Azg0zifiprND5m3CmMw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Roman Yepishev <roman.yepishev@gmail.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Content-Type: multipart/mixed; boundary=047d7bdc08c89de1dc04df249e77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 06:01:41 PM Luck, Tony wrote:
-> >> Tony promised me to test those patches on his box, so we'll know for sure
-> >> in a while.
-> 
-> Tested this series - and the box boots just fine with no unexpected messages.
+--047d7bdc08c89de1dc04df249e77
+Content-Type: text/plain; charset=ISO-8859-1
 
-Thanks!
+On Fri, Jun 14, 2013 at 2:26 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Maxim, Jussi]
+>
+> Yeah, this is a huge mess.  It makes my head hurt.  I don't think it's
+> reasonable to add more flags because that will make my head hurt even
+> more.
+>
+> If I understand correctly, on Roman's system (the Acer Aspire One
+> AOA150 netbook mentioned in
+> https://bugzilla.kernel.org/show_bug.cgi?id=55211):
+>
+>   - The BIOS leaves ASPM enabled for the ath5k device (03:00.0)
+>   - The BIOS does not allow the OS to manage ASPM (via _OSC)
+>   - The ath5k device does not work correctly with ASPM enabled
+>   - The ath5k driver calls pci_disable_link_state(), but we do not
+> disable ASPM because we don't have permission from the BIOS
 
-> But I should note that this box doesn't have anything that is hot pluggable, so I
-> couldn't test hotplug (which seems to be deeply involved with things that this
-> patch is touching).
-> 
-> Of course that means that I haven't been testing hotplug - so it might have been
-> broken for years and I'd never have noticed.
+looks like Matthew Garrett path is causing problem:
 
-Can you please just test patch [5/5] alone without patches [1-4/5]?  We believe
-that this should work too and if that's the case, we'll only need that patch
-and a reworked [1/5].
+ commit 4949be16822e92a18ea0cc1616319926628092ee
+ Author: Matthew Garrett <mjg@redhat.com>
+ Date:   Tue Mar 6 13:41:49 2012 -0500
 
-Thanks,
-Rafael
+     PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
 
+ commit c9651e70ad0aa499814817cbf3cc1d0b806ed3a1
+ Author: Matthew Garrett <mjg@redhat.com>
+ Date:   Tue Mar 27 10:17:41 2012 -0400
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+     ASPM: Fix pcie devices with non-pcie children
+
+after those two patches, it aspm_disabled is set, via _osc early,
+pre-1.1 devices aspm register will be touched even aspm_force is not specified.
+
+pcie_aspm_init_link_state will all the way to
+ pcie_config_aspm_path ==> pcie_config_aspm_link
+
+in that path, aspm_disabled is not checked nowhere.
+
+BTW, when aspm is not disabled, even the link is allocated, because it is
+black listed,  so it is never get touched.
+Matthew's patch is not needed in any case.
+
+I would suspect that that aspm enabling in Roman's system could set by that
+path instead of BIOS.
+
+Roman, can you please check two patches + linsus' tree on your system?
+
+Thanks
+
+Yinghai
+
+--047d7bdc08c89de1dc04df249e77
+Content-Type: application/octet-stream; 
+	name="revert_revert_osc_change_linus.patch"
+Content-Disposition: attachment; 
+	filename="revert_revert_osc_change_linus.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhxxn2hh0
+
+U3ViamVjdDogW1BBVENIXSBBQ1BJLCBQQ0k6IFJldmVydCByZXZlcnRpbmcgb2YgIlBDSS9BQ1BJ
+OiBSZXF1ZXN0IF9PU0MgY29udHJvbCBiZWZvcmUgc2Nhbm5pbmcgUENJIHJvb3QgYnVzIgoKSW4K
+fCBjb21taXQgYjgxNzhmMTMwZTI1YzFiZGFjMWMzM2UwOTk2ZjFmZjZlMjBlYzA4ZQp8IEF1dGhv
+cjogQmpvcm4gSGVsZ2FhcyA8YmhlbGdhYXNAZ29vZ2xlLmNvbT4KfCBEYXRlOiAgIE1vbiBBcHIg
+MSAxNTo0NzozOSAyMDEzIC0wNjAwCnwKfCAgICBSZXZlcnQgIlBDSS9BQ1BJOiBSZXF1ZXN0IF9P
+U0MgY29udHJvbCBiZWZvcmUgc2Nhbm5pbmcgUENJIHJvb3QgYnVzIgp8CnwgICAgVGhpcyByZXZl
+cnRzIGNvbW1pdCA4YzMzZjUxZGY0MDZlMWExZjdmYTRlOWIyNDQ4NDViN2ViZDYxZmE2Lgpmb3Ig
+djMuOSwgIk9TQyBzZXQgZWFybHkiIGlzIHJldmVydGVkLgoKTm93IHdlIGhhdmUgcHJvYmxlbSBv
+biB2My4xMCwgYXMgaXQgaGFzCiAgICAgICAtIFJlbW92ZSBBQ1BJIFBDSSBzdWJkcml2ZXJzIChK
+aWFuZyBMaXUsIE15cm9uIFN0b3dlKQogICAgICAgLSBNYWtlIGFjcGlwaHAgYnVpbHRpbiBvbmx5
+LCBub3QgbW9kdWxhciAoSmlhbmcgTGl1KQogICBhY3BpcGhwIGdldCByZWdpc3RlcmVkIHdpdGgg
+cGNpYmlvc19hZGRfYnVzIHZlcnkgZWFybHkuCldlIGNhbiBub3QgZW5hYmxlIHBjaWUgbmF0aXZl
+IGhvdHBsdWcgZHJpdmVyIGFueSBtb3JlIGlmIHN5c3RlbSBzdXBwb3J0CmFjcGlwaHAgYW5kIHBj
+aWVocC4KCkNhbGxpbmcgcGF0aDogaW4gYWNwaV9wY2lfcm9vdF9hZGQgd2UgaGF2ZQoxLiBwY2lf
+YWNwaV9zY2FuX3Jvb3QKICAgICA9PT4gcGNpIGRldmljZXMgZW51bWVyYXRpb24gYW5kIGJ1cyBz
+Y2FubmluZy4KICAgICAgID09PiBwY2lfYWxsb2NfY2hpbGRfYnVzCiAgICAgICAgID09PiBwY2li
+aW9zX2FkZF9idXMKICAgICAgICAgICA9PT4gYWNwaV9wY2lfYWRkX2J1cwogICAgICAgICAgICAg
+PT0+IGFjcGlwaHBfZW51bWVyYXRlX3Nsb3RzCiAgICAgICAgICAgICAgID09PiAuLi49PT4gcmVn
+aXN0ZXJfc2xvdAogICAgICAgICAgICAgICAgID09PiBkZXZpY2VfaXNfbWFuYWdlZF9ieV9uYXRp
+dmVfcGNpZWhwCiAgICAgICAgICAgICAgICAgICA9PT4gY2hlY2sgb3NjX3NldCB3aXRoIE9TQ19Q
+Q0lfRVhQUkVTU19OQVRJVkVfSFBfQ09OVFJPTAoyLiBfT1NDIHNldCByZXF1ZXN0CnNvIHdlIGFs
+d2F5cyBoYXZlIGFjcGlwaHAgaG90cGx1ZyBzbG90IHJlZ2lzdGVyZWQgYXQgZmlyc3QsIGFzIE9T
+QyBpcwpub3Qgc2V0IHlldC4KCldlIG5lZWQgIk9TQyBzZXQgZWFybHkiIGJlZm9yZSBwY2lfYXBj
+aV9zY2FuX3Jvb3QgYWdhaW4uCgpUaGUgcG9pbnQ6IGxhdGVyIGFzcG0sIHBtZSwgcGNpZWhwLCBh
+ZXIgc3VwcG9ydCB3b3VsZCByZWx5IG9uIHZhbHVlIGluCnJvb3Qgb3NjX3N1cHBvcnRfc2V0L29z
+Y19jb250cm9sX3NldC4KCkZvciB2My4xMCwgbGV0J3MgcHV0IHRoZSAib3NjIGNvbnRyb2wgc2V0
+IGVhcmx5IiBiYWNrLAphcyB3ZSBoYXZlIHVzZXIgaW4gcGNpX2FjcGlfc2Nhbl9yb290LgoKU2ln
+bmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKZGlmZiAtLWdpdCBh
+L2RyaXZlcnMvYWNwaS9wY2lfcm9vdC5jIGIvZHJpdmVycy9hY3BpL3BjaV9yb290LmMKaW5kZXgg
+ZTQyN2RjNS4uMjA3ZDc3MyAxMDA2NDQKLS0tIGEvZHJpdmVycy9hY3BpL3BjaV9yb290LmMKKysr
+IGIvZHJpdmVycy9hY3BpL3BjaV9yb290LmMKQEAgLTM4Miw2ICszODIsNyBAQCBzdGF0aWMgaW50
+IGFjcGlfcGNpX3Jvb3RfYWRkKHN0cnVjdCBhY3BpX2RldmljZSAqZGV2aWNlLAogCWludCByZXN1
+bHQ7CiAJc3RydWN0IGFjcGlfcGNpX3Jvb3QgKnJvb3Q7CiAJdTMyIGZsYWdzLCBiYXNlX2ZsYWdz
+OworCWJvb2wgaXNfb3NjX2dyYW50ZWQgPSBmYWxzZTsKIAogCXJvb3QgPSBremFsbG9jKHNpemVv
+ZihzdHJ1Y3QgYWNwaV9wY2lfcm9vdCksIEdGUF9LRVJORUwpOwogCWlmICghcm9vdCkKQEAgLTQ0
+MiwzMCArNDQzLDYgQEAgc3RhdGljIGludCBhY3BpX3BjaV9yb290X2FkZChzdHJ1Y3QgYWNwaV9k
+ZXZpY2UgKmRldmljZSwKIAlmbGFncyA9IGJhc2VfZmxhZ3MgPSBPU0NfUENJX1NFR01FTlRfR1JP
+VVBTX1NVUFBPUlQ7CiAJYWNwaV9wY2lfb3NjX3N1cHBvcnQocm9vdCwgZmxhZ3MpOwogCi0JLyoK
+LQkgKiBUQkQ6IE5lZWQgUENJIGludGVyZmFjZSBmb3IgZW51bWVyYXRpb24vY29uZmlndXJhdGlv
+biBvZiByb290cy4KLQkgKi8KLQotCW11dGV4X2xvY2soJmFjcGlfcGNpX3Jvb3RfbG9jayk7Ci0J
+bGlzdF9hZGRfdGFpbCgmcm9vdC0+bm9kZSwgJmFjcGlfcGNpX3Jvb3RzKTsKLQltdXRleF91bmxv
+Y2soJmFjcGlfcGNpX3Jvb3RfbG9jayk7Ci0KLQkvKgotCSAqIFNjYW4gdGhlIFJvb3QgQnJpZGdl
+Ci0JICogLS0tLS0tLS0tLS0tLS0tLS0tLS0KLQkgKiBNdXN0IGRvIHRoaXMgcHJpb3IgdG8gYW55
+IGF0dGVtcHQgdG8gYmluZCB0aGUgcm9vdCBkZXZpY2UsIGFzIHRoZQotCSAqIFBDSSBuYW1lc3Bh
+Y2UgZG9lcyBub3QgZ2V0IGNyZWF0ZWQgdW50aWwgdGhpcyBjYWxsIGlzIG1hZGUgKGFuZAotCSAq
+IHRodXMgdGhlIHJvb3QgYnJpZGdlJ3MgcGNpX2RldiBkb2VzIG5vdCBleGlzdCkuCi0JICovCi0J
+cm9vdC0+YnVzID0gcGNpX2FjcGlfc2Nhbl9yb290KHJvb3QpOwotCWlmICghcm9vdC0+YnVzKSB7
+Ci0JCXByaW50ayhLRVJOX0VSUiBQUkVGSVgKLQkJCSAgICAiQnVzICUwNHg6JTAyeCBub3QgcHJl
+c2VudCBpbiBQQ0kgbmFtZXNwYWNlXG4iLAotCQkJICAgIHJvb3QtPnNlZ21lbnQsICh1bnNpZ25l
+ZCBpbnQpcm9vdC0+c2Vjb25kYXJ5LnN0YXJ0KTsKLQkJcmVzdWx0ID0gLUVOT0RFVjsKLQkJZ290
+byBvdXRfZGVsX3Jvb3Q7Ci0JfQotCiAJLyogSW5kaWNhdGUgc3VwcG9ydCBmb3IgdmFyaW91cyBf
+T1NDIGNhcGFiaWxpdGllcy4gKi8KIAlpZiAocGNpX2V4dF9jZmdfYXZhaWwoKSkKIAkJZmxhZ3Mg
+fD0gT1NDX0VYVF9QQ0lfQ09ORklHX1NVUFBPUlQ7CkBAIC00ODQsNyArNDYxLDYgQEAgc3RhdGlj
+IGludCBhY3BpX3BjaV9yb290X2FkZChzdHJ1Y3QgYWNwaV9kZXZpY2UgKmRldmljZSwKIAkJCWZs
+YWdzID0gYmFzZV9mbGFnczsKIAkJfQogCX0KLQogCWlmICghcGNpZV9wb3J0c19kaXNhYmxlZAog
+CSAgICAmJiAoZmxhZ3MgJiBBQ1BJX1BDSUVfUkVRX1NVUFBPUlQpID09IEFDUElfUENJRV9SRVFf
+U1VQUE9SVCkgewogCQlmbGFncyA9IE9TQ19QQ0lfRVhQUkVTU19DQVBfU1RSVUNUVVJFX0NPTlRS
+T0wKQEAgLTUwNSwyOCArNDgxLDU0IEBAIHN0YXRpYyBpbnQgYWNwaV9wY2lfcm9vdF9hZGQoc3Ry
+dWN0IGFjcGlfZGV2aWNlICpkZXZpY2UsCiAJCXN0YXR1cyA9IGFjcGlfcGNpX29zY19jb250cm9s
+X3NldChkZXZpY2UtPmhhbmRsZSwgJmZsYWdzLAogCQkJCSAgICAgICBPU0NfUENJX0VYUFJFU1Nf
+Q0FQX1NUUlVDVFVSRV9DT05UUk9MKTsKIAkJaWYgKEFDUElfU1VDQ0VTUyhzdGF0dXMpKSB7CisJ
+CQlpc19vc2NfZ3JhbnRlZCA9IHRydWU7CiAJCQlkZXZfaW5mbygmZGV2aWNlLT5kZXYsCiAJCQkJ
+IkFDUEkgX09TQyBjb250cm9sICgweCUwMngpIGdyYW50ZWRcbiIsIGZsYWdzKTsKLQkJCWlmIChh
+Y3BpX2dibF9GQURULmJvb3RfZmxhZ3MgJiBBQ1BJX0ZBRFRfTk9fQVNQTSkgewotCQkJCS8qCi0J
+CQkJICogV2UgaGF2ZSBBU1BNIGNvbnRyb2wsIGJ1dCB0aGUgRkFEVCBpbmRpY2F0ZXMKLQkJCQkg
+KiB0aGF0IGl0J3MgdW5zdXBwb3J0ZWQuIENsZWFyIGl0LgotCQkJCSAqLwotCQkJCXBjaWVfY2xl
+YXJfYXNwbShyb290LT5idXMpOwotCQkJfQogCQl9IGVsc2UgeworCQkJaXNfb3NjX2dyYW50ZWQg
+PSBmYWxzZTsKIAkJCWRldl9pbmZvKCZkZXZpY2UtPmRldiwKIAkJCQkiQUNQSSBfT1NDIHJlcXVl
+c3QgZmFpbGVkICglcyksICIKIAkJCQkicmV0dXJuZWQgY29udHJvbCBtYXNrOiAweCUwMnhcbiIs
+CiAJCQkJYWNwaV9mb3JtYXRfZXhjZXB0aW9uKHN0YXR1cyksIGZsYWdzKTsKLQkJCXByX2luZm8o
+IkFDUEkgX09TQyBjb250cm9sIGZvciBQQ0llIG5vdCBncmFudGVkLCAiCi0JCQkJImRpc2FibGlu
+ZyBBU1BNXG4iKTsKLQkJCXBjaWVfbm9fYXNwbSgpOwogCQl9CiAJfSBlbHNlIHsKIAkJZGV2X2lu
+Zm8oJmRldmljZS0+ZGV2LAotCQkJICJVbmFibGUgdG8gcmVxdWVzdCBfT1NDIGNvbnRyb2wgIgot
+CQkJICIoX09TQyBzdXBwb3J0IG1hc2s6IDB4JTAyeClcbiIsIGZsYWdzKTsKKwkJCSJVbmFibGUg
+dG8gcmVxdWVzdCBfT1NDIGNvbnRyb2wgIgorCQkJIihfT1NDIHN1cHBvcnQgbWFzazogMHglMDJ4
+KVxuIiwgZmxhZ3MpOworCX0KKworCS8qCisJICogVEJEOiBOZWVkIFBDSSBpbnRlcmZhY2UgZm9y
+IGVudW1lcmF0aW9uL2NvbmZpZ3VyYXRpb24gb2Ygcm9vdHMuCisJICovCisKKwltdXRleF9sb2Nr
+KCZhY3BpX3BjaV9yb290X2xvY2spOworCWxpc3RfYWRkX3RhaWwoJnJvb3QtPm5vZGUsICZhY3Bp
+X3BjaV9yb290cyk7CisJbXV0ZXhfdW5sb2NrKCZhY3BpX3BjaV9yb290X2xvY2spOworCisJLyoK
+KwkgKiBTY2FuIHRoZSBSb290IEJyaWRnZQorCSAqIC0tLS0tLS0tLS0tLS0tLS0tLS0tCisJICog
+TXVzdCBkbyB0aGlzIHByaW9yIHRvIGFueSBhdHRlbXB0IHRvIGJpbmQgdGhlIHJvb3QgZGV2aWNl
+LCBhcyB0aGUKKwkgKiBQQ0kgbmFtZXNwYWNlIGRvZXMgbm90IGdldCBjcmVhdGVkIHVudGlsIHRo
+aXMgY2FsbCBpcyBtYWRlIChhbmQgCisJICogdGh1cyB0aGUgcm9vdCBicmlkZ2UncyBwY2lfZGV2
+IGRvZXMgbm90IGV4aXN0KS4KKwkgKi8KKwlyb290LT5idXMgPSBwY2lfYWNwaV9zY2FuX3Jvb3Qo
+cm9vdCk7CisJaWYgKCFyb290LT5idXMpIHsKKwkJcHJpbnRrKEtFUk5fRVJSIFBSRUZJWAorCQkJ
+ICAgICJCdXMgJTA0eDolMDJ4IG5vdCBwcmVzZW50IGluIFBDSSBuYW1lc3BhY2VcbiIsCisJCQkg
+ICAgcm9vdC0+c2VnbWVudCwgKHVuc2lnbmVkIGludClyb290LT5zZWNvbmRhcnkuc3RhcnQpOwor
+CQlyZXN1bHQgPSAtRU5PREVWOworCQlnb3RvIG91dF9kZWxfcm9vdDsKKwl9CisKKwkvKiBBU1BN
+IHNldHRpbmcgKi8KKwlpZiAoaXNfb3NjX2dyYW50ZWQpIHsKKwkJaWYgKGFjcGlfZ2JsX0ZBRFQu
+Ym9vdF9mbGFncyAmIEFDUElfRkFEVF9OT19BU1BNKQorCQkJcGNpZV9jbGVhcl9hc3BtKHJvb3Qt
+PmJ1cyk7CisJfSBlbHNlIHsKKwkJcHJfaW5mbygiQUNQSSBfT1NDIGNvbnRyb2wgZm9yIFBDSWUg
+bm90IGdyYW50ZWQsICIKKwkJCSJkaXNhYmxpbmcgQVNQTVxuIik7CisJCXBjaWVfbm9fYXNwbSgp
+OwogCX0KIAogCXBjaV9hY3BpX2FkZF9idXNfcG1fbm90aWZpZXIoZGV2aWNlLCByb290LT5idXMp
+Owo=
+--047d7bdc08c89de1dc04df249e77
+Content-Type: application/octet-stream; 
+	name="revert_matthew_aspm_disabled.patch"
+Content-Disposition: attachment; 
+	filename="revert_matthew_aspm_disabled.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhxxo8wx1
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3BjaWUvYXNwbS5jIGIvZHJpdmVycy9wY2kvcGNpZS9h
+c3BtLmMKaW5kZXggNDAzYTQ0My4uYjc5NWI0MyAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcGNp
+ZS9hc3BtLmMKKysrIGIvZHJpdmVycy9wY2kvcGNpZS9hc3BtLmMKQEAgLTQ5MywxNSArNDkzLDYg
+QEAgc3RhdGljIGludCBwY2llX2FzcG1fc2FuaXR5X2NoZWNrKHN0cnVjdCBwY2lfZGV2ICpwZGV2
+KQogCQkJcmV0dXJuIC1FSU5WQUw7CiAKIAkJLyoKLQkJICogSWYgQVNQTSBpcyBkaXNhYmxlZCB0
+aGVuIHdlJ3JlIG5vdCBnb2luZyB0byBjaGFuZ2UKLQkJICogdGhlIEJJT1Mgc3RhdGUuIEl0J3Mg
+c2FmZSB0byBjb250aW51ZSBldmVuIGlmIGl0J3MgYQotCQkgKiBwcmUtMS4xIGRldmljZQotCQkg
+Ki8KLQotCQlpZiAoYXNwbV9kaXNhYmxlZCkKLQkJCWNvbnRpbnVlOwotCi0JCS8qCiAJCSAqIERp
+c2FibGUgQVNQTSBmb3IgcHJlLTEuMSBQQ0llIGRldmljZSwgd2UgZm9sbG93IE1TIHRvIHVzZQog
+CQkgKiBSQkVSIGJpdCB0byBkZXRlcm1pbmUgaWYgYSBmdW5jdGlvbiBpcyAxLjEgdmVyc2lvbiBk
+ZXZpY2UKIAkJICovCg==
+--047d7bdc08c89de1dc04df249e77--
