@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3FNVGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:06:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22187 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3FNVGL (ORCPT
+	id S1752836Ab3FNVIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:08:14 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:56254 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3FNVIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:06:11 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=w1cNLofYa50A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=yqaEuN8awxIA:10 a=V_Nx1pHck5XVaBwX5WwA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371243967.9844.338.camel@gandalf.local.home>
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rojhalat Ibrahim <imr@rtschenk.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Fri, 14 Jun 2013 17:06:07 -0400
-In-Reply-To: <1645938.As0LR1yeVd@pcimr>
-References: <1626500.7WAVXjfS9F@pcimr>
-	 <20130614122800.GL5146@linux.vnet.ibm.com> <1645938.As0LR1yeVd@pcimr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Jun 2013 17:08:13 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v2 00/11] irqdomain: Refactor
+Date: Fri, 14 Jun 2013 22:07:55 +0100
+Message-Id: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 14:46 +0200, Rojhalat Ibrahim wrote:
-> On Friday 14 June 2013 05:28:00 Paul E. McKenney wrote:
-> > On Fri, Jun 14, 2013 at 01:47:00PM +0200, Rojhalat Ibrahim wrote:
-> > > Hi,
-> > > 
-> > > the current mainline kernel from git reproducibly hangs on my Freescale
-> > > PowerPC P5020DS development system. Most of the time the hang occurs
-> > > during
-> > > boot (kernel just stops booting, system hangs), sometimes shortly after
-> > > booting (system hangs, no message). Very often booting stops at the
-> > > initialization of the Intel PRO 1000 PCIe network device (e1000e).
+I've done a bunch of refactoring work on the irq_domain infrastructure.
+Some of these patches I've posted before, and some our brand new. The
+goal of this is to greatly simplify how irq_domains work. With this
+series, instead of there being multiple different types of irq domains,
+each with different mapping rules, instead there is now only one time of
+irq_domain that contains both kinds of map; the linear map for irqs
+below a certain value, and the radix tree for large & sparse irq
+controllers. As you can see from the following diffstat, the result is a
+fair bit less code. It should make it easier to understand irqdomains
+too.
 
-I was pretty much able to reproduce this on my PA Semi PPC box. Funny
-thing is, when I type on the console, it makes progress. Anyway, it
-seems that powerpc has an issue with irq_work(). I'll try to get some
-time either tonight or next week to figure it out.
+This is the second posting of this series. I've added a couple more
+patches and dropped an unrelated patch to the versatile irq driver.
 
-Thanks!
+irqdomain: Relax failure path on setting up mappings
+irqdomain: Replace LEGACY mapping with LINEAR
+irqdomain: Add a name field
+irqdomain: merge linear and tree reverse mappings.
+irqdomain: Eliminate revmap type
+irqdomain: Clean up aftermath of irq_domain refactoring
+irqdomain: Beef up debugfs output
+irqdomain: Refactor irq_domain_associate_many()
+irqdomain: remove irq_domain_generate_simple()
+irqdomain: make irq_linear_revmap() a fast path again
+irqdomain: Include hwirq number in /proc/interrupts
 
--- Steve
+ arch/powerpc/platforms/cell/beat_interrupt.c |   2 +-
+ arch/powerpc/platforms/powermac/smp.c        |   2 +-
+ arch/x86/kernel/devicetree.c                 |   4 +-
+ include/linux/irqdomain.h                    | 142 +++++++------
+ kernel/irq/generic-chip.c                    |   6 +-
+ kernel/irq/irqdomain.c                       | 571 ++++++++++++++++----------------------------------
+ kernel/irq/proc.c                            |   2 +
+ 7 files changed, 261 insertions(+), 468 deletions(-)
 
-> > > 
-> > > I used git bisect and arrived at this commit:
-> > > 
-> > > 016a8d5be6ddcc72ef0432d82d9f6fa34f61b907
-> > > rcu: Don't call wakeup() with rcu_node structure ->lock held
-> > > 
-> > > With versions before that commit the system runs normally.
-> > 
-> > Odd, given that this fix was intended to prevent hangs.  Could you
-> > please send your .config?
-> > 
-> > 							Thanx, Paul
+I've pushed this series out to my git server at the following branch:
 
+git://git.secretlab.ca/git/linux irqdomain/test
+
+It depends on the tip tree's irq/for-arm branch and also Linus' mainline
+(they need to be merged). The branch above includes both.
+
+Cheers,
+g.
 
