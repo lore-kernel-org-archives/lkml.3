@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3FNOe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:34:26 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:38517 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab3FNOeZ (ORCPT
+	id S1753306Ab3FNOfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:35:34 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:42900 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab3FNOfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:34:25 -0400
+	Fri, 14 Jun 2013 10:35:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130612224952.GB8146@quad.lixom.net>
+In-Reply-To: <20130612225630.GC8146@quad.lixom.net>
 References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
-	<1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
-	<20130612224952.GB8146@quad.lixom.net>
-Date: Fri, 14 Jun 2013 16:34:24 +0200
-Message-ID: <CACmBeS0T1n92CcGN6kR+eBcFPuwsWc+PsUx7Cms+4vbeVFhQKg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: mach-moxart: add MOXA ART device tree files
+	<1371040448-28742-4-git-send-email-jonas.jensen@gmail.com>
+	<20130612225630.GC8146@quad.lixom.net>
+Date: Fri, 14 Jun 2013 16:35:32 +0200
+Message-ID: <CACmBeS0ra+32VVFtCpNiz0xrENFbTZFpnb3KppxiOfMiiKUXVQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: mach-moxart: add MOXA ART UART debug files
 From: Jonas Jensen <jonas.jensen@gmail.com>
 To: Olof Johansson <olof@lixom.net>
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org
+        linux-kernel@vger.kernel.org, arm@kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,82 +28,49 @@ Hi,
 
 Thanks for the replies.
 
-What isn't commented below should already be fixed.
-
-On 13 June 2013 00:49, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
+On 13 June 2013 00:56, Olof Johansson <olof@lixom.net> wrote:
+>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>> index 1d41908..a0e4a32 100644
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -422,6 +422,15 @@ choice
+>>                 Say Y here if you want kernel low-level debugging support
+>>                 on Allwinner A1X based platforms on the UART1.
+>>
+>> +    config DEBUG_MOXART_UART0
+>> +        bool "Kernel low-level debugging messages via MOXART UART0"
+>> +        depends on ARCH_MOXART
+>> +        help
+>> +          Say Y here if you want kernel low-level debugging support
+>> +          on MOXART based platforms on the UART0.
+>> +          select this to make sure "putc" in arch/arm/boot/compressed/debug.S
+>> +          uses arch/arm/include/debug/moxart.S:s "addruart" macro
 >
-> You should add a bindings description for the MOXA SoC platforms, similar to
-> how others do it, under Documentation/devicetree/bindings/arm/.
+> Looks like the last two lines above are leftovers? It's not super-helpful for
+> someone trying to figure out if they want this option or not; the first two
+> lines covers that quite nicely.
 
-The following is now added under Documentation:
+Leftovers removed. I only added them because I spent some time
+figuring out the call chain around putc.
 
- Documentation/devicetree/bindings/arm/moxart.txt   |    8 +++
- .../arm/moxart/moxart-interrupt-controller.txt     |   29 ++++++++++++
- .../bindings/arm/moxart/moxart-timer.txt           |   17 +++++++
-
-> Same goes for other device bindings below -- they all need to be added to the
-> bindings documentation. You might be better off removing some of them until you
-> post and merge the corresponding drivers.
-
-I'll remove them for now with the intent of adding them later. Maybe
-when (and if) all drivers are posted and merged.
-
->> +/dts-v1/;
->> +/include/ "moxart.dtsi"
+>> +++ b/arch/arm/include/debug/moxart.S
+>> @@ -0,0 +1,14 @@
+>> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms of the GNU General Public License as published by the
+>> + * Free Software Foundation; either version 2 of the License,
+>> + * or (at your option) any later version. */
 >> +
->> +/ {
->> +     model = "MOXA UC-7112-LX";
->> +     compatible = "moxa,moxart-uc-7112-lx";
->
-> Is there a generic board design / eval board that you can have as a fallback
-> compatible value? That way you won't have to add every board to the table in
-> the c file.
-
-There isn't really a generic board but the same can be accomplished by
-adding "moxa,moxart" to compatible? New boards can then be added
-without patching arch/arm/mach-moxart/moxart.c.
-
->> +     mxser@98200040 {
->> +             compatible = "moxa,moxart-mxser";
->> +             reg =   <0x98200040 0x00000080>,        /* UART "3" base */
->> +                             <0x982000e4 0x00000080>,        /* UART mode base */
->> +                             <0x982000c0 0x00000020>;        /* UART interrupt vector */
->
-> Are there other registers for other devices inbetween, or could you just do one
-> large memory area here?
-
-No, reg could simply be 0x98200040 to 0x982000e0. I split them out as
-documentation but those could be defined in the driver instead, also
-because it's sort of easier to assign values with of_iomap.
-
->> +             interrupts = <31 1>;
->> +     };
+>> +#define MOXART_UART_DEBUG_PHYS_BASE          0x98200000
 >> +
->> +     mac0: mac@90900000 {
->> +             compatible = "moxa,moxart-mac0";
->> +             reg =   <0x90900000 0x1000>,
->> +                             <0x80000050 0x5>;                       /* MAC address stored on flash */
+>> +.macro       addruart, rp, rv, tmp
+>> +     ldr     \rp, =MOXART_UART_DEBUG_PHYS_BASE       @ physical
 >
-> This is a pretty unusal way to indicate mac address location. While I suppose
-> it works, I'd like to get the device tree maintainers in the loop. ADding them
-> to cc.
->
-> Also, there should be a bindings doc for this device (and a driver)
+> You need to set rv here too.
 
-I'm removing ethernet until the driver is submitted. This allows me to
-submit bindings doc later?
-
-> I'm also surprised that you have a 5-byte mac address. 6 bytes is much more
-> common. :)
-
-That _is_ surprising :) Corrected to 6 bytes.
-
-> Finally, are the two MACs using the same driver? if so, using the same
-> compatible value makes more sense.
-
-Yes, using the same driver is the point. I see now they can use the
-same value, they'll still be probed from the DT entries.
+Done. Used to be set with the IO_ADDRESS macro I worked so hard to
+remove. Looking at other platforms, it seems accepted to set a
+hardcoded value here.
 
 
 Best regards,
