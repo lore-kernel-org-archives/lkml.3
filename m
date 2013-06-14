@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3FNSzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:55:46 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34596 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752973Ab3FNSzn (ORCPT
+	id S1753788Ab3FNSzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:55:08 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:52878 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab3FNSzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:55:43 -0400
-Message-ID: <1371236142.2726.43.camel@dabdike>
-Subject: [PATCH RESEND] fix WARNING: at kernel/cpu/idle.c:96
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Parisc List <linux-parisc@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 14 Jun 2013 11:55:42 -0700
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Jun 2013 14:55:05 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com, Andreas Gruenbacher <agruen@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: [PATCH 4/6] drbd: Ignore the exit code of a fence-peer handler if it returns too late
+Date: Fri, 14 Jun 2013 20:54:21 +0200
+Message-Id: <1371236063-17198-5-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
+References: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 48bbf44a96676ce6f520a408378730c976e9a11e Mon Sep 17 00:00:00 2001
-From: James Bottomley <JBottomley@Parallels.com>
-Date: Wed, 8 May 2013 14:05:34 -0700
-Subject: [PATCH] [PARISC] fix WARNING: at kernel/cpu/idle.c:96
+In case the connection was established and lost again before
+the a fence-peer handler returns, ignore the exit code of this
+instance. (And use the exit code of the later started instance)
 
-On PA-RISC (and presumably any other arch that doesn't implement its own
-arch_cpu_idle), we get this spurious boot warning.  The problem is that the
-way the idle task is selected initially using the weak arch_cpu_idle() in
-idle.c causes us to enter this place once with interrupts enabled.  Fix this
-by disabling interrupts in the weak arch_cpu_idle() code.
-
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
+ drivers/block/drbd/drbd_int.h   |    1 +
+ drivers/block/drbd/drbd_nl.c    |   15 +++++++++++++--
+ drivers/block/drbd/drbd_state.c |    4 +++-
+ 3 files changed, 17 insertions(+), 3 deletions(-)
 
-Thomas, I'm getting a bit impatient: this is a clear bug in the cpu idle
-code and we keep getting reports of this as a boot crash on parisc.  If
-you don't push it through your tree, I'll take it through the parisc
-one.
-
-
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index d5585f5..0a4d11e 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -58,6 +58,7 @@ void __weak arch_cpu_idle_dead(void) { }
- void __weak arch_cpu_idle(void)
- {
- 	cpu_idle_force_poll = 1;
-+	local_irq_enable();
- }
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index f943aac..f104328 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -832,6 +832,7 @@ struct drbd_tconn {			/* is a resource from the config file */
+ 	unsigned susp_nod:1;		/* IO suspended because no data */
+ 	unsigned susp_fen:1;		/* IO suspended because fence peer handler runs */
+ 	struct mutex cstate_mutex;	/* Protects graceful disconnects */
++	unsigned int connect_cnt;	/* Inc each time a connection is established */
  
- /*
-
+ 	unsigned long flags;
+ 	struct net_conf *net_conf;	/* content protected by rcu */
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 0936d6a..e25803b 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -417,6 +417,7 @@ static enum drbd_fencing_p highest_fencing_policy(struct drbd_tconn *tconn)
+ 
+ bool conn_try_outdate_peer(struct drbd_tconn *tconn)
+ {
++	unsigned int connect_cnt;
+ 	union drbd_state mask = { };
+ 	union drbd_state val = { };
+ 	enum drbd_fencing_p fp;
+@@ -428,6 +429,10 @@ bool conn_try_outdate_peer(struct drbd_tconn *tconn)
+ 		return false;
+ 	}
+ 
++	spin_lock_irq(&tconn->req_lock);
++	connect_cnt = tconn->connect_cnt;
++	spin_unlock_irq(&tconn->req_lock);
++
+ 	fp = highest_fencing_policy(tconn);
+ 	switch (fp) {
+ 	case FP_NOT_AVAIL:
+@@ -492,8 +497,14 @@ bool conn_try_outdate_peer(struct drbd_tconn *tconn)
+ 	   here, because we might were able to re-establish the connection in the
+ 	   meantime. */
+ 	spin_lock_irq(&tconn->req_lock);
+-	if (tconn->cstate < C_WF_REPORT_PARAMS && !test_bit(STATE_SENT, &tconn->flags))
+-		_conn_request_state(tconn, mask, val, CS_VERBOSE);
++	if (tconn->cstate < C_WF_REPORT_PARAMS && !test_bit(STATE_SENT, &tconn->flags)) {
++		if (tconn->connect_cnt != connect_cnt)
++			/* In case the connection was established and droped
++			   while the fence-peer handler was running, ignore it */
++			conn_info(tconn, "Ignoring fence-peer exit code\n");
++		else
++			_conn_request_state(tconn, mask, val, CS_VERBOSE);
++	}
+ 	spin_unlock_irq(&tconn->req_lock);
+ 
+ 	return conn_highest_pdsk(tconn) <= D_OUTDATED;
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 90c5be2..216d47b 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -1115,8 +1115,10 @@ __drbd_set_state(struct drbd_conf *mdev, union drbd_state ns,
+ 		drbd_thread_restart_nowait(&mdev->tconn->receiver);
+ 
+ 	/* Resume AL writing if we get a connection */
+-	if (os.conn < C_CONNECTED && ns.conn >= C_CONNECTED)
++	if (os.conn < C_CONNECTED && ns.conn >= C_CONNECTED) {
+ 		drbd_resume_al(mdev);
++		mdev->tconn->connect_cnt++;
++	}
+ 
+ 	/* remember last attach time so request_timer_fn() won't
+ 	 * kill newly established sessions while we are still trying to thaw
+-- 
+1.7.9.5
 
