@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab3FNGxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:53:21 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:19893 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751621Ab3FNGxU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:53:20 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 14 Jun 2013 14:53:14 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5gQG0DP9vff+kURemvb02abvnWOAIi0tlw
-Message-ID: <35FD53F367049845BC99AC72306C23D17B08729316@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
- <20130531084638.GB4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
- <20130531111305.GI4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
- <20130603095425.GA32242@mudshark.cambridge.arm.com>
-In-Reply-To: <20130603095425.GA32242@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752022Ab3FNHEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:04:38 -0400
+Received: from gate.alliedtelesyn.co.nz ([202.49.72.33]:38631 "HELO
+	gate.alliedtelesyn.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751651Ab3FNHEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 03:04:37 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jun 2013 03:04:36 EDT
+From: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Subject: [PATCH 1/1] ipv4: Fixed MD5 key lookups when adding/ removing MD5 to/ from TCP sockets.
+Date: Fri, 14 Jun 2013 18:56:31 +1200
+Message-Id: <1371192991-6937-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+MD5 key lookups on a given TCP socket were being performed
+incorrectly. This fix alters parameter inputs to the MD5
+lookup function tcp_md5_do_lookup, which is called by functions
+tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
+inputs the correct address and address family required to make
+a proper lookup.
 
-We have tested the patch,
-It seems ok in the stability test .
+Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+---
+ net/ipv4/tcp_ipv4.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-We have merged it into our main branch .
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index d09203c..04dfdc9 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1005,7 +1005,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct tcp_md5sig_info *md5sig;
+ 
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)addr, family);
+ 	if (key) {
+ 		/* Pre-existing entry - just update that one. */
+ 		memcpy(key->key, newkey, newkeylen);
+@@ -1050,7 +1050,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
+ 	struct tcp_md5sig_key *key;
+ 	struct tcp_md5sig_info *md5sig;
+ 
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)addr, family);
+ 	if (!key)
+ 		return -ENOENT;
+ 	hlist_del_rcu(&key->node);
+-- 
+1.7.9.5
 
-Thanks for your patch !
-
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: Monday, June 03, 2013 5:54 PM
-To: Wang, Yalin
-Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: A bug about system call on ARM
-
-On Mon, Jun 03, 2013 at 06:25:26AM +0100, Wang, Yalin wrote:
-> Hi  Will,
-> 
-> I have a question about this patch .
-> 
-> If the user space is thumb mode,
-> The PC should be rewind by 2 bytes,
-> So the fix_up code should be
-> 
-> Sub lr, lr, #2 .
-> 
-> 
-> Am I right ?
-
-No, because we don't have OABI-compat support for Thumb applications and force everything down the EABI path instead.
-
-Did you manage to test the patch?
-
-Will
