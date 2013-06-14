@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3FNQpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:45:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45174 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab3FNQpK (ORCPT
+	id S1752953Ab3FNQpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:45:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39215 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab3FNQp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:45:10 -0400
-Date: Fri, 14 Jun 2013 09:45:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH] power: Include additional information in pm_print_times
-Message-ID: <20130614164546.GA26107@kroah.com>
-References: <1371227625-3141-1-git-send-email-shuah.kh@samsung.com>
+	Fri, 14 Jun 2013 12:45:26 -0400
+Date: Fri, 14 Jun 2013 09:45:24 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] ARM: mmu: Add debug_ll_io_init() mappings to early
+ mappings
+Message-ID: <20130614164524.GA3399@codeaurora.org>
+References: <1371000607-1787-1-git-send-email-sboyd@codeaurora.org>
+ <CAL_JsqLJ7ZD9-VR+vgOZZ_q-RD6FCDvKPSNSCjAADxy94SU1Xg@mail.gmail.com>
+ <20130612172146.GB10823@codeaurora.org>
+ <51BB15DA.8020302@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371227625-3141-1-git-send-email-shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51BB15DA.8020302@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 10:33:45AM -0600, Shuah Khan wrote:
-> Change __device_suspend() path to include driver name and the ops that
-> get run for a device. This additional information helps associate driver
-> and the type of pm_ops the device uses in suspend path very quickly and
-> aid in debugging problems in suspend and resume paths. Added the additional
-> information at the end of the original message.
+On 06/14, Rob Herring wrote:
+> On 06/12/2013 12:21 PM, Stephen Boyd wrote:
+> > On 06/11, Rob Herring wrote:
+> >> On Tue, Jun 11, 2013 at 8:30 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >>
+> >>> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> >>> index e0d8565..04fe160 100644
+> >>> --- a/arch/arm/mm/mmu.c
+> >>> +++ b/arch/arm/mm/mmu.c
+> >>> @@ -938,8 +938,12 @@ static void __init pci_reserve_io(void)
+> >>>  #ifdef CONFIG_DEBUG_LL
+> >>>  void __init debug_ll_io_init(void)
+> >>>  {
+> >>> +       struct vm_struct *vm;
+> >>> +       struct static_vm *svm;
+> >>>         struct map_desc map;
+> >>>
+> >>> +       svm = early_alloc_aligned(sizeof(*svm), __alignof__(*svm));
+> >>> +
+> >>>         debug_ll_addr(&map.pfn, &map.virtual);
+> >>>         if (!map.pfn || !map.virtual)
+> >>>                 return;
+> >>> @@ -948,6 +952,15 @@ void __init debug_ll_io_init(void)
+> >>>         map.length = PAGE_SIZE;
+> >>>         map.type = MT_DEVICE;
+> >>>         create_mapping(&map);
+> >>> +
+> >>> +       vm = &svm->vm;
+> >>> +       vm->addr = (void *)map.virtual;
+> >>> +       vm->size = map.length;
+> >>> +       vm->phys_addr = __pfn_to_phys(map.pfn);
+> >>> +       vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+> >>> +       vm->flags |= VM_ARM_MTYPE(map.type);
+> >>> +       vm->caller = debug_ll_io_init;
+> >>> +       add_static_vm_early(svm);
+> >>
+> >> Can you use vm_reserve_area_early here or perhaps just call
+> >> iotable_init instead of create_mapping directly? I don't recall if
+> >> there was some reason I didn't do that.
+> >>
+> > 
+> > I had iotable_init() before but I thought it was better to have
+> > the ->caller argument say debug_ll_io_init() instead of
+> > iotable_init(). Shall I extract out the similar code?
 > 
-> dmesg output before the change:
+> Well, that's always welcome...
 > 
-> [  164.390032] calling  1-1+ @ 69, parent: usb1
-> [  164.390035] call 1-1+ returned 0 after 0 usecs
+> Another option would be use __builtin_return_address. That would change
+> vmallocinfo from showing iotable_init to the caller of iotable_init.
+> Arguably, knowing the caller would be better.
 > 
-> [  164.390352] calling  00:0a+ @ 2457, parent: pnp0
-> [  164.390357] call 00:0a+ returned 0 after 3 usecs
-> 
-> [  164.390361] calling  00:09+ @ 2457, parent: pnp0
-> [  164.496458] call 00:09+ returned 0 after 103500 usecs
-> 
-> [  164.496494] calling  00:05+ @ 2457, parent: pnp0
-> [  164.496511] call 00:05+ returned 0 after 14 usecs
-> 
-> dmesg output after the change:
-> 
-> [  317.295499] calling 1-1+ @ 71, parent: usb1 driver: usb type pm ops
-> [  317.297671] call 1-1+ returned 0 after 2117 usecs
-> 
-> [  318.134469] calling 00:0a+ @ 2941, parent: pnp0 driver: system legacy bus
-> [  318.134476] call 00:0a+ returned 0 after 5 usecs
-> 
-> [  317.292894] calling 00:09+ @ 2941, parent: pnp0 driver: tpm_tis legacy bus pm ops
-> [  317.397315] call 00:09+ returned 0 after 101967 usecs
-> 
-> [  317.397353] calling 00:05+ @ 2941, parent: pnp0 driver: rtc_cmos legacy bus pm ops
-> [  317.397369] call 00:05+ returned 0 after 13 usecs
-> 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> CC: Shuah Khan <shuahkhan@gmail.com>
-> ---
->  drivers/base/power/main.c |   35 ++++++++++++++++++++---------------
->  1 file changed, 20 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index 5a9b656..900266d 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -157,14 +157,15 @@ void device_pm_move_last(struct device *dev)
->  	list_move_tail(&dev->power.entry, &dpm_list);
->  }
->  
-> -static ktime_t initcall_debug_start(struct device *dev)
-> +static ktime_t initcall_debug_start(struct device *dev, char *info)
->  {
->  	ktime_t calltime = ktime_set(0, 0);
->  
->  	if (pm_print_times_enabled) {
-> -		pr_info("calling  %s+ @ %i, parent: %s\n",
-> +		pr_info("calling %s+ @ %i, parent: %s driver: %s %s\n",
->  			dev_name(dev), task_pid_nr(current),
 
-As we have a 'struct device' here, why aren't we just using dev_info()
-instead?  That will get us the "proper" structured logging information,
-and the needed information that you are looking for as well, right?
+Ok sounds fair. I'll use iotable_init() and send a follow-up
+patch to make iotable_init() more informative.
 
-thanks,
-
-greg k-h
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
