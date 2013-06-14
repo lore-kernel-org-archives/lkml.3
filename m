@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab3FNP5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:57:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19169 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930Ab3FNP5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:57:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,867,1363158000"; 
-   d="scan'208";a="329537243"
-Message-ID: <51BB3D78.2070907@intel.com>
-Date: Fri, 14 Jun 2013 08:57:44 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752071Ab3FNQCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:02:44 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:50751 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab3FNQCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:02:42 -0400
+Date: Fri, 14 Jun 2013 09:02:42 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Li Wang <liwang@ubuntukylin.com>
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel file system client support for punch hole
+In-Reply-To: <1371224186-4809-1-git-send-email-liwang@ubuntukylin.com>
+Message-ID: <alpine.DEB.2.00.1306140858460.26467@cobra.newdream.net>
+References: <1371224186-4809-1-git-send-email-liwang@ubuntukylin.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jan kara <jack@suse.cz>
-Subject: Re: ext4 extent status tree LRU locking
-References: <51B7B128.60909@intel.com> <20130614140940.GA20401@gmail.com>
-In-Reply-To: <20130614140940.GA20401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 07:09 AM, Zheng Liu wrote:
-> -	INIT_LIST_HEAD(&scanned);
-> -
->  	spin_lock(&sbi->s_es_lru_lock);
-> +	list_sort(NULL, &sbi->s_es_lru, ext4_inode_touch_time_cmp);
->  	list_for_each_safe(cur, tmp, &sbi->s_es_lru) {
+On Fri, 14 Jun 2013, Li Wang wrote:
+> This patch implements punch hole (fallocate) support for Ceph kernel
+> file system client.
+> We prepared two patches based on different kernel versions, one against
+> kernel 3.8-rc3, the other against the latest 3.10-rc5. It is because
+> unfortunately, we failed to set up a workable Ceph system with the client
+> based on the lastest code from Linux kernel git tree, for the server
+> side, we tried both the latest code from Ceph git tree and
+> the latest v0.61.3 release. The client will easily hang there without
+> any response, unless rebooting the machine.
 
-How long can this list get?  I have the feeling this might get a bit
-painful, especially on a NUMA machine.
+This is odd; was there anything in dmesg?  We test this nightly (currently 
+on 3.10-rc5).
 
-But, it definitely eliminates the spinlock contention that I was seeing.
- The top ext4 function in my profiles is way down under 1% of CPU time
-now.  Thanks for the quick response, and please let me know if you need
-any further testing.
+> We managed to set up a Ceph system with the client based on Linux 
+> kernel 3.8-rc3 and the server based on Ceph v0.61.3, so the patch 
+> against v3.8-rc3 has been under preliminary tests. However, the one 
+> against v3.10-rc5 not.
+
+Do they differ substantially?  The one against the latest kernel is what 
+we'll ultimately apply and merge.
+
+Comments inline...
+
+Thanks!
+sage
