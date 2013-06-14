@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab3FNTOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:14:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63542 "EHLO mx1.redhat.com"
+	id S1753595Ab3FNTRW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:17:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab3FNTN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:13:58 -0400
-Date: Fri, 14 Jun 2013 21:09:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] move exit_task_namespaces() outside of exit_notify()
-Message-ID: <20130614190949.GA8262@redhat.com>
+	id S1752784Ab3FNTRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 15:17:21 -0400
+Date: Fri, 14 Jun 2013 15:16:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v5 2/5] s390/vmcore: Use ELF header in new memory feature
+Message-ID: <20130614191649.GN12023@redhat.com>
+References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1370624161-2298-3-git-send-email-holzheu@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130614190915.GA8226@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1370624161-2298-3-git-send-email-holzheu@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exit_notify() does exit_task_namespaces() after
-forget_original_parent(). This was needed to ensure that ->nsproxy
-can't be cleared prematurely, an exiting child we are going to
-reparent can do do_notify_parent() and use the parent's (ours) pid_ns.
+On Fri, Jun 07, 2013 at 06:55:58PM +0200, Michael Holzheu wrote:
 
-However, after 32084504 "pidns: use task_active_pid_ns in
-do_notify_parent" ->nsproxy != NULL is no longer needed, we rely
-on task_active_pid_ns().
+[..]
+>  /*
+> - * Create kdump ELF core header in new kernel, if it has not been passed via
+> - * the "elfcorehdr" kernel parameter
+> + * Free ELF core header (new kernel)
+>   */
+> -static int setup_kdump_elfcorehdr(void)
+> +void elfcorehdr_free(void)
+>  {
 
-Move exit_task_namespaces() from exit_notify() to do_exit(), after
-exit_fs() and before exit_task_work().
+I was hoping that we will pass the value returned by elfcorehdr_alloc()
+here. Something along the lines of kmalloc() and kfree().
 
-This solves the problem reported by Andrey, free_ipc_ns()->shm_destroy()
-does fput() which needs task_work_add().
+elfcorehdr_addr = elfcorhdr_alloc();
+...
+...
+elfcorhdr_free(elfcorhdr_addr);
 
-Note: this particular problem can be fixed if we change fput(), and
-that change makes sense anyway. But there is another reason to move
-the callsite. The original reason for exit_task_namespaces() from
-the middle of exit_notify() was subtle and it has already gone away,
-now this looks confusing. And this allows us do simplify exit_notify(),
-we can avoid unlock/lock(tasklist) and we can use ->exit_state instead
-of PF_EXITING in forget_original_parent().
+Only odd part here is that arch will not set elfcorehdr_addr=NULL as there
+are functions like is_kdump_kernel() which depend on it being set.
 
-Reported-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Acked-by: Andrey Vagin <avagin@openvz.org>
----
- kernel/exit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+That might be a separate cleanup thought and we can put a comment after
+elfcorhdr_free() and explain that oddity.
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 8fc3c8f..c623cd3 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -644,7 +644,6 @@ static void exit_notify(struct task_struct *tsk, int group_dead)
- 	 *	jobs, send them a SIGHUP and then a SIGCONT.  (POSIX 3.2.2.2)
- 	 */
- 	forget_original_parent(tsk);
--	exit_task_namespaces(tsk);
- 
- 	write_lock_irq(&tasklist_lock);
- 	if (group_dead)
-@@ -790,6 +789,7 @@ void do_exit(long code)
- 	exit_shm(tsk);
- 	exit_files(tsk);
- 	exit_fs(tsk);
-+	exit_task_namespaces(tsk);
- 	exit_task_work(tsk);
- 	check_stack_usage();
- 	exit_thread();
--- 
-1.5.5.1
-
+Thanks
+Vivek
