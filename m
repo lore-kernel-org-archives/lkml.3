@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3FNXSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 19:18:20 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:47010 "EHLO 7of9.schinagl.nl"
+	id S1754008Ab3FNXSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 19:18:40 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:46998 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab3FNXSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 19:18:17 -0400
+	id S1753095Ab3FNXSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 19:18:15 -0400
 From: Oliver Schinagl <oliver+list@schinagl.nl>
 To: arnd@arndb.de, gregkh@linuxfoundation.org
 Cc: maxime.ripard@free-electrons.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, andy.shevchenko@gmail.com,
         linux@arm.linux.org.uk, linus.walleij@linaro.org,
         Oliver Schinagl <oliver@schinagl.nl>
-Subject: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Date: Sat, 15 Jun 2013 01:16:20 +0200
-Message-Id: <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl>
+Subject: [PATCH 2/2] Add sunxi-sid to dts for sun4i and sun5i
+Date: Sat, 15 Jun 2013 01:16:21 +0200
+Message-Id: <1371251781-17167-3-git-send-email-oliver+list@schinagl.nl>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl>
 References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl>
@@ -24,241 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oliver Schinagl <oliver@schinagl.nl>
 
-Allwinner has electric fuses (efuse) on their line of chips. This driver
-reads those fuses, seeds the kernel entropy and exports them as a sysfs node.
-
-These fuses are most likly to be programmed at the factory, encoding
-things like Chip ID, some sort of serial number etc and appear to be
-reasonable unique.
-While in theory, these should be writeable by the user, it will probably
-be inconvinient to do so. Allwinner recommends that a certain input pin,
-labeled 'efuse_vddq', be connected to GND. To write these fuses, 2.5 V
-needs to be applied to this pin.
-
-Even so, they can still be used to generate a board-unique mac from, board
-unique RSA key and seed the kernel RNG.
-
-Currently supported are the following known chips:
-Allwinner sun4i (A10)
-Allwinner sun5i (A10s, A13)
+This patch shall add support for the sunxi-sid driver to the device table for
+sun4i and sun5i.
 
 Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
 ---
- drivers/misc/eeprom/Kconfig     |  17 ++++
- drivers/misc/eeprom/Makefile    |   1 +
- drivers/misc/eeprom/sunxi_sid.c | 167 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 185 insertions(+)
- create mode 100644 drivers/misc/eeprom/sunxi_sid.c
+ arch/arm/boot/dts/sun4i-a10.dtsi | 5 +++++
+ arch/arm/boot/dts/sun5i-a13.dtsi | 5 +++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-index 04f2e1f..c7bc6ed 100644
---- a/drivers/misc/eeprom/Kconfig
-+++ b/drivers/misc/eeprom/Kconfig
-@@ -96,4 +96,21 @@ config EEPROM_DIGSY_MTC_CFG
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index e7ef619..bc71d64 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -213,6 +213,11 @@
+ 			reg = <0x01c20c90 0x10>;
+ 		};
  
- 	  If unsure, say N.
++		sid: eeprom@01c23800 {
++			compatible = "allwinner,sun4i-sid";
++			reg = <0x01c23800 0x10>;
++		};
++
+ 		uart0: serial@01c28000 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28000 0x400>;
+diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
+index 8ba65c1..c80c81b 100644
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -196,6 +196,11 @@
+ 			reg = <0x01c20c90 0x10>;
+ 		};
  
-+config EEPROM_SUNXI_SID
-+	tristate "Allwinner sunxi security ID support"
-+	depends on ARCH_SUNXI && SYSFS
-+	help
-+	  This is a driver for the 'security ID' available on various Allwinner
-+	  devices. Currently supported are:
-+		sun4i (A10)
-+		sun5i (A13)
++		sid: eeprom@01c23800 {
++			compatible = "allwinner,sun4i-sid";
++			reg = <0x01c23800 0x10>;
++		};
 +
-+	  Due to the potential risks involved with changing e-fuses,
-+	  this driver is read-only
-+
-+	  For more information visit http://linux-sunxi.org/SID
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called sunxi_sid.
-+
- endmenu
-diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
-index fc1e81d..9507aec 100644
---- a/drivers/misc/eeprom/Makefile
-+++ b/drivers/misc/eeprom/Makefile
-@@ -4,4 +4,5 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
- obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
- obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
- obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
-+obj-$(CONFIG_EEPROM_SUNXI_SID)	+= sunxi_sid.o
- obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
-diff --git a/drivers/misc/eeprom/sunxi_sid.c b/drivers/misc/eeprom/sunxi_sid.c
-new file mode 100644
-index 0000000..f014e1b
---- /dev/null
-+++ b/drivers/misc/eeprom/sunxi_sid.c
-@@ -0,0 +1,167 @@
-+/*
-+ * Copyright (c) 2013 Oliver Schinagl
-+ * http://www.linux-sunxi.org
-+ *
-+ * Oliver Schinagl <oliver@schinagl.nl>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * This driver exposes the Allwinner security ID, a 128 bit eeprom, in byte
-+ * sized chunks.
-+ */
-+
-+#include <linux/compiler.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/export.h>
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/kobject.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/random.h>
-+#include <linux/stat.h>
-+#include <linux/sysfs.h>
-+#include <linux/types.h>
-+
-+#define DRV_NAME "sunxi-sid"
-+#define DRV_VERSION "1.0"
-+
-+/* There are 4 32-bit keys */
-+#define SID_KEYS 4
-+/* and 4 byte sized keys per 32-bit key */
-+#define SID_SIZE (SID_KEYS * 4)
-+
-+
-+/* We read the entire key, but only return the requested byte. This is of
-+ * course slower then it could be and uses 4 times more reads as needed but
-+ * keeps code simpler.
-+ */
-+static u8 sunxi_sid_read_byte(const void __iomem *sid_reg_base,
-+			      const unsigned int offset)
-+{
-+	u32 sid_key = 0;
-+
-+	if (offset >= SID_SIZE)
-+		goto exit;
-+
-+	sid_key = ioread32be(sid_reg_base + round_down(offset, 4));
-+	sid_key >>= (offset % 4) * 8;
-+	sid_key &= 0xff;
-+	/* fall through */
-+
-+exit:
-+	return (u8)sid_key;
-+}
-+
-+static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-+			struct bin_attribute *attr, char *buf,
-+			loff_t pos, size_t size)
-+{
-+	int i;
-+	struct platform_device *pdev;
-+	void __iomem *sid_reg_base;
-+
-+	pdev = (struct platform_device *)to_platform_device(kobj_to_dev(kobj));
-+	sid_reg_base = (void __iomem *)platform_get_drvdata(pdev);
-+
-+	for (i = 0; i < size; i++) {
-+		if ((pos + i) >= SID_SIZE || (pos < 0))
-+			break;
-+		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
-+	}
-+
-+	return i;
-+}
-+
-+static const struct of_device_id sunxi_sid_of_match[] = {
-+	{
-+		.compatible = "allwinner,sun4i-sid",
-+	},
-+	{/* sentinel */}
-+};
-+MODULE_DEVICE_TABLE(of, sunxi_sid_of_match);
-+
-+static const struct bin_attribute sid_bin_attr = {
-+	.attr = {
-+		.name = "eeprom",
-+		.mode = S_IRUGO,
-+	},
-+	.size = SID_SIZE,
-+	.read = sid_read,
-+};
-+
-+static int sunxi_sid_remove(struct platform_device *pdev)
-+{
-+	device_remove_bin_file(&pdev->dev, &sid_bin_attr);
-+	dev_info(&pdev->dev, "sunxi SID driver unloaded\n");
-+
-+	return 0;
-+}
-+
-+static int __init sunxi_sid_probe(struct platform_device *pdev)
-+{
-+	int entropy[SID_SIZE], i;
-+	struct resource *res;
-+	void __iomem *sid_reg_base;
-+	int ret;
-+
-+	if (!pdev->dev.of_node) {
-+		dev_err(&pdev->dev, "No devicetree data available\n");
-+		ret = -ENXIO;
-+		goto exit;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(sid_reg_base)) {
-+		ret = PTR_ERR(sid_reg_base);
-+		goto exit;
-+	}
-+	platform_set_drvdata(pdev, sid_reg_base);
-+
-+	ret = device_create_bin_file(&pdev->dev, &sid_bin_attr);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Unable to create sysfs bin entry\n");
-+		goto exit;
-+	}
-+
-+	for (i = 0; i < SID_SIZE; i++)
-+		entropy[i] = sunxi_sid_read_byte(sid_reg_base, i);
-+	add_device_randomness(entropy, SID_SIZE);
-+	dev_info(&pdev->dev, "sunxi SID ver %s loaded\n", DRV_VERSION);
-+	ret = 0;
-+	/* fall through */
-+
-+exit:
-+	return ret;
-+}
-+
-+static struct platform_driver sunxi_sid_driver = {
-+	.probe = sunxi_sid_probe,
-+	.remove = sunxi_sid_remove,
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = sunxi_sid_of_match,
-+	},
-+};
-+module_platform_driver(sunxi_sid_driver);
-+
-+
-+MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
-+MODULE_DESCRIPTION("Allwinner sunxi security id driver");
-+MODULE_VERSION(DRV_VERSION);
-+MODULE_LICENSE("GPL");
+ 		uart1: serial@01c28400 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28400 0x400>;
 -- 
 1.8.1.5
 
