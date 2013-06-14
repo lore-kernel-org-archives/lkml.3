@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3FNQlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:41:51 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49676 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752549Ab3FNQli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:41:38 -0400
-Message-ID: <1371228095.31941.49.camel@joe-AO722>
-Subject: Re: [PATCH] power: Include additional information in pm_print_times
-From: Joe Perches <joe@perches.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, gregkh@linuxfoundation.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Date: Fri, 14 Jun 2013 09:41:35 -0700
-In-Reply-To: <1371227625-3141-1-git-send-email-shuah.kh@samsung.com>
-References: <1371227625-3141-1-git-send-email-shuah.kh@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753422Ab3FNQmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:42:17 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46995 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3FNQlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:41:08 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 5/7] arm: orion: use irq_get_trigger_type() to get IRQ flags
+Date: Fri, 14 Jun 2013 18:40:47 +0200
+Message-Id: <1371228049-27080-6-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 10:33 -0600, Shuah Khan wrote:
-> Change __device_suspend() path to include driver name and the ops that
-> get run for a device.
-[]
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-[]
-> -static ktime_t initcall_debug_start(struct device *dev)
-> +static ktime_t initcall_debug_start(struct device *dev, char *info)
->  {
->  	ktime_t calltime = ktime_set(0, 0);
->  
->  	if (pm_print_times_enabled) {
-> -		pr_info("calling  %s+ @ %i, parent: %s\n",
-> +		pr_info("calling %s+ @ %i, parent: %s driver: %s %s\n",
+Use irq_get_trigger_type() to get the IRQ trigger type flags
+instead calling irqd_get_trigger_type(irq_get_irq_data(irq))
 
-dev_info(dev, etc...
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ arch/arm/plat-orion/gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/plat-orion/gpio.c b/arch/arm/plat-orion/gpio.c
+index 249fe63..6816192 100644
+--- a/arch/arm/plat-orion/gpio.c
++++ b/arch/arm/plat-orion/gpio.c
+@@ -426,7 +426,7 @@ static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
+ 		if (!(cause & (1 << i)))
+ 			continue;
+ 
+-		type = irqd_get_trigger_type(irq_get_irq_data(irq));
++		type = irq_get_trigger_type(irq);
+ 		if ((type & IRQ_TYPE_SENSE_MASK) == IRQ_TYPE_EDGE_BOTH) {
+ 			/* Swap polarity (race with GPIO line) */
+ 			u32 polarity;
+-- 
+1.7.7.6
 
