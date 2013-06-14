@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab3FNGPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:15:50 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:47317 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751320Ab3FNGPs (ORCPT
+	id S1751824Ab3FNGSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:18:12 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:11227 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751409Ab3FNGSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:15:48 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] sched: scale the busy and this queue's per-task load before compare
-Date: Fri, 14 Jun 2013 14:14:19 +0800
-Message-ID: <1371190459-10365-3-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
-References: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
+	Fri, 14 Jun 2013 02:18:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQPAMe0ulF5LHzw/2dsb2JhbABagwmDBLcJhTYEAYEGF3SCIwEBBTocIxAIAxgJJQ8FJQMhE4gNuwEWjhSBHQeDYAOXQIodhyaBWIFJKg
+Date: Fri, 14 Jun 2013 16:18:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [Trivial PATCH 25/33] xfs: Convert use of typedef ctl_table to
+ struct ctl_table
+Message-ID: <20130614061807.GY29338@dastard>
+References: <cover.1371177118.git.joe@perches.com>
+ <1cd76f83a114f3bc5bf6450bc71098aa2c6baa33.1371177118.git.joe@perches.com>
+ <20130614052104.GX29338@dastard>
+ <1371188006.31941.45.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371188006.31941.45.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since for max_load and this_load, they are the value that already be
-scaled. It is not reasonble to get a minimum value between the scaled
-and non-scaled value, like below example.
-	min(sds->busiest_load_per_task, sds->max_load);
+On Thu, Jun 13, 2013 at 10:33:26PM -0700, Joe Perches wrote:
+> On Fri, 2013-06-14 at 15:21 +1000, Dave Chinner wrote:
+> > On Thu, Jun 13, 2013 at 07:37:50PM -0700, Joe Perches wrote:
+> > > This typedef is unnecessary and should just be removed.
+> > > 
+> > > Signed-off-by: Joe Perches <joe@perches.com>
+> > 
+> > Looks fine, Joe.
+> > 
+> > Acked-by: Dave Chinner <dchinner@redhat.com>
+> > 
+> > How do you want us to handle this? Push it through the XFS tree or
+> > are you going to send it on up yourself?
+> 
+> Hi Dave.
+> 
+> I'd prefer you pick it up.
+> 
+> These are all pretty trivial patches, but Jiri
+> typically doesn't pick them up for months.
+> 
+> I expect I'll have to resend whatever maintainers
+> don't pick up in 6 months or so.
 
-Also add comment over in what condition, there would be cpu power gain
-in move the load.
+No worries, I'll add it to my current 3.11 patchset.
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+Cheers,
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 28052fa..77a149c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4692,7 +4692,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- {
- 	unsigned long tmp, pwr_now = 0, pwr_move = 0;
- 	unsigned int imbn = 2;
--	unsigned long scaled_busy_load_per_task;
-+	unsigned long scaled_busy_load_per_task, scaled_this_load_per_task;
- 
- 	if (sds->this_nr_running) {
- 		sds->this_load_per_task /= sds->this_nr_running;
-@@ -4714,6 +4714,9 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- 		return;
- 	}
- 
-+	scaled_this_load_per_task = sds->this_load_per_task
-+					 * SCHED_POWER_SCALE;
-+	scaled_this_load_per_task /= sds->this->sgp->power;
- 	/*
- 	 * OK, we don't have enough imbalance to justify moving tasks,
- 	 * however we may be able to increase total CPU power used by
-@@ -4721,28 +4724,35 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- 	 */
- 
- 	pwr_now += sds->busiest->sgp->power *
--			min(sds->busiest_load_per_task, sds->max_load);
-+			min(scaled_busy_load_per_task, sds->max_load);
- 	pwr_now += sds->this->sgp->power *
--			min(sds->this_load_per_task, sds->this_load);
-+			min(scaled_this_load_per_task, sds->this_load);
- 	pwr_now /= SCHED_POWER_SCALE;
- 
- 	/* Amount of load we'd subtract */
- 	if (sds->max_load > scaled_busy_load_per_task) {
- 		pwr_move += sds->busiest->sgp->power *
--			min(sds->busiest_load_per_task,
-+			min(scaled_busy_load_per_task,
- 				sds->max_load - scaled_busy_load_per_task);
--		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
--			sds->this->sgp->power;
-+		tmp = scaled_busy_load_per_task;
- 	} else
--		tmp = (sds->max_load * sds->busiest->sgp->power) /
--			sds->this->sgp->power;
-+		tmp = sds->max_load;
- 
-+	/* Scale to this queue from busiest queue */
-+	tmp = (tmp * sds->busiest->sgp->power) /
-+		sds->this->sgp->power;
- 	/* Amount of load we'd add */
- 	pwr_move += sds->this->sgp->power *
--			min(sds->this_load_per_task, sds->this_load + tmp);
-+			min(scaled_this_load_per_task, sds->this_load + tmp);
- 	pwr_move /= SCHED_POWER_SCALE;
- 
- 	/* Move if we gain throughput */
-+	/*
-+	 * The only possibilty for below statement be true, is:
-+	 * sds->max_load is larger than scaled_busy_load_per_task, while,
-+	 * scaled_this_load_per_task is larger than sds->this_load plus by
-+	 * the scaled scaled_busy_load_per_task moved into this queue
-+	 */
- 	if (pwr_move > pwr_now)
- 		env->imbalance = sds->busiest_load_per_task;
- }
+Dave.
 -- 
-1.7.10.4
-
+Dave Chinner
+david@fromorbit.com
