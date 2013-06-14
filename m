@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab3FNN4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:56:12 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:47363 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab3FNN4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:56:07 -0400
+	id S1753339Ab3FNN4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:56:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37336 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173Ab3FNN4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 09:56:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when handling dock notification
+Date: Fri, 14 Jun 2013 16:05:48 +0200
+Message-ID: <3541509.09EeuLnmd2@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51BB2075.5040600@gmail.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <2448481.HbOiE9Npmq@vostro.rjw.lan> <51BB2075.5040600@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51B94C54.8070209@codeaurora.org>
-References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
- <1370873118-18468-3-git-send-email-draviv@codeaurora.org> <CALMYJDvXi7M8AgdJNpoL4H2-b3WBNZ3LLc2d8wkUMRJi5OQJQQ@mail.gmail.com>
- <51B94C54.8070209@codeaurora.org>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Fri, 14 Jun 2013 19:25:44 +0530
-Message-ID: <CALMYJDtqCHN5UYTwi+DrUrQw+6iNZMcu4q_X+5DO_OaiaCKT0A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] scsi: ufs: Set fDeviceInit flag to initiate device initialization
-To: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Cc: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:06 AM, Sujit Reddy Thumma
-<sthumma@codeaurora.org> wrote:
-> On 6/12/2013 11:04 AM, Santosh Y wrote:
->>>
->>>
->>>   /**
->>> + *  ufshcd_query_request() - API for issuing query request to the
->>> device.
->>> + *  @hba: ufs driver context
->>> + *  @query: params for query request
->>> + *  @descriptor: buffer for sending/receiving descriptor
->>> + *  @retries: number of times to try executing the command
->>> + *
->>> + *   All necessary fields for issuing a query and receiving its response
->>> + *   are stored in the UFS hba struct. We can use this method since we
->>> know
->>> + *   there is only one active query request or any internal command at
->>> all
->>> + *   times.
->>> + */
->>> +static int ufshcd_send_query_request(struct ufs_hba *hba,
->>> +                                       struct ufs_query_req *query,
->>> +                                       u8 *descriptor,
->>> +                                       struct ufs_query_res *response)
->>> +{
->>> +       int ret;
->>> +
->>> +       BUG_ON(!hba);
->>> +       if (!query || !response) {
->>> +               dev_err(hba->dev,
->>> +                       "%s: NULL pointer query = %p, response = %p\n",
->>> +                       __func__, query, response);
->>> +               return -EINVAL;
->>> +       }
->>> +
->>> +       mutex_lock(&hba->i_cmd.dev_cmd_lock);
->>> +       hba->i_cmd.query.request = query;
->>> +       hba->i_cmd.query.response = response;
->>> +       hba->i_cmd.query.descriptor = descriptor;
->>> +
->>> +       ret = ufshcd_exec_internal_cmd(hba, DEV_CMD_TYPE_QUERY,
->>> +                                       QUERY_REQ_TIMEOUT);
->>
->>
->> Can this be generic, as external query commands might also use it?
->
->
-> External query commands can call ufshcd_send_query_request() directly,
-> without going into hassle of taking mutex lock and filling internal cmd
-> structure.
->
+On Friday, June 14, 2013 09:53:57 PM Jiang Liu wrote:
+> On 06/14/2013 03:59 AM, Rafael J. Wysocki wrote:
+> > On Friday, June 14, 2013 12:32:25 AM Jiang Liu wrote:
+> >> Current ACPI glue logic expects that physical devices are destroyed
+> >> before destroying companion ACPI devices, otherwise it will break the
+> >> ACPI unbind logic and cause following warning messages:
+> >> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
+> >> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
+> >> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
+> >> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
+> >> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
+> >> for full log message.
+> > 
+> > So my question is, did we have this problem before commit 3b63aaa70e1?
+> > 
+> > If we did, then when did it start?  Or was it present forever?
+> I think this issue should exist before commit "PCI: acpiphp: Do not use
+> ACPI PCI subdriver mechanism". It may trace back to the changes to kill
+> acpi_pci_bind()/acpi_pci_unbind().
 
-I was not clear.
-It might be confusing that user issued query commands also use methods
-with name *internal_cmd*.
+I thought so.
 
->
->>
->>> +
->>> +       hba->i_cmd.query.request = NULL;
->>> +       hba->i_cmd.query.response = NULL;
->>> +       hba->i_cmd.query.descriptor = NULL;
->>> +       mutex_unlock(&hba->i_cmd.dev_cmd_lock);
->>> +
->>> +       return ret;
->>> +}
->>> +
->>> +/**
->>
->>
->>
->
-> --
-> Regards,
-> Sujit
+> >> Above warning messages are caused by following scenario:
+> >> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
+> >> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
+> >>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
+> >> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
+> >>    destroy physical devices, then destroys all affected ACPI devices.
+> >>    Everything seems perfect until now. But the acpiphp dock notification
+> >>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
+> >>    destroy affected physical devices.
+> > 
+> > Would not the solution be to modify it so that it didn't spawn the other
+> > task (T2), but removed the affected physical devices synchronously?
+> Yes, that's the way I'm going to fix this issue.
+> 
+> > 
+> >> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
+> >>    been destroyed.
+> >> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
+> >>    devices.
+> >>
+> >> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
+> >> in step 3 and physical devices are destroyed in step 5.
+> >>
+> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> >> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+> >> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >> Cc: Yinghai Lu <yinghai@kernel.org>
+> >> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> >> Cc: linux-pci@vger.kernel.org
+> >> Cc: linux-kernel@vger.kernel.org
+> >> Cc: stable@vger.kernel.org
+> >> ---
+> >> Hi Bjorn and Rafael,
+> >>      The recursive lock changes haven't been tested yet, need help
+> >> from Alexander for testing.
+> > 
+> > Well, let's just say I'm not a fan of recursive locks.  Is that unavoidable
+> > here?
+> Yeah, you are right, we encounter other deadlock issue here, as reported
+> by Alexander. So need to find new solution here.
 
+Can you please have a look at the patch I posted earlier in this thread?
+
+Rafael
 
 
 -- 
-~Santosh
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
