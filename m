@@ -1,101 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3FNQIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:08:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:18460 "EHLO mga14.intel.com"
+	id S1752537Ab3FNQKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:10:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42305 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab3FNQIH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:08:07 -0400
+	id S1751425Ab3FNQJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:09:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,867,1363158000"; 
-   d="scan'208";a="317095087"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: Problems with ixgbe driver
-Thread-Topic: Problems with ixgbe driver
-Thread-Index: AQHOaPa4Reipntw3xEiCFWdi/5Nblpk1XbFQ
-Date: Fri, 14 Jun 2013 16:08:04 +0000
-Message-ID: <87618083B2453E4A8714035B62D679924FDC4748@FMSMSX105.amr.corp.intel.com>
-References: <alpine.LRH.2.02.1306141031490.22892@praktifix.dwd.de>
-In-Reply-To: <alpine.LRH.2.02.1306141031490.22892@praktifix.dwd.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="353519449"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+References: <1371165333.27102.568.camel@schen9-DESK>
+	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Jun 2013 09:09:57 -0700
+Message-ID: <1371226197.27102.594.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On
->Behalf Of Holger Kiehl
->Sent: Friday, June 14, 2013 4:50 AM
->To: e1000-devel@lists.sf.net
->Cc: linux-kernel; netdev@vger.kernel.org
->Subject: Problems with ixgbe driver
->
->Hello,
->
->I have dual port 10Gb Intel network card on a 2 socket (Xeon X5690) with
->a total of 12 cores. Hyperthreading is enabled so there are 24 cores.
->The problem I have is that when other systems send large amount of data
->the network with the intel ixgbe driver gets very slow. Ping times go up
->from 0.2ms to appr. 60ms. Some FTP connections stall for more then 2
->minutes. What is strange is that heatbeat is configured on the system
->with a serial connection to another node and kernel always reports
+Added copy to mailing list which I forgot in my previous reply:
 
-If the network slows down so much there should be some indication in dmesg. Like Tx hangs perhaps.
-Can you provide the output of dmesg and ethtool -S from the offending interface after the issue occurs?
+On Thu, 2013-06-13 at 16:43 -0700, Davidlohr Bueso wrote:
+> On Thu, 2013-06-13 at 16:15 -0700, Tim Chen wrote:
+> > Ingo,
+> > 
+> > At the time of switching the anon-vma tree's lock from mutex to 
+> > rw-sem (commit 5a505085), we encountered regressions for fork heavy workload. 
+> > A lot of optimizations to rw-sem (e.g. lock stealing) helped to 
+> > mitigate the problem.  I tried an experiment on the 3.10-rc4 kernel 
+> > to compare the performance of rw-sem to one that uses mutex. I saw 
+> > a 8% regression in throughput for rw-sem vs a mutex implementation in
+> > 3.10-rc4.
+> 
+> Funny, just yesterday I was discussing this issue with Michel. While I
+> didn't measure the anon-vma mutex->rwem conversion, I did convert the
+> i_mmap_mutex to a rwsem and noticed a performance regression on a few
+> aim7 workloads on a 8 socket, 80 core box, when keeping all writers,
+> which should perform very similarly to a mutex. While some of these
+> workloads recovered when I shared the lock among readers (similar to
+> anon-vma), it left me wondering.
+> 
+> > For the experiments, I used the exim mail server workload in 
+> > the MOSBENCH test suite on 4 socket (westmere) and a 4 socket 
+> > (ivy bridge) with the number of clients sending mail equal 
+> > to number of cores.  The mail server will
+> > fork off a process to handle an incoming mail and put it into mail
+> > spool. The lock protecting the anon-vma tree is stressed due to
+> > heavy forking. On both machines, I saw that the mutex implementation 
+> > has 8% more throughput.  I've pinned the cpu frequency to maximum
+> > in the experiments.
+> 
+> I got some similar -8% throughput on high_systime and shared.
+> 
 
->
->     ttyS0: 4 input overrun(s)
->
->when lot of data is send and the ping time goes up.
->
->On the network there are three vlan's configured. The network is bonded
->(active-backup) together with another HP NC523SFP 10Gb 2-port Server
->Adapter. When I switch the network to this card the problem goes away.
->Also the ttyS0 input overruns disappear. Note also both network cards
->are connected to the same switch.
->
->The system uses Scientific Linux 6.4 with kernel.org kernel. I noticed
->this behavior with kernel 3.9.5 and 3.9.6-rc1. Before I did not notice
->it because traffic always went over the HP NC523SFP qlcnic card.
->
->In search for a solution to the problem I found a newer ixgbe driver
->3.15.1 (3.9.6-rc1. has 3.11.33-k) and tried that. But it has the same
->problem. However when I load the module as follows:
->
->     modprobe ixgbe RSS=8,8
->
->the problem goes away. The kernel.org ixgbe driver does not offer this
->option. Why? It seems that both drivers have problems on systems with
+That's interesting. Another perspective on rwsem vs mutex.
 
-If you are using newer kernel and ethtool version you can use `ethtool -L ethX combined Y` to control the number of queues per interface.
+> > 
+> > I've tried two separate tweaks to the rw-sem on 3.10-rc4.  I've tested 
+> > each tweak individually.
+> > 
+> > 1) Add an owner field when a writer holds the lock and introduce 
+> > optimistic spinning when an active writer is holding the semaphore.  
+> > It reduced the context switching by 30% to a level very close to the
+> > mutex implementation.  However, I did not see any throughput improvement
+> > of exim.
+> 
+> I was hoping that the lack of spin on owner was the main difference with
+> rwsems and am/was in the middle of implementing it. Could you send your
+> patch so I can give it a try on my workloads?
+> 
+> Note that there have been a few recent (3.10) changes to mutexes that
+> give a nice performance boost, specially on large systems, most
+> noticeably:
+> 
+> commit 2bd2c92c (mutex: Make more scalable by doing less atomic
+> operations)
+> 
+> commit 0dc8c730 (mutex: Queue mutex spinners with MCS lock to reduce
+> cacheline contention)
+> 
+> It might be worth looking into doing something similar to commit
+> 0dc8c730, in addition to the optimistic spinning.
 
->24 cpu's. But I cannot believe that I am the only one who noticed this,
->since ixgbe is widely used.
+Okay.  Here's my ugly experimental hack with some code lifted from optimistic spin 
+within mutex.  I've thought about doing the MCS lock thing but decided 
+to keep the first try on the optimistic spinning simple.
 
-We run traffic with multiple queues all the time and I don't think what you are reporting is a generic issue. Most likely it's something related to your setup/system.
+Matthew and I have also discussed possibly introducing some 
+limited spinning for writer when semaphore is held by read.  
+His idea was to have readers as well as writers set ->owner.  
+Writers, as now, unconditionally clear owner.  Readers clear 
+owner if sem->owner == current.  Writers spin on ->owner if ->owner 
+is non-NULL and still active. That gives us a reasonable chance 
+to spin since we'll be spinning on
+the most recent acquirer of the lock.
 
->
->It would really be nice if one could set the RSS=8,8 option for kernel.org
->ixgbe driver too. Or if someone could tell me where I can force the driver
->to Receive Side Scaling to 8 even if it means editing the source code.
->
->Below I have added some additional information. Please CC me since I
->am not subscribed to any of these lists. And please do not hesitate
->to ask if more information is needed.
+Tim
 
-I would suggest that you open up a bug at e1000.sf.net - describe your configuration and attach the relevant info (dmesg, ethtool -S, lspci etc). This would make it easier for us to follow.
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 0616ffe..331f5f0 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -29,6 +29,7 @@ struct rw_semaphore {
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+        struct lockdep_map      dep_map;
+ #endif
++       struct task_struct      *owner;
+ };
+ 
+ extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
+diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+index cfff143..916747f 100644
+--- a/kernel/rwsem.c
++++ b/kernel/rwsem.c
+@@ -12,6 +12,16 @@
+ 
+ #include <linux/atomic.h>
+ 
++static inline void rwsem_set_owner(struct rw_semaphore *sem)
++{
++       sem->owner = current;
++}
++
++static inline void rwsem_clear_owner(struct rw_semaphore *sem)
++{
++       sem->owner = NULL;
++}
++
+ /*
+  * lock for reading
+  */
+@@ -48,6 +58,7 @@ void __sched down_write(struct rw_semaphore *sem)
+        rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
+ 
+        LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++       rwsem_set_owner(sem);   
+ }
+ 
+ EXPORT_SYMBOL(down_write);
+@@ -59,8 +70,10 @@ int down_write_trylock(struct rw_semaphore *sem)
+ {
+        int ret = __down_write_trylock(sem);
+ 
+-       if (ret == 1)
++       if (ret == 1) {
+                rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
++               rwsem_set_owner(sem);   
++       }
+        return ret;
+ }
+ 
+@@ -86,6 +99,7 @@ void up_write(struct rw_semaphore *sem)
+        rwsem_release(&sem->dep_map, 1, _RET_IP_);
+ 
+        __up_write(sem);
++       rwsem_clear_owner(sem); 
+ }
+ 
+ EXPORT_SYMBOL(up_write);
+@@ -100,6 +114,7 @@ void downgrade_write(struct rw_semaphore *sem)
+         * dependency.
+         */
+        __downgrade_write(sem);
++       rwsem_clear_owner(sem); 
+ }
+ 
+ EXPORT_SYMBOL(downgrade_write);
+@@ -122,6 +137,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
+        rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
+ 
+        LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++       rwsem_set_owner(sem);   
+ }
+ 
+ EXPORT_SYMBOL(_down_write_nest_lock);
+@@ -141,6 +157,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+        rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
+ 
+        LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++       rwsem_set_owner(sem);   
+ }
+ 
+ EXPORT_SYMBOL(down_write_nested);
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 9be8a91..9d3edd5 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -49,6 +49,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+        sem->activity = 0;
+        raw_spin_lock_init(&sem->wait_lock);
+        INIT_LIST_HEAD(&sem->wait_list);
++       sem->owner = NULL;
+ }
+ EXPORT_SYMBOL(__init_rwsem);
+ 
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 19c5fa9..4dbd022 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -8,6 +8,7 @@
+  */
+ #include <linux/rwsem.h>
+ #include <linux/sched.h>
++#include <linux/sched/rt.h>
+ #include <linux/init.h>
+ #include <linux/export.h>
+ 
+@@ -27,6 +28,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+        sem->count = RWSEM_UNLOCKED_VALUE;
+        raw_spin_lock_init(&sem->wait_lock);
+        INIT_LIST_HEAD(&sem->wait_list);
++       sem->owner = NULL;
+ }
+ 
+ EXPORT_SYMBOL(__init_rwsem);
+@@ -187,12 +189,126 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+        return sem;
+ }
+ 
++static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
++{
++        int retval = true;
++
++       /* Spin only if active writer running */
++       if (!sem->owner)
++               return false;
++
++        rcu_read_lock();
++        if (sem->owner)
++                retval = sem->owner->on_cpu;
++        rcu_read_unlock();
++        /*
++         * if lock->owner is not set, the sem owner may have just acquired
++         * it and not set the owner yet, or the sem has been released, or
++         * reader active.
++         */
++        return retval;
++}
++
++static inline bool owner_running(struct rw_semaphore *lock, struct task_struct *owner)
++{
++        if (lock->owner != owner)
++                return false;
++
++        /*
++         * Ensure we emit the owner->on_cpu, dereference _after_ checking
++         * lock->owner still matches owner, if that fails, owner might
++         * point to free()d memory, if it still matches, the rcu_read_lock()
++         * ensures the memory stays valid.
++         */
++        barrier();
++
++        return owner->on_cpu;
++}
++
++static noinline
++int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
++{
++        rcu_read_lock();
++        while (owner_running(lock, owner)) {
++                if (need_resched())
++                        break;
++
++                arch_mutex_cpu_relax();
++        }
++        rcu_read_unlock();
++
++        /*
++         * We break out the loop above on need_resched() and when the
++         * owner changed, which is a sign for heavy contention. Return
++         * success only when lock->owner is NULL.
++         */
++        return lock->owner == NULL;
++}
++
++
++static inline int rwsem_try_write_lock(long count, bool need_lock, struct rw_semaphore *sem)
++{
++       if (!(count & RWSEM_ACTIVE_MASK)) {
++               /* Try acquiring the write lock. */
++               if (sem->count == RWSEM_WAITING_BIAS &&
++                   cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
++                           RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
++                       if (need_lock)
++                               raw_spin_lock_irq(&sem->wait_lock);
++                       if (!list_is_singular(&sem->wait_list))
++                               rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
++                       return 1;
++               }
++       }
++       return 0;
++}
++
++int rwsem_optimistic_spin(struct rw_semaphore *sem)
++{
++       struct  task_struct     *owner;
++
++       /* sem->wait_lock should not be held when attempting optimistic spinning */
++       if (!rwsem_can_spin_on_owner(sem))
++               return 0;
++
++       for (;;) {
++               owner = ACCESS_ONCE(sem->owner);
++               if (owner && !rwsem_spin_on_owner(sem, owner))
++                       break;
++
++               /* wait_lock will be acquired if write_lock is obtained */
++               if (rwsem_try_write_lock(sem->count, true, sem))
++                       return 1;
++
++               /*
++                 * When there's no owner, we might have preempted between the
++                 * owner acquiring the lock and setting the owner field. If
++                 * we're an RT task that will live-lock because we won't let
++                 * the owner complete.
++                 */
++                if (!owner && (need_resched() || rt_task(current)))
++                        break;
++
++                /*
++                 * The cpu_relax() call is a compiler barrier which forces
++                 * everything in this loop to be re-loaded. We don't need
++                 * memory barriers as we'll eventually observe the right
++                 * values at the cost of a few extra spins.
++                 */
++                arch_mutex_cpu_relax();
++
++       }       
++
++       return 0;
++}
++
+ /*
+  * wait until we successfully acquire the write lock
+  */
+ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ {
+        long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
++       bool try_optimistic_spin = true;
+        struct rwsem_waiter waiter;
+        struct task_struct *tsk = current;
+ 
+@@ -218,20 +334,16 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+        /* wait until we successfully acquire the lock */
+        set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+        while (true) {
+-               if (!(count & RWSEM_ACTIVE_MASK)) {
+-                       /* Try acquiring the write lock. */
+-                       count = RWSEM_ACTIVE_WRITE_BIAS;
+-                       if (!list_is_singular(&sem->wait_list))
+-                               count += RWSEM_WAITING_BIAS;
+-
+-                       if (sem->count == RWSEM_WAITING_BIAS &&
+-                           cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+-                                                       RWSEM_WAITING_BIAS)
+-                               break;
+-               }
++               if (rwsem_try_write_lock(count, false, sem))
++                       break;
+ 
+                raw_spin_unlock_irq(&sem->wait_lock);
+ 
++               /* do some optimistic spinning */
++               if (try_optimistic_spin && rwsem_optimistic_spin(sem))
++                       break;
++
++               try_optimistic_spin = false;
+                /* Block until there are no active lockers. */
+                do {
+                        schedule();
 
-Thanks,
-Emil
+
+
+
