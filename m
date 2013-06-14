@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3FNGTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:19:03 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:60471 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660Ab3FNGTA (ORCPT
+	id S1751765Ab3FNGaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:30:16 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:31909
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320Ab3FNGaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:19:00 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
+	Fri, 14 Jun 2013 02:30:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 14 Jun 2013 14:30:53 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] sched: reduce calculation effort in fix_small_imbalance
-Date: Fri, 14 Jun 2013 14:14:18 +0800
-Message-ID: <1371190459-10365-2-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
-References: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
+Subject: Re: [PATCH 1/4] ARM: cfa10036: Add USB0 OTG port
+Message-ID: <20130614063051.GE20513@S2101-09.ap.freescale.net>
+References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1371131025-12200-2-git-send-email-maxime.ripard@free-electrons.com>
+ <24013808.T2v7Fa5NMK@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <24013808.T2v7Fa5NMK@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually all below item could be repalced by scaled_busy_load_per_task
-	(sds->busiest_load_per_task * SCHED_POWER_SCALE)
-		/sds->busiest->sgp->power;
+On Fri, Jun 14, 2013 at 12:06:51AM +0200, Arnd Bergmann wrote:
+> On Thursday 13 June 2013 15:43:42 Maxime Ripard wrote:
+> > +
+> > +       ahb@80080000 {
+> > +               usb0: usb@80080000 {
+> > +                       pinctrl-names = "default";
+> > +                       pinctrl-0 = <&usb0_otg_cfa10036>;
+> > +                       status = "okay";
+> >                 };
+> >         };
+> > 
+> 
+> The patches all look good, just one trivial comment about the fragment above:
+> 
+> There is already a "usb0" label in the imx28.dtsi file for the same
+> node. When you refer to the node from a board.dts file, either leave
+> out the redundant label, or use it to simplify the statements above
+> to the brief version:
+> 
+> 	&usb0 {
+> 		pinctrl-names = "default";
+> 		pinctrl-0 = <&usb0_otg_cfa10036>;
+> 		status = "okay";
+> 	};
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+Yeah, I moved all imx board level dts files to use this.  But I was told
+by Olof that the change does not gain too much and looks like a churn.
+That's why I haven't made the same move for mxs.  So I will remove the
+redundant label when applying this patch.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c61a614..28052fa 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4727,20 +4727,17 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- 	pwr_now /= SCHED_POWER_SCALE;
- 
- 	/* Amount of load we'd subtract */
--	tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
--		sds->busiest->sgp->power;
--	if (sds->max_load > tmp)
-+	if (sds->max_load > scaled_busy_load_per_task) {
- 		pwr_move += sds->busiest->sgp->power *
--			min(sds->busiest_load_per_task, sds->max_load - tmp);
--
--	/* Amount of load we'd add */
--	if (sds->max_load * sds->busiest->sgp->power <
--		sds->busiest_load_per_task * SCHED_POWER_SCALE)
--		tmp = (sds->max_load * sds->busiest->sgp->power) /
--			sds->this->sgp->power;
--	else
-+			min(sds->busiest_load_per_task,
-+				sds->max_load - scaled_busy_load_per_task);
- 		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
- 			sds->this->sgp->power;
-+	} else
-+		tmp = (sds->max_load * sds->busiest->sgp->power) /
-+			sds->this->sgp->power;
-+
-+	/* Amount of load we'd add */
- 	pwr_move += sds->this->sgp->power *
- 			min(sds->this_load_per_task, sds->this_load + tmp);
- 	pwr_move /= SCHED_POWER_SCALE;
--- 
-1.7.10.4
+Shawn
 
