@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab3FNEUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 00:20:42 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:59471 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab3FNEUl (ORCPT
+	id S1751435Ab3FNEnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 00:43:42 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:40794 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3FNEnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 00:20:41 -0400
+	Fri, 14 Jun 2013 00:43:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130613104943.GD16677@laptop>
-References: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
-	<20130613104943.GD16677@laptop>
-Date: Fri, 14 Jun 2013 09:50:40 +0530
-Message-ID: <CAK9yfHxJGtC5i8SQ0TLCzvXQwgskxAX5rpFsbNAnQvkSWqW0VQ@mail.gmail.com>
-Subject: Re: [PATCH Resend 1/1] mfd: davinci_voicecodec: Convert to use devm_* APIs
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        Miguel Aguilar <miguel.aguilar@ridgerun.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <51BA98BF.5070403@huawei.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQX1xVJA3MZc4LndWU7kx0mxC-YPE1R8JD4W2-Gg9zq3Zw@mail.gmail.com>
+	<51BA7B3D.1020402@huawei.com>
+	<CAE9FiQX-jCZYPyxeHCp2h-6qx1GMyQYuaTk5JwZR6H1t4jRg9g@mail.gmail.com>
+	<51BA8524.9050507@huawei.com>
+	<CAN_LGv0AYvBpwQMcAkSqQVZHBA3Yfz=42_OGPxF032FQ-Ec36A@mail.gmail.com>
+	<51BA98BF.5070403@huawei.com>
+Date: Fri, 14 Jun 2013 10:43:39 +0600
+Message-ID: <CAN_LGv1FNj-38=tpOg6itCJ3DQLw2TQaJJdGqRwtx9A9eVcxKw@mail.gmail.com>
+Subject: Re: [BUGFIX 0/9] Fix bug 59501 and code improvement for dock driver
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: "Jiang Liu (Gerry)" <jiang.liu@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+2013/6/14 Jiang Liu (Gerry) <jiang.liu@huawei.com>:
 
-On 13 June 2013 16:19, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 12 Jun 2013, Sachin Kamat wrote:
->
->> devm_* APIs are device managed and make code simpler.
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
->> ---
->> CC'd Lee Jones
->
-> Can you resubmit this based on -rc5 please?
->
-> There have been some related changes since you wrote this patch.
+> What's the situation now? Could you please send out dmesgs\ioports\iomem?
+> Thanks!
 
-This patch is based on Samuel's mfd-next tree [1].
-This patch is dependent on your patch "mfd: davinci_voicecodec:
-Convert to managed resources for allocating memory"
-which is applied in mfd-next.
+The requested information has been added to
+https://bugzilla.kernel.org/show_bug.cgi?id=56531
 
-Please let me know which other tree you want me to rebase this patch
-on considering the dependency.
+The changes in pci_move_pcibios_add_bus_down.patch are not needed.
 
-[1] http://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git
+The radeon card in the dock station works after docking and restarting
+the X server, and its HD audio device works, too. Just for
+completeness, I have tested the CD-ROM drive, the USB adapters and the
+Ethernet card - they all work. IOW, everything works after docking.
+
+I did not test undocking, as that would surely hit
+https://bugzilla.kernel.org/show_bug.cgi?id=59681 and the hda_intel
+bug you mentioned in the first mail in this thread.
+
+Note that, for the initial series of patches, I still don't have any
+response to the lockdep warnings in
+https://lkml.org/lkml/2013/6/13/398
+
 -- 
-With warm regards,
-Sachin
+Alexander E. Patrakov
