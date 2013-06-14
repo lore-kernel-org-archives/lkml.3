@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3FNWrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:47:16 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:41264 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab3FNWrO (ORCPT
+	id S1753949Ab3FNWrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:47:51 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:57275 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab3FNWru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:47:14 -0400
+	Fri, 14 Jun 2013 18:47:50 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: <balbi@ti.com>, <richard.genoud@gmail.com>, <voice.shen@atmel.com>,
+        <vinod.koul@intel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: Device Tree update for 3.11 #2
+Date: Sat, 15 Jun 2013 00:47:47 +0200
+Message-ID: <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+Organization: atmel
 MIME-Version: 1.0
-In-Reply-To: <1371249104.1758.20.camel@buesod1.americas.hpqcorp.net>
-References: <1371165333.27102.568.camel@schen9-DESK>
-	<1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
-	<1371226197.27102.594.camel@schen9-DESK>
-	<1371249104.1758.20.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 14 Jun 2013 15:47:13 -0700
-Message-ID: <CANN689GtHw6dDeMd+2fuUz_dv_Z44XndVj2u-TNy70qkZWkpDw@mail.gmail.com>
-Subject: Re: Performance regression from switching lock to rw-sem for anon-vma tree
-From: Michel Lespinasse <walken@google.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 3:31 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> A few ideas that come to mind are avoiding taking the ->wait_lock and
-> avoid dealing with waiters when doing the optimistic spinning (just like
-> mutexes do).
->
-> I agree that we should first deal with the optimistic spinning before
-> adding the MCS complexity.
+Arnd, Olof,
 
-Maybe it would be worth disabling the MCS patch in mutex and comparing
-that to the rwsem patches ? Just to make sure the rwsem performance
-delta isn't related to that.
+Additional pull-request for AT91 DT patches.
+It contains the remaining part of the USB gadget pull-request that I sent you
+last week. After having split it, here is the DT part.
+It also contains the update of DMA bindings: it is the AT91 part the should go
+through arm-soc. I have included the patch (ARM: at91: dt: add header to define
+at_hdmac configuration) so that we avoid build errors whichever git tree
+(slave-dma or arm-soc) is merged first.
+A SPI DT patch for at91sam9x5 is also added.
+
+Thanks, best regards,
+
+The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
+
+  ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-dt
+
+for you to fetch changes up to 24ce10e142e7b063c4ae4437dd3b290fbfafe052:
+
+  ARM: at91: sam9m10g45ek add udc DT support (2013-06-15 00:15:22 +0200)
+
+----------------------------------------------------------------
+Again some nice DT updates for AT91:
+- DMA binding update with one patch shared with slave-dma tree
+- more SPI DT activation
+- enable the USB gadget HS for DT platforms
+
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (4):
+      ARM: at91: sam9x5 add udc DT support
+      ARM: at91: sam9x5ek add udc DT support
+      ARM: at91: sam9g45 add udc DT support
+      ARM: at91: sam9m10g45ek add udc DT support
+
+Ludovic Desroches (2):
+      ARM: at91: dt: add header to define at_hdmac configuration
+      ARM: at91: dt: switch DMA DT bindings to pre-processor
+
+Richard Genoud (1):
+      ARM: at91: dt: at91sam9x5: add SPI DMA client infos
+
+ arch/arm/boot/dts/at91sam9g45.dtsi     | 67 ++++++++++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9m10g45ek.dts |  5 ++
+ arch/arm/boot/dts/at91sam9n12.dtsi     | 11 +++--
+ arch/arm/boot/dts/at91sam9x5.dtsi      | 85 ++++++++++++++++++++++++++++++----
+ arch/arm/boot/dts/at91sam9x5ek.dtsi    |  5 ++
+ arch/arm/boot/dts/sama5d3.dtsi         | 19 ++++----
+ arch/arm/mach-at91/at91sam9g45.c       |  2 +
+ arch/arm/mach-at91/at91sam9x5.c        |  2 +
+ include/dt-bindings/dma/at91.h         | 27 +++++++++++
+ 9 files changed, 199 insertions(+), 24 deletions(-)
+ create mode 100644 include/dt-bindings/dma/at91.h
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Nicolas Ferre
