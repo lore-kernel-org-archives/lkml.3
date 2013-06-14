@@ -1,114 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab3FNJhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:37:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43093 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843Ab3FNJhP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:37:15 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 0/7] Convert GPIO Davinci to platform driver
-Thread-Topic: [PATCH v2 0/7] Convert GPIO Davinci to platform driver
-Thread-Index: AQHOaOId2keRY1h3e0qqO66QU0Rh0Zk08q9Q
-Date: Fri, 14 Jun 2013 09:35:38 +0000
-Deferred-Delivery: Fri, 14 Jun 2013 09:35:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EADAF06@DBDE04.ent.ti.com>
-References: <1371202481-14585-1-git-send-email-y>
-In-Reply-To: <1371202481-14585-1-git-send-email-y>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
+	id S1751844Ab3FNJlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:41:17 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:14156
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751268Ab3FNJlQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:41:16 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1155h)
+Message-ID: <1371202864.23304.0.camel@leyfoon-vm>
+Subject: Re: [PATCH] of/fdt: Add FDT address translation
+From: Ley Foon Tan <lftan@altera.com>
+To: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Kenneth Tan <cytan@altera.com>,
+        Walter Goossens <waltergoossens@home.nl>
+Date: Fri, 14 Jun 2013 17:41:04 +0800
+In-Reply-To: <1369388190-16365-1-git-send-email-lftan@altera.com>
+References: <1369388190-16365-1-git-send-email-lftan@altera.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Any comment or feedback for this patch?
 
-Sender mail id got corrupted. I will send another.
 
-Thanks
-Avinash
+On Fri, 2013-05-24 at 17:36 +0800, Ley Foon Tan wrote:
+> This patch adds address translation to fdt. It is needed when the early
+> console is connected to a simple-bus (bridge) that has address translation
+> enabled.
+> 
+> Walter Goossens have submitted first version of patch previously. This
+> patch resolved the feedback from first submission and some enhancements
+> on translation functions.
+> 
+> Reviewed-by: Walter Goossens <waltergoossens@home.nl>
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  drivers/of/fdt.c       |  188 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_fdt.h |    2 +
+>  2 files changed, 190 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 808be06..74cc1bc 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -695,6 +695,194 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+>  	/* break now */
+>  	return 1;
+>  }
+> +/**
+> + * flat_dt_translate_address - Translate an address using the ranges property
+> + *
+> + * This function converts address from "node address-space" to "parent address-
+> + * space"
+> + */
+> +static int __init flat_dt_translate_address(unsigned long node,
+> +		unsigned long parent, u64 *address)
+> +{
+> +	unsigned long size = 0;
+> +	__be32 *prop;
+> +	__be32 *ranges;
+> +	int size_cells = 0;
+> +	int addr_cells = 0;
+> +	int paddr_cells = OF_ROOT_NODE_ADDR_CELLS_DEFAULT;
+> +
+> +	ranges = of_get_flat_dt_prop(node, "ranges", &size);
+> +
+> +	if (!ranges) {
+> +		pr_warn("Address cannot be translated\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (!size) {
+> +		pr_debug("No translation possible/necessary\n");
+> +		return 0;
+> +	}
+> +
+> +	prop = of_get_flat_dt_prop(node, "#size-cells", NULL);
+> +	if (!prop)
+> +		return -EINVAL;
+> +	size_cells = be32_to_cpup(prop);
+> +
+> +	prop = of_get_flat_dt_prop(node, "#address-cells", NULL);
+> +	if (!prop)
+> +		return -EINVAL;
+> +	addr_cells = be32_to_cpup(prop);
+> +
+> +	if (parent) {
+> +		prop = of_get_flat_dt_prop(parent, "#address-cells", NULL);
+> +		if (prop)
+> +			paddr_cells = be32_to_cpup(prop);
+> +	}
+> +	if ((addr_cells <= 0) || (size_cells <= 0) ||
+> +		(addr_cells > 2) || (size_cells > 2) || (paddr_cells > 2)) {
+> +		pr_warn("Translation not possible in fdt. Invalid address.\n");
+> +		*address = 0;
+> +		return -1;
+> +	}
+> +
+> +	while (size > 0) {
+> +		u64 from, to, tsize;
+> +		from = be32_to_cpup(ranges++);
+> +		size -= 4;
+> +		if (addr_cells == 2) {
+> +			from += (((u64)be32_to_cpup(ranges++)) << 32);
+> +			size -= 4;
+> +		}
+> +		to = be32_to_cpup(ranges++);
+> +		size -= 4;
+> +		if (paddr_cells == 2) {
+> +			to += (((u64)be32_to_cpup(ranges++)) << 32);
+> +			size -= 4;
+> +		}
+> +		tsize = be32_to_cpup(ranges++);
+> +		size -= 4;
+> +		if (size_cells == 2) {
+> +			tsize += (((u64)be32_to_cpup(ranges++)) << 32);
+> +			size -= 4;
+> +		}
+> +		pr_debug("  From %llX To %llX Size %llX\n", from, to, tsize);
+> +		if ((*address >= from) && (*address < (from + tsize)))
+> +			*address += (to - from);
+> +	}
+> +	return 1;
+> +}
+> +
+> +static int __init of_scan_flat_dt_ranges(unsigned long *pnode,
+> +				unsigned long parent, unsigned long target,
+> +				u64 *address, int ignore)
+> +{
+> +	int rc = 0;
+> +	int depth = -1;
+> +	const char *pathp;
+> +	unsigned long p = *pnode;
+> +	do {
+> +		u32 tag = be32_to_cpup((__be32 *)p);
+> +
+> +		p += 4;
+> +		if (tag == OF_DT_END_NODE) {
+> +			if (depth--)
+> +				break;
+> +			else
+> +				continue;
+> +		}
+> +		if (tag == OF_DT_NOP)
+> +			continue;
+> +		if (tag == OF_DT_END)
+> +			break;
+> +		if (tag == OF_DT_PROP) {
+> +			u32 sz = be32_to_cpup((__be32 *)p);
+> +			p += 8;
+> +			if (be32_to_cpu(initial_boot_params->version) < 0x10)
+> +				p = ALIGN(p, sz >= 8 ? 8 : 4);
+> +			p += sz;
+> +			p = ALIGN(p, 4);
+> +			continue;
+> +		}
+> +		if (tag != OF_DT_BEGIN_NODE) {
+> +			pr_err("Invalid tag %x in flat device tree!\n", tag);
+> +			return -EINVAL;
+> +		}
+> +		pathp = (char *)p;
+> +		p = ALIGN(p + strlen(pathp) + 1, 4);
+> +		if ((*pathp) == '/')
+> +			pathp = kbasename(pathp);
+> +		if ((ignore == 0) && (p == target)) {
+> +			rc = 1;
+> +			ignore++;
+> +			pr_debug("Found target. Start address translation\n");
+> +		}
+> +		if (depth) {
+> +			int res;
+> +			*pnode = p;
+> +			res = of_scan_flat_dt_ranges(pnode, p, target,
+> +							address, ignore);
+> +			if (res < 0) {
+> +				/* Something bad happened */
+> +				return -1;
+> +			} else if (res > 0) {
+> +				/* Something good happened. Translate. */
+> +				rc++;
+> +				pr_debug("translate %08lX %s\n", p, pathp);
+> +				if (flat_dt_translate_address(p, parent,
+> +						address) < 0)
+> +					return -1;
+> +			}
+> +			p = *pnode;
+> +		} else
+> +			depth++;
+> +	} while (1);
+> +
+> +	*pnode = p;
+> +	return rc;
+> +}
+> +/**
+> + * of_get_flat_dt_address - get address from a node
+> + * @node: targeted node
+> + *
+> + * Returns address or OF_BAD_ADDR if error.
+> + */
+> +u64 __init of_get_flat_dt_address(unsigned long node)
+> +{
+> +	__be32 *valp;
+> +	u64 addr = OF_BAD_ADDR;
+> +	unsigned long sz;
+> +
+> +	valp = of_get_flat_dt_prop(node, "reg", &sz);
+> +	if (valp) {
+> +		if (sz == 1)
+> +			addr = be32_to_cpu(valp[0]);
+> +		 else if (sz == 2)
+> +			addr = (((u64)be32_to_cpu(valp[0]) << 32)) |
+> +				be32_to_cpu(valp[1]);
+> +	}
+> +	return addr;
+> +}
+> +
+> +/**
+> + * of_get_flat_dt_translated_address - get translated address from a node
+> + * @node: targeted node
+> + *
+> + * Returns translated address or OF_BAD_ADDR if error.
+> + */
+> +u64 __init of_get_flat_dt_translated_address(unsigned long node)
+> +{
+> +	unsigned long p = of_get_flat_dt_root();
+> +	u64 addr64;
+> +	int rc;
+> +
+> +	addr64 = of_get_flat_dt_address(node);
+> +	if (addr64 != OF_BAD_ADDR) {
+> +		rc = of_scan_flat_dt_ranges(&p, 0, node, &addr64, 0);
+> +		if (rc > 0)
+> +			return addr64;
+> +	}
+> +	return OF_BAD_ADDR;
+> +}
+>  
+>  /**
+>   * unflatten_device_tree - create tree of device_nodes from flat blob
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index ed136ad..48046ed 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -100,6 +100,8 @@ extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+>  extern void * early_init_dt_alloc_memory_arch(u64 size, u64 align);
+>  extern u64 dt_mem_next_cell(int s, __be32 **cellp);
+>  
+> +extern u64 __init of_get_flat_dt_address(unsigned long node);
+> +extern u64 __init of_get_flat_dt_translated_address(unsigned long node);
+>  /*
+>   * If BLK_DEV_INITRD, the fdt early init code will call this function,
+>   * to be provided by the arch code. start and end are specified as
 
-On Fri, Jun 14, 2013 at 15:04:34, y@symphony.india.ext.ti.com wrote:
-> From: Philip Avinash <avinashphilip@ti.com>
-> 
-> To support DT booting of da850 EVM, davinci gpio driver converted to platform
-> driver. Also when here, start using gpiolib API for gpio get/set functionalities.
-> Hence removing gpio inline functionalities. However usage of gpiolib API will
-> cause an additional software latencies.
-> 
-> In this patch series
-> - Cleaned gpio Davinci driver code with proper commenting style.
-> - Create platform driver for GPIO Davinci in da8xx and dmxxx platforms and
->   removed gpio related member updation in davinci_soc_info structure.
-> - Remove soc_info reference in the gpio davinci driver and start uses
->   gpiolib interface.
-> - gpio-tnetv107x driver also modified to use gpiolib API interface.
-> 
-> This series has been tested on da850 EVM for gpio interrupt generation.
-> This patch series is based on Linux 3.10-rc4 and is availabel at [1].
-> 
-> 1. https://github.com/avinashphilip/am335x_linux/tree/linux_davinci_v3.10_soc_gpio_v310-rc4
-> 
-> KV Sujith (2):
->   gpio: davinci: move to platform device
->   ARM: davinci: da8xx: creation of gpio platform device
-> 
-> Philip Avinash (5):
->   gpio: davinci: coding style correction
->   ARM: davinci: creation of gpio platform device for dmxxx platforms
->   ARM: davinci: da8xx: gpio device creation
->   ARM: davinci: dmxxx: gpio device creation
->   ARM: davinci: Start using gpiolib API inplace of inline functions
-> 
->  arch/arm/Kconfig                                  |    1 -
->  arch/arm/mach-davinci/board-da830-evm.c           |   19 ++-
->  arch/arm/mach-davinci/board-da850-evm.c           |   11 ++
->  arch/arm/mach-davinci/board-dm355-evm.c           |   27 ++++
->  arch/arm/mach-davinci/board-dm355-leopard.c       |    1 +
->  arch/arm/mach-davinci/board-dm365-evm.c           |   28 ++++
->  arch/arm/mach-davinci/board-dm644x-evm.c          |   26 ++++
->  arch/arm/mach-davinci/board-dm646x-evm.c          |   27 ++++
->  arch/arm/mach-davinci/board-neuros-osd2.c         |    1 +
->  arch/arm/mach-davinci/board-omapl138-hawk.c       |    2 +
->  arch/arm/mach-davinci/da830.c                     |    5 -
->  arch/arm/mach-davinci/da850.c                     |    5 -
->  arch/arm/mach-davinci/devices-da8xx.c             |   26 ++++
->  arch/arm/mach-davinci/devices.c                   |   13 ++
->  arch/arm/mach-davinci/dm355.c                     |    5 -
->  arch/arm/mach-davinci/dm365.c                     |    6 -
->  arch/arm/mach-davinci/dm644x.c                    |    5 -
->  arch/arm/mach-davinci/dm646x.c                    |    5 -
->  arch/arm/mach-davinci/include/mach/common.h       |    4 +
->  arch/arm/mach-davinci/include/mach/da8xx.h        |    1 +
->  arch/arm/mach-davinci/include/mach/gpio-davinci.h |   91 -------------
->  arch/arm/mach-davinci/include/mach/gpio.h         |   88 -------------
->  arch/arm/mach-davinci/tnetv107x.c                 |    2 +-
->  drivers/gpio/gpio-davinci.c                       |  144 ++++++++++++++-------
->  drivers/gpio/gpio-tnetv107x.c                     |    1 +
->  include/linux/platform_data/gpio-davinci.h        |   59 +++++++++
->  26 files changed, 341 insertions(+), 262 deletions(-)
->  delete mode 100644 arch/arm/mach-davinci/include/mach/gpio-davinci.h
->  delete mode 100644 arch/arm/mach-davinci/include/mach/gpio.h
->  create mode 100644 include/linux/platform_data/gpio-davinci.h
-> 
-> -- 
-> 1.7.9.5
-> 
-> 
 
