@@ -1,91 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3FNMKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:10:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20774 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab3FNMKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:10:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,866,1363158000"; 
-   d="scan'208";a="349828086"
-Message-ID: <51BB090F.5060002@linux.intel.com>
-Date: Fri, 14 Jun 2013 15:14:07 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752541Ab3FNMLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:11:05 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:39670 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab3FNMLC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 08:11:02 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/1] gpio driver for Intel Baytrail platforms
-References: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com> <CACRpkdbuGeciwhh=FC=ekZ4di11rdPve7g79aG5wNvJAbAxx1g@mail.gmail.com>
-In-Reply-To: <CACRpkdbuGeciwhh=FC=ekZ4di11rdPve7g79aG5wNvJAbAxx1g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+Date: Fri, 14 Jun 2013 14:11:01 +0200
+Message-ID: <CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        John Stultz <john.stultz@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 06:45 PM, Linus Walleij wrote:
-> On Thu, Jun 13, 2013 at 5:06 PM, Mathias Nyman
-> <mathias.nyman@linux.intel.com>  wrote:
+On 13 June 2013 19:56, Zoran Markovic <zoran.markovic@linaro.org> wrote:
+> This is a reworked implementation of wakelocks for the MMC core from
+> Android kernel, originally authored by Colin Cross and San Mehat.
+> The patch makes sure that whenever a MMC device is inserted/removed,
+> the system stays awake until it's reconfigured for the new state.
+> It is assumed that 1/2 second is sufficient for the system to start
+> the configuration action for the newly detected MMC device, which might
+> include e.g. mounting the hosted file system(s).
 >
->> After looking at the pinctrl subsystem that Linus W. suggested I think
->> pinctrl suits platforms that don't have firmware configuring the pins
->> before the operating system is started, or when pins need to be configured
->> on the fly.
->>
->> I'd still keep this driver under GPIO. Adding it to pinctrl
->> feels like adding more complexity without any bigger use for the features.
->>
->> We expect BIOS to set all pin configurations correctly.
->> The comments about pin muxing capabilities are removed from the driver.
->> The same firmware is anyway listing gpio resources in ACPI tables, so pin
->> configurations should be correct. (The previous indication in the driver
->> about the need to configure pins was mostly because we're working with early
->> develpment stage firmwares which still have small hickups)
+> The implementation uses wakeup_sources instead of wake_locks.
 >
-> This does not address the issue that you're reimplementing
-> the GPIO ranges from the pinctrl subsystem, and just hours ago
-> on the mailing list Christian Ruppert sent a patch making these
-> more flexible I think.
->
-> Subject "Add pin-list based GPIO ranges", please check this
-> patch, isn't that exactly the helper infrastructure you need?
+> Feedback on the approach is greatly appreciated, in particular for the
+> 1/2 second extension peroid.
 
-It fits better yes, with that patch I could use
-struct pinctrl_gpio_range instead of the custom struct gpio_bank.
-The .name entry can be used for acpi_id to identify the range.
+Hi Zoran,
 
-Also the gpio_to_pad() function is usable.
+I am not sure I understand why this patch is needed. When a new card
+is inserted/removed and the upper levels gets notification about the
+new card, triggering the mounting/un-mounting of the file system, why
+should it be the lowest layer (mmc) that prevents the platform from
+enter suspend/sleep? Why do we need to prevent it at all?
+
+Note that notifier handling in mmc_pm_notify, was if I remember
+correctly, not completely developed when the original version of this
+patch was being discussed. mmc_pm_notify prevents cards from being
+inserted/removed in the middle of suspend->resume sequence, is that
+not enough?
+
+Kind regards
+Ulf Hansson
 
 >
-> Of course you can make an argument that is is a good idea to
-> duplicate this, but I want that to be explicit. To me it is still
-> quite obvious that these gpio to pad mappings are laid out
-> according to the actual hardware registers, and that the actual
-> hardware registers pertain to pads rather than what we call
-> "GPIOs", which in kernel terms are only some line.
+> Cc: San Mehat <san@google.com>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: Johan Rudholm <johan.rudholm@stericsson.com>
+> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+> Cc: Konstantin Dorfman <kdorfman@codeaurora.org>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> [<zoran.markovic@linaro.org>: tweaked commit message, reworked to use
+> wakeup_source_register/unregister instead of wakeup_source_init/trash,
+> added the missing __pm_relax() for non-removable devices in mmc_rescan().]
+> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+> ---
+>  drivers/mmc/core/core.c  |   31 +++++++++++++++++++++++++------
+>  drivers/mmc/core/host.c  |    7 +++++++
+>  include/linux/mmc/host.h |    2 ++
+>  3 files changed, 34 insertions(+), 6 deletions(-)
 >
-
-That is true, it's about mapping between layout of hw registers.
-I guess it's a tradeoff between more
-
-> I would still vote to put the thing in drivers/pinctrl anyway,
-> I am perfectly happy to house pure GPIO drivers there,
-> especially if they're obviously masking something more
-> pinctrl-like in reality, it will be way more flexible the day that
-> you just want to add "this one little quirk for this pin config
-> thing", then it'll fit just fine.
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index c40396f..d5230c7 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/log2.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/pm_wakeup.h>
+>  #include <linux/suspend.h>
+>  #include <linux/fault-inject.h>
+>  #include <linux/random.h>
+> @@ -1656,6 +1657,7 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
+>         spin_unlock_irqrestore(&host->lock, flags);
+>  #endif
+>         host->detect_change = 1;
+> +       __pm_stay_awake(host->ws);
+>         mmc_schedule_delayed_work(&host->detect, delay);
+>  }
 >
-
-I'm fine with having it under drivers/pinctrl as a GPIO driver, either 
-just as it is, or by using the pinctrl_gpio_range structure and helper 
-functions such as gpio_to_pad(), once Christian Rupperts patch is accepted.
-
-any naming preference?
-gpio-baytrail.c
-pinctrl-gpio-baytrail.c
-pinctrl-baytrail.c
-
--Mathias
+> @@ -2351,13 +2353,16 @@ void mmc_rescan(struct work_struct *work)
+>         struct mmc_host *host =
+>                 container_of(work, struct mmc_host, detect.work);
+>         int i;
+> +       bool extend_wakeup = false;
+>
+>         if (host->rescan_disable)
+>                 return;
+>
+>         /* If there is a non-removable card registered, only scan once */
+> -       if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered)
+> +       if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered) {
+> +               __pm_relax(host->ws);
+>                 return;
+> +       }
+>         host->rescan_entered = 1;
+>
+>         mmc_bus_get(host);
+> @@ -2400,16 +2405,27 @@ void mmc_rescan(struct work_struct *work)
+>
+>         mmc_claim_host(host);
+>         for (i = 0; i < ARRAY_SIZE(freqs); i++) {
+> -               if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min)))
+> +               if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min))) {
+> +                       /* stay awake extra time to process detected device */
+> +                       extend_wakeup = true;
+>                         break;
+> +               }
+>                 if (freqs[i] <= host->f_min)
+>                         break;
+>         }
+>         mmc_release_host(host);
+>
+>   out:
+> -       if (host->caps & MMC_CAP_NEEDS_POLL)
+> +       if (extend_wakeup)
+> +               /* extra 1/2 second should be enough, hopefully */
+> +               __pm_wakeup_event(host->ws, MSEC_PER_SEC/2);
+> +       else
+> +               __pm_relax(host->ws);
+> +
+> +       if (host->caps & MMC_CAP_NEEDS_POLL) {
+> +               __pm_stay_awake(host->ws);
+>                 mmc_schedule_delayed_work(&host->detect, HZ);
+> +       }
+>  }
+>
+>  void mmc_start_host(struct mmc_host *host)
+> @@ -2433,7 +2449,8 @@ void mmc_stop_host(struct mmc_host *host)
+>  #endif
+>
+>         host->rescan_disable = 1;
+> -       cancel_delayed_work_sync(&host->detect);
+> +       if (cancel_delayed_work_sync(&host->detect))
+> +               __pm_relax(host->ws);
+>         mmc_flush_scheduled_work();
+>
+>         /* clear pm flags now and let card drivers set them as needed */
+> @@ -2628,7 +2645,8 @@ int mmc_suspend_host(struct mmc_host *host)
+>  {
+>         int err = 0;
+>
+> -       cancel_delayed_work(&host->detect);
+> +       if (cancel_delayed_work(&host->detect))
+> +               __pm_relax(host->ws);
+>         mmc_flush_scheduled_work();
+>
+>         mmc_bus_get(host);
+> @@ -2741,7 +2759,8 @@ int mmc_pm_notify(struct notifier_block *notify_block,
+>                 spin_lock_irqsave(&host->lock, flags);
+>                 host->rescan_disable = 1;
+>                 spin_unlock_irqrestore(&host->lock, flags);
+> -               cancel_delayed_work_sync(&host->detect);
+> +               if (cancel_delayed_work_sync(&host->detect))
+> +                       __pm_relax(host->ws);
+>
+>                 if (!host->bus_ops || host->bus_ops->suspend)
+>                         break;
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index 2a3593d..3cbb3d7 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -452,6 +452,11 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
+>         host->class_dev.class = &mmc_host_class;
+>         device_initialize(&host->class_dev);
+>
+> +       host->ws = wakeup_source_register(
+> +               kasprintf(GFP_KERNEL, "%s_detect", mmc_hostname(host)));
+> +       if (!host->ws)
+> +               goto free;
+> +
+>         mmc_host_clk_init(host);
+>
+>         mutex_init(&host->slot.lock);
+> @@ -555,6 +560,8 @@ void mmc_free_host(struct mmc_host *host)
+>         spin_lock(&mmc_host_lock);
+>         idr_remove(&mmc_host_idr, host->index);
+>         spin_unlock(&mmc_host_lock);
+> +       wakeup_source_unregister(host->ws);
+> +       host->ws = NULL;
+>
+>         put_device(&host->class_dev);
+>  }
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index e326ae2..9dc2dd6 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -15,6 +15,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/device.h>
+>  #include <linux/fault-inject.h>
+> +#include <linux/pm_wakeup.h>
+>
+>  #include <linux/mmc/core.h>
+>  #include <linux/mmc/pm.h>
+> @@ -329,6 +330,7 @@ struct mmc_host {
+>         int                     claim_cnt;      /* "claim" nesting count */
+>
+>         struct delayed_work     detect;
+> +       struct wakeup_source    *ws;
+>         int                     detect_change;  /* card detect flag */
+>         struct mmc_slot         slot;
+>
+> --
+> 1.7.9.5
+>
