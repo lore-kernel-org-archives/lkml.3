@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab3FNVbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:31:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34381 "EHLO
+	id S1753797Ab3FNVbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:31:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34391 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab3FNVbg (ORCPT
+	with ESMTP id S1753705Ab3FNVbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:31:36 -0400
-Date: Fri, 14 Jun 2013 14:31:14 -0700
+	Fri, 14 Jun 2013 17:31:41 -0400
+Date: Fri, 14 Jun 2013 14:31:23 -0700
 From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-b19feb388cdee35bf991e4977d1936f6d23c75a8@git.kernel.org>
+Message-ID: <tip-5a2c7ccc51a2bc42d96e05dd3d920ef0c09eb730@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
-        jacob.shin@amd.com, trenn@suse.de, tglx@linutronix.de,
-        hpa@linux.intel.com, rjw@sisk.pl
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        trenn@suse.de, hpa@linux.intel.com, rjw@sisk.pl
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
-        jacob.shin@amd.com, tglx@linutronix.de, trenn@suse.de, rjw@sisk.pl,
-        hpa@linux.intel.com
-In-Reply-To: <1371128589-8953-4-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-4-git-send-email-tangchen@cn.fujitsu.com>
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        trenn@suse.de, rjw@sisk.pl, hpa@linux.intel.com
+In-Reply-To: <1371128589-8953-5-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-5-git-send-email-tangchen@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, ACPI, mm: Kill max_low_pfn_mapped
-Git-Commit-ID: b19feb388cdee35bf991e4977d1936f6d23c75a8
+Subject: [tip:x86/mm] x86, ACPI:
+  Search buffer above 4GB in a second try for acpi initrd table override
+Git-Commit-ID: 5a2c7ccc51a2bc42d96e05dd3d920ef0c09eb730
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,111 +30,51 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:31:20 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:31:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b19feb388cdee35bf991e4977d1936f6d23c75a8
-Gitweb:     http://git.kernel.org/tip/b19feb388cdee35bf991e4977d1936f6d23c75a8
+Commit-ID:  5a2c7ccc51a2bc42d96e05dd3d920ef0c09eb730
+Gitweb:     http://git.kernel.org/tip/5a2c7ccc51a2bc42d96e05dd3d920ef0c09eb730
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 21:02:50 +0800
+AuthorDate: Thu, 13 Jun 2013 21:02:51 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jun 2013 14:03:37 -0700
+CommitDate: Fri, 14 Jun 2013 14:03:49 -0700
 
-x86, ACPI, mm: Kill max_low_pfn_mapped
+x86, ACPI: Search buffer above 4GB in a second try for acpi initrd table override
 
-Now we have pfn_mapped[] array, and max_low_pfn_mapped should not
-be used anymore. Users should use pfn_mapped[] or just
-1UL<<(32-PAGE_SHIFT) instead.
+Now we only search buffer for new acpi tables in initrd under
+4GB. In some case, like user use memmap to exclude all low ram,
+we may not find range for it under 4GB. So do second try to
+search for buffer above 4GB.
 
-The only user of max_low_pfn_mapped is ACPI_INITRD_TABLE_OVERRIDE.
-We could change to use 1U<<(32_PAGE_SHIFT) with it, aka under 4G.
+Since later accessing to the tables is using early_ioremap(),
+using memory above 4GB is OK.
 
-Known problem:
-There is another user of max_low_pfn_mapped: i915 device driver.
-But the code is commented out by a pair of "#if 0 ... #endif".
-Not sure why the driver developers want to do that.
-
--v2: Leave alone max_low_pfn_mapped in i915 code according to tj.
-
-Suggested-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371128589-8953-4-git-send-email-tangchen@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/1371128589-8953-5-git-send-email-tangchen@cn.fujitsu.com
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: linux-acpi@vger.kernel.org
 Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/page_types.h | 1 -
- arch/x86/kernel/setup.c           | 4 +---
- arch/x86/mm/init.c                | 4 ----
- drivers/acpi/osl.c                | 6 +++---
- 4 files changed, 4 insertions(+), 11 deletions(-)
+ drivers/acpi/osl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index 54c9787..b012b82 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -43,7 +43,6 @@
- 
- extern int devmem_is_allowed(unsigned long pagenr);
- 
--extern unsigned long max_low_pfn_mapped;
- extern unsigned long max_pfn_mapped;
- 
- static inline phys_addr_t get_max_mapped(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 66ab495..6ca5f2c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -112,13 +112,11 @@
- #include <asm/prom.h>
- 
- /*
-- * max_low_pfn_mapped: highest direct mapped pfn under 4GB
-- * max_pfn_mapped:     highest direct mapped pfn over 4GB
-+ * max_pfn_mapped:     highest direct mapped pfn
-  *
-  * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
-  * represented by pfn_mapped
-  */
--unsigned long max_low_pfn_mapped;
- unsigned long max_pfn_mapped;
- 
- #ifdef CONFIG_DMI
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index eaac174..8554656 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -313,10 +313,6 @@ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
- 	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
- 
- 	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
--
--	if (start_pfn < (1UL<<(32-PAGE_SHIFT)))
--		max_low_pfn_mapped = max(max_low_pfn_mapped,
--					 min(end_pfn, 1UL<<(32-PAGE_SHIFT)));
- }
- 
- bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
 diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e721863..93e3194 100644
+index 93e3194..42c48fc 100644
 --- a/drivers/acpi/osl.c
 +++ b/drivers/acpi/osl.c
-@@ -624,9 +624,9 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	if (table_nr == 0)
- 		return;
- 
--	acpi_tables_addr =
--		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
--				       all_tables_size, PAGE_SIZE);
-+	/* under 4G at first, then above 4G */
-+	acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
+@@ -627,6 +627,10 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	/* under 4G at first, then above 4G */
+ 	acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
+ 					all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr)
++		acpi_tables_addr = memblock_find_in_range(0,
++					~(phys_addr_t)0,
 +					all_tables_size, PAGE_SIZE);
  	if (!acpi_tables_addr) {
  		WARN_ON(1);
