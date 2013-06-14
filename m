@@ -1,146 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab3FNQD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:03:29 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:32994 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab3FNQD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:03:28 -0400
+	id S1752610Ab3FNQE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:04:59 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:26545 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab3FNQE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:04:58 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        <linux-mips@linux-mips.org>
+Subject: [PATCH v2] MIPS: Reduce _NSIG from 128 to 127 to avoid BUG_ON
+Date: Fri, 14 Jun 2013 17:03:45 +0100
+Message-ID: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <20130614122608.GK5146@linux.vnet.ibm.com>
-References: <20130613131057.GA15997@somewhere>
-	<20130613140207.GW133453@redhat.com>
-	<20130613142210.GD16339@somewhere>
-	<20130613144515.GX133453@redhat.com>
-	<20130613145601.GE16339@somewhere>
-	<20130613152059.GA133453@redhat.com>
-	<1371138491.9844.288.camel@gandalf.local.home>
-	<CAK7N6vqtnoNzRNodN6T0wysMYgPD+-SgPZLXAvRu3px7TUUvHQ@mail.gmail.com>
-	<1371143779.9844.297.camel@gandalf.local.home>
-	<CAK7N6vqOQijcZEEuJKFbHKEaULnx8bCkaxSpBaiTe1+VGT+D5w@mail.gmail.com>
-	<20130614122608.GK5146@linux.vnet.ibm.com>
-Date: Fri, 14 Jun 2013 21:33:27 +0530
-Message-ID: <CAK7N6vrCuWd4Q2hquJK9-HED4xyjC7hsCOUdvK3dHEetatzcfw@mail.gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-From: anish singh <anish198519851985@gmail.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_14_17_04_55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Paul & Steve for replying.
-On Fri, Jun 14, 2013 at 5:56 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Jun 14, 2013 at 09:47:31AM +0530, anish singh wrote:
->> On Thu, Jun 13, 2013 at 10:46 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, 2013-06-13 at 21:51 +0530, anish singh wrote:
->> >
->> >> > The concept behind full dynamic ticks is very easy. When you set a given
->> >> > CPU(s) to dynamic tick, when it only has a single task scheduled on that
->> >> > CPU, it disables the periodic tick. This removes essentially *all*
->> >>
->> >> Documentation/timers/highres.txt states that
->> >> hrtimer_stop_sched_tick() is called when a CPU goes into idle state.Would
->> >> you mind elaborating "single task scheduled on that CPU"?
->> >> I am bit new to this so please excuse me if the question is too basic.
->> >
->> > That's the old CONFIG_NO_HZ, which only disables the tick on idle. What
->> > we are working on is to also disable the tick when there's only one task
->> > running on a given CPU. Why have as schedule tick when there's nothing
->> > to schedule?
->> >
->> > 3.10 now has new config options:
->> >
->> > CONFIG_NO_HZ_PERIODIC - which is NO_HZ disabled
->> >    (the old # CONFIG_NO_HZ not set)
->> >
->> > CONFIG_NO_HZ_IDLE - which is what CONFIG_NO_HZ use to be.
->> >
->> > Note, CONFIG_NO_HZ still exists and if set, will make CONFIG_NO_HZ_IDLE
->> > the default. This was to keep the same configuration for people who
->> > update their kernel and run make oldconfig.
->> >
->> > Then there's the new:
->> >
->> > CONFIG_NO_HZ_FULL - this enables CONFIG_NO_HZ_IDLE plus adds the new
->> > feature with disabling the tick when only one task is running on a given
->> > CPU.
->>
->> Thanks and some more explanation in below documents.
->> Documentation/timers/NO_HZ.txt
->> Documentation/timers/highres.txt
->> >
->> >
->> >> > latency from the kernel! That is, if the task is doing some complex
->> >> > calculations, it wont be interrupted for kernel maintenance. A lot of
->> >> > Red Hat customers would love to have this feature. It allows for
->> >> > extremely low latency actions even without a real-time kernel. Heck, it
->> >> > works without even kernel preemption.
->> >> >
->> >> > Now removing the periodic tick is not a trivial task, and this is where
->> >>
->> >> You mean getting rid of period ticks in the kernel code is not easy as there
->> >> are many features such as perf is dependent on it right and that is why
->> >> instead of completely removing periodic ticks we just set the periodic tick
->> >> to happen at 1HZ instead of CONFIG_HZ value?
->> >
->> > IIRC, the reason for moving to 1 HZ is so that the scheduler doesn't get
->> > confused with overflows. It still needs to handle time keeping for
->> "overflows" meaning the tick happening at 1HZ?
->> However as I see here in this patch http://lwn.net/Articles/549592/ -
->> you have plans to move it to 0Hz then how does scheduler cope
->> with this?Does it not need this information to schedule a different
->> task when the current task on "adaptive-ticks CPU" is done?
->
-> When the current task completed, it will enter the kernel, allowing
-> the scheduler to take over.
->
-> If a second task awakens or is created, there will either be some sort
-> of interrupt to the CPU itself, or to some other CPU, and this other
-> CPU will IPI the first CPU.  Either way, the scheduler gains control
-> when it needs it -- but avoids continually interrupting the task.
->
->> Anyway doesn't "future works" should be part of No-hz.txt document?
->
-> It does, please see the very last bullet of the document:
->
-> o       Some process-handling operations still require the occasional
->         scheduling-clock tick.  These operations include calculating CPU
->         load, maintaining sched average, computing CFS entity vruntime,
->         computing avenrun, and carrying out load balancing.  They are
->         currently accommodated by scheduling-clock tick every second
->         or so.  On-going work will eliminate the need even for these
->         infrequent scheduling-clock ticks.
->
-> Here, "the occasional scheduling-clock tick" is the 1Hz tick that
+MIPS has 128 signals, the highest of which has the number 128 (they
+start from 1). The following command causes get_signal_to_deliver() to
+pass this signal number straight through to do_group_exit() as the exit
+code:
 
-May I know why we zeroed in on 1Hz? Is there any logical reason
-or just because it is above 0Hz?
->
->                                                         Thanx, Paul
->
->> > managing how to schedule tasks according to CFS.
->> >
->> > Everything else shouldn't depend on the tick... period.
->> >
->> > -- Steve
->> >
->> >> > all our issues come from. In fact, we can not even completely remove the
->> >> > tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
->> >> > set to. We have to handle everything that depends on that tick, which
->> >> > includes perf, among other things.
->> >> >
->> >
->> >
->>
->
+  strace sleep 10 & sleep 1 && kill -128 `pidof sleep`
+
+However do_group_exit() checks for the core dump bit (0x80) in the exit
+code which matches in this particular case and the kernel panics:
+
+  BUG_ON(exit_code & 0x80); /* core dumps don't get here */
+
+Lets avoid this by changing the ABI by reducing the number of signals to
+127 (so that the maximum signal number is 127). Glibc incorrectly sets
+[__]SIGRTMAX to 127 already. uClibc sets it to 128 so it's conceivable
+that programs built against uClibc which intentionally uses RT signals
+from the top (SIGRTMAX-n, n>=0) would need an updated uClibc (and a
+rebuild if it's crazy enough to use __SIGRTMAX).
+
+Note that the signals man page seems to make clear that signals should
+be referred to from SIGRTMIN, and it seems unlikely that any portable
+program would ever need to use 96 RT signals:
+
+  "programs should never refer to real-time signals using hard-coded
+  numbers, but instead should always refer to real-time signals using
+  the notation SIGRTMIN+n, and include suitable (run-time) checks that
+  SIGRTMIN+n does not exceed SIGRTMAX."
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <david.daney@cavium.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: linux-mips@linux-mips.org
+---
+As discussed on IRC, another possibility is to reduce the number of
+signals down to 64 to match other arches and reduce the number of
+sigset_t words, but I think that's riskier as it would affect glibc too.
+
+ arch/mips/include/uapi/asm/signal.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/include/uapi/asm/signal.h b/arch/mips/include/uapi/asm/signal.h
+index addb9f5..40e944d 100644
+--- a/arch/mips/include/uapi/asm/signal.h
++++ b/arch/mips/include/uapi/asm/signal.h
+@@ -11,9 +11,9 @@
+ 
+ #include <linux/types.h>
+ 
+-#define _NSIG		128
++#define _NSIG		127
+ #define _NSIG_BPW	(sizeof(unsigned long) * 8)
+-#define _NSIG_WORDS	(_NSIG / _NSIG_BPW)
++#define _NSIG_WORDS	((_NSIG + _NSIG_BPW - 1) / _NSIG_BPW)
+ 
+ typedef struct {
+ 	unsigned long sig[_NSIG_WORDS];
+-- 
+1.8.1.2
+
+
