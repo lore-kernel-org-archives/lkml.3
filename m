@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab3FNSzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:55:00 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:52586 "EHLO
+	id S1753745Ab3FNSzE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:55:04 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:52651 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3FNSy6 (ORCPT
+	with ESMTP id S1753671Ab3FNSzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:54:58 -0400
+	Fri, 14 Jun 2013 14:55:01 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com, Andreas Gruenbacher <agruen@linbit.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
         Philipp Reisner <philipp.reisner@linbit.com>
-Subject: [PATCH 0/6] RFC: DRBD fixes and one functional enhancemet
-Date: Fri, 14 Jun 2013 20:54:17 +0200
-Message-Id: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 2/6] drbd: fix error return code in drbd_init()
+Date: Fri, 14 Jun 2013 20:54:19 +0200
+Message-Id: <1371236063-17198-3-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
+References: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first 4 patches are obvious fixes. The last patch adds
-the capability to change the activity log layout online.
-(al-stripes and al-stripe-size)
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Andreas Gruenbacher (2):
-  drbd: Do not sleep inside rcu
-  drbd: Fix rcu_read_lock balance on error path
+Fix to return a negative error code from the error handling
+case instead of 0, as returned elsewhere in this function.
 
-Philipp Reisner (3):
-  drbd: Ignore the exit code of a fence-peer handler if it returns too late
-  drbd: Constants should be UPPERCASE
-  drbd: Allow online change of al-stripes and al-stripe-size
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+---
+ drivers/block/drbd/drbd_main.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Wei Yongjun (1):
-  drbd: fix error return code in drbd_init()
-
- drivers/block/drbd/drbd_actlog.c   |   21 ++++
- drivers/block/drbd/drbd_int.h      |   15 ++-
- drivers/block/drbd/drbd_main.c     |   61 ++++++------
- drivers/block/drbd/drbd_nl.c       |  185 ++++++++++++++++++++++++++++--------
- drivers/block/drbd/drbd_receiver.c |   12 +--
- drivers/block/drbd/drbd_state.c    |    4 +-
- include/linux/drbd.h               |    6 +-
- include/linux/drbd_genl.h          |    2 +
- include/linux/drbd_limits.h        |    9 ++
- 9 files changed, 236 insertions(+), 79 deletions(-)
-
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index a5dca6a..49040a3 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2762,8 +2762,6 @@ int __init drbd_init(void)
+ 	/*
+ 	 * allocate all necessary structs
+ 	 */
+-	err = -ENOMEM;
+-
+ 	init_waitqueue_head(&drbd_pp_wait);
+ 
+ 	drbd_proc = NULL; /* play safe for drbd_cleanup */
+@@ -2773,6 +2771,7 @@ int __init drbd_init(void)
+ 	if (err)
+ 		goto fail;
+ 
++	err = -ENOMEM;
+ 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
+ 	if (!drbd_proc)	{
+ 		printk(KERN_ERR "drbd: unable to register proc file\n");
+@@ -2803,7 +2802,6 @@ int __init drbd_init(void)
+ fail:
+ 	drbd_cleanup();
+ 	if (err == -ENOMEM)
+-		/* currently always the case */
+ 		printk(KERN_ERR "drbd: ran out of memory\n");
+ 	else
+ 		printk(KERN_ERR "drbd: initialization failure\n");
 -- 
 1.7.9.5
 
