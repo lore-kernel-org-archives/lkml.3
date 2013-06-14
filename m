@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3FNOfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:35:34 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42900 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3FNOfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:35:33 -0400
+	id S1753360Ab3FNOft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:35:49 -0400
+Received: from sauhun.de ([89.238.76.85]:46999 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256Ab3FNOfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:35:47 -0400
+Date: Fri, 14 Jun 2013 16:37:41 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] i2c: designware: fix race between subsequent xfers
+Message-ID: <20130614143740.GD2929@katana>
+References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+ <1370595083-801-1-git-send-email-christian.ruppert@abilis.com>
 MIME-Version: 1.0
-In-Reply-To: <20130612225630.GC8146@quad.lixom.net>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
-	<1371040448-28742-4-git-send-email-jonas.jensen@gmail.com>
-	<20130612225630.GC8146@quad.lixom.net>
-Date: Fri, 14 Jun 2013 16:35:32 +0200
-Message-ID: <CACmBeS0ra+32VVFtCpNiz0xrENFbTZFpnb3KppxiOfMiiKUXVQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: mach-moxart: add MOXA ART UART debug files
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, arm@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SFyWQ0h3ruR435lw"
+Content-Disposition: inline
+In-Reply-To: <1370595083-801-1-git-send-email-christian.ruppert@abilis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Thanks for the replies.
+--SFyWQ0h3ruR435lw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 13 June 2013 00:56, Olof Johansson <olof@lixom.net> wrote:
->> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
->> index 1d41908..a0e4a32 100644
->> --- a/arch/arm/Kconfig.debug
->> +++ b/arch/arm/Kconfig.debug
->> @@ -422,6 +422,15 @@ choice
->>                 Say Y here if you want kernel low-level debugging support
->>                 on Allwinner A1X based platforms on the UART1.
->>
->> +    config DEBUG_MOXART_UART0
->> +        bool "Kernel low-level debugging messages via MOXART UART0"
->> +        depends on ARCH_MOXART
->> +        help
->> +          Say Y here if you want kernel low-level debugging support
->> +          on MOXART based platforms on the UART0.
->> +          select this to make sure "putc" in arch/arm/boot/compressed/debug.S
->> +          uses arch/arm/include/debug/moxart.S:s "addruart" macro
->
-> Looks like the last two lines above are leftovers? It's not super-helpful for
-> someone trying to figure out if they want this option or not; the first two
-> lines covers that quite nicely.
+On Fri, Jun 07, 2013 at 10:51:23AM +0200, Christian Ruppert wrote:
+> The designware block is not always properly disabled in the case of
+> transfer errors. Interrupts from aborted transfers might be handled
+> after the data structures for the following transfer are initialised but
+> before the hardware is set up. This can corrupt the data structures to
+> the point that the system is stuck in an infinite interrupt loop (where
+> FIFOs are never emptied because dev->msg_read_idx =3D=3D dev->msgs_num).
+>=20
+> This patch cleanly disables the designware-i2c hardware at the end of
+> every transfer, be it successful or not.
+>=20
+> This patch requires https://patchwork.kernel.org/patch/2601241/ to be
+> applied first.
 
-Leftovers removed. I only added them because I spent some time
-figuring out the call chain around putc.
+These last two lines should be below "---".
 
->> +++ b/arch/arm/include/debug/moxart.S
->> @@ -0,0 +1,14 @@
->> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms of the GNU General Public License as published by the
->> + * Free Software Foundation; either version 2 of the License,
->> + * or (at your option) any later version. */
->> +
->> +#define MOXART_UART_DEBUG_PHYS_BASE          0x98200000
->> +
->> +.macro       addruart, rp, rv, tmp
->> +     ldr     \rp, =MOXART_UART_DEBUG_PHYS_BASE       @ physical
->
-> You need to set rv here too.
+>=20
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> ---
+>  drivers/i2c/busses/i2c-designware-core.c |   10 ++++++++--
+>  1 files changed, 8 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busse=
+s/i2c-designware-core.c
+> index b75d292..55a9991 100644
+> --- a/drivers/i2c/busses/i2c-designware-core.c
+> +++ b/drivers/i2c/busses/i2c-designware-core.c
+> @@ -588,11 +588,19 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_ms=
+g msgs[], int num)
+>  	ret =3D wait_for_completion_timeout(&dev->cmd_complete, HZ);
+>  	if (ret =3D=3D 0) {
+>  		dev_err(dev->dev, "controller timed out\n");
+> +		/* i2c_dw_init implicitly disables the adapter */
+>  		i2c_dw_init(dev);
+>  		ret =3D -ETIMEDOUT;
+>  		goto done;
+>  	}
+> =20
+> +	/*
+> +	 * We must disable the adapter before unlocking the &dev->lock mutex
+> +	 * below. Otherwise the hardware might continue generating interrupts
+> +	 * which in turn causes a race condition with the following transfer.
 
-Done. Used to be set with the IO_ADDRESS macro I worked so hard to
-remove. Looking at other platforms, it seems accepted to set a
-hardcoded value here.
+I added "Needs some more investigation if the additional interrupts are
+a hardware bug or this driver doesn't handle them correctly yet." to the
+comment and
 
+Applied to for-next, thanks!
 
-Best regards,
-Jonas
+BTW since I am currently here: i2c-designware-core should be in the
+'algos' directory, no?
+
+--SFyWQ0h3ruR435lw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuyq0AAoJEBQN5MwUoCm2U4IP/3xYWG2jo1fL3KEvTmm56wCh
+VRZ3Pe0NU0xEpa5qcTJKlvR2g2nt9pzihJYsBWU5iLt5/yPlClFQhpz57JlTurkR
+X8QjoByuaH7DBFhuIY1m7LcMYku/uJQWtc0NoKCDdqRcKg0G3FuMQa64L/eJK0kB
+ak/R+tmBdamvsLHX2teKD1DpQ+00EgcrbmdDX6lFGakm61Wv5J0yuiIdNK3RMmiV
+3gWtwwt4bbCt73rrRVWajYs/f62sxQu5tnQZrqjiy02LKclQh0/Dtq2aF8AGDORj
+VHod5v+0qry0s9834GPmxUnEEqJSSdM2sZTWDwkSi2VTxGIqYO1wYhOzyyjziJV6
+Ugjlebizy3yzpWvyAM/cT1eCoOmVtIuxbRf73AEs4tWwkrH2sJvIoxaw7wCmcpGW
+muwTxhEs+1Ivms/aTsrtH+6vgPW0hhSGgE8oBLU1QU59iOHl3hq4aPThVlk6EZDl
+2dNLKiqf+7PqLB2IjN72LMxJWwpVBGv3TI70IdB/siJ++CvMRTC10f0uOctS2mB2
+nrmwF+yFZ24NUsICtnzLei7oqqacQOaMTC3G/f6fV2oOlFYKhD3syrBW1yxpaLg8
+Gg5Bqrr+zaFu57QqNimwL5NtlckuVWi8vP10a7FlPcCgZuCNWA+NAE87YsLb2mdu
+6jrAXceabWoS/zoDyGVL
+=siA8
+-----END PGP SIGNATURE-----
+
+--SFyWQ0h3ruR435lw--
