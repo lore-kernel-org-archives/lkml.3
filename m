@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab3FNFXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 01:23:51 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:59033 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab3FNFXt (ORCPT
+	id S1751960Ab3FNFZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 01:25:00 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:42462 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751765Ab3FNFY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 01:23:49 -0400
+	Fri, 14 Jun 2013 01:24:59 -0400
 From: Chao Xie <chao.xie@marvell.com>
 To: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
         <yizhang@marvell.com>
 CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V2 0/9] mfd: 88pm80x: bug fixes and enhancement
-Date: Fri, 14 Jun 2013 01:21:44 -0400
-Message-ID: <1371187313-5776-1-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH V2 8/9] mfd: 88pm800: enhance sub devices initialization
+Date: Fri, 14 Jun 2013 01:21:52 -0400
+Message-ID: <1371187313-5776-9-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1371187313-5776-1-git-send-email-chao.xie@marvell.com>
+References: <1371187313-5776-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch set fixes some bugs in the 88pm800/88pm805 driver, and it add
-regulator device into 88pm800.
+Separate the devices initialization into different functions.
+It makes the probe function clearly.
 
-The patches are tested based on Marvell pxa988 platform.
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/mfd/88pm800.c |   61 +++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 42 insertions(+), 19 deletions(-)
 
-V2->V1:
-  add more fixes patches.
-  Below patches are same almost same as V1
-     mfd: 88pm800: fix NULL pointer errorm
-     mfd: 88pm800/88pm805: remove "IRQF_TRIGGER_FALLING" flag
-  Other patches are new.
-
-Chao Xie (7):
-  mfd: 88pm80x: fix driver name for 88pm800 and 88pm805
-  mfd: 88pm800: fix for mask_invert
-  mfd: 88pm800: remove the power and gpadc page addr from platform data
-  mfd: 88pm800: fixes error handling for sub pages probe/remove
-  mfd: 88pm80x: Changes chip id definition and detection
-  mfd: 88pm800: enhance sub devices initialization
-  mfd: 88pm800: add regulator sub device
-
-Yi Zhang (2):
-  mfd: 88pm800: fix NULL pointer error
-  mfd: 88pm800/88pm805: remove "IRQF_TRIGGER_FALLING" flag
-
- drivers/mfd/88pm800.c       |  237 +++++++++++++++++++++++++------------------
- drivers/mfd/88pm805.c       |   20 +---
- drivers/mfd/88pm80x.c       |   47 +++++++--
- include/linux/mfd/88pm80x.h |   17 ++--
- 4 files changed, 193 insertions(+), 128 deletions(-)
-
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index 16faad6..35c7fe8 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -304,6 +304,40 @@ out:
+ 	return ret;
+ }
+ 
++static int device_onkey_init(struct pm80x_chip *chip,
++				struct pm80x_platform_data *pdata)
++{
++	int ret;
++
++	ret = mfd_add_devices(chip->dev, 0, &onkey_devs[0],
++			      ARRAY_SIZE(onkey_devs), &onkey_resources[0], 0,
++			      NULL);
++	if (ret) {
++		dev_err(chip->dev, "Failed to add onkey subdev\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++static int device_rtc_init(struct pm80x_chip *chip,
++				struct pm80x_platform_data *pdata)
++{
++	int ret;
++
++	rtc_devs[0].platform_data = pdata->rtc;
++	rtc_devs[0].pdata_size =
++			pdata->rtc ? sizeof(struct pm80x_rtc_pdata) : 0;
++	ret = mfd_add_devices(chip->dev, 0, &rtc_devs[0],
++			      ARRAY_SIZE(rtc_devs), NULL, 0, NULL);
++	if (ret) {
++		dev_err(chip->dev, "Failed to add rtc subdev\n");
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int device_irq_init_800(struct pm80x_chip *chip)
+ {
+ 	struct regmap *map = chip->regmap;
+@@ -453,27 +487,16 @@ static int device_800_init(struct pm80x_chip *chip,
+ 		goto out;
+ 	}
+ 
+-	ret =
+-	    mfd_add_devices(chip->dev, 0, &onkey_devs[0],
+-			    ARRAY_SIZE(onkey_devs), &onkey_resources[0], 0,
+-			    NULL);
+-	if (ret < 0) {
++	ret = device_onkey_init(chip, pdata);
++	if (ret) {
+ 		dev_err(chip->dev, "Failed to add onkey subdev\n");
+ 		goto out_dev;
+-	} else
+-		dev_info(chip->dev, "[%s]:Added mfd onkey_devs\n", __func__);
+-
+-	if (pdata && pdata->rtc) {
+-		rtc_devs[0].platform_data = pdata->rtc;
+-		rtc_devs[0].pdata_size = sizeof(struct pm80x_rtc_pdata);
+-		ret = mfd_add_devices(chip->dev, 0, &rtc_devs[0],
+-				      ARRAY_SIZE(rtc_devs), NULL, 0, NULL);
+-		if (ret < 0) {
+-			dev_err(chip->dev, "Failed to add rtc subdev\n");
+-			goto out_dev;
+-		} else
+-			dev_info(chip->dev,
+-				 "[%s]:Added mfd rtc_devs\n", __func__);
++	}
++
++	ret = device_rtc_init(chip, pdata);
++	if (ret) {
++		dev_err(chip->dev, "Failed to add rtc subdev\n");
++		goto out;
+ 	}
+ 
+ 	return 0;
 -- 
 1.7.4.1
 
