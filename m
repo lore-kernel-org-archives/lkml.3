@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760093Ab3FNCmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 22:42:19 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54582 "EHLO
+	id S932443Ab3FNCm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 22:42:28 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45926 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759632Ab3FNCmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 22:42:15 -0400
+	id S1759888Ab3FNCmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 22:42:24 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [Trivial PATCH 27/33] key: Convert use of typedef ctl_table to struct ctl_table
-Date: Thu, 13 Jun 2013 19:37:52 -0700
-Message-Id: <022a6fa5a123e17c1394fc30539dd32f12345329.1371177118.git.joe@perches.com>
+Subject: [Trivial PATCH 28/33] ipv6: Convert use of typedef ctl_table to struct ctl_table
+Date: Thu, 13 Jun 2013 19:37:53 -0700
+Message-Id: <43ebfe570d433155e880191f889d8b0a912257e5.1371177118.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1371177118.git.joe@perches.com>
 References: <cover.1371177118.git.joe@perches.com>
@@ -24,22 +28,24 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/key.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ipv6.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 4dfde11..3b98ce0 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -310,7 +310,7 @@ do {									\
- } while (0)
+diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+index ab47582..5fe5649 100644
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -859,8 +859,8 @@ static inline int snmp6_unregister_dev(struct inet6_dev *idev) { return 0; }
+ #endif
  
  #ifdef CONFIG_SYSCTL
--extern ctl_table key_sysctls[];
-+extern struct ctl_table key_sysctls[];
- #endif
- /*
-  * the userspace interface
+-extern ctl_table ipv6_route_table_template[];
+-extern ctl_table ipv6_icmp_table_template[];
++extern struct ctl_table ipv6_route_table_template[];
++extern struct ctl_table ipv6_icmp_table_template[];
+ 
+ extern struct ctl_table *ipv6_icmp_sysctl_init(struct net *net);
+ extern struct ctl_table *ipv6_route_sysctl_init(struct net *net);
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
