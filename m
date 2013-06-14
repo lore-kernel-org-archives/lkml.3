@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab3FNTxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:53:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48724 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3FNTw6 (ORCPT
+	id S1753404Ab3FNTyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:54:36 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:58761 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab3FNTye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:52:58 -0400
-Date: Fri, 14 Jun 2013 12:52:55 -0700
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL 3/3] msm clock for 3.11
-Message-ID: <20130614195238.GA2381@codeaurora.org>
-References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
+	Fri, 14 Jun 2013 15:54:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
+References: <1362629799-22485-1-git-send-email-mporter@ti.com>
+	<1362629799-22485-3-git-send-email-mporter@ti.com>
+	<41fde401c8e646689123d7c6d3a2dffc@DLEE71.ent.ti.com>
+	<20130307141235.GQ6209@beef>
+	<79CD15C6BA57404B839C016229A409A83EC20C57@DBDE01.ent.ti.com>
+	<20130307144656.GR6209@beef>
+	<79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
+	<20130307150408.GU6209@beef>
+	<79CD15C6BA57404B839C016229A409A83EC20D27@DBDE01.ent.ti.com>
+	<20130307160236.GV6209@beef>
+	<79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
+Date: Fri, 14 Jun 2013 14:54:33 -0500
+Message-ID: <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+From: Joel A Fernandes <agnel.joel@gmail.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Cc: "Porter, Matt" <mporter@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+Hi Tony, Vaibhav,
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+>> I just doublechecked MMC rootfs on bone and evmsk as it's the standard
+>> smoke test. My EVM is intermittent now so trying to coax it to power up
+>> to reverify.
+>>
+>
+> Matt,
+>
+> Your branch is working for me, I tested it on EVM. Not sure what is wrong with manual rebasing
+> I did yesterday. I will try to nail-down root-cause here.
+>
+> And you can submit the next version fixing the comments I have given.
 
-are available in the git repository at:
+The only comment I could find in the whole discussion was adding of
+the interrupts property. I tested I don't have any problem booting
+with Matt's patch, without having the interrupts property.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-clock-for-3.11
+Can this patch be pulled in for 3.11?
 
-for you to fetch changes up to f54c1c11053d8aaf318a096b8b332fd41a394a66:
+Tested-by: Joel A Fernandes <joelagnel@ti.com>
 
-  ARM: msm: Migrate to common clock framework (2013-06-12 14:43:31 -0700)
-
-----------------------------------------------------------------
-MSM clock updates for 3.11.
-
-Per Stephen Boyd's coverletter:
-
-This patchset moves the existing MSM clock code and affected drivers
-to the common clock framework. A prerequisite of moving to the common
-clock framework is to use clk_prepare() and clk_enable() so the first
-few patches migrate drivers to that call (clk_prepare() is a no-op on
-MSM right now). It also removes some custom clock APIs that MSM
-provides and finally moves the proc_comm clock code to the common
-struct clk.
-
-This patch series will be used as the foundation of the MSM 8660/8960
-clock code that I plan to send out after this series.
-
-----------------------------------------------------------------
-Stephen Boyd (12):
-      msm_serial: Convert to clk_prepare/unprepare
-      msm_serial: Use devm_clk_get() and properly return errors
-      usb: otg: msm: Convert to clk_prepare/unprepare
-      msm_sdcc: Convert to clk_prepare/unprepare
-      msm: iommu: Convert to clk_prepare/unprepare
-      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
-      ARM: msm: Remove custom clk_set_flags() API
-      ARM: msm: Remove custom clk_set_{max,min}_rate() API
-      ARM: msm: Remove clock-7x30.h include file
-      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
-      ARM: msm: Make proc_comm clock control into a platform driver
-      ARM: msm: Migrate to common clock framework
-
- arch/arm/Kconfig                       |   2 +-
- arch/arm/mach-msm/Makefile             |  10 +-
- arch/arm/mach-msm/board-halibut.c      |   2 +-
- arch/arm/mach-msm/board-msm7x30.c      |   2 +-
- arch/arm/mach-msm/board-qsd8x50.c      |   2 +-
- arch/arm/mach-msm/board-trout-panel.c  |  19 ++--
- arch/arm/mach-msm/board-trout.c        |   3 +-
- arch/arm/mach-msm/clock-7x30.h         | 155 ------------------------------
- arch/arm/mach-msm/clock-debug.c        | 130 --------------------------
- arch/arm/mach-msm/clock-pcom.c         | 149 ++++++++++++++++++-----------
- arch/arm/mach-msm/clock-pcom.h         |  31 +++---
- arch/arm/mach-msm/clock.c              | 166 +--------------------------------
- arch/arm/mach-msm/clock.h              |  51 +++-------
- arch/arm/mach-msm/devices-msm7x00.c    |  12 ++-
- arch/arm/mach-msm/devices-msm7x30.c    |  14 ++-
- arch/arm/mach-msm/devices-qsd8x50.c    |  11 ++-
- arch/arm/mach-msm/devices.h            |  15 +--
- arch/arm/mach-msm/dma.c                |   5 +-
- arch/arm/mach-msm/include/mach/board.h |   5 -
- arch/arm/mach-msm/include/mach/clk.h   |   9 --
- drivers/iommu/msm_iommu_dev.c          |  20 ++--
- drivers/mmc/host/msm_sdcc.c            |  14 ++-
- drivers/tty/serial/msm_serial.c        |  35 +++----
- drivers/usb/phy/phy-msm-usb.c          |  38 ++++----
- 24 files changed, 241 insertions(+), 659 deletions(-)
- delete mode 100644 arch/arm/mach-msm/clock-7x30.h
- delete mode 100644 arch/arm/mach-msm/clock-debug.c
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+Joel
