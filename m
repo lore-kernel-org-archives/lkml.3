@@ -1,137 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3FNS2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:28:06 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44908 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab3FNS2E (ORCPT
+	id S1753683Ab3FNScW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:32:22 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:55304 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab3FNScU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:28:04 -0400
-Message-ID: <51BB60B1.6040007@linaro.org>
-Date: Fri, 14 Jun 2013 11:28:01 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 14:32:20 -0400
+Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: "Bjorn Helgaas" <bhelgaas@google.com>, "Ming Lei" <ming.lei@canonical.com>
+Cc: "nirinA raseliarison" <nirina.raseliarison@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Francois Romieu" <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
+        "Hayes Wang" <hayeswang@realtek.com>,
+        "Guenter Roeck" <linux@roeck-us.net>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
+ 0000000000000040
+References: <op.wyn5vzc89ey1ta@localhost>
+ <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
+ <CACVXFVPSGcBHj1tPfr16ORkuhkjTvDN3CHJv1Ke=W731pFxU4g@mail.gmail.com>
+Date: Fri, 14 Jun 2013 21:32:04 +0300
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 4/9 RESEND] RFC: timekeeping: introduce
- flag systime_was_set
-References: <51BA1FF7.4000206@ahsoftware.de> <1371228732-5749-1-git-send-email-holler@ahsoftware.de> <1371228732-5749-5-git-send-email-holler@ahsoftware.de> <51BB55C0.7090603@linaro.org> <51BB5B65.3000400@ahsoftware.de>
-In-Reply-To: <51BB5B65.3000400@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+From: nirinA raseliarison <nirina.raseliarison@gmail.com>
+Message-ID: <op.wyolrqyo9ey1ta@localhost>
+In-Reply-To: <CACVXFVPSGcBHj1tPfr16ORkuhkjTvDN3CHJv1Ke=W731pFxU4g@mail.gmail.com>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 11:05 AM, Alexander Holler wrote:
-> Am 14.06.2013 19:41, schrieb John Stultz:
->> On 06/14/2013 09:52 AM, Alexander Holler wrote:
->>> In order to let an RTC set the time at boot without the problem that a
->>> second RTC overwrites it, the flag systime_was_set is introduced.
+on Fri, 14 Jun 2013 20:02:25 +0300, Ming Lei <ming.lei@canonical.com>  
+wrote:
+
+> On Fri, Jun 14, 2013 at 10:30 PM, Bjorn Helgaas <bhelgaas@google.com>  
+> wrote:
+>> [+cc Ming, Hayes, Francois, r8169 list]
+>>
+>> On Fri, Jun 14, 2013 at 6:49 AM, nirinA raseliarison
+>> <nirina.raseliarison@gmail.com> wrote:
+>>> hello there,
+>>> i have this ethernet controler:
 >>>
->>> systime_was_set will be true, if a persistent clock sets the time at
->>> boot,
->>> or if do_settimeofday() is called (e.g. by the RTC subsystem or
->>> userspace).
+>>>  Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast  
+>>> Ethernet
+>>> controller (rev 05)
 >>>
->>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->>> ---
->>>   include/linux/time.h      |  6 ++++++
->>>   kernel/time/timekeeping.c | 10 +++++++++-
->>>   2 files changed, 15 insertions(+), 1 deletion(-)
+>>> that uses the r8169 module.
+>>> it works fine, but sometimes after a reboot and issueing:
 >>>
->>> diff --git a/include/linux/time.h b/include/linux/time.h
->>> index d5d229b..888280f 100644
->>> --- a/include/linux/time.h
->>> +++ b/include/linux/time.h
->>> @@ -129,6 +129,12 @@ extern int update_persistent_clock(struct
->>> timespec now);
->>>   void timekeeping_init(void);
->>>   extern int timekeeping_suspended;
->>> +/*
->>> + * Will be true if the system time was set at least once by
->>> + * a persistent clock, RTC or userspace.
->>> + */
->>> +extern bool systime_was_set;
->>> +
->>
->> Probably should make this static to timekeeping.c and create an accessor
->> function so you don't have to export locking rules on this.
->>
->>
->>>   unsigned long get_seconds(void);
->>>   struct timespec current_kernel_time(void);
->>>   struct timespec __current_kernel_time(void); /* does not take
->>> xtime_lock */
->>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
->>> index baeeb5c..07d8531 100644
->>> --- a/kernel/time/timekeeping.c
->>> +++ b/kernel/time/timekeeping.c
->>> @@ -37,6 +37,9 @@ int __read_mostly timekeeping_suspended;
->>>   /* Flag for if there is a persistent clock on this platform */
->>>   bool __read_mostly persistent_clock_exist = false;
->>> +/* Flag for if the system time was set at least once */
->>> +bool __read_mostly systime_was_set;
->>> +
->> Probably should also move this to be part of the timekeeper structure
->> (since it will be protected by the timekeeper lock.
->>
+>>>  ifconfig eth0 192.168.1.1 up
+>>>
+>>> i got the message below. after another reboot the
+>>> message disappears. i also get the same message this 3.9.5 and 3.9.4.
+>>>
+>>> it seems i catch my first oops and don't know what to do with it.
+>>> currently running:
+>>>
+>>>  cat /proc/version
+>>>  Linux version 3.9.6.20130614 (root@supernova) (gcc version 4.8.1  
+>>> (GCC) ) #1
+>>> SMP Fri Jun 14 09:14:50 EAT 2013
+>>>
+>>>  uname -a
+>>>  Linux supernova 3.9.6.20130614 #1 SMP Fri Jun 14 09:14:50 EAT 2013  
+>>> x86_64
+>>> Intel(R) Celeron(R) CPU G1610 @ 2.60GHz GenuineIntel GNU/Linux
+>>>
+>>> thanks,
+>>> -----------------8<------------------------------8<---------------------------------------
+>>>
+>>> [   57.877560] BUG: unable to handle kernel NULL pointer dereference at
+>>> 0000000000000040
+>>> [   57.877603] IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
+>>> [   57.877634] PGD 21330a067 PUD 211a3a067 PMD 0
+>>> [   57.877660] Oops: 0002 [#1] SMP
+>>> [   57.877681] Modules linked in: fuse coretemp kvm_intel kvm evdev  
+>>> r8169
+>>> microcode mii
+>>> [   57.877735] CPU 0
+>>> [   57.877746] Pid: 1950, comm: firmware Not tainted 3.9.6.20130614 #1  
+>>> To be
+>>> filled by O.E.M. To be filled by O.E.M./ONDA H61V Ver:4.01
+>>> [   57.877790] RIP: 0010:[<ffffffff81491844>]  [<ffffffff81491844>]
+>>> fw_load_abort.isra.5+0x4/0x20
+>>> [   57.877824] RSP: 0018:ffff8802119a7e80  EFLAGS: 00010246
+>>> [   57.877844] RAX: ffff8802158fe250 RBX: ffff880211a03b40 RCX:
+>>> 0000000000000000
+>>> [   57.877869] RDX: ffffffff81c742c8 RSI: ffff8802158fe250 RDI:
+>>> 0000000000000000
+>>> [   57.877895] RBP: ffff8802119a7e80 R08: ffff8802119a6000 R09:
+>>> 00000000000005aa
+>>> [   57.877920] R10: 0000000000000000 R11: 0000000000000000 R12:
+>>> ffffffffffffffff
+>>> [   57.877945] R13: ffff880213d34088 R14: 0000000000000003 R15:
+>>> ffff88020eafc230
+>>> [   57.877970] FS:  00007f3c6cb2a740(0000) GS:ffff88021f200000(0000)
+>>> knlGS:0000000000000000
+>>> [   57.877998] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> [   57.878019] CR2: 0000000000000040 CR3: 0000000203155000 CR4:
+>>> 00000000001407f0
+>>> [   57.878044] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+>>> 0000000000000000
+>>> [   57.878069] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+>>> 0000000000000400
+>>> [   57.878094] Process firmware (pid: 1950, threadinfo  
+>>> ffff8802119a6000,
+>>> task ffff8802158fe250)
+>>> [   57.878124] Stack:
+>>> [   57.878133]  ffff8802119a7eb0 ffffffff81491917 ffff880211a4d5a0
+>>> 0000000000000003
+>>> [   57.878168]  ffff8802119a7f50 ffffffff818765a0 ffff8802119a7ec0
+>>> ffffffff81483063
+>>> [   57.878203]  ffff8802119a7f08 ffffffff8119bc9e ffff880213d34098
+>>> ffff880211a4d5c0
+>>> [   57.878237] Call Trace:
+>>> [   57.878251]  [<ffffffff81491917>] firmware_loading_store+0x77/0x150
+>>> [   57.878275]  [<ffffffff81483063>] dev_attr_store+0x13/0x20
+>>> [   57.878297]  [<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
+>>> [   57.878320]  [<ffffffff81133e8a>] vfs_write+0x9a/0x160
+>>> [   57.878340]  [<ffffffff81134164>] sys_write+0x44/0x90
+>>> [   57.878360]  [<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
+>>> [   57.879379] Code: 6b ff ff ff 48 89 df 31 db e8 b9 b0 c9 ff e9 79  
+>>> ff ff
+>>> ff 0f 1f 40 00 48 83 c4 10 5b 41 5c 41 5d 41 5e 5d c3 0f 1f 00 55 48  
+>>> 89 e5
+>>> <f0> 80 4f 40 04 48 83 c7 18 e8 8e a9 bd ff 5d c3 66 66 66 2e 0f
+>>> [   57.881753] RIP  [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
+>>> [   57.882888]  RSP <ffff8802119a7e80>
+>>> [   57.884019] CR2: 0000000000000040
+>>> [   57.885166] ---[ end trace 6705f6d4ce6b6a12 ]---
 >
-> I wanted to avoid locks for this silly flag at all. It is only set 
-> once at boot (and resume) and set to 0 at suspend. And I don't see any 
-> possible race condition which could make a lock necessary. Therefor 
-> I've decided to not use a lock or atomic_* in order to skip any delay 
-> in setting the time.
+> Looks it is a double abort race, could you try below patch?
+> (also attached for applying)
 
-Even so, having random flag variables with special rules being exported 
-out is likely to cause eventual trouble (someone will mis-use or 
-overload some meaning on it).
+i've also applied this patch and up to now, after
+reboot a few times all thing seems to work fine.
 
-So at least providing a accessor function for non-timekeeping.c uses 
-would be good.
+thanks,
 
-
-> Of course, I might be wrong and there might be a use case where 
-> multiple things do set the system time concurrently and nothing else 
-> did set system time before, but I found that extremly unlikely.
-
-Yea, the condition check and the action won't be both be done under a 
-lock, so its likely going to be racy anyway.
-
-
->>>   static inline void tk_normalize_xtime(struct timekeeper *tk)
->>>   {
->>>       while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
->>> @@ -498,6 +501,9 @@ int do_settimeofday(const struct timespec *tv)
->>>       raw_spin_lock_irqsave(&timekeeper_lock, flags);
->>>       write_seqcount_begin(&timekeeper_seq);
->>> +    systime_was_set = true;
->>> +
->>> +
->>>       timekeeping_forward_now(tk);
->>>       xt = tk_xtime(tk);
->>
->> Might also want to add the flag to inject_offset as well, since that
->> could be used to set the time.
+> --
+> diff --git a/drivers/base/firmware_class.c  
+> b/drivers/base/firmware_class.c
+> index 6ede229..a217ba8 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -550,7 +550,12 @@ static ssize_t firmware_loading_show(struct device  
+> *dev,
+>  				     struct device_attribute *attr, char *buf)
+>  {
+>  	struct firmware_priv *fw_priv = to_firmware_priv(dev);
+> -	int loading = test_bit(FW_STATUS_LOADING, &fw_priv->buf->status);
+> +	int loading = 0;
+> +
+> +	mutex_lock(&fw_lock);
+> +	if (fw_priv->buf)
+> +		loading = test_bit(FW_STATUS_LOADING, &fw_priv->buf->status);
+> +	mutex_unlock(&fw_lock);
 >
-> I wasn't sure about that because I had only a quick look at 
-> inject_offset() and had the impression it's only able to inject a 
-> relative small offset (so not usable at boot). And, as written 
-> sometimes before, I haven't had a deep look at suspend/resume, which 
-> might be the only place where it is really used to set the clock when
-> systime_was_set is false.
+>  	return sprintf(buf, "%d\n", loading);
+>  }
+> @@ -592,12 +597,12 @@ static ssize_t firmware_loading_store(struct  
+> device *dev,
+>  				      const char *buf, size_t count)
+>  {
+>  	struct firmware_priv *fw_priv = to_firmware_priv(dev);
+> -	struct firmware_buf *fw_buf = fw_priv->buf;
+> +	struct firmware_buf *fw_buf;
+>  	int loading = simple_strtol(buf, NULL, 10);
+>  	int i;
+>
+>  	mutex_lock(&fw_lock);
+> -
+> +	fw_buf = fw_priv->buf;
+>  	if (!fw_buf)
+>  		goto out;
+>
+> @@ -636,6 +641,7 @@ static ssize_t firmware_loading_store(struct device  
+> *dev,
+>  		/* fallthrough */
+>  	case -1:
+>  		fw_load_abort(fw_buf);
+> +		fw_priv->buf = NULL;
+>  		break;
+>  	}
+>  out:
+> @@ -704,6 +710,7 @@ static int fw_realloc_buffer(struct firmware_priv
+> *fw_priv, int min_size)
+>  				    GFP_KERNEL);
+>  		if (!new_pages) {
+>  			fw_load_abort(buf);
+> +			fw_priv->buf = NULL;
+>  			return -ENOMEM;
+>  		}
+>  		memcpy(new_pages, buf->pages,
+> @@ -721,6 +728,7 @@ static int fw_realloc_buffer(struct firmware_priv
+> *fw_priv, int min_size)
+>
+>  		if (!buf->pages[buf->nr_pages]) {
+>  			fw_load_abort(buf);
+> +			fw_priv->buf = NULL;
+>  			return -ENOMEM;
+>  		}
+>  		buf->nr_pages++;
+> @@ -805,6 +813,7 @@ static void firmware_class_timeout_work(struct
+> work_struct *work)
+>  		return;
+>  	}
+>  	fw_load_abort(fw_priv->buf);
+> +	fw_priv->buf = NULL;
+>  	mutex_unlock(&fw_lock);
+>  }
+>
+> @@ -886,8 +895,6 @@ static int _request_firmware_load(struct
+> firmware_priv *fw_priv, bool uevent,
+>
+>  	cancel_delayed_work_sync(&fw_priv->timeout_work);
+>
+> -	fw_priv->buf = NULL;
+> -
+>  	device_remove_file(f_dev, &dev_attr_loading);
+>  err_del_bin_attr:
+>  	device_remove_bin_file(f_dev, &firmware_attr_data);
+>
+>
+> Thanks,
+> --
+> Ming Lei
 
-Not via suspend/resume, since those modify the boottime to account for 
-the sleep time that has past.
 
-I'm thinking via adjtimex ADJ_SETOFFSET (which is relatively new, and 
-not widely used). See the do_adjtimex() path in timekeeping.c
-
-
-thanks
--john
-
+-- 
+nirinA
