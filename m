@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab3FNFmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 01:42:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:36193 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab3FNFmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 01:42:16 -0400
-X-IronPort-AV: E=Sophos;i="4.87,863,1363104000"; 
-   d="scan'208";a="7544436"
-Message-ID: <51BAADE8.2040501@cn.fujitsu.com>
-Date: Fri, 14 Jun 2013 13:45:12 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751825Ab3FNFnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 01:43:51 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:64022 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab3FNFnu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 01:43:50 -0400
+Message-ID: <51BAAD93.6020308@contentreich.de>
+Date: Fri, 14 Jun 2013 05:43:47 +0000
+From: Andreas Steffan <a.steffan@contentreich.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part3 PATCH v2 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages
- in memory offline procedure.
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com> <1371128636-9027-3-git-send-email-tangchen@cn.fujitsu.com> <51B9FE8E.9000109@intel.com>
-In-Reply-To: <51B9FE8E.9000109@intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/14 13:40:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/14 13:40:19,
-	Serialize complete at 2013/06/14 13:40:19
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: TCP through vpnx dev stalls
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hallo everybody,
 
-On 06/14/2013 01:17 AM, Dave Hansen wrote:
-> On 06/13/2013 06:03 AM, Tang Chen wrote:
->> +static inline bool is_local_node_data(struct page *page)
->> +{
->> +	return (unsigned long)page->lru.next == LOCAL_NODE_DATA;
->> +}
->
-> page->lru is already in a union.  Could you please just add a new entry
-> to the union with a nice associated comment instead of reusing it this way?
->
+I see certain tcp traffing stalling with kernel 3.8.0-22.33 (current
+Raring Ringtail version). It is 100% reproducible when I scp a file
+(>100 kB) to a machine on the other side. Copying a file of any size in
+the other direction (from the remote machine) to my box works fine. I
+see somewhat similiar problems doing large HTTP POSTs to the remote
+machine or when I run a remote X application.
 
-You mean add a new entry to the union in page structure ?
+I tried several versions of openconnect 4.06, 4.07 and 4.99 on linux
+3.8.0-22 and see this behaviour with all versions.
 
-Hum, seems a good idea. :)
+On the same system everything works fine by just swapping the kernel
+booting to 3.5.0-27.46 (latest from Quantal Quetzal).
 
-And as you know, NODE_INFO, SECTION_INFO, ... , they all reuse page->lru.
-So I need to modify the associated code too. This is easy to do, and I can
-do it in the next version soon.
 
-Thanks. :)
+Additional information (e.g. tcpdump output) is at launchpad (bug 1185884)
+where I originally reported to bug.
+
+Linux mcgyver 3.8.0-23-generic #34-Ubuntu SMP Wed May 29 20:22:58 UTC
+2013 x86_64 x86_64 x86_64 GNU/Linux
+ 
+Gnu C                  4.7
+Gnu make               3.81
+binutils               2.23.2
+util-linux             2.20.1
+mount                  support
+module-init-tools      9
+e2fsprogs              1.42.5
+jfsutils               1.1.15
+reiserfsprogs          3.6.21
+xfsprogs               3.1.9
+pcmciautils            018
+Linux C Library        2.17
+Dynamic linker (ldd)   2.17
+Procps                 3.3.3
+Net-tools              1.60
+Kbd                    1.15.5
+Sh-utils               8.20
+wireless-tools         30
+Modules Loaded         nls_utf8 isofs snd_hrtimer pci_stub vboxpci
+vboxnetadp vboxnetflt vboxdrv nfnetlink_log nfnetlink ip6table_filter
+ip6_t_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat
+nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT
+xt_CHECKSUM ipta_tcpudp iptable_filter ip_tables x_tables bridge stp llc
+autofs4 deflate zlib_deflate dm_crypt ctr twofish_generic
+twofish_x86_64_3way twofishsh_common camellia_generic camellia_x86_64
+serpent_sse2_x86_64 serpent_generic glue_helper blowfish_generic
+
+best regards
+Andreas
+
+-- 
+Andreas Steffan
+
+Achter Billing 14
+22399 Hamburg
+Germany
+
+skype: contentreich
+M: +49 1793903615
+T: +49 40 23943542
+F: +49 40 23943542
+
+http://www.contentreich.de
+
+Contentreich : Alfresco WCM / ECM, JEE, Grails
 
