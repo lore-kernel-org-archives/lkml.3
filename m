@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab3FNJPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:15:36 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:55743 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3FNJPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:15:34 -0400
+	id S1751741Ab3FNJRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:17:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36466 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087Ab3FNJQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:16:59 -0400
+Date: Fri, 14 Jun 2013 10:16:55 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [iput] BUG: Bad page state in process rm pfn:0b0ce
+Message-ID: <20130614091655.GD1875@suse.de>
+References: <20130613102549.GD31394@localhost>
 MIME-Version: 1.0
-In-Reply-To: <201306101035.20924.arnd@arndb.de>
-References: <1369969115-4279-1-git-send-email-zhangwm@marvell.com>
-	<201306061826.19551.arnd@arndb.de>
-	<CADApbeixEKi984QED07LxA8vzfHmLGCGT8KxEbB5cqXzpW823Q@mail.gmail.com>
-	<201306101035.20924.arnd@arndb.de>
-Date: Fri, 14 Jun 2013 17:15:33 +0800
-Message-ID: <CADApbeh9EJDetkvx9Sq=y58mkhU_X1oo-e_hgZqeBV9nriqTiQ@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: mmp: bring up pxa988 with device tree support
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Neil Zhang <zhangwm@marvell.com>, Chao Xie <cxie4@marvell.com>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130613102549.GD31394@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 4:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Thu, Jun 13, 2013 at 06:25:49PM +0800, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg in linux-next and the first bad commit is
+> 
 
->
->> >> > __initdata = {
->> >> > >           .virtual        = (unsigned long)AXI_VIRT_BASE,
->> >> > >           .length         = AXI_PHYS_SIZE,
->> >> > >           .type           = MT_DEVICE,
->> >> > > - },
->> >> > > + }, {
->> >> > > +         .pfn            = __phys_to_pfn(MMP_CORE_PERIPH_PHYS_BASE),
->> >> > > +         .virtual        = (unsigned long)MMP_CORE_PERIPH_VIRT_BASE,
->> >> > > +         .length         = MMP_CORE_PERIPH_PHYS_SIZE,
->> >> > > +         .type           = MT_DEVICE,
->> >> > > + }
->> >> > >  };
->> >> > >
->> >> > >  void __init mmp_map_io(void)
->> >> >
->> >> > What is this needed for?
->> >>
->> >> This function is used to static map the device registers.
->> >
->> > I understand what map_io does. Why do you need a static mapping?
->> >
->>
->> The AXI and APB bus register mapping, It does not need to be static mapping.
->> Because we define the registers for each peripharals in device tree.
->> The device driver can map it.
->
-> Ok. Please try if it all keeps working without these mappings (aside
-> from the SCU). You can leave them in as a performance optimization
-> since the registers will get mapped as large pages this way, but it
-> should really work without them.
->
-> I would also suggest defining the virtual base addresses locally in this
-> file rather than globally, just to ensure that no driver starts relying
-> on the static mapping.
->
->> There is a exception. The address space used by core for example CPU
->> SCU registers for CA9.
->> We have to read/write the registers even device tree has not been
->> build up in kernel, for example ->smp_prepare_cpus.
->> At this point, how can we get the base address for SCU?
->
-> I guess that is a problem we have on other platforms as well, we should
-> find a generic solution for that. It would be nice to reserve a page
-> in "fixmap" and have common code map the SCU page into that.
->
+Thanks Fengguang.
 
-So you mean that reserve a page in arch/arm/asm/include/fixmap.h?
-This reserve will depend on the cpu type beacuse only A9 will have SCU part.
-I do not know that in fixmap, the #ifdef is acceptable or not.
-For the common code to map the SCU page, where do you suggest to put it?
+Can you try the following please? I do not see the same issue
+unfortunately but I am the wrong type of unlucky here.
 
->> >> > > +/* PXA988 */
->> >> > > +static const struct of_dev_auxdata pxa988_auxdata_lookup[] __initconst
+---8<---
+mm: Clear page active before releasing pages
 
->
->         Arnd
+Active pages should not be freed to the page allocator as it triggers a
+bad page state warning. Fengguang Wu reported the following bug
+
+[   84.212960] BUG: Bad page state in process rm  pfn:0b0c9
+[   84.214682] page:ffff88000d646240 count:0 mapcount:0 mapping:          (null) index:0x0
+[   84.216883] page flags: 0x20000000004c(referenced|uptodate|active)
+[   84.218697] CPU: 1 PID: 283 Comm: rm Not tainted 3.10.0-rc4-04361-geeb9bfc #49
+[   84.220729]  ffff88000d646240 ffff88000d179bb8 ffffffff82562956 ffff88000d179bd8
+[   84.223242]  ffffffff811333f1 000020000000004c ffff88000d646240 ffff88000d179c28
+[   84.225387]  ffffffff811346a4 ffff880000270000 0000000000000000 0000000000000006
+[   84.227294] Call Trace:
+[   84.227867]  [<ffffffff82562956>] dump_stack+0x27/0x30
+[   84.229045]  [<ffffffff811333f1>] bad_page+0x130/0x158
+[   84.230261]  [<ffffffff811346a4>] free_pages_prepare+0x8b/0x1e3
+[   84.231765]  [<ffffffff8113542a>] free_hot_cold_page+0x28/0x1cf
+[   84.233171]  [<ffffffff82585830>] ? _raw_spin_unlock_irqrestore+0x6b/0xc6
+[   84.234822]  [<ffffffff81135b59>] free_hot_cold_page_list+0x30/0x5a
+[   84.236311]  [<ffffffff8113a4ed>] release_pages+0x251/0x267
+[   84.237653]  [<ffffffff8112a88d>] ? delete_from_page_cache+0x48/0x9e
+[   84.239142]  [<ffffffff8113ad93>] __pagevec_release+0x2b/0x3d
+[   84.240473]  [<ffffffff8113b45a>] truncate_inode_pages_range+0x1b0/0x7ce
+[   84.242032]  [<ffffffff810e76ab>] ? put_lock_stats.isra.20+0x1c/0x53
+[   84.243480]  [<ffffffff810e77f5>] ? lock_release_holdtime+0x113/0x11f
+[   84.244935]  [<ffffffff8113ba8c>] truncate_inode_pages+0x14/0x1d
+[   84.246337]  [<ffffffff8119b3ef>] evict+0x11f/0x232
+[   84.247501]  [<ffffffff8119c527>] iput+0x1a5/0x218
+[   84.248607]  [<ffffffff8118f015>] do_unlinkat+0x19b/0x25a
+[   84.249828]  [<ffffffff810ea993>] ? trace_hardirqs_on_caller+0x210/0x2ce
+[   84.251382]  [<ffffffff8144372e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   84.252879]  [<ffffffff8118f10d>] SyS_unlinkat+0x39/0x4c
+[   84.254174]  [<ffffffff825874d6>] system_call_fastpath+0x1a/0x1f
+[   84.255596] Disabling lock debugging due to kernel taint
+
+The problem was that a page marked for activation was released via
+pagevec. This patch clears the active bit before freeing in this case.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/swap.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mm/swap.c b/mm/swap.c
+index ac23602..4a1d0d2 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -739,6 +739,9 @@ void release_pages(struct page **pages, int nr, int cold)
+ 			del_page_from_lru_list(page, lruvec, page_off_lru(page));
+ 		}
+ 
++		/* Clear Active bit in case of parallel mark_page_accessed */
++		ClearPageActive(page);
++
+ 		list_add(&page->lru, &pages_to_free);
+ 	}
+ 	if (zone)
+-- 
+Mel Gorman
+SUSE Labs
