@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab3FNQMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:12:13 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:38629 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3FNQML (ORCPT
+	id S1752854Ab3FNQMU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:12:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15420 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3FNQMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:12:11 -0400
-Date: Fri, 14 Jun 2013 18:11:48 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 10/31] mips/kvm: Implement ioctls to get and set FPU
- registers.
-Message-ID: <20130614161148.GM15775@linux-mips.org>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
- <1370646215-6543-11-git-send-email-ddaney.cavm@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370646215-6543-11-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Jun 2013 12:12:17 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tkaDFPjYVEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=apdwqXrHFoAA:10 a=iwrn97SKuRVz8EZBcckA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371226336.9844.328.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Fri, 14 Jun 2013 12:12:16 -0400
+In-Reply-To: <CAK7N6vrCuWd4Q2hquJK9-HED4xyjC7hsCOUdvK3dHEetatzcfw@mail.gmail.com>
+References: <20130613131057.GA15997@somewhere>
+	 <20130613140207.GW133453@redhat.com> <20130613142210.GD16339@somewhere>
+	 <20130613144515.GX133453@redhat.com> <20130613145601.GE16339@somewhere>
+	 <20130613152059.GA133453@redhat.com>
+	 <1371138491.9844.288.camel@gandalf.local.home>
+	 <CAK7N6vqtnoNzRNodN6T0wysMYgPD+-SgPZLXAvRu3px7TUUvHQ@mail.gmail.com>
+	 <1371143779.9844.297.camel@gandalf.local.home>
+	 <CAK7N6vqOQijcZEEuJKFbHKEaULnx8bCkaxSpBaiTe1+VGT+D5w@mail.gmail.com>
+	 <20130614122608.GK5146@linux.vnet.ibm.com>
+	 <CAK7N6vrCuWd4Q2hquJK9-HED4xyjC7hsCOUdvK3dHEetatzcfw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 04:03:14PM -0700, David Daney wrote:
+On Fri, 2013-06-14 at 21:33 +0530, anish singh wrote:
 
-> From: David Daney <david.daney@cavium.com>
-> 
-> The current implementation does nothing with them, but future MIPSVZ
-> work need them.  Also add the asm-offsets accessors for the fields.
+> May I know why we zeroed in on 1Hz? Is there any logical reason
+> or just because it is above 0Hz?
+> >
 
-Just as a note, older MIPS FPUs only have fcr0 and fcr31.
+We had to keep a tick. What number would you have picked?
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+-- Steve
 
-  Ralf
+
