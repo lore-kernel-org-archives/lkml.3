@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3FNQIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:08:06 -0400
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:45346 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751864Ab3FNQIF (ORCPT
+	id S1752768Ab3FNQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:08:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18460 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab3FNQIH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:08:05 -0400
-Date: Fri, 14 Jun 2013 16:08:02 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Roman Gushchin <klamm@yandex-team.ru>
-cc: Pekka Enberg <penberg@kernel.org>, mpm@selenic.com,
-        akpm@linux-foundation.org, mgorman@suse.de,
-        David Rientjes <rientjes@google.com>, glommer@gmail.com,
-        hannes@cmpxchg.org, minchan@kernel.org, jiang.liu@huawei.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slub: Avoid direct compaction if possible
-In-Reply-To: <51BB33FE.1020403@yandex-team.ru>
-Message-ID: <0000013f43718d4d-7bb260e7-8115-4891-bb26-6febacb7169d-000000@email.amazonses.com>
-References: <51BB1802.8050108@yandex-team.ru> <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com> <51BB33FE.1020403@yandex-team.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 14 Jun 2013 12:08:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,867,1363158000"; 
+   d="scan'208";a="317095087"
+From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+To: Holger Kiehl <Holger.Kiehl@dwd.de>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: Problems with ixgbe driver
+Thread-Topic: Problems with ixgbe driver
+Thread-Index: AQHOaPa4Reipntw3xEiCFWdi/5Nblpk1XbFQ
+Date: Fri, 14 Jun 2013 16:08:04 +0000
+Message-ID: <87618083B2453E4A8714035B62D679924FDC4748@FMSMSX105.amr.corp.intel.com>
+References: <alpine.LRH.2.02.1306141031490.22892@praktifix.dwd.de>
+In-Reply-To: <alpine.LRH.2.02.1306141031490.22892@praktifix.dwd.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.14-54.240.9.50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jun 2013, Roman Gushchin wrote:
+>-----Original Message-----
+>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On
+>Behalf Of Holger Kiehl
+>Sent: Friday, June 14, 2013 4:50 AM
+>To: e1000-devel@lists.sf.net
+>Cc: linux-kernel; netdev@vger.kernel.org
+>Subject: Problems with ixgbe driver
+>
+>Hello,
+>
+>I have dual port 10Gb Intel network card on a 2 socket (Xeon X5690) with
+>a total of 12 cores. Hyperthreading is enabled so there are 24 cores.
+>The problem I have is that when other systems send large amount of data
+>the network with the intel ixgbe driver gets very slow. Ping times go up
+>from 0.2ms to appr. 60ms. Some FTP connections stall for more then 2
+>minutes. What is strange is that heatbeat is configured on the system
+>with a serial connection to another node and kernel always reports
 
-> But there is an actual problem, that this patch solves.
-> Sometimes I saw the following issue on some machines:
-> all CPUs are performing compaction, system time is about 80%,
-> system is completely unreliable. It occurs only on machines
-> with specific workload (distributed data storage system, so,
-> intensive disk i/o is performed). A system can fall into
-> this state fast and unexpectedly or by progressive degradation.
+If the network slows down so much there should be some indication in dmesg. Like Tx hangs perhaps.
+Can you provide the output of dmesg and ethtool -S from the offending interface after the issue occurs?
 
-Well that is not a slab allocator specific issue but related to compaction
-concurrency. Likely cache line contention is causing a severe slowday. But
-that issue could be triggered by any subsystem that does lots of memory
-allocations. I would suggest that we try to address the problem in the
-compaction logic rather than modifying allocators.
+>
+>     ttyS0: 4 input overrun(s)
+>
+>when lot of data is send and the ping time goes up.
+>
+>On the network there are three vlan's configured. The network is bonded
+>(active-backup) together with another HP NC523SFP 10Gb 2-port Server
+>Adapter. When I switch the network to this card the problem goes away.
+>Also the ttyS0 input overruns disappear. Note also both network cards
+>are connected to the same switch.
+>
+>The system uses Scientific Linux 6.4 with kernel.org kernel. I noticed
+>this behavior with kernel 3.9.5 and 3.9.6-rc1. Before I did not notice
+>it because traffic always went over the HP NC523SFP qlcnic card.
+>
+>In search for a solution to the problem I found a newer ixgbe driver
+>3.15.1 (3.9.6-rc1. has 3.11.33-k) and tried that. But it has the same
+>problem. However when I load the module as follows:
+>
+>     modprobe ixgbe RSS=8,8
+>
+>the problem goes away. The kernel.org ixgbe driver does not offer this
+>option. Why? It seems that both drivers have problems on systems with
 
-Mel?
+If you are using newer kernel and ethtool version you can use `ethtool -L ethX combined Y` to control the number of queues per interface.
+
+>24 cpu's. But I cannot believe that I am the only one who noticed this,
+>since ixgbe is widely used.
+
+We run traffic with multiple queues all the time and I don't think what you are reporting is a generic issue. Most likely it's something related to your setup/system.
+
+>
+>It would really be nice if one could set the RSS=8,8 option for kernel.org
+>ixgbe driver too. Or if someone could tell me where I can force the driver
+>to Receive Side Scaling to 8 even if it means editing the source code.
+>
+>Below I have added some additional information. Please CC me since I
+>am not subscribed to any of these lists. And please do not hesitate
+>to ask if more information is needed.
+
+I would suggest that you open up a bug at e1000.sf.net - describe your configuration and attach the relevant info (dmesg, ethtool -S, lspci etc). This would make it easier for us to follow.
+
+Thanks,
+Emil
