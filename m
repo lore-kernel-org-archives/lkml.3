@@ -1,112 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3FNPo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:44:26 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:34488 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab3FNPoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:44:25 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/5] pinctrl: rockchip: correctly handle arguments of pinconf options
-Date: Fri, 14 Jun 2013 17:44:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-References: <201306141741.46077.heiko@sntech.de>
-In-Reply-To: <201306141741.46077.heiko@sntech.de>
+	id S1752363Ab3FNPps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:45:48 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49776 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3FNPpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 11:45:47 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 14 Jun 2013 08:45:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: nirinA raseliarison <nirina.raseliarison@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
+        Ming Lei <ming.lei@canonical.com>, Hayes Wang <hayeswang@realtek.com>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
+ 0000000000000040
+Message-ID: <20130614154325.GA30105@roeck-us.net>
+References: <op.wyn5vzc89ey1ta@localhost>
+ <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306141744.21117.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the rockchip pinctrl driver to handle the arguments of 0 or 1 to
-the pull pinconfig options correctly, so that the pull gets disabled when
-either the bias_disable options is set or the pull option has the argument 0.
+On Fri, Jun 14, 2013 at 08:30:29AM -0600, Bjorn Helgaas wrote:
+> [+cc Ming, Hayes, Francois, r8169 list]
+> 
+> On Fri, Jun 14, 2013 at 6:49 AM, nirinA raseliarison
+> <nirina.raseliarison@gmail.com> wrote:
+> > hello there,
+> > i have this ethernet controler:
+> >
+> >  Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast Ethernet
+> > controller (rev 05)
+> >
+> > that uses the r8169 module.
+> > it works fine, but sometimes after a reboot and issueing:
+> >
+> >  ifconfig eth0 192.168.1.1 up
+> >
+> > i got the message below. after another reboot the
+> > message disappears. i also get the same message this 3.9.5 and 3.9.4.
+> >
+> > it seems i catch my first oops and don't know what to do with it.
+> > currently running:
+> >
+> >  cat /proc/version
+> >  Linux version 3.9.6.20130614 (root@supernova) (gcc version 4.8.1 (GCC) ) #1
+> > SMP Fri Jun 14 09:14:50 EAT 2013
+> >
+> >  uname -a
+> >  Linux supernova 3.9.6.20130614 #1 SMP Fri Jun 14 09:14:50 EAT 2013 x86_64
+> > Intel(R) Celeron(R) CPU G1610 @ 2.60GHz GenuineIntel GNU/Linux
+> >
+> > thanks,
+> > -----------------8<------------------------------8<---------------------------------------
+> >
+> > [   57.877560] BUG: unable to handle kernel NULL pointer dereference at
+> > 0000000000000040
+> > [   57.877603] IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
+> > [   57.877634] PGD 21330a067 PUD 211a3a067 PMD 0
+> > [   57.877660] Oops: 0002 [#1] SMP
+> > [   57.877681] Modules linked in: fuse coretemp kvm_intel kvm evdev r8169
+> > microcode mii
+> > [   57.877735] CPU 0
+> > [   57.877746] Pid: 1950, comm: firmware Not tainted 3.9.6.20130614 #1 To be
+> > filled by O.E.M. To be filled by O.E.M./ONDA H61V Ver:4.01
+> > [   57.877790] RIP: 0010:[<ffffffff81491844>]  [<ffffffff81491844>]
+> > fw_load_abort.isra.5+0x4/0x20
+> > [   57.877824] RSP: 0018:ffff8802119a7e80  EFLAGS: 00010246
+> > [   57.877844] RAX: ffff8802158fe250 RBX: ffff880211a03b40 RCX:
+> > 0000000000000000
+> > [   57.877869] RDX: ffffffff81c742c8 RSI: ffff8802158fe250 RDI:
+> > 0000000000000000
+> > [   57.877895] RBP: ffff8802119a7e80 R08: ffff8802119a6000 R09:
+> > 00000000000005aa
+> > [   57.877920] R10: 0000000000000000 R11: 0000000000000000 R12:
+> > ffffffffffffffff
+> > [   57.877945] R13: ffff880213d34088 R14: 0000000000000003 R15:
+> > ffff88020eafc230
+> > [   57.877970] FS:  00007f3c6cb2a740(0000) GS:ffff88021f200000(0000)
+> > knlGS:0000000000000000
+> > [   57.877998] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [   57.878019] CR2: 0000000000000040 CR3: 0000000203155000 CR4:
+> > 00000000001407f0
+> > [   57.878044] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> > 0000000000000000
+> > [   57.878069] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> > 0000000000000400
+> > [   57.878094] Process firmware (pid: 1950, threadinfo ffff8802119a6000,
+> > task ffff8802158fe250)
+> > [   57.878124] Stack:
+> > [   57.878133]  ffff8802119a7eb0 ffffffff81491917 ffff880211a4d5a0
+> > 0000000000000003
+> > [   57.878168]  ffff8802119a7f50 ffffffff818765a0 ffff8802119a7ec0
+> > ffffffff81483063
+> > [   57.878203]  ffff8802119a7f08 ffffffff8119bc9e ffff880213d34098
+> > ffff880211a4d5c0
+> > [   57.878237] Call Trace:
+> > [   57.878251]  [<ffffffff81491917>] firmware_loading_store+0x77/0x150
+> > [   57.878275]  [<ffffffff81483063>] dev_attr_store+0x13/0x20
+> > [   57.878297]  [<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
+> > [   57.878320]  [<ffffffff81133e8a>] vfs_write+0x9a/0x160
+> > [   57.878340]  [<ffffffff81134164>] sys_write+0x44/0x90
+> > [   57.878360]  [<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
+> > [   57.879379] Code: 6b ff ff ff 48 89 df 31 db e8 b9 b0 c9 ff e9 79 ff ff
+> > ff 0f 1f 40 00 48 83 c4 10 5b 41 5c 41 5d 41 5e 5d c3 0f 1f 00 55 48 89 e5
+> > <f0> 80 4f 40 04 48 83 c7 18 e8 8e a9 bd ff 5d c3 66 66 66 2e 0f
+> > [   57.881753] RIP  [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
+> > [   57.882888]  RSP <ffff8802119a7e80>
+> > [   57.884019] CR2: 0000000000000040
+> > [   57.885166] ---[ end trace 6705f6d4ce6b6a12 ]---
+> >
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Please try the following patch.
+
+[ Bjorn, sorry I dropped you from the recipient list, but unfortunately
+Google still considers me to be a spammer and doesn't let me send any
+e-mail to you ]
+
+Guenter
+
+----------
+
+>From 9feae0b1b33721573c41fbf2323db2a12c34c725 Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Fri, 14 Jun 2013 08:39:06 -0700
+Subject: [PATCH] firmware: Fix race condition in firmware_loading_store
+
+Fix:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
+IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
+...
+Call Trace:
+[<ffffffff81491917>] firmware_loading_store+0x77/0x150
+[<ffffffff81483063>] dev_attr_store+0x13/0x20
+[<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
+[<ffffffff81133e8a>] vfs_write+0x9a/0x160
+[<ffffffff81134164>] sys_write+0x44/0x90
+[<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/pinctrl/pinctrl-rockchip.c |   37 +++++++++++++++++++++++++++++++-----
- 1 file changed, 32 insertions(+), 5 deletions(-)
+ drivers/base/firmware_class.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index c605b63..2568afc 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -563,6 +563,25 @@ static const struct pinmux_ops rockchip_pmx_ops = {
-  * Pinconf_ops handling
-  */
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 4b1f926..f34b489 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -570,12 +570,13 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 				      const char *buf, size_t count)
+ {
+ 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
+-	struct firmware_buf *fw_buf = fw_priv->buf;
+ 	int loading = simple_strtol(buf, NULL, 10);
++	struct firmware_buf *fw_buf;
+ 	int i;
  
-+static bool rockchip_pinconf_pull_valid(struct rockchip_pin_ctrl *ctrl,
-+					enum pin_config_param pull)
-+{
-+	/* rk3066b does support any pulls */
-+	if (!ctrl->pull_offset)
-+		return pull ? false : true;
-+
-+	if (ctrl->pull_auto) {
-+		if (pull != PIN_CONFIG_BIAS_PULL_PIN_DEFAULT &&
-+					pull != PIN_CONFIG_BIAS_DISABLE)
-+			return false;
-+	} else {
-+		if (pull == PIN_CONFIG_BIAS_PULL_PIN_DEFAULT)
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- /* set the pin config settings for a specified pin */
- static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 							unsigned long config)
-@@ -570,12 +589,21 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
- 	struct rockchip_pin_bank *bank = pin_to_bank(info, pin);
- 	enum pin_config_param param = pinconf_to_config_param(config);
-+	u16 arg = pinconf_to_config_argument(config);
+ 	mutex_lock(&fw_lock);
  
- 	switch (param) {
- 	case PIN_CONFIG_BIAS_DISABLE:
-+		return rockchip_set_pull(bank, pin - bank->pin_base, param);
-+		break;
- 	case PIN_CONFIG_BIAS_PULL_UP:
- 	case PIN_CONFIG_BIAS_PULL_DOWN:
- 	case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
-+		if (!rockchip_pinconf_pull_valid(info->ctrl, param))
-+			return -ENOTSUPP;
-+
-+		if (!arg)
-+			param = PIN_CONFIG_BIAS_DISABLE;
-+
- 		return rockchip_set_pull(bank, pin - bank->pin_base, param);
- 		break;
- 	default:
-@@ -600,12 +628,11 @@ static int rockchip_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
- 	case PIN_CONFIG_BIAS_PULL_UP:
- 	case PIN_CONFIG_BIAS_PULL_DOWN:
- 	case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
--		pull = rockchip_get_pull(bank, pin - bank->pin_base);
--
--		if (pull != param)
--			return -EINVAL;
-+		if (!rockchip_pinconf_pull_valid(info->ctrl, param))
-+			return -ENOTSUPP;
++	fw_buf = fw_priv->buf;
+ 	if (!fw_buf)
+ 		goto out;
  
--		*config = 0;
-+		pull = rockchip_get_pull(bank, pin - bank->pin_base);
-+		*config = (pull == param) ? 1 : 0;
- 		break;
- 	default:
- 		return -ENOTSUPP;
 -- 
-1.7.10.4
+1.7.9.7
 
