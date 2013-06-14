@@ -1,38 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3FNHtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:49:22 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:61434 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab3FNHtV (ORCPT
+	id S1752127Ab3FNHz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:55:58 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:41367 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3FNHz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:49:21 -0400
-Message-ID: <51BACB03.8010400@gmail.com>
-Date: Fri, 14 Jun 2013 09:49:23 +0200
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 14 Jun 2013 03:55:57 -0400
+From: Rojhalat Ibrahim <imr@rtschenk.de>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Michael Guntsche <michael.guntsche@it-loops.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
+Date: Fri, 14 Jun 2013 09:55:50 +0200
+Message-ID: <6071007.YKP3JmbiTP@pcimr>
+User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1371142157.2028.9@snotra>
+References: <1370971739.18413.27@snotra> <7706620.VNI3PE9pqO@pcimr> <1371142157.2028.9@snotra>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: perf bench does compile in 3.9.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thursday 13 June 2013 11:49:17 Scott Wood wrote:
+> On 06/13/2013 02:21:24 AM, Rojhalat Ibrahim wrote:
+> > On Wednesday 12 June 2013 16:50:26 Scott Wood wrote:
+> > > On 06/12/2013 03:19:30 AM, Rojhalat Ibrahim wrote:
+> > > > On Tuesday 11 June 2013 12:28:59 Scott Wood wrote:
+> > > > > Yes, I figured it was non-PCIe because the code change that you
+> > 
+> > said
+> > 
+> > > > > helped was on the non-PCIe branch of the if/else.  Generally
+> > 
+> > it's
+> > 
+> > > > good
+> > > > 
+> > > > > to explicitly mention the chip you're using, though.
+> > > > > 
+> > > > > fsl_setup_indirect_pci should be renamed to
+> > 
+> > fsl_setup_indirect_pcie.
+> > 
+> > > > > Your patch above should be applied, and fsl_setup_indirect_pcie
+> > > > 
+> > > > should
+> > > > 
+> > > > > be moved into the booke/86xx ifdef to avoid an unused function
+> > > > 
+> > > > warning.
+> > > > 
+> > > > > -Scott
+> > > > 
+> > > > How about this patch? It uses setup_indirect_pci for the PCI case
+> > 
+> > in
+> > 
+> > > > mpc83xx_add_bridge. Additionally it adds a check in
+> > > > fsl_setup_indirect_pci
+> > > > to only use the modified read function in case of PCIe.
+> > > 
+> > > If we're adding the check to fsl_setup_indirect_pci, there's no
+> > 
+> > need to
+> > 
+> > > change the 83xx call back to setup_indirect_pci.  I see that 85xx is
+> > > also callirng fsl_setup_indirect_pci for both; it'd be good to be
+> > > consistent.
+> > > 
+> > > In any case, can you send a proper patch with a signoff and commit
+> > > message?
+> > > 
+> > > -Scott
+> > 
+> > Where is it called for 85xx? As far as I can tell
+> > fsl_setup_indirect_pci is
+> > called exactly once in fsl_add_bridge and nowhere else (after
+> > applying the
+> > proposed patch).
+> 
+> fsl_add_bridge() is where it's called for 85xx.
+> 
+> > For 83xx the decision between PCI and PCIe has already been made at
+> > the point where the setup function is called. So IMO it doesn't make
+> > sense
+> > to call fsl_setup_indirect_pci and do the check again. Moreover PCIe
+> > on 83xx
+> > uses a completely different set of functions.
+> 
+> My concern is consistency.  E.g. if 85xx is using
+> fsl_setup_indirect_pci for both, but 83xx isn't, then a developer using
+> 83xx could end up breaking 85xx by introducing another PCIe dependency
+> in fsl_setup_indirect_pci.  Or an 85xx developer could put something
+> non-PCIe-related in fsl_setup_indirect_pci that 83xx would benefit from.
+> 
+> Alternatively, you could call it fsl_setup_indirect_pcie, and move the
+> PCIe check into fsl_add_bridge().
+> 
+> -Scott
 
-on my 64bit kernel / 32 bit userspace system with libnuma 2.0.8 i get this error on linux 3.9.6:
+Ok. I'll post a v2 of the patch.
 
-bench/numa.c: In function ‘worker_thread’:
-bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-bench/numa.c:1161:6: error: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format]
+   Rojhalat
 
-Haven't tried latest git but it looks like there's the same issue.
-
-thanks,
-riccardo
