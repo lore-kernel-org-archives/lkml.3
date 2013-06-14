@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759841Ab3FNCkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 22:40:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41762 "EHLO
+	id S1759862Ab3FNCkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 22:40:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47995 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759823Ab3FNCkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 22:40:09 -0400
+	id S1759845Ab3FNCkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 22:40:17 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [Trivial PATCH 13/33] md: Convert use of typedef ctl_table to struct ctl_table
-Date: Thu, 13 Jun 2013 19:37:38 -0700
-Message-Id: <f688e5c8901e3fadf381ba5ba5cde664bd95ab93.1371177118.git.joe@perches.com>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org
+Subject: [Trivial PATCH 14/33] sgi: xpc: Convert use of typedef ctl_table to struct ctl_table
+Date: Thu, 13 Jun 2013 19:37:39 -0700
+Message-Id: <4a2276e3c9bc2afc3b67651972a2a2b7f83b161c.1371177118.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1371177118.git.joe@perches.com>
 References: <cover.1371177118.git.joe@perches.com>
@@ -24,40 +23,40 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/md/md.c | 6 +++---
+ drivers/misc/sgi-xp/xpc_main.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 9b82377..f7edaf9 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -112,7 +112,7 @@ static inline int speed_max(struct mddev *mddev)
+diff --git a/drivers/misc/sgi-xp/xpc_main.c b/drivers/misc/sgi-xp/xpc_main.c
+index d971817..82dc574 100644
+--- a/drivers/misc/sgi-xp/xpc_main.c
++++ b/drivers/misc/sgi-xp/xpc_main.c
+@@ -92,7 +92,7 @@ int xpc_disengage_timelimit = XPC_DISENGAGE_DEFAULT_TIMELIMIT;
+ static int xpc_disengage_min_timelimit;	/* = 0 */
+ static int xpc_disengage_max_timelimit = 120;
  
- static struct ctl_table_header *raid_table_header;
- 
--static ctl_table raid_table[] = {
-+static struct ctl_table raid_table[] = {
+-static ctl_table xpc_sys_xpc_hb_dir[] = {
++static struct ctl_table xpc_sys_xpc_hb_dir[] = {
  	{
- 		.procname	= "speed_limit_min",
- 		.data		= &sysctl_speed_limit_min,
-@@ -130,7 +130,7 @@ static ctl_table raid_table[] = {
- 	{ }
+ 	 .procname = "hb_interval",
+ 	 .data = &xpc_hb_interval,
+@@ -111,7 +111,7 @@ static ctl_table xpc_sys_xpc_hb_dir[] = {
+ 	 .extra2 = &xpc_hb_check_max_interval},
+ 	{}
  };
- 
--static ctl_table raid_dir_table[] = {
-+static struct ctl_table raid_dir_table[] = {
+-static ctl_table xpc_sys_xpc_dir[] = {
++static struct ctl_table xpc_sys_xpc_dir[] = {
  	{
- 		.procname	= "raid",
- 		.maxlen		= 0,
-@@ -140,7 +140,7 @@ static ctl_table raid_dir_table[] = {
- 	{ }
+ 	 .procname = "hb",
+ 	 .mode = 0555,
+@@ -126,7 +126,7 @@ static ctl_table xpc_sys_xpc_dir[] = {
+ 	 .extra2 = &xpc_disengage_max_timelimit},
+ 	{}
  };
- 
--static ctl_table raid_root_table[] = {
-+static struct ctl_table raid_root_table[] = {
+-static ctl_table xpc_sys_dir[] = {
++static struct ctl_table xpc_sys_dir[] = {
  	{
- 		.procname	= "dev",
- 		.maxlen		= 0,
+ 	 .procname = "xpc",
+ 	 .mode = 0555,
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
