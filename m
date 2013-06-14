@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3FNR5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 13:57:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43728 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab3FNR5T (ORCPT
+	id S1752636Ab3FNR5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 13:57:18 -0400
+Received: from mail-gh0-f169.google.com ([209.85.160.169]:46422 "EHLO
+	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNR5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 13:57:19 -0400
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL 2/3] msm fixes for 3.11
-Date: Fri, 14 Jun 2013 10:56:54 -0700
-Message-Id: <1371232615-30731-3-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
-References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
+	Fri, 14 Jun 2013 13:57:17 -0400
+Date: Fri, 14 Jun 2013 10:57:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] mm/writeback: rename WB_REASON_FORKER_THREAD to
+ WB_REASON_WORKER_THREAD
+Message-ID: <20130614175710.GB6593@mtj.dyndns.org>
+References: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1371195041-26654-4-git-send-email-liwanp@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371195041-26654-4-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+On Fri, Jun 14, 2013 at 03:30:37PM +0800, Wanpeng Li wrote:
+> After commit 839a8e86("writeback: replace custom worker pool implementation
+> with unbound workqueue"), there is no bdi forker thread any more. This patch
+> rename WB_REASON_FORKER_THREAD to WB_REASON_WORKER_THREAD since works are
+> done by emergency worker.
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+This is somewhat userland visible and we'll be exposing exactly the
+same information with just a different name.  While the string doesn't
+match the current implementation exactly, I don't think we need to
+change it.  Maybe add a comment there saying why it has a mismatching
+name is enough?
 
-are available in the git repository at:
+Thanks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-fix-for-3.11
-
-for you to fetch changes up to 7ba655fc965b073292349fa49fb9d16d701185bc:
-
-  gpio: msm-v1: Remove errant __devinit to fix compile (2013-06-12 14:49:06 -0700)
-
-----------------------------------------------------------------
-Some minor fixes for MSM for 3.11
-
-I don't expect these to be necessary for stable, since the fixes are
-to recently added code.  The strncpy fix is only in debug code that
-isn't normally compiled or used (and is being removed in upcoming
-patches).
-
-----------------------------------------------------------------
-Chen Gang (1):
-      arch: arm: mach-msm: using strlcpy instead of strncpy
-
-Stephen Boyd (3):
-      ARM: dts: msm: Fix bad register addresses
-      mfd: ssbi: Add MODULE_DEVICE_TABLE
-      gpio: msm-v1: Remove errant __devinit to fix compile
-
- arch/arm/boot/dts/msm8660-surf.dts | 4 ++--
- arch/arm/boot/dts/msm8960-cdp.dts  | 2 +-
- arch/arm/mach-msm/clock-debug.c    | 2 +-
- drivers/gpio/gpio-msm-v1.c         | 2 +-
- drivers/ssbi/ssbi.c                | 1 +
- 5 files changed, 6 insertions(+), 5 deletions(-)
+-- 
+tejun
