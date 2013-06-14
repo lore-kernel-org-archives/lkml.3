@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3FNOsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:48:36 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10362 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3FNOse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:48:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 14 Jun 2013 07:47:16 -0700
-Message-ID: <51BB2D3A.1050407@nvidia.com>
-Date: Fri, 14 Jun 2013 20:18:26 +0530
-From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
-Organization: NVIDIA Graphics Pvt Ltd
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        Arto Merilainen <amerilainen@nvidia.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "airlied@redhat.com" <airlied@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	id S1752986Ab3FNOt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:49:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60817 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750933Ab3FNOtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:49:25 -0400
+Date: Fri, 14 Jun 2013 16:44:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] gpu: host1x: add runtime pm support for dc
-References: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com> <1371117218-2326-4-git-send-email-mkulkarni@nvidia.com> <20130613184938.GE32574@mithrandir> <51BA18EF.4090302@wwwdotorg.org>
-In-Reply-To: <51BA18EF.4090302@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base
+	multibuffer
+Message-ID: <20130614144442.GA1943@redhat.com>
+References: <51BA7578.4080108@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BA7578.4080108@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 June 2013 12:39 AM, Stephen Warren wrote:
-> On 06/13/2013 12:49 PM, Thierry Reding wrote:
->> On Thu, Jun 13, 2013 at 03:23:37PM +0530, Mayuresh Kulkarni wrote:
->> [...]
->>> diff --git a/drivers/gpu/host1x/drm/dc.c
->>> b/drivers/gpu/host1x/drm/dc.c
->> [...]
->>> @@ -1128,9 +1129,7 @@ static int tegra_dc_probe(struct
->>> platform_device *pdev) return PTR_ERR(dc->clk); }
->>>
->>> -	err = clk_prepare_enable(dc->clk); -	if (err < 0) -		return
->>> err; +	platform_set_drvdata(pdev, dc);
->>
->> Why do you move the call to platform_set_drvdata() up here?
+On 06/14, zhangwei(Jovi) wrote:
 >
-> Presumably the suspend/resume functions need to get the value out of
-> the device they're passed, so it needs to be set up early?
+> Support multi-buffer on uprobe-based dynamic events by
+> using ftrace_event_file.
 >
+> The code change is based on kprobe-based dynamic events
+> multibuffer support work commited by Masami(commit 41a7dd420c)
 
-Yes that is correct, Stephen. The run-time pm call-backs need 2 things: 
-correct driver data pointer and correct clock pointer within it. Hence I 
-had to move this line upper in sequence.
+And the change in probe_event_enable() doesn't look right, but
+let me repeat I didn't read the patch carefully yet.
 
-Same is applicable to gr2d and host1x patches as well.
+> +static DEFINE_MUTEX(uprobe_enable_lock);
+> +
+>  static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
+>  {
+>  	return tu->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE);
+> @@ -607,33 +655,123 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+>  				struct mm_struct *mm);
+> 
+>  static int
+> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+> +		   filter_func_t filter)
+>  {
+> +	int enabled = 0;
+>  	int ret = 0;
+> 
+> +	mutex_lock(&uprobe_enable_lock);
+
+Do we really need this? Can't we really on mutex_event hold by the caller?
+
+>  	if (is_trace_uprobe_enabled(tu))
+> -		return -EINTR;
+> +		enabled = 1;
+> +
+> +	if (file) {
+> +		struct ftrace_event_file **new, **old;
+> +		int n = trace_uprobe_nr_files(tu);
+> +
+> +		old = rcu_dereference_raw(tu->files);
+> +		/* 1 is for new one and 1 is for stopper */
+> +		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
+> +			      GFP_KERNEL);
+> +		if (!new) {
+> +			ret = -ENOMEM;
+> +			goto out_unlock;
+> +		}
+> +		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+> +		new[n] = file;
+> +		/* The last one keeps a NULL */
+> +
+> +		rcu_assign_pointer(tu->files, new);
+> +		tu->flags |= TP_FLAG_TRACE;
+> +
+> +		if (old) {
+> +			/* Make sure the probe is done with old files */
+> +			synchronize_sched();
+> +			kfree(old);
+> +		}
+> +	} else
+> +		tu->flags |= TP_FLAG_PROFILE;
+
+So it can set both TP_FLAG_TRACE and TP_FLAG_PROFILE, yes?
+
+If yes, this is not right. Until we change the pre-filtering at least.
+Currently TP_FLAG_TRACE/TP_FLAG_PROFILE are mutually exclusive.
+
+I think it makes sense to remove this limitation anyway, and in fact
+I do not remember why I didn't do this... But this needs a separate
+change.
+
+Oleg.
+
