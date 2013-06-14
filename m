@@ -1,204 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab3FNLRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 07:17:10 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.169]:44218 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752298Ab3FNLRI (ORCPT
+	id S1752464Ab3FNLan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 07:30:43 -0400
+Received: from gate.alliedtelesyn.co.nz ([202.49.72.33]:41629 "HELO
+	gate.alliedtelesyn.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752290Ab3FNLal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 07:17:08 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-13.tower-38.messagelabs.com!1371208607!17312867!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 14 Jun 2013 13:16:48 +0200
-Date: Fri, 14 Jun 2013 13:19:53 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
-Subject: [PATCH v9 2/2] watchdog: Sysfs interface for MEN A21 watchdog
-Message-ID: <20130614111947.GA17814@jtlinux>
-References: <20130614105831.GA9334@jtlinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130614105831.GA9334@jtlinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 14 Jun 2013 11:16:47.0657 (UTC) FILETIME=[A8F7B990:01CE68F0]
+	Fri, 14 Jun 2013 07:30:41 -0400
+From: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Subject: [PATCH 1/1] [PATCH v2] tcp: Fixed MD5 key lookups when adding/removing MD5.
+Date: Fri, 14 Jun 2013 23:30:03 +1200
+Message-Id: <1371209403-28275-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a sysfs interface for the watchdog
-device found on MEN A21 Boards.
+MD5 key lookups on a given TCP socket were being performed
+incorrectly. This fix alters parameter inputs to the MD5
+lookup function tcp_md5_do_lookup, which is called by functions
+tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
+inputs the correct address and address family required to make
+a proper lookup.
 
-The newly generated files are:
-* rebootcause:
-Can be one of:
-Power on Reset,
-CPU Reset Request,
-Push Button,
-FPGA Reset Request,
-Watchdog,
-Local Power Bad,
-Invalid or
-BDI
-and shows the reason of the boards last reboot.
+Commit a915da9b69273815527ccb3789421cb7027b545b ("tcp: md5: rcu conversion")
+is the source of the regression.
 
-* active:
-Shows if the watchdog CPLD is actually running
-
-* allow_disable:
-Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
-
-* fastmode:
-Shows if the CPLD is running in fast mode (1s timeout), once it is in
-fastmode it can't be switched back to slow mode (30s timeout) until the
-next reboot.
-
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
 ---
+ net/ipv4/tcp_ipv4.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- Revision 2:
- * Re-worked sysfs patch to apply on re-worked base
-
- Revision 3:
- * Re-worked sysfs patch to apply on re-worked base
-
- Revision 4:
- * Re-worked sysfs patch to apply on re-worked base
-
- drivers/watchdog/mena21_wdt.c |   88 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 88 insertions(+)
-
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-index 0d3409a..03165be 100644
---- a/drivers/watchdog/mena21_wdt.c
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -22,6 +22,17 @@
-
- #define NUM_GPIOS 6
-
-+static char *reset_causes[] = {
-+	"Power On Reset",
-+	"CPU Reset Request",
-+	"Push Button",
-+	"FPGA Reset Request",
-+	"Watchdog",
-+	"Local Power Bad",
-+	"Invalid",
-+	"BDI",
-+};
-+
- enum a21_wdt_gpios {
- 	GPIO_WD_ENAB,
- 	GPIO_WD_FAST,
-@@ -53,6 +64,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
- 	return reset;
- }
-
-+static ssize_t rebootcause_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+	unsigned int reset = 0;
-+
-+	reset = a21_wdt_get_bootstatus(drv);
-+
-+	return sprintf(buf, "%s\n", reset_causes[reset]);
-+}
-+static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-+
-+static ssize_t active_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
-+}
-+static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
-+
-+static ssize_t allow_disable_show(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	return sprintf(buf, "%d\n", !nowayout);
-+}
-+static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
-+
-+static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
-+}
-+static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
-+
-+static int a21_wdt_create_files(struct watchdog_device *wdev)
-+{
-+	int ret;
-+
-+	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_active);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_remove_files(struct watchdog_device *wdev)
-+{
-+	device_remove_file(wdev->dev, &dev_attr_rebootcause);
-+	device_remove_file(wdev->dev, &dev_attr_active);
-+	device_remove_file(wdev->dev, &dev_attr_allow_disable);
-+	device_remove_file(wdev->dev, &dev_attr_fastmode);
-+}
-+
- static int a21_wdt_start(struct watchdog_device *wdt)
- {
- 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-@@ -222,9 +300,18 @@ static int a21_wdt_probe(struct platform_device *pdev)
- 	}
-
- 	dev_set_drvdata(&pdev->dev, drv);
-+	dev_set_drvdata(a21_wdt.dev, drv);
-+
-+	ret = a21_wdt_create_files(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
-+		goto err_create_sysfs;
-+	}
-
- 	return 0;
-
-+err_create_sysfs:
-+	watchdog_unregister_device(&drv->wdt);
- err_register_wd:
- 	mutex_destroy(&drv->lock);
-
-@@ -238,6 +325,7 @@ static int a21_wdt_remove(struct platform_device *pdev)
- 	dev_warn(&pdev->dev,
- 		"Unregistering A21 watchdog driver, board may reboot\n");
-
-+	a21_wdt_remove_files(&drv->wdt);
-
- 	watchdog_unregister_device(&drv->wdt);
-
---
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index d09203c..da84cdb 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1005,7 +1005,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct tcp_md5sig_info *md5sig;
+ 
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, addr, family);
+ 	if (key) {
+ 		/* Pre-existing entry - just update that one. */
+ 		memcpy(key->key, newkey, newkeylen);
+@@ -1050,7 +1050,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
+ 	struct tcp_md5sig_key *key;
+ 	struct tcp_md5sig_info *md5sig;
+ 
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, addr, family);
+ 	if (!key)
+ 		return -ENOENT;
+ 	hlist_del_rcu(&key->node);
+-- 
 1.7.9.5
 
