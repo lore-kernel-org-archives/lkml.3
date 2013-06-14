@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3FNJgT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:36:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37276 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3FNJgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:36:18 -0400
+	id S1752205Ab3FNJga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:36:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42835 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab3FNJg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:36:28 -0400
 From: Philip Avinash <avinashphilip@ti.com>
 To: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>
 CC: <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-kernel@vger.kernel.org>, <avinashphilip@ti.com>
-Subject: [PATCH v2 4/7] ARM: davinci: creation of gpio platform device for dmxxx platforms
-Date: Fri, 14 Jun 2013 15:05:29 +0530
-Message-ID: <1371202532-14628-5-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v2 5/7] ARM: davinci: da8xx: gpio device creation
+Date: Fri, 14 Jun 2013 15:05:30 +0530
+Message-ID: <1371202532-14628-6-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
 References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
@@ -25,65 +24,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpio controller resource information being associated with
-davinci_soc_info structure and not created any device. Hence davinci
-gpio didn't fall under proper device model. This patch creates gpio
-davinci as a platform device for dmxxx platforms.
-Also add daivinci_register_gpio API to create platform device for dmxxx
-platforms.
+Create davinci gpio device and remove references in davinci_soc_info
+structure. Also rearrange header file inclusion in group basis.
 
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 ---
- arch/arm/mach-davinci/devices.c             |   13 +++++++++++++
- arch/arm/mach-davinci/include/mach/common.h |    2 ++
- 2 files changed, 15 insertions(+)
+ arch/arm/mach-davinci/board-da830-evm.c     |   19 +++++++++++++++----
+ arch/arm/mach-davinci/board-da850-evm.c     |   11 +++++++++++
+ arch/arm/mach-davinci/board-omapl138-hawk.c |    2 ++
+ arch/arm/mach-davinci/da830.c               |    4 ----
+ arch/arm/mach-davinci/da850.c               |    4 ----
+ 5 files changed, 28 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
-index a7068a3..b4f345b 100644
---- a/arch/arm/mach-davinci/devices.c
-+++ b/arch/arm/mach-davinci/devices.c
-@@ -313,6 +313,19 @@ static void davinci_init_wdt(void)
- 	platform_device_register(&davinci_wdt_device);
- }
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index 1332de8..4e8bcc1 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -22,17 +22,19 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/flash.h>
++#include <linux/platform_data/mtd-davinci.h>
++#include <linux/platform_data/gpio-davinci.h>
++#include <linux/platform_data/usb-davinci.h>
++#include <linux/platform_data/mtd-davinci-aemif.h>
++#include <linux/platform_data/spi-davinci.h>
  
-+static struct platform_device davinci_gpio_device = {
-+	.name		= "davinci_gpio",
-+	.id		= -1,
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ 
+ #include <mach/cp_intc.h>
+ #include <mach/mux.h>
+-#include <linux/platform_data/mtd-davinci.h>
++#include <mach/common.h>
+ #include <mach/da8xx.h>
+-#include <linux/platform_data/usb-davinci.h>
+-#include <linux/platform_data/mtd-davinci-aemif.h>
+-#include <linux/platform_data/spi-davinci.h>
+ 
+ #define DA830_EVM_PHY_ID		""
+ /*
+@@ -590,11 +592,20 @@ static struct spi_board_info da830evm_spi_info[] = {
+ 	},
+ };
+ 
++static struct davinci_gpio_platform_data da830_gpio_platform_data = {
++	.ngpio = 128,
++	.intc_irq_num = DA830_N_CP_INTC_IRQ,
 +};
 +
-+int davinci_gpio_register(struct resource *res, int size, void *pdata)
-+{
-+	davinci_gpio_device.resource = res;
-+	davinci_gpio_device.num_resources = size;
-+	davinci_gpio_device.dev.platform_data = pdata;
-+	return platform_device_register(&davinci_gpio_device);
-+}
+ static __init void da830_evm_init(void)
+ {
+ 	struct davinci_soc_info *soc_info = &davinci_soc_info;
+ 	int ret;
+ 
++	ret = da8xx_register_gpio(&da830_gpio_platform_data);
++	if (ret)
++		pr_warn("da830_evm_init: GPIO init failed: %d\n", ret);
 +
- /*-------------------------------------------------------------------------*/
+ 	ret = da830_register_edma(da830_edma_rsv);
+ 	if (ret)
+ 		pr_warning("da830_evm_init: edma registration failed: %d\n",
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 8a24b6c..d5dd010 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -28,6 +28,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/platform_device.h>
++#include <linux/platform_data/gpio-davinci.h>
+ #include <linux/platform_data/mtd-davinci.h>
+ #include <linux/platform_data/mtd-davinci-aemif.h>
+ #include <linux/platform_data/spi-davinci.h>
+@@ -42,6 +43,7 @@
+ #include <mach/da8xx.h>
+ #include <mach/mux.h>
+ #include <mach/sram.h>
++#include <mach/common.h>
  
- /*-------------------------------------------------------------------------*/
-diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
-index b124b77..bd389ba 100644
---- a/arch/arm/mach-davinci/include/mach/common.h
-+++ b/arch/arm/mach-davinci/include/mach/common.h
-@@ -14,6 +14,7 @@
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -1138,6 +1140,11 @@ static struct edma_rsv_info *da850_edma_rsv[2] = {
+ 	&da850_edma_cc1_rsv,
+ };
  
- #include <linux/compiler.h>
- #include <linux/types.h>
-+#include <linux/ioport.h>
++static struct davinci_gpio_platform_data da850_gpio_platform_data = {
++	.ngpio = 144,
++	.intc_irq_num = DA850_N_CP_INTC_IRQ,
++};
++
+ #ifdef CONFIG_CPU_FREQ
+ static __init int da850_evm_init_cpufreq(void)
+ {
+@@ -1444,6 +1451,10 @@ static __init void da850_evm_init(void)
+ {
+ 	int ret;
  
- extern void davinci_timer_init(void);
++	ret = da8xx_register_gpio(&da850_gpio_platform_data);
++	if (ret)
++		pr_warn("da850_evm_init: GPIO init failed: %d\n", ret);
++
+ 	ret = pmic_tps65070_init();
+ 	if (ret)
+ 		pr_warn("%s: TPS65070 PMIC init failed: %d\n", __func__, ret);
+diff --git a/arch/arm/mach-davinci/board-omapl138-hawk.c b/arch/arm/mach-davinci/board-omapl138-hawk.c
+index b8c20de..1f44a1b 100644
+--- a/arch/arm/mach-davinci/board-omapl138-hawk.c
++++ b/arch/arm/mach-davinci/board-omapl138-hawk.c
+@@ -13,6 +13,7 @@
+ #include <linux/init.h>
+ #include <linux/console.h>
+ #include <linux/gpio.h>
++#include <linux/platform_data/gpio-davinci.h>
  
-@@ -83,6 +84,7 @@ extern void davinci_common_init(struct davinci_soc_info *soc_info);
- extern void davinci_init_ide(void);
- void davinci_restart(char mode, const char *cmd);
- void davinci_init_late(void);
-+int davinci_gpio_register(struct resource *res, int size, void *pdata);
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -20,6 +21,7 @@
+ #include <mach/cp_intc.h>
+ #include <mach/da8xx.h>
+ #include <mach/mux.h>
++#include <mach/common.h>
  
- #ifdef CONFIG_DAVINCI_RESET_CLOCKS
- int davinci_clk_disable_unused(void);
+ #define HAWKBOARD_PHY_ID		"davinci_mdio-0:07"
+ #define DA850_HAWK_MMCSD_CD_PIN		GPIO_TO_PIN(3, 12)
+diff --git a/arch/arm/mach-davinci/da830.c b/arch/arm/mach-davinci/da830.c
+index abbaf02..e7b79ee 100644
+--- a/arch/arm/mach-davinci/da830.c
++++ b/arch/arm/mach-davinci/da830.c
+@@ -1195,10 +1195,6 @@ static struct davinci_soc_info davinci_soc_info_da830 = {
+ 	.intc_irq_prios		= da830_default_priorities,
+ 	.intc_irq_num		= DA830_N_CP_INTC_IRQ,
+ 	.timer_info		= &da830_timer_info,
+-	.gpio_type		= GPIO_TYPE_DAVINCI,
+-	.gpio_base		= DA8XX_GPIO_BASE,
+-	.gpio_num		= 128,
+-	.gpio_irq		= IRQ_DA8XX_GPIO0,
+ 	.serial_dev		= &da8xx_serial_device,
+ 	.emac_pdata		= &da8xx_emac_pdata,
+ };
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index 93bcf06..de8753d 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -1298,10 +1298,6 @@ static struct davinci_soc_info davinci_soc_info_da850 = {
+ 	.intc_irq_prios		= da850_default_priorities,
+ 	.intc_irq_num		= DA850_N_CP_INTC_IRQ,
+ 	.timer_info		= &da850_timer_info,
+-	.gpio_type		= GPIO_TYPE_DAVINCI,
+-	.gpio_base		= DA8XX_GPIO_BASE,
+-	.gpio_num		= 144,
+-	.gpio_irq		= IRQ_DA8XX_GPIO0,
+ 	.serial_dev		= &da8xx_serial_device,
+ 	.emac_pdata		= &da8xx_emac_pdata,
+ 	.sram_dma		= DA8XX_SHARED_RAM_BASE,
 -- 
 1.7.9.5
 
