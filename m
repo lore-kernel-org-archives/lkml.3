@@ -1,127 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3FNN51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:57:27 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34881 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3FNN5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:57:24 -0400
-Message-ID: <51BB213B.7010807@gmail.com>
-Date: Fri, 14 Jun 2013 21:57:15 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753321Ab3FNN5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:57:30 -0400
+Received: from sauhun.de ([89.238.76.85]:50344 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753047Ab3FNN50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 09:57:26 -0400
+Date: Fri, 14 Jun 2013 15:58:59 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: vt8500: Add support for I2C bus on Wondermedia
+ SoCs
+Message-ID: <20130614135857.GA2929@katana>
+References: <1371023785-3132-1-git-send-email-linux@prisktech.co.nz>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when
- handling dock notification
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-3-git-send-email-jiang.liu@huawei.com> <2448481.HbOiE9Npmq@vostro.rjw.lan> <2301639.HY0nSRLtah@vostro.rjw.lan>
-In-Reply-To: <2301639.HY0nSRLtah@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+In-Reply-To: <1371023785-3132-1-git-send-email-linux@prisktech.co.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 08:23 PM, Rafael J. Wysocki wrote:
-> On Thursday, June 13, 2013 09:59:44 PM Rafael J. Wysocki wrote:
->> On Friday, June 14, 2013 12:32:25 AM Jiang Liu wrote:
->>> Current ACPI glue logic expects that physical devices are destroyed
->>> before destroying companion ACPI devices, otherwise it will break the
->>> ACPI unbind logic and cause following warning messages:
->>> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
->>> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
->>> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
->>> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
->>> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
->>> for full log message.
->>
->> So my question is, did we have this problem before commit 3b63aaa70e1?
->>
->> If we did, then when did it start?  Or was it present forever?
->>
->>> Above warning messages are caused by following scenario:
->>> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
->>> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
->>>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
->>> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
->>>    destroy physical devices, then destroys all affected ACPI devices.
->>>    Everything seems perfect until now. But the acpiphp dock notification
->>>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
->>>    destroy affected physical devices.
->>
->> Would not the solution be to modify it so that it didn't spawn the other
->> task (T2), but removed the affected physical devices synchronously?
->>
->>> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
->>>    been destroyed.
->>> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
->>>    devices.
->>>
->>> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
->>> in step 3 and physical devices are destroyed in step 5.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
->>> Cc: Bjorn Helgaas <bhelgaas@google.com>
->>> Cc: Yinghai Lu <yinghai@kernel.org>
->>> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
->>> Cc: linux-pci@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Cc: stable@vger.kernel.org
->>> ---
->>> Hi Bjorn and Rafael,
->>>      The recursive lock changes haven't been tested yet, need help
->>> from Alexander for testing.
->>
->> Well, let's just say I'm not a fan of recursive locks.  Is that unavoidable
->> here?
-> 
-> What about the appended patch (on top of [1/9], untested)?
-> 
-> Rafael
-It should have similar effect as patch 2/9, and it will encounter the
-same deadlock scenario as 2/9 too.
 
-> 
-> 
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Jun 12, 2013 at 07:56:25PM +1200, Tony Prisk wrote:
+> This patch adds support for the I2C bus controllers found on Wondermedia
+> 8xxx-series SoCs. Only master-mode is supported.
+>=20
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 > ---
->  drivers/pci/hotplug/acpiphp_glue.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -145,9 +145,20 @@ static int post_dock_fixups(struct notif
->  	return NOTIFY_OK;
->  }
->  
-> +static void handle_dock_event_func(acpi_handle handle, u32 event, void *context)
-> +{
-> +	if (event == ACPI_NOTIFY_EJECT_REQUEST) {
-> +		struct acpiphp_func *func = context;
-> +
-> +		if (!acpiphp_disable_slot(func->slot))
-> +			acpiphp_eject_slot(func->slot);
-> +	} else {
-> +		handle_hotplug_event_func(handle, event, context);
-> +	}
-> +}
->  
->  static const struct acpi_dock_ops acpiphp_dock_ops = {
-> -	.handler = handle_hotplug_event_func,
-> +	.handler = handle_dock_event_func,
->  };
->  
->  /* Check whether the PCI device is managed by native PCIe hotplug driver */
-> 
 
+Please describe here what changed since the last version. It's a lot
+easier and faster to review then.
+
+> +static int wmt_i2c_xfer(struct i2c_adapter *adap,
+> +			struct i2c_msg msgs[],
+> +			int num)
+> +{
+> +	struct i2c_msg *pmsg;
+> +	int i, is_last, no_start;
+> +	int ret =3D 0;
+> +
+> +	for (i =3D 0; ret >=3D 0 && i < num; i++) {
+> +		is_last =3D ((i + 1) =3D=3D num);
+> +		no_start =3D (i !=3D 0);
+
+(i !=3D 0) is a restart condition (start instead of stop)...
+
+> +
+> +		pmsg =3D &msgs[i];
+> +		if (pmsg->flags & I2C_M_NOSTART)
+> +			no_start =3D 1;
+
+=2E..and this is a no_start (concatenating messages). I do have the
+impression you are mixing those two?
+
+> +		if (pmsg->flags & I2C_M_RD)
+> +			ret =3D wmt_i2c_read(adap, pmsg, no_start, is_last);
+> +		else
+> +			ret =3D wmt_i2c_write(adap, pmsg, no_start, is_last);
+> +	}
+> +
+> +	return (ret < 0) ? ret : i;
+> +}
+> +	adap =3D &i2c_dev->adapter;
+> +	i2c_set_adapdata(adap, i2c_dev);
+> +	strlcpy(adap->name, "WMT I2C adapter", sizeof(adap->name));
+> +	adap->owner =3D THIS_MODULE;
+> +	adap->algo =3D &wmt_i2c_algo;
+> +	adap->dev.parent =3D &pdev->dev;
+> +	adap->dev.of_node =3D pdev->dev.of_node;
+> +	adap->nr =3D of_alias_get_id(pdev->dev.of_node, "i2c");
+
+Drop this line...
+
+> +
+> +	init_completion(&i2c_dev->complete);
+> +
+> +	err =3D wmt_i2c_reset_hardware(i2c_dev);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "error initializing hardware\n");
+> +		return err;
+> +	}
+> +
+> +	err =3D i2c_add_numbered_adapter(adap);
+
+=2E.. and use i2c_add_adpter here. Since recently the core checks the
+ofnode for an alias. Sorry, forgot to mention this last time.
+
+> +	if (err) {
+> +		dev_err(&pdev->dev, "failed to add adapter\n");
+> +		return err;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, i2c_dev);
+> +
+> +	of_i2c_register_devices(adap);
+> +
+> +	return 0;
+> +}
+> +
+> +module_platform_driver(wmt_i2c_driver);
+> +
+> +MODULE_DESCRIPTION("Wondermedia I2C master-mode bus adapter");
+> +MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
+> +MODULE_LICENSE("GPL and additional rights");
+
+I see no additional rights mentioned. According to the header "GPL"
+should do, but you know the original sources better.
+
+> +MODULE_DEVICE_TABLE(of, wmt_i2c_dt_ids);
+> --=20
+> 1.7.9.5
+>=20
+
+Regards,
+
+   Wolfram
+
+
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuyGhAAoJEBQN5MwUoCm26LQP/AsVG+oJWCMo+gKx8QDemxWV
+hysBgpjZ2Io2o3sekpMfQW7Z6fjapzxaY4fXO8TCib6XjPsOlRgZoqaQ2hAIVDQS
+eLSrjUSzqWYupUbqFyYfOlMK9G+1vU9EZmIFAno4plsSkZKf2ICEkUNpXa3wSYcC
+6mDCpbyVcPAICzbUgILPrjeVrNxEoriUl6pxfK454/cIwnFl/Cu7o0DpHnGzc1sQ
+1G2gdQyAO7FXbNazRM7w8mTwxwgFdD76PU+w7/tt+vt9jNVfistycHHVx4G+h9th
+4/Z92KFfP4zVZrQIU5PneYcRyLQgFzMu9Y8md0PYjVslX3dOlXpmlPP/f8hc8m35
+MuF6jRlfKMDHjlgm3oOaBK/nhN9cxXa7o2LY22kjKQshJ7Ah+tp2O/xUSvMK9Age
+i7TRh5BKXx+wn7hlfxagIMiWudF5JKQHFy/yLLB3TzF8qI1F92CE8M9YIqPT3glK
+BOGLo2Z/2bTgrZ+AZqCLYeBk82ytypVrQOy7MD627OzPIGFxULcXobBCGv8HGpJv
+LwbZNdXyiLg5GyaH4CbSqDN9C9YiMpM903dxakiFbV52d2AxJIzYCcSQzfwbbvHB
+QUkXDjig6OY9I+qIpePxXMU9dl3e9cLkqP44ITJ0FYDuW8QboLwBm6dt9Pc6ym2N
+tJ/QLfZwyf60UaX6InzM
+=w/qj
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
