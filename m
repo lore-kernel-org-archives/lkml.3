@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab3FNN6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:58:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36495 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3FNN6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:58:00 -0400
-Date: Fri, 14 Jun 2013 14:57:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Message-ID: <20130614135749.GS1403@sirena.org.uk>
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
- <20130611142358.GG29135@zurbaran>
- <51B74252.5090906@linutronix.de>
+	id S1753293Ab3FNOAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:00:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55572 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753099Ab3FNOAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:00:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,866,1363158000"; 
+   d="scan'208";a="353459569"
+Message-ID: <51BB21D8.6000109@intel.com>
+Date: Fri, 14 Jun 2013 21:59:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/OxAoNYcURhUkoHv"
-Content-Disposition: inline
-In-Reply-To: <51B74252.5090906@linutronix.de>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Lei Wen <adrian.wenl@gmail.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, wangyun@linux.vnet.ibm.com,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        fweisbec@gmail.com
+Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
+ forked task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-4-git-send-email-alex.shi@intel.com> <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
+In-Reply-To: <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/14/2013 06:02 PM, Lei Wen wrote:
+>> >         enqueue_entity
+>> >             enqueue_entity_load_avg
+>> >
+>> > and make forking balancing imbalance since incorrect load_avg_contrib.
+>> >
+>> > Further more, Morten Rasmussen notice some tasks were not launched at
+>> > once after created. So Paul and Peter suggest giving a start value for
+>> > new task runnable avg time same as sched_slice().
+> I am confused at this comment, how set slice to runnable avg would change
+> the behavior of "some tasks were not launched at once after created"?
 
---/OxAoNYcURhUkoHv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I also don't know the details on Morten's machine. but just guess, there
+are much tasks on in the run queue. the minimum load avg make the new
+task wait its time...
+> 
+> IMHO, I could only tell that for the new forked task, it could be run if current
+> task already be set as need_resched, and preempt_schedule or
+> preempt_schedule_irq
+> is called.
+> 
+> Since the set slice to avg behavior would not affect this task's vruntime,
+> and hence cannot make current running task be need_sched, if
+> previously it cannot.
+> 
+> Could you help correct if I am wrong at somewhere? ....
+> 
+> Thanks,
 
-On Tue, Jun 11, 2013 at 05:29:22PM +0200, Sebastian Andrzej Siewior wrote:
-> On 06/11/2013 04:23 PM, Samuel Ortiz wrote:
 
-> > Please fix your commit logs, and your subject lines. It should be e.g.
-> > mfd: input: ti_am335x_adc: Blablabla
-
-> > if it's mostly an mfd patch that also touches an input driver.
-
-> I usually do "subsystem / driver: short description" but if you want
-> the ":" as delimiter I can do this.
-
-You should always aim to be consistent with the style used by the code
-you're updating - do a git log and make sure your patches don't have
-changelogs that are obivously using a different style.
-
---/OxAoNYcURhUkoHv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuyFaAAoJELSic+t+oim9MHUQAI4k6ZFd3GEwPZgVcptmG09S
-gXyleNtbhmtiFGUsZEZDhX8fQjAnGMq6i2fsBQXQv9WcdZNFWuBWyoYL5D9YWm+z
-oWmwrsMB9WncNyd1otHRH+k+qRWhosroOtjRSi+oBPGZKE2Nb9BzyUxxsWbmq4iW
-Vq5V6KKRX0rWGA6zrD/ZCerQR81A/b+DQWd7UT56GRWIGYle2s7MI7zMXXQQer+u
-nXmm/Df7kSdeXDupuepUIyc3dw7c4yfjENM2vvcmIVchXBLEvBpjBGBlTlaPfeJu
-Sflwu/pUeeuVJYUXWtDV85Ec3ymVh4YVPjwMeno7dlSow3l5z9SWr22dMgzMY2Y3
-mGLwDVkwYx/2Y/jaLrFPR5eDQU7DKBoLFqeN+eh0ZL/vkmmJrfRy+HoVv6WF7yGb
-RbU25Z+hJ1dgWvuCFZU/5lpxF/fXBm00rXWgZ3nkOLfbQVupBRh98IwMAFPerQjm
-LydU8L8iN8nl/MJLjcwtpN1ODVXhilodAlBk7Zn7GJUf+Id9xybtMKLzixTBGN2a
-s1dy6/fpJAX7l8Bwwt7uYrP4kZPVD63YPzm7Z6CEoIcg/s18byxnzoE6eYB4HXCg
-8ZGAV7+pam7fe/jR1f6aTpnL8RKrwdujsWlkpQwGntGTgxed1DywWWpf5MCEpOmq
-GwRs87ym96jNXPEWvvPV
-=vm2j
------END PGP SIGNATURE-----
-
---/OxAoNYcURhUkoHv--
+-- 
+Thanks
+    Alex
