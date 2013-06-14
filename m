@@ -1,30 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3FNI5v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:57:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59182 "EHLO mx1.redhat.com"
+	id S1751544Ab3FNJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:02:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab3FNI5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:57:49 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <9fc3b9d2c9dd12c74aab5115a3c50b9eb3ae76d5.1371177118.git.joe@perches.com>
-References: <9fc3b9d2c9dd12c74aab5115a3c50b9eb3ae76d5.1371177118.git.joe@perches.com> <cover.1371177118.git.joe@perches.com>
-To: Joe Perches <joe@perches.com>
-Cc: dhowells@redhat.com, Jiri Kosina <trivial@kernel.org>,
+	id S1750714Ab3FNJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:02:23 -0400
+Date: Fri, 14 Jun 2013 11:02:17 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [Trivial PATCH 02/33] frv: Convert use of typedef ctl_table to struct ctl_table
-Date: Fri, 14 Jun 2013 09:57:43 +0100
-Message-ID: <7254.1371200263@warthog.procyon.org.uk>
+Subject: Re: [PATCH 1/8] mm/writeback: fix wb_do_writeback exported unsafely
+Message-ID: <20130614090217.GA7574@dhcp22.suse.cz>
+References: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri 14-06-13 15:30:34, Wanpeng Li wrote:
+> There is just one caller in fs-writeback.c call wb_do_writeback and
+> current codes unnecessary export it in header file, this patch fix
+> it by changing wb_do_writeback to static function.
 
-These look okay.  Feel free to add my Acked-by.  I presume they can't become
-const also?
+So what?
 
-David
+Besides that git grep wb_do_writeback tells that 
+mm/backing-dev.c:                       wb_do_writeback(me, 0);
+
+Have you tested this at all?
+
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  fs/fs-writeback.c         | 2 +-
+>  include/linux/writeback.h | 1 -
+>  2 files changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 3be5718..f892dec 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+>  /*
+>   * Retrieve work items and do the writeback they describe
+>   */
+> -long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+> +static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+>  {
+>  	struct backing_dev_info *bdi = wb->bdi;
+>  	struct wb_writeback_work *work;
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index 579a500..e27468e 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -94,7 +94,6 @@ int try_to_writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
+>  void sync_inodes_sb(struct super_block *);
+>  long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
+>  				enum wb_reason reason);
+> -long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
+>  void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
+>  void inode_wait_for_writeback(struct inode *inode);
+>  
+> -- 
+> 1.8.1.2
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
