@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab3FNMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:30:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11379 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab3FNMaZ (ORCPT
+	id S1752633Ab3FNMbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:31:03 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:47211 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3FNMbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:30:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 14 Jun 2013 05:29:08 -0700
-Message-ID: <51BB0DC9.3090809@nvidia.com>
-Date: Fri, 14 Jun 2013 18:04:17 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Fri, 14 Jun 2013 08:31:01 -0400
 MIME-Version: 1.0
-To: "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-CC: Mark Brown <broonie@kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+In-Reply-To: <2301639.HY0nSRLtah@vostro.rjw.lan>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
+	<1371141152-9468-3-git-send-email-jiang.liu@huawei.com>
+	<2448481.HbOiE9Npmq@vostro.rjw.lan>
+	<2301639.HY0nSRLtah@vostro.rjw.lan>
+Date: Fri, 14 Jun 2013 18:30:58 +0600
+Message-ID: <CAN_LGv1_b16XDAS-hrP2w=ERBgJ+V+P3kgKrksR0qO3navXiOg@mail.gmail.com>
+Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when
+ handling dock notification
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>, Keerthy <a0393675@ti.com>
-Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
-References: <20130604093816.GY31367@sirena.org.uk> <51ADB6BF.6020205@ti.com> <20130604100511.GA31367@sirena.org.uk> <51B5A14E.6000500@ti.com> <20130610100330.GO31367@sirena.org.uk> <51B5B268.8090908@ti.com> <20130610124924.GU31367@sirena.org.uk> <51B8345F.601@nvidia.com> <20130612141409.GE1403@sirena.org.uk> <bcb26ab704763c7ae7ef815b8fa0f652@slimlogic.co.uk> <20130612145126.GG1403@sirena.org.uk> <feb8849eb7c84a17fd53da28df0f82e7@slimlogic.co.uk>
-In-Reply-To: <feb8849eb7c84a17fd53da28df0f82e7@slimlogic.co.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 June 2013 08:53 PM, gg@slimlogic.co.uk wrote:
-> On 2013-06-12 15:51, Mark Brown wrote:
->> On Wed, Jun 12, 2013 at 03:31:09PM +0100, gg@slimlogic.co.uk wrote:
->>> On 2013-06-12 15:14, Mark Brown wrote:
->>>> Yes, that seems like the most obvious thing here as far as I can tell
->>> >from the frankly fragmented and obscure information but given all the
->>>> confusion that seems to exist among the people working on the driver
->>>> it's really not clear if there's something else going on.
->>> What about the case where they are inputs? For bus power?
->> So the current flow can change direction here?
-> Just rechecked the data sheet and it looks like that use-case has
-> actually been
-> removed from more recent data sheets.
+2013/6/14 Rafael J. Wysocki <rjw@sisk.pl>:
+
+> What about the appended patch (on top of [1/9], untested)?
 >
-> So ignore me, yes now it can be modelled by two regulators!
+> Rafael
 
-Thanks for concluding on this.
+Sorry, I have lost the track of which patches, on top of 3.10-rc5, I
+should include in my testing and which I shouldn't. Could you please
+restore my understanding? I.e., please provide a full list of LKML or
+Bugzilla links to patches which I should test during the next boot of
+the laptop.
 
-Kishon,
-Are you going to send new patch for splitting this regulator or should I 
-send for this?
+Thanks in advance.
 
-This will help on populating dts file what Keerthi is sending and also 
-to me for the tegra platform.
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c |   13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+>
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -145,9 +145,20 @@ static int post_dock_fixups(struct notif
+>         return NOTIFY_OK;
+>  }
+>
+> +static void handle_dock_event_func(acpi_handle handle, u32 event, void *context)
+> +{
+> +       if (event == ACPI_NOTIFY_EJECT_REQUEST) {
+> +               struct acpiphp_func *func = context;
+> +
+> +               if (!acpiphp_disable_slot(func->slot))
+> +                       acpiphp_eject_slot(func->slot);
+> +       } else {
+> +               handle_hotplug_event_func(handle, event, context);
+> +       }
+> +}
+>
+>  static const struct acpi_dock_ops acpiphp_dock_ops = {
+> -       .handler = handle_hotplug_event_func,
+> +       .handler = handle_dock_event_func,
+>  };
+>
+>  /* Check whether the PCI device is managed by native PCIe hotplug driver */
+>
 
+
+
+--
+Alexander E. Patrakov
