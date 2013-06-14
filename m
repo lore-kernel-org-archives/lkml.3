@@ -1,54 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab3FNOUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:20:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65522 "EHLO mga02.intel.com"
+	id S1753244Ab3FNOVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:21:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43824 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab3FNOUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:20:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,866,1363158000"; 
-   d="scan'208";a="353473935"
-Message-ID: <51BB26B5.5000102@intel.com>
-Date: Fri, 14 Jun 2013 22:20:37 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>
-Subject: Re: [RFC patch 0/4] change 64 bit variables to long type
-References: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752942Ab3FNOVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:21:08 -0400
+Message-ID: <1371219666.22681.0.camel@ul30vt.home>
+Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
+From: Alex Williamson <alex.williamson@redhat.com>
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 14 Jun 2013 08:21:06 -0600
+In-Reply-To: <20130530183955.14686.89444.stgit@bling.home>
+References: <20130530183955.14686.89444.stgit@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2013 03:29 PM, Alex Shi wrote:
-> There are some 64 bits variables in cfs_rq/tg etc. That ask expersive
-> operations in 32 bit machine. But in fact, long type is enough for them.
+Bump.  Comments?
+
+On Thu, 2013-05-30 at 12:40 -0600, Alex Williamson wrote:
+> PCIe ACS (Access Control Services) is the PCIe 2.0+ feature that
+> allows us to control whether transactions are allowed to be redirected
+> in various subnodes of a PCIe topology.  For instance, if two
+> endpoints are below a root port or downsteam switch port, the
+> downstream port may optionally redirect transactions between the
+> devices, bypassing upstream devices.  The same can happen internally
+> on multifunction devices.  The transaction may never be visible to the
+> upstream devices.
 > 
-> So do this change lead more efficient code and without data lose.
+> One upstream device that we particularly care about is the IOMMU.  If
+> a redirection occurs in the topology below the IOMMU, then the IOMMU
+> cannot provide isolation between devices.  This is why the PCIe spec
+> encourages topologies to include ACS support.  Without it, we have to
+> assume peer-to-peer DMA within a hierarchy can bypass IOMMU isolation.
+> 
+> Unfortunately, far too many topologies do not support ACS to make this
+> a steadfast requirement.  Even the latest chipsets from Intel are only
+> sporadically supporting ACS.  We have trouble getting interconnect
+> vendors to include the PCIe spec required PCIe capability, let alone
+> suggested features.
+> 
+> Therefore, we need to add some flexibility.  The pcie_acs_override=
+> boot option lets users opt-in specific devices or sets of devices to
+> assume ACS support.  The "downstream" option assumes full ACS support
+> on root ports and downstream switch ports.  The "multifunction"
+> option assumes the subset of ACS features available on multifunction
+> endpoints and upstream switch ports are supported.  The "id:nnnn:nnnn"
+> option enables ACS support on devices matching the provided vendor
+> and device IDs, allowing more strategic ACS overrides.  These options
+> may be combined in any order.  A maximum of 16 id specific overrides
+> are available.  It's suggested to use the most limited set of options
+> necessary to avoid completely disabling ACS across the topology.
+> 
+> Note to hardware vendors, we have facilities to permanently quirk
+> specific devices which enforce isolation but not provide an ACS
+> capability.  Please contact me to have your devices added and save
+> your customers the hassle of this boot option.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |   10 +++
+>  drivers/pci/quirks.c                |  102 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 112 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 47bb23c..a60e6ad 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2349,6 +2349,16 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		nomsi	Do not use MSI for native PCIe PME signaling (this makes
+>  			all PCIe root ports use INTx for all services).
+>  
+> +	pcie_acs_override =
+> +			[PCIE] Override missing PCIe ACS support for:
+> +		downstream
+> +			All downstream ports - full ACS capabilties
+> +		multifunction
+> +			All multifunction devices - multifunction ACS subset
+> +		id:nnnn:nnnn
+> +			Specfic device - full ACS capabilities
+> +			Specified as vid:did (vendor/device ID) in hex
+> +
+>  	pcmv=		[HW,PCMCIA] BadgePAD 4
+>  
+>  	pd.		[PARIDE]
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 0369fb6..c7609f6 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3292,11 +3292,113 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+>  	return pci_dev_get(dev);
+>  }
+>  
+> +static bool acs_on_downstream;
+> +static bool acs_on_multifunction;
+> +
+> +#define NUM_ACS_IDS 16
+> +struct acs_on_id {
+> +	unsigned short vendor;
+> +	unsigned short device;
+> +};
+> +static struct acs_on_id acs_on_ids[NUM_ACS_IDS];
+> +static u8 max_acs_id;
+> +
+> +static __init int pcie_acs_override_setup(char *p)
+> +{
+> +	if (!p)
+> +		return -EINVAL;
+> +
+> +	while (*p) {
+> +		if (!strncmp(p, "downstream", 10))
+> +			acs_on_downstream = true;
+> +		if (!strncmp(p, "multifunction", 13))
+> +			acs_on_multifunction = true;
+> +		if (!strncmp(p, "id:", 3)) {
+> +			char opt[5];
+> +			int ret;
+> +			long val;
+> +
+> +			if (max_acs_id >= NUM_ACS_IDS - 1) {
+> +				pr_warn("Out of PCIe ACS override slots (%d)\n",
+> +					NUM_ACS_IDS);
+> +				goto next;
+> +			}
+> +
+> +			p += 3;
+> +			snprintf(opt, 5, "%s", p);
+> +			ret = kstrtol(opt, 16, &val);
+> +			if (ret) {
+> +				pr_warn("PCIe ACS ID parse error %d\n", ret);
+> +				goto next;
+> +			}
+> +			acs_on_ids[max_acs_id].vendor = val;
+> +
+> +			p += strcspn(p, ":");
+> +			if (*p != ':') {
+> +				pr_warn("PCIe ACS invalid ID\n");
+> +				goto next;
+> +			}
+> +
+> +			p++;
+> +			snprintf(opt, 5, "%s", p);
+> +			ret = kstrtol(opt, 16, &val);
+> +			if (ret) {
+> +				pr_warn("PCIe ACS ID parse error %d\n", ret);
+> +				goto next;
+> +			}
+> +			acs_on_ids[max_acs_id].device = val;
+> +			max_acs_id++;
+> +		}
+> +next:
+> +		p += strcspn(p, ",");
+> +		if (*p == ',')
+> +			p++;
+> +	}
+> +
+> +	if (acs_on_downstream || acs_on_multifunction || max_acs_id)
+> +		pr_warn("Warning: PCIe ACS overrides enabled; This may allow non-IOMMU protected peer-to-peer DMA\n");
+> +
+> +	return 0;
+> +}
+> +early_param("pcie_acs_override", pcie_acs_override_setup);
+> +
+> +static int pcie_acs_overrides(struct pci_dev *dev, u16 acs_flags)
+> +{
+> +	int i;
+> +
+> +	/* Never override ACS for legacy devices or devices with ACS caps */
+> +	if (!pci_is_pcie(dev) ||
+> +	    pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ACS))
+> +		return -ENOTTY;
+> +
+> +	for (i = 0; i < max_acs_id; i++)
+> +		if (acs_on_ids[i].vendor == dev->vendor &&
+> +		    acs_on_ids[i].device == dev->device)
+> +			return 1;
+> +
+> +	switch (pci_pcie_type(dev)) {
+> +	case PCI_EXP_TYPE_DOWNSTREAM:
+> +	case PCI_EXP_TYPE_ROOT_PORT:
+> +		if (acs_on_downstream)
+> +			return 1;
+> +		break;
+> +	case PCI_EXP_TYPE_ENDPOINT:
+> +	case PCI_EXP_TYPE_UPSTREAM:
+> +	case PCI_EXP_TYPE_LEG_END:
+> +	case PCI_EXP_TYPE_RC_END:
+> +		if (acs_on_multifunction && dev->multifunction)
+> +			return 1;
+> +	}
+> +
+> +	return -ENOTTY;
+> +}
+> +
+>  static const struct pci_dev_acs_enabled {
+>  	u16 vendor;
+>  	u16 device;
+>  	int (*acs_enabled)(struct pci_dev *dev, u16 acs_flags);
+>  } pci_dev_acs_enabled[] = {
+> +	{ PCI_ANY_ID, PCI_ANY_ID, pcie_acs_overrides },
+>  	{ 0 }
+>  };
+>  
 > 
 
-some variable like cfs_rq->runnable_load_avg, there is no much changes
-in patch  1/4, since in most of place it was treated as a 'unsigned
-long', not u64.
-
-Anyway, Paul, I know you are watching the mailing list. :)
-Could you like to give some comments on this patchset?
-> Regards
-> Alex
-> 
 
 
--- 
-Thanks
-    Alex
