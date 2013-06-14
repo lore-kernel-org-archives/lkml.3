@@ -1,162 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3FNKCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 06:02:48 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54312 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3FNKCq (ORCPT
+	id S1752109Ab3FNKG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 06:06:58 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:46251 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab3FNKG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 06:02:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370589652-24549-4-git-send-email-alex.shi@intel.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-	<1370589652-24549-4-git-send-email-alex.shi@intel.com>
-Date: Fri, 14 Jun 2013 18:02:45 +0800
-Message-ID: <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
-Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
- forked task
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Jun 2013 06:06:56 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-7b-51baeb3e2bee
+From: Heesub Shin <heesub.shin@samsung.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, kyungmin.park@samsung.com, d.j.shin@samsung.com,
+        sunae.seo@samsung.com, Heesub Shin <heesub.shin@samsung.com>
+Subject: [PATCH] mm: vmscan: remove redundant querying to shrinker
+Date: Fri, 14 Jun 2013 19:07:51 +0900
+Message-id: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t8zLV2717sCDR4/V7aYs34Nm8WJi7UW
+	B2cvYbI42/SG3eLyrjlsFvfW/Ge1mPzuGaPF3yvrWSwad79jc+D02PRpErvHiRm/WTze77vK
+	5tG3ZRWjx+bT1R6fN8kFsEVx2aSk5mSWpRbp2yVwZcxaNoe54DNnxYZ/D1kbGN+zdzFyckgI
+	mEh8ObWEGcIWk7hwbz1bFyMXh5DAMkaJ/q5/QA4HWNGpVTIQ8UWMEnebz7JDOG1MEst+LGAC
+	KWIT0JY4tC0YZJCIgKzE1L/nWUBqmAVOMkoc7XzMBpIQFnCSeH7kGdhQFgFViRsTYkDCvALu
+	Eo1n7jBCHKEgMeXhe2aQXgmBeewSnd+7mEASLAICEt8mH2KBOEhWYtMBqKMlJQ6uuMEygVFw
+	ASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQcJ64g/H+AetDjMlA4yYyS4km5wPjIa8k
+	3tDYzMjC1MTU2Mjc0ow0YSVxXvUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjEsVORT8
+	OHcxXdnkZiis99Ce6+fJS688MiR3Xot/U/np95RfS7mfbO5fYJx4rOXEyvhp4VtuS5T8atNf
+	GvSmQFng8Yx/hzS336phVc3PYFv2wHazkWmsbhGj96Wr4Zd6YxLyrqQ/1zl+6E2lLdtUtwDu
+	vzHnzi8+EaTzeeqj0092JpzjbKjsN1JiKc5INNRiLipOBAB/1P3MfQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAV2717sCDTZfk7eYs34Nm8WJi7UW
+	B2cvYbI42/SG3eLyrjlsFvfW/Ge1mPzuGaPF3yvrWSwad79jc+D02PRpErvHiRm/WTze77vK
+	5tG3ZRWjx+bT1R6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynk
+	Jeam2iq5+AToumXmAB2lpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8yY
+	tWwOc8FnzooN/x6yNjC+Z+9i5OCQEDCROLVKpouRE8gUk7hwbz1bFyMXh5DAIkaJu81n2SGc
+	NiaJZT8WMIE0sAloSxzaFgzSICIgKzH173kWkBpmgZOMEkc7H7OBJIQFnCSeH3nGBlLPIqAq
+	cWNCDEiYV8BdovHMHUaIZQoSUx6+Z57AyL2AkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4m
+	RnC0PJPawbiyweIQowAHoxIPb8KFnYFCrIllxZW5hxglOJiVRHjD/wKFeFMSK6tSi/Lji0pz
+	UosPMSYDLZ/ILCWanA+M5LySeENjEzMjSyMzYxNzY2PShJXEeQ+0WgcKCaQnlqRmp6YWpBbB
+	bGHi4JRqYFRVVJuv9UJXjv3B/OOP7WSfiN2Uml8218J+4lPBRXkOGeuOyjDMaQmUM1mg6col
+	0MTZ/f1rs4/oqu6QQ/evvg/9xKP+6PhVbVvbCI7XC1cKcrxm+u3h1J7sdL63fc0Mlb+ffly/
+	5bt05hXPk+EbL/dtM9uxwqri7PqmLf+fzN78XUVzReHtq4lKLMUZiYZazEXFiQBh6ct42gIA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+shrink_slab() queries each slab cache to get the number of
+elements in it. In most cases such queries are cheap but,
+on some caches. For example, Android low-memory-killer,
+which is operates as a slab shrinker, does relatively
+long calculation once invoked and it is quite expensive.
 
-On Fri, Jun 7, 2013 at 3:20 PM, Alex Shi <alex.shi@intel.com> wrote:
-> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-> new forked task.
-> Otherwise random values of above variables cause mess when do new task
-> enqueue:
->     enqueue_task_fair
->         enqueue_entity
->             enqueue_entity_load_avg
->
-> and make forking balancing imbalance since incorrect load_avg_contrib.
->
-> Further more, Morten Rasmussen notice some tasks were not launched at
-> once after created. So Paul and Peter suggest giving a start value for
-> new task runnable avg time same as sched_slice().
+This patch removes redundant queries to shrinker function
+in the loop of shrink batch.
 
-I am confused at this comment, how set slice to runnable avg would change
-the behavior of "some tasks were not launched at once after created"?
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+---
+ mm/vmscan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-IMHO, I could only tell that for the new forked task, it could be run if current
-task already be set as need_resched, and preempt_schedule or
-preempt_schedule_irq
-is called.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fa6a853..11b6695 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -282,9 +282,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 					max_pass, delta, total_scan);
+ 
+ 		while (total_scan >= batch_size) {
+-			int nr_before;
++			int nr_before = max_pass;
+ 
+-			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+ 			shrink_ret = do_shrinker_shrink(shrinker, shrink,
+ 							batch_size);
+ 			if (shrink_ret == -1)
+@@ -293,6 +292,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 				ret += nr_before - shrink_ret;
+ 			count_vm_events(SLABS_SCANNED, batch_size);
+ 			total_scan -= batch_size;
++			max_pass = shrink_ret;
+ 
+ 			cond_resched();
+ 		}
+-- 
+1.8.3.1
 
-Since the set slice to avg behavior would not affect this task's vruntime,
-and hence cannot make current running task be need_sched, if
-previously it cannot.
-
-Could you help correct if I am wrong at somewhere? ....
-
-Thanks,
-Lei
-
-
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/core.c  |  6 ++----
->  kernel/sched/fair.c  | 23 +++++++++++++++++++++++
->  kernel/sched/sched.h |  2 ++
->  3 files changed, 27 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b9e7036..6f226c2 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1598,10 +1598,6 @@ static void __sched_fork(struct task_struct *p)
->         p->se.vruntime                  = 0;
->         INIT_LIST_HEAD(&p->se.group_node);
->
-> -#ifdef CONFIG_SMP
-> -       p->se.avg.runnable_avg_period = 0;
-> -       p->se.avg.runnable_avg_sum = 0;
-> -#endif
->  #ifdef CONFIG_SCHEDSTATS
->         memset(&p->se.statistics, 0, sizeof(p->se.statistics));
->  #endif
-> @@ -1745,6 +1741,8 @@ void wake_up_new_task(struct task_struct *p)
->         set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
->  #endif
->
-> +       /* Give new task start runnable values */
-> +       set_task_runnable_avg(p);
->         rq = __task_rq_lock(p);
->         activate_task(rq, p, 0);
->         p->on_rq = 1;
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index f404468..1fc30b9 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -680,6 +680,26 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
->         return calc_delta_fair(sched_slice(cfs_rq, se), se);
->  }
->
-> +#ifdef CONFIG_SMP
-> +static inline void __update_task_entity_contrib(struct sched_entity *se);
-> +
-> +/* Give new task start runnable values to heavy its load in infant time */
-> +void set_task_runnable_avg(struct task_struct *p)
-> +{
-> +       u32 slice;
-> +
-> +       p->se.avg.decay_count = 0;
-> +       slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
-> +       p->se.avg.runnable_avg_sum = slice;
-> +       p->se.avg.runnable_avg_period = slice;
-> +       __update_task_entity_contrib(&p->se);
-> +}
-> +#else
-> +void set_task_runnable_avg(struct task_struct *p)
-> +{
-> +}
-> +#endif
-> +
->  /*
->   * Update the current task's runtime statistics. Skip current tasks that
->   * are not in our scheduling class.
-> @@ -1527,6 +1547,9 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->          * We track migrations using entity decay_count <= 0, on a wake-up
->          * migration we use a negative decay count to track the remote decays
->          * accumulated while sleeping.
-> +        *
-> +        * When enqueue a new forked task, the se->avg.decay_count == 0, so
-> +        * we bypass update_entity_load_avg(), use avg.load_avg_contrib direct.
->          */
->         if (unlikely(se->avg.decay_count <= 0)) {
->                 se->avg.last_runnable_update = rq_clock_task(rq_of(cfs_rq));
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 24b1503..8bc66c6 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -1058,6 +1058,8 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
->
->  extern void update_idle_cpu_load(struct rq *this_rq);
->
-> +extern void set_task_runnable_avg(struct task_struct *p);
-> +
->  #ifdef CONFIG_PARAVIRT
->  static inline u64 steal_ticks(u64 steal)
->  {
-> --
-> 1.7.12
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
