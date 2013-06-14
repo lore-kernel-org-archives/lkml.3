@@ -1,198 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab3FNE71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 00:59:27 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:43897 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3FNE7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 00:59:25 -0400
-Date: Fri, 14 Jun 2013 01:04:26 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: perf: yet another fuzzer triggered crash
-In-Reply-To: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751337Ab3FNFFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 01:05:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54115 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857Ab3FNFFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 01:05:47 -0400
+X-IronPort-AV: E=Sophos;i="4.87,863,1363104000"; 
+   d="scan'208";a="7544126"
+Message-ID: <51BAA557.7060501@cn.fujitsu.com>
+Date: Fri, 14 Jun 2013 13:08:39 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
+        Prarit Bhargava <prarit@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: Re: [Part1 PATCH v5 21/22] x86, mm: Make init_mem_mapping be able
+ to be called several times
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <1371128589-8953-22-git-send-email-tangchen@cn.fujitsu.com> <aad34de7-8ff7-442d-ad8a-bed2a6e3edea@email.android.com> <CAE9FiQXjg1zZB8veUHH2u9T5G1X8VMdMyY528YDhJtsFjKPxPQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQXjg1zZB8veUHH2u9T5G1X8VMdMyY528YDhJtsFjKPxPQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/14 13:03:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/14 13:03:49,
+	Serialize complete at 2013/06/14 13:03:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/14/2013 06:47 AM, Yinghai Lu wrote:
+> On Thu, Jun 13, 2013 at 11:35 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com>  wrote:
+>> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>>
+>>> From: Yinghai Lu<yinghai@kernel.org>
+>>>
+>>> Prepare to put page table on local nodes.
+>>>
+>>> Move calling of init_mem_mapping() to early_initmem_init().
+>>>
+>>> Rework alloc_low_pages to allocate page table in following order:
+>>>        BRK, local node, low range
+>>>
+>>> Still only load_cr3 one time, otherwise we would break xen 64bit again.
+>>>
+>>
+>>
+>>
+>> Sigh..  Can that comment on Xen be removed please.  The issue was fixed last release  and I believe I already asked to remove that comment as it is not true anymore.
+>
+> Sorry about that again, I thought I removed that already.
 
-OK, I haven't managed to get a small reproducible test case for the system 
-crash yet, but I do have one for the initial WARN_ONCE that happens.
-This is on 3.10-rc5
+Sorry I didn't notice that. Will remove it if Yinghai or I resend this 
+patch-set.
 
-As a refresher, it looks like this:
-
-[   44.688044] ------------[ cut here ]------------
-[   44.692023] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x5f()
-[   44.692023] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs lockd dns_resolver fscache sunrpc loop fuse snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel kvm nouveau mxm_wmi evdev ttm microcode drm_kms_helper drm i2c_algo_bit video wmi snd_hda_intel acpi_cpufreq snd_hda_codec mperf snd_hwdep snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer shpchp snd soundcore button psmouse pcspkr processor i2c_nforce2 thermal_sys serio_raw i2c_core ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ata_generic ahci libahci ohci_hcd libata ehci_pci ehci_hcd r8169 mii scsi_mod usbcore usb_common
-[   44.692023] CPU: 0 PID: 2992 Comm: out Not tainted 3.10.0-rc5 #2
-[   44.692023] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[   44.692023]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc15b28
-[   44.692023]  ffff8801165a10c0 0000000000000000 ffff88011977458c ffffffff810ab2e1
-[   44.692023]  ffff880119774580 ffffffff810af04e 0000000000000009 ffff8801165a10c0
-[   44.692023] Call Trace:
-[   44.692023]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
-[   44.692023]  [<ffffffff810ab2e1>] ? task_ctx_sched_out+0x3c/0x5f
-[   44.692023]  [<ffffffff810af04e>] ? perf_event_exit_task+0xbf/0x194
-[   44.692023]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
-[   44.692023]  [<ffffffff810cd5cf>] ? __do_fault+0x359/0x394
-[   44.692023]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
-[   44.692023]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
-[   44.692023]  [<ffffffff810cdd24>] ? __pte_alloc+0x83/0xf2
-[   44.692023]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
-[   44.692023]  [<ffffffff81368160>] ? __do_page_fault+0x31c/0x3ba
-[   44.692023]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
-[   44.692023]  [<ffffffff813655b5>] ? retint_signal+0x3d/0x78
-[   44.692023] ---[ end trace 38bad7d3252e7847 ]---
-
-And the test code that consistently reproduces this:
-
-/* log_to_code output from ./newcrash-bisect31 */
-/* by Vince Weaver <vincent.weaver _at_ maine.edu */
-
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <sys/ioctl.h>
-#include <sys/prctl.h>
-#include <linux/hw_breakpoint.h>
-#include <linux/perf_event.h>
-
-int fd[1024];
-struct perf_event_attr pe[1024];
-char *mmap_result[1024];
-
-int forked_pid;
-
-int perf_event_open(struct perf_event_attr *hw_event_uptr,
-	pid_t pid, int cpu, int group_fd, unsigned long flags) {
-
-	return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
-		group_fd, flags);
-}
-
-int main(int argc, char **argv) {
-
-	memset(&pe[20],0,sizeof(struct perf_event_attr));
-	pe[20].type=PERF_TYPE_SOFTWARE;
-	pe[20].config=PERF_COUNT_SW_TASK_CLOCK;
-	pe[20].sample_type=0; /* 0 */
-	pe[20].read_format=0x0ULL; /* 0 */
-	pe[20].inherit=1;
-	pe[20].pinned=1;
-	pe[20].exclusive=1;
-	pe[20].exclude_user=1;
-	pe[20].exclude_kernel=1;
-	pe[20].exclude_hv=1;
-	pe[20].inherit_stat=1;
-	pe[20].precise_ip=0; /* arbitrary skid */
-	pe[20].exclude_guest=1;
-	pe[20].wakeup_events=0;
-	pe[20].bp_type=HW_BREAKPOINT_EMPTY;
-
-	fd[20]=perf_event_open(&pe[20],0,0,-1,0x20000000000000ULL /*20000000000000*/ );
-
-
-	memset(&pe[23],0,sizeof(struct perf_event_attr));
-	pe[23].type=PERF_TYPE_TRACEPOINT;
-	pe[23].size=96;
-	pe[23].config=0x1d;
-	pe[23].sample_type=0; /* 0 */
-	pe[23].read_format=PERF_FORMAT_TOTAL_TIME_RUNNING|PERF_FORMAT_GROUP; /* a */
-	pe[23].exclude_user=1;
-	pe[23].exclude_hv=1;
-	pe[23].comm=1;
-	pe[23].inherit_stat=1;
-	pe[23].enable_on_exec=1;
-	pe[23].precise_ip=0; /* arbitrary skid */
-	pe[23].exclude_host=1;
-	pe[23].exclude_guest=1;
-	pe[23].wakeup_events=0;
-	pe[23].bp_type=HW_BREAKPOINT_EMPTY;
-	pe[23].config1=0x26;
-
-	fd[23]=perf_event_open(&pe[23],0,0,-1,0 /*0*/ );
-
-
-	memset(&pe[12],0,sizeof(struct perf_event_attr));
-	pe[12].type=PERF_TYPE_SOFTWARE;
-	pe[12].size=96;
-	pe[12].config=PERF_COUNT_SW_TASK_CLOCK;
-	pe[12].sample_type=0; /* 0 */
-	pe[12].read_format=PERF_FORMAT_ID; /* 4 */
-	pe[12].inherit=1;
-	pe[12].exclude_kernel=1;
-	pe[12].exclude_idle=1;
-	pe[12].mmap=1;
-	pe[12].freq=1;
-	pe[12].task=1;
-	pe[12].watermark=1;
-	pe[12].precise_ip=1; /* constant skid */
-	pe[12].sample_id_all=1;
-	pe[12].exclude_host=1;
-	pe[12].wakeup_watermark=0;
-	pe[12].bp_type=HW_BREAKPOINT_EMPTY;
-
-	fd[12]=perf_event_open(&pe[12],0,0,fd[23],PERF_FLAG_FD_NO_GROUP /*1*/ );
-
-
-	memset(&pe[30],0,sizeof(struct perf_event_attr));
-	pe[30].type=PERF_TYPE_HARDWARE;
-	pe[30].size=72;
-	pe[30].config=PERF_COUNT_HW_INSTRUCTIONS;
-	pe[30].sample_type=0; /* 0 */
-	pe[30].read_format=PERF_FORMAT_TOTAL_TIME_ENABLED|PERF_FORMAT_ID; /* 5 */
-	pe[30].exclude_user=1;
-	pe[30].exclude_hv=1;
-	pe[30].mmap=1;
-	pe[30].comm=1;
-	pe[30].freq=1;
-	pe[30].task=1;
-	pe[30].watermark=1;
-	pe[30].precise_ip=2; /* request zero skid */
-	pe[30].sample_id_all=1;
-	pe[30].wakeup_watermark=0;
-	pe[30].bp_type=HW_BREAKPOINT_EMPTY;
-
-	fd[30]=perf_event_open(&pe[30],0,0,fd[20],0 /*0*/ );
-
-
-	memset(&pe[11],0,sizeof(struct perf_event_attr));
-	pe[11].type=PERF_TYPE_SOFTWARE;
-	pe[11].size=64;
-	pe[11].config=PERF_COUNT_SW_TASK_CLOCK;
-	pe[11].sample_type=0; /* 0 */
-	pe[11].read_format=PERF_FORMAT_TOTAL_TIME_ENABLED|PERF_FORMAT_GROUP; /* 9 */
-	pe[11].exclude_idle=1;
-	pe[11].comm=1;
-	pe[11].enable_on_exec=1;
-	pe[11].task=1;
-	pe[11].watermark=1;
-	pe[11].precise_ip=0; /* arbitrary skid */
-	pe[11].exclude_host=1;
-	pe[11].exclude_guest=1;
-	pe[11].wakeup_watermark=0;
-	pe[11].bp_type=HW_BREAKPOINT_EMPTY;
-
-	fd[11]=perf_event_open(&pe[11],0,0,fd[23],PERF_FLAG_FD_NO_GROUP|PERF_FLAG_FD_OUTPUT /*3*/ );
-
-	forked_pid=fork();
-	if (forked_pid==0) while(1);
-	close(fd[23]);
-	kill(forked_pid,SIGKILL);
-	/* Replayed 8 syscalls */
-	return 0;
-}
+Thanks.
