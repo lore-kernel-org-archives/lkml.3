@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3FNT1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:27:36 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:51500 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab3FNT1f (ORCPT
+	id S1753849Ab3FNT2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:28:31 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37315 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab3FNT2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:27:35 -0400
-Date: Fri, 14 Jun 2013 21:27:04 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Fri, 14 Jun 2013 15:28:30 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
         "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
-Message-ID: <20130614192704.GA4857@electric-eye.fr.zoreil.com>
-References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
- <20130613221946.GA16632@electric-eye.fr.zoreil.com>
- <4881796E12491D4BB15146FE0209CE643F5E3A07@DE02WEMBXB.internal.synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4881796E12491D4BB15146FE0209CE643F5E3A07@DE02WEMBXB.internal.synopsys.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS: add zswap and zbud maintainer
+Date: Fri, 14 Jun 2013 14:28:20 -0500
+Message-Id: <1371238100-4621-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061419-3620-0000-0000-0000031EF442
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Brodkin <Alexey.Brodkin@synopsys.com> :
-> On 06/14/2013 02:20 AM, Francois Romieu wrote:
-[...]
-> >> +struct arc_emac_priv {
-> >> +	struct net_device_stats stats;
-> >> +	unsigned int clock_frequency;
-> >> +	unsigned int max_speed;
-> >> +
-> >> +	/* Pointers to BD rings - CPU side */
-> >> +	struct arc_emac_bd_t *rxbd;
-> >
-> > There does not seem to be much need for rxbd->data.
-> 
-> Could you please clarify this comment? Not clear what do you mean.
+This patch adds maintainer information for zswap and zbud
+into the MAINTAINERS file.
 
-Rx and Tx use the same struct but they don't work the same.
-They could/should use differents struct.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ MAINTAINERS |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-[...]
-> > The descriptor entry is left unchanged. Afaiu the driver will move to the
-> > next descriptor and crash on dereferencing NULL (rx_buff->)skb next time
-> > it wraps.
-> >
-> > I suggest avoiding holes: don't netif_receive_skb if you can't alloc a new
-> > skb.
-> 
-> Frankly I cannot understand how "don't netif_receive_skb" for one of the 
-> received packets helps to prevent crash on the next iteration?
-> And I don't see a way to return any error state from NAPI poll handler.
-> Could you please clarify your idea?
-
-The driver assigns the otherwise-netif_received skb to the current rx
-descriptor as if it was a newly allocated one. The driver increases
-stats.rx_dropped. The rx descriptor ring doesn't ever exhibit a hole.
-
-[...]
-> >> +static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
-> >> +{
-> >> +	struct arc_emac_priv *priv = netdev_priv(ndev);
-> >> +	unsigned int info, len, *txbd_curr = &priv->txbd_curr;
-> >> +	dma_addr_t addr;
-> >> +	char *pkt = skb->data;
-> >> +
-> >> +	len = max_t(unsigned int, ETH_ZLEN, skb->len);
-> >
-> > The device automatically pads, right ?
-> 
-> What do you mean here?
-
-Does the device fill a smaller than 64 bytes packet with zeroes or may
-the driver leak information ? The driver should use skb_pad if the
-latter applies.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8bdd7a7..8c5897e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9011,6 +9011,13 @@ F:	Documentation/networking/z8530drv.txt
+ F:	drivers/net/hamradio/*scc.c
+ F:	drivers/net/hamradio/z8530.h
+ 
++ZBUD COMPRESSED PAGE ALLOCATOR
++M:	Seth Jennings <sjenning@linux.vnet.ibm.com>
++L:	linux-mm@kvack.org
++S:	Maintained
++F:	mm/zbud.c
++F:	include/linux/zbud.h
++
+ ZD1211RW WIRELESS DRIVER
+ M:	Daniel Drake <dsd@gentoo.org>
+ M:	Ulrich Kunitz <kune@deine-taler.de>
+@@ -9033,6 +9040,12 @@ M:	"Maciej W. Rozycki" <macro@linux-mips.org>
+ S:	Maintained
+ F:	drivers/tty/serial/zs.*
+ 
++ZSWAP COMPRESSED SWAP CACHING
++M:	Seth Jennings <sjenning@linux.vnet.ibm.com>
++L:	linux-mm@kvack.org
++S:	Maintained
++F:	mm/zswap.c
++
+ THE REST
+ M:	Linus Torvalds <torvalds@linux-foundation.org>
+ L:	linux-kernel@vger.kernel.org
 -- 
-Ueimor
+1.7.9.5
+
