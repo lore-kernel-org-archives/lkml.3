@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab3FNQjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:39:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45152 "EHLO
+	id S1752512Ab3FNQjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:39:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab3FNQjJ (ORCPT
+	with ESMTP id S1751259Ab3FNQjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:39:09 -0400
-Date: Fri, 14 Jun 2013 09:39:46 -0700
+	Fri, 14 Jun 2013 12:39:47 -0400
+Date: Fri, 14 Jun 2013 09:40:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.10-rc6
-Message-ID: <20130614163946.GA26018@kroah.com>
-References: <20130614163851.GA25973@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc fixes for 3.10-rc6
+Message-ID: <20130614164024.GA26053@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130614163851.GA25973@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-[resend with fixed subject]
 
 The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
 
@@ -32,35 +29,29 @@ The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.10-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.10-rc5
 
-for you to fetch changes up to 0c3f3dc68bb6e6950e8cd7851e7778c550e8dfb4:
+for you to fetch changes up to 42f132febff3b7b42c6c9dbfc151f29233be3132:
 
-  usb: chipidea: fix id change handling (2013-06-11 16:18:05 -0700)
+  mei: me: clear interrupts on the resume path (2013-06-13 22:31:07 -0700)
 
 ----------------------------------------------------------------
-USB fixes for 3.10-rc6
+Char / Misc fixes for 3.10-rc6
 
-Here are some small USB driver fixes that resolve some reported problems
-for 3.10-rc6
-
-Nothing major, just 3 USB serial driver fixes, and two chipidea fixes.
+Here are some small mei driver fixes for 3.10-rc6 that fix some reported
+problems.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alexander Shishkin (2):
-      usb: chipidea: fix no transceiver case
-      usb: chipidea: fix id change handling
+Samuel Ortiz (1):
+      mei: init: Flush scheduled work before resetting the device
 
-Johan Hovold (3):
-      USB: f81232: fix device initialisation at open
-      USB: spcp8x5: fix device initialisation at open
-      USB: pl2303: fix device initialisation at open
+Tomas Winkler (2):
+      mei: nfc: fix nfc device freeing
+      mei: me: clear interrupts on the resume path
 
- drivers/usb/chipidea/core.c  |  3 ++-
- drivers/usb/chipidea/udc.c   | 13 ++++++++-----
- drivers/usb/serial/f81232.c  |  8 ++++----
- drivers/usb/serial/pl2303.c  | 10 +++++-----
- drivers/usb/serial/spcp8x5.c | 10 ++++------
- 5 files changed, 23 insertions(+), 21 deletions(-)
+ drivers/misc/mei/init.c   | 4 ++--
+ drivers/misc/mei/nfc.c    | 2 ++
+ drivers/misc/mei/pci-me.c | 1 +
+ 3 files changed, 5 insertions(+), 2 deletions(-)
