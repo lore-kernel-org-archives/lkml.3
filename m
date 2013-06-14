@@ -1,107 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3FNKRF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 06:17:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3FNKRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 06:17:02 -0400
-Date: Fri, 14 Jun 2013 12:16:53 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        akpm@linux-foundation.org, hughd@google.com
-Subject: Re: [PATCH v4 15/20] ext4: use ext4_zero_partial_blocks in
- punch_hole
-In-Reply-To: <20130614030154.GA18731@thunk.org>
-Message-ID: <alpine.LFD.2.00.1306141216070.2327@localhost.localdomain>
-References: <1368549454-8930-1-git-send-email-lczerner@redhat.com> <1368549454-8930-16-git-send-email-lczerner@redhat.com> <20130614030154.GA18731@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751907Ab3FNKSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 06:18:42 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:63784 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3FNKSl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 06:18:41 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <51B20922.4070504@wwwdotorg.org>
+References: <1370590290-13467-1-git-send-email-acourbot@nvidia.com> <51B20922.4070504@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 14 Jun 2013 19:18:20 +0900
+Message-ID: <CAAVeFu+2W7Df-94FvGdwPurKbsnaxFAvKrj6r3C0zGi5L0nT=A@mail.gmail.com>
+Subject: Re: [PATCH v3] simplefb: add support for a8b8g8r8 pixel format
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Olof Johansson <olof@lixom.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013, Theodore Ts'o wrote:
+On Sat, Jun 8, 2013 at 1:24 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/07/2013 01:31 AM, Alexandre Courbot wrote:
+>> A framebuffer of this format is set up by SHIELD's bootloader.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> Acked-by: Olof Johansson <olof@lixom.net>
+>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-> Date: Thu, 13 Jun 2013 23:01:54 -0400
-> From: Theodore Ts'o <tytso@mit.edu>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
->     linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
->     akpm@linux-foundation.org, hughd@google.com
-> Subject: Re: [PATCH v4 15/20] ext4: use ext4_zero_partial_blocks in punch_hole
-> 
-> On Tue, May 14, 2013 at 06:37:29PM +0200, Lukas Czerner wrote:
-> > We're doing to get rid of ext4_discard_partial_page_buffers() since it is
-> > duplicating some code and also partially duplicating work of
-> > truncate_pagecache_range(), moreover the old implementation was much
-> > clearer.
-> > 
-> > Now when the truncate_inode_pages_range() can handle truncating non page
-> > aligned regions we can use this to invalidate and zero out block aligned
-> > region of the punched out range and then use ext4_block_truncate_page()
-> > to zero the unaligned blocks on the start and end of the range. This
-> > will greatly simplify the punch hole code. Moreover after this commit we
-> > can get rid of the ext4_discard_partial_page_buffers() completely.
-> > 
-> > We also introduce function ext4_prepare_punch_hole() to do come common
-> > operations before we attempt to do the actual punch hole on
-> > indirect or extent file which saves us some code duplication.
-> > 
-> > This has been tested on ppc64 with 1k block size with fsx and xfstests
-> > without any problems.
-> > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> 
-> Hi Lukas,
-> 
-> I've been seeing xfstests failures on test generic/300 in nojournal
-> mode.
-> 
-> BEGIN TEST: Ext4 4k block w/ no journal Thu Jun 13 22:38:47 EDT 2013
-> Device: /dev/vdb
-> mk2fs options: -q -O ^has_journal
-> mount options: -o block_validity,noload
-> FSTYP         -- ext4
-> PLATFORM      -- Linux/i686 candygram 3.10.0-rc2-00477-g1e1cad7
-> MKFS_OPTIONS  -- -q -O ^has_journal /dev/vdc
-> MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity,noload /dev/vdc /vdc
-> 
-> generic/300		[20:42:18][  116.877278] fio (3320) used greatest stack depth: 5580 bytes left
-> [  116.967122] fio (3321) used greatest stack depth: 5560 bytes left
-> [  117.573861] fio (3325) used greatest stack depth: 5504 bytes left
->  [20:44:01] [failed, exit status 1] - output mismatch (see /root/xfstests/results/generic/300.out.bad)
->     --- tests/generic/300.out	 2013-06-04 22:42:55.000000000 -0400
->     +++ /root/xfstests/results/generic/300.out.bad	       2013-06-13 20:44:01.306666665 -0400
->     @@ -2,3 +2,4 @@
->      
->      Run fio with random aio-dio pattern
->      
->     +_check_generic_filesystem: filesystem on /dev/vdc is inconsistent (see /root/xfstests/results/generic/300.full)
->      ...
->      (Run 'diff -u tests/generic/300.out /root/xfstests/results/generic/300.out.bad' to see the entire diff)
-> 
-> It bisects down to this patch, and if I take the dev branch, and
-> revert patches #15 through #19 in this series, the problem goes away.
-> 
-> Can you investigate and recommend a better fix?
+Jean-Christophe, Tomi, do you plan to merge this?
 
-Hi Ted,
-
-I'll take a look at this. Thanks for letting me know.
-
--Lukas
-
-> 
-> Thanks,
-> 
-> 					- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Alex.
