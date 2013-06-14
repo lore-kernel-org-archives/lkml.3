@@ -1,153 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3FNN5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:57:30 -0400
-Received: from sauhun.de ([89.238.76.85]:50344 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab3FNN50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:57:26 -0400
-Date: Fri, 14 Jun 2013 15:58:59 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: vt8500: Add support for I2C bus on Wondermedia
- SoCs
-Message-ID: <20130614135857.GA2929@katana>
-References: <1371023785-3132-1-git-send-email-linux@prisktech.co.nz>
+	id S1753351Ab3FNN6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:58:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36495 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNN6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 09:58:00 -0400
+Date: Fri, 14 Jun 2013 14:57:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Message-ID: <20130614135749.GS1403@sirena.org.uk>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+ <20130611142358.GG29135@zurbaran>
+ <51B74252.5090906@linutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+	protocol="application/pgp-signature"; boundary="/OxAoNYcURhUkoHv"
 Content-Disposition: inline
-In-Reply-To: <1371023785-3132-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <51B74252.5090906@linutronix.de>
+X-Cookie: Tomorrow, you can be anywhere.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FCuugMFkClbJLl1L
+--/OxAoNYcURhUkoHv
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 12, 2013 at 07:56:25PM +1200, Tony Prisk wrote:
-> This patch adds support for the I2C bus controllers found on Wondermedia
-> 8xxx-series SoCs. Only master-mode is supported.
->=20
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
+On Tue, Jun 11, 2013 at 05:29:22PM +0200, Sebastian Andrzej Siewior wrote:
+> On 06/11/2013 04:23 PM, Samuel Ortiz wrote:
 
-Please describe here what changed since the last version. It's a lot
-easier and faster to review then.
+> > Please fix your commit logs, and your subject lines. It should be e.g.
+> > mfd: input: ti_am335x_adc: Blablabla
 
-> +static int wmt_i2c_xfer(struct i2c_adapter *adap,
-> +			struct i2c_msg msgs[],
-> +			int num)
-> +{
-> +	struct i2c_msg *pmsg;
-> +	int i, is_last, no_start;
-> +	int ret =3D 0;
-> +
-> +	for (i =3D 0; ret >=3D 0 && i < num; i++) {
-> +		is_last =3D ((i + 1) =3D=3D num);
-> +		no_start =3D (i !=3D 0);
+> > if it's mostly an mfd patch that also touches an input driver.
 
-(i !=3D 0) is a restart condition (start instead of stop)...
+> I usually do "subsystem / driver: short description" but if you want
+> the ":" as delimiter I can do this.
 
-> +
-> +		pmsg =3D &msgs[i];
-> +		if (pmsg->flags & I2C_M_NOSTART)
-> +			no_start =3D 1;
+You should always aim to be consistent with the style used by the code
+you're updating - do a git log and make sure your patches don't have
+changelogs that are obivously using a different style.
 
-=2E..and this is a no_start (concatenating messages). I do have the
-impression you are mixing those two?
-
-> +		if (pmsg->flags & I2C_M_RD)
-> +			ret =3D wmt_i2c_read(adap, pmsg, no_start, is_last);
-> +		else
-> +			ret =3D wmt_i2c_write(adap, pmsg, no_start, is_last);
-> +	}
-> +
-> +	return (ret < 0) ? ret : i;
-> +}
-> +	adap =3D &i2c_dev->adapter;
-> +	i2c_set_adapdata(adap, i2c_dev);
-> +	strlcpy(adap->name, "WMT I2C adapter", sizeof(adap->name));
-> +	adap->owner =3D THIS_MODULE;
-> +	adap->algo =3D &wmt_i2c_algo;
-> +	adap->dev.parent =3D &pdev->dev;
-> +	adap->dev.of_node =3D pdev->dev.of_node;
-> +	adap->nr =3D of_alias_get_id(pdev->dev.of_node, "i2c");
-
-Drop this line...
-
-> +
-> +	init_completion(&i2c_dev->complete);
-> +
-> +	err =3D wmt_i2c_reset_hardware(i2c_dev);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "error initializing hardware\n");
-> +		return err;
-> +	}
-> +
-> +	err =3D i2c_add_numbered_adapter(adap);
-
-=2E.. and use i2c_add_adpter here. Since recently the core checks the
-ofnode for an alias. Sorry, forgot to mention this last time.
-
-> +	if (err) {
-> +		dev_err(&pdev->dev, "failed to add adapter\n");
-> +		return err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, i2c_dev);
-> +
-> +	of_i2c_register_devices(adap);
-> +
-> +	return 0;
-> +}
-> +
-> +module_platform_driver(wmt_i2c_driver);
-> +
-> +MODULE_DESCRIPTION("Wondermedia I2C master-mode bus adapter");
-> +MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-> +MODULE_LICENSE("GPL and additional rights");
-
-I see no additional rights mentioned. According to the header "GPL"
-should do, but you know the original sources better.
-
-> +MODULE_DEVICE_TABLE(of, wmt_i2c_dt_ids);
-> --=20
-> 1.7.9.5
->=20
-
-Regards,
-
-   Wolfram
-
-
---FCuugMFkClbJLl1L
+--/OxAoNYcURhUkoHv
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRuyGhAAoJEBQN5MwUoCm26LQP/AsVG+oJWCMo+gKx8QDemxWV
-hysBgpjZ2Io2o3sekpMfQW7Z6fjapzxaY4fXO8TCib6XjPsOlRgZoqaQ2hAIVDQS
-eLSrjUSzqWYupUbqFyYfOlMK9G+1vU9EZmIFAno4plsSkZKf2ICEkUNpXa3wSYcC
-6mDCpbyVcPAICzbUgILPrjeVrNxEoriUl6pxfK454/cIwnFl/Cu7o0DpHnGzc1sQ
-1G2gdQyAO7FXbNazRM7w8mTwxwgFdD76PU+w7/tt+vt9jNVfistycHHVx4G+h9th
-4/Z92KFfP4zVZrQIU5PneYcRyLQgFzMu9Y8md0PYjVslX3dOlXpmlPP/f8hc8m35
-MuF6jRlfKMDHjlgm3oOaBK/nhN9cxXa7o2LY22kjKQshJ7Ah+tp2O/xUSvMK9Age
-i7TRh5BKXx+wn7hlfxagIMiWudF5JKQHFy/yLLB3TzF8qI1F92CE8M9YIqPT3glK
-BOGLo2Z/2bTgrZ+AZqCLYeBk82ytypVrQOy7MD627OzPIGFxULcXobBCGv8HGpJv
-LwbZNdXyiLg5GyaH4CbSqDN9C9YiMpM903dxakiFbV52d2AxJIzYCcSQzfwbbvHB
-QUkXDjig6OY9I+qIpePxXMU9dl3e9cLkqP44ITJ0FYDuW8QboLwBm6dt9Pc6ym2N
-tJ/QLfZwyf60UaX6InzM
-=w/qj
+iQIcBAEBAgAGBQJRuyFaAAoJELSic+t+oim9MHUQAI4k6ZFd3GEwPZgVcptmG09S
+gXyleNtbhmtiFGUsZEZDhX8fQjAnGMq6i2fsBQXQv9WcdZNFWuBWyoYL5D9YWm+z
+oWmwrsMB9WncNyd1otHRH+k+qRWhosroOtjRSi+oBPGZKE2Nb9BzyUxxsWbmq4iW
+Vq5V6KKRX0rWGA6zrD/ZCerQR81A/b+DQWd7UT56GRWIGYle2s7MI7zMXXQQer+u
+nXmm/Df7kSdeXDupuepUIyc3dw7c4yfjENM2vvcmIVchXBLEvBpjBGBlTlaPfeJu
+Sflwu/pUeeuVJYUXWtDV85Ec3ymVh4YVPjwMeno7dlSow3l5z9SWr22dMgzMY2Y3
+mGLwDVkwYx/2Y/jaLrFPR5eDQU7DKBoLFqeN+eh0ZL/vkmmJrfRy+HoVv6WF7yGb
+RbU25Z+hJ1dgWvuCFZU/5lpxF/fXBm00rXWgZ3nkOLfbQVupBRh98IwMAFPerQjm
+LydU8L8iN8nl/MJLjcwtpN1ODVXhilodAlBk7Zn7GJUf+Id9xybtMKLzixTBGN2a
+s1dy6/fpJAX7l8Bwwt7uYrP4kZPVD63YPzm7Z6CEoIcg/s18byxnzoE6eYB4HXCg
+8ZGAV7+pam7fe/jR1f6aTpnL8RKrwdujsWlkpQwGntGTgxed1DywWWpf5MCEpOmq
+GwRs87ym96jNXPEWvvPV
+=vm2j
 -----END PGP SIGNATURE-----
 
---FCuugMFkClbJLl1L--
+--/OxAoNYcURhUkoHv--
