@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab3FNIRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:17:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32985 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3FNIRv (ORCPT
+	id S1751784Ab3FNISg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:18:36 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:50438 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3FNISc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:17:51 -0400
-Message-ID: <51BAD181.3020902@ti.com>
-Date: Fri, 14 Jun 2013 11:17:05 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 04:18:32 -0400
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH 1/4] arm: omap: Add phy binding info for musb in plat
- data
-References: <1368796954-3499-1-git-send-email-kishon@ti.com> <51A43E0A.8090201@ti.com> <51B9C3B6.1080707@ti.com> <51BAABB0.5060107@ti.com> <20130614054720.GL8164@atomide.com> <51BAB9EA.5090805@ti.com> <20130614073314.GA20992@atomide.com>
-In-Reply-To: <20130614073314.GA20992@atomide.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2HNHPTJIVANKBMVEBWGEE"
+In-Reply-To: <20130614070641.GB28134@laptop>
+References: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
+	<20130613104943.GD16677@laptop>
+	<CAK9yfHxJGtC5i8SQ0TLCzvXQwgskxAX5rpFsbNAnQvkSWqW0VQ@mail.gmail.com>
+	<20130614070641.GB28134@laptop>
+Date: Fri, 14 Jun 2013 13:48:31 +0530
+Message-ID: <CAK9yfHyw+uKCF34uHh-h7huS6AnDLbvnjk6=2qZT4ir3O+5UjQ@mail.gmail.com>
+Subject: Re: [PATCH Resend 1/1] mfd: davinci_voicecodec: Convert to use devm_* APIs
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2HNHPTJIVANKBMVEBWGEE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 14 June 2013 12:36, Lee Jones <lee.jones@linaro.org> wrote:
+> On Fri, 14 Jun 2013, Sachin Kamat wrote:
+>
+>> Hi Lee,
+>>
+>> On 13 June 2013 16:19, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Wed, 12 Jun 2013, Sachin Kamat wrote:
+>> >
+>> >> devm_* APIs are device managed and make code simpler.
+>> >>
+>> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> >> Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
+>> >> ---
+>> >> CC'd Lee Jones
+>> >
+>> > Can you resubmit this based on -rc5 please?
+>> >
+>> > There have been some related changes since you wrote this patch.
+>>
+>> This patch is based on Samuel's mfd-next tree [1].
+>> This patch is dependent on your patch "mfd: davinci_voicecodec:
+>> Convert to managed resources for allocating memory"
+>> which is applied in mfd-next.
+>>
+>> Please let me know which other tree you want me to rebase this patch
+>> on considering the dependency.
+>>
+>> [1] http://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git
+>
+> I believe Sam's branch has been updated considerably since you wrote
+> the patch. Would you mind rebasing it onto Sam's latest master branch
+> please? Should be commit: d8c5d658f425bd25bbfb137f2617f59ed4fdee7d.
 
-On 14/06/13 10:33, Tony Lindgren wrote:
+It applies cleanly on top of the commit:
+d8c5d658f425bd25bbfb137f2617f59ed4fdee7d
+("Merge tag 'am335x_tsc-adc' of git://breakpoint.cc/bigeasy/linux").
 
-> If we want to fix something this late in the merge window, the patches
-> must have a clear description what caused the regression and what happe=
-ns
-> without the patches. These patches don't have that. And they are marked=
+I am surprised that you are getting errors. Anyway resending once again.
 
-> RFC also. So actually I'm not applying any of them before the regressio=
-n
-> descriptions are there and the patches have been reposted without RFC
-> and have sufficient acks from people.
-
-No disagreement there.
-
-Kishon, I tested the patches on top of v3.10-rc5, booting with nfs root
-via usb gadget eth:
-
-Overo: works
-Beagle: works, but I need to reconnect the usb cable after kernel is up
-Beagle-xm: doesn't work. The cable is detected correctly, though
-Panda: works
-
-The problems with Beagles are there even without these patches, so they
-do make things better (fix Overo).
-
- Tomi
-
-
-
-------enig2HNHPTJIVANKBMVEBWGEE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRutGBAAoJEPo9qoy8lh710rIQAJH7MGB/33pOFZXA+xWhWZiI
-u2EBcMjobB6R5PSvuQVZtE39fPDf8Z+p0D2E+2/FKTS4uzrFFVmXw2NgVSfcO/Ny
-GFWTlgls8K9j/BZJ0AaM9YywDUthc/xrb946YHCORKkPH9AaqIJWlqHQIDWx20Cb
-dK6bKmqbuCtq+ci9IV8rBfOpbV3N7PzyajNyZxLhsc+6qVrWkjnLYB8skuP2KaGE
-71V3Tghvgtw+ZlENQXE1+/VO54XNNljuzQ7nOfhflHDBg0phwEd5DiHFlBa+9c6B
-wh9/8kC7iMiMCMTMWLEbHZFw8wroh57PckFjOvbRgH78BqNSaaKMFvAwppjoCFn8
-Ih6D1JfuT8h7tue7mMzEhirabXqmEj1XNGYjT8bMSqAHDkviE+VjrqG3mm06PBCk
-sdSvvZjw+ZJeVKEtx8JFXTDMDGuMZQ7T+gC4wg+Vzl1J5XQy0vU3EmqENRS3bDLK
-JzfUBPrCMfEqimrIc4DXnXcSRpPMsw4ajTPBHwuhGh29TXi+awDJl7yxi5gpUZDJ
-S55j5vixv+36E6U3PCHpeHlaYsFXbgKoaogrd/Z54xswejRe1e1RY0S7nucWK+6d
-NlQnbplCoNwG51G8lbsSbDJQhqypDkTCHP932vOV56TtXCYAbO9opaVgSDLqb3FA
-4wzlDDJNUsEOn8EFKUG/
-=sJcQ
------END PGP SIGNATURE-----
-
-------enig2HNHPTJIVANKBMVEBWGEE--
+-- 
+With warm regards,
+Sachin
