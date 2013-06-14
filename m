@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3FNHbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:31:08 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49998 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab3FNHbG (ORCPT
+	id S1752027Ab3FNHbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:31:19 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:44726 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab3FNHbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:31:06 -0400
+	Fri, 14 Jun 2013 03:31:16 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -16,66 +16,48 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 3/8] mm/writeback: Don't check force_wait to handle bdi->work_list
-Date: Fri, 14 Jun 2013 15:30:36 +0800
-Message-Id: <1371195041-26654-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 7/8] mm/thp: fix doc for transparent huge zero page
+Date: Fri, 14 Jun 2013 15:30:40 +0800
+Message-Id: <1371195041-26654-7-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061407-9574-0000-0000-0000084A6BD2
+x-cbid: 13061407-1618-0000-0000-000004144C09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 839a8e86("writeback: replace custom worker pool implementation
-with unbound workqueue"), bdi_writeback_workfn runs off bdi_writeback->dwork,
-on each execution, it processes bdi->work_list and reschedules if there are
-more things to do instead of flush any work that race with us existing. It is
-unecessary to check force_wait in wb_do_writeback since it is always 0 after
-the mentioned commit. This patch remove the force_wait in wb_do_writeback.
+Transparent huge zero page is used during the page fault instead of
+in khugepaged.
+
+# ls /sys/kernel/mm/transparent_hugepage/
+defrag  enabled  khugepaged  use_zero_page
+# ls /sys/kernel/mm/transparent_hugepage/khugepaged/
+alloc_sleep_millisecs  defrag  full_scans  max_ptes_none  pages_collapsed  pages_to_scan  scan_sleep_millisecs
+
+This patch corrects the documentation just like the codes done.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- fs/fs-writeback.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ Documentation/vm/transhuge.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index f892dec..e15aa97 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
- /*
-  * Retrieve work items and do the writeback they describe
-  */
--static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
-+static long wb_do_writeback(struct bdi_writeback *wb)
- {
- 	struct backing_dev_info *bdi = wb->bdi;
- 	struct wb_writeback_work *work;
-@@ -967,12 +967,6 @@ static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index 8785fb8..4a63953 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -120,8 +120,8 @@ By default kernel tries to use huge zero page on read page fault.
+ It's possible to disable huge zero page by writing 0 or enable it
+ back by writing 1:
  
- 	set_bit(BDI_writeback_running, &wb->bdi->state);
- 	while ((work = get_next_work_item(bdi)) != NULL) {
--		/*
--		 * Override sync mode, in case we must wait for completion
--		 * because this thread is exiting now.
--		 */
--		if (force_wait)
--			work->sync_mode = WB_SYNC_ALL;
+-echo 0 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
+-echo 1 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
++echo 0 >/sys/kernel/mm/transparent_hugepage/use_zero_page
++echo 1 >/sys/kernel/mm/transparent_hugepage/use_zero_page
  
- 		trace_writeback_exec(bdi, work);
- 
-@@ -1021,7 +1015,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		 * rescuer as work_list needs to be drained.
- 		 */
- 		do {
--			pages_written = wb_do_writeback(wb, 0);
-+			pages_written = wb_do_writeback(wb);
- 			trace_writeback_pages_written(pages_written);
- 		} while (!list_empty(&bdi->work_list));
- 	} else {
+ khugepaged will be automatically started when
+ transparent_hugepage/enabled is set to "always" or "madvise, and it'll
 -- 
 1.8.1.2
 
