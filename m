@@ -1,43 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3FNVfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:35:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47000 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab3FNVfG (ORCPT
+	id S1754077Ab3FNVgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:36:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34447 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab3FNVcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:35:06 -0400
-Date: Fri, 14 Jun 2013 14:35:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ross Lagerwall <rosslagerwall@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-serial@vger.kernel.org
-Subject: Re: Possible tty VT1 disallocate regression
-Message-ID: <20130614213543.GA1896@kroah.com>
-References: <20130614204740.GA706@hobo.wolfson.cam.ac.uk>
+	Fri, 14 Jun 2013 17:32:25 -0400
+Date: Fri, 14 Jun 2013 14:32:14 -0700
+From: tip-bot for Yinghai Lu <tipbot@zytor.com>
+Message-ID: <tip-f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm, numa:
+  Move two functions calling on successful path later
+Git-Commit-ID: f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130614204740.GA706@hobo.wolfson.cam.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:32:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 09:47:40PM +0100, Ross Lagerwall wrote:
-> Hi,
-> 
-> Ever since commit 421b40a6286e ("tty/vt: Fix vc_deallocate() lock
-> order"), the first VT does not clear when I log out.  AFAIK, this means
-> that disallocation is not working?  The problem only affects the first
-> VT, the others clear when logging out.
+Commit-ID:  f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
+Gitweb:     http://git.kernel.org/tip/f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 13 Jun 2013 21:02:57 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 14 Jun 2013 14:04:53 -0700
 
-And if you revert that patch, does it all start working again?
+x86, mm, numa: Move two functions calling on successful path later
 
-thanks,
+We need to have numa info ready before init_mem_mappingi(), so that we
+can call init_mem_mapping per node, and alse trim node memory ranges to
+big alignment.
 
-greg k-h
+Currently, parsing numa info needs to allocate some buffer and need to be
+called after init_mem_mapping. So try to split parsing numa info procedure
+into two steps:
+	- The first step will be called before init_mem_mapping, and it
+	  should not need allocate buffers.
+	- The second step will cantain all the buffer related code and be
+	  executed later.
 
-p.s. In the future, please cc: the people who handled the patch you are
-asking about, otherwise stuff like this often gets missed in the noise
-of lkml.
+At last we will have early_initmem_init() and initmem_init().
+
+This patch implements only the first step.
+
+setup_node_data() and numa_init_array() are only called for successful
+path, so we can move these two callings to x86_numa_init(). That will also
+make numa_init() smaller and more readable.
+
+-v2: remove online_node_map clear in numa_init(), as it is only
+     set in setup_node_data() at last in successful path.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/numa.c | 69 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 30 deletions(-)
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a71c4e2..07ae800 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -477,7 +477,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+ 	unsigned long uninitialized_var(pfn_align);
+-	int i, nid;
++	int i;
+ 
+ 	/* Account for nodes with cpus and no memory */
+ 	node_possible_map = numa_nodes_parsed;
+@@ -506,24 +506,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
+ 		return -EINVAL;
+ 
+-	/* Finally register nodes. */
+-	for_each_node_mask(nid, node_possible_map) {
+-		u64 start = PFN_PHYS(max_pfn);
+-		u64 end = 0;
+-
+-		for (i = 0; i < mi->nr_blks; i++) {
+-			if (nid != mi->blk[i].nid)
+-				continue;
+-			start = min(mi->blk[i].start, start);
+-			end = max(mi->blk[i].end, end);
+-		}
+-
+-		if (start < end)
+-			setup_node_data(nid, start, end);
+-	}
+-
+-	/* Dump memblock with node info and return. */
+-	memblock_dump_all();
+ 	return 0;
+ }
+ 
+@@ -559,7 +541,6 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	nodes_clear(numa_nodes_parsed);
+ 	nodes_clear(node_possible_map);
+-	nodes_clear(node_online_map);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+ 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+@@ -577,15 +558,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	for (i = 0; i < nr_cpu_ids; i++) {
+-		int nid = early_cpu_to_node(i);
+-
+-		if (nid == NUMA_NO_NODE)
+-			continue;
+-		if (!node_online(nid))
+-			numa_clear_node(i);
+-	}
+-	numa_init_array();
+ 	return 0;
+ }
+ 
+@@ -618,7 +590,7 @@ static int __init dummy_numa_init(void)
+  * last fallback is dummy single node config encomapssing whole memory and
+  * never fails.
+  */
+-void __init x86_numa_init(void)
++static void __init early_x86_numa_init(void)
+ {
+ 	if (!numa_off) {
+ #ifdef CONFIG_X86_NUMAQ
+@@ -638,6 +610,43 @@ void __init x86_numa_init(void)
+ 	numa_init(dummy_numa_init);
+ }
+ 
++void __init x86_numa_init(void)
++{
++	int i, nid;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	early_x86_numa_init();
++
++	/* Finally register nodes. */
++	for_each_node_mask(nid, node_possible_map) {
++		u64 start = PFN_PHYS(max_pfn);
++		u64 end = 0;
++
++		for (i = 0; i < mi->nr_blks; i++) {
++			if (nid != mi->blk[i].nid)
++				continue;
++			start = min(mi->blk[i].start, start);
++			end = max(mi->blk[i].end, end);
++		}
++
++		if (start < end)
++			setup_node_data(nid, start, end); /* online is set */
++	}
++
++	/* Dump memblock with node info */
++	memblock_dump_all();
++
++	for (i = 0; i < nr_cpu_ids; i++) {
++		int nid = early_cpu_to_node(i);
++
++		if (nid == NUMA_NO_NODE)
++			continue;
++		if (!node_online(nid))
++			numa_clear_node(i);
++	}
++	numa_init_array();
++}
++
+ static __init int find_near_online_node(int node)
+ {
+ 	int n, val;
