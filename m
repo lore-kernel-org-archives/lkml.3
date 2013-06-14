@@ -1,240 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3FNXSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 19:18:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43841 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095Ab3FNXSo (ORCPT
+	id S1753616Ab3FNXXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 19:23:36 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:36623 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab3FNXXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 19:18:44 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] gpio MIPS/OCTEON: Add a driver for OCTEON's on-chip GPIO pins.
-Date: Fri, 14 Jun 2013 16:18:35 -0700
-Message-Id: <1371251915-18271-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 14 Jun 2013 19:23:34 -0400
+Message-ID: <51BBA5E5.9070202@mentor.com>
+Date: Sat, 15 Jun 2013 08:23:17 +0900
+From: Jiada Wang <jiada_wang@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devel@driverdev.osuosl.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [RFC] Staging: imx-drm: Do not use fractional part of divider
+References: <1371195670.904413971@f400.i.mail.ru>
+In-Reply-To: <1371195670.904413971@f400.i.mail.ru>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jun 2013 23:23:29.0011 (UTC) FILETIME=[2D665C30:01CE6956]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Hello Alexander
 
-The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
-GPIO pins, this driver handles them all.  Configuring the pins as
-interrupt sources is handled elsewhere (OCTEON's irq handling code).
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
+Alexander Shiyan wrote:
+> Hello.
+>
+> Analysis of driver imx-drm led me to believe that the use fractional part of the divider is not always a good idea.
+> For example, for a parallel display bus connected to LVDS converter chip (DS90C363), in this case the use of
+> fractional part, clock will unstable and the on-chip PLL is not working properly, or rather, does not work at all.
+>
+> Let me give a specific example.
+> ipu_crtc_mode_set 0x36314752
+> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000035 outrate: 40150928 wanted: 40000000
+> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000035 outrate: 40150928 wanted: 40150928
+> imx-ipuv3 40000000.ipu: clk_di_set_rate: inrate: 133000000 desired: 40150928 div: 0x00000035
+>
+> In this case the divider is 3.5, that result to clock is incorrect. See an attached oscillogram F0000TEK.jpg.
+>
+> After a patch the clocks is OK. Patch just uncomment some FSL code.
+> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000040 outrate: 33250000 wanted: 40000000
+> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000040 outrate: 33250000 wanted: 33250000
+> imx-ipuv3 40000000.ipu: clk_di_set_rate: inrate: 133000000 desired: 33250000 div: 0x00000040
+>
+> See an attached oscillogram F0001TEK.jpg.
+>
+> So, I want to review this from developers and wait for comments.
+>
+>
 
-This patch depends somewhat on patches in Ralf's MIPS/Linux -next tree
-where we have patches that enable the Kconfig CAVIUM_OCTEON_SOC and
-ARCH_REQUIRE_GPIOLIB symbols.  Apart from that it is stand-alone and
-is probably suitable for merging via the GPIO tree.
+Recently I am also looking at use of fractional part of CLKGEN0,
+and want to discuss with you some information I found.
 
-Device tree binding defintions already exist for this device in
-Documentation/devicetree/bindings/gpio/cavium-octeon-gpio.txt
+in our code we are using external PLL to drive DI pixel clock, although 
+I haven't checked with oscilloscope, but it's apparently fractional part 
+of CLKGEN0 doesn't work properly as it is described in reference manual. 
+After some investigation I found 0x8 (0.5) seems works fine.
 
- drivers/gpio/Kconfig       |   8 +++
- drivers/gpio/Makefile      |   1 +
- drivers/gpio/gpio-octeon.c | 153 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 162 insertions(+)
- create mode 100644 drivers/gpio/gpio-octeon.c
+Our solution is try to set DI pixel clock's root clock to integer times 
+of clk_di_pixel as close as possible, so that we can avoid using 
+fractional part to get desired clock. if Pll -> ipu_di_podf could not 
+provide the clock close enough, then try to set it to X.5 times of DI 
+pixel clock, then only the "proved" 0x8 of fractional part will be used.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 573c449..7b5df9a 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -190,6 +190,14 @@ config GPIO_MXS
- 	select GPIO_GENERIC
- 	select GENERIC_IRQ_CHIP
- 
-+config GPIO_OCTEON
-+	tristate "Cavium OCTEON GPIO"
-+	depends on GPIOLIB && CAVIUM_OCTEON_SOC
-+	default y
-+	help
-+	  Say yes here to support the on-chip GPIO lines on the OCTEON
-+	  family of SOCs.
-+
- config GPIO_PL061
- 	bool "PrimeCell PL061 GPIO support"
- 	depends on ARM && ARM_AMBA
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0cb2d65..b8487b6 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -50,6 +50,7 @@ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
- obj-$(CONFIG_GPIO_MVEBU)        += gpio-mvebu.o
- obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
- obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
-+obj-$(CONFIG_GPIO_OCTEON)	+= gpio-octeon.o
- obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
- obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
- obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
-diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
-new file mode 100644
-index 0000000..f5bd127
---- /dev/null
-+++ b/drivers/gpio/gpio-octeon.c
-@@ -0,0 +1,153 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2011, 2012 Cavium Inc.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+
-+#include <asm/octeon/octeon.h>
-+#include <asm/octeon/cvmx-gpio-defs.h>
-+
-+#define RX_DAT 0x80
-+#define TX_SET 0x88
-+#define TX_CLEAR 0x90
-+/*
-+ * The address offset of the GPIO configuration register for a given
-+ * line.
-+ */
-+static unsigned int bit_cfg_reg(unsigned int gpio)
-+{
-+	if (gpio < 16)
-+		return 8 * gpio;
-+	else
-+		return 8 * (gpio - 16) + 0x100;
-+}
-+
-+struct octeon_gpio {
-+	struct gpio_chip chip;
-+	u64 register_base;
-+};
-+
-+static int octeon_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+
-+	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), 0);
-+	return 0;
-+}
-+
-+static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	u64 mask = 1ull << offset;
-+	u64 reg = gpio->register_base + (value ? TX_SET : TX_CLEAR);
-+	cvmx_write_csr(reg, mask);
-+}
-+
-+static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
-+			       int value)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	union cvmx_gpio_bit_cfgx cfgx;
-+
-+	octeon_gpio_set(chip, offset, value);
-+
-+	cfgx.u64 = 0;
-+	cfgx.s.tx_oe = 1;
-+
-+	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), cfgx.u64);
-+	return 0;
-+}
-+
-+static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
-+	u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
-+
-+	return ((1ull << offset) & read_bits) != 0;
-+}
-+
-+static int octeon_gpio_probe(struct platform_device *pdev)
-+{
-+	struct octeon_gpio *gpio;
-+	struct gpio_chip *chip;
-+	struct resource *res_mem;
-+	int err = 0;
-+
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
-+	if (!gpio)
-+		return -ENOMEM;
-+	chip = &gpio->chip;
-+
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "found no memory resource\n");
-+		err = -ENXIO;
-+		goto out;
-+	}
-+	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
-+					resource_size(res_mem),
-+				     res_mem->name)) {
-+		dev_err(&pdev->dev, "request_mem_region failed\n");
-+		err = -ENXIO;
-+		goto out;
-+	}
-+	gpio->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
-+						resource_size(res_mem));
-+
-+	pdev->dev.platform_data = chip;
-+	chip->label = "octeon-gpio";
-+	chip->dev = &pdev->dev;
-+	chip->owner = THIS_MODULE;
-+	chip->base = 0;
-+	chip->can_sleep = 0;
-+	chip->ngpio = 20;
-+	chip->direction_input = octeon_gpio_dir_in;
-+	chip->get = octeon_gpio_get;
-+	chip->direction_output = octeon_gpio_dir_out;
-+	chip->set = octeon_gpio_set;
-+	err = gpiochip_add(chip);
-+	if (err)
-+		goto out;
-+
-+	dev_info(&pdev->dev, "OCTEON GPIO\n");
-+out:
-+	return err;
-+}
-+
-+static int octeon_gpio_remove(struct platform_device *pdev)
-+{
-+	struct gpio_chip *chip = pdev->dev.platform_data;
-+	return gpiochip_remove(chip);
-+}
-+
-+static struct of_device_id octeon_gpio_match[] = {
-+	{
-+		.compatible = "cavium,octeon-3860-gpio",
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, octeon_gpio_match);
-+
-+static struct platform_driver octeon_gpio_driver = {
-+	.driver = {
-+		.name		= "octeon_gpio",
-+		.owner		= THIS_MODULE,
-+		.of_match_table = octeon_gpio_match,
-+	},
-+	.probe		= octeon_gpio_probe,
-+	.remove		= octeon_gpio_remove,
-+};
-+
-+module_platform_driver(octeon_gpio_driver);
-+
-+MODULE_DESCRIPTION("Cavium Inc. OCTEON GPIO Driver");
-+MODULE_AUTHOR("David Daney");
-+MODULE_LICENSE("GPL");
--- 
-1.7.11.7
+> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-di.c b/drivers/stagineg/imx-drm/ipu-v3/ipu-di.c
+> index 19d777e..d424c22 100644
+> --- a/drivers/staging/imx-drm/ipu-v3/ipu-di.c
+> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
+> @@ -154,22 +154,15 @@ static int ipu_di_clk_calc_div(unsigned long inrate, unsigned long outrate)
+>
+>   	if (div < 0x10)
+>   		div = 0x10;
+> -
+> -#ifdef WTF_IS_THIS
+> -	/*
+> -	 * Freescale has this in their Kernel. It is neither clear what
+> -	 * it does nor why it does it
+> -	 */
+> -	if (div & 0x10)
+> -		div &= ~0x7;
+>   	else {
+>   		/* Round up divider if it gets us closer to desired pix clk */
+> -		if ((div & 0xC) == 0xC) {
+> +		if (div & 0x0f) {
+>   			div += 0x10;
+> -			div &= ~0xF;
+> +			/* Strip fractional part of divider */
+> +			div &= ~0x0f;
+If div = 0x11, and the display is not forgiving enough, the pixel clock 
+will probably not be accepted by it.
+
+thanks,
+jiada
+>   		}
+>   	}
+> -#endif
+> +
+>   	return div;
+>   }
+>
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
 
