@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3FNOgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:36:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63101 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3FNOge (ORCPT
+	id S1753108Ab3FNOkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:40:55 -0400
+Received: from forward4.mail.yandex.net ([77.88.46.9]:50782 "EHLO
+	forward4.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab3FNOky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:36:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
-Date: Fri, 14 Jun 2013 16:36:29 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        "Linux-Arch" <linux-arch@vger.kernel.org>
-References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com> <201306121706.39368.arnd@arndb.de> <1371157181.2261.8.camel@dabdike>
-In-Reply-To: <1371157181.2261.8.camel@dabdike>
+	Fri, 14 Jun 2013 10:40:54 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched: schedule_raw_spin_unlock() and schedule_spin_unlock()
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Message-Id: <353211371220851@web23d.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 14 Jun 2013 18:40:51 +0400
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306141636.29390.arnd@arndb.de>
-X-Provags-ID: V02:K0:lGBAuhgLu2duj6y0Ghu/YtH/0zt4aBjLr6H5JjV/VCW
- J3EPVqrG3U5TVkuQPp4dZZ+ABXBjYv2a5Oo7FFQsHwGe0TlHh3
- qfnJtynfXOYVh9bMm8bZ0Jik1i26lXCMRLtz8IulNKPP3vHw+D
- baDk6oaUVl6gdzSTXqxDY7K/wNj+108RK4Mm2UTsZyL5uHs3Hr
- 32Is1WlfzTKLKK+AinHpuTc9ksKBuURCPartij7AJN5l228H9K
- fHYmJ0F4FMghpaxGWwTbWBhYVVOz/cTA+RzeXneOS63ozU+rtz
- OqqLkfK8fgs5IeqY7j0/MxA5GNbzn7gVPqHsiKN2HLfPWtcTjU
- xAur9TPXFlJGzdqwe6ag=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 June 2013, James Bottomley wrote:
-> On Wed, 2013-06-12 at 17:06 +0200, Arnd Bergmann wrote:
-> > On Tuesday 11 June 2013, James Bottomley wrote:
-> > > Really, no, it's not a good idea at all.  It invites tons of patches
-> > > littering the code with BUG_ONs where we might possibly get a NULL
-> > > dereference.  All it does is add extra instructions to a code path for
-> > > no actual benefit.
-> > > 
-> > > If you can answer the question: what more information does the BUG_ON
-> > > give you than the NULL deref Oops would not? then it might be
-> > > reasonable.
-> > 
-> > The question is if a user can trigger the NULL dereference intentionally,
-> > in which case they might get the kernel to jump into a  user-provided
-> > buffer.
-> 
-> Can you elaborate on how they could do this?  If you're thinking they
-> could alter the pointer and trigger the jump, then yes, but a BUG_ON
-> won't prevent that because the altered pointer won't be NULL.
+Helpers for replacement repeating patterns:
 
-The attack that has been demonstrated a couple of times uses an anomymous
-mmap to virtual address 0. You fill that page with pointers to a
-function in your program. If there is a NULL pointer to some operations
-structure and kernel code calls an operation without checking the
-ops pointer first, it gets read from the NULL page and the kernel
-jumps into user space.
+1)raw_spin_unlock_irq(lock);
+   schedule();
+2)raw_spin_unlock_irqrestore(lock, flags);
+   schedule();
 
-	Arnd
+(The same for spinlock_t)
+
+They allow to prevent excess preempt_schedule(), which can happen on preemptible kernel.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/sched.h |   20 ++++++++++++++++++++
+ kernel/sched/core.c   |   24 ++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 0 deletions(-)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8b10339..0ae79f3 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -310,6 +310,26 @@ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+ extern void schedule_preempt_disabled(void);
+ 
++#ifdef CONFIG_PREEMPT
++extern void schedule_raw_spin_unlock(raw_spinlock_t *lock);
++/* See comment for schedule_raw_spin_unlock() */
++static inline void schedule_spin_unlock(spinlock_t *lock)
++{
++	schedule_raw_spin_unlock(&lock->rlock);
++}
++#else
++static inline void schedule_raw_spin_unlock(raw_spinlock_t *lock)
++{
++	raw_spin_unlock_irq(lock);
++	schedule();
++}
++static inline void schedule_spin_unlock(spinlock_t *lock)
++{
++	spin_unlock_irq(lock);
++	schedule();
++}
++#endif
++
+ struct nsproxy;
+ struct user_namespace;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..381e493 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3125,6 +3125,30 @@ asmlinkage void __sched preempt_schedule_irq(void)
+ 	exception_exit(prev_state);
+ }
+ 
++/*
++ * schedule_raw_spin_unlock - unlock raw_spinlock and call schedule()
++ * 
++ * Should be used instead of the constructions
++ *   1) raw_spin_unlock_irq(lock);
++ *      schedule();
++ *   or
++ *   2) raw_spin_unlock_irqrestore(lock, flags);
++ *      schedule();
++ * where they have to be.
++ *
++ * It helps to prevent excess preempt_schedule() during the unlocking,
++ * which can be called on preemptible kernel.
++ * Returns with irqs enabled.
++ */
++void __sched schedule_raw_spin_unlock(raw_spinlock_t *lock)
++{
++	preempt_disable();
++	raw_spin_unlock_irq(lock);
++	sched_preempt_enable_no_resched();
++	schedule();
++}
++EXPORT_SYMBOL(schedule_raw_spin_unlock);
++
+ #endif /* CONFIG_PREEMPT */
+ 
+ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
