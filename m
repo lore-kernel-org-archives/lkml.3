@@ -1,153 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3FNN4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:56:14 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:58480 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab3FNN4I (ORCPT
+	id S1753291Ab3FNN4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:56:12 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:47363 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3FNN4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:56:08 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>, Benjamin Poirier <bpoirier@suse.de>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Wang YanQing <udknight@gmail.com>,
-        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH] kconfig/lxdialog: Add definitions for mininimum resize values
-Date: Fri, 14 Jun 2013 15:55:57 +0200
-Message-Id: <1371218157-18058-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 14 Jun 2013 09:56:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <51B94C54.8070209@codeaurora.org>
+References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
+ <1370873118-18468-3-git-send-email-draviv@codeaurora.org> <CALMYJDvXi7M8AgdJNpoL4H2-b3WBNZ3LLc2d8wkUMRJi5OQJQQ@mail.gmail.com>
+ <51B94C54.8070209@codeaurora.org>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Fri, 14 Jun 2013 19:25:44 +0530
+Message-ID: <CALMYJDtqCHN5UYTwi+DrUrQw+6iNZMcu4q_X+5DO_OaiaCKT0A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] scsi: ufs: Set fDeviceInit flag to initiate device initialization
+To: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Cc: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c8dc68ad0fbd ("kconfig/lxdialog: support resize") added support
-for resizing, but forgot to collect all hardcoded values at one single
-place.
+On Thu, Jun 13, 2013 at 10:06 AM, Sujit Reddy Thumma
+<sthumma@codeaurora.org> wrote:
+> On 6/12/2013 11:04 AM, Santosh Y wrote:
+>>>
+>>>
+>>>   /**
+>>> + *  ufshcd_query_request() - API for issuing query request to the
+>>> device.
+>>> + *  @hba: ufs driver context
+>>> + *  @query: params for query request
+>>> + *  @descriptor: buffer for sending/receiving descriptor
+>>> + *  @retries: number of times to try executing the command
+>>> + *
+>>> + *   All necessary fields for issuing a query and receiving its response
+>>> + *   are stored in the UFS hba struct. We can use this method since we
+>>> know
+>>> + *   there is only one active query request or any internal command at
+>>> all
+>>> + *   times.
+>>> + */
+>>> +static int ufshcd_send_query_request(struct ufs_hba *hba,
+>>> +                                       struct ufs_query_req *query,
+>>> +                                       u8 *descriptor,
+>>> +                                       struct ufs_query_res *response)
+>>> +{
+>>> +       int ret;
+>>> +
+>>> +       BUG_ON(!hba);
+>>> +       if (!query || !response) {
+>>> +               dev_err(hba->dev,
+>>> +                       "%s: NULL pointer query = %p, response = %p\n",
+>>> +                       __func__, query, response);
+>>> +               return -EINVAL;
+>>> +       }
+>>> +
+>>> +       mutex_lock(&hba->i_cmd.dev_cmd_lock);
+>>> +       hba->i_cmd.query.request = query;
+>>> +       hba->i_cmd.query.response = response;
+>>> +       hba->i_cmd.query.descriptor = descriptor;
+>>> +
+>>> +       ret = ufshcd_exec_internal_cmd(hba, DEV_CMD_TYPE_QUERY,
+>>> +                                       QUERY_REQ_TIMEOUT);
+>>
+>>
+>> Can this be generic, as external query commands might also use it?
+>
+>
+> External query commands can call ufshcd_send_query_request() directly,
+> without going into hassle of taking mutex lock and filling internal cmd
+> structure.
+>
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- scripts/kconfig/lxdialog/checklist.c |  4 ++--
- scripts/kconfig/lxdialog/dialog.h    | 13 +++++++++++++
- scripts/kconfig/lxdialog/inputbox.c  |  4 ++--
- scripts/kconfig/lxdialog/menubox.c   |  2 +-
- scripts/kconfig/lxdialog/textbox.c   |  2 +-
- scripts/kconfig/lxdialog/util.c      |  2 +-
- scripts/kconfig/lxdialog/yesno.c     |  4 ++--
- 7 files changed, 22 insertions(+), 9 deletions(-)
+I was not clear.
+It might be confusing that user issued query commands also use methods
+with name *internal_cmd*.
 
-diff --git a/scripts/kconfig/lxdialog/checklist.c b/scripts/kconfig/lxdialog/checklist.c
-index a2eb80f..3034057 100644
---- a/scripts/kconfig/lxdialog/checklist.c
-+++ b/scripts/kconfig/lxdialog/checklist.c
-@@ -132,9 +132,9 @@ int dialog_checklist(const char *title, const char *prompt, int height,
- 	}
- 
- do_resize:
--	if (getmaxy(stdscr) < (height + 6))
-+	if (getmaxy(stdscr) < (height + CHECKLIST_HEIGTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
--	if (getmaxx(stdscr) < (width + 6))
-+	if (getmaxx(stdscr) < (width + CHECKLIST_WIDTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
- 
- 	max_choice = MIN(list_height, item_count());
-diff --git a/scripts/kconfig/lxdialog/dialog.h b/scripts/kconfig/lxdialog/dialog.h
-index 10993370..f9f8475 100644
---- a/scripts/kconfig/lxdialog/dialog.h
-+++ b/scripts/kconfig/lxdialog/dialog.h
-@@ -200,6 +200,19 @@ int item_is_tag(char tag);
- int on_key_esc(WINDOW *win);
- int on_key_resize(void);
- 
-+#define CHECKLIST_HEIGTH_MIN 6	/* For dialog_checklist() */
-+#define CHECKLIST_WIDTH_MIN 6
-+#define INPUTBOX_HEIGTH_MIN 2	/* For dialog_inputbox() */
-+#define INPUTBOX_WIDTH_MIN 2
-+#define MENU_HEIGTH_MIN 15	/* For dialog_menu() */
-+#define MENU_WIDTH_MIN 65
-+#define TEXTBOX_HEIGTH_MIN 8	/* For dialog_textbox() */
-+#define TEXTBOX_WIDTH_MIN 8
-+#define YESNO_HEIGTH_MIN 4	/* For dialog_yesno() */
-+#define YESNO_WIDTH_MIN 4
-+#define WIN_HEIGTH_MIN 19	/* For init_dialog() */
-+#define WIN_WIDTH_MIN 80
-+
- int init_dialog(const char *backtitle);
- void set_dialog_backtitle(const char *backtitle);
- void set_dialog_subtitles(struct subtitle_list *subtitles);
-diff --git a/scripts/kconfig/lxdialog/inputbox.c b/scripts/kconfig/lxdialog/inputbox.c
-index 21404a0..7b01add 100644
---- a/scripts/kconfig/lxdialog/inputbox.c
-+++ b/scripts/kconfig/lxdialog/inputbox.c
-@@ -56,9 +56,9 @@ int dialog_inputbox(const char *title, const char *prompt, int height, int width
- 		strcpy(instr, init);
- 
- do_resize:
--	if (getmaxy(stdscr) <= (height - 2))
-+	if (getmaxy(stdscr) <= (height - INPUTBOX_HEIGTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
--	if (getmaxx(stdscr) <= (width - 2))
-+	if (getmaxx(stdscr) <= (width - INPUTBOX_WIDTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
- 
- 	/* center dialog box on screen */
-diff --git a/scripts/kconfig/lxdialog/menubox.c b/scripts/kconfig/lxdialog/menubox.c
-index 38cd69c..0ab663d 100644
---- a/scripts/kconfig/lxdialog/menubox.c
-+++ b/scripts/kconfig/lxdialog/menubox.c
-@@ -193,7 +193,7 @@ int dialog_menu(const char *title, const char *prompt,
- do_resize:
- 	height = getmaxy(stdscr);
- 	width = getmaxx(stdscr);
--	if (height < 15 || width < 65)
-+	if (height < MENU_HEIGTH_MIN || width < MENU_WIDTH_MIN)
- 		return -ERRDISPLAYTOOSMALL;
- 
- 	height -= 4;
-diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
-index a48bb93..907cdcb 100644
---- a/scripts/kconfig/lxdialog/textbox.c
-+++ b/scripts/kconfig/lxdialog/textbox.c
-@@ -80,7 +80,7 @@ int dialog_textbox(const char *title, char *tbuf, int initial_height,
- 
- do_resize:
- 	getmaxyx(stdscr, height, width);
--	if (height < 8 || width < 8)
-+	if (height < TEXTBOX_HEIGTH_MIN || width < TEXTBOX_WIDTH_MIN)
- 		return -ERRDISPLAYTOOSMALL;
- 	if (initial_height != 0)
- 		height = initial_height;
-diff --git a/scripts/kconfig/lxdialog/util.c b/scripts/kconfig/lxdialog/util.c
-index a0e97c2..be61979 100644
---- a/scripts/kconfig/lxdialog/util.c
-+++ b/scripts/kconfig/lxdialog/util.c
-@@ -317,7 +317,7 @@ int init_dialog(const char *backtitle)
- 	getyx(stdscr, saved_y, saved_x);
- 
- 	getmaxyx(stdscr, height, width);
--	if (height < 19 || width < 80) {
-+	if (height < WIN_HEIGTH_MIN || width < WIN_WIDTH_MIN) {
- 		endwin();
- 		return -ERRDISPLAYTOOSMALL;
- 	}
-diff --git a/scripts/kconfig/lxdialog/yesno.c b/scripts/kconfig/lxdialog/yesno.c
-index 4e6e809..abb0c39 100644
---- a/scripts/kconfig/lxdialog/yesno.c
-+++ b/scripts/kconfig/lxdialog/yesno.c
-@@ -45,9 +45,9 @@ int dialog_yesno(const char *title, const char *prompt, int height, int width)
- 	WINDOW *dialog;
- 
- do_resize:
--	if (getmaxy(stdscr) < (height + 4))
-+	if (getmaxy(stdscr) < (height + YESNO_HEIGTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
--	if (getmaxx(stdscr) < (width + 4))
-+	if (getmaxx(stdscr) < (width + YESNO_WIDTH_MIN))
- 		return -ERRDISPLAYTOOSMALL;
- 
- 	/* center dialog box on screen */
+>
+>>
+>>> +
+>>> +       hba->i_cmd.query.request = NULL;
+>>> +       hba->i_cmd.query.response = NULL;
+>>> +       hba->i_cmd.query.descriptor = NULL;
+>>> +       mutex_unlock(&hba->i_cmd.dev_cmd_lock);
+>>> +
+>>> +       return ret;
+>>> +}
+>>> +
+>>> +/**
+>>
+>>
+>>
+>
+> --
+> Regards,
+> Sujit
+
+
+
 -- 
-1.8.3.1
-
+~Santosh
