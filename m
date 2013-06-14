@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3FNOAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:00:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55572 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab3FNOAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:00:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,866,1363158000"; 
-   d="scan'208";a="353459569"
-Message-ID: <51BB21D8.6000109@intel.com>
-Date: Fri, 14 Jun 2013 21:59:52 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752570Ab3FNOC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:02:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57985 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab3FNOCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:02:25 -0400
+Date: Fri, 14 Jun 2013 10:02:15 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+Message-ID: <20130614140215.GA1017@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+References: <51B7B128.60909@intel.com>
+ <20130614140940.GA20401@gmail.com>
 MIME-Version: 1.0
-To: Lei Wen <adrian.wenl@gmail.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
- forked task
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-4-git-send-email-alex.shi@intel.com> <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
-In-Reply-To: <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130614140940.GA20401@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 06:02 PM, Lei Wen wrote:
->> >         enqueue_entity
->> >             enqueue_entity_load_avg
->> >
->> > and make forking balancing imbalance since incorrect load_avg_contrib.
->> >
->> > Further more, Morten Rasmussen notice some tasks were not launched at
->> > once after created. So Paul and Peter suggest giving a start value for
->> > new task runnable avg time same as sched_slice().
-> I am confused at this comment, how set slice to runnable avg would change
-> the behavior of "some tasks were not launched at once after created"?
+On Fri, Jun 14, 2013 at 10:09:40PM +0800, Zheng Liu wrote:
+> This commit tries to fix this problem.  Now a new member called
+> i_touch_when is added into ext4_inode_info to record the last access
+> time for an inode.  Meanwhile we never need to keep a proper in-order
+> LRU list.  So this can avoid to burns some CPU time.  When we try to
+> reclaim some entries from extent status tree, we use list_sort() to get
+> a proper in-order list.  Then we traverse this list to discard some
+> entries.
 
-I also don't know the details on Morten's machine. but just guess, there
-are much tasks on in the run queue. the minimum load avg make the new
-task wait its time...
-> 
-> IMHO, I could only tell that for the new forked task, it could be run if current
-> task already be set as need_resched, and preempt_schedule or
-> preempt_schedule_irq
-> is called.
-> 
-> Since the set slice to avg behavior would not affect this task's vruntime,
-> and hence cannot make current running task be need_sched, if
-> previously it cannot.
-> 
-> Could you help correct if I am wrong at somewhere? ....
-> 
-> Thanks,
+I think this approach is very sound.  I have one reservation, however.
+If there are a large number of inodes on this list, list_sort() could
+burn a lot of CPU time, especially if the shrinker is called a very
+large number of times in a short time period (i.e., when the system is
+thrashing, or when one or more memory containers are under a large
+amount of memory pressure).
 
+I have a suggestion for how to address this: Keep a timestamp of when
+the list last has been sorted in struct ext4_super_info.  When
+iterating over the list, looking for a candidate inode, if inode's
+i_touch_when is greater than the last time sorted, skip the inode.  If
+there are no inodes left in the list, or more than some threshold
+inodes have been skipped, only then resort the list (and update the
+timestamp in the ext4_super_info structure).
 
--- 
-Thanks
-    Alex
+What do you think?
+
+					- Ted
