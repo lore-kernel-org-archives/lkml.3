@@ -1,247 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab3FNOqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:46:47 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57084 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab3FNOqo convert rfc822-to-8bit (ORCPT
+	id S1753308Ab3FNOrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:47:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59385 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab3FNOrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:46:44 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrice Chotard <patrice.chotard.st@gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig properties from a dt node
-Date: Fri, 14 Jun 2013 16:46:54 +0200
-Message-ID: <15070787.kHC0vo7yeH@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <201306140934.15052.heiko@sntech.de>
-References: <201306102139.32444.heiko@sntech.de> <2477455.I6AxjaGPuJ@avalon> <201306140934.15052.heiko@sntech.de>
+	Fri, 14 Jun 2013 10:47:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: mach-moxart: add MOXA ART SoC files
+Date: Fri, 14 Jun 2013 16:47:23 +0200
+Message-ID: <2428901.voOA9oET8R@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
+References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com> <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Igz1NQSs6sToPxLuUyFgl8bZVvUc5CXwtSDildsGAvm
+ y6M1OLE0HvhsV6nieVQ/rPM9c3lyDZY/r8ZYLxbJHeu/fUFacv
+ JAKP5WVwREo6IVK90ZxjJuJHqzBtBqnGW8VgL6LBSqLB3YOZCu
+ apHqIL4EjvvlstJvK3evdUbPUoOC1sXW/ck/PghpwBQAoC0Ymd
+ do7iusHlwMWULzz3GlDLqyLq87Gxs+ZSPOix02N4Cb9DDMbzGo
+ FRrRfuC2W9rro2hSZ86Wfxt9FfkEjZSPU0FMmmiGJfKXzxApXs
+ KRikYthKvy+Jc1Be2gjgQ1+U74Je9r6BM8SnH28G/bBuI4CkAI
+ ylduZgjoFw5ZEt9q6MsQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+On Wednesday 12 June 2013 14:34:06 Jonas Jensen wrote:
 
-On Friday 14 June 2013 09:34:14 Heiko Stübner wrote:
-> Am Freitag, 14. Juni 2013, 02:27:01 schrieb Laurent Pinchart:
-> > Hi Heiko,
-> > 
-> > Thank you for the patch. I've tested it on an sh73a0 KZM9G board with the
-> > sh- pfc driver and it seems to work fine. Please see the code below for
-> > comments.
-> > 
-> > On Monday 10 June 2013 21:40:29 Heiko Stübner wrote:
-> > > pinconf_generic_parse_dt_config() takes a node as input and generates an
-> > > array of generic pinconfig values from the properties of this node.
-> > > 
-> > > As I couldn't find a mechanism to count the number of properties of a
-> > > node the function uses internally an array to accept one of parameter
-> > > and copies the real present options to a smaller variable at its end.
-> > > 
-> > > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > > ---
-> > > 
-> > >  .../bindings/pinctrl/pinctrl-bindings.txt          |   38 +++++++++
-> > >  drivers/pinctrl/pinconf-generic.c                  |   81 +++++++++++++
-> > >  drivers/pinctrl/pinconf.h                          |    6 ++
-> > >  
-> > >  3 files changed, 125 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git
-> > > a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> > > b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt index
-> > > c95ea82..ef7cd57 100644
-> > > --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> > > +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> > > @@ -126,3 +126,41 @@ device; they may be grandchildren, for example.
-> > > Whether this is legal, and whether there is any interaction between the
-> > > child and intermediate parent nodes, is again defined entirely by the
-> > > binding for the individual pin controller device.
-> > > +
-> > > +== Using generic pinconfig options ==
-> > > +
-> > > +Generic pinconfig parameters can be used by defining a separate node
-> > > containing +the applicable parameters (and optional values), like:
-> > > +
-> > > +pcfg_pull_up: pcfg_pull_up {
-> > > +	bias-pull-up;
-> > > +	drive-strength = <20>;
-> > > +};
-> > > +
-> > > +This node should then be referenced in the appropriate pinctrl node as
-> > > a
-> > > phandle +and parsed in the driver using the
-> > > pinconf_generic_parse_dt_config function. +
-> > > +Supported configuration parameters are:
-> > > +
-> > > +bias-disable		- disable any pin bias
-> > > +bias-high-impedance	- high impedance mode ("third-state", "floating")
-> > > +bias-bus-hold		- latch weakly
-> > > +bias-pull-up		- pull up the pin
-> > > +bias-pull-down		- pull down the pin
-> > > +bias-pull-pin-default	- use pin-default pull state
-> > > +drive-push-pull		- drive actively high and low
-> > > +drive-open-drain	- drive with open drain
-> > > +drive-open-source	- drive with open source
-> > > +drive-strength		- sink or source at most X mA
-> > > +input-schmitt-enable	- enable schmitt-trigger mode
-> > > +input-schmitt-disable	- disable schmitt-trigger mode
-> > > +input-schmitt		- run in schmitt-trigger mode with hysteresis X
-> > > +input-debounce		- debounce mode with debound time X
-> > > +power-source		- select power source X
-> > > +slew-rate		- use slew-rate X
-> > > +low-power-mode		- low power mode
-> > > +output-low		- set the pin to output mode with low level
-> > > +output-high		- set the pin to output mode with high level
-> > > +
-> > > +More in-depth documentation on these parameters can be found in
-> > > +<include/linux/pinctrl/pinconfig-generic.h>
-> > > diff --git a/drivers/pinctrl/pinconf-generic.c
-> > > b/drivers/pinctrl/pinconf-generic.c index 9a6812b..3610e7b 100644
-> > > --- a/drivers/pinctrl/pinconf-generic.c
-> > > +++ b/drivers/pinctrl/pinconf-generic.c
-> > > @@ -21,6 +21,7 @@
-> > > 
-> > >  #include <linux/pinctrl/pinctrl.h>
-> > >  #include <linux/pinctrl/pinconf.h>
-> > >  #include <linux/pinctrl/pinconf-generic.h>
-> > > 
-> > > +#include <linux/of.h>
-> > > 
-> > >  #include "core.h"
-> > >  #include "pinconf.h"
-> > > 
-> > > @@ -139,3 +140,83 @@ void pinconf_generic_dump_config(struct pinctrl_dev
-> > > *pctldev, }
-> > > 
-> > >  EXPORT_SYMBOL_GPL(pinconf_generic_dump_config);
-> > >  #endif
-> > > 
-> > > +
-> > > +#ifdef CONFIG_OF
-> > > +struct pinconf_generic_dt_params {
-> > > +	const char * const property;
-> > > +	enum pin_config_param param;
-> > > +	u32 default_value;
-> > > +};
-> > > +
-> > > +static struct pinconf_generic_dt_params dt_params[] = {
-> > > +	{ "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
-> > > +	{ "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
-> > > +	{ "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
-> > > +	{ "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
-> > > +	{ "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
-> > > +	{ "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
-> > > +	{ "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
-> > > +	{ "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
-> > > +	{ "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
-> > > +	{ "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
-> > > +	{ "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
-> > > +	{ "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
-> > > +	{ "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
-> > > +	{ "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
-> > > +	{ "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
-> > > +	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
-> > > +	{ "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
-> > > +	{ "output-low", PIN_CONFIG_OUTPUT, 0, },
-> > > +	{ "output-high", PIN_CONFIG_OUTPUT, 1, },
-> > > +};
-> > > +
-> > > +/**
-> > > + * pinconf_generic_parse_dt_config()
-> > > + * parse the config properties into generic pinconfig values.
-> > > + * @np: node containing the pinconfig properties
-> > > + * @configs: array with nconfigs entries containing the generic pinconf
-> > > values + * @nconfigs: umber of configurations
-> > > + */
-> > > +int pinconf_generic_parse_dt_config(struct device_node *np,
-> > > +				    unsigned long **configs,
-> > > +				    unsigned int *nconfigs)
-> > > +{
-> > > +	unsigned long cfg[ARRAY_SIZE(dt_params)];
-> > 
-> > I'm a bit uneasy about allocating large arrays on the stack. Would it be
-> > better to dynamically allocate cfg ? I've used kzrealloc in my
-> > implementation to grow the config array every time a config was found, but
-> > that might not be the most efficient implementation, although I wonder how
-> > many configuration options we will see in practice in a single node.
-> 
-> Personally I'm not sure ... using kzrealloc once for each found property
-> like I saw it in your patch feels somehow slow, while my big array might
-> cause other problems.
+> diff --git a/arch/arm/mach-moxart/idle.c b/arch/arm/mach-moxart/idle.c
+> new file mode 100644
+> index 0000000..73ed844
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/idle.c
+> @@ -0,0 +1,21 @@
+> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License,
+> + * or (at your option) any later version. */
+> +
+> +#include <linux/init.h>
+> +#include <asm/system.h>
+> +#include <asm/proc-fns.h>
+> +
+> +static void moxart_idle(void)
+> +{
+> +}
+> +
+> +static int __init moxart_idle_init(void)
+> +{
+> +	arm_pm_idle = moxart_idle;
+> +	return 0;
+> +}
+> +
+> +arch_initcall(moxart_idle_init);
 
-What about allocating the larger array dynamically instead ? Something like
+IIRC Russell suggested changing cpu_fa526_do_idle() to not call WFI instead,
+since the only other platform with fa526 has the same problem.
 
-	unsigned long *cfg;
+Your change above is actually wrong and breaks non-fa526 platforms in a
+multiplatform kernel because it overrides arm_pm_idle without checking
+what machine it currently runs on.
 
-	cfg = kzalloc(sizeof(*cfg) * ARRAY_SIZE(dt_params), GFP_KERNEL);
+> diff --git a/arch/arm/mach-moxart/moxart.c b/arch/arm/mach-moxart/moxart.c
+> new file mode 100644
+> index 0000000..ab70386
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/moxart.c
+> @@ -0,0 +1,23 @@
+> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License,
+> + * or (at your option) any later version. */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/clk-provider.h>
 
-	...
-	(after allocating the returned array and copying data over)
-	kfree(cfg);
+Most of these are probably unneeded now.
 
-> If there was a way to count properties in a dt node this would solve the
-> problem, aka alloc an array of the number of properties, parse props and
-> then move to correct sized array when we know the exact number of found
-> ones.
-> 
-> But I hadn't found  a way to get the number of properties and trying to
-> write my own iterating over the properties did result in strange numbers,
-> probably thru inheritance of properties.
-> 
-> > > +	unsigned int ncfg = 0;
-> > > +	int ret;
-> > > +	int i;
-> > > +	u32 val;
-> > > +
-> > > +	if (!np)
-> > > +		return -EINVAL;
-> > > +
-> > > +	for (i = 0; i < ARRAY_SIZE(dt_params); i++) {
-> > > +		struct pinconf_generic_dt_params *par = &dt_params[i];
-> > > +		ret = of_property_read_u32(np, par->property, &val);
-> > > +
-> > > +		/* property not found */
-> > > +		if (ret == -EINVAL)
-> > > +			continue;
-> > > +
-> > > +		/* use default value, when no value is specified */
-> > > +		if (ret)
-> > > +			val = par->default_value;
-> > > +
-> > > +		pr_debug("found %s with value %u\n", par->property, val);
-> > > +		cfg[ncfg] = pinconf_to_config_packed(par->param, val);
-> > > +		ncfg++;
-> > > +	}
-> > 
-> > You could add
-> > 
-> > 	if (ncfg == 0) {
-> > 	
-> > 		*configs = NULL;
-> > 		*nconfigs = 0;
-> > 		return 0;
-> > 	
-> > 	}
-> > 
-> > here.
-> > 
-> > Most of the issues I wanted to raise have already been addressed by
-> > comments sent to the list. Do you plan to send a v2 in the near future ?
-> 
-> According to Linus this is already in his tree, so I'm currently working on
-> fixup patches for the issues. Should be done hopefully today.
+> +#include <asm/mach/arch.h>
+> +
+> +static const char * const moxart_dt_compat[] = {
+> +	"moxa,moxart-uc-7112-lx",
+> +	NULL,
+> +};
+> +
+> +DT_MACHINE_START(MOXART, "MOXA UC-7112-LX")
+> +	.dt_compat		= moxart_dt_compat,
+> +MACHINE_END
 
-Sounds good to me.
+If the .dt_compat fields is the only field in the machine descriptor,
+you can leave out the entire descriptor!
 
--- 
-Regards,
+Olof, do you have a preference to how we want to handle this? The
+only advantage of having this file at all is to have the
+"MOXA UC-7112-LX" string in /proc/cpuinfo.
+Should we just remove the entire directory or leave it as the trivial
+file above?
 
-Laurent Pinchart
-
+	Arnd
