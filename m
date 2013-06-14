@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3FNWrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:47:51 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:57275 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab3FNWru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:47:50 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: <balbi@ti.com>, <richard.genoud@gmail.com>, <voice.shen@atmel.com>,
-        <vinod.koul@intel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: Device Tree update for 3.11 #2
-Date: Sat, 15 Jun 2013 00:47:47 +0200
-Message-ID: <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
-Organization: atmel
+	id S1753964Ab3FNWsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:48:20 -0400
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:30864
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753689Ab3FNWsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 18:48:18 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Roman Yepishev <roman.yepishev@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+Thread-Topic: [PATCH] PCI: Remove not needed check in disable aspm link
+Thread-Index: AQHOaSy7q8T6unfYO0y0KlbpsoIbopk1uWwAgAAOSICAAAKsgIAAA5wAgAACKQA=
+Date: Fri, 14 Jun 2013 22:48:13 +0000
+Message-ID: <1371250092.2490.7.camel@x230>
+References: <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
+	 <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
+	 <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
+	 <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
+	 <20130401235256.GA31966@google.com>
+	 <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
+	 <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com>
+	 <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
+	 <CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com>
+	 <CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com>
+	 <20130614141101.GA29452@google.com>
+	 <CAE9FiQVr-OWeqEHFXn0MjNiSD0WM=FNO_DFo6m9UbbG60uonpw@mail.gmail.com>
+	 <CAErSpo7grN-93zZfBJOHZH-pR1wDYrojTwt=B=++QqA0rPb3Rg@mail.gmail.com>
+	 <CAE9FiQUO350kqrXB5=yQ-OxOeSJj4+P6WPg4gGgXxFEvfoLyng@mail.gmail.com>
+	 <CAErSpo6vEOw10YV=Sou6wjjSc2GWr-oX=Dvbt7Xt=RJKi4RELw@mail.gmail.com>
+	 <CAE9FiQWevd6ZNDdqGkqbLrGujKYuTiwibPAT+30VPpC_H-rLJA@mail.gmail.com>
+	 <CAErSpo66qtgg8=BqX+4sm4h1vXD5gR6aiH7hHK7gvz1x3rEQZA@mail.gmail.com>
+	 <CAE9FiQWxDhagFNAYc2eNDe_1jYtVTa5Azg0zifiprND5m3CmMw@mail.gmail.com>
+	 <1371248853.2490.5.camel@x230>
+	 <CAE9FiQWPvOYK2W0VSRuMyfj9Edbw1BSp-W91HjPyszPK0ZBcjg@mail.gmail.com>
+In-Reply-To: <CAE9FiQWPvOYK2W0VSRuMyfj9Edbw1BSp-W91HjPyszPK0ZBcjg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <0E8CCCB434AFC340A3CCE0F33534D549@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5EMmP72008669
 
-Arnd, Olof,
+On Fri, 2013-06-14 at 15:40 -0700, Yinghai Lu wrote:
+> On Fri, Jun 14, 2013 at 3:27 PM, Matthew Garrett
+> <matthew.garrett@nebula.com> wrote:
+> > On Fri, 2013-06-14 at 15:17 -0700, Yinghai Lu wrote:
+> >
+> >> after those two patches, it aspm_disabled is set, via _osc early,
+> >> pre-1.1 devices aspm register will be touched even aspm_force is not specified.
+> >
+> > I don't follow. We were previously automatically disabling ASPM on
+> > pre-1.1 devices even if _OSC didn't give us control.
+> 
+> I don't think so, we just moved _OSC support/control setting before pci scan
+> in 3.8 and revert that in v3.9.
 
-Additional pull-request for AT91 DT patches.
-It contains the remaining part of the USB gadget pull-request that I sent you
-last week. After having split it, here is the DT part.
-It also contains the update of DMA bindings: it is the AT91 part the should go
-through arm-soc. I have included the patch (ARM: at91: dt: add header to define
-at_hdmac configuration) so that we avoid build errors whichever git tree
-(slave-dma or arm-soc) is merged first.
-A SPI DT patch for at91sam9x5 is also added.
-
-Thanks, best regards,
-
-The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
-
-  ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
-
-for you to fetch changes up to 24ce10e142e7b063c4ae4437dd3b290fbfafe052:
-
-  ARM: at91: sam9m10g45ek add udc DT support (2013-06-15 00:15:22 +0200)
-
-----------------------------------------------------------------
-Again some nice DT updates for AT91:
-- DMA binding update with one patch shared with slave-dma tree
-- more SPI DT activation
-- enable the USB gadget HS for DT platforms
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (4):
-      ARM: at91: sam9x5 add udc DT support
-      ARM: at91: sam9x5ek add udc DT support
-      ARM: at91: sam9g45 add udc DT support
-      ARM: at91: sam9m10g45ek add udc DT support
-
-Ludovic Desroches (2):
-      ARM: at91: dt: add header to define at_hdmac configuration
-      ARM: at91: dt: switch DMA DT bindings to pre-processor
-
-Richard Genoud (1):
-      ARM: at91: dt: at91sam9x5: add SPI DMA client infos
-
- arch/arm/boot/dts/at91sam9g45.dtsi     | 67 ++++++++++++++++++++++++++-
- arch/arm/boot/dts/at91sam9m10g45ek.dts |  5 ++
- arch/arm/boot/dts/at91sam9n12.dtsi     | 11 +++--
- arch/arm/boot/dts/at91sam9x5.dtsi      | 85 ++++++++++++++++++++++++++++++----
- arch/arm/boot/dts/at91sam9x5ek.dtsi    |  5 ++
- arch/arm/boot/dts/sama5d3.dtsi         | 19 ++++----
- arch/arm/mach-at91/at91sam9g45.c       |  2 +
- arch/arm/mach-at91/at91sam9x5.c        |  2 +
- include/dt-bindings/dma/at91.h         | 27 +++++++++++
- 9 files changed, 199 insertions(+), 24 deletions(-)
- create mode 100644 include/dt-bindings/dma/at91.h
+Right, sorry, I don't mean _OSC, I mean the FADT flag. We were
+previously automatically disabling ASPM on pre-1.1 devices even if the
+FADT flag was set.
 
 -- 
-Nicolas Ferre
+Matthew Garrett | mjg59@srcf.ucam.org
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
