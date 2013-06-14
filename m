@@ -1,196 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab3FNRIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 13:08:31 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63742 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3FNRIa (ORCPT
+	id S1753608Ab3FNRJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 13:09:07 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:38367 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab3FNRJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 13:08:30 -0400
-Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: "nirinA raseliarison" <nirina.raseliarison@gmail.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Francois Romieu" <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
-        "Ming Lei" <ming.lei@canonical.com>,
-        "Hayes Wang" <hayeswang@realtek.com>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000040
-References: <op.wyn5vzc89ey1ta@localhost>
- <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
- <20130614154325.GA30105@roeck-us.net>
-Date: Fri, 14 Jun 2013 20:07:11 +0300
+	Fri, 14 Jun 2013 13:09:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: nirinA raseliarison <nirina.raseliarison@gmail.com>
-Message-ID: <op.wyoht9hm9ey1ta@localhost>
-In-Reply-To: <20130614154325.GA30105@roeck-us.net>
-User-Agent: Opera Mail/11.10 (Linux)
+In-Reply-To: <2491625.TQ1FFQeR38@vostro.rjw.lan>
+References: <2491625.TQ1FFQeR38@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 14 Jun 2013 11:08:44 -0600
+Message-ID: <CAErSpo7Q8H5wmMUPKqquerp_zbFwnac95Gbezd2=STBjtUrnvw@mail.gmail.com>
+Subject: Re: [PATCH] PCI / ACPI / PM: Use correct power state strings in messages
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on Fri, 14 Jun 2013 18:45:48 +0300, Guenter Roeck <linux@roeck-us.net>  
-wrote:
-
-> On Fri, Jun 14, 2013 at 08:30:29AM -0600, Bjorn Helgaas wrote:
->> [+cc Ming, Hayes, Francois, r8169 list]
->>
->> On Fri, Jun 14, 2013 at 6:49 AM, nirinA raseliarison
->> <nirina.raseliarison@gmail.com> wrote:
->> > hello there,
->> > i have this ethernet controler:
->> >
->> >  Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast  
->> Ethernet
->> > controller (rev 05)
->> >
->> > that uses the r8169 module.
->> > it works fine, but sometimes after a reboot and issueing:
->> >
->> >  ifconfig eth0 192.168.1.1 up
->> >
->> > i got the message below. after another reboot the
->> > message disappears. i also get the same message this 3.9.5 and 3.9.4.
->> >
->> > it seems i catch my first oops and don't know what to do with it.
->> > currently running:
->> >
->> >  cat /proc/version
->> >  Linux version 3.9.6.20130614 (root@supernova) (gcc version 4.8.1  
->> (GCC) ) #1
->> > SMP Fri Jun 14 09:14:50 EAT 2013
->> >
->> >  uname -a
->> >  Linux supernova 3.9.6.20130614 #1 SMP Fri Jun 14 09:14:50 EAT 2013  
->> x86_64
->> > Intel(R) Celeron(R) CPU G1610 @ 2.60GHz GenuineIntel GNU/Linux
->> >
->> > thanks,
->> >  
->> -----------------8<------------------------------8<---------------------------------------
->> >
->> > [   57.877560] BUG: unable to handle kernel NULL pointer dereference  
->> at
->> > 0000000000000040
->> > [   57.877603] IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
->> > [   57.877634] PGD 21330a067 PUD 211a3a067 PMD 0
->> > [   57.877660] Oops: 0002 [#1] SMP
->> > [   57.877681] Modules linked in: fuse coretemp kvm_intel kvm evdev  
->> r8169
->> > microcode mii
->> > [   57.877735] CPU 0
->> > [   57.877746] Pid: 1950, comm: firmware Not tainted 3.9.6.20130614  
->> #1 To be
->> > filled by O.E.M. To be filled by O.E.M./ONDA H61V Ver:4.01
->> > [   57.877790] RIP: 0010:[<ffffffff81491844>]  [<ffffffff81491844>]
->> > fw_load_abort.isra.5+0x4/0x20
->> > [   57.877824] RSP: 0018:ffff8802119a7e80  EFLAGS: 00010246
->> > [   57.877844] RAX: ffff8802158fe250 RBX: ffff880211a03b40 RCX:
->> > 0000000000000000
->> > [   57.877869] RDX: ffffffff81c742c8 RSI: ffff8802158fe250 RDI:
->> > 0000000000000000
->> > [   57.877895] RBP: ffff8802119a7e80 R08: ffff8802119a6000 R09:
->> > 00000000000005aa
->> > [   57.877920] R10: 0000000000000000 R11: 0000000000000000 R12:
->> > ffffffffffffffff
->> > [   57.877945] R13: ffff880213d34088 R14: 0000000000000003 R15:
->> > ffff88020eafc230
->> > [   57.877970] FS:  00007f3c6cb2a740(0000) GS:ffff88021f200000(0000)
->> > knlGS:0000000000000000
->> > [   57.877998] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> > [   57.878019] CR2: 0000000000000040 CR3: 0000000203155000 CR4:
->> > 00000000001407f0
->> > [   57.878044] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
->> > 0000000000000000
->> > [   57.878069] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->> > 0000000000000400
->> > [   57.878094] Process firmware (pid: 1950, threadinfo  
->> ffff8802119a6000,
->> > task ffff8802158fe250)
->> > [   57.878124] Stack:
->> > [   57.878133]  ffff8802119a7eb0 ffffffff81491917 ffff880211a4d5a0
->> > 0000000000000003
->> > [   57.878168]  ffff8802119a7f50 ffffffff818765a0 ffff8802119a7ec0
->> > ffffffff81483063
->> > [   57.878203]  ffff8802119a7f08 ffffffff8119bc9e ffff880213d34098
->> > ffff880211a4d5c0
->> > [   57.878237] Call Trace:
->> > [   57.878251]  [<ffffffff81491917>] firmware_loading_store+0x77/0x150
->> > [   57.878275]  [<ffffffff81483063>] dev_attr_store+0x13/0x20
->> > [   57.878297]  [<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
->> > [   57.878320]  [<ffffffff81133e8a>] vfs_write+0x9a/0x160
->> > [   57.878340]  [<ffffffff81134164>] sys_write+0x44/0x90
->> > [   57.878360]  [<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
->> > [   57.879379] Code: 6b ff ff ff 48 89 df 31 db e8 b9 b0 c9 ff e9 79  
->> ff ff
->> > ff 0f 1f 40 00 48 83 c4 10 5b 41 5c 41 5d 41 5e 5d c3 0f 1f 00 55 48  
->> 89 e5
->> > <f0> 80 4f 40 04 48 83 c7 18 e8 8e a9 bd ff 5d c3 66 66 66 2e 0f
->> > [   57.881753] RIP  [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
->> > [   57.882888]  RSP <ffff8802119a7e80>
->> > [   57.884019] CR2: 0000000000000040
->> > [   57.885166] ---[ end trace 6705f6d4ce6b6a12 ]---
->> >
+On Thu, Jun 13, 2013 at 4:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> Please try the following patch.
-
-patch applied and no longer have the bug message when i
-reboot and wake up the ethernet controller.
-
-thanks,
-
-> [ Bjorn, sorry I dropped you from the recipient list, but unfortunately
-> Google still considers me to be a spammer and doesn't let me send any
-> e-mail to you ]
+> Make acpi_pci_set_power_state() print the name of the ACPI device
+> power state the device has been actually put into instead of printing
+> the name of the requested PCI device power state, which need not be
+> the same.
 >
-> Guenter
->
-> ----------
->
-> From 9feae0b1b33721573c41fbf2323db2a12c34c725 Mon Sep 17 00:00:00 2001
-> From: Guenter Roeck <linux@roeck-us.net>
-> Date: Fri, 14 Jun 2013 08:39:06 -0700
-> Subject: [PATCH] firmware: Fix race condition in firmware_loading_store
->
-> Fix:
->
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-> IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
-> ...
-> Call Trace:
-> [<ffffffff81491917>] firmware_loading_store+0x77/0x150
-> [<ffffffff81483063>] dev_attr_store+0x13/0x20
-> [<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
-> [<ffffffff81133e8a>] vfs_write+0x9a/0x160
-> [<ffffffff81134164>] sys_write+0x44/0x90
-> [<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
->
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  drivers/base/firmware_class.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
 >
-> diff --git a/drivers/base/firmware_class.c  
-> b/drivers/base/firmware_class.c
-> index 4b1f926..f34b489 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -570,12 +570,13 @@ static ssize_t firmware_loading_store(struct  
-> device *dev,
->  				      const char *buf, size_t count)
->  {
->  	struct firmware_priv *fw_priv = to_firmware_priv(dev);
-> -	struct firmware_buf *fw_buf = fw_priv->buf;
->  	int loading = simple_strtol(buf, NULL, 10);
-> +	struct firmware_buf *fw_buf;
->  	int i;
-> 	mutex_lock(&fw_lock);
-> +	fw_buf = fw_priv->buf;
->  	if (!fw_buf)
->  		goto out;
+> For 3.11.
+>
+> Thanks,
+> Rafael
+>
+> ---
+>  drivers/pci/pci-acpi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-pm/drivers/pci/pci-acpi.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-acpi.c
+> +++ linux-pm/drivers/pci/pci-acpi.c
+> @@ -211,7 +211,7 @@ static int acpi_pci_set_power_state(stru
+>
+>         if (!error)
+>                 dev_info(&dev->dev, "power state changed by ACPI to %s\n",
+> -                        pci_power_name(state));
+> +                        acpi_power_state_string(state_conv[state]));
+>
+>         return error;
+>  }
 >
 
+Just to double-check this, it *looks* like the effective change is
+that for PCI_D3hot and PCI_D3cold, we'll print "(unknown)" instead of
+"D3hot" and "D3cold" because state_conv[] folds both PCI_D3hot and
+PCI_D3cold into ACPI_STATE_D3, and acpi_power_state_string() doesn't
+have a case for ACPI_STATE_D3.
 
--- 
-nirinA
+Is that what you intended?
+
+Bjorn
