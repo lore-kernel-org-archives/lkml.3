@@ -1,307 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3FNVJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:09:22 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34287 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab3FNVJS (ORCPT
+	id S1753997Ab3FNVJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:09:49 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:64802 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3FNVIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:09:18 -0400
-Message-ID: <1371244396.15314.113.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] qla_target: remove qlt_check_fcport_exist
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Date: Fri, 14 Jun 2013 14:13:16 -0700
-In-Reply-To: <20130612202754.GB2981@logfs.org>
-References: <20130612202754.GB2981@logfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Fri, 14 Jun 2013 17:08:21 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH v2 08/11] irqdomain: Refactor irq_domain_associate_many()
+Date: Fri, 14 Jun 2013 22:08:03 +0100
+Message-Id: <1371244086-9189-9-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
+References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 16:27 -0400, Jörn Engel wrote:
-> Comment from original 2012 patch:
->   In all our testing this function has never returned true.  However, the
->   dropping of hardware_lock necessary to call this function seems to cause
->   a use-after-free we manage to hit rather frequently.  Given this
->   cost-benefit ratio, I'm willing to remove some 100 lines of code.
-> 
-> And since the same problem exists around shutdown_sess and put_sess,
-> this patch changes them from taking the hardware_lock to requiring the
-> hardware_lock to be taken.  In most cases the caller already had the
-> lock and had to drop it for the called method to reacquire it.  At best
-> that hurts performance and in rare instances it causes races with fatal
-> consequences.
-> 
-> We dropped the original 2012 patch when upgrading our kernel and it took
-> us nearly half a year to discover we still need it.
-> 
-> Signed-off-by: Joern Engel <joern@logfs.org>
-> ---
+Originally, irq_domain_associate_many() was designed to unwind the
+mapped irqs on a failure of any individual association. However, that
+proved to be a problem with certain IRQ controllers. Some of them only
+support a subset of irqs, and will fail when attempting to map a
+reserved IRQ. In those cases we want to map as many IRQs as possible, so
+instead it is better for irq_domain_associate_many() to make a
+best-effort attempt to map irqs, but not fail if any or all of them
+don't succeed. If a caller really cares about how many irqs got
+associated, then it should instead go back and check that all of the
+irqs is cares about were mapped.
 
-Applied to target-pending/for-next, and adding a CC' for the QLogic
-folks to double check.
+The original design open-coded the individual association code into the
+body of irq_domain_associate_many(), but with no longer needing to
+unwind associations, the code becomes simpler to split out
+irq_domain_associate() to contain the bulk of the logic, and
+irq_domain_associate_many() to be a simple loop wrapper.
 
-Thanks Joern!
+This patch also adds a new error check to the associate path to make
+sure it isn't called for an irq larger than the controller can handle,
+and adds locking so that the irq_domain_mutex is held while setting up a
+new association.
 
---nab
+v2: Fixup x86 warning. irq_domain_associate_many() no longer returns an
+    error code, but reports errors to the printk log directly. In the
+    majority of cases we don't actually want to fail if there is a
+    problem, but rather log it and still try to boot the system.
 
->  drivers/scsi/qla2xxx/qla_target.c  |  151 ++++--------------------------------
->  drivers/scsi/qla2xxx/tcm_qla2xxx.c |    6 +-
->  2 files changed, 17 insertions(+), 140 deletions(-)
-> 
-> diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-> index 61b5d8c..d34d954 100644
-> --- a/drivers/scsi/qla2xxx/qla_target.c
-> +++ b/drivers/scsi/qla2xxx/qla_target.c
-> @@ -544,102 +544,6 @@ out_free_id_list:
->  	return res;
->  }
->  
-> -static bool qlt_check_fcport_exist(struct scsi_qla_host *vha,
-> -	struct qla_tgt_sess *sess)
-> -{
-> -	struct qla_hw_data *ha = vha->hw;
-> -	struct qla_port_24xx_data *pmap24;
-> -	bool res, found = false;
-> -	int rc, i;
-> -	uint16_t loop_id = 0xFFFF; /* to eliminate compiler's warning */
-> -	uint16_t entries;
-> -	void *pmap;
-> -	int pmap_len;
-> -	fc_port_t *fcport;
-> -	int global_resets;
-> -	unsigned long flags;
-> -
-> -retry:
-> -	global_resets = atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count);
-> -
-> -	rc = qla2x00_get_node_name_list(vha, &pmap, &pmap_len);
-> -	if (rc != QLA_SUCCESS) {
-> -		res = false;
-> -		goto out;
-> -	}
-> -
-> -	pmap24 = pmap;
-> -	entries = pmap_len/sizeof(*pmap24);
-> -
-> -	for (i = 0; i < entries; ++i) {
-> -		if (!memcmp(sess->port_name, pmap24[i].port_name, WWN_SIZE)) {
-> -			loop_id = le16_to_cpu(pmap24[i].loop_id);
-> -			found = true;
-> -			break;
-> -		}
-> -	}
-> -
-> -	kfree(pmap);
-> -
-> -	if (!found) {
-> -		res = false;
-> -		goto out;
-> -	}
-> -
-> -	ql_dbg(ql_dbg_tgt_mgt, vha, 0xf046,
-> -	    "qlt_check_fcport_exist(): loop_id %d", loop_id);
-> -
-> -	fcport = kzalloc(sizeof(*fcport), GFP_KERNEL);
-> -	if (fcport == NULL) {
-> -		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf047,
-> -		    "qla_target(%d): Allocation of tmp FC port failed",
-> -		    vha->vp_idx);
-> -		res = false;
-> -		goto out;
-> -	}
-> -
-> -	fcport->loop_id = loop_id;
-> -
-> -	rc = qla2x00_get_port_database(vha, fcport, 0);
-> -	if (rc != QLA_SUCCESS) {
-> -		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf048,
-> -		    "qla_target(%d): Failed to retrieve fcport "
-> -		    "information -- get_port_database() returned %x "
-> -		    "(loop_id=0x%04x)", vha->vp_idx, rc, loop_id);
-> -		res = false;
-> -		goto out_free_fcport;
-> -	}
-> -
-> -	if (global_resets !=
-> -	    atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count)) {
-> -		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf002,
-> -		    "qla_target(%d): global reset during session discovery"
-> -		    " (counter was %d, new %d), retrying",
-> -		    vha->vp_idx, global_resets,
-> -		    atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count));
-> -		goto retry;
-> -	}
-> -
-> -	ql_dbg(ql_dbg_tgt_mgt, vha, 0xf003,
-> -	    "Updating sess %p s_id %x:%x:%x, loop_id %d) to d_id %x:%x:%x, "
-> -	    "loop_id %d", sess, sess->s_id.b.domain, sess->s_id.b.al_pa,
-> -	    sess->s_id.b.area, sess->loop_id, fcport->d_id.b.domain,
-> -	    fcport->d_id.b.al_pa, fcport->d_id.b.area, fcport->loop_id);
-> -
-> -	spin_lock_irqsave(&ha->hardware_lock, flags);
-> -	ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
-> -				(fcport->flags & FCF_CONF_COMP_SUPPORTED));
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
-> -
-> -	res = true;
-> -
-> -out_free_fcport:
-> -	kfree(fcport);
-> -
-> -out:
-> -	return res;
-> -}
-> -
->  /* ha->hardware_lock supposed to be held on entry */
->  static void qlt_undelete_sess(struct qla_tgt_sess *sess)
->  {
-> @@ -663,43 +567,13 @@ static void qlt_del_sess_work_fn(struct delayed_work *work)
->  		sess = list_entry(tgt->del_sess_list.next, typeof(*sess),
->  		    del_list_entry);
->  		if (time_after_eq(jiffies, sess->expires)) {
-> -			bool cancel;
-> -
->  			qlt_undelete_sess(sess);
->  
-> -			spin_unlock_irqrestore(&ha->hardware_lock, flags);
-> -			cancel = qlt_check_fcport_exist(vha, sess);
-> -
-> -			if (cancel) {
-> -				if (sess->deleted) {
-> -					/*
-> -					 * sess was again deleted while we were
-> -					 * discovering it
-> -					 */
-> -					spin_lock_irqsave(&ha->hardware_lock,
-> -					    flags);
-> -					continue;
-> -				}
-> -
-> -				ql_dbg(ql_dbg_tgt_mgt, vha, 0xf049,
-> -				    "qla_target(%d): cancel deletion of "
-> -				    "session for port %02x:%02x:%02x:%02x:%02x:"
-> -				    "%02x:%02x:%02x (loop ID %d), because "
-> -				    " it isn't deleted by firmware",
-> -				    vha->vp_idx, sess->port_name[0],
-> -				    sess->port_name[1], sess->port_name[2],
-> -				    sess->port_name[3], sess->port_name[4],
-> -				    sess->port_name[5], sess->port_name[6],
-> -				    sess->port_name[7], sess->loop_id);
-> -			} else {
-> -				ql_dbg(ql_dbg_tgt_mgt, vha, 0xf004,
-> -				    "Timeout: sess %p about to be deleted\n",
-> -				    sess);
-> -				ha->tgt.tgt_ops->shutdown_sess(sess);
-> -				ha->tgt.tgt_ops->put_sess(sess);
-> -			}
-> -
-> -			spin_lock_irqsave(&ha->hardware_lock, flags);
-> +			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf004,
-> +			    "Timeout: sess %p about to be deleted\n",
-> +			    sess);
-> +			ha->tgt.tgt_ops->shutdown_sess(sess);
-> +			ha->tgt.tgt_ops->put_sess(sess);
->  		} else {
->  			schedule_delayed_work(&tgt->sess_del_work,
->  			    jiffies - sess->expires);
-> @@ -884,9 +758,8 @@ void qlt_fc_port_added(struct scsi_qla_host *vha, fc_port_t *fcport)
->  		    sess->loop_id);
->  		sess->local = 0;
->  	}
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
-> -
->  	ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  }
->  
->  void qlt_fc_port_deleted(struct scsi_qla_host *vha, fc_port_t *fcport)
-> @@ -2725,7 +2598,9 @@ static void qlt_do_work(struct work_struct *work)
->  	/*
->  	 * Drop extra session reference from qla_tgt_handle_cmd_for_atio*(
->  	 */
-> +	spin_lock_irqsave(&ha->hardware_lock, flags);
->  	ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	return;
->  
->  out_term:
-> @@ -2737,9 +2612,9 @@ out_term:
->  	spin_lock_irqsave(&ha->hardware_lock, flags);
->  	qlt_send_term_exchange(vha, NULL, &cmd->atio, 1);
->  	kmem_cache_free(qla_tgt_cmd_cachep, cmd);
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	if (sess)
->  		ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  }
->  
->  /* ha->hardware_lock supposed to be held on entry */
-> @@ -4188,16 +4063,16 @@ static void qlt_abort_work(struct qla_tgt *tgt,
->  	rc = __qlt_24xx_handle_abts(vha, &prm->abts, sess);
->  	if (rc != 0)
->  		goto out_term;
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  
->  	ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	return;
->  
->  out_term:
->  	qlt_24xx_send_abts_resp(vha, &prm->abts, FCP_TMF_REJECTED, false);
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	if (sess)
->  		ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  }
->  
->  static void qlt_tmr_work(struct qla_tgt *tgt,
-> @@ -4245,16 +4120,16 @@ static void qlt_tmr_work(struct qla_tgt *tgt,
->  	rc = qlt_issue_task_mgmt(sess, unpacked_lun, fn, iocb, 0);
->  	if (rc != 0)
->  		goto out_term;
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  
->  	ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	return;
->  
->  out_term:
->  	qlt_send_term_exchange(vha, NULL, &prm->tm_iocb2, 1);
-> -	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  	if (sess)
->  		ha->tgt.tgt_ops->put_sess(sess);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
->  }
->  
->  static void qlt_sess_work_fn(struct work_struct *work)
-> diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-> index d182c96..2313f06 100644
-> --- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-> +++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-> @@ -795,12 +795,14 @@ static void tcm_qla2xxx_put_session(struct se_session *se_sess)
->  
->  static void tcm_qla2xxx_put_sess(struct qla_tgt_sess *sess)
->  {
-> -	tcm_qla2xxx_put_session(sess->se_sess);
-> +	assert_spin_locked(&sess->vha->hw->hardware_lock);
-> +	kref_put(&se_sess->sess_kref, tcm_qla2xxx_release_session);
->  }
->  
->  static void tcm_qla2xxx_shutdown_sess(struct qla_tgt_sess *sess)
->  {
-> -	tcm_qla2xxx_shutdown_session(sess->se_sess);
-> +	assert_spin_locked(&sess->vha->hw->hardware_lock);
-> +	target_sess_cmd_list_set_waiting(sess->se_sess);
->  }
->  
->  static struct se_node_acl *tcm_qla2xxx_make_nodeacl(
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ arch/x86/kernel/devicetree.c |   4 +-
+ include/linux/irqdomain.h    |  22 +++--
+ kernel/irq/irqdomain.c       | 185 +++++++++++++++++++++----------------------
+ 3 files changed, 102 insertions(+), 109 deletions(-)
 
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index b158152..4934890 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -364,9 +364,7 @@ static void dt_add_ioapic_domain(unsigned int ioapic_num,
+ 		 * and assigned so we can keep the 1:1 mapping which the ioapic
+ 		 * is having.
+ 		 */
+-		ret = irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
+-		if (ret)
+-			pr_err("Error mapping legacy IRQs: %d\n", ret);
++		irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
+ 
+ 		if (num > NR_IRQS_LEGACY) {
+ 			ret = irq_create_strict_mappings(id, NR_IRQS_LEGACY,
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index fd4b26f..f9e8e06 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -103,6 +103,7 @@ struct irq_domain {
+ 	struct irq_domain_chip_generic *gc;
+ 
+ 	/* reverse map data. The linear map gets appended to the irq_domain */
++	irq_hw_number_t hwirq_max;
+ 	unsigned int revmap_direct_max_irq;
+ 	unsigned int revmap_size;
+ 	struct radix_tree_root revmap_tree;
+@@ -110,8 +111,8 @@ struct irq_domain {
+ };
+ 
+ #ifdef CONFIG_IRQ_DOMAIN
+-struct irq_domain *__irq_domain_add(struct device_node *of_node,
+-				    int size, int direct_max,
++struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
++				    irq_hw_number_t hwirq_max, int direct_max,
+ 				    const struct irq_domain_ops *ops,
+ 				    void *host_data);
+ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+@@ -140,14 +141,14 @@ static inline struct irq_domain *irq_domain_add_linear(struct device_node *of_no
+ 					 const struct irq_domain_ops *ops,
+ 					 void *host_data)
+ {
+-	return __irq_domain_add(of_node, size, 0, ops, host_data);
++	return __irq_domain_add(of_node, size, size, 0, ops, host_data);
+ }
+ static inline struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
+ 					 unsigned int max_irq,
+ 					 const struct irq_domain_ops *ops,
+ 					 void *host_data)
+ {
+-	return __irq_domain_add(of_node, 0, max_irq, ops, host_data);
++	return __irq_domain_add(of_node, 0, max_irq, max_irq, ops, host_data);
+ }
+ static inline struct irq_domain *irq_domain_add_legacy_isa(
+ 				struct device_node *of_node,
+@@ -166,14 +167,11 @@ static inline struct irq_domain *irq_domain_add_tree(struct device_node *of_node
+ 
+ extern void irq_domain_remove(struct irq_domain *host);
+ 
+-extern int irq_domain_associate_many(struct irq_domain *domain,
+-				     unsigned int irq_base,
+-				     irq_hw_number_t hwirq_base, int count);
+-static inline int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
+-					irq_hw_number_t hwirq)
+-{
+-	return irq_domain_associate_many(domain, irq, hwirq, 1);
+-}
++extern int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
++					irq_hw_number_t hwirq);
++extern void irq_domain_associate_many(struct irq_domain *domain,
++				      unsigned int irq_base,
++				      irq_hw_number_t hwirq_base, int count);
+ 
+ extern unsigned int irq_create_mapping(struct irq_domain *host,
+ 				       irq_hw_number_t hwirq);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 280b804..80e9249 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -35,8 +35,8 @@ static struct irq_domain *irq_default_domain;
+  * register allocated irq_domain with irq_domain_register().  Returns pointer
+  * to IRQ domain, or NULL on failure.
+  */
+-struct irq_domain *__irq_domain_add(struct device_node *of_node,
+-				    int size, int direct_max,
++struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
++				    irq_hw_number_t hwirq_max, int direct_max,
+ 				    const struct irq_domain_ops *ops,
+ 				    void *host_data)
+ {
+@@ -52,6 +52,7 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node,
+ 	domain->ops = ops;
+ 	domain->host_data = host_data;
+ 	domain->of_node = of_node_get(of_node);
++	domain->hwirq_max = hwirq_max;
+ 	domain->revmap_size = size;
+ 	domain->revmap_direct_max_irq = direct_max;
+ 
+@@ -126,7 +127,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+ {
+ 	struct irq_domain *domain;
+ 
+-	domain = __irq_domain_add(of_node, size, 0, ops, host_data);
++	domain = __irq_domain_add(of_node, size, size, 0, ops, host_data);
+ 	if (!domain)
+ 		return NULL;
+ 
+@@ -139,7 +140,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+ 				pr_info("Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+ 					first_irq);
+ 		}
+-		WARN_ON(irq_domain_associate_many(domain, first_irq, 0, size));
++		irq_domain_associate_many(domain, first_irq, 0, size);
+ 	}
+ 
+ 	return domain;
+@@ -170,11 +171,12 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+ {
+ 	struct irq_domain *domain;
+ 
+-	domain = __irq_domain_add(of_node, first_hwirq + size, 0, ops, host_data);
++	domain = __irq_domain_add(of_node, first_hwirq + size,
++				  first_hwirq + size, 0, ops, host_data);
+ 	if (!domain)
+ 		return NULL;
+ 
+-	WARN_ON(irq_domain_associate_many(domain, first_irq, first_hwirq, size));
++	irq_domain_associate_many(domain, first_irq, first_hwirq, size);
+ 
+ 	return domain;
+ }
+@@ -228,109 +230,109 @@ void irq_set_default_host(struct irq_domain *domain)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_default_host);
+ 
+-static void irq_domain_disassociate_many(struct irq_domain *domain,
+-					 unsigned int irq_base, int count)
++static void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
+ {
+-	/*
+-	 * disassociate in reverse order;
+-	 * not strictly necessary, but nice for unwinding
+-	 */
+-	while (count--) {
+-		int irq = irq_base + count;
+-		struct irq_data *irq_data = irq_get_irq_data(irq);
+-		irq_hw_number_t hwirq;
++	struct irq_data *irq_data = irq_get_irq_data(irq);
++	irq_hw_number_t hwirq;
+ 
+-		if (WARN_ON(!irq_data || irq_data->domain != domain))
+-			continue;
++	if (WARN(!irq_data || irq_data->domain != domain,
++		 "virq%i doesn't exist; cannot disassociate\n", irq))
++		return;
+ 
+-		hwirq = irq_data->hwirq;
+-		irq_set_status_flags(irq, IRQ_NOREQUEST);
++	hwirq = irq_data->hwirq;
++	irq_set_status_flags(irq, IRQ_NOREQUEST);
+ 
+-		/* remove chip and handler */
+-		irq_set_chip_and_handler(irq, NULL, NULL);
++	/* remove chip and handler */
++	irq_set_chip_and_handler(irq, NULL, NULL);
+ 
+-		/* Make sure it's completed */
+-		synchronize_irq(irq);
++	/* Make sure it's completed */
++	synchronize_irq(irq);
+ 
+-		/* Tell the PIC about it */
+-		if (domain->ops->unmap)
+-			domain->ops->unmap(domain, irq);
+-		smp_mb();
++	/* Tell the PIC about it */
++	if (domain->ops->unmap)
++		domain->ops->unmap(domain, irq);
++	smp_mb();
+ 
+-		irq_data->domain = NULL;
+-		irq_data->hwirq = 0;
++	irq_data->domain = NULL;
++	irq_data->hwirq = 0;
+ 
+-		/* Clear reverse map for this hwirq */
+-		if (hwirq < domain->revmap_size) {
+-			domain->linear_revmap[hwirq] = 0;
+-		} else {
+-			mutex_lock(&revmap_trees_mutex);
+-			radix_tree_delete(&domain->revmap_tree, hwirq);
+-			mutex_unlock(&revmap_trees_mutex);
+-		}
++	/* Clear reverse map for this hwirq */
++	if (hwirq < domain->revmap_size) {
++		domain->linear_revmap[hwirq] = 0;
++	} else {
++		mutex_lock(&revmap_trees_mutex);
++		radix_tree_delete(&domain->revmap_tree, hwirq);
++		mutex_unlock(&revmap_trees_mutex);
+ 	}
+ }
+ 
+-int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
+-			      irq_hw_number_t hwirq_base, int count)
++int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
++			 irq_hw_number_t hwirq)
+ {
+-	unsigned int virq = irq_base;
+-	irq_hw_number_t hwirq = hwirq_base;
+-	int i, ret;
++	struct irq_data *irq_data = irq_get_irq_data(virq);
++	int ret;
+ 
+-	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
+-		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
++	if (WARN(hwirq >= domain->hwirq_max,
++		 "error: hwirq 0x%x is too large for %s\n", (int)hwirq, domain->name))
++		return -EINVAL;
++	if (WARN(!irq_data, "error: virq%i is not allocated", virq))
++		return -EINVAL;
++	if (WARN(irq_data->domain, "error: virq%i is already associated", virq))
++		return -EINVAL;
+ 
+-	for (i = 0; i < count; i++) {
+-		struct irq_data *irq_data = irq_get_irq_data(virq + i);
+-
+-		if (WARN(!irq_data, "error: irq_desc not allocated; "
+-			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
+-			return -EINVAL;
+-		if (WARN(irq_data->domain, "error: irq_desc already associated; "
+-			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
+-			return -EINVAL;
+-	};
+-
+-	for (i = 0; i < count; i++, virq++, hwirq++) {
+-		struct irq_data *irq_data = irq_get_irq_data(virq);
+-
+-		irq_data->hwirq = hwirq;
+-		irq_data->domain = domain;
+-		if (domain->ops->map) {
+-			ret = domain->ops->map(domain, virq, hwirq);
+-			if (ret != 0) {
+-				/*
+-				 * If map() returns -EPERM, this interrupt is protected
+-				 * by the firmware or some other service and shall not
+-				 * be mapped. Don't bother telling the user about it.
+-				 */
+-				if (ret != -EPERM) {
+-					pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
+-					       domain->name, hwirq, virq, ret);
+-				}
+-				irq_data->domain = NULL;
+-				irq_data->hwirq = 0;
+-				continue;
++	mutex_lock(&irq_domain_mutex);
++	irq_data->hwirq = hwirq;
++	irq_data->domain = domain;
++	if (domain->ops->map) {
++		ret = domain->ops->map(domain, virq, hwirq);
++		if (ret != 0) {
++			/*
++			 * If map() returns -EPERM, this interrupt is protected
++			 * by the firmware or some other service and shall not
++			 * be mapped. Don't bother telling the user about it.
++			 */
++			if (ret != -EPERM) {
++				pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
++				       domain->name, hwirq, virq, ret);
+ 			}
+-			/* If not already assigned, give the domain the chip's name */
+-			if (!domain->name && irq_data->chip)
+-				domain->name = irq_data->chip->name;
++			irq_data->domain = NULL;
++			irq_data->hwirq = 0;
++			mutex_unlock(&irq_domain_mutex);
++			return ret;
+ 		}
+ 
+-		if (hwirq < domain->revmap_size) {
+-			domain->linear_revmap[hwirq] = virq;
+-		} else {
+-			mutex_lock(&revmap_trees_mutex);
+-			radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
+-			mutex_unlock(&revmap_trees_mutex);
+-		}
++		/* If not already assigned, give the domain the chip's name */
++		if (!domain->name && irq_data->chip)
++			domain->name = irq_data->chip->name;
++	}
+ 
+-		irq_clear_status_flags(virq, IRQ_NOREQUEST);
++	if (hwirq < domain->revmap_size) {
++		domain->linear_revmap[hwirq] = virq;
++	} else {
++		mutex_lock(&revmap_trees_mutex);
++		radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
++		mutex_unlock(&revmap_trees_mutex);
+ 	}
++	mutex_unlock(&irq_domain_mutex);
++
++	irq_clear_status_flags(virq, IRQ_NOREQUEST);
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(irq_domain_associate);
++
++void irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
++			       irq_hw_number_t hwirq_base, int count)
++{
++	int i;
++
++	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
++		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
++
++	for (i = 0; i < count; i++) {
++		irq_domain_associate(domain, irq_base + i, hwirq_base + i);
++	}
++}
+ EXPORT_SYMBOL_GPL(irq_domain_associate_many);
+ 
+ /**
+@@ -460,12 +462,7 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
+ 	if (unlikely(ret < 0))
+ 		return ret;
+ 
+-	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
+-	if (unlikely(ret < 0)) {
+-		irq_free_descs(irq_base, count);
+-		return ret;
+-	}
+-
++	irq_domain_associate_many(domain, irq_base, hwirq_base, count);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
+@@ -535,7 +532,7 @@ void irq_dispose_mapping(unsigned int virq)
+ 	if (WARN_ON(domain == NULL))
+ 		return;
+ 
+-	irq_domain_disassociate_many(domain, virq, 1);
++	irq_domain_disassociate(domain, virq);
+ 	irq_free_desc(virq);
+ }
+ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+-- 
+1.8.1.2
 
