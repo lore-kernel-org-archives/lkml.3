@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab3FNDCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 23:02:05 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57840 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab3FNDCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 23:02:03 -0400
-Date: Thu, 13 Jun 2013 23:01:54 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        akpm@linux-foundation.org, hughd@google.com
-Subject: Re: [PATCH v4 15/20] ext4: use ext4_zero_partial_blocks in punch_hole
-Message-ID: <20130614030154.GA18731@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
-	hughd@google.com
-References: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
- <1368549454-8930-16-git-send-email-lczerner@redhat.com>
+	id S1755224Ab3FNDDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 23:03:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49482 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3FNDC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 23:02:59 -0400
+Message-ID: <51BA87DB.1020403@hitachi.com>
+Date: Fri, 14 Jun 2013 12:02:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368549454-8930-16-git-send-email-lczerner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH] tracing/kprobes: remove unnecessary checking of, trace_probe_is_enabled
+References: <51BA7B9E.3040807@huawei.com>
+In-Reply-To: <51BA7B9E.3040807@huawei.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 06:37:29PM +0200, Lukas Czerner wrote:
-> We're doing to get rid of ext4_discard_partial_page_buffers() since it is
-> duplicating some code and also partially duplicating work of
-> truncate_pagecache_range(), moreover the old implementation was much
-> clearer.
+(2013/06/14 11:10), zhangwei(Jovi) wrote:
+> Since tp->flags assignment was moved into function enable_trace_probe,
+> so there have no need to use trace_probe_is_enabled to check flags
+> in same function.
+
+Indeed :)
+
 > 
-> Now when the truncate_inode_pages_range() can handle truncating non page
-> aligned regions we can use this to invalidate and zero out block aligned
-> region of the punched out range and then use ext4_block_truncate_page()
-> to zero the unaligned blocks on the start and end of the range. This
-> will greatly simplify the punch hole code. Moreover after this commit we
-> can get rid of the ext4_discard_partial_page_buffers() completely.
+> Remove the unnecessary checking.
+
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
 > 
-> We also introduce function ext4_prepare_punch_hole() to do come common
-> operations before we attempt to do the actual punch hole on
-> indirect or extent file which saves us some code duplication.
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  kernel/trace/trace_kprobe.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> This has been tested on ppc64 with 1k block size with fsx and xfstests
-> without any problems.
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 9f46e98..f237417 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -240,8 +240,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  	} else
+>  		tp->flags |= TP_FLAG_PROFILE;
 > 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> -	if (trace_probe_is_enabled(tp) && trace_probe_is_registered(tp) &&
+> -	    !trace_probe_has_gone(tp)) {
+> +	if (trace_probe_is_registered(tp) && !trace_probe_has_gone(tp)) {
+>  		if (trace_probe_is_return(tp))
+>  			ret = enable_kretprobe(&tp->rp);
+>  		else
+> 
 
-Hi Lukas,
 
-I've been seeing xfstests failures on test generic/300 in nojournal
-mode.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-BEGIN TEST: Ext4 4k block w/ no journal Thu Jun 13 22:38:47 EDT 2013
-Device: /dev/vdb
-mk2fs options: -q -O ^has_journal
-mount options: -o block_validity,noload
-FSTYP         -- ext4
-PLATFORM      -- Linux/i686 candygram 3.10.0-rc2-00477-g1e1cad7
-MKFS_OPTIONS  -- -q -O ^has_journal /dev/vdc
-MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity,noload /dev/vdc /vdc
 
-generic/300		[20:42:18][  116.877278] fio (3320) used greatest stack depth: 5580 bytes left
-[  116.967122] fio (3321) used greatest stack depth: 5560 bytes left
-[  117.573861] fio (3325) used greatest stack depth: 5504 bytes left
- [20:44:01] [failed, exit status 1] - output mismatch (see /root/xfstests/results/generic/300.out.bad)
-    --- tests/generic/300.out	 2013-06-04 22:42:55.000000000 -0400
-    +++ /root/xfstests/results/generic/300.out.bad	       2013-06-13 20:44:01.306666665 -0400
-    @@ -2,3 +2,4 @@
-     
-     Run fio with random aio-dio pattern
-     
-    +_check_generic_filesystem: filesystem on /dev/vdc is inconsistent (see /root/xfstests/results/generic/300.full)
-     ...
-     (Run 'diff -u tests/generic/300.out /root/xfstests/results/generic/300.out.bad' to see the entire diff)
-
-It bisects down to this patch, and if I take the dev branch, and
-revert patches #15 through #19 in this series, the problem goes away.
-
-Can you investigate and recommend a better fix?
-
-Thanks,
-
-					- Ted
