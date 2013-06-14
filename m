@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3FNQfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:35:55 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:30895
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752330Ab3FNQfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:35:54 -0400
-Message-ID: <51BB4666.9050007@caviumnetworks.com>
-Date: Fri, 14 Jun 2013 09:35:50 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752050Ab3FNQiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45150 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab3FNQiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:38:14 -0400
+Date: Fri, 14 Jun 2013 09:38:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.10-rc5
+Message-ID: <20130614163851.GA25973@kroah.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Daney <ddaney.cavm@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] smp.h: Use local_irq_{save,restore}() in !SMP version
- of on_each_cpu().
-References: <1371172023-16004-1-git-send-email-ddaney.cavm@gmail.com> <CA+55aFziBGnSgLimDe7WBRPQ+f3RVAsrdbo212oj85c-XSz4oA@mail.gmail.com>
-In-Reply-To: <CA+55aFziBGnSgLimDe7WBRPQ+f3RVAsrdbo212oj85c-XSz4oA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:CO1PR07MB222;H:BY2PRD0712HT004.namprd07.prod.outlook.com;LANG:en;
-X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 10:46 PM, Linus Torvalds wrote:
-> On Thu, Jun 13, 2013 at 6:07 PM, David Daney <ddaney.cavm@gmail.com> wrote:
->>
->> Suggested fix: Do what we already do in the SMP version of
->> on_each_cpu(), and use local_irq_save/local_irq_restore.
->
-> I was going to apply this, but started looking a bit more.
->
-> Using "flags" as a variable name inside a macro like this is a
-> *really* bad idea.
->
-> Lookie here:
->
->      [torvalds@pixel linux]$ git grep on_each_cpu.*flags
->      arch/s390/kernel/perf_cpum_cf.c:        on_each_cpu(setup_pmc_cpu,
-> &flags, 1);
->      arch/s390/kernel/perf_cpum_cf.c:        on_each_cpu(setup_pmc_cpu,
-> &flags, 1);
->
-> and ask yourself what happens when the "info" argument expands to
-> "&flags", and it all compiles perfectly fine, but the "&flags" takes
-> the address of the new _inner_ variable called "flags" from the macro
-> expansion. Not the one that the caller actually intends..
->
-> Oops.
->
-> Not a good idea.
->
+The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
 
-Yeah,  I think making it a static inline function may be the best approach.
+  Linux 3.10-rc5 (2013-06-08 17:41:04 -0700)
 
-I am going to test doing that and send a new patch very soon.
+are available in the git repository at:
 
-David Daney
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.10-rc5
 
+for you to fetch changes up to 0c3f3dc68bb6e6950e8cd7851e7778c550e8dfb4:
 
-> So I would suggest trivially renaming "flags" as "__flags" or
-> something, or perhaps even just making it a real function and avoiding
-> the whole namespace issue.
->
-> And rather than doing that blindly by editing the patch at after -rc5,
-> I'm just going to ask you to re-send a tested patch. Ok?
->
->                      Linus
->
+  usb: chipidea: fix id change handling (2013-06-11 16:18:05 -0700)
 
+----------------------------------------------------------------
+USB fixes for 3.10-rc6
+
+Here are some small USB driver fixes that resolve some reported problems
+for 3.10-rc6
+
+Nothing major, just 3 USB serial driver fixes, and two chipidea fixes.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alexander Shishkin (2):
+      usb: chipidea: fix no transceiver case
+      usb: chipidea: fix id change handling
+
+Johan Hovold (3):
+      USB: f81232: fix device initialisation at open
+      USB: spcp8x5: fix device initialisation at open
+      USB: pl2303: fix device initialisation at open
+
+ drivers/usb/chipidea/core.c  |  3 ++-
+ drivers/usb/chipidea/udc.c   | 13 ++++++++-----
+ drivers/usb/serial/f81232.c  |  8 ++++----
+ drivers/usb/serial/pl2303.c  | 10 +++++-----
+ drivers/usb/serial/spcp8x5.c | 10 ++++------
+ 5 files changed, 23 insertions(+), 21 deletions(-)
