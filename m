@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759638Ab3FNB7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:59:04 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:50560 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759Ab3FNB6w (ORCPT
+	id S1759673Ab3FNB7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:59:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:38231 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759641Ab3FNB7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:58:52 -0400
-Message-ID: <51BA7808.10004@huawei.com>
-Date: Fri, 14 Jun 2013 09:55:20 +0800
+	Thu, 13 Jun 2013 21:59:08 -0400
+Message-ID: <51BA7814.8020207@huawei.com>
+Date: Fri, 14 Jun 2013 09:55:32 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -18,7 +18,7 @@ CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@openvz.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH v4 7/9] memcg: don't need to get a reference to the parent
+Subject: [PATCH v4 8/9] memcg: kill memcg refcnt
 References: <51BA7794.2000305@huawei.com>
 In-Reply-To: <51BA7794.2000305@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -29,66 +29,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cgroup core guarantees it's always safe to access the parent.
-
-v2:
-- added a comment in mem_cgroup_put() as suggested by Michal
-- removed mem_cgroup_get(), otherwise gcc will warn that it's not used
+Now memcg has the same life cycle as its corresponding cgroup.
+Kill the useless refcnt.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c | 19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
+ mm/memcontrol.c | 18 +-----------------
+ 1 file changed, 1 insertion(+), 17 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a63d9f1..443fb45 100644
+index 443fb45..7b622c3 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -513,7 +513,6 @@ enum res_type {
+@@ -303,8 +303,6 @@ struct mem_cgroup {
+ 	bool		oom_lock;
+ 	atomic_t	under_oom;
+ 
+-	atomic_t	refcnt;
+-
+ 	int	swappiness;
+ 	/* OOM-Killer disable */
+ 	int		oom_kill_disable;
+@@ -513,8 +511,6 @@ enum res_type {
   */
  static DEFINE_MUTEX(memcg_create_mutex);
  
--static void mem_cgroup_get(struct mem_cgroup *memcg);
- static void mem_cgroup_put(struct mem_cgroup *memcg);
- 
+-static void mem_cgroup_put(struct mem_cgroup *memcg);
+-
  static inline
-@@ -6210,19 +6209,10 @@ static void free_rcu(struct rcu_head *rcu_head)
+ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
+ {
+@@ -6209,17 +6205,6 @@ static void free_rcu(struct rcu_head *rcu_head)
  	schedule_work(&memcg->work_freeing);
  }
  
--static void mem_cgroup_get(struct mem_cgroup *memcg)
+-static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
 -{
--	atomic_inc(&memcg->refcnt);
+-	if (atomic_sub_and_test(count, &memcg->refcnt))
+-		call_rcu(&memcg->rcu_freeing, free_rcu);
 -}
 -
- static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
- {
--	if (atomic_sub_and_test(count, &memcg->refcnt)) {
--		struct mem_cgroup *parent = parent_mem_cgroup(memcg);
-+	if (atomic_sub_and_test(count, &memcg->refcnt))
- 		call_rcu(&memcg->rcu_freeing, free_rcu);
--		if (parent)
--			mem_cgroup_put(parent);
--	}
+-static void mem_cgroup_put(struct mem_cgroup *memcg)
+-{
+-	__mem_cgroup_put(memcg, 1);
+-}
+-
+ /*
+  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
+  */
+@@ -6279,7 +6264,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+ 
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
+-	atomic_set(&memcg->refcnt, 1);
+ 	memcg->move_charge_at_immigrate = 0;
+ 	mutex_init(&memcg->thresholds_lock);
+ 	spin_lock_init(&memcg->move_lock);
+@@ -6371,7 +6355,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+ 
+ 	mem_cgroup_sockets_destroy(memcg);
+ 
+-	mem_cgroup_put(memcg);
++	call_rcu(&memcg->rcu_freeing, free_rcu);
  }
  
- static void mem_cgroup_put(struct mem_cgroup *memcg)
-@@ -6325,12 +6315,9 @@ mem_cgroup_css_online(struct cgroup *cont)
- 		res_counter_init(&memcg->kmem, &parent->kmem);
- 
- 		/*
--		 * We increment refcnt of the parent to ensure that we can
--		 * safely access it on res_counter_charge/uncharge.
--		 * This refcnt will be decremented when freeing this
--		 * mem_cgroup(see mem_cgroup_put).
-+		 * No need to take a reference to the parent because cgroup
-+		 * core guarantees its existence.
- 		 */
--		mem_cgroup_get(parent);
- 	} else {
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
+ #ifdef CONFIG_MMU
 -- 
 1.8.0.2
