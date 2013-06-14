@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab3FNGO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:14:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11373 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab3FNGO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:14:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
-   d="scan'208";a="329300998"
-Message-ID: <51BAB4D9.2020803@linux.intel.com>
-Date: Fri, 14 Jun 2013 09:14:49 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1751877Ab3FNGPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:15:50 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:47317 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320Ab3FNGPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 02:15:48 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] sched: scale the busy and this queue's per-task load before compare
+Date: Fri, 14 Jun 2013 14:14:19 +0800
+Message-ID: <1371190459-10365-3-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
+References: <1371190459-10365-1-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v4 net-next 2/4] net: convert low latency sockets to sched_clock()
-References: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>  <20130614015659.3500.48625.stgit@ladj378.jer.intel.com> <1371179569.3252.120.camel@edumazet-glaptop>
-In-Reply-To: <1371179569.3252.120.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/2013 06:12, Eric Dumazet wrote:
-> On Fri, 2013-06-14 at 04:57 +0300, Eliezer Tamir wrote:
->> Use sched_clock() instead of get_cycles().
->> We can use sched_clock() because we don't care much about accuracy.
->> Remove the dependency on X86_TSC
->>
->> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->> ---
->
->>
->> -static inline bool can_poll_ll(cycles_t end_time)
->> +static inline bool can_poll_ll(u64 end_time)
->>   {
->> -	return !time_after((unsigned long)get_cycles(),
->> +	return !time_after((unsigned long)sched_clock(),
->>   			    (unsigned long)end_time);
->>   }
->
-> I do not really understand why you bother to have 64bit wide values,
-> and then use these "unsigned long" casts here.
->
-> On 32bit arches, this will really limit to 2^31 ns range.
->
-> You should instead either :
-> - use time_after_64() or
-> - explicitly limit sysctl_net_ll_poll range
+Since for max_load and this_load, they are the value that already be
+scaled. It is not reasonble to get a minimum value between the scaled
+and non-scaled value, like below example.
+	min(sds->busiest_load_per_task, sds->max_load);
 
-OK
+Also add comment over in what condition, there would be cpu power gain
+in move the load.
+
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |   28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 28052fa..77a149c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4692,7 +4692,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ {
+ 	unsigned long tmp, pwr_now = 0, pwr_move = 0;
+ 	unsigned int imbn = 2;
+-	unsigned long scaled_busy_load_per_task;
++	unsigned long scaled_busy_load_per_task, scaled_this_load_per_task;
+ 
+ 	if (sds->this_nr_running) {
+ 		sds->this_load_per_task /= sds->this_nr_running;
+@@ -4714,6 +4714,9 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 		return;
+ 	}
+ 
++	scaled_this_load_per_task = sds->this_load_per_task
++					 * SCHED_POWER_SCALE;
++	scaled_this_load_per_task /= sds->this->sgp->power;
+ 	/*
+ 	 * OK, we don't have enough imbalance to justify moving tasks,
+ 	 * however we may be able to increase total CPU power used by
+@@ -4721,28 +4724,35 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	 */
+ 
+ 	pwr_now += sds->busiest->sgp->power *
+-			min(sds->busiest_load_per_task, sds->max_load);
++			min(scaled_busy_load_per_task, sds->max_load);
+ 	pwr_now += sds->this->sgp->power *
+-			min(sds->this_load_per_task, sds->this_load);
++			min(scaled_this_load_per_task, sds->this_load);
+ 	pwr_now /= SCHED_POWER_SCALE;
+ 
+ 	/* Amount of load we'd subtract */
+ 	if (sds->max_load > scaled_busy_load_per_task) {
+ 		pwr_move += sds->busiest->sgp->power *
+-			min(sds->busiest_load_per_task,
++			min(scaled_busy_load_per_task,
+ 				sds->max_load - scaled_busy_load_per_task);
+-		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+-			sds->this->sgp->power;
++		tmp = scaled_busy_load_per_task;
+ 	} else
+-		tmp = (sds->max_load * sds->busiest->sgp->power) /
+-			sds->this->sgp->power;
++		tmp = sds->max_load;
+ 
++	/* Scale to this queue from busiest queue */
++	tmp = (tmp * sds->busiest->sgp->power) /
++		sds->this->sgp->power;
+ 	/* Amount of load we'd add */
+ 	pwr_move += sds->this->sgp->power *
+-			min(sds->this_load_per_task, sds->this_load + tmp);
++			min(scaled_this_load_per_task, sds->this_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
+ 
+ 	/* Move if we gain throughput */
++	/*
++	 * The only possibilty for below statement be true, is:
++	 * sds->max_load is larger than scaled_busy_load_per_task, while,
++	 * scaled_this_load_per_task is larger than sds->this_load plus by
++	 * the scaled scaled_busy_load_per_task moved into this queue
++	 */
+ 	if (pwr_move > pwr_now)
+ 		env->imbalance = sds->busiest_load_per_task;
+ }
+-- 
+1.7.10.4
+
