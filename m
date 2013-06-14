@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3FNRlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 13:41:24 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:62722 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab3FNRlX (ORCPT
+	id S1753474Ab3FNRoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 13:44:11 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34443 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab3FNRoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 13:41:23 -0400
-Message-ID: <51BB55C0.7090603@linaro.org>
-Date: Fri, 14 Jun 2013 10:41:20 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 13:44:09 -0400
+Message-ID: <51BB565A.1010305@ahsoftware.de>
+Date: Fri, 14 Jun 2013 19:43:54 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
+To: John Stultz <john.stultz@linaro.org>
 CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH 4/9 RESEND] RFC: timekeeping: introduce flag systime_was_set
-References: <51BA1FF7.4000206@ahsoftware.de> <1371228732-5749-1-git-send-email-holler@ahsoftware.de> <1371228732-5749-5-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1371228732-5749-5-git-send-email-holler@ahsoftware.de>
+Subject: Re: [PATCH 7/9] RFC: rtc: implement rtc_read_timeval()
+References: <51BA1FF7.4000206@ahsoftware.de> <1371228732-5749-1-git-send-email-holler@ahsoftware.de> <1371228732-5749-8-git-send-email-holler@ahsoftware.de> <51BB51A0.6050408@linaro.org>
+In-Reply-To: <51BB51A0.6050408@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 09:52 AM, Alexander Holler wrote:
-> In order to let an RTC set the time at boot without the problem that a
-> second RTC overwrites it, the flag systime_was_set is introduced.
+Am 14.06.2013 19:23, schrieb John Stultz:
+> On 06/14/2013 09:52 AM, Alexander Holler wrote:
+>> Some RTCs offer a higher resolution than seconds. To support reading such
+>> high resolution timestamps from inside the kernel implement
+>> rtc_read_timeval() and add a read_timeval to the rtc-ops.
 >
-> systime_was_set will be true, if a persistent clock sets the time at boot,
-> or if do_settimeofday() is called (e.g. by the RTC subsystem or userspace).
+> So I like the direction this patch is going. But if we're going to add a
+> new interface, lets not use an already out-dated structure (timeval).
 >
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> ---
->   include/linux/time.h      |  6 ++++++
->   kernel/time/timekeeping.c | 10 +++++++++-
->   2 files changed, 15 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/time.h b/include/linux/time.h
-> index d5d229b..888280f 100644
-> --- a/include/linux/time.h
-> +++ b/include/linux/time.h
-> @@ -129,6 +129,12 @@ extern int update_persistent_clock(struct timespec now);
->   void timekeeping_init(void);
->   extern int timekeeping_suspended;
->   
-> +/*
-> + * Will be true if the system time was set at least once by
-> + * a persistent clock, RTC or userspace.
-> + */
-> +extern bool systime_was_set;
-> +
+> Instead could you rework this to be timepsec based? Or ktime_t if its
+> really internal only?
 
-Probably should make this static to timekeeping.c and create an accessor 
-function so you don't have to export locking rules on this.
+Sure, no problem. I wasn't aware timeval is out-dated and I've read 
+somewhere in the sources a comment that ktime_t has to disappear. I had 
+no clue if I should use timeval or timespec, and just have roled a dice 
+to decide between timeval and timespec.
 
+That "internal only" is only because I don't want to write changes for 
+the userspace api to handle RTCs with greater precision than seconds. I 
+don't have a writable RTC supporting such a precision and I want to 
+leave this for people which are developing such devices and earning 
+money with them.
 
->   unsigned long get_seconds(void);
->   struct timespec current_kernel_time(void);
->   struct timespec __current_kernel_time(void); /* does not take xtime_lock */
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index baeeb5c..07d8531 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -37,6 +37,9 @@ int __read_mostly timekeeping_suspended;
->   /* Flag for if there is a persistent clock on this platform */
->   bool __read_mostly persistent_clock_exist = false;
->   
-> +/* Flag for if the system time was set at least once */
-> +bool __read_mostly systime_was_set;
-> +
-Probably should also move this to be part of the timekeeper structure 
-(since it will be protected by the timekeeper lock.
+Besides that, I have almost no knowledge about the userspace api for 
+RTCs. If just looked a bit around in the in-kernel-ntp-sources for 
+adjtimex, but that's all.
 
->   static inline void tk_normalize_xtime(struct timekeeper *tk)
->   {
->   	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
-> @@ -498,6 +501,9 @@ int do_settimeofday(const struct timespec *tv)
->   	raw_spin_lock_irqsave(&timekeeper_lock, flags);
->   	write_seqcount_begin(&timekeeper_seq);
->   
-> +	systime_was_set = true;
-> +
-> +
->   	timekeeping_forward_now(tk);
->   
->   	xt = tk_xtime(tk);
+Please don't forget, my only motivation is to use an USB-RTC I've build 
+myself to use with developer-boards without RTCs. All the other work 
+like the support for higher precisions, the new hctosys or similiar is 
+just because I let me trick to do that ;)
 
-Might also want to add the flag to inject_offset as well, since that 
-could be used to set the time.
+Regards,
 
-
-thanks
--john
-
+Alexander Holler
