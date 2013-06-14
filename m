@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab3FNB5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:57:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63049 "EHLO mga03.intel.com"
+	id S1759557Ab3FNB5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:57:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24162 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab3FNB5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:57:03 -0400
+	id S1759540Ab3FNB5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 21:57:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
-   d="scan'208";a="349633172"
+   d="scan'208";a="353184488"
 From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v4 net-next 1/4] net: change sysctl_net_ll_poll into an
- unsigned int
+Subject: [PATCH v4 net-next 2/4] net: convert low latency sockets to
+ sched_clock()
 To: David Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -26,8 +26,8 @@ Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Alex Rosenbaum <alexr@mellanox.com>,
         Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
         sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Date: Fri, 14 Jun 2013 04:56:49 +0300
-Message-ID: <20130614015648.3500.85865.stgit@ladj378.jer.intel.com>
+Date: Fri, 14 Jun 2013 04:57:00 +0300
+Message-ID: <20130614015659.3500.48625.stgit@ladj378.jer.intel.com>
 In-Reply-To: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
 References: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
 User-Agent: StGIT/0.14.3
@@ -38,68 +38,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason for sysctl_net_ll_poll to be an unsigned long.
-Change it into an unsigned int.
-Fix the proc handler.
+Use sched_clock() instead of get_cycles().
+We can use sched_clock() because we don't care much about accuracy.
+Remove the dependency on X86_TSC
 
 Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
 
- include/net/ll_poll.h      |    5 +++--
- net/core/sysctl_net_core.c |    4 ++--
- net/socket.c               |    2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ include/net/ll_poll.h |   32 +++++++++++++++++---------------
+ net/Kconfig           |    1 -
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
 diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index bc262f8..44e2f70 100644
+index 44e2f70..8608547 100644
 --- a/include/net/ll_poll.h
 +++ b/include/net/ll_poll.h
-@@ -34,7 +34,7 @@
- #ifdef CONFIG_NET_LL_RX_POLL
+@@ -21,10 +21,6 @@
+  * e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
+  */
  
- struct napi_struct;
--extern unsigned long sysctl_net_ll_poll __read_mostly;
-+extern unsigned int sysctl_net_ll_poll __read_mostly;
+-/*
+- * For now this depends on CONFIG_X86_TSC
+- */
+-
+ #ifndef _LINUX_NET_LL_POLL_H
+ #define _LINUX_NET_LL_POLL_H
  
- /* return values from ndo_ll_poll */
+@@ -40,13 +36,19 @@ extern unsigned int sysctl_net_ll_poll __read_mostly;
  #define LL_FLUSH_FAILED		-1
-@@ -45,7 +45,8 @@ extern unsigned long sysctl_net_ll_poll __read_mostly;
+ #define LL_FLUSH_BUSY		-2
  
- static inline cycles_t ll_end_time(void)
+-/* we don't mind a ~2.5% imprecision */
+-#define TSC_MHZ (tsc_khz >> 10)
+-
+-static inline cycles_t ll_end_time(void)
++/* we can use sched_clock() because we don't care much about precision
++ * we only care that the average is bounded
++ */
++static inline u64 ll_end_time(void)
  {
--	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
-+	return (cycles_t)TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll)
-+			+ get_cycles();
+-	return (cycles_t)TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll)
+-			+ get_cycles();
++	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
++
++	/* we don't mind a ~2.5% imprecision
++	 * sysctl_net_ll_poll is a u_int so this can't overflow
++	 */
++	end_time = (end_time << 10) + sched_clock();
++
++	return end_time;
  }
  
  static inline bool sk_valid_ll(struct sock *sk)
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 637a42e..ce9acc2 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -289,9 +289,9 @@ static struct ctl_table net_core_table[] = {
- 	{
- 		.procname	= "low_latency_poll",
- 		.data		= &sysctl_net_ll_poll,
--		.maxlen		= sizeof(unsigned long),
-+		.maxlen		= sizeof(unsigned int),
- 		.mode		= 0644,
--		.proc_handler	= proc_doulongvec_minmax
-+		.proc_handler	= proc_dointvec
- 	},
- #endif
- #endif /* CONFIG_NET */
-diff --git a/net/socket.c b/net/socket.c
-index 21fd29f..caaffa1 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -107,7 +107,7 @@
- #include <net/ll_poll.h>
+@@ -55,16 +57,16 @@ static inline bool sk_valid_ll(struct sock *sk)
+ 	       !need_resched() && !signal_pending(current);
+ }
  
- #ifdef CONFIG_NET_LL_RX_POLL
--unsigned long sysctl_net_ll_poll __read_mostly;
-+unsigned int sysctl_net_ll_poll __read_mostly;
- EXPORT_SYMBOL_GPL(sysctl_net_ll_poll);
- #endif
+-static inline bool can_poll_ll(cycles_t end_time)
++static inline bool can_poll_ll(u64 end_time)
+ {
+-	return !time_after((unsigned long)get_cycles(),
++	return !time_after((unsigned long)sched_clock(),
+ 			    (unsigned long)end_time);
+ }
  
+ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+ {
+-	cycles_t end_time = ll_end_time();
+ 	const struct net_device_ops *ops;
++	u64 end_time = ll_end_time();
+ 	struct napi_struct *napi;
+ 	int rc = false;
+ 
+@@ -117,7 +119,7 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+ 
+ #else /* CONFIG_NET_LL_RX_POLL */
+ 
+-static inline cycles_t ll_end_time(void)
++static inline u64 ll_end_time(void)
+ {
+ 	return 0;
+ }
+@@ -140,7 +142,7 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+ {
+ }
+ 
+-static inline bool can_poll_ll(cycles_t end_time)
++static inline bool can_poll_ll(u64 end_time)
+ {
+ 	return false;
+ }
+diff --git a/net/Kconfig b/net/Kconfig
+index d6a9ce6..e591668 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -245,7 +245,6 @@ config NETPRIO_CGROUP
+ 
+ config NET_LL_RX_POLL
+ 	bool "Low Latency Receive Poll"
+-	depends on X86_TSC
+ 	default n
+ 	---help---
+ 	  Support Low Latency Receive Queue Poll.
 
