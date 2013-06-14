@@ -1,138 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab3FNODJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:03:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37343 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab3FNODF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:03:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when handling dock notification
-Date: Fri, 14 Jun 2013 16:12:19 +0200
-Message-ID: <9088362.uF3gIllFWp@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51BB213B.7010807@gmail.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <2301639.HY0nSRLtah@vostro.rjw.lan> <51BB213B.7010807@gmail.com>
+	id S1753319Ab3FNOD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:03:56 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53448 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab3FNODy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:03:54 -0400
+Message-ID: <51BB2295.1020105@parallels.com>
+Date: Fri, 14 Jun 2013 18:03:01 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 09/14] fuse: Implement writepages and write_begin/write_end
+ callbacks - v3
+References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104202.19027.99619.stgit@maximpc.sw.ru> <CAJfpegskt2zmKyx5sB49em86HqEJH3mZFH5hnuDXPuD_EtYzyw@mail.gmail.com>
+In-Reply-To: <CAJfpegskt2zmKyx5sB49em86HqEJH3mZFH5hnuDXPuD_EtYzyw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 09:57:15 PM Jiang Liu wrote:
-> On 06/14/2013 08:23 PM, Rafael J. Wysocki wrote:
-> > On Thursday, June 13, 2013 09:59:44 PM Rafael J. Wysocki wrote:
-> >> On Friday, June 14, 2013 12:32:25 AM Jiang Liu wrote:
-> >>> Current ACPI glue logic expects that physical devices are destroyed
-> >>> before destroying companion ACPI devices, otherwise it will break the
-> >>> ACPI unbind logic and cause following warning messages:
-> >>> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
-> >>> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
-> >>> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
-> >>> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
-> >>> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
-> >>> for full log message.
-> >>
-> >> So my question is, did we have this problem before commit 3b63aaa70e1?
-> >>
-> >> If we did, then when did it start?  Or was it present forever?
-> >>
-> >>> Above warning messages are caused by following scenario:
-> >>> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
-> >>> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
-> >>>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
-> >>> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
-> >>>    destroy physical devices, then destroys all affected ACPI devices.
-> >>>    Everything seems perfect until now. But the acpiphp dock notification
-> >>>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
-> >>>    destroy affected physical devices.
-> >>
-> >> Would not the solution be to modify it so that it didn't spawn the other
-> >> task (T2), but removed the affected physical devices synchronously?
-> >>
-> >>> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
-> >>>    been destroyed.
-> >>> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
-> >>>    devices.
-> >>>
-> >>> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
-> >>> in step 3 and physical devices are destroyed in step 5.
-> >>>
-> >>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >>> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-> >>> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> >>> Cc: Yinghai Lu <yinghai@kernel.org>
-> >>> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> >>> Cc: linux-pci@vger.kernel.org
-> >>> Cc: linux-kernel@vger.kernel.org
-> >>> Cc: stable@vger.kernel.org
-> >>> ---
-> >>> Hi Bjorn and Rafael,
-> >>>      The recursive lock changes haven't been tested yet, need help
-> >>> from Alexander for testing.
-> >>
-> >> Well, let's just say I'm not a fan of recursive locks.  Is that unavoidable
-> >> here?
-> > 
-> > What about the appended patch (on top of [1/9], untested)?
-> > 
-> > Rafael
-> It should have similar effect as patch 2/9, and it will encounter the
-> same deadlock scenario as 2/9 too.
+Hi Miklos,
 
-And why exactly?
+04/25/2013 02:35 PM, Miklos Szeredi пишет:
+> On Mon, Apr 1, 2013 at 12:42 PM, Maxim V. Patlasov
+> <MPatlasov@parallels.com> wrote:
+>> The .writepages one is required to make each writeback request carry more than
+>> one page on it.
+> I'd split this into two parts:
+>
+> 1) implement ->writepages() and enable it unconditionally for mmaped
+> writeback (why is it not enabled by this patch?)
+>
+> 2) implement ->write_begin() and ->write_end() and conditionally
+> enable cached writeback
+>
+> More comments inline.
 
-I'm looking at acpiphp_disable_slot() and I'm not seeing where the
-problematic lock is taken.  Similarly for power_off_slot().
+Thanks a lot for careful review. I agree with most of your comments and 
+will address them in the next version of patchset. The only point I 
+disagree is the following:
 
-It should take the ACPI scan lock, but that's a different matter.
+>> +
+>> +       spin_lock(&fc->lock);
+>> +       list_add(&req->writepages_entry, &fi->writepages);
+>> +       spin_unlock(&fc->lock);
+>> +
+>> +       for (i = 0; i < req->num_pages; i++) {
+>> +               struct page *page = req->pages[i];
+>> +               struct page *tmp_page;
+>> +
+>> +               tmp_page = alloc_page(GFP_NOFS | __GFP_HIGHMEM);
+>> +               if (tmp_page) {
+>> +                       copy_highpage(tmp_page, page);
+>> +                       inc_bdi_stat(bdi, BDI_WRITEBACK);
+>> +                       inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+> Is there a reason why we do the page allocation/copying here instead
+> of at fill time?  I'd guess it would be simpler and more logical
+> there.
+
+There is a problem to have in mind: we can't call 
+end_page_writeback(page) before update of fuse writeback state 
+(fi->writepages). Otherwise a nasty race would be possible when an 
+activity for that particular page offset intervenes in the middle of 
+writeback leading to multiple in-flight fuse requests for given page offset.
+
+What you suggested is doable but would require additional space to stash 
+pointers to original pages because we cannot release them immediately 
+after copying (due to the problem described above). The size of the 
+space is not known in advance because we don't know how many pages 
+write_cache_pages() will process. The size is currently limited by 
+sizeof(struct page *) * FUSE_MAX_PAGES_PER_REQ, but may become variable 
+in future (a lot of people complain about 128K limit of fuse request). 
+Adding dynamically growing array of pages would make the code neither 
+simpler nor logical.
+
+The approach I implemented utilizes the fact that 
+fuse_page_is_writeback() and friends require only 
+req->misc.write.in.offset and req->num_pages to be set correctly. Actual 
+pointers in req->pages[] doesn't matter. Thus, as soon as the two 
+parameters are known, I add the request to fi->writepages (blocking 
+other operations on given page offset) and perform "in place" 
+allocation/copying avoiding need for extra space to stash page pointers.
 
 Thanks,
-Rafael
-
-
-> > ---
-> >  drivers/pci/hotplug/acpiphp_glue.c |   13 ++++++++++++-
-> >  1 file changed, 12 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -145,9 +145,20 @@ static int post_dock_fixups(struct notif
-> >  	return NOTIFY_OK;
-> >  }
-> >  
-> > +static void handle_dock_event_func(acpi_handle handle, u32 event, void *context)
-> > +{
-> > +	if (event == ACPI_NOTIFY_EJECT_REQUEST) {
-> > +		struct acpiphp_func *func = context;
-> > +
-> > +		if (!acpiphp_disable_slot(func->slot))
-> > +			acpiphp_eject_slot(func->slot);
-> > +	} else {
-> > +		handle_hotplug_event_func(handle, event, context);
-> > +	}
-> > +}
-> >  
-> >  static const struct acpi_dock_ops acpiphp_dock_ops = {
-> > -	.handler = handle_hotplug_event_func,
-> > +	.handler = handle_dock_event_func,
-> >  };
-> >  
-> >  /* Check whether the PCI device is managed by native PCIe hotplug driver */
-> > 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Maxim
