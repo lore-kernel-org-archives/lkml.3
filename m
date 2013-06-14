@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3FNQxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:53:32 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:50156 "EHLO
+	id S1753466Ab3FNQxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:53:46 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:50172 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab3FNQxa (ORCPT
+	with ESMTP id S1752658Ab3FNQxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:53:30 -0400
+	Fri, 14 Jun 2013 12:53:44 -0400
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 3/9] rtc: rtc-hid-sensor-time: delay registering as rtc into a work
-Date: Fri, 14 Jun 2013 18:52:06 +0200
-Message-Id: <1371228732-5749-4-git-send-email-holler@ahsoftware.de>
+Subject: [PATCH 4/9 RESEND] RFC: timekeeping: introduce flag systime_was_set
+Date: Fri, 14 Jun 2013 18:52:07 +0200
+Message-Id: <1371228732-5749-5-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371228732-5749-1-git-send-email-holler@ahsoftware.de>
 References: <51BA1FF7.4000206@ahsoftware.de>
@@ -25,121 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtc_device_register() might want to read the clock which doesn't work
-before the hid device is registered. Therefor we delay the registration of
-the rtc driver by moving it to a work.
+In order to let an RTC set the time at boot without the problem that a
+second RTC overwrites it, the flag systime_was_set is introduced.
+
+systime_was_set will be true, if a persistent clock sets the time at boot,
+or if do_settimeofday() is called (e.g. by the RTC subsystem or userspace).
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/rtc/rtc-hid-sensor-time.c | 66 ++++++++++++++++++++++++++++++++++-----
- 1 file changed, 58 insertions(+), 8 deletions(-)
+ include/linux/time.h      |  6 ++++++
+ kernel/time/timekeeping.c | 10 +++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index 7273b01..b842730 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -37,6 +37,11 @@ enum hid_time_channel {
- 	TIME_RTC_CHANNEL_MAX,
- };
+diff --git a/include/linux/time.h b/include/linux/time.h
+index d5d229b..888280f 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -129,6 +129,12 @@ extern int update_persistent_clock(struct timespec now);
+ void timekeeping_init(void);
+ extern int timekeeping_suspended;
  
-+struct hid_time_workts {
-+	struct work_struct work;
-+	struct hid_time_state *time_state;
-+};
++/*
++ * Will be true if the system time was set at least once by
++ * a persistent clock, RTC or userspace.
++ */
++extern bool systime_was_set;
 +
- struct hid_time_state {
- 	struct hid_sensor_hub_callbacks callbacks;
- 	struct hid_sensor_common common_attributes;
-@@ -46,6 +51,7 @@ struct hid_time_state {
- 	struct completion comp_last_time;
- 	struct rtc_time time_buf;
- 	struct rtc_device *rtc;
-+	struct hid_time_workts *workts;
- };
+ unsigned long get_seconds(void);
+ struct timespec current_kernel_time(void);
+ struct timespec __current_kernel_time(void); /* does not take xtime_lock */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index baeeb5c..07d8531 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -37,6 +37,9 @@ int __read_mostly timekeeping_suspended;
+ /* Flag for if there is a persistent clock on this platform */
+ bool __read_mostly persistent_clock_exist = false;
  
- static const u32 hid_time_addresses[TIME_RTC_CHANNEL_MAX] = {
-@@ -237,6 +243,36 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
- 	.read_time = hid_rtc_read_time,
- };
- 
-+static void hid_time_register_rtc_work(struct work_struct *work)
-+{
-+	struct hid_time_state *time_state =
-+		container_of(work, struct hid_time_workts, work)
-+			->time_state;
-+	struct platform_device *pdev = time_state->callbacks.pdev;
++/* Flag for if the system time was set at least once */
++bool __read_mostly systime_was_set;
 +
-+	time_state->rtc = devm_rtc_device_register(&pdev->dev,
-+					"hid-sensor-time", &hid_time_rtc_ops,
-+					THIS_MODULE);
-+	if (IS_ERR_OR_NULL(time_state->rtc)) {
-+		struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-+		time_state->rtc = NULL;
-+		dev_err(&pdev->dev, "rtc device register failed!\n");
-+		/*
-+		 *  I haven't a found a way to remove only this device from
-+		 *  hid-sensor-hub. Removing the device a level above (the
-+		 *  complete HID device) doesn't work, because a sensor-hub
-+		 *  might provide more than just a time-sensor and thus we
-+		 *  would remove all sensors not just this one.
-+		 *  So we just leave this driver idling around until I or
-+		 *  someone else has figured out how to remove this device
-+		 *  from hid-sensor-hub.
-+		 */
-+	}
-+	time_state->workts = NULL;
-+	kfree(work);
-+}
-+
- static int hid_time_probe(struct platform_device *pdev)
+ static inline void tk_normalize_xtime(struct timekeeper *tk)
  {
- 	int ret = 0;
-@@ -279,22 +315,36 @@ static int hid_time_probe(struct platform_device *pdev)
- 		return ret;
- 	}
+ 	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
+@@ -498,6 +501,9 @@ int do_settimeofday(const struct timespec *tv)
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+ 	write_seqcount_begin(&timekeeper_seq);
  
--	time_state->rtc = devm_rtc_device_register(&pdev->dev,
--					"hid-sensor-time", &hid_time_rtc_ops,
--					THIS_MODULE);
--
--	if (IS_ERR(time_state->rtc)) {
--		dev_err(&pdev->dev, "rtc device register failed!\n");
--		return PTR_ERR(time_state->rtc);
-+	/*
-+	 * The HID device has to be registered to read the clock.
-+	 * Because rtc_device_register() might read the time, we have to delay
-+	 * rtc_device_register() to a work in order to finish the probe before.
-+	 */
-+	time_state->workts = kmalloc(sizeof(struct hid_time_workts),
-+		GFP_KERNEL);
-+	if (time_state->workts == NULL) {
-+		sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-+		return -ENOMEM;
- 	}
-+	time_state->workts->time_state = time_state;
-+	INIT_WORK(&time_state->workts->work,
-+			hid_time_register_rtc_work);
-+	schedule_work(&time_state->workts->work);
++	systime_was_set = true;
++
++
+ 	timekeeping_forward_now(tk);
  
--	return ret;
-+	return 0;
- }
- 
- static int hid_time_remove(struct platform_device *pdev)
- {
- 	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+	struct hid_time_state *time_state = platform_get_drvdata(pdev);
- 
-+	if (time_state->workts) {
-+		flush_work(&time_state->workts->work);
-+		WARN_ON(time_state->workts != NULL);
+ 	xt = tk_xtime(tk);
+@@ -781,8 +787,10 @@ void __init timekeeping_init(void)
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		now.tv_sec = 0;
+ 		now.tv_nsec = 0;
+-	} else if (now.tv_sec || now.tv_nsec)
++	} else if (now.tv_sec || now.tv_nsec) {
+ 		persistent_clock_exist = true;
++		systime_was_set = true;
 +	}
-+	if (time_state->rtc)
-+		rtc_device_unregister(time_state->rtc);
- 	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
  
- 	return 0;
+ 	read_boot_clock(&boot);
+ 	if (!timespec_valid_strict(&boot)) {
 -- 
 1.8.1.4
 
