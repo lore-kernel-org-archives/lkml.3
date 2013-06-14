@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3FNSz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:55:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752973Ab3FNSzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:55:24 -0400
-Date: Fri, 14 Jun 2013 14:54:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 0/5] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130614185454.GM12023@redhat.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753843Ab3FNSzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:55:46 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34596 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752973Ab3FNSzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 14:55:43 -0400
+Message-ID: <1371236142.2726.43.camel@dabdike>
+Subject: [PATCH RESEND] fix WARNING: at kernel/cpu/idle.c:96
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Parisc List <linux-parisc@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 14 Jun 2013 11:55:42 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 06:55:56PM +0200, Michael Holzheu wrote:
+>From 48bbf44a96676ce6f520a408378730c976e9a11e Mon Sep 17 00:00:00 2001
+From: James Bottomley <JBottomley@Parallels.com>
+Date: Wed, 8 May 2013 14:05:34 -0700
+Subject: [PATCH] [PARISC] fix WARNING: at kernel/cpu/idle.c:96
 
-[..]
-> In this patch series I did not include the discussed ELF header swap trick
-> patch because with the ELF header read functions this patch currently is
-> not necessary.
+On PA-RISC (and presumably any other arch that doesn't implement its own
+arch_cpu_idle), we get this spurious boot warning.  The problem is that the
+way the idle task is selected initially using the weak arch_cpu_idle() in
+idle.c causes us to enter this place once with interrupts enabled.  Fix this
+by disabling interrupts in the weak arch_cpu_idle() code.
 
-Michael,
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
-Would be good to this change atleast in a separate patch series so that
-we have common mechanism across arches and understanding code becomes
-easier.
+---
 
-Thanks
-Vivek
+Thomas, I'm getting a bit impatient: this is a clear bug in the cpu idle
+code and we keep getting reports of this as a boot crash on parisc.  If
+you don't push it through your tree, I'll take it through the parisc
+one.
+
+
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index d5585f5..0a4d11e 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -58,6 +58,7 @@ void __weak arch_cpu_idle_dead(void) { }
+ void __weak arch_cpu_idle(void)
+ {
+ 	cpu_idle_force_poll = 1;
++	local_irq_enable();
+ }
+ 
+ /*
+
+
