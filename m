@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3FNW2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:28:00 -0400
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:29787
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751512Ab3FNW17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:27:59 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Roman Yepishev <roman.yepishev@gmail.com>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
-Thread-Topic: [PATCH] PCI: Remove not needed check in disable aspm link
-Thread-Index: AQHOaSy7q8T6unfYO0y0KlbpsoIbopk1uWwAgAAOSICAAAKsgA==
-Date: Fri, 14 Jun 2013 22:27:34 +0000
-Message-ID: <1371248853.2490.5.camel@x230>
-References: <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
-	 <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
-	 <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
-	 <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
-	 <20130401235256.GA31966@google.com>
-	 <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
-	 <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com>
-	 <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
-	 <CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com>
-	 <CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com>
-	 <20130614141101.GA29452@google.com>
-	 <CAE9FiQVr-OWeqEHFXn0MjNiSD0WM=FNO_DFo6m9UbbG60uonpw@mail.gmail.com>
-	 <CAErSpo7grN-93zZfBJOHZH-pR1wDYrojTwt=B=++QqA0rPb3Rg@mail.gmail.com>
-	 <CAE9FiQUO350kqrXB5=yQ-OxOeSJj4+P6WPg4gGgXxFEvfoLyng@mail.gmail.com>
-	 <CAErSpo6vEOw10YV=Sou6wjjSc2GWr-oX=Dvbt7Xt=RJKi4RELw@mail.gmail.com>
-	 <CAE9FiQWevd6ZNDdqGkqbLrGujKYuTiwibPAT+30VPpC_H-rLJA@mail.gmail.com>
-	 <CAErSpo66qtgg8=BqX+4sm4h1vXD5gR6aiH7hHK7gvz1x3rEQZA@mail.gmail.com>
-	 <CAE9FiQWxDhagFNAYc2eNDe_1jYtVTa5Azg0zifiprND5m3CmMw@mail.gmail.com>
-In-Reply-To: <CAE9FiQWxDhagFNAYc2eNDe_1jYtVTa5Azg0zifiprND5m3CmMw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D141784C3C2CD4439E3C574B5E93F81A@namprd05.prod.outlook.com>
+	id S1753622Ab3FNW21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:28:27 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50574 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNW2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 18:28:25 -0400
+Date: Sat, 15 Jun 2013 01:26:31 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+CC: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+Message-ID: <20130614222537.GA25428@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <41fde401c8e646689123d7c6d3a2dffc@DLEE71.ent.ti.com>
+ <20130307141235.GQ6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20C57@DBDE01.ent.ti.com>
+ <20130307144656.GR6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
+ <20130307150408.GU6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20D27@DBDE01.ent.ti.com>
+ <20130307160236.GV6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
+ <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
+Content-Disposition: inline
+In-Reply-To: <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5EMS8UT008478
 
-On Fri, 2013-06-14 at 15:17 -0700, Yinghai Lu wrote:
+--dc+cDN39EJAMEtIO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> after those two patches, it aspm_disabled is set, via _osc early,
-> pre-1.1 devices aspm register will be touched even aspm_force is not specified.
+Hi,
 
-I don't follow. We were previously automatically disabling ASPM on
-pre-1.1 devices even if _OSC didn't give us control. I've confirmed that
-this was the wrong thing for us to be doing, and my patch changed the
-behaviour such that if the firmware enables ASPM on a pre-1.1 device and
-refuses to give us control via _OSC we will leave ASPM enabled.
+On Fri, Jun 14, 2013 at 02:54:33PM -0500, Joel A Fernandes wrote:
+> Hi Tony, Vaibhav,
+>=20
+> >> I just doublechecked MMC rootfs on bone and evmsk as it's the standard
+> >> smoke test. My EVM is intermittent now so trying to coax it to power up
+> >> to reverify.
+> >>
+> >
+> > Matt,
+> >
+> > Your branch is working for me, I tested it on EVM. Not sure what is wro=
+ng with manual rebasing
+> > I did yesterday. I will try to nail-down root-cause here.
+> >
+> > And you can submit the next version fixing the comments I have given.
+>=20
+> The only comment I could find in the whole discussion was adding of
+> the interrupts property. I tested I don't have any problem booting
+> with Matt's patch, without having the interrupts property.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+might very well be, but we want to figure out why adding "intrrupts"
+causes issues. Why does it have to come through hwmod ? You might have
+uncovered a real problem which needs fixing. Besides, at the end of the
+day, we want to remove the redundant hwmod data if we already have DTS
+bindings covering the same requirements.
+--=20
+balbi
+
+--dc+cDN39EJAMEtIO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRu5iXAAoJEIaOsuA1yqRE5l0P/iHsoyrL4UuOAcKCyFnB+Biw
+UrRREW9xlAd4IG7Uiqhy3C04JVv0KCPtF1ngUiiNU1Nb0BhPrLKpgUpuOM0DyIOx
+r3pLNqoq5PsMGp7XNzjSdOwCm6y+Yu3wDuDaaO9OGuuLBmKucNXqYgGfJM+g+24s
+110vwTGpPqxW1TndYfzhNlw5qN/5OIbTJVORuuMQLhO/mK5EaNtb+7TAv68VBuub
+Xo4cDWfzYwNujV0QTzUOJYP0L/qNHWi5hnLpGlI5tZZf9N+z/QJo52A4B5paWGmb
+HCsfgMM2FUy3EMkXzjz2FDI72mSAPVgc0N7QVq5f4e25lJFgd/l/Xu34AZdUdxeo
+GYBIYkK6G+xAPT9uRAuadXizprEn+3FlVxGzFvrgKrW5B1HS/+8W3SIB9GO3keYz
+DLhjbNFBiEl7wnMr7DA5SjJ3rtopLirkn6bFd+KJXft867AOZnPu+rh5GgwfdbuO
+0dbxVJ16BrxPrIgPxYbi1EqpsrjLF9dCOel56zs/KBBeB3MN4srLP115P3MNg2OX
+VduXg7JsqSUPBfkaSEV5g0Ng2LZpTdCTblBKg6slVRak41iejjslChV62I9ORIZu
+SjvM8tFel/231KWoVdAHlVe8qaegUpYR87UFXBBLV4QLwUvERM01tQrumdnfszJg
+h+mXiEgLTS5iw+LeiteZ
+=R0Oe
+-----END PGP SIGNATURE-----
+
+--dc+cDN39EJAMEtIO--
