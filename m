@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3FNPfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:35:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16364 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3FNPfw (ORCPT
+	id S1753468Ab3FNPhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:37:09 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58788 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab3FNPhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:35:52 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tkaDFPjYVEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=apdwqXrHFoAA:10 a=cGvrsGG1Lldk8p6T-csA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371224150.9844.327.camel@gandalf.local.home>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
+	Fri, 14 Jun 2013 11:37:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <51BB2FFC.8060209@hp.com>
+References: <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
+	<1370974231.9844.212.camel@gandalf.local.home>
+	<1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
+	<1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
+	<20130612233224.GH4165@ZenIV.linux.org.uk>
+	<CA+55aFw2=3ua32vkpWc_9ckCNweFmmH3c0d-VqoaUD86rkR-=w@mail.gmail.com>
+	<20130613002058.GI4165@ZenIV.linux.org.uk>
+	<CA+55aFxEnNvj1SoOL+ChVQqK+ouSNgsM+6cQt+=PpmTGdcFggg@mail.gmail.com>
+	<20130613004941.GJ4165@ZenIV.linux.org.uk>
+	<CA+55aFz-=xewm_6MuxK9JK_GoqyFSo6L-beXyEv83awe+B_rVw@mail.gmail.com>
+	<51BB2FFC.8060209@hp.com>
+Date: Fri, 14 Jun 2013 08:37:05 -0700
+X-Google-Sender-Auth: b_saeZ8_NCkFFRcETqvhgCO4jv8
+Message-ID: <CA+55aFxmdPAeknSVH8fhdJW4VH=EcJ4dfBQUuQp_M_hnrr295g@mail.gmail.com>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "?????????" <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
         Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Date: Fri, 14 Jun 2013 11:35:50 -0400
-In-Reply-To: <20130614134947.GB133453@redhat.com>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
-	 <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
-	 <20130612170316.GO133453@redhat.com> <20130613131057.GA15997@somewhere>
-	 <20130613140207.GW133453@redhat.com> <20130613142210.GD16339@somewhere>
-	 <20130613144515.GX133453@redhat.com> <20130613145601.GE16339@somewhere>
-	 <20130613152059.GA133453@redhat.com>
-	 <1371138491.9844.288.camel@gandalf.local.home>
-	 <20130614134947.GB133453@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 09:49 -0400, Don Zickus wrote:
->  
-> > The concept behind full dynamic ticks is very easy. When you set a given
-> > CPU(s) to dynamic tick, when it only has a single task scheduled on that
-> > CPU, it disables the periodic tick. This removes essentially *all*
-> > latency from the kernel! That is, if the task is doing some complex
-> 
-> Including SMMi latency? ;-)
+On Fri, Jun 14, 2013 at 8:00 AM, Waiman Long <waiman.long@hp.com> wrote:
+> On 06/12/2013 08:59 PM, Linus Torvalds wrote:
+>>
+>> Ho humm.. interesting. I was talking about wanting to mix atomics and
+>> spinlocks earlier in this thread due to space constraints, and it
+>> strikes me that that would actually help this case a lot. Having the
+>> dentry count mix d_lock and the count in one word would allow for
+>> atomic ops like "increment if not locked", and we'd avoid this whole
+>> race entirely..
+>>
+>> Something like "low bit of count is the lock bit" would end up being
+>> lovely for this case. Of course, that's not how our spinlocks work ..
+>>
+>>                Linus
+>
+>
+> I have created another patch to do exactly the "increment if not locked"
+> operation as suggested. It did help a lot. See the patch below for more
+> information. Any additional comment will be appreciated.
 
-When you have SMI latencies, it's time to bitch at your vendor, not
-us. ;-)
+Hmm. This is interesting and proves the concept, and the numbers look
+very promising.
 
+The patch is not mergable, though, since it clearly depends on the
+spinlock/d_count fitting in a u64, which is normally true, but not the
+case of debugging locks etc, we'd need to generalize and fix the whole
+concept of "refcount+lock".
 
-> > 
-> > Now removing the periodic tick is not a trivial task, and this is where
-> > all our issues come from. In fact, we can not even completely remove the
-> > tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
-> > set to. We have to handle everything that depends on that tick, which
-> > includes perf, among other things.
-> 
-> Which part of perf is dependent on the tick?  Just curious.
+Generalizing it might be a good idea anyway, since there are other
+cases of "atomic_dec_and_lock()" etc behaviours where we might want to
+have these kinds of extended lock+count shenanigans.
 
-I'm not the one to answer this question, but it seems that it uses the
-tick whenever perf is active. I had to disable watchdog when dynamic
-tick was configured because it would permanently disable dynamic ticks
-without letting the user know why. This is because watchdog uses perf
-and enables it on boot and keeps it enabled.
+I also do wonder if we could perhaps fit both in 32-bits, and just not
+use the "real" spinlocks at all, but use a bitlock in the low (or
+high) bit of the refcount. We do that in some other places - we'd
+potentially lose lockdep etc, and we'd lose some of the other good
+parts of spinlocks (fairness yadda yadda), but *if* we can reduce
+contention enough that it works out, maybe it would be worth it.
 
--- Steve
+So this doesn't look like 3.11 material, but the numbers certainly
+make it look very promising, so with some more work on it ...
 
-
+                Linus
