@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547Ab3FNCgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 22:36:04 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51576 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab3FNCgC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 22:36:02 -0400
-X-AuditID: 9c930197-b7b8cae000003b08-01-51ba8190f656
-From: Namhyung Kim <namhyung@kernel.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>
-Subject: Re: [PATCH v2 13/14] perf, persistent: Exposing persistent events using sysfs
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
-	<1370968960-22527-14-git-send-email-rric@kernel.org>
-Date: Fri, 14 Jun 2013 11:36:00 +0900
-In-Reply-To: <1370968960-22527-14-git-send-email-rric@kernel.org> (Robert
-	Richter's message of "Tue, 11 Jun 2013 18:42:39 +0200")
-Message-ID: <87a9mt2zcf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1753500Ab3FNCiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 22:38:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46330 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751173Ab3FNCiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 22:38:14 -0400
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net, linux-rdma@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-scsi@vger.kernel.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, linux-fsdevel@vger.kernel.org,
+        linux-cachefs@redhat.com, linux-nfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        xfs@oss.sgi.com, keyrings@linux-nfs.org, netdev@vger.kernel.org,
+        linux-mm@kvack.org, linux-security-module@vger.kernel.org
+Subject: [Trivial PATCH 00/33] Remove uses of typedef ctl_table
+Date: Thu, 13 Jun 2013 19:37:25 -0700
+Message-Id: <cover.1371177118.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013 18:42:39 +0200, Robert Richter wrote:
-> From: Robert Richter <robert.richter@linaro.org>
->
-> Expose persistent events in the system to userland using sysfs. Perf
-> tools are able to read existing pmu events from sysfs. Now we use a
-> persistent pmu as an event container containing all registered
-> persistent events of the system. This patch adds dynamically
-> registration of persistent events to sysfs. E.g. something like this:
->
->  /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
->  /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
->
-> Perf tools need to support the attr<num> syntax that is added in a
-> separate patch set. With it we are able to run perf tool commands to
-> read persistent events, e.g.:
->
->  # perf record -e persistent/mce_record/ sleep 10
->  # perf top -e persistent/mce_record/
->
-> [ Document attr<index> syntax in sysfs ABI ]
-> Reported-by: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Robert Richter <robert.richter@linaro.org>
-> Signed-off-by: Robert Richter <rric@kernel.org>
-> ---
-[SNIP]
-> +static int pers_event_sysfs_register(struct pers_event *event)
-> +{
-> +	struct device_attribute *attr = &event->sysfs.attr;
-> +	int idx;
-> +
-> +	*attr = (struct device_attribute)__ATTR(, 0444, pers_event_sysfs_show,
-> +						NULL);
-> +	attr->attr.name = event->name;
+It's clearer to use struct ctl_table instead
 
-When I added another persistent event with this API, I got an WARNING
-from lockdep like this:
+Joe Perches (33):
+  arm: kernel: isa: Convert use of typedef ctl_table to struct ctl_table
+  frv: Convert use of typedef ctl_table to struct ctl_table
+  ia64: crash: Convert use of typedef ctl_table to struct ctl_table
+  mips: lasat: sysctl: Convert use of typedef ctl_table to struct ctl_table
+  powerpc: idle: Convert use of typedef ctl_table to struct ctl_table
+  s390: Convert use of typedef ctl_table to struct ctl_table
+  tile: proc: Convert use of typedef ctl_table to struct ctl_table
+  x86: vdso: Convert use of typedef ctl_table to struct ctl_table
+  cdrom: Convert use of typedef ctl_table to struct ctl_table
+  char: Convert use of typedef ctl_table to struct ctl_table
+  infiniband: Convert use of typedef ctl_table to struct ctl_table
+  macintosh: Convert use of typedef ctl_table to struct ctl_table
+  md: Convert use of typedef ctl_table to struct ctl_table
+  sgi: xpc: Convert use of typedef ctl_table to struct ctl_table
+  parport: Convert use of typedef ctl_table to struct ctl_table
+  scsi_sysctl: Convert use of typedef ctl_table to struct ctl_table
+  coda: Convert use of typedef ctl_table to struct ctl_table
+  fscache: Convert use of typedef ctl_table to struct ctl_table
+  lockd: Convert use of typedef ctl_table to struct ctl_table
+  nfs: Convert use of typedef ctl_table to struct ctl_table
+  inotify: Convert use of typedef ctl_table to struct ctl_table
+  ntfs: Convert use of typedef ctl_table to struct ctl_table
+  ocfs2: Convert use of typedef ctl_table to struct ctl_table
+  quota: Convert use of typedef ctl_table to struct ctl_table
+  xfs: Convert use of typedef ctl_table to struct ctl_table
+  fs: Convert use of typedef ctl_table to struct ctl_table
+  key: Convert use of typedef ctl_table to struct ctl_table
+  ipv6: Convert use of typedef ctl_table to struct ctl_table
+  ndisc: Convert use of typedef ctl_table to struct ctl_table
+  ipc: Convert use of typedef ctl_table to struct ctl_table
+  sysctl: Convert use of typedef ctl_table to struct ctl_table
+  mm: Convert use of typedef ctl_table to struct ctl_table
+  security: keys: Convert use of typedef ctl_table to struct ctl_table
 
-[    0.432506] BUG: key ffff88040946f140 not in .data!
-[    0.432581] ------------[ cut here ]------------
-[    0.432656] WARNING: at /home/namhyung/project/linux/kernel/lockdep.c:2987 lockdep_init_map+0x53d/0x570()
-[    0.432763] DEBUG_LOCKS_WARN_ON(1)
+ arch/arm/kernel/isa.c              |  6 ++--
+ arch/frv/kernel/pm.c               |  8 +++---
+ arch/frv/kernel/sysctl.c           |  4 +--
+ arch/ia64/kernel/crash.c           |  4 +--
+ arch/ia64/kernel/perfmon.c         |  6 ++--
+ arch/mips/lasat/sysctl.c           | 14 ++++-----
+ arch/powerpc/kernel/idle.c         |  4 +--
+ arch/s390/appldata/appldata_base.c | 16 +++++------
+ arch/s390/kernel/debug.c           |  4 +--
+ arch/s390/mm/cmm.c                 |  6 ++--
+ arch/tile/kernel/proc.c            |  4 +--
+ arch/x86/vdso/vdso32-setup.c       |  4 +--
+ drivers/cdrom/cdrom.c              | 10 +++----
+ drivers/char/hpet.c                |  6 ++--
+ drivers/char/ipmi/ipmi_poweroff.c  |  6 ++--
+ drivers/char/random.c              |  8 +++---
+ drivers/char/rtc.c                 |  6 ++--
+ drivers/infiniband/core/ucma.c     |  2 +-
+ drivers/macintosh/mac_hid.c        |  8 +++---
+ drivers/md/md.c                    |  6 ++--
+ drivers/misc/sgi-xp/xpc_main.c     |  6 ++--
+ drivers/parport/procfs.c           | 58 +++++++++++++++++++-------------------
+ drivers/scsi/scsi_sysctl.c         |  6 ++--
+ fs/coda/sysctl.c                   |  4 +--
+ fs/dcache.c                        |  2 +-
+ fs/drop_caches.c                   |  2 +-
+ fs/eventpoll.c                     |  2 +-
+ fs/file_table.c                    |  4 +--
+ fs/fscache/main.c                  |  4 +--
+ fs/inode.c                         |  2 +-
+ fs/lockd/svc.c                     |  6 ++--
+ fs/nfs/nfs4sysctl.c                |  6 ++--
+ fs/nfs/sysctl.c                    |  6 ++--
+ fs/notify/inotify/inotify_user.c   |  2 +-
+ fs/ntfs/sysctl.c                   |  4 +--
+ fs/ocfs2/stackglue.c               |  8 +++---
+ fs/quota/dquot.c                   |  6 ++--
+ fs/xfs/xfs_sysctl.c                | 26 ++++++++---------
+ include/linux/key.h                |  2 +-
+ include/net/ipv6.h                 |  4 +--
+ include/net/ndisc.h                |  2 +-
+ ipc/ipc_sysctl.c                   | 14 ++++-----
+ ipc/mq_sysctl.c                    | 10 +++----
+ kernel/sysctl.c                    |  2 +-
+ kernel/utsname_sysctl.c            |  6 ++--
+ mm/page-writeback.c                |  2 +-
+ mm/page_alloc.c                    | 15 +++++-----
+ security/keys/sysctl.c             |  2 +-
+ 48 files changed, 174 insertions(+), 171 deletions(-)
 
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-I guess we need the following line here:
-
-	sysfs_attr_init(&attr->attr);
-
-
-Thanks,
-Namhyung
-
-
-> +
-> +	/* add sysfs attr to events: */
-> +	for (idx = 0; idx < MAX_EVENTS; idx++) {
-> +		if (!cmpxchg(persistent_events_attr + idx, NULL, &attr->attr))
-> +			break;
-> +	}
-> +
-> +	if (idx >= MAX_EVENTS)
-> +		return -ENOSPC;
-> +	if (!idx)
-> +		EVENTS_GROUP = &persistent_events_group;
-> +	if (!persistent_pmu.dev)
-> +		return 0;	/* sysfs not yet initialized */
-> +	if (idx)
-> +		return sysfs_update_group(&persistent_pmu.dev->kobj,
-> +					EVENTS_GROUP);
-> +	return sysfs_create_group(&persistent_pmu.dev->kobj, EVENTS_GROUP);
-> +}
->  
->  static int persistent_pmu_init(struct perf_event *event)
->  {
