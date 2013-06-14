@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3FNURH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 16:17:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab3FNURF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 16:17:05 -0400
-Message-ID: <51BB7A1E.5000605@redhat.com>
-Date: Fri, 14 Jun 2013 16:16:30 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S1753748Ab3FNUSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 16:18:22 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:37165
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753116Ab3FNUSV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 16:18:21 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+Date: Fri, 14 Jun 2013 15:18:03 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH v2] powerpc/pci: Fix setup of Freescale PCI / PCIe
+ controllers
+To: Rojhalat Ibrahim <imr@rtschenk.de>
+CC: Michael Guntsche <michael.guntsche@it-loops.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <2819373.IXRuYOYOkX@pcimr> (from imr@rtschenk.de on Fri Jun 14
+	04:05:34 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1371241083.2996.7@snotra>
 MIME-Version: 1.0
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-CC: David Woodhouse <dwmw2@infradead.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86/iommu: fix dma pte address size error
-References: <1369355756-1030-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1369355756-1030-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 08:35 PM, Li, Zhen-Hua wrote:
-> In Intel Vt-D specs, Chapter 9.3 Page-Table Entry,
-> The size of ADDR(address) field is 12:51, but the function dma_pte_addr
->   treats it as 12:63.
->
-> Signed-off-by: Li, Zhen-Hua<zhen-hual@hp.com>
+On 06/14/2013 04:05:34 AM, Rojhalat Ibrahim wrote:
+> Commit 50d8f87d2b3 (powerpc/fsl-pci Make PCIe hotplug work with  
+> Freescale
+> PCIe controllers) does not handle non-PCIe controllers properly,  
+> which causes
+> a panic during boot for certain configurations.
+> This patch fixes the issue by calling setup_indirect_pci for all  
+> device types.
+> fsl_indirect_read_config is now only used for booke/86xx PCIe  
+> controllers.
+> 
+> Reported-by: Michael Guntsche <mike@it-loops.com>
+> Cc: Scott Wood <scottwood@freescale.com>
+> Signed-off-by: Rojhalat Ibrahim <imr@rtschenk.de>
 > ---
->   drivers/iommu/intel-iommu.c   |    4 ++--
->   include/linux/dma_remapping.h |    2 ++
->   2 files changed, 4 insertions(+), 2 deletions(-)
->
+> v2: Make it more consistent.
+> 
+>  arch/powerpc/sysdev/fsl_pci.c |   20 +++++++-------------
+>  1 file changed, 7 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/powerpc/sysdev/fsl_pci.c  
+> b/arch/powerpc/sysdev/fsl_pci.c
+> index 028ac1f..5682c8a 100644
+> --- a/arch/powerpc/sysdev/fsl_pci.c
+> +++ b/arch/powerpc/sysdev/fsl_pci.c
+> @@ -97,20 +97,12 @@ static int fsl_indirect_read_config(struct  
+> pci_bus *bus,
+> unsigned int devfn,
+>  	return indirect_read_config(bus, devfn, offset, len, val);
+>  }
+> 
+> -static struct pci_ops fsl_indirect_pci_ops =
+> +static struct pci_ops fsl_indirect_pcie_ops =
+>  {
+>  	.read = fsl_indirect_read_config,
+>  	.write = indirect_write_config,
+>  };
 
-Is this patching for the sake of spec interpretation?
-a dma-pte format (consumed by iommu) has 63,61:52 as available for sw, ignored by hw.
-62 is 'transient mapping' bit, which is a _hint_ for selecting iotlbs to flush sooner.
-finally, the system would have to have a memory map that actually has bit 62 set to
-be affected.
+On 83xx:
+cc1: warnings being treated as errors
+/home/scott/fsl/git/linux/upstream/arch/powerpc/sysdev/fsl_pci.c:100:23:  
+error: 'fsl_indirect_pcie_ops' defined but not used
+make[2]: *** [arch/powerpc/sysdev/fsl_pci.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
 
-So, for intel-iommu, I don't see a bug occurring.
-Did you actually have one with previous definition, and if so,
-could you provide that information ?
+I can fix this when applying, but this makes me wonder how you tested  
+it, given that the whole point is to fix 83xx...  Did you fix this and  
+then accidentally sent a stale version?
 
-Cheers,
-- Don
-  
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index b4f0e28..c6d2847 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -311,10 +311,10 @@ static inline void dma_set_pte_prot(struct dma_pte *pte, unsigned long prot)
->   static inline u64 dma_pte_addr(struct dma_pte *pte)
->   {
->   #ifdef CONFIG_64BIT
-> -	return pte->val&  VTD_PAGE_MASK;
-> +	return pte->val&  DMA_PTE_MASK;
->   #else
->   	/* Must have a full atomic 64-bit read */
-> -	return  __cmpxchg64(&pte->val, 0ULL, 0ULL)&  VTD_PAGE_MASK;
-> +	return  __cmpxchg64(&pte->val, 0ULL, 0ULL)&  DMA_PTE_MASK;
->   #endif
->   }
->
-> diff --git a/include/linux/dma_remapping.h b/include/linux/dma_remapping.h
-> index 57c9a8a..7a1e212 100644
-> --- a/include/linux/dma_remapping.h
-> +++ b/include/linux/dma_remapping.h
-> @@ -16,6 +16,8 @@
->   #define DMA_PTE_WRITE (2)
->   #define DMA_PTE_LARGE_PAGE (1<<  7)
->   #define DMA_PTE_SNP (1<<  11)
-> +#define DMA_PTE_ADD_LENGTH (40)
-> +#define DMA_PTE_MASK	((((u64)1<<  DMA_PTE_ADD_LENGTH) - 1)<<  VTD_PAGE_SHIFT)
->
->   #define CONTEXT_TT_MULTI_LEVEL	0
->   #define CONTEXT_TT_DEV_IOTLB	1
+Also, please be careful that the patch doesn't get line wrapped -- I  
+had to manually unwrap a couple places.  Use git send-email if you  
+can't get KMail to cooperate.
 
+-Scott
