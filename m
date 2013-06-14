@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3FNJpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:45:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39475 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3FNJpG (ORCPT
+	id S1752053Ab3FNJtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:49:16 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:46069 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab3FNJtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:45:06 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>, <grant.likely@secretlab.ca>,
-        <linus.walleij@linaro.org>, <rob.herring@calxeda.com>,
-        <rob@landley.net>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <avinashphilip@ti.com>
-Subject: [PATCH v2 4/4] ARM: davinci: da850 evm: add GPIO DT data
-Date: Fri, 14 Jun 2013 15:15:56 +0530
-Message-ID: <1371203156-15260-5-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371203020-15092-1-git-send-email-avinashphilip@ti.com>
-References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 14 Jun 2013 05:49:15 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: eric.y.miao@gmail.com, linux@arm.linux.org.uk, haojian.zhuang@gmail.com,
+        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] ASoC: Fix double assignment of .owner in struct snd_soc_card
+Date: Fri, 14 Jun 2013 11:48:56 +0200
+Message-Id: <1371203336-16972-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KV Sujith <sujithkv@ti.com>
+In struct snd_soc_card zylonite .owner is assigned THIS_MODULE
+twice, remove one of them.
 
-- Add GPIO DT Data and pinmux for DA850 EVM. GPIO is configurable differently
-  on different boards. So add GPIO pinmuxing in dts file.
-- Dependency: This patch is dependent on Grab-pin-control patch;
-  https://patchwork.kernel.org/patch/2013751/
-
-Signed-off-by: KV Sujith <sujithkv@ti.com>
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- arch/arm/boot/dts/da850-evm.dts |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ sound/soc/pxa/zylonite.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 5bce7cc..2c127ff 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -17,6 +17,20 @@
- 	soc {
- 		pmx_core: pinmux@1c14120 {
- 			status = "okay";
-+			gpio_pins: pinmux_gpio_pins {
-+				pinctrl-single,bits = <
-+					/* GPIO2_4 GPIO2_6 */
-+					0x18 0x00008080 0x0000f0f0
-+					/* GPIO2_8 GPIO2_15 */
-+					0x14 0x80000008 0xf000000f
-+					/* GPIO3_12 GPIO3_13 */
-+					0x1C 0x00008800 0x0000ff00
-+					/* GPIO4_0 GPIO4_1 */
-+					0x28 0x88000000 0xff000000
-+					/* GPIO6_9 GPIO6_10 GPIO6_13 */
-+					0x34 0x08800800 0x0ff00f00
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			status = "okay";
-@@ -90,6 +104,11 @@
- 				};
- 			};
- 		};
-+		gpio: gpio@1e26000 {
-+			status = "okay";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&gpio_pins>;
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
+diff --git a/sound/soc/pxa/zylonite.c b/sound/soc/pxa/zylonite.c
+index ceb6566..db8aadf 100644
+--- a/sound/soc/pxa/zylonite.c
++++ b/sound/soc/pxa/zylonite.c
+@@ -256,7 +256,6 @@ static struct snd_soc_card zylonite = {
+ 	.resume_pre = &zylonite_resume_pre,
+ 	.dai_link = zylonite_dai,
+ 	.num_links = ARRAY_SIZE(zylonite_dai),
+-	.owner = THIS_MODULE,
+ };
+ 
+ static struct platform_device *zylonite_snd_ac97_device;
 -- 
-1.7.9.5
+1.7.10.4
 
