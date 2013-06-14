@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3FNHdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:33:21 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:30582 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3FNHdT (ORCPT
+	id S1752168Ab3FNHgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:36:50 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.115]:15785 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752009Ab3FNHgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:33:19 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19k+RKOsuY4u4bjv6W42jZJ
-Date: Fri, 14 Jun 2013 00:33:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [RFC PATCH 1/4] arm: omap: Add phy binding info for musb in
- plat data
-Message-ID: <20130614073314.GA20992@atomide.com>
-References: <1368796954-3499-1-git-send-email-kishon@ti.com>
- <51A43E0A.8090201@ti.com>
- <51B9C3B6.1080707@ti.com>
- <51BAABB0.5060107@ti.com>
- <20130614054720.GL8164@atomide.com>
- <51BAB9EA.5090805@ti.com>
+	Fri, 14 Jun 2013 03:36:48 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-7.tower-194.messagelabs.com!1371195405!7912593!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 14 Jun 2013 09:36:45 +0200
+Date: Fri, 14 Jun 2013 09:39:48 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>, <wim@iguana.be>,
+        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <guenter@roeck-us.net>
+Subject: Re: [PATCH v8] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130614073948.GA9438@jtlinux>
+References: <20130531114037.GA13533@roeck-us.net>
+ <20130603143453.GA14251@jtlinux>
+ <20130614035533.GC6980@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <51BAB9EA.5090805@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130614035533.GC6980@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 14 Jun 2013 07:36:44.0756 (UTC) FILETIME=[EB6CE940:01CE68D1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tomi Valkeinen <tomi.valkeinen@ti.com> [130613 23:42]:
-> On 14/06/13 08:47, Tony Lindgren wrote:
-> > * Kishon Vijay Abraham I <kishon@ti.com> [130613 22:41]:
-> >> Hi,
-> >>
-> >> On Thursday 13 June 2013 06:35 PM, Tomi Valkeinen wrote:
-> >>> Hi,
-> >>>
-> >>> On 28/05/13 08:18, Kishon Vijay Abraham I wrote:
-> >>>> Hi Tony,
-> >>>>
-> >>>> On Friday 17 May 2013 06:52 PM, Kishon Vijay Abraham I wrote:
-> >>>>> In order for controllers to get PHY in case of non dt boot, the phy
-> >>>>> binding information (phy label) should be added in the platform
-> >>>>> data of the controller.
-> >>>>
-> >>>> This series would be needed to get MUSB working in OMAP3 boards for
-> >>>> non-dt boot case. Do you think this is good enough to go in this rc cycle?
-> >>>
-> >>> Did this or some other solution go forward? I'm still unable to boot
-> >>> with usb-gadget-ethernet with v3.10-rc5.
-> >>
-> >> No. I think Tony is ok to take this only during next merge window.
-> > 
-> > Yes I'll apply them to omap-for-v3.11/fixes-non-critical. We really
-> > should have basic functionaly tested and working always before the
-> > merge window so we only need to do minimal fixes during the -rc cycle.
-> 
-> I'm mostly interested in the USB gadget ethernet for the boards I have,
-> but if I'm not mistaken, all USB gadget support for many OMAP boards is
-> broken in v3.10. Shouldn't that be fixed, no matter if it's a minimal
-> fix or not? Or is there some other, more minimal, way to fix this?
+On Thu, Jun 13, 2013 at 08:55:33PM -0700, Guenter Roeck wrote:
+[...]
+> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+>
+> Almost good. One comment below.
+>
+> Thanks,
+> Guenter
+>
+Nice to hear. Thanks for the review by the way.
 
-Yes it's unfortunate it's broken. But frankly I'm pretty tired of this
-constant fixing up of basic things for omaps after every merge window.
+[...]
 
-If some patches are not tested properly, then everybody,
-_do_not_try_to_merge_broken_patches_upstream_. Let them float on the
-mailing lists until they get fixed or forgotten. Simple as that.
+> > +
+> > +	drv->num_gpios = of_gpio_count(node);
+> > +	if (drv->num_gpios <= 0) {
+> > +		dev_err(&pdev->dev, "gpios DT property empty / missing");
+> > +		return -ENODEV;
+> > +	}
+>
+> Not happy with this. Code accepts one gpio pin, but then assumes throughout the
+> driver that all pins are defined. I am quite sure I can get it to crash if I
+> specify only a single gpio pin. num_gpios will be 1, you allocate a single
+> entry, but then access all 6 of them.
+>
+> I think it would be easier if you expect a fixed number of gpio pins (6) and abort
+> if it is not correct. You can then make drv->gpios an array and don't have to
+> allocate it separately, and you don't need drv->num_gpios (which you don't need
+> anyway as it is not used outside this function).
+>
 
-If we want to fix something this late in the merge window, the patches
-must have a clear description what caused the regression and what happens
-without the patches. These patches don't have that. And they are marked
-RFC also. So actually I'm not applying any of them before the regression
-descriptions are there and the patches have been reposted without RFC
-and have sufficient acks from people.
+Yup, you're right. Now that you're saying it I see it as well. This is probably a
+copy'n'paste error from drivers/hwmon/gpio-fan.c.
 
-Regards,
+@Wim are there any objections from your side?
 
-Tony
+Byte
+Johannes
