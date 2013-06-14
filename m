@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab3FNWB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:01:57 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:36635 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab3FNWBr (ORCPT
+	id S1753284Ab3FNWCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:02:16 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53117 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753159Ab3FNWCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:01:47 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] dtc: ensure #line directives don't consume data from the next line
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, jdl@jdl.com,
-        Stephen Warren <swarren@nvidia.com>
-In-Reply-To: <51AF6C3A.5020609@wwwdotorg.org>
-References: <1370273816-19411-1-git-send-email-swarren@wwwdotorg.org> <51AF6C3A.5020609@wwwdotorg.org>
-Date: Fri, 14 Jun 2013 23:01:35 +0100
-Message-Id: <20130614220135.0D0D63E0A56@localhost>
+	Fri, 14 Jun 2013 18:02:12 -0400
+Message-ID: <51BB92E1.7040906@hurleysoftware.com>
+Date: Fri, 14 Jun 2013 18:02:09 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Ross Lagerwall <rosslagerwall@gmail.com>, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, linux-serial@vger.kernel.org
+Subject: Re: Possible tty VT1 disallocate regression
+References: <20130614204740.GA706@hobo.wolfson.cam.ac.uk> <20130614213543.GA1896@kroah.com>
+In-Reply-To: <20130614213543.GA1896@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Jun 2013 10:50:02 -0600, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/03/2013 09:36 AM, Stephen Warren wrote:
-> > From: Stephen Warren <swarren@nvidia.com>
-> > 
-> > Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
-> > could match line-break characters. If the #line directive did not contain
-> > the optional flags field at the end, this could cause any integer data on
-> > the next line to be consumed as part of the #line directive parsing. This
-> > could cause syntax errors (i.e. #line parsing consuming the leading 0
-> > from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
-> > which is a syntax error), or invalid compilation results (i.e. simply
-> > consuming literal 1234 as part of the #line processing, thus removing it
-> > from the cell data).
-> > 
-> > Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
-> > 
-> > Convert all instances of {WS}, even though the other instances should be
-> > irrelevant for any well-formed #line directive. This is done for
-> > consistency and ultimate safety.
-> > 
-> > This is a port of upstream dtc commit a1ee6f0 (with same subject) to the
-> > kernel's copy of dtc.
-> 
-> Rob, Grant, does this look OK to apply for v3.10-rc*?
+On 06/14/2013 05:35 PM, Greg KH wrote:
+> On Fri, Jun 14, 2013 at 09:47:40PM +0100, Ross Lagerwall wrote:
+>> Hi,
+>>
+>> Ever since commit 421b40a6286e ("tty/vt: Fix vc_deallocate() lock
+>> order"), the first VT does not clear when I log out.  AFAIK, this means
+>> that disallocation is not working?  The problem only affects the first
+>> VT, the others clear when logging out.
+>
+> And if you revert that patch, does it all start working again?
+>
+> thanks,
+>
+> greg k-h
+>
+> p.s. In the future, please cc: the people who handled the patch you are
+> asking about, otherwise stuff like this often gets missed in the noise
+> of lkml.
 
-The fix is in mainline now. Please check to make sure it is working for you.
+I've already been re-reviewing the VT indexing to see if or what I missed.
 
-g.
+Thanks,
+Peter Hurley
 
-
--- 
-email sent from notmuch.vim plugin
