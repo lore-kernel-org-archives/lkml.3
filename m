@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab3FNJCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:02:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35945 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab3FNJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:02:23 -0400
-Date: Fri, 14 Jun 2013 11:02:17 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] mm/writeback: fix wb_do_writeback exported unsafely
-Message-ID: <20130614090217.GA7574@dhcp22.suse.cz>
-References: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	id S1751266Ab3FNJFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:05:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:42687 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab3FNJFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:05:43 -0400
+From: Rojhalat Ibrahim <imr@rtschenk.de>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Michael Guntsche <michael.guntsche@it-loops.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] powerpc/pci: Fix setup of Freescale PCI / PCIe controllers
+Date: Fri, 14 Jun 2013 11:05:34 +0200
+Message-ID: <2819373.IXRuYOYOkX@pcimr>
+User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371195041-26654-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-06-13 15:30:34, Wanpeng Li wrote:
-> There is just one caller in fs-writeback.c call wb_do_writeback and
-> current codes unnecessary export it in header file, this patch fix
-> it by changing wb_do_writeback to static function.
+Commit 50d8f87d2b3 (powerpc/fsl-pci Make PCIe hotplug work with Freescale
+PCIe controllers) does not handle non-PCIe controllers properly, which causes
+a panic during boot for certain configurations.
+This patch fixes the issue by calling setup_indirect_pci for all device types.
+fsl_indirect_read_config is now only used for booke/86xx PCIe controllers.
 
-So what?
+Reported-by: Michael Guntsche <mike@it-loops.com>
+Cc: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Rojhalat Ibrahim <imr@rtschenk.de>
+---
+v2: Make it more consistent.
 
-Besides that git grep wb_do_writeback tells that 
-mm/backing-dev.c:                       wb_do_writeback(me, 0);
+ arch/powerpc/sysdev/fsl_pci.c |   20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
-Have you tested this at all?
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 028ac1f..5682c8a 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -97,20 +97,12 @@ static int fsl_indirect_read_config(struct pci_bus *bus, 
+unsigned int devfn,
+ 	return indirect_read_config(bus, devfn, offset, len, val);
+ }
+ 
+-static struct pci_ops fsl_indirect_pci_ops =
++static struct pci_ops fsl_indirect_pcie_ops =
+ {
+ 	.read = fsl_indirect_read_config,
+ 	.write = indirect_write_config,
+ };
+ 
+-static void __init fsl_setup_indirect_pci(struct pci_controller* hose,
+-					  resource_size_t cfg_addr,
+-					  resource_size_t cfg_data, u32 flags)
+-{
+-	setup_indirect_pci(hose, cfg_addr, cfg_data, flags);
+-	hose->ops = &fsl_indirect_pci_ops;
+-}
+-
+ #if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
+ 
+ #define MAX_PHYS_ADDR_BITS	40
+@@ -504,13 +496,15 @@ int __init fsl_add_bridge(struct platform_device *pdev, 
+int is_primary)
+ 	if (!hose->private_data)
+ 		goto no_bridge;
+ 
+-	fsl_setup_indirect_pci(hose, rsrc.start, rsrc.start + 0x4,
+-			       PPC_INDIRECT_TYPE_BIG_ENDIAN);
++	setup_indirect_pci(hose, rsrc.start, rsrc.start + 0x4,
++			   PPC_INDIRECT_TYPE_BIG_ENDIAN);
+ 
+ 	if (in_be32(&pci->block_rev1) < PCIE_IP_REV_3_0)
+ 		hose->indirect_type |= PPC_INDIRECT_TYPE_FSL_CFG_REG_LINK;
+ 
+ 	if (early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP)) {
++		/* use fsl_indirect_read_config for PCIe */
++		hose->ops = &fsl_indirect_pcie_ops;
+ 		/* For PCIE read HEADER_TYPE to identify controler mode */
+ 		early_read_config_byte(hose, 0, 0, PCI_HEADER_TYPE, &hdr_type);
+ 		if ((hdr_type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
+@@ -814,8 +808,8 @@ int __init mpc83xx_add_bridge(struct device_node *dev)
+ 		if (ret)
+ 			goto err0;
+ 	} else {
+-		fsl_setup_indirect_pci(hose, rsrc_cfg.start,
+-				       rsrc_cfg.start + 4, 0);
++		setup_indirect_pci(hose, rsrc_cfg.start,
++				   rsrc_cfg.start + 4, 0);
+ 	}
+ 
+ 	printk(KERN_INFO "Found FSL PCI host bridge at 0x%016llx. "
 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  fs/fs-writeback.c         | 2 +-
->  include/linux/writeback.h | 1 -
->  2 files changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index 3be5718..f892dec 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
->  /*
->   * Retrieve work items and do the writeback they describe
->   */
-> -long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
-> +static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
->  {
->  	struct backing_dev_info *bdi = wb->bdi;
->  	struct wb_writeback_work *work;
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index 579a500..e27468e 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -94,7 +94,6 @@ int try_to_writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
->  void sync_inodes_sb(struct super_block *);
->  long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
->  				enum wb_reason reason);
-> -long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
->  void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
->  void inode_wait_for_writeback(struct inode *inode);
->  
-> -- 
-> 1.8.1.2
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+--
+1.8.1.5
