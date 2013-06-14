@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab3FNQWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:22:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45020 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab3FNQWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:22:43 -0400
-Date: Fri, 14 Jun 2013 09:23:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jani Nikula <jani.nikula@intel.com>, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org,
-        Andrew Morton <akpm@linux-foundation.org>, chris@chris-wilson.co.uk
-Subject: Re: [PATCH 0/3]
-Message-ID: <20130614162319.GB14829@kroah.com>
-References: <cover.1370525922.git.jani.nikula@intel.com>
- <87d2rzl4qp.fsf@intel.com>
- <20130613082205.GL22870@phenom.ffwll.local>
+	id S1753183Ab3FNQXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:23:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab3FNQXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:23:54 -0400
+Date: Fri, 14 Jun 2013 18:18:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace multibuffer && rcu (Was: tracing/uprobes: Support
+	ftrace_event_file base multibuffer)
+Message-ID: <20130614161837.GA15268@redhat.com>
+References: <51BA7578.4080108@huawei.com> <20130614144442.GA1943@redhat.com> <20130614160456.GA14726@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130613082205.GL22870@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130614160456.GA14726@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:22:05AM +0200, Daniel Vetter wrote:
-> On Thu, Jun 06, 2013 at 04:59:26PM +0300, Jani Nikula wrote:
-> > 
-> > With Greg's address fixed. Please drop the old one from any
-> > replies. Sorry for the noise.
-> 
-> Oops, replied with the old one still there.
-> 
-> Greg, Andrew: Imo it's best to merge all three patches through the same
-> tree, so:
-> 
-> Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> on the i915 parts of it. If you want I can also slurp them in through the
-> intel tree, including the new dmi match code.
+On 06/14, Oleg Nesterov wrote:
+>
+> So perhaps something like below (untested) makes sense? With this patch
+> we can trivially convert trace_kprobe.c to use list_add/del/each_rcu.
 
-Please feel free to take them through your tree, I don't need to take
-them.
+Forgot to mention, the patch is obviously incomplete, __kprobe_trace_func()
+can see the "dead" file even if its memory can't go away. But this looks
+fixable.
 
-thanks,
+> +static inline struct event_file_link *
+> +alloc_event_file_link(struct ftrace_event_file *file)
+> +{
+> +	struct event_file_link *link = kmalloc(sizeof(*link), GFP_KERNEL);
+> +	if (link)
+> +		link->file = file;
+> +	return link;
+> +}
 
-greg k-h
+And this lacks atomic_inc(file->refcnt).
+
+In short, this is just to explain what I meant, the actual change should
+probably differ.
+
+Oleg.
+
