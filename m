@@ -1,119 +1,509 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab3FNXXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 19:23:36 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:36623 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3FNXXe (ORCPT
+	id S1753940Ab3FNXrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 19:47:24 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53089 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab3FNXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 19:23:34 -0400
-Message-ID: <51BBA5E5.9070202@mentor.com>
-Date: Sat, 15 Jun 2013 08:23:17 +0900
-From: Jiada Wang <jiada_wang@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 14 Jun 2013 19:47:23 -0400
+Date: Fri, 14 Jun 2013 16:46:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <eag0628@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        torvalds@linux-foundation.org, walken@google.com, waiman.long@hp.com,
+        davidlohr.bueso@hp.com
+Subject: Re: [PATCH RFC ticketlock] v3 Auto-queued ticketlock
+Message-ID: <20130614234647.GR5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <20130611170249.GA1091@linux.vnet.ibm.com>
+ <20130612154008.GA9714@linux.vnet.ibm.com>
+ <51B934AD.1070807@cn.fujitsu.com>
+ <20130613152238.GB5146@linux.vnet.ibm.com>
+ <CACvQF52F57Ac17oNjfD0wMoV26csbRDPRWSQd5OYRXFUQSs01Q@mail.gmail.com>
+ <20130613235741.GI5146@linux.vnet.ibm.com>
+ <51BAC26B.3050801@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Alexander Shiyan <shc_work@mail.ru>
-CC: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [RFC] Staging: imx-drm: Do not use fractional part of divider
-References: <1371195670.904413971@f400.i.mail.ru>
-In-Reply-To: <1371195670.904413971@f400.i.mail.ru>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jun 2013 23:23:29.0011 (UTC) FILETIME=[2D665C30:01CE6956]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BAC26B.3050801@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061423-4834-0000-0000-000008149633
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexander
+On Fri, Jun 14, 2013 at 03:12:43PM +0800, Lai Jiangshan wrote:
+> On 06/14/2013 07:57 AM, Paul E. McKenney wrote:
+> > On Fri, Jun 14, 2013 at 07:25:57AM +0800, Lai Jiangshan wrote:
+> >> On Thu, Jun 13, 2013 at 11:22 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >>> On Thu, Jun 13, 2013 at 10:55:41AM +0800, Lai Jiangshan wrote:
+> >>>> On 06/12/2013 11:40 PM, Paul E. McKenney wrote:
+> >>>>> Breaking up locks is better than implementing high-contention locks, but
+> >>>>> if we must have high-contention locks, why not make them automatically
+> >>>>> switch between light-weight ticket locks at low contention and queued
+> >>>>> locks at high contention?  After all, this would remove the need for
+> >>>>> the developer to predict which locks will be highly contended.
+> >>>>>
+> >>>>> This commit allows ticket locks to automatically switch between pure
+> >>>>> ticketlock and queued-lock operation as needed.  If too many CPUs are
+> >>>>> spinning on a given ticket lock, a queue structure will be allocated
+> >>>>> and the lock will switch to queued-lock operation.  When the lock becomes
+> >>>>> free, it will switch back into ticketlock operation.  The low-order bit
+> >>>>> of the head counter is used to indicate that the lock is in queued mode,
+> >>>>> which forces an unconditional mismatch between the head and tail counters.
+> >>>>> This approach means that the common-case code path under conditions of
+> >>>>> low contention is very nearly that of a plain ticket lock.
+> >>>>>
+> >>>>> A fixed number of queueing structures is statically allocated in an
+> >>>>> array.  The ticket-lock address is used to hash into an initial element,
+> >>>>> but if that element is already in use, it moves to the next element.  If
+> >>>>> the entire array is already in use, continue to spin in ticket mode.
+> >>>>>
+> >>>>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>>>> [ paulmck: Eliminate duplicate code and update comments (Steven Rostedt). ]
+> >>>>> [ paulmck: Address Eric Dumazet review feedback. ]
+> >>>>> [ paulmck: Use Lai Jiangshan idea to eliminate smp_mb(). ]
+> >>>>> [ paulmck: Expand ->head_tkt from s32 to s64 (Waiman Long). ]
+> >>>>> [ paulmck: Move cpu_relax() to main spin loop (Steven Rostedt). ]
+> >>>>> [ paulmck: Reduce queue-switch contention (Waiman Long). ]
+> >>>>> [ paulmck: __TKT_SPIN_INC for __ticket_spin_trylock() (Steffen Persvold). ]
+> >>>>> [ paulmck: Type safety fixes (Steven Rostedt). ]
+> >>>>> [ paulmck: Pre-check cmpxchg() value (Waiman Long). ]
+> >>>>> [ paulmck: smp_mb() downgrade to smp_wmb() (Lai Jiangshan). ]
+> >>>>
+> >>>>
+> >>>> Hi, Paul,
+> >>>>
+> >>>> I simplify the code and remove the search by encoding the index of struct tkt_q_head
+> >>>> into lock->tickets.head.
+> >>>>
+> >>>> A) lock->tickets.head(when queued-lock):
+> >>>> ---------------------------------
+> >>>>  index of struct tkt_q_head |0|1|
+> >>>> ---------------------------------
+> >>>
+> >>> Interesting approach!  It might reduce queued-mode overhead a bit in
+> >>> some cases, though I bet that in the common case the first queue element
+> >>> examined is the right one.  More on this below.
+> >>>
+> >>>> The bit0 = 1 for queued, and the bit1 = 0 is reserved for __ticket_spin_unlock(),
+> >>>> thus __ticket_spin_unlock() will not change the higher bits of lock->tickets.head.
+> >>>>
+> >>>> B) tqhp->head is for the real value of lock->tickets.head.
+> >>>> if the last bit of tqhp->head is 1, it means it is the head ticket when started queuing.
+> >>>
+> >>> But don't you also need the xadd() in __ticket_spin_unlock() to become
+> >>> a cmpxchg() for this to work?  Or is your patch missing your changes to
+> >>> arch/x86/include/asm/spinlock.h?  Either way, this is likely to increase
+> >>> the no-contention overhead, which might be counterproductive.  Wouldn't
+> >>> hurt to get measurements, though.
+> >>
+> >> No, don't need to change __ticket_spin_unlock() in my idea.
+> >> bit1 in the  tickets.head is reserved for __ticket_spin_unlock(),
+> >> __ticket_spin_unlock() only changes the bit1, it will not change
+> >> the higher bits. tkt_q_do_wake() will restore the tickets.head.
+> >>
+> >> This approach avoids cmpxchg in __ticket_spin_unlock().
+> > 
+> > Ah, I did miss that.  But doesn't the adjustment in __ticket_spin_lock()
+> > need to be atomic in order to handle concurrent invocations of
+> > __ticket_spin_lock()?
+> > 
+> > Either way, it would be good to see the performance effects of this.
+> > 
+> > 							Thanx, Paul
+> > 
+> >>> Given the results that Davidlohr posted, I believe that the following
+> >>> optimizations would also provide some improvement:
+> >>>
+> >>> 1.      Move the call to tkt_spin_pass() from __ticket_spin_lock()
+> >>>         to a separate linker section in order to reduce the icache
+> >>>         penalty exacted by the spinloop.  This is likely to be causing
+> >>>         some of the performance reductions in the cases where ticket
+> >>>         locks are not highly contended.
+> >>>
+> >>> 2.      Limit the number of elements searched for in the array of
+> >>>         queues.  However, this would help only if a number of ticket
+> >>>         locks were in queued mode at the same time.
+> >>>
+> >>> 3.      Dynamically allocate the queue array at boot.  This might
+> >>>         also reduce cache pressure, again, at least in cases where
+> >>>         there are a number of ticket locks in queued mode at the
+> >>>         same time.
+> >>>
+> >>> Frederic just reminded me that I owe him some energy-efficiency improvements
+> >>> for adaptive ticks, so I won't get to these very quickly.  Please feel free
+> >>> to take these on -- the patch clearly does well under high contention, so
+> >>> reducing the no-contention penalty could really help.
+> >>>
+> >>>                                                         Thanx, Paul
+> >>>
+> >>>> Thanks,
+> >>>> Lai
+> >>>>
+> >>>>  kernel/tktqlock.c |   51 +++++++++++++--------------------------------------
+> >>>>  1 files changed, 13 insertions(+), 38 deletions(-)
+> >>>>
+> >>>> diff --git a/kernel/tktqlock.c b/kernel/tktqlock.c
+> >>>> index 912817c..1329d0f 100644
+> >>>> --- a/kernel/tktqlock.c
+> >>>> +++ b/kernel/tktqlock.c
+> >>>> @@ -33,7 +33,7 @@ struct tkt_q {
+> >>>>
+> >>>>  struct tkt_q_head {
+> >>>>       arch_spinlock_t *ref;           /* Pointer to spinlock if in use. */
+> >>>> -     s64 head_tkt;                   /* Head ticket when started queuing. */
+> >>>> +     __ticket_t head;                /* Real head when queued. */
+> >>>>       struct tkt_q *spin;             /* Head of queue. */
+> >>>>       struct tkt_q **spin_tail;       /* Tail of queue. */
+> >>>>  };
+> >>>> @@ -77,15 +77,8 @@ static unsigned long tkt_q_hash(arch_spinlock_t *lock)
+> >>>>   */
+> >>>>  static struct tkt_q_head *tkt_q_find_head(arch_spinlock_t *lock)
+> >>>>  {
+> >>>> -     int i;
+> >>>> -     int start;
+> >>>> -
+> >>>> -     start = i = tkt_q_hash(lock);
+> >>>> -     do
+> >>>> -             if (ACCESS_ONCE(tkt_q_heads[i].ref) == lock)
+> >>>> -                     return &tkt_q_heads[i];
+> >>>> -     while ((i = tkt_q_next_slot(i)) != start);
+> >>>> -     return NULL;
+> >>>> +     BUILD_BUG_ON(TKT_Q_NQUEUES > (1 << (TICKET_SHIFT - 2)));
+> >>>> +     return &tkt_q_heads[ACCESS_ONCE(lock->tickets.head) >> 2];
+> >>>>  }
+> >>>>
+> >>>>  /*
+> >>>> @@ -101,11 +94,11 @@ static bool tkt_q_try_unqueue(arch_spinlock_t *lock, struct tkt_q_head *tqhp)
+> >>>>
+> >>>>       /* Pick up the ticket values. */
+> >>>>       asold = ACCESS_ONCE(*lock);
+> >>>> -     if ((asold.tickets.head & ~0x1) == asold.tickets.tail) {
+> >>>> +     if (tqhp->head == asold.tickets.tail) {
+> >>>>
+> >>>>               /* Attempt to mark the lock as not having a queue. */
+> >>>>               asnew = asold;
+> >>>> -             asnew.tickets.head &= ~0x1;
+> >>>> +             asnew.tickets.head = tqhp->head;
+> >>>>               if (cmpxchg(&lock->head_tail,
+> >>>>                           asold.head_tail,
+> >>>>                           asnew.head_tail) == asold.head_tail) {
+> >>>> @@ -128,12 +121,9 @@ void tkt_q_do_wake(arch_spinlock_t *lock)
+> >>>>       struct tkt_q_head *tqhp;
+> >>>>       struct tkt_q *tqp;
+> >>>>
+> >>>> -     /*
+> >>>> -      * If the queue is still being set up, wait for it.  Note that
+> >>>> -      * the caller's xadd() provides the needed memory ordering.
+> >>>> -      */
+> >>>> -     while ((tqhp = tkt_q_find_head(lock)) == NULL)
+> >>>> -             cpu_relax();
+> >>>> +     tqhp = tkt_q_find_head(lock);
+> >>>> +     ACCESS_ONCE(lock->tickets.head) -= __TKT_SPIN_INC;
+> >>>> +     ACCESS_ONCE(tqhp->head) = (tqhp->head & ~0x1) + __TKT_SPIN_INC;
+> >>>>
+> >>>>       for (;;) {
+> >>>>
+> >>>> @@ -145,9 +135,7 @@ void tkt_q_do_wake(arch_spinlock_t *lock)
+> >>>>                       return; /* No element, successfully removed queue. */
+> >>>>               cpu_relax();
+> >>>>       }
+> >>>> -     if (ACCESS_ONCE(tqhp->head_tkt) != -1)
+> >>>> -             ACCESS_ONCE(tqhp->head_tkt) = -1;
+> >>>> -     smp_mb(); /* Order pointer fetch and assignment against handoff. */
+> >>>> +     smp_mb(); /* Order modification, pointer fetch and assignment against handoff. */
+> >>>>       ACCESS_ONCE(tqp->cpu) = -1;
+> >>>>  }
+> >>>>  EXPORT_SYMBOL(tkt_q_do_wake);
+> >>>> @@ -169,10 +157,7 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+> >>>>        */
+> >>>>       smp_mb();  /* See above block comment. */
+> >>>>
+> >>>> -     /* If there no longer is a queue, leave. */
+> >>>>       tqhp = tkt_q_find_head(lock);
+> >>>> -     if (tqhp == NULL)
+> >>>> -             return false;
+> >>>>
+> >>>>       /* Initialize our queue element. */
+> >>>>       tq.cpu = raw_smp_processor_id();
+> >>>> @@ -180,9 +165,8 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+> >>>>       tq.next = NULL;
+> >>>>
+> >>>>       /* Check to see if we already hold the lock. */
+> >>>> -     if (ACCESS_ONCE(tqhp->head_tkt) == inc.tail) {
+> >>>> +     if (ACCESS_ONCE(tqhp->head) == (inc.tail | 0x1)) {
+> >>>>               /* The last holder left before queue formed, we hold lock. */
+> >>>> -             tqhp->head_tkt = -1;
+> >>>>               return true;
+> >>>>       }
+> >>>>
+> >>>> @@ -290,16 +274,14 @@ tkt_q_init_contend(int i, arch_spinlock_t *lock, struct __raw_tickets inc)
+> >>>>                * Record the head counter in case one of the spinning
+> >>>>                * CPUs already holds the lock but doesn't realize it yet.
+> >>>>                */
+> >>>> -             tqhp->head_tkt = asold.tickets.head;
+> >>>> +             tqhp->head = asold.tickets.head | 0x1;
+> >>>>
+> >>>>               /* The low-order bit in the head counter says "queued". */
+> >>>> -             asnew.tickets.head |= 0x1;
+> >>>> +             asnew.tickets.head = (i << 2) + 0x1;
+> >>>>       } while (cmpxchg(&lock->head_tail,
+> >>>>                asold.head_tail,
+> >>>>                asnew.head_tail) != asold.head_tail);
+> >>>>
+> >>>> -     /* Point the queue at the lock and go spin on it. */
+> >>>> -     ACCESS_ONCE(tqhp->ref) = lock;
+> >>>>       return tkt_q_do_spin(lock, inc);
+> >>>>  }
+> >>>>
+> >>>> @@ -321,15 +303,8 @@ bool tkt_q_start_contend(arch_spinlock_t *lock, struct __raw_tickets inc)
+> >>>>        * the lock with the corresponding queue.
+> >>>>        */
+> >>>>       do {
+> >>>> -             /*
+> >>>> -              * Use 0x1 to mark the queue in use, but also avoiding
+> >>>> -              * any spinners trying to use it before we get it all
+> >>>> -              * initialized.
+> >>>> -              */
+> >>>>               if (!tkt_q_heads[i].ref &&
+> >>>> -                 cmpxchg(&tkt_q_heads[i].ref,
+> >>>> -                         NULL,
+> >>>> -                         (arch_spinlock_t *)0x1) == NULL) {
+> >>>> +                 cmpxchg(&tkt_q_heads[i].ref, NULL, lock) == NULL) {
+> >>>>
+> >>>>                       /* Succeeded, now go initialize it. */
+> >>>>                       return tkt_q_init_contend(i, lock, inc);
+> >>>>
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Hi, Paul.
+> 
+> More possible improvement. Again, this is untested.
+> 
+> This improvement removes slow path from unlock() by:
+> 1) Instead of forcing all competitor to spin on its queued-node,
+>    this improvement selects one and only one competitor and force it still spinning on the lock.
+> 2) The selected competitor is the leader of the queue.
+> 3) the queue is used for passing the leadership instead of passing the lock holder.
+> 
+> Implemented on top of my previous improvement.
+> Would you merge them all as one patch to get more reviews if you agree my improvement?
 
+This one does have the advantage of reducing the non-queued overhead by
+allowing the original __ticket_spin_unlock() to be used as-is, which is
+good.  After all, the biggest weakness in my earliers versions was not the
+handoff, but rather the performance regressions when in non-queued mode.
+Of course, the performance regressions would need to be negligible for
+this to have any chance of inclusion.  My guess is that this patch gets
+things half-way there, but that the ____ticket_spin_lock() path needs
+some help (for example, moving the queued-lock handling out of line)
+is required to get something that has a chance.
 
-Alexander Shiyan wrote:
-> Hello.
->
-> Analysis of driver imx-drm led me to believe that the use fractional part of the divider is not always a good idea.
-> For example, for a parallel display bus connected to LVDS converter chip (DS90C363), in this case the use of
-> fractional part, clock will unstable and the on-chip PLL is not working properly, or rather, does not work at all.
->
-> Let me give a specific example.
-> ipu_crtc_mode_set 0x36314752
-> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000035 outrate: 40150928 wanted: 40000000
-> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000035 outrate: 40150928 wanted: 40150928
-> imx-ipuv3 40000000.ipu: clk_di_set_rate: inrate: 133000000 desired: 40150928 div: 0x00000035
->
-> In this case the divider is 3.5, that result to clock is incorrect. See an attached oscillogram F0000TEK.jpg.
->
-> After a patch the clocks is OK. Patch just uncomment some FSL code.
-> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000040 outrate: 33250000 wanted: 40000000
-> imx-ipuv3 40000000.ipu: clk_di_round_rate: inrate: 133000000 div: 0x00000040 outrate: 33250000 wanted: 33250000
-> imx-ipuv3 40000000.ipu: clk_di_set_rate: inrate: 133000000 desired: 33250000 div: 0x00000040
->
-> See an attached oscillogram F0001TEK.jpg.
->
-> So, I want to review this from developers and wait for comments.
->
->
+If you test them both for correct function, I will post them as separate
+commits on a qlock branch in my -rcu tree.  I do have a user-mode test
+harness that might help, though of course in-kernel testing is needed.
 
-Recently I am also looking at use of fractional part of CLKGEN0,
-and want to discuss with you some information I found.
+> Thanks,
+> Lai
+> 
+> PS:
+> 
+> After this, we can shrink the size of struct tkt_q_head.
+> Is this size important?
 
-in our code we are using external PLL to drive DI pixel clock, although 
-I haven't checked with oscilloscope, but it's apparently fractional part 
-of CLKGEN0 doesn't work properly as it is described in reference manual. 
-After some investigation I found 0x8 (0.5) seems works fine.
+Not hugely, but every bit helps.
 
-Our solution is try to set DI pixel clock's root clock to integer times 
-of clk_di_pixel as close as possible, so that we can avoid using 
-fractional part to get desired clock. if Pll -> ipu_di_podf could not 
-provide the clock close enough, then try to set it to X.5 times of DI 
-pixel clock, then only the "proved" 0x8 of fractional part will be used.
-
-> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-di.c b/drivers/stagineg/imx-drm/ipu-v3/ipu-di.c
-> index 19d777e..d424c22 100644
-> --- a/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-> @@ -154,22 +154,15 @@ static int ipu_di_clk_calc_div(unsigned long inrate, unsigned long outrate)
->
->   	if (div < 0x10)
->   		div = 0x10;
+> struct tkt_q_head {
+>         __ticket_t head;                /* Real head when queued. */
+>         struct tkt_q **spin_tail;       /* Tail of queue. */
+> };
+> 
+> And "__ticket_t head;" can be also removed.
+> 
+> 
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index 5aa0177..01c3bdd 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -90,27 +90,11 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+>  	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+>  }
+> 
+> -#ifndef CONFIG_TICKET_LOCK_QUEUED
 > -
-> -#ifdef WTF_IS_THIS
-> -	/*
-> -	 * Freescale has this in their Kernel. It is neither clear what
-> -	 * it does nor why it does it
-> -	 */
-> -	if (div & 0x10)
-> -		div &= ~0x7;
->   	else {
->   		/* Round up divider if it gets us closer to desired pix clk */
-> -		if ((div & 0xC) == 0xC) {
-> +		if (div & 0x0f) {
->   			div += 0x10;
-> -			div &= ~0xF;
-> +			/* Strip fractional part of divider */
-> +			div &= ~0x0f;
-If div = 0x11, and the display is not forgiving enough, the pixel clock 
-will probably not be accepted by it.
-
-thanks,
-jiada
->   		}
->   	}
-> -#endif
+>  static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+>  {
+>  	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
+>  }
+> 
+> -#else /* #ifndef CONFIG_TICKET_LOCK_QUEUED */
+> -
+> -extern void tkt_q_do_wake(arch_spinlock_t *lock);
+> -
+> -static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+> -{
+> -	__ticket_t head = 2;
+> -
+> -	head = xadd(&lock->tickets.head, head);
+> -	if (head & 0x1)
+> -		tkt_q_do_wake(lock);
+> -}
+> -#endif /* #else #ifndef CONFIG_TICKET_LOCK_QUEUED */
+> -
+>  static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+>  {
+>  	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+> diff --git a/kernel/tktqlock.c b/kernel/tktqlock.c
+> index 1329d0f..b658fae 100644
+> --- a/kernel/tktqlock.c
+> +++ b/kernel/tktqlock.c
+> @@ -94,7 +94,7 @@ static bool tkt_q_try_unqueue(arch_spinlock_t *lock, struct tkt_q_head *tqhp)
+> 
+>  	/* Pick up the ticket values. */
+>  	asold = ACCESS_ONCE(*lock);
+> -	if (tqhp->head == asold.tickets.tail) {
+> +	if (tqhp->head + __TKT_SPIN_INC == asold.tickets.tail) {
+> 
+>  		/* Attempt to mark the lock as not having a queue. */
+>  		asnew = asold;
+> @@ -114,33 +114,6 @@ static bool tkt_q_try_unqueue(arch_spinlock_t *lock, struct tkt_q_head *tqhp)
+>  }
+> 
+>  /*
+> - * Hand the lock off to the first CPU on the queue.
+> - */
+> -void tkt_q_do_wake(arch_spinlock_t *lock)
+> -{
+> -	struct tkt_q_head *tqhp;
+> -	struct tkt_q *tqp;
+> -
+> -	tqhp = tkt_q_find_head(lock);
+> -	ACCESS_ONCE(lock->tickets.head) -= __TKT_SPIN_INC;
+> -	ACCESS_ONCE(tqhp->head) = (tqhp->head & ~0x1) + __TKT_SPIN_INC;
+> -
+> -	for (;;) {
+> -
+> -		/* Find the first queue element. */
+> -		tqp = ACCESS_ONCE(tqhp->spin);
+> -		if (tqp != NULL)
+> -			break;  /* Element exists, hand off lock. */
+> -		if (tkt_q_try_unqueue(lock, tqhp))
+> -			return; /* No element, successfully removed queue. */
+> -		cpu_relax();
+> -	}
+> -	smp_mb(); /* Order modification, pointer fetch and assignment against handoff. */
+> -	ACCESS_ONCE(tqp->cpu) = -1;
+> -}
+> -EXPORT_SYMBOL(tkt_q_do_wake);
+> -
+> -/*
+>   * Given a lock that already has a queue associated with it, spin on
+>   * that queue.  Return false if there was no queue (which means we do not
+>   * hold the lock) and true otherwise (meaning we -do- hold the lock).
+> @@ -150,6 +123,7 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+>  	struct tkt_q **oldtail;
+>  	struct tkt_q tq;
+>  	struct tkt_q_head *tqhp;
+> +	int index;
+> 
+>  	/*
+>  	 * Ensure that accesses to queue header happen after sensing
+> @@ -157,6 +131,7 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+>  	 */
+>  	smp_mb();  /* See above block comment. */
+> 
+> +	index = ACCESS_ONCE(lock->tickets.head) >> 2;
+>  	tqhp = tkt_q_find_head(lock);
+> 
+>  	/* Initialize our queue element. */
+> @@ -178,10 +153,29 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+>  	oldtail = xchg(&tqhp->spin_tail, &tq.next);
+>  	ACCESS_ONCE(*oldtail) = &tq;
+> 
+> -	/* Spin until handoff. */
+> -	while (ACCESS_ONCE(tq.cpu) != -1)
+> +	if (oldtail != &tqhp->spin) {
+> +		/* Spin until get the queue leadership */
+> +		while (ACCESS_ONCE(tq.cpu) != -1)
+> +			cpu_relax();
+> +		smp_mb(); /* Force ordering between get leadership and access lock->tickets.head */
+> +	}
 > +
->   	return div;
->   }
->
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> +	/*
+> +	 * Spin until hold the lock. if the next smp_mb() doesn't help,
+> +	 * it should be implemented arch-depended
+> +	 */
+> +	inc.head = index * __TKT_SPIN_INC * 2 + 1;
+> +	while (ACCESS_ONCE(lock->tickets.head) != inc.head + __TKT_SPIN_INC)
+>  		cpu_relax();
+
+So this detects the atomic increment and then undoes it below, correct?
+
+> +	smp_mb(); /* Force ordering between (prev C.S. & lock->tickets.head)
+> +			and (current C.S. & tqhp->head & hand off) */
+> +
+> +	/* store queued-lock tickets head */
+> +	ACCESS_ONCE(lock->tickets.head) = inc.head;
+> +	/* update real tickets head */
+> +	ACCESS_ONCE(tqhp->head) = (tqhp->head & ~0x1) + __TKT_SPIN_INC;
+> +
+>  	/*
+>  	 * Remove our element from the queue.  If the queue is now empty,
+>  	 * update carefully so that the next acquisition will enqueue itself
+> @@ -217,8 +211,10 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+>  		/* Try to point the tail back at the head. */
+>  		if (cmpxchg(&tqhp->spin_tail,
+>  			    &tq.next,
+> -			    &tqhp->spin) == &tq.next)
+> +			    &tqhp->spin) == &tq.next) {
+> +			tkt_q_try_unqueue(lock, tqhp);
+>  			return true; /* Succeeded, queue is now empty. */
+> +		}
+> 
+>  		/* Failed, if needed, wait for the enqueue to complete. */
+>  		while (tq.next == NULL)
+> @@ -226,14 +222,13 @@ bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
+> 
+>  		/* The following code will repair the head. */
+>  	}
+> -	smp_mb(); /* Force ordering between handoff and critical section. */
+> 
+>  	/*
+> -	 * Advance list-head pointer.  This same task will be the next to
+> -	 * access this when releasing the lock, so no need for a memory
+> -	 * barrier after the following assignment.
+> +	 * Advance list-head pointer. tqhp->spin is useless, it can be removed.
+>  	 */
+>  	ACCESS_ONCE(tqhp->spin) = tq.next;
+> +	ACCESS_ONCE(tq.next->cpu) = -1; /* hand off queue leadership */
+> +
+>  	return true;
+>  }
+> 
+> @@ -277,7 +272,7 @@ tkt_q_init_contend(int i, arch_spinlock_t *lock, struct __raw_tickets inc)
+>  		tqhp->head = asold.tickets.head | 0x1;
+> 
+>  		/* The low-order bit in the head counter says "queued". */
+> -		asnew.tickets.head = (i << 2) + 0x1;
+> +		asnew.tickets.head = i * __TKT_SPIN_INC * 2 + 0x1;
+>  	} while (cmpxchg(&lock->head_tail,
+>  		 asold.head_tail,
+>  		 asnew.head_tail) != asold.head_tail);
+> 
 
