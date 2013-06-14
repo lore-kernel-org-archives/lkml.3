@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315Ab3FNBQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:16:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412Ab3FNBQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:16:49 -0400
-Date: Thu, 13 Jun 2013 18:15:31 -0700 (PDT)
-Message-Id: <20130613.181531.1879909059826723046.davem@redhat.com>
-To: mschiffer@universe-factory.net
-Cc: xiyou.wangcong@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net/3.9] ipv6: ndisc: fix ndisc_send_redirect writing
- to the wrong skb
-From: David Miller <davem@redhat.com>
-In-Reply-To: <51B1BD64.8090300@universe-factory.net>
-References: <CAM_iQpWNAnRTgzjPTPxLU-eqz1nWqD=zyjTgwZaaxbwcpf4KMw@mail.gmail.com>
-	<20130531.014244.1871655049070137342.davem@davemloft.net>
-	<51B1BD64.8090300@universe-factory.net>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1759400Ab3FNBSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:18:09 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44950 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab3FNBSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 21:18:08 -0400
+Message-ID: <51BA6F34.30001@huawei.com>
+Date: Fri, 14 Jun 2013 09:17:40 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 5/9] memcg: use css_get/put when charging/uncharging
+ kmem
+References: <51B98D17.2050902@huawei.com> <20130613155319.GJ23070@dhcp22.suse.cz>
+In-Reply-To: <20130613155319.GJ23070@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthias Schiffer <mschiffer@universe-factory.net>
-Date: Fri, 07 Jun 2013 13:00:52 +0200
-
-> On 05/31/2013 10:42 AM, David Miller wrote:
->> From: Cong Wang <xiyou.wangcong@gmail.com>
->> Date: Fri, 31 May 2013 11:23:11 +0800
->> 
->>> On Fri, May 31, 2013 at 9:27 AM, Matthias Schiffer
->>> <mschiffer@universe-factory.net> wrote:
->>>> Since some refactoring in 5f5a011, ndisc_send_redirect called
->>>> ndisc_fill_redirect_hdr_option on the wrong skb, leading to data corruption or
->>>> in the worst case a panic when the skb_put failed.
->>>>
->>>> Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
->>>
->>>
->>> Good catch!
->>>
->>> Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
->> 
->> I've queued this up for -stable.
->> 
+>>  static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+>>  {
+>> +	/*
+>> +	 * We need to call css_get() first, because memcg_uncharge_kmem()
+>> +	 * will call css_put() if it sees the memcg is dead.
+>> +	 */
+>> +	smb_wmb();
+>>  	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
+>>  		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
 > 
-> I saw that this was marked as 'not applicable' in the patchwork - it
-> should still be applied to the net tree though. I hope my patch tag
-> 'net/3.9' didn't cause any confusion, I meant net *and* 3.9.
+> I do not feel strongly about that but maybe open coding this in
+> mem_cgroup_css_offline would be even better. There is only single caller
+> and there is smaller chance somebody will use the function incorrectly
+> later on.
+> 
+> So I leave the decision on you because this doesn't matter much.
+> 
 
-It's in the -stable queue and it will be submitted, don't worry.
+Yeah, it should go away soon. I'll post a patch after this patchset gets
+merged into -mm tree and then we can discuss there.
 
-In this situation it means "not applicable" to net or net-next, sorry
-for the confusion.
-
-The way I work with the "stable" patchwork bundle is I process that
-queue with state filtering off, so that the patch bundle I end up with
-has every patch in that queue, regardless of state.
