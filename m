@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab3FNOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:47:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59385 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab3FNOrG (ORCPT
+	id S1752782Ab3FNOsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:48:36 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10362 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3FNOse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:47:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ARM: mach-moxart: add MOXA ART SoC files
-Date: Fri, 14 Jun 2013 16:47:23 +0200
-Message-ID: <2428901.voOA9oET8R@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com> <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
+	Fri, 14 Jun 2013 10:48:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 14 Jun 2013 07:47:16 -0700
+Message-ID: <51BB2D3A.1050407@nvidia.com>
+Date: Fri, 14 Jun 2013 20:18:26 +0530
+From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
+Organization: NVIDIA Graphics Pvt Ltd
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Igz1NQSs6sToPxLuUyFgl8bZVvUc5CXwtSDildsGAvm
- y6M1OLE0HvhsV6nieVQ/rPM9c3lyDZY/r8ZYLxbJHeu/fUFacv
- JAKP5WVwREo6IVK90ZxjJuJHqzBtBqnGW8VgL6LBSqLB3YOZCu
- apHqIL4EjvvlstJvK3evdUbPUoOC1sXW/ck/PghpwBQAoC0Ymd
- do7iusHlwMWULzz3GlDLqyLq87Gxs+ZSPOix02N4Cb9DDMbzGo
- FRrRfuC2W9rro2hSZ86Wfxt9FfkEjZSPU0FMmmiGJfKXzxApXs
- KRikYthKvy+Jc1Be2gjgQ1+U74Je9r6BM8SnH28G/bBuI4CkAI
- ylduZgjoFw5ZEt9q6MsQ=
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "airlied@redhat.com" <airlied@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] gpu: host1x: add runtime pm support for dc
+References: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com> <1371117218-2326-4-git-send-email-mkulkarni@nvidia.com> <20130613184938.GE32574@mithrandir> <51BA18EF.4090302@wwwdotorg.org>
+In-Reply-To: <51BA18EF.4090302@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 June 2013 14:34:06 Jonas Jensen wrote:
+On Friday 14 June 2013 12:39 AM, Stephen Warren wrote:
+> On 06/13/2013 12:49 PM, Thierry Reding wrote:
+>> On Thu, Jun 13, 2013 at 03:23:37PM +0530, Mayuresh Kulkarni wrote:
+>> [...]
+>>> diff --git a/drivers/gpu/host1x/drm/dc.c
+>>> b/drivers/gpu/host1x/drm/dc.c
+>> [...]
+>>> @@ -1128,9 +1129,7 @@ static int tegra_dc_probe(struct
+>>> platform_device *pdev) return PTR_ERR(dc->clk); }
+>>>
+>>> -	err = clk_prepare_enable(dc->clk); -	if (err < 0) -		return
+>>> err; +	platform_set_drvdata(pdev, dc);
+>>
+>> Why do you move the call to platform_set_drvdata() up here?
+>
+> Presumably the suspend/resume functions need to get the value out of
+> the device they're passed, so it needs to be set up early?
+>
 
-> diff --git a/arch/arm/mach-moxart/idle.c b/arch/arm/mach-moxart/idle.c
-> new file mode 100644
-> index 0000000..73ed844
-> --- /dev/null
-> +++ b/arch/arm/mach-moxart/idle.c
-> @@ -0,0 +1,21 @@
-> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2 of the License,
-> + * or (at your option) any later version. */
-> +
-> +#include <linux/init.h>
-> +#include <asm/system.h>
-> +#include <asm/proc-fns.h>
-> +
-> +static void moxart_idle(void)
-> +{
-> +}
-> +
-> +static int __init moxart_idle_init(void)
-> +{
-> +	arm_pm_idle = moxart_idle;
-> +	return 0;
-> +}
-> +
-> +arch_initcall(moxart_idle_init);
+Yes that is correct, Stephen. The run-time pm call-backs need 2 things: 
+correct driver data pointer and correct clock pointer within it. Hence I 
+had to move this line upper in sequence.
 
-IIRC Russell suggested changing cpu_fa526_do_idle() to not call WFI instead,
-since the only other platform with fa526 has the same problem.
-
-Your change above is actually wrong and breaks non-fa526 platforms in a
-multiplatform kernel because it overrides arm_pm_idle without checking
-what machine it currently runs on.
-
-> diff --git a/arch/arm/mach-moxart/moxart.c b/arch/arm/mach-moxart/moxart.c
-> new file mode 100644
-> index 0000000..ab70386
-> --- /dev/null
-> +++ b/arch/arm/mach-moxart/moxart.c
-> @@ -0,0 +1,23 @@
-> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2 of the License,
-> + * or (at your option) any later version. */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/clk-provider.h>
-
-Most of these are probably unneeded now.
-
-> +#include <asm/mach/arch.h>
-> +
-> +static const char * const moxart_dt_compat[] = {
-> +	"moxa,moxart-uc-7112-lx",
-> +	NULL,
-> +};
-> +
-> +DT_MACHINE_START(MOXART, "MOXA UC-7112-LX")
-> +	.dt_compat		= moxart_dt_compat,
-> +MACHINE_END
-
-If the .dt_compat fields is the only field in the machine descriptor,
-you can leave out the entire descriptor!
-
-Olof, do you have a preference to how we want to handle this? The
-only advantage of having this file at all is to have the
-"MOXA UC-7112-LX" string in /proc/cpuinfo.
-Should we just remove the entire directory or leave it as the trivial
-file above?
-
-	Arnd
+Same is applicable to gr2d and host1x patches as well.
