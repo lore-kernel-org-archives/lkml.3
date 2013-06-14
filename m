@@ -1,169 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173Ab3FNImi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:42:38 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52256 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab3FNImf (ORCPT
+	id S1751534Ab3FNIn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:43:27 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53226 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab3FNInX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:42:35 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, sachin.kamat@linaro.org,
-        Miguel Aguilar <miguel.aguilar@ridgerun.com>
-Subject: =?UTF-8?q?=5BPATCH=20Resend=5D=20mfd=3A=20davinci=5Fvoicecodec=3A=20Convert=20to=20use=20devm=5F*=20APIs?=
-Date: Fri, 14 Jun 2013 13:57:56 +0530
-Message-Id: <1371198476-28373-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 14 Jun 2013 04:43:23 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130613143536.GA18021@localhost.localdomain>
+References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com>
+ <1371114745-24710-2-git-send-email-acourbot@nvidia.com> <20130613143536.GA18021@localhost.localdomain>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 14 Jun 2013 17:43:03 +0900
+Message-ID: <CAAVeFuLufKSfeQzP-tX1JpX9qtHa2EdFA9J8qpKE4Pyyrc8UQg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] ARM: tegra: basic support for Trusted Foundations
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_* APIs are device managed and make code simpler.
+On Thu, Jun 13, 2013 at 11:35 PM, Dave Martin <Dave.Martin@arm.com> wrote:
+>> diff --git a/Documentation/devicetree/bindings/arm/tegra.txt b/Documentation/devicetree/bindings/arm/tegra.txt
+>> index ed9c853..d59bc19 100644
+>> --- a/Documentation/devicetree/bindings/arm/tegra.txt
+>> +++ b/Documentation/devicetree/bindings/arm/tegra.txt
+>> @@ -32,3 +32,14 @@ board-specific compatible values:
+>>    nvidia,whistler
+>>    toradex,colibri_t20-512
+>>    toradex,iris
+>> +
+>> +Optional nodes
+>> +-------------------------------------------
+>> +
+>> +Trusted Foundations:
+>> +Boards using the Trusted Foundations secure monitor should signal its
+>> +presence by declaring a node compatible with "tl,trusted-foundations":
+>> +
+>> +     firmware {
+>
+> You need to make a clear statement about whether the node name is
+>
+> I think it shouldn't required to be exactly equal to "firmware", because
+> that would lead to problems if there were multiple independent firmware
+> APIs present (which is certainly possible, whether or not it is true
+> on Tegra).
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
----
-Patch is based on mfd-next tree and compile tested.
-This driver gives following compilation error (not introduced by this patch):
-drivers/mfd/davinci_voicecodec.c:86:3: error: implicit declaration
-of function ‘io_v2p’ [-Werror=implicit-function-declaration]
-   (dma_addr_t)(io_v2p(davinci_vc->base) + DAVINCI_VC_WFIFO);
+Yes, the name of the node is not fixed (doing so would make its lookup
+faster, but the gain is not obvious). Will make it explicit in the
+doc.
 
-In order to test my changes I added the following to davinci_voicecodec.h file:
-+#define IO_OFFSET      0xfd000000 /* Virtual IO = 0xfec00000 */
-+#define io_v2p(va)     ((va) - IO_OFFSET)
+>> +             compatible = "tl,trusted-foundations";
+>> +     };
+>
+> For now, it might make more sense to make this binding tegra-specific,
+> and to interpret the node is only implying the presence of the low-
+> level SoC functions you are using on Tegra, not TF as a whole.
 
-I am not sure if these changes are right fix for the above error.
----
+Do you mean the vendor should be changed from "tl" to "nvidia" here?
 
- drivers/mfd/davinci_voicecodec.c       |   48 +++++++-------------------------
- include/linux/mfd/davinci_voicecodec.h |    2 --
- 2 files changed, 10 insertions(+), 40 deletions(-)
+> Otherwise, it feels too generic.  There is no description of exactly
+> what functionality will be available if this node it present: if
+> this is going to be a generic binding for TF, then it needs to work
+> for all deployments of TF, not just your specific case.  For example,
+> how to you find out what functionality is present?  Will there be
+> a standard probing ABI for all versions and deployments of TF, or
+> would extra information need to be described in the DT?
+>
+> Partly, this depends on whether the TF_SET_CPU_BOOT_ADDR_SMC call will
+> be present, working, and with compatible ABI and semantics, on every SoC
+> where an implementation of TF is present.  Someone from Trusted Logic, or
+> someone with visibility of the relevant ABI/API specs would need to
+> judge on that -- do you have that info?
 
-diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
-index b6e2973..fb64398 100644
---- a/drivers/mfd/davinci_voicecodec.c
-+++ b/drivers/mfd/davinci_voicecodec.c
-@@ -46,7 +46,7 @@ void davinci_vc_write(struct davinci_vc *davinci_vc,
- static int __init davinci_vc_probe(struct platform_device *pdev)
- {
- 	struct davinci_vc *davinci_vc;
--	struct resource *res, *mem;
-+	struct resource *res;
- 	struct mfd_cell *cell = NULL;
- 	int ret;
- 
-@@ -58,7 +58,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	davinci_vc->clk = clk_get(&pdev->dev, NULL);
-+	davinci_vc->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(davinci_vc->clk)) {
- 		dev_dbg(&pdev->dev,
- 			    "could not get the clock for voice codec\n");
-@@ -67,35 +67,18 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 	clk_enable(davinci_vc->clk);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "no mem resource\n");
--		ret = -ENODEV;
--		goto fail2;
--	}
--
--	davinci_vc->pbase = res->start;
--	davinci_vc->base_size = resource_size(res);
- 
--	mem = request_mem_region(davinci_vc->pbase, davinci_vc->base_size,
--				 pdev->name);
--	if (!mem) {
--		dev_err(&pdev->dev, "VCIF region already claimed\n");
--		ret = -EBUSY;
--		goto fail2;
--	}
--
--	davinci_vc->base = ioremap(davinci_vc->pbase, davinci_vc->base_size);
--	if (!davinci_vc->base) {
--		dev_err(&pdev->dev, "can't ioremap mem resource.\n");
--		ret = -ENOMEM;
--		goto fail3;
-+	davinci_vc->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(davinci_vc->base)) {
-+		ret = PTR_ERR(davinci_vc->base);
-+		goto fail;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
- 		ret = -ENXIO;
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	davinci_vc->davinci_vcif.dma_tx_channel = res->start;
-@@ -106,7 +89,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
- 		ret = -ENXIO;
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	davinci_vc->davinci_vcif.dma_rx_channel = res->start;
-@@ -132,19 +115,13 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 			      DAVINCI_VC_CELLS, NULL, 0, NULL);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "fail to register client devices\n");
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	return 0;
- 
--fail4:
--	iounmap(davinci_vc->base);
--fail3:
--	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
--fail2:
-+fail:
- 	clk_disable(davinci_vc->clk);
--	clk_put(davinci_vc->clk);
--	davinci_vc->clk = NULL;
- 
- 	return ret;
- }
-@@ -155,12 +132,7 @@ static int davinci_vc_remove(struct platform_device *pdev)
- 
- 	mfd_remove_devices(&pdev->dev);
- 
--	iounmap(davinci_vc->base);
--	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
--
- 	clk_disable(davinci_vc->clk);
--	clk_put(davinci_vc->clk);
--	davinci_vc->clk = NULL;
- 
- 	return 0;
- }
-diff --git a/include/linux/mfd/davinci_voicecodec.h b/include/linux/mfd/davinci_voicecodec.h
-index 0ab6132..94c53d4 100644
---- a/include/linux/mfd/davinci_voicecodec.h
-+++ b/include/linux/mfd/davinci_voicecodec.h
-@@ -112,8 +112,6 @@ struct davinci_vc {
- 
- 	/* Memory resources */
- 	void __iomem *base;
--	resource_size_t pbase;
--	size_t base_size;
- 
- 	/* MFD cells */
- 	struct mfd_cell cells[DAVINCI_VC_CELLS];
--- 
-1.7.9.5
+I'm currently looking into that. This patch makes the assumption that
+all TF implementations have the same features and the same interface -
+if this is the case, do you agree this binding is ok as it is?
 
+If indeed TF's functionality and ABI is the same no matter whether we
+are on Tegra on not, then its support should even be moved outside of
+mach-tegra.
+
+
+>> --- /dev/null
+>> +++ b/arch/arm/mach-tegra/firmware.c
+>> @@ -0,0 +1,40 @@
+>> +/*
+>> + * SecureOS support for Tegra CPUs
+>
+> Should the name "SecureOS" change in these comment headers? (affects
+> multiple files)
+
+Yes, I missed these ones, thanks. Another missed opportunity to use git grep...
+
+>> +     node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+>> +     if (node && !IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))
+>> +             pr_warn("Trusted Foundations detected but support missing!\n");
+>
+> Should this be more than just a warning?
+>
+> It looks to me like tegra_cpu_reset_handler_set() might either silently
+> fail or trigger an external abort in this situation, depending on the
+> hardware and on how TF sets things up.
+
+What will happen (from 3.10) is that tegra_cpu_reset_handler_set()
+will output a "CPUX: failed to come online" for each secondary CPU and
+boot will continue (albeit on one CPU). The system's features are
+degraded, but it is not fatal, so I think it is reasonable to continue
+here.
+
+> There seems to be no way to signal an error when attempting to set a
+> CPU's reset address.
+
+Indeed. But even if that fails the system can still survive, at least on Tegra.
+
+>> +#if IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS)
+>> +     else if (node)
+>> +             register_firmware_ops(&tegra_trusted_foundations_ops);
+>> +#endif
+>> +}
+>
+>
+> IS_ENABLED() allows #ifdefs to be avoided -- maybe this would be clearer
+> as:
+>
+>         node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+>         if (!node)
+>                 return;
+>
+>         if (WARN_ON(!IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))) {
+>                 pr_warn("Trusted Foundations detected but support missing!\n");
+>                 return;
+>         }
+>
+>         register_firmware_ops(&tegra_trusted_foundations_ops);
+
+But then you will get a link error when TF support is not compiled in
+because tegra_trusted_foundations_ops will not be defined. That's why
+I used a #ifdef here - I agree it is terribly inelegant though.
+
+>> +     asm volatile(
+>> +             ".arch_extension        sec\n\t"
+>> +             "stmfd  sp!, {r3 - r11, lr}\n\t"
+>
+> I think you don't need to save r3: the ARM PCS makes r3 caller-save, so
+> it shouldn't matter if the SMC call causes it to get trashed.
+
+One less register to save, I take it! :)
+
+Thanks,
+Alex.
