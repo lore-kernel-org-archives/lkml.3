@@ -1,207 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3FNVcC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:32:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34410 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab3FNVb6 (ORCPT
+	id S1754307Ab3FNVg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:36:56 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:5817
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754215Ab3FNVgw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:31:58 -0400
-Date: Fri, 14 Jun 2013 14:31:40 -0700
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-29206daa5831dc5b435a06387fd702875401c6bd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
-        tj@kernel.org, jacob.shin@amd.com, trenn@suse.de, tglx@linutronix.de,
-        hpa@linux.intel.com, rjw@sisk.pl
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
-        tj@kernel.org, jacob.shin@amd.com, tglx@linutronix.de, trenn@suse.de,
-        rjw@sisk.pl, hpa@linux.intel.com
-In-Reply-To: <1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, ACPI: Split acpi_initrd_override() into find/
- copy two steps
-Git-Commit-ID: 29206daa5831dc5b435a06387fd702875401c6bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 14 Jun 2013 17:36:52 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI9371Ic89bh936eI542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz31h2a8h668h839h947hd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
+CC: Fernando Soto <fsoto@bluecatnetworks.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] Drivers: hv: vmbus: incorrect device name is printed
+ when child device is unregistered
+Thread-Topic: [PATCH] Drivers: hv: vmbus: incorrect device name is printed
+ when child device is unregistered
+Thread-Index: Ac5okEkVBpap2M3qQqqQ0UUeLNbP9QAE3nQwAB3m44AACutyIA==
+Date: Fri, 14 Jun 2013 21:36:07 +0000
+Message-ID: <0a644e26a9dc4849938107fb6b713911@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <88E08D85EE353144A618C55479FE1117411FD9A9@TORMBXW01.bluecatnetworks.corp>
+ <21ce39ca10234c2fae6f98b029d86b5c@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130614162231.GA14829@kroah.com>
+In-Reply-To: <20130614162231.GA14829@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:31:46 -0700 (PDT)
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%BLUECATNETWORKS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377424003)(24454002)(51704005)(199002)(377454002)(13464003)(189002)(74366001)(74662001)(50466002)(47446002)(76482001)(56776001)(53806001)(51856001)(33646001)(79102001)(74502001)(46102001)(47736001)(23756003)(74876001)(59766001)(54356001)(47776003)(50986001)(63696002)(16676001)(20776003)(74706001)(77982001)(76786001)(4396001)(47976001)(6806003)(76576001)(80022001)(65816001)(31966008)(69226001)(66066001)(44976003)(56816003)(81542001)(74316001)(49866001)(77096001)(54316002)(81342001)(76796001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB021;H:TK5EX14MLTC104.redmond.corp.microsoft.com;CLIP:131.107.125.37;RD:InfoDomainNonexistent;A:1;MX:3;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 08770259B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29206daa5831dc5b435a06387fd702875401c6bd
-Gitweb:     http://git.kernel.org/tip/29206daa5831dc5b435a06387fd702875401c6bd
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 21:02:53 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jun 2013 14:04:01 -0700
 
-x86, ACPI: Split acpi_initrd_override() into find/copy two steps
 
-To parse SRAT before memblock starts to work, we need to move acpi table
-probing procedure earlier. But acpi_initrd_table_override procedure must
-be executed before acpi table probing. So we need to move it earlier too,
-which means to move acpi_initrd_table_override procedure before memblock
-starts to work.
+> -----Original Message-----
+> From: Greg KH (gregkh@linuxfoundation.org)
+> [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, June 14, 2013 12:23 PM
+> To: KY Srinivasan
+> Cc: Fernando Soto; linux-kernel@vger.kernel.org; Haiyang Zhang
+> Subject: Re: [PATCH] Drivers: hv: vmbus: incorrect device name is printed when
+> child device is unregistered
+> 
+> On Fri, Jun 14, 2013 at 02:13:44AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Fernando Soto [mailto:fsoto@bluecatnetworks.com]
+> > > Sent: Thursday, June 13, 2013 8:11 PM
+> > > To: linux-kernel@vger.kernel.org
+> > > Cc: KY Srinivasan; Haiyang Zhang
+> > > Subject: [PATCH] Drivers: hv: vmbus: incorrect device name is printed when
+> child
+> > > device is unregistered
+> > >
+> > > From: Fernando Soto <fsoto@bluecatnetworks.com>
+> > > Please CC me, I am not subscribed to the list.
+> > >
+> > > Whenever a device is unregistered in vmbus_device_unregister
+> > > (drivers/hv/vmbus_drv.c), the device name in the log message may contain
+> > > garbage as the memory has already been freed by the time pr_info is called.
+> Log
+> > > example:
+> > >  [ 3149.170475] hv_vmbus: child device ахsии0_5 unregistered
+> > >
+> > > By logging the message just before calling device_unregister, the correct
+> device
+> > > name is printed:
+> > > [ 3145.034652] hv_vmbus: child device vmbus_0_5 unregistered
+> > >
+> > > Signed-off-by: Fernando M Soto <fsoto@bluecatnetworks.com>
+> > Acked-by: K. Y. Srinivasan <kys@microsoft.com>
+> >
+> > > --- linux-3.10-rc5/drivers/hv/vmbus_drv.c.orig	2013-06-13
+> 19:20:55.359511352 -
+> > > 0400
+> > > +++ linux-3.10-rc5/drivers/hv/vmbus_drv.c	2013-06-13 19:21:39.299511695 -
+> > > 0400
+> > > @@ -698,14 +698,14 @@ int vmbus_device_register(struct hv_devi
+> > >   */
+> > >  void vmbus_device_unregister(struct hv_device *device_obj)
+> > >  {
+> > > +	pr_info("child device %s unregistered\n",
+> > > +		dev_name(&device_obj->device));
+> > > +
+> > >  	/*
+> > >  	 * Kick off the process of unregistering the device.
+> > >  	 * This will call vmbus_remove() and eventually vmbus_device_release()
+> > >  	 */
+> > >  	device_unregister(&device_obj->device);
+> > > -
+> > > -	pr_info("child device %s unregistered\n",
+> > > -		dev_name(&device_obj->device));
+> 
+> No, please just remove these entirely, or make them pr_debug(), you
+> shouldn't clutter up the kernel log for stuff like this.
 
-But acpi_initrd_table_override procedure needs memblock to allocate buffer
-for ACPI tables. To solve this problem, we need to split acpi_initrd_override()
-procedure into two steps: finding and copying.
-Find should be as early as possible. Copy should be after memblock is ready.
+Agreed. Fernando, do you want to submit a patch as suggested by Greg.
 
-Currently, acpi_initrd_table_override procedure is executed after
-init_mem_mapping() and relocate_initrd(), so it can scan initrd and copy
-acpi tables with kernel virtual addresses of initrd.
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Once we split it into finding and copying steps, it could be done like the
-following:
 
-Finding could be done in head_32.S and head64.c, just like microcode early
-scanning. In head_32.S, it is 32bit flat mode, we don't need to setup page
-table to access it. In head64.c, #PF set page table could help us to access
-initrd with kernel low mapping addresses.
-
-Copying need to be done just after memblock is ready, because it needs to
-allocate buffer for new acpi tables with memblock.
-Also it should be done before probing acpi tables, and we need early_ioremap
-to access source and target ranges, as init_mem_mapping is not called yet.
-
-While a dummy version of acpi_initrd_override() was defined when
-!CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version were
-conditionalized inside CONFIG_ACPI. This forced setup_arch() to have its own
-#ifdefs around acpi_initrd_override() as otherwise build would fail when
-!CONFIG_ACPI. Move the prototypes and dummy implementations of the newly
-split functions out of CONFIG_ACPI block in acpi.h so that we can throw away
-the #ifdefs from its users.
-
--v2: Split one patch out according to tj.
-     also don't pass table_nr around.
--v3: Add Tj's changelog about moving down to #idef in acpi.h to
-     avoid #idef in setup.c
-
-Signed-off-by: Yinghai <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/setup.c |  6 +++---
- drivers/acpi/osl.c      | 18 +++++++++++++-----
- include/linux/acpi.h    | 16 ++++++++--------
- 3 files changed, 24 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 6ca5f2c..42f584c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1119,9 +1119,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	reserve_initrd();
- 
--#if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
--	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
--#endif
-+	acpi_initrd_override_find((void *)initrd_start,
-+					initrd_end - initrd_start);
-+	acpi_initrd_override_copy();
- 
- 	reserve_crashkernel();
- 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 53dd490..6ab6c54 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -572,14 +572,13 @@ static const char * const table_sigs[] = {
- #define ACPI_OVERRIDE_TABLES 64
- static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
- 
--void __init acpi_initrd_override(void *data, size_t size)
-+void __init acpi_initrd_override_find(void *data, size_t size)
- {
--	int sig, no, table_nr = 0, total_offset = 0;
-+	int sig, no, table_nr = 0;
- 	long offset = 0;
- 	struct acpi_table_header *table;
- 	char cpio_path[32] = "kernel/firmware/acpi/";
- 	struct cpio_data file;
--	char *p;
- 
- 	if (data == NULL || size == 0)
- 		return;
-@@ -620,7 +619,14 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		acpi_initrd_files[table_nr].size = file.size;
- 		table_nr++;
- 	}
--	if (table_nr == 0)
-+}
-+
-+void __init acpi_initrd_override_copy(void)
-+{
-+	int no, total_offset = 0;
-+	char *p;
-+
-+	if (!all_tables_size)
- 		return;
- 
- 	/* under 4G at first, then above 4G */
-@@ -652,9 +658,11 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	 * tables at one time, we will hit the limit. So we need to map tables
- 	 * one by one during copying.
- 	 */
--	for (no = 0; no < table_nr; no++) {
-+	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
- 		phys_addr_t size = acpi_initrd_files[no].size;
- 
-+		if (!size)
-+			break;
- 		p = early_ioremap(acpi_tables_addr + total_offset, size);
- 		memcpy(p, acpi_initrd_files[no].data, size);
- 		early_iounmap(p, size);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 17b5b59..8dd917b 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -79,14 +79,6 @@ typedef int (*acpi_tbl_table_handler)(struct acpi_table_header *table);
- typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
- 				      const unsigned long end);
- 
--#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
--void acpi_initrd_override(void *data, size_t size);
--#else
--static inline void acpi_initrd_override(void *data, size_t size)
--{
--}
--#endif
--
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-@@ -476,6 +468,14 @@ static inline bool acpi_driver_match_device(struct device *dev,
- 
- #endif	/* !CONFIG_ACPI */
- 
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void acpi_initrd_override_find(void *data, size_t size);
-+void acpi_initrd_override_copy(void);
-+#else
-+static inline void acpi_initrd_override_find(void *data, size_t size) { }
-+static inline void acpi_initrd_override_copy(void) { }
-+#endif
-+
- #ifdef CONFIG_ACPI
- void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
- 			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
