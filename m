@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3FNHUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:20:40 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:50906 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab3FNHUj (ORCPT
+	id S1752066Ab3FNHVi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:21:38 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60007 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab3FNHVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:20:39 -0400
-Date: Fri, 14 Jun 2013 09:20:34 +0200
-From: Robert Richter <rric@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v2 03/14] perf: Add persistent event facilities
-Message-ID: <20130614072034.GS12218@rric.localhost>
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
- <1370968960-22527-4-git-send-email-rric@kernel.org>
- <87ehc530b2.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehc530b2.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Jun 2013 03:21:36 -0400
+Message-ID: <1371194491.3252.125.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] ipv4: Fixed MD5 key lookups when adding/ removing
+ MD5 to/ from TCP sockets.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 14 Jun 2013 00:21:31 -0700
+In-Reply-To: <1371192991-6937-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+References: <n>
+	 <1371192991-6937-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.06.13 11:15:13, Namhyung Kim wrote:
-> > +int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
-> > +{
-> > +   struct pers_event_desc *desc;
-> > +
-> > +   if (cpu >= (unsigned)nr_cpu_ids)
-> > +           return -EINVAL;  
-> > +
-> > +   list_for_each_entry(desc, &per_cpu(pers_events, cpu), plist)
-> > +           if (desc->attr->config == attr->config)
-> > +                   return __alloc_persistent_event_fd(desc);
-> > +
->
-> So it only supports tracepoint events.  Don't we need to add other types
-> of event?
+On Fri, 2013-06-14 at 18:56 +1200, Aydin Arik wrote:
+> MD5 key lookups on a given TCP socket were being performed
+> incorrectly. This fix alters parameter inputs to the MD5
+> lookup function tcp_md5_do_lookup, which is called by functions
+> tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
+> inputs the correct address and address family required to make
+> a proper lookup.
+> 
+> Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+> ---
+>  net/ipv4/tcp_ipv4.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+> index d09203c..04dfdc9 100644
+> --- a/net/ipv4/tcp_ipv4.c
+> +++ b/net/ipv4/tcp_ipv4.c
+> @@ -1005,7 +1005,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
+>  	struct tcp_sock *tp = tcp_sk(sk);
+>  	struct tcp_md5sig_info *md5sig;
+>  
+> -	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
+> +	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)addr, family);
+>  	if (key) {
+>  		/* Pre-existing entry - just update that one. */
+>  		memcpy(key->key, newkey, newkeylen);
+> @@ -1050,7 +1050,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
+>  	struct tcp_md5sig_key *key;
+>  	struct tcp_md5sig_info *md5sig;
+>  
+> -	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
+> +	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)addr, family);
+>  	if (!key)
+>  		return -ENOENT;
+>  	hlist_del_rcu(&key->node);
 
-We have choosen tracepoints as initial implementation since they are
-our first use case and its specifiers are unique already.
+Good catch !
 
-So this is for the initial implementation only. We can easily
-implement support for other event types later. The only thing we need
-to implement for this are unique identifiers for each persistent
-event. Since all events are described in sysfs this change can be done
-later without changing ABI or breaking userland.
+Could you remove the casts "(union tcp_md5_addr *)" as well ?
 
-The support for all event types is definitely on our list. We need
-this also for a later implemention of registering all system wide
-events as persistent events. This allows sharing events between
-processes and is one of Ingos use cases to enable persistent events at
-runtime.
+And please add in the changelog the bug origin to ease stable
+submissions :
 
--Robert
+commit a915da9b69273815527ccb3789421cb7027b545b
+("tcp: md5: rcu conversion")
+
+Thanks !
+
+
