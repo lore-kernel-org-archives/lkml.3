@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3FNQiP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:38:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45150 "EHLO
+	id S1752250Ab3FNQjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:39:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab3FNQiO (ORCPT
+	with ESMTP id S1751259Ab3FNQjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:38:14 -0400
-Date: Fri, 14 Jun 2013 09:38:51 -0700
+	Fri, 14 Jun 2013 12:39:09 -0400
+Date: Fri, 14 Jun 2013 09:39:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.10-rc5
-Message-ID: <20130614163851.GA25973@kroah.com>
+Subject: [GIT PATCH] USB fixes for 3.10-rc6
+Message-ID: <20130614163946.GA26018@kroah.com>
+References: <20130614163851.GA25973@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130614163851.GA25973@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+[resend with fixed subject]
 
 The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
 
