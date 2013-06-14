@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab3FNJdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:33:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34765 "EHLO arroyo.ext.ti.com"
+	id S1751962Ab3FNJfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:35:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42539 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab3FNJds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:33:48 -0400
+	id S1751818Ab3FNJfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:35:30 -0400
 From: Philip Avinash <avinashphilip@ti.com>
 To: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>
 CC: <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-kernel@vger.kernel.org>, <avinashphilip@ti.com>
-Subject: [PATCH v2 0/7] Convert GPIO Davinci to platform driver
-Date: Fri, 14 Jun 2013 15:05:25 +0530
-Message-ID: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v2 1/7] gpio: davinci: coding style correction
+Date: Fri, 14 Jun 2013 15:05:26 +0530
+Message-ID: <1371202532-14628-2-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
+References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support DT booting of da850 EVM, davinci gpio driver converted to platform
-driver. Also when here, start using gpiolib API for gpio get/set functionalities.
-Hence removing gpio inline functionalities. However usage of gpiolib API will
-cause an additional software latencies.
+Make some minor coding style fixes. Use proper multi-line
+commenting style, arrange include files alphabetically use
+macros for bit definitions.
 
-In this patch series
-- Cleaned gpio Davinci driver code with proper commenting style.
-- Create platform driver for GPIO Davinci in da8xx and dmxxx platforms and
-  removed gpio related member updation in davinci_soc_info structure.
-- Remove soc_info reference in the gpio davinci driver and start uses
-  gpiolib interface.
-- gpio-tnetv107x driver also modified to use gpiolib API interface.
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+---
+Changes since v1:
+	- Remove variable name replacement
+	- Add line break after BINTEN macro definition
 
-This series has been tested on da850 EVM for gpio interrupt generation.
-This patch series is based on Linux 3.10-rc4 and is availabel at [1].
+ drivers/gpio/gpio-davinci.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-1. https://github.com/avinashphilip/am335x_linux/tree/linux_davinci_v3.10_soc_gpio_v310-rc4
-
-KV Sujith (2):
-  gpio: davinci: move to platform device
-  ARM: davinci: da8xx: creation of gpio platform device
-
-Philip Avinash (5):
-  gpio: davinci: coding style correction
-  ARM: davinci: creation of gpio platform device for dmxxx platforms
-  ARM: davinci: da8xx: gpio device creation
-  ARM: davinci: dmxxx: gpio device creation
-  ARM: davinci: Start using gpiolib API inplace of inline functions
-
- arch/arm/Kconfig                                  |    1 -
- arch/arm/mach-davinci/board-da830-evm.c           |   19 ++-
- arch/arm/mach-davinci/board-da850-evm.c           |   11 ++
- arch/arm/mach-davinci/board-dm355-evm.c           |   27 ++++
- arch/arm/mach-davinci/board-dm355-leopard.c       |    1 +
- arch/arm/mach-davinci/board-dm365-evm.c           |   28 ++++
- arch/arm/mach-davinci/board-dm644x-evm.c          |   26 ++++
- arch/arm/mach-davinci/board-dm646x-evm.c          |   27 ++++
- arch/arm/mach-davinci/board-neuros-osd2.c         |    1 +
- arch/arm/mach-davinci/board-omapl138-hawk.c       |    2 +
- arch/arm/mach-davinci/da830.c                     |    5 -
- arch/arm/mach-davinci/da850.c                     |    5 -
- arch/arm/mach-davinci/devices-da8xx.c             |   26 ++++
- arch/arm/mach-davinci/devices.c                   |   13 ++
- arch/arm/mach-davinci/dm355.c                     |    5 -
- arch/arm/mach-davinci/dm365.c                     |    6 -
- arch/arm/mach-davinci/dm644x.c                    |    5 -
- arch/arm/mach-davinci/dm646x.c                    |    5 -
- arch/arm/mach-davinci/include/mach/common.h       |    4 +
- arch/arm/mach-davinci/include/mach/da8xx.h        |    1 +
- arch/arm/mach-davinci/include/mach/gpio-davinci.h |   91 -------------
- arch/arm/mach-davinci/include/mach/gpio.h         |   88 -------------
- arch/arm/mach-davinci/tnetv107x.c                 |    2 +-
- drivers/gpio/gpio-davinci.c                       |  144 ++++++++++++++-------
- drivers/gpio/gpio-tnetv107x.c                     |    1 +
- include/linux/platform_data/gpio-davinci.h        |   59 +++++++++
- 26 files changed, 341 insertions(+), 262 deletions(-)
- delete mode 100644 arch/arm/mach-davinci/include/mach/gpio-davinci.h
- delete mode 100644 arch/arm/mach-davinci/include/mach/gpio.h
- create mode 100644 include/linux/platform_data/gpio-davinci.h
-
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index 17df6db..e8d189c 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -9,12 +9,12 @@
+  * the Free Software Foundation; either version 2 of the License, or
+  * (at your option) any later version.
+  */
+-#include <linux/gpio.h>
+-#include <linux/errno.h>
+-#include <linux/kernel.h>
++
+ #include <linux/clk.h>
+-#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/gpio.h>
+ #include <linux/io.h>
++#include <linux/kernel.h>
+ 
+ #include <asm/mach/irq.h>
+ 
+@@ -31,6 +31,8 @@ struct davinci_gpio_regs {
+ 	u32	intstat;
+ };
+ 
++#define BINTEN	0x8 /* GPIO Interrupt Per-Bank Enable Register */
++
+ #define chip2controller(chip)	\
+ 	container_of(chip, struct davinci_gpio_controller, chip)
+ 
+@@ -304,7 +306,8 @@ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct davinci_soc_info *soc_info = &davinci_soc_info;
+ 
+-	/* NOTE:  we assume for now that only irqs in the first gpio_chip
++	/*
++	 * NOTE:  we assume for now that only irqs in the first gpio_chip
+ 	 * can provide direct-mapped IRQs to AINTC (up to 32 GPIOs).
+ 	 */
+ 	if (offset < soc_info->gpio_unbanked)
+@@ -368,7 +371,8 @@ static int __init davinci_gpio_irq_setup(void)
+ 	}
+ 	clk_prepare_enable(clk);
+ 
+-	/* Arrange gpio_to_irq() support, handling either direct IRQs or
++	/*
++	 * Arrange gpio_to_irq() support, handling either direct IRQs or
+ 	 * banked IRQs.  Having GPIOs in the first GPIO bank use direct
+ 	 * IRQs, while the others use banked IRQs, would need some setup
+ 	 * tweaks to recognize hardware which can do that.
+@@ -450,10 +454,11 @@ static int __init davinci_gpio_irq_setup(void)
+ 	}
+ 
+ done:
+-	/* BINTEN -- per-bank interrupt enable. genirq would also let these
++	/*
++	 * BINTEN -- per-bank interrupt enable. genirq would also let these
+ 	 * bits be set/cleared dynamically.
+ 	 */
+-	__raw_writel(binten, gpio_base + 0x08);
++	__raw_writel(binten, gpio_base + BINTEN);
+ 
+ 	printk(KERN_INFO "DaVinci: %d gpio irqs\n", irq - gpio_to_irq(0));
+ 
 -- 
 1.7.9.5
 
