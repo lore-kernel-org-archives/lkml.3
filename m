@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759490Ab3FNAAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 20:00:07 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:50782 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab3FNAAE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 20:00:04 -0400
+	id S1759517Ab3FNAOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 20:14:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754818Ab3FNAOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 20:14:46 -0400
+Message-ID: <51BA6072.1020506@redhat.com>
+Date: Thu, 13 Jun 2013 20:14:42 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <15e401ce688b$8fadadb0$af090910$%kim@samsung.com>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
-	<150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
-	<CAD=FV=U9V-rgjcCusCvgw-SeUH-kDbozr_T-i1DcaXNXv48vxw@mail.gmail.com>
-	<4661065.SXhmWQNl5M@flatron>
-	<CAD=FV=Ukdpt4vMCZNySvKpHz6yGCP5X-LLAc1XdOAEAM8rr1fw@mail.gmail.com>
-	<15e401ce688b$8fadadb0$af090910$%kim@samsung.com>
-Date: Thu, 13 Jun 2013 17:00:01 -0700
-X-Google-Sender-Auth: _HDHP5XTWqHhixSexwNNM8VSYOY
-Message-ID: <CAD=FV=WZQwA3UgYRGBQVHFs05JJzfmVfLyLXo7iQJYm=WmVQdw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts
- before unmasking
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Ilho Lee <ilho215.lee@samsung.com>,
-        =?UTF-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Simon Brown <smb@700c.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Accessing more than 2GB of memory with a 32 bit kernel
+References: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com> <51B8D59B.1040801@redhat.com> <3704356.7sSoN0NIpj@phaedrus>
+In-Reply-To: <3704356.7sSoN0NIpj@phaedrus>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin
-
-<take 2, not in HTML mode>
-
-On Thu, Jun 13, 2013 at 4:13 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Doug Anderson wrote:
+On 06/13/2013 06:32 PM, Simon Brown wrote:
+> On Wednesday 12 Jun 2013 16:10:03 Rik van Riel wrote:
+>> On 06/12/2013 12:54 PM, Simon Brown wrote:
+>>> Hello,
+>>>
+>>> For the sake of an old prototype peripheral I'm using a non PAE 32 bit
+>>> x86 kernel and I'm having trouble accessing memory above 2 GB. The
+>>> system has 4GB installed and all is well with a PAE kernel.
+>>>
+>>> I'm obviously expecting to lose some memory due to memory mapped devices
+>>> but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
+>>> The system reports:
+>>> free -m
+>>>
+>>>                total       used       free     shared    buffers
+>>>                cached
+>>>
+>>> Mem:          2012        491       1521          0         40
+>>> 277
+>>>
+>>> The mtrr table looked odd so I enabled sanitisation:
+>>> [    0.000000] original variable MTRRs
+>>> [    0.000000] reg 0, base: 2GB, range: 2GB, type UC
+>>> [    0.000000] reg 1, base: 0GB, range: 4GB, type WB
+>>> [    0.000000] reg 2, base: 4GB, range: 2GB, type WB
+>>> [    0.000000] total RAM covered: 4096M
+>>> [    0.000000] Found optimal setting for mtrr clean up
+>>> [    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2
+>>> lose cover RAM: 0G
+>>> [    0.000000] New variable MTRRs
+>>> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
+>>> [    0.000000] reg 1, base: 4GB, range: 2GB, type WB
+>>>
+>>> I don't understand the gap in the new table.
 >>
->> Tomasz,
->>
->> On Thu, Jun 13, 2013 at 9:42 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> >> > BTW, probably we need a similar fixing in the mach-exynos/common.c
->> >> > file
->> >> > before pinct기 for distro...
->> >>
->> >> Is anyone using the functions in mach-exynos/common.c file anymore?  I
->> >> thought that non-dt exynos support was going away and then we could
->> >> just delete a whole lot of code from that file.
->> >
->> > I think Kukjin meant stable kernels that support Exynos boards using
->> board
->> > files and without pinctrl. Would make sense to have them fixed as well,
->> I
->> > guess.
->>
-> Yes, correct. Thanks, Tomasz.
+>> Check the e820 table. Chances are the BIOS is reserving 2GB to
+>> map various devices (especially video cards) below the 4GB limit.
 >
->> Ah, makes sense.  Kukjin: do you know of someone who needs this
->> (someone who is picking up linux-stable updates for exynos)?  I don't
->> think it's important for ChromeOS for this particular patch.  If
->> there's someone who needs this to officially land on linux-stable I'd
->> be happy to review their backport of this patch.
->>
-> As you know, developing something like Android, Tizen use the stable kernel (long-term? I'm not sure) and there was a problem about this issue. So I mean, would be fixed for the stable kernel.
+> The table looks like this:
+>    [    0.000000] BIOS-provided physical RAM map:
+>    [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+>    [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+>    [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
+>    [    0.000000]  BIOS-e820: 0000000000100000 - 000000007ff80000 (usable)
+>    [    0.000000]  BIOS-e820: 000000007ff80000 - 000000007ff8e000 (ACPI data)
+>    [    0.000000]  BIOS-e820: 000000007ff8e000 - 000000007ffe0000 (ACPI NVS)
+>    [    0.000000]  BIOS-e820: 000000007ffe0000 - 0000000080000000 (reserved)
+>    [    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
+>    [    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
+>    [    0.000000]  BIOS-e820: 0000000100000000 - 0000000180000000 (usable)
+>
+> So the BIOS has reserved the entire upper half. Can I do anything about that?
 
-Sure, but do they actually pull in from linux-stable periodically?
-I'd imagine that they have a private tree and that it would be their
-job to backport any fixes onto their kernel.
+Besides use a 64 bit kernel?  No.
+
+
+-- 
+All rights reversed
