@@ -1,130 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3FNXEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 19:04:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37814 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab3FNXEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 19:04:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] PCI / ACPI / PM: Use correct power state strings in messages
-Date: Sat, 15 Jun 2013 01:13:22 +0200
-Message-ID: <1560214.24OrRSoYgv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130614224949.GA29105@google.com>
-References: <2491625.TQ1FFQeR38@vostro.rjw.lan> <1701924.fhYB0ilm4Z@vostro.rjw.lan> <20130614224949.GA29105@google.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753937Ab3FNXE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 19:04:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47631 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab3FNXE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 19:04:27 -0400
+Date: Fri, 14 Jun 2013 16:04:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: HeeSub Shin <heesub@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Heesub Shin <heesub.shin@samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, kyungmin.park@samsung.com, d.j.shin@samsung.com,
+        sunae.seo@samsung.com
+Subject: Re: [PATCH] mm: vmscan: remove redundant querying to shrinker
+Message-Id: <20130614160425.237b0fe0cb3f711740734b32@linux-foundation.org>
+In-Reply-To: <CALSv+Dht=1ghRmiXdLwkFcXgRTwV=erSeoXc2AEh7+8XmHh1xQ@mail.gmail.com>
+References: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
+	<20130614111034.GA306@gmail.com>
+	<CALSv+Dht=1ghRmiXdLwkFcXgRTwV=erSeoXc2AEh7+8XmHh1xQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 04:49:49 PM Bjorn Helgaas wrote:
-> On Sat, Jun 15, 2013 at 12:28:12AM +0200, Rafael J. Wysocki wrote:
-> > On Friday, June 14, 2013 11:08:44 AM Bjorn Helgaas wrote:
-> > > On Thu, Jun 13, 2013 at 4:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > >
-> > > > Make acpi_pci_set_power_state() print the name of the ACPI device
-> > > > power state the device has been actually put into instead of printing
-> > > > the name of the requested PCI device power state, which need not be
-> > > > the same.
-> > > >
-> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > ---
-> > > >
-> > > > For 3.11.
-> > > >
-> > > > Thanks,
-> > > > Rafael
-> > > >
-> > > > ---
-> > > >  drivers/pci/pci-acpi.c |    2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > >
-> > > > Index: linux-pm/drivers/pci/pci-acpi.c
-> > > > ===================================================================
-> > > > --- linux-pm.orig/drivers/pci/pci-acpi.c
-> > > > +++ linux-pm/drivers/pci/pci-acpi.c
-> > > > @@ -211,7 +211,7 @@ static int acpi_pci_set_power_state(stru
-> > > >
-> > > >         if (!error)
-> > > >                 dev_info(&dev->dev, "power state changed by ACPI to %s\n",
-> > > > -                        pci_power_name(state));
-> > > > +                        acpi_power_state_string(state_conv[state]));
-> > > >
-> > > >         return error;
-> > > >  }
-> > > >
-> > > 
-> > > Just to double-check this, it *looks* like the effective change is
-> > > that for PCI_D3hot and PCI_D3cold, we'll print "(unknown)" instead of
-> > > "D3hot" and "D3cold" because state_conv[] folds both PCI_D3hot and
-> > > PCI_D3cold into ACPI_STATE_D3, and acpi_power_state_string() doesn't
-> > > have a case for ACPI_STATE_D3.
-> > 
-> > No, it won't work like this, because ACPI_STATE_D3 == ACPI_STATE_D3_COLD. :-)
-> > 
-> > So, actually, "D3cold" will be printed for both PCI_D3hot and PCI_D3cold
-> > (and I have tested this).
-> 
-> Ah, right, I should have noticed that.
-> 
-> > Well, I think it's better to actually replace ACPI_STATE_D3 everywhere in
-> > pci-acpi.c with ACPI_STATE_D3_COLD to avoid that confusion.  Do you want me
-> > to prepare a patch?
-> 
-> If the following is OK, I'll just put it in my pci/misc branch:
+On Sat, 15 Jun 2013 03:13:26 +0900 HeeSub Shin <heesub@gmail.com> wrote:
 
-Yes, it is, thanks!
+> Hello,
+> 
+> On Fri, Jun 14, 2013 at 8:10 PM, Minchan Kim <minchan@kernel.org> wrote:
+> 
+> >
+> > Hello,
+> >
+> > On Fri, Jun 14, 2013 at 07:07:51PM +0900, Heesub Shin wrote:
+> > > shrink_slab() queries each slab cache to get the number of
+> > > elements in it. In most cases such queries are cheap but,
+> > > on some caches. For example, Android low-memory-killer,
+> > > which is operates as a slab shrinker, does relatively
+> > > long calculation once invoked and it is quite expensive.
+> >
+> > LMK as shrinker is really bad, which everybody didn't want
+> > when we reviewed it a few years ago so that's a one of reason
+> > LMK couldn't be promoted to mainline yet. So your motivation is
+> > already not atrractive. ;-)
+> >
+> > >
+> > > This patch removes redundant queries to shrinker function
+> > > in the loop of shrink batch.
+> >
+> > I didn't review the patch and others don't want it, I guess.
+> > Because slab shrink is under construction and many patches were
+> > already merged into mmtom. Please look at latest mmotm tree.
+> >
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+> 
+> 
+> >
+> > If you concern is still in there and it's really big concern of MM
+> > we should take care, NOT LMK, plese, resend it.
+> >
+> >
+> I've noticed that there are huge changes there in the recent mmotm and you
+> guys already settled the issue of my concern. I usually keep track changes
+> in recent mm-tree, but this time I didn't. My bad :-)
+> 
 
-Rafael
+I'm not averse to merging an improvement like this even if it gets
+rubbed out by forthcoming changes.  The big changes may never get
+merged or may be reverted.  And by merging this patch, others are more
+likely to grab it, backport it into earlier kernels and benefit from
+it.
+
+Also, the problem which this simple patch fixes might be present in a
+different form after the large patchset has been merged.  That does not
+appear to be the case this time.
+
+So I'd actually like to merge Heesub's patch.  Problem is, I don't have
+a way to redistribute it for testing - I'd need to effectively revert
+the whole thing when integrating Glauber's stuff on top, so nobody who
+is using linux-next would test Heesub's change.  Drat.
 
 
-> commit fc6504b3a4dc9beae782a11e6f7c3c4a9f077fb8
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date:   Fri Jun 14 00:29:50 2013 +0200
-> 
->     PCI / ACPI / PM: Use correct power state strings in messages
->     
->     Make acpi_pci_set_power_state() print the name of the ACPI device
->     power state the device has been actually put into instead of printing
->     the name of the requested PCI device power state, which need not be
->     the same.
->     
->     [bhelgaas: use ACPI_STATE_D3_COLD (ACPI_STATE_D3 == ACPI_STATE_D3_COLD)]
->     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 6c15d6a..dbdc5f7 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -186,8 +186,8 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  		[PCI_D0] = ACPI_STATE_D0,
->  		[PCI_D1] = ACPI_STATE_D1,
->  		[PCI_D2] = ACPI_STATE_D2,
-> -		[PCI_D3hot] = ACPI_STATE_D3,
-> -		[PCI_D3cold] = ACPI_STATE_D3
-> +		[PCI_D3hot] = ACPI_STATE_D3_COLD,
-> +		[PCI_D3cold] = ACPI_STATE_D3_COLD,
->  	};
->  	int error = -EINVAL;
->  
-> @@ -211,7 +211,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  
->  	if (!error)
->  		dev_info(&dev->dev, "power state changed by ACPI to %s\n",
-> -			 pci_power_name(state));
-> +			 acpi_power_state_string(state_conv[state]));
->  
->  	return error;
->  }
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+
+However I'm a bit sceptical about the description here.  The shrinker
+is supposed to special-case the "nr_to_scan == 0" case and AFAICT
+drivers/staging/android/lowmemorykiller.c:lowmem_shrink() does do this,
+and it looks like the function will be pretty quick in this case.
+
+In other words, the behaviour of lowmem_shrink(nr_to_scan == 0) does
+not match Heesub's description.  What's up with that?
+
+
+
+Also, there is an obvious optimisation which we could make to
+lowmem_shrink().  All this stuff:
+
+	if (lowmem_adj_size < array_size)
+		array_size = lowmem_adj_size;
+	if (lowmem_minfree_size < array_size)
+		array_size = lowmem_minfree_size;
+	for (i = 0; i < array_size; i++) {
+		if (other_free < lowmem_minfree[i] &&
+		    other_file < lowmem_minfree[i]) {
+			min_score_adj = lowmem_adj[i];
+			break;
+		}
+	}
+
+does nothing useful in the nr_to_scan==0 case and should be omitted for
+this special case.  But this problem was fixed in the large shrinker
+rework in -mm.
