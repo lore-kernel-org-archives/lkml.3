@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3FNOHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:07:23 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37359 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752883Ab3FNOHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:07:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shaohua Li <shaohua.li@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 5/9] ACPI, DOCK: kill redundant spin lock in dock device object
-Date: Fri, 14 Jun 2013 16:16:35 +0200
-Message-ID: <2066328.eBboj8Iu4P@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51BB233B.3040009@gmail.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1490442.eFer0nddaj@vostro.rjw.lan> <51BB233B.3040009@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753117Ab3FNOJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:09:28 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:59112 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3FNOJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:09:26 -0400
+From: Vincent Donnefort <vdonnefort@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Simon Guinot <simon.guinot@sequanux.org>,
+        Vincent Donnefort <vdonnefort@gmail.com>
+Subject: [PATCH] gpio: ich: add GPO_BLINK support
+Date: Fri, 14 Jun 2013 16:09:13 +0200
+Message-Id: <1371218953-31777-1-git-send-email-vdonnefort@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 10:05:47 PM Jiang Liu wrote:
-> On 06/14/2013 02:28 AM, Rafael J. Wysocki wrote:
-> > On Friday, June 14, 2013 12:32:28 AM Jiang Liu wrote:
-> >> All dock device related data structures are created during driver
-> >> initialization, so kill the redundant spin lock in dock device object.
-> > 
-> > As a cleanup, it definitely makes sense, but does it fix anything?
-> > 
-> > Rafael
-> Patch 3-9 are code cleanup only, I will resend them as separate patchset
-> later.
+This patch makes sure blink hardware is disabled for selected GPIO. Blink
+hardware is controled by GPO_BLINK register and is available for GPIOs from 0
+to 31.
 
-Cool, thanks!
+Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
 
-Rafael
-
-
-> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >> Cc: Shaohua Li <shaohua.li@intel.com>
-> >> Cc: Len Brown <lenb@kernel.org>
-> >> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> >> Cc: linux-acpi@vger.kernel.org
-> >> Cc: linux-kernel@vger.kernel.org
-> >> ---
-> >>  drivers/acpi/dock.c | 15 +++------------
-> >>  1 file changed, 3 insertions(+), 12 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> >> index 8e578aa..cd2d5df 100644
-> >> --- a/drivers/acpi/dock.c
-> >> +++ b/drivers/acpi/dock.c
-> >> @@ -57,7 +57,6 @@ struct dock_station {
-> >>  	acpi_handle handle;
-> >>  	unsigned long last_dock_time;
-> >>  	u32 flags;
-> >> -	spinlock_t dd_lock;
-> >>  	struct mutex hp_lock;
-> >>  	struct task_struct *owner;
-> >>  	struct list_head dependent_devices;
-> >> @@ -107,10 +106,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
-> >>  	dd->handle = handle;
-> >>  	INIT_LIST_HEAD(&dd->list);
-> >>  	INIT_LIST_HEAD(&dd->hotplug_list);
-> >> -
-> >> -	spin_lock(&ds->dd_lock);
-> >>  	list_add_tail(&dd->list, &ds->dependent_devices);
-> >> -	spin_unlock(&ds->dd_lock);
-> >>  
-> >>  	return 0;
-> >>  }
-> >> @@ -168,14 +164,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
-> >>  {
-> >>  	struct dock_dependent_device *dd;
-> >>  
-> >> -	spin_lock(&ds->dd_lock);
-> >> -	list_for_each_entry(dd, &ds->dependent_devices, list) {
-> >> -		if (handle == dd->handle) {
-> >> -			spin_unlock(&ds->dd_lock);
-> >> +	list_for_each_entry(dd, &ds->dependent_devices, list)
-> >> +		if (handle == dd->handle)
-> >>  			return dd;
-> >> -		}
-> >> -	}
-> >> -	spin_unlock(&ds->dd_lock);
-> >> +
-> >>  	return NULL;
-> >>  }
-> >>  
-> >> @@ -964,7 +956,6 @@ static int __init dock_add(acpi_handle handle)
-> >>  	dock_station->last_dock_time = jiffies - HZ;
-> >>  
-> >>  	mutex_init(&dock_station->hp_lock);
-> >> -	spin_lock_init(&dock_station->dd_lock);
-> >>  	INIT_LIST_HEAD(&dock_station->sibling);
-> >>  	INIT_LIST_HEAD(&dock_station->hotplug_devices);
-> >>  	INIT_LIST_HEAD(&dock_station->dependent_devices);
-> >>
-> 
+diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+index de3c317..181828f 100644
+--- a/drivers/gpio/gpio-ich.c
++++ b/drivers/gpio/gpio-ich.c
+@@ -41,12 +41,14 @@ enum GPIO_REG {
+ 	GPIO_USE_SEL = 0,
+ 	GPIO_IO_SEL,
+ 	GPIO_LVL,
++	GPO_BLINK
+ };
+ 
+-static const u8 ichx_regs[3][3] = {
++static const u8 ichx_regs[4][3] = {
+ 	{0x00, 0x30, 0x40},	/* USE_SEL[1-3] offsets */
+ 	{0x04, 0x34, 0x44},	/* IO_SEL[1-3] offsets */
+ 	{0x0c, 0x38, 0x48},	/* LVL[1-3] offsets */
++	{0x18, 0x18, 0x18},	/* BLINK offset */
+ };
+ 
+ static const u8 ichx_reglen[3] = {
+@@ -154,6 +156,10 @@ static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+ 	if (!ichx_gpio_check_available(gpio, nr))
+ 		return -ENXIO;
+ 
++	/* Disable blink hardware which is available for GPIOs from 0 to 31. */
++	if (nr < 32)
++		ichx_write_bit(GPO_BLINK, nr, 0, 0);
++
+ 	/* Set GPIO output value. */
+ 	ichx_write_bit(GPIO_LVL, nr, val, 0);
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
