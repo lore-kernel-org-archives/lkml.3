@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3FNGhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:37:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33532 "EHLO comal.ext.ti.com"
+	id S1751895Ab3FNGqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:46:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29473 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab3FNGhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:37:04 -0400
-Message-ID: <51BAB9EA.5090805@ti.com>
-Date: Fri, 14 Jun 2013 09:36:26 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751344Ab3FNGqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 02:46:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
+   d="scan'208";a="316879139"
+Message-ID: <51BABC6F.3050201@intel.com>
+Date: Fri, 14 Jun 2013 14:47:11 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH 1/4] arm: omap: Add phy binding info for musb in plat
- data
-References: <1368796954-3499-1-git-send-email-kishon@ti.com> <51A43E0A.8090201@ti.com> <51B9C3B6.1080707@ti.com> <51BAABB0.5060107@ti.com> <20130614054720.GL8164@atomide.com>
-In-Reply-To: <20130614054720.GL8164@atomide.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2LWTHKMTPTSUPGLMFEARV"
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: linux-acpi@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Aaron Lu <aaron.lwe@gmail.com>, Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware
+ expects Windows 8
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2LWTHKMTPTSUPGLMFEARV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 06/10/2013 07:01 AM, Matthew Garrett wrote:
+> Windows 8 leaves backlight control up to individual graphics drivers rather
+> than making ACPI calls itself. There's plenty of evidence to suggest that
+> the Intel driver for Windows doesn't use the ACPI interface, including the
+> fact that it's broken on a bunch of machines when the OS claims to support
+> Windows 8. The simplest thing to do appears to be to disable the ACPI
+> backlight interface on these systems.
+> 
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+>  drivers/gpu/drm/i915/i915_dma.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index 3b315ba..23b6292 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>  		/* Must be done after probing outputs */
+>  		intel_opregion_init(dev);
+>  		acpi_video_register();
+> +		/* Don't use ACPI backlight functions on Windows 8 platforms */
+> +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
+> +			acpi_video_backlight_unregister();
 
-On 14/06/13 08:47, Tony Lindgren wrote:
-> * Kishon Vijay Abraham I <kishon@ti.com> [130613 22:41]:
->> Hi,
->>
->> On Thursday 13 June 2013 06:35 PM, Tomi Valkeinen wrote:
->>> Hi,
->>>
->>> On 28/05/13 08:18, Kishon Vijay Abraham I wrote:
->>>> Hi Tony,
->>>>
->>>> On Friday 17 May 2013 06:52 PM, Kishon Vijay Abraham I wrote:
->>>>> In order for controllers to get PHY in case of non dt boot, the phy=
+What about the platform driver created backlight interface? Oh right,
+thinkpad_acpi will not create backlight interface for them since they
+are not in DMI table, so acpi_video_backlight_support() will return
+true and thinkspad_acpi thinks ACPI video driver is controlling
+backlight so it will not create backlight interface for them.
 
->>>>> binding information (phy label) should be added in the platform
->>>>> data of the controller.
->>>>
->>>> This series would be needed to get MUSB working in OMAP3 boards for
->>>> non-dt boot case. Do you think this is good enough to go in this rc =
-cycle?
->>>
->>> Did this or some other solution go forward? I'm still unable to boot
->>> with usb-gadget-ethernet with v3.10-rc5.
->>
->> No. I think Tony is ok to take this only during next merge window.
->=20
-> Yes I'll apply them to omap-for-v3.11/fixes-non-critical. We really
-> should have basic functionaly tested and working always before the
-> merge window so we only need to do minimal fixes during the -rc cycle.
+Then we will need to remember not to add any of those systems into
+the DMI table of video_detect.c, or thinkpad_acpi module will create
+backlight interface for them and according to reporter, that interface
+does not work either.
 
-I'm mostly interested in the USB gadget ethernet for the boards I have,
-but if I'm not mistaken, all USB gadget support for many OMAP boards is
-broken in v3.10. Shouldn't that be fixed, no matter if it's a minimal
-fix or not? Or is there some other, more minimal, way to fix this?
+What about a priority based solution? We can introduce a new field named
+priority to backlight_device and instead of calling another module's
+function like the unregister one here(which cause unnecessary module
+dependency), we only need to boost priority for its own interface. This
+field will be exported to sysfs, so user can change it during runtime
+too. And we can also introduce a new kernel command line as
+backlight.force_interface=raw/firmware/platform, to overcome the limited
+functionality provided by acpi_backlight=video/vendor, which does not
+involve GPU's interface.
 
- Tomi
+And we can place the quirk code in backlight layer instead of individual
+backlight functionality provider module. Suppose we have a backlight
+manager there, for all win8 systems, we can boost the raw type's
+priority on its registration, so no need to add code in
+intel/amd/etc./'s GPU driver code.
 
+With priority based solution, all backlight control interfaces stay,
+the priority field is an indication given by kernel to user space.
 
+For a complete description on backlight control background and the
+proposed solution, please take a look at:
+https://gist.github.com/aaronlu/5779828
 
-------enig2LWTHKMTPTSUPGLMFEARV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+It would be good to know your opinions, thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRurntAAoJEPo9qoy8lh71N4cP/R7ASm0PjLDbXvV7Di89b7EB
-h7ntvTdEHXgB/9Y8qWg3lEoX+rdYfBljvI+c8vwSd/Rlydof1Ij7Xt+8j6sRC15d
-FcWlvDN060vZGpoPp6d1Dy67HowoTm3QcRtJFFmkiLeM1+otpF/7QmjdtSot6M60
-KezKX1+TGrZhDKIjRanM9alMF5ruUquc8jlaQGqPPM7SZzjq4zCuN92ilqFJFDpv
-yywCCupBN+ylOGhdmQYVXPLRItpurY733EUi4/anJnCHCzo2DCL9SBQ+VRR44esg
-EQPUa7OFZqKI3JivcMbV+ScX9Frti7RweU6qnnBTFLi1SWROUCLTTxTmS5fRPaqb
-jiPkoGOMdR41srKMI5hCrvpsR5AXqDT4NmUsgb2PcwzHUJ9IzByOGLUhAuVbdQwU
-GQSfu3NduQv9p8EHDfI7H+dEFu7HIAYOcQKqN4maMJJwxKSp55DOP/2KfdcEinDZ
-Gs7Py3PAogP39ETeKzz5YEPSR/ACi1CJjJFzZCcTYT2sT6RmAK8iYL6zkKJkutM+
-TwBvOYF8d6Cw31caX882NRHT9l2Tv+CRWcwSdH/Jq/hlnCRQs2e3ABijoUtQXjfx
-+fyz+JPZGl7uSA1GPGTI//7SQIojOjkiqp60WfStxd6OEtSUgHlF64pDQs/G8fx4
-qx3roYyXxPqVzxeJdu5k
-=POe6
------END PGP SIGNATURE-----
-
-------enig2LWTHKMTPTSUPGLMFEARV--
+-Aaron
