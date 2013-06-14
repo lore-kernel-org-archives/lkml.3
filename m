@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab3FNBHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:07:12 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37076 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab3FNBHK (ORCPT
+	id S1759204Ab3FNBMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:12:40 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:2772 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab3FNBMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:07:10 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: ralf@linux-mips.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] smp.h: Use local_irq_{save,restore}() in !SMP version of on_each_cpu().
-Date: Thu, 13 Jun 2013 18:07:03 -0700
-Message-Id: <1371172023-16004-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Thu, 13 Jun 2013 21:12:38 -0400
+Message-ID: <51BA6DFD.6060903@huawei.com>
+Date: Fri, 14 Jun 2013 09:12:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [cgroup_init_early] WARNING: at mm/percpu.c:292 pcpu_mem_zalloc()
+References: <20130613230004.GA8096@localhost>
+In-Reply-To: <20130613230004.GA8096@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On 2013/6/14 7:00, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
+> commit f284b77333b1320491f138b76f11006bbc962569
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Wed Jun 12 13:50:58 2013 -0700
+> 
+>     cgroup: use percpu refcnt for cgroup_subsys_states
+>     
 
-Thanks to commit f91eb62f71b (init: scream bloody murder if interrupts
-are enabled too early), "bloody murder" is now being screamed.
-
-With a MIPS OCTEON config, we use on_each_cpu() in our
-irq_chip.irq_bus_sync_unlock() function.  This gets called in early as
-a result of the time_init() call.  Because the !SMP version of
-on_each_cpu() unconditionally enables irqs, we get:
-
-------------[ cut here ]------------
-WARNING: at init/main.c:560 start_kernel+0x250/0x410()
-Interrupts were enabled early
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.0-rc5-Cavium-Octeon+ #801
-Stack : 0000000000000046 ffffffff808e0000 0000000000000006 0000000000000004
-	  0000000000000001 0000000000000000 0000000000000046 0000000000000000
-	  ffffffff80a90000 ffffffff8015c020 0000000000000000 ffffffff8015c020
-	  ffffffff80a79f70 ffffffff80a80000 ffffffff8072b9c0 ffffffff808a7d77
-	  ffffffff80a79f70 ffffffff808a8168 0000000000000000 00000004178a9948
-	  0000000417801230 ffffffff805f7610 0000000010000078 ffffffff805fa01c
-	  ffffffff8089bd18 ffffffff801595fc ffffffff8089bd28 ffffffff8015d384
-	  ffffffff808a7e80 ffffffff8089bc30 0000000000000000 ffffffff80159710
-	  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-	  0000000000000000 ffffffff80139520 0000000000000000 0000000000000009
-	  ...
-Call Trace:
-[<ffffffff80139520>] show_stack+0x68/0x80
-[<ffffffff80159710>] warn_slowpath_common+0x78/0xb0
-[<ffffffff801597e8>] warn_slowpath_fmt+0x38/0x48
-[<ffffffff8092b768>] start_kernel+0x250/0x410
-
----[ end trace 139ce121c98e96c9 ]---
-
-Suggested fix: Do what we already do in the SMP version of
-on_each_cpu(), and use local_irq_save/local_irq_restore.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- include/linux/smp.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index e6564c1..d8fb04b 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -141,9 +141,10 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 			(up_smp_call_function(func, info))
- #define on_each_cpu(func,info,wait)		\
- 	({					\
--		local_irq_disable();		\
-+		unsigned long flags;		\
-+		local_irq_save(flags);		\
- 		func(info);			\
--		local_irq_enable();		\
-+		local_irq_restore(flags);	\
- 		0;				\
- 	})
- /*
--- 
-1.7.11.7
+You were testing the old patch, and Tejun has had it updated yesterday,
+and the new one won't trigger this warning.
 
