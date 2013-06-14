@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3FNUtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 16:49:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56283 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3FNUtJ (ORCPT
+	id S1752729Ab3FNUwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 16:52:31 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:38347 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3FNUwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 16:49:09 -0400
-Date: Fri, 14 Jun 2013 22:49:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH RESEND] fix WARNING: at kernel/cpu/idle.c:96
-In-Reply-To: <alpine.DEB.2.02.1306142227260.24522@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1306142245050.24522@ionos.tec.linutronix.de>
-References: <1371236142.2726.43.camel@dabdike> <alpine.DEB.2.02.1306142227260.24522@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 14 Jun 2013 16:52:30 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+Date: Fri, 14 Jun 2013 13:52:28 -0700
+X-Google-Sender-Auth: Z4pbB_moQjGQ4AbvSDwp6ahdj3M
+Message-ID: <CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Colin Cross <ccross@android.com>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, San Mehat <san@google.com>,
+        John Stultz <john.stultz@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jun 2013, Thomas Gleixner wrote:
-> On Fri, 14 Jun 2013, James Bottomley wrote:
-> 
-> > >From 48bbf44a96676ce6f520a408378730c976e9a11e Mon Sep 17 00:00:00 2001
-> > From: James Bottomley <JBottomley@Parallels.com>
-> > Date: Wed, 8 May 2013 14:05:34 -0700
-> > Subject: [PATCH] [PARISC] fix WARNING: at kernel/cpu/idle.c:96
-> > 
-> > On PA-RISC (and presumably any other arch that doesn't implement its own
-> > arch_cpu_idle), we get this spurious boot warning.  The problem is that the
-> > way the idle task is selected initially using the weak arch_cpu_idle() in
-> > idle.c causes us to enter this place once with interrupts enabled.  Fix this
-> > by disabling interrupts in the weak arch_cpu_idle() code.
-> > 
-> > Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > Cc: stable@vger.kernel.org
-> 
-> What's the stable tag for? This code got merged in 3,10, so stable is
-> totally irrelevant.
-> 
-> > Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> > 
-> > ---
-> > 
-> > Thomas, I'm getting a bit impatient: this is a clear bug in the cpu idle
-> > code and we keep getting reports of this as a boot crash on parisc.  If
-> > you don't push it through your tree, I'll take it through the parisc
-> > one.
-> 
-> Hold your breath. I was not even CC'ed on the original patch and I
-> admit that I ignored the patch which starts with [PARISC].
-> 
-> If the subject line would have started with [idle], [core/idle] I
-> definitely would have paid attention.
-> 
-> Aside of that the rest of the subject line is just annoyingly
-> sloppy. We do not fix a WARNING. That's not what this patch is
-> about. The patch fixes a problem which got introduced with the idle
-> rework, period.
-> 
-> I'll pick it up and fix the changelog.
+On Fri, Jun 14, 2013 at 11:42 AM, Zoran Markovic
+<zoran.markovic@linaro.org> wrote:
+>> I am not sure I understand why this patch is needed. When a new card
+>> is inserted/removed and the upper levels gets notification about the
+>> new card, triggering the mounting/un-mounting of the file system, why
+>> should it be the lowest layer (mmc) that prevents the platform from
+>> enter suspend/sleep? Why do we need to prevent it at all?
+>>
+>> Note that notifier handling in mmc_pm_notify, was if I remember
+>> correctly, not completely developed when the original version of this
+>> patch was being discussed. mmc_pm_notify prevents cards from being
+>> inserted/removed in the middle of suspend->resume sequence, is that
+>> not enough?
+>
+> I will try to speak on behalf of the original implementers in a hope
+> they would provide the original motivation for the patch.
+>
+> My understanding is that any preemption in the procedure could be an
+> opportunity to suspend, as there may be a suspend request racing with
+> this code. This is why the calls to __pm_stay_awake() and
+> queue_delayed_work() are so tightly coupled. It would be up to the
+> delayed work procedure (mmc_rescan()) to decide whether or not it is
+> safe to suspend. If there are no changes in the MMC state or all
+> changes can be handled by mmc_rescan(), it is safe to call
+> __pm_relax(). Otherwise, userland may take over processing of this
+> event, and this is why the awake state needs to be extended by 1/2
+> second.
 
-And it needs fixing. It says:
-
-"... way the idle task is selected initially using the weak
- arch_cpu_idle() in idle.c causes us to enter this place once with
- interrupts enabled.  Fix this by disabling interrupts in the weak
- arch_cpu_idle() code."
-
-And the patch does:
-
- void __weak arch_cpu_idle(void)
- {
-        cpu_idle_force_poll = 1;
-+       local_irq_enable();
- }
-
-Instead of bullying around you might consider to read
-Documentation/SubmittingPatches.
-
-Thanks,
-
-	tglx
+The __pm_stay_awake() is required to prevent autosleep during the time
+between the card detect interrupt and when the userspace process that
+gets the notification runs.  The 1/2 second delay is used because it
+is easier than trying to detect when the userspace process has
+received the notification, at which time it should hold its own
+wakelock and the mmc subsystem can call __pm_relax().
