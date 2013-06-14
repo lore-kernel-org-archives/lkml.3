@@ -1,82 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609Ab3FNB5m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:57:42 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:37404 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759329Ab3FNB5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:57:40 -0400
-Message-ID: <51BA77B7.5030405@huawei.com>
-Date: Fri, 14 Jun 2013 09:53:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S932415Ab3FNB6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:58:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29700 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932084Ab3FNB6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 21:58:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
+   d="scan'208";a="349633560"
+Message-ID: <51BA78C7.9010001@linux.intel.com>
+Date: Fri, 14 Jun 2013 04:58:31 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH v4 2/9] memcg, kmem: fix reference count handling on the error
- path
-References: <51BA7794.2000305@huawei.com>
-In-Reply-To: <51BA7794.2000305@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Subject: [PATCH v2 sockperf] sockperf: add SO_LL socketop support
+References: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
-
-mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem
-fails. This is not correct because only memcg_propagate_kmem takes an
-additional reference while mem_cgroup_sockets_init is allowed to fail as
-well (although no current implementation fails) but it doesn't take any
-reference. This all suggests that it should be memcg_propagate_kmem that
-should clean up after itself so this patch moves mem_cgroup_put over
-there.
-
-Unfortunately this is not that easy (as pointed out by Li Zefan) because
-memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it
-is marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
-memcg_propagate_kmem fails so the additional reference is dropped in
-that case in kmem_cgroup_destroy which means that the reference would be
-dropped two times.
-
-The easiest way then would be to simply remove mem_cgrroup_put from
-mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
-thing.
-
-Cc: <stable@vger.kernel.org> # 3.8+
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Add lls socket option support.
+use --lls (value in usecs) to override global setting.
+Right now we always get and print the value of the option before we set,
+to show that the option works properly.
+This should be removed in an official release.
 ---
- mm/memcontrol.c | 8 --------
- 1 file changed, 8 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0bacc0d..b5ec4da 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6325,14 +6325,6 @@ mem_cgroup_css_online(struct cgroup *cont)
- 
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
--		mem_cgroup_put(memcg);
--	}
- 	return error;
- }
- 
--- 
-1.8.0.2
+  src/Defs.h       |    3 +++
+  src/SockPerf.cpp |   58 
++++++++++++++++++++++++++++++++++++++++++++++++++++---
+  2 files changed, 58 insertions(+), 3 deletions(-)
+
+diff --git a/src/Defs.h b/src/Defs.h
+index e38e3a4..041fa0d 100644
+--- a/src/Defs.h
++++ b/src/Defs.h
+@@ -161,6 +161,7 @@ enum {
+      OPT_OUTPUT_PRECISION,           //35
+      OPT_CLIENTPORT,                 //36
+      OPT_CLIENTIP,                   //37
++    OPT_LLS,            //38
+  };
+
+  #define MODULE_NAME            "sockperf"
+@@ -527,6 +528,8 @@ struct user_params_t {
+  //    bool stream_mode; - use b_stream instead
+      int mthread_server;
+      struct timeval* select_timeout;
++    unsigned int lls_usecs;
++    bool lls_is_set;
+      int sock_buff_size;
+      int threads_num;
+      char threads_affinity[MAX_ARGV_SIZE];
+diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
+index 41daf95..28569c9 100644
+--- a/src/SockPerf.cpp
++++ b/src/SockPerf.cpp
+@@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
+          "Limit the lifetime of the message (default 2)."
+      },
+      {
++        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string( "lls" ),
++        "Turn on LLS via socket option (value = us to poll)."
++    },
++    {
+          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ), 
+aopt_set_string( "buffer-size" ),
+          "Set total socket receive/send buffer <size> in bytes (system 
+defined by default)."
+      },
+@@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const 
+char **argv )
+      int   i = 0;
+
+      printf(MODULE_NAME " is a tool for testing network latency and 
+throughput.\n");
+-    printf("version %s\n", STR(VERSION));
++    printf("version %s-lls\n", STR(VERSION));
+      printf("\n");
+      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
+      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on 
+a specific subcommand.\n");
+@@ -1382,8 +1386,8 @@ static int proc_mode_server( int id, int argc, 
+const char **argv )
+          {
+              'B', AOPT_NOARG,    aopt_set_literal( 'B' ), 
+aopt_set_string( "Bridge" ),
+              "Run in Bridge mode."
+-        },
+-*/
++        },
++*/
+          {
+               OPT_THREADS_NUM, AOPT_ARG, aopt_set_literal( 0 ), 
+aopt_set_string( "threads-num" ),
+               "Run <N> threads on server side (requires '-f' option)."
+@@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT 
+*common_obj )
+              s_user_params.is_nonblocked_send = true;
+          }
+
++        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
++            const char* optarg = aopt_value(common_obj, OPT_LLS);
++            if (optarg) {
++                errno = 0;
++                int value = strtoul(optarg, NULL, 0);
++                if (errno != 0 || value < 0) {
++                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS, 
+optarg);
++                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
++                }
++                else {
++                    s_user_params.lls_usecs = value;
++                    s_user_params.lls_is_set = true;
++                }
++            }
++            else {
++                log_msg("'-%d' Invalid value", OPT_LLS);
++                rc = SOCKPERF_ERR_BAD_ARGUMENT;
++            }
++        }
++
+          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
+
+              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
+@@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
+      return rc;
+  }
+
++#ifndef SO_LL
++#define SO_LL 46
++#endif
++int sock_set_lls(int fd)
++{
++    int rc = SOCKPERF_ERR_NONE;
++    unsigned int lls;
++    int size = sizeof(lls);
++
++    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
++        log_err("getsockopt(SO_LL) failed");
++        return SOCKPERF_ERR_SOCKET;
++    } else
++        log_msg("socket option SO_LL default was %u, changing to %u", 
+lls, s_user_params.lls_usecs);
++
++    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs), 
+sizeof(s_user_params.lls_usecs)) < 0) {
++        log_err("setsockopt(SO_LL) failed");
++        rc = SOCKPERF_ERR_SOCKET;
++    }
++    return rc;
++}
++
++
+  int sock_set_snd_rcv_bufs(int fd)
+  {
+      /*
+@@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
+      }
+
+      if (!rc &&
++            (s_user_params.lls_is_set == true))
++    {
++        rc = sock_set_lls(fd);
++    }
++    if (!rc &&
+              (s_user_params.sock_buff_size > 0))
+      {
+          rc = sock_set_snd_rcv_bufs(fd);
+
+
+
+
