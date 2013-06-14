@@ -1,192 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab3FNB6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:58:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29700 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab3FNB6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:58:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,863,1363158000"; 
-   d="scan'208";a="349633560"
-Message-ID: <51BA78C7.9010001@linux.intel.com>
-Date: Fri, 14 Jun 2013 04:58:31 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S932471Ab3FNB6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:58:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:37871 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab3FNB6m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 21:58:42 -0400
+Message-ID: <51BA77DD.1000103@huawei.com>
+Date: Fri, 14 Jun 2013 09:54:37 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: [PATCH v2 sockperf] sockperf: add SO_LL socketop support
-References: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130614015638.3500.61523.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH v4 4/9] memcg: don't use mem_cgroup_get() when creating a
+ kmemcg cache
+References: <51BA7794.2000305@huawei.com>
+In-Reply-To: <51BA7794.2000305@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lls socket option support.
-use --lls (value in usecs) to override global setting.
-Right now we always get and print the value of the option before we set,
-to show that the option works properly.
-This should be removed in an official release.
+Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
+
+There are two things being done in the current code:
+
+First, we acquired a css_ref to make sure that the underlying cgroup
+would not go away. That is a short lived reference, and it is put as
+soon as the cache is created.
+
+At this point, we acquire a long-lived per-cache memcg reference count
+to guarantee that the memcg will still be alive.
+
+so it is:
+
+enqueue: css_get
+create : memcg_get, css_put
+destroy: memcg_put
+
+So we only need to get rid of the memcg_get, change the memcg_put to
+css_put, and get rid of the now extra css_put.
+
+(This changelog is mostly written by Glauber)
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
+ mm/memcontrol.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-  src/Defs.h       |    3 +++
-  src/SockPerf.cpp |   58 
-+++++++++++++++++++++++++++++++++++++++++++++++++++---
-  2 files changed, 58 insertions(+), 3 deletions(-)
-
-diff --git a/src/Defs.h b/src/Defs.h
-index e38e3a4..041fa0d 100644
---- a/src/Defs.h
-+++ b/src/Defs.h
-@@ -161,6 +161,7 @@ enum {
-      OPT_OUTPUT_PRECISION,           //35
-      OPT_CLIENTPORT,                 //36
-      OPT_CLIENTIP,                   //37
-+    OPT_LLS,            //38
-  };
-
-  #define MODULE_NAME            "sockperf"
-@@ -527,6 +528,8 @@ struct user_params_t {
-  //    bool stream_mode; - use b_stream instead
-      int mthread_server;
-      struct timeval* select_timeout;
-+    unsigned int lls_usecs;
-+    bool lls_is_set;
-      int sock_buff_size;
-      int threads_num;
-      char threads_affinity[MAX_ARGV_SIZE];
-diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
-index 41daf95..28569c9 100644
---- a/src/SockPerf.cpp
-+++ b/src/SockPerf.cpp
-@@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
-          "Limit the lifetime of the message (default 2)."
-      },
-      {
-+        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string( "lls" ),
-+        "Turn on LLS via socket option (value = us to poll)."
-+    },
-+    {
-          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ), 
-aopt_set_string( "buffer-size" ),
-          "Set total socket receive/send buffer <size> in bytes (system 
-defined by default)."
-      },
-@@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const 
-char **argv )
-      int   i = 0;
-
-      printf(MODULE_NAME " is a tool for testing network latency and 
-throughput.\n");
--    printf("version %s\n", STR(VERSION));
-+    printf("version %s-lls\n", STR(VERSION));
-      printf("\n");
-      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
-      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on 
-a specific subcommand.\n");
-@@ -1382,8 +1386,8 @@ static int proc_mode_server( int id, int argc, 
-const char **argv )
-          {
-              'B', AOPT_NOARG,    aopt_set_literal( 'B' ), 
-aopt_set_string( "Bridge" ),
-              "Run in Bridge mode."
--        },
--*/
-+        },
-+*/
-          {
-               OPT_THREADS_NUM, AOPT_ARG, aopt_set_literal( 0 ), 
-aopt_set_string( "threads-num" ),
-               "Run <N> threads on server side (requires '-f' option)."
-@@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT 
-*common_obj )
-              s_user_params.is_nonblocked_send = true;
-          }
-
-+        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
-+            const char* optarg = aopt_value(common_obj, OPT_LLS);
-+            if (optarg) {
-+                errno = 0;
-+                int value = strtoul(optarg, NULL, 0);
-+                if (errno != 0 || value < 0) {
-+                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS, 
-optarg);
-+                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+                }
-+                else {
-+                    s_user_params.lls_usecs = value;
-+                    s_user_params.lls_is_set = true;
-+                }
-+            }
-+            else {
-+                log_msg("'-%d' Invalid value", OPT_LLS);
-+                rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+            }
-+        }
-+
-          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
-
-              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
-@@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
-      return rc;
-  }
-
-+#ifndef SO_LL
-+#define SO_LL 46
-+#endif
-+int sock_set_lls(int fd)
-+{
-+    int rc = SOCKPERF_ERR_NONE;
-+    unsigned int lls;
-+    int size = sizeof(lls);
-+
-+    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
-+        log_err("getsockopt(SO_LL) failed");
-+        return SOCKPERF_ERR_SOCKET;
-+    } else
-+        log_msg("socket option SO_LL default was %u, changing to %u", 
-lls, s_user_params.lls_usecs);
-+
-+    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs), 
-sizeof(s_user_params.lls_usecs)) < 0) {
-+        log_err("setsockopt(SO_LL) failed");
-+        rc = SOCKPERF_ERR_SOCKET;
-+    }
-+    return rc;
-+}
-+
-+
-  int sock_set_snd_rcv_bufs(int fd)
-  {
-      /*
-@@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
-      }
-
-      if (!rc &&
-+            (s_user_params.lls_is_set == true))
-+    {
-+        rc = sock_set_lls(fd);
-+    }
-+    if (!rc &&
-              (s_user_params.sock_buff_size > 0))
-      {
-          rc = sock_set_snd_rcv_bufs(fd);
-
-
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a8e8d2a..466c595 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3252,7 +3252,7 @@ void memcg_release_cache(struct kmem_cache *s)
+ 	list_del(&s->memcg_params->list);
+ 	mutex_unlock(&memcg->slab_caches_mutex);
+ 
+-	mem_cgroup_put(memcg);
++	css_put(&memcg->css);
+ out:
+ 	kfree(s->memcg_params);
+ }
+@@ -3412,16 +3412,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 
+ 	mutex_lock(&memcg_cache_mutex);
+ 	new_cachep = cachep->memcg_params->memcg_caches[idx];
+-	if (new_cachep)
++	if (new_cachep) {
++		css_put(&memcg->css);
+ 		goto out;
++	}
+ 
+ 	new_cachep = kmem_cache_dup(memcg, cachep);
+ 	if (new_cachep == NULL) {
+ 		new_cachep = cachep;
++		css_put(&memcg->css);
+ 		goto out;
+ 	}
+ 
+-	mem_cgroup_get(memcg);
+ 	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+ 
+ 	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+@@ -3509,8 +3511,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+ 
+ 	cw = container_of(w, struct create_work, work);
+ 	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+-	/* Drop the reference gotten when we enqueued. */
+-	css_put(&cw->memcg->css);
+ 	kfree(cw);
+ }
+ 
+-- 
+1.8.0.2
 
