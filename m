@@ -1,207 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab3FNAVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 20:21:31 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60665 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab3FNAVa (ORCPT
+	id S1758381Ab3FNA0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 20:26:54 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52900 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab3FNA0x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 20:21:30 -0400
-X-AuditID: 9c930197-b7b8cae000003b08-59-51ba6207a01b
-Date: Fri, 14 Jun 2013 09:21:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/8] vrange: Clear volatility on new mmaps
-Message-ID: <20130614002132.GC4533@bbox>
-References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
- <1371010971-15647-5-git-send-email-john.stultz@linaro.org>
- <20130613062815.GB5209@bbox>
- <51BA593E.9000102@linaro.org>
+	Thu, 13 Jun 2013 20:26:53 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrice Chotard <patrice.chotard.st@gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig properties from a dt node
+Date: Fri, 14 Jun 2013 02:27:01 +0200
+Message-ID: <2477455.I6AxjaGPuJ@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <201306102140.29918.heiko@sntech.de>
+References: <201306102139.32444.heiko@sntech.de> <201306102140.29918.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BA593E.9000102@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello John,
+Hi Heiko,
 
-On Thu, Jun 13, 2013 at 04:43:58PM -0700, John Stultz wrote:
-> On 06/12/2013 11:28 PM, Minchan Kim wrote:
-> >Hey John,
-> >
-> >On Tue, Jun 11, 2013 at 09:22:47PM -0700, John Stultz wrote:
-> >>At lsf-mm, the issue was brought up that there is a precedence with
-> >>interfaces like mlock, such that new mappings in a pre-existing range
-> >>do no inherit the mlock state.
-> >>
-> >>This is mostly because mlock only modifies the existing vmas, and so
-> >>any new mmaps create new vmas, which won't be mlocked.
-> >>
-> >>Since volatility is not stored in the vma (for good cause, specfically
-> >>as we'd have to have manage file volatility differently from anonymous
-> >>and we're likely to manage volatility on small chunks of memory, which
-> >>would cause lots of vma splitting and churn), this patch clears volatilty
-> >>on new mappings, to ensure that we don't inherit volatility if memory in
-> >>an existing volatile range is unmapped and then re-mapped with something
-> >>else.
-> >>
-> >>Thus, this patch forces any volatility to be cleared on mmap.
-> >If we have lots of node on vroot but it doesn't include newly mmmaping
-> >vma range, it's purely unnecessary cost and that's never what we want.
-> >
-> >>XXX: We expect this patch to be not well loved by mm folks, and are open
-> >>to alternative methods here. Its more of a place holder to address
-> >>the issue from lsf-mm and hopefully will spur some further discussion.
-> >Another idea is we can add "bool is_vrange" in struct vm_area_struct.
-> >It is protected by vrange_lock. The scenario is following as,
-> >
-> >When do_vrange is called with VRANGE_VOLATILE, it iterates vmas
-> >and mark the vma->is_vrange to true. So, we can avoid tree traversal
-> >if the is_vrange is false when munmap is called and newly mmaped vma
-> >doesn't need to clear any volatility.
+Thank you for the patch. I've tested it on an sh73a0 KZM9G board with the sh-
+pfc driver and it seems to work fine. Please see the code below for comments.
+
+On Monday 10 June 2013 21:40:29 Heiko Stübner wrote:
+> pinconf_generic_parse_dt_config() takes a node as input and generates an
+> array of generic pinconfig values from the properties of this node.
 > 
-> We could look further into this approach if folks think its the best
-> way to go. Though it has the downside of having the split the vmas
-> when we're dealing with a large number of smallish objects. Also
-
-We don't need to split vma, which I don't really want.
-I meant followig as
-
-1)
-
-0x100000                                        0x10000000
-|                       VMA : isvrange = false  |
-
-
-2) vrange(0x200000, 0x100000, VRANGE_VOLATILE)
-
-
-0x100000                                        0x10000000
-|                       VMA : isvrange = true   |
-
-
-        vroot
-       /
-   node 1
-    
-2) vrange(0x400000, 0x100000, VRANGE_VOLATILE)
-
-0x100000                                        0x10000000
-|                       VMA : isvrange = true   |
-
-
-        vroot
-       /     \
-   node 1  node 2
-
-
-3) unmap(0x400000, 0x100000, VRANGE_NOVOLATILE)
-
-sys_munmap:
-
-if (vma->is_vrange) {
-        vrange_clear(0x400000, 0x400000 + 0x100000 -1); 
-        if (vma_vrange_all_clear(vma)
-                vma->isvrange = false;
-}
-
-0x100000                                        0x10000000
-|                       VMA : isvrange = true   |
-
-        vroot
-       /    
-   node 1
-
-
-3) unmap(0x200000, 0x100000, VRANGE_NOVOLATILE)
-
-sys_munmap:
-
-if (vma->is_vrange) {
-        vrange_clear(0x200000, 0x200000 + 0x100000 -1); 
-        if (vma_vrange_all_clear(vma)
-                vma->isvrange = false;
-}
-
-0x100000                                        0x10000000
-|                       VMA : isvrange = false  |
-
-        vroot
-       /    \
-
-
-4) purging path
-
-bool really_vrange_page(page *page)
-{
-        
-        return __vrange_address(vroot, startofpage, endofpage);
-}
-
-shrink_page_list
-        ..
-        ..
-
-        vma = rmap_from_page(page);
-        if (vma->is_vrange) {
-                /*
-                 * vma's is_vrange could have false positive
-                 * so that we should check it.
-                 */
-                if (really_vrange_page(page))
-                        purge_page(page);
-        }
-        ..
-        ..
-
-So we can reduce unnecessary vroot traverse without vma splitting.
-
-> we'd be increasing the vma_struct size for everyone, even if no one
-> is using volatile ranges, which may be a bigger concern.
-
-
-I think vma is not a sensitive about size and historically, we have
-been added a variable easily. Of course, another ideas which don't
-need to increase vma size are welcome but IMHO, it'a good compromise
-between performance and memoryfootprint.
-
+> As I couldn't find a mechanism to count the number of properties of a node
+> the function uses internally an array to accept one of parameter and copies
+> the real present options to a smaller variable at its end.
 > 
-> Also it means we'd be managing anonymous and file volatility with
-> different structures (though that's not the end of the world).
-
-volatility still is kept in vrange->purged.
-Do I miss something?
-
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>  .../bindings/pinctrl/pinctrl-bindings.txt          |   38 +++++++++
+>  drivers/pinctrl/pinconf-generic.c                  |   81 +++++++++++++++++
+>  drivers/pinctrl/pinconf.h                          |    6 ++
+>  3 files changed, 125 insertions(+), 0 deletions(-)
 > 
-> thanks
-> -john
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt index
+> c95ea82..ef7cd57 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> @@ -126,3 +126,41 @@ device; they may be grandchildren, for example. Whether
+> this is legal, and whether there is any interaction between the child and
+> intermediate parent nodes, is again defined entirely by the binding for the
+> individual pin controller device.
+> +
+> +== Using generic pinconfig options ==
+> +
+> +Generic pinconfig parameters can be used by defining a separate node
+> containing +the applicable parameters (and optional values), like:
+> +
+> +pcfg_pull_up: pcfg_pull_up {
+> +	bias-pull-up;
+> +	drive-strength = <20>;
+> +};
+> +
+> +This node should then be referenced in the appropriate pinctrl node as a
+> phandle +and parsed in the driver using the pinconf_generic_parse_dt_config
+> function. +
+> +Supported configuration parameters are:
+> +
+> +bias-disable		- disable any pin bias
+> +bias-high-impedance	- high impedance mode ("third-state", "floating")
+> +bias-bus-hold		- latch weakly
+> +bias-pull-up		- pull up the pin
+> +bias-pull-down		- pull down the pin
+> +bias-pull-pin-default	- use pin-default pull state
+> +drive-push-pull		- drive actively high and low
+> +drive-open-drain	- drive with open drain
+> +drive-open-source	- drive with open source
+> +drive-strength		- sink or source at most X mA
+> +input-schmitt-enable	- enable schmitt-trigger mode
+> +input-schmitt-disable	- disable schmitt-trigger mode
+> +input-schmitt		- run in schmitt-trigger mode with hysteresis X
+> +input-debounce		- debounce mode with debound time X
+> +power-source		- select power source X
+> +slew-rate		- use slew-rate X
+> +low-power-mode		- low power mode
+> +output-low		- set the pin to output mode with low level
+> +output-high		- set the pin to output mode with high level
+> +
+> +More in-depth documentation on these parameters can be found in
+> +<include/linux/pinctrl/pinconfig-generic.h>
+> diff --git a/drivers/pinctrl/pinconf-generic.c
+> b/drivers/pinctrl/pinconf-generic.c index 9a6812b..3610e7b 100644
+> --- a/drivers/pinctrl/pinconf-generic.c
+> +++ b/drivers/pinctrl/pinconf-generic.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/pinctrl/pinctrl.h>
+>  #include <linux/pinctrl/pinconf.h>
+>  #include <linux/pinctrl/pinconf-generic.h>
+> +#include <linux/of.h>
+>  #include "core.h"
+>  #include "pinconf.h"
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> @@ -139,3 +140,83 @@ void pinconf_generic_dump_config(struct pinctrl_dev
+> *pctldev, }
+>  EXPORT_SYMBOL_GPL(pinconf_generic_dump_config);
+>  #endif
+> +
+> +#ifdef CONFIG_OF
+> +struct pinconf_generic_dt_params {
+> +	const char * const property;
+> +	enum pin_config_param param;
+> +	u32 default_value;
+> +};
+> +
+> +static struct pinconf_generic_dt_params dt_params[] = {
+> +	{ "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
+> +	{ "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
+> +	{ "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
+> +	{ "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
+> +	{ "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
+> +	{ "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
+> +	{ "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
+> +	{ "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
+> +	{ "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
+> +	{ "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
+> +	{ "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
+> +	{ "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
+> +	{ "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
+> +	{ "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
+> +	{ "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
+> +	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
+> +	{ "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
+> +	{ "output-low", PIN_CONFIG_OUTPUT, 0, },
+> +	{ "output-high", PIN_CONFIG_OUTPUT, 1, },
+> +};
+> +
+> +/**
+> + * pinconf_generic_parse_dt_config()
+> + * parse the config properties into generic pinconfig values.
+> + * @np: node containing the pinconfig properties
+> + * @configs: array with nconfigs entries containing the generic pinconf
+> values + * @nconfigs: umber of configurations
+> + */
+> +int pinconf_generic_parse_dt_config(struct device_node *np,
+> +				    unsigned long **configs,
+> +				    unsigned int *nconfigs)
+> +{
+> +	unsigned long cfg[ARRAY_SIZE(dt_params)];
 
+I'm a bit uneasy about allocating large arrays on the stack. Would it be 
+better to dynamically allocate cfg ? I've used kzrealloc in my implementation 
+to grow the config array every time a config was found, but that might not be 
+the most efficient implementation, although I wonder how many configuration 
+options we will see in practice in a single node.
+
+> +	unsigned int ncfg = 0;
+> +	int ret;
+> +	int i;
+> +	u32 val;
+> +
+> +	if (!np)
+> +		return -EINVAL;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(dt_params); i++) {
+> +		struct pinconf_generic_dt_params *par = &dt_params[i];
+> +		ret = of_property_read_u32(np, par->property, &val);
+> +
+> +		/* property not found */
+> +		if (ret == -EINVAL)
+> +			continue;
+> +
+> +		/* use default value, when no value is specified */
+> +		if (ret)
+> +			val = par->default_value;
+> +
+> +		pr_debug("found %s with value %u\n", par->property, val);
+> +		cfg[ncfg] = pinconf_to_config_packed(par->param, val);
+> +		ncfg++;
+> +	}
+
+You could add
+
+	if (ncfg == 0) {
+		*configs = NULL;
+		*nconfigs = 0;
+		return 0;
+	}
+
+here.
+
+Most of the issues I wanted to raise have already been addressed by comments 
+sent to the list. Do you plan to send a v2 in the near future ?
+
+> +
+> +	/*
+> +	 * Now limit the number of configs to the real number of
+> +	 * found properties.
+> +	 */
+> +	*configs = kzalloc(ncfg * sizeof(unsigned long), GFP_KERNEL);
+> +	if (!*configs)
+> +		return -ENOMEM;
+> +
+> +	memcpy(*configs, &cfg, ncfg * sizeof(unsigned long));
+> +	*nconfigs = ncfg;
+> +	return 0;
+> +}
+> +#endif
+> diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
+> index 92c7267..a4a5417 100644
+> --- a/drivers/pinctrl/pinconf.h
+> +++ b/drivers/pinctrl/pinconf.h
+> @@ -123,3 +123,9 @@ static inline void pinconf_generic_dump_config(struct
+> pinctrl_dev *pctldev, return;
+>  }
+>  #endif
+> +
+> +#if defined(CONFIG_GENERIC_PINCONF) && defined(CONFIG_OF)
+> +int pinconf_generic_parse_dt_config(struct device_node *np,
+> +				    unsigned long **configs,
+> +				    unsigned int *nconfigs);
+> +#endif
 -- 
-Kind regards,
-Minchan Kim
+Regards,
+
+Laurent Pinchart
+
