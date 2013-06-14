@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3FNK4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 06:56:20 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:33423 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3FNK4S (ORCPT
+	id S1752393Ab3FNLDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 07:03:03 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54559 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3FNLDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 06:56:18 -0400
-Date: Fri, 14 Jun 2013 14:56:13 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v3 5/9] memcg: use css_get/put when charging/uncharging
- kmem
-Message-ID: <20130614105611.GA4292@localhost.localdomain>
-References: <51B98D17.2050902@huawei.com>
- <20130613155319.GJ23070@dhcp22.suse.cz>
- <51BA6F34.30001@huawei.com>
+	Fri, 14 Jun 2013 07:03:01 -0400
+Date: Fri, 14 Jun 2013 13:02:59 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] ARM: cfa10036: Add USB0 OTG port
+Message-ID: <20130614110259.GQ16699@lukather>
+References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1371131025-12200-2-git-send-email-maxime.ripard@free-electrons.com>
+ <24013808.T2v7Fa5NMK@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51BA6F34.30001@huawei.com>
+In-Reply-To: <24013808.T2v7Fa5NMK@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 09:17:40AM +0800, Li Zefan wrote:
-> >>  static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
-> >>  {
-> >> +	/*
-> >> +	 * We need to call css_get() first, because memcg_uncharge_kmem()
-> >> +	 * will call css_put() if it sees the memcg is dead.
-> >> +	 */
-> >> +	smb_wmb();
-> >>  	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
-> >>  		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
-> > 
-> > I do not feel strongly about that but maybe open coding this in
-> > mem_cgroup_css_offline would be even better. There is only single caller
-> > and there is smaller chance somebody will use the function incorrectly
-> > later on.
-> > 
-> > So I leave the decision on you because this doesn't matter much.
+Hi Arnd,
+
+On Fri, Jun 14, 2013 at 12:06:51AM +0200, Arnd Bergmann wrote:
+> On Thursday 13 June 2013 15:43:42 Maxime Ripard wrote:
+> > +
+> > +       ahb@80080000 {
+> > +               usb0: usb@80080000 {
+> > +                       pinctrl-names = "default";
+> > +                       pinctrl-0 = <&usb0_otg_cfa10036>;
+> > +                       status = "okay";
+> >                 };
+> >         };
 > > 
 > 
-> Yeah, it should go away soon. I'll post a patch after this patchset gets
-> merged into -mm tree and then we can discuss there.
- 
-I don't care if it is open coded or not. If there is any strong preference
-from anyone on this matter, feel free to change it.
+> The patches all look good, just one trivial comment about the fragment above:
+> 
+> There is already a "usb0" label in the imx28.dtsi file for the same
+> node. When you refer to the node from a board.dts file, either leave
+> out the redundant label, or use it to simplify the statements above
+> to the brief version:
+> 
+> 	&usb0 {
+> 		pinctrl-names = "default";
+> 		pinctrl-0 = <&usb0_otg_cfa10036>;
+> 		status = "okay";
+> 	};
+> 
+
+Good to know, thanks!
+
+Maxime
+
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
