@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3FNGvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 02:51:13 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:24800
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab3FNGvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 02:51:12 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 14 Jun 2013 14:51:52 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] ARM: mxs: Various Crystalfontz DT additions
-Message-ID: <20130614065150.GG20513@S2101-09.ap.freescale.net>
-References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
+	id S1751992Ab3FNGxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 02:53:21 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:19893 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621Ab3FNGxU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 02:53:20 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 14 Jun 2013 14:53:14 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5gQG0DP9vff+kURemvb02abvnWOAIi0tlw
+Message-ID: <35FD53F367049845BC99AC72306C23D17B08729316@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+ <20130531111305.GI4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
+ <20130603095425.GA32242@mudshark.cambridge.arm.com>
+In-Reply-To: <20130603095425.GA32242@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 03:43:41PM +0200, Maxime Ripard wrote:
-> Brian Lilly (3):
->   ARM: cfa10049: Switch the chip select pin of the LCD controller
->   ARM: mxs: dt: Add the Crystalfontz CFA-10055 device tree
->   ARM: mxs: dt: Add Crystalfontz CFA-10057 device tree
+Hi Will,
+
+We have tested the patch,
+It seems ok in the stability test .
+
+We have merged it into our main branch .
+
+Thanks for your patch !
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Monday, June 03, 2013 5:54 PM
+To: Wang, Yalin
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: A bug about system call on ARM
+
+On Mon, Jun 03, 2013 at 06:25:26AM +0100, Wang, Yalin wrote:
+> Hi  Will,
 > 
-> Maxime Ripard (1):
->   ARM: cfa10036: Add USB0 OTG port
+> I have a question about this patch .
+> 
+> If the user space is thumb mode,
+> The PC should be rewind by 2 bytes,
+> So the fix_up code should be
+> 
+> Sub lr, lr, #2 .
+> 
+> 
+> Am I right ?
 
-All applied, thanks.
+No, because we don't have OABI-compat support for Thumb applications and force everything down the EABI path instead.
 
-Shawn
+Did you manage to test the patch?
 
+Will
