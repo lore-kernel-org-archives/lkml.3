@@ -1,772 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3FNO5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:57:11 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43217 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751259Ab3FNO4y (ORCPT
+	id S1753099Ab3FNPAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:00:32 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:48678 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3FNPAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:56:54 -0400
-From: Bernd Bassimir <bassimir.kernel@gmx.de>
-To: devel@linuxdriverproject.org
-Cc: gregkh@linuxfoundation.org, yamanetoshi@gmail.com, devendra.aaru@gmail.com,
-        jslaby@suse.cz, nico.doerr@hawo.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de,
-        Bernd Bassimir <bassimir.kernel@gmx.de>
-Subject: [PATCH 1/2] serqt_usb2: Fixed coding style CamelCases
-Date: Fri, 14 Jun 2013 16:55:57 +0200
-Message-Id: <1371221758-31589-1-git-send-email-bassimir.kernel@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 14 Jun 2013 11:00:31 -0400
+Message-ID: <51BB2FFC.8060209@hp.com>
+Date: Fri, 14 Jun 2013 11:00:12 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, ????????? <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+References: <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net> <1370974231.9844.212.camel@gandalf.local.home> <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net> <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com> <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net> <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com> <20130612233224.GH4165@ZenIV.linux.org.uk> <CA+55aFw2=3ua32vkpWc_9ckCNweFmmH3c0d-VqoaUD86rkR-=w@mail.gmail.com> <20130613002058.GI4165@ZenIV.linux.org.uk> <CA+55aFxEnNvj1SoOL+ChVQqK+ouSNgsM+6cQt+=PpmTGdcFggg@mail.gmail.com> <20130613004941.GJ4165@ZenIV.linux.org.uk> <CA+55aFz-=xewm_6MuxK9JK_GoqyFSo6L-beXyEv83awe+B_rVw@mail.gmail.com>
+In-Reply-To: <CA+55aFz-=xewm_6MuxK9JK_GoqyFSo6L-beXyEv83awe+B_rVw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed names of several variables, that contained CamelCases.
+On 06/12/2013 08:59 PM, Linus Torvalds wrote:
+> On Wed, Jun 12, 2013 at 5:49 PM, Al Viro<viro@zeniv.linux.org.uk>  wrote:
+>> On Wed, Jun 12, 2013 at 05:38:13PM -0700, Linus Torvalds wrote:
+>>> For the particular case of dget_parent() maybe dget_parent() should
+>>> just double-check the original dentry->d_parent pointer after getting
+>>> the refcount on it (and if the parent has changed, drop the refcount
+>>> again and go to the locked version). That might be a good idea anyway,
+>>> and should fix the possible race (which would be with another cpu
+>>> having to first rename the child to some other parent, and the
+>>> d_invalidate() the original parent)
+>> Yes, but...  Then we'd need to dput() that sucker if we decide we shouldn't
+>> have grabbed that reference, after all, which would make dget_parent()
+>> potentially blocking.
+> Ho humm.. interesting. I was talking about wanting to mix atomics and
+> spinlocks earlier in this thread due to space constraints, and it
+> strikes me that that would actually help this case a lot. Having the
+> dentry count mix d_lock and the count in one word would allow for
+> atomic ops like "increment if not locked", and we'd avoid this whole
+> race entirely..
+>
+> Something like "low bit of count is the lock bit" would end up being
+> lovely for this case. Of course, that's not how our spinlocks work ..
+>
+>                Linus
 
-Signed-off-by: Bernd Bassimir <bassimir.kernel@gmx.de>
-Signed-off-by: Nico Doerr <nico.doerr@hawo.net>
+I have created another patch to do exactly the "increment if not locked" 
+operation as suggested. It did help a lot. See the patch below for more 
+information. Any additional comment will be appreciated.
+
+Regards,
+Longman
+
+-------------------------------------------------------------------------------------------------------------------
+The current code takes the dentry's d_lock lock whenever the d_count
+reference count is being updated. In reality, nothing big really
+happens until d_count goes to 0 in dput(). So it is not necessary
+to take the lock if the reference count won't go to 0. On the other
+hand, there are cases where d_count should not be updated or was not
+expected to be updated while d_lock was taken by other functions.
+
+To try to locklessly update the d_count while d_lock is not taken
+by others, the 32-bit d_count and 32-bit d_lock (when no debugging
+code is turned on) can be combined into a single 64-bit word to be
+updated atomically whenever the following conditions happen:
+
+1. The lock is not taken, i.e. spin_can_lock() returns true.
+2. For increment, the original d_count must be > 0, or
+3. for decrement, the original d_count must be > 1.
+
+To maximize the chance of doing lockless update, the new code calls
+spin_unlock_wait() before trying to do the update.
+
+The new code also attempts to do lockless atomic update twice before
+falling back to the old code path of taking a lock before doing
+the update. It is because there will still be some fair amount of
+contention with only one attempt.
+
+The offsets of the d_count/d_lock duple are at byte 72 and 88 for
+32-bit and 64-bit systems respectively. In both cases, they are
+8-byte aligned and their combination into a single 8-byte word will
+not introduce a hole that increase the size of the dentry structure.
+
+This patch has a particular big impact on the short workload of the
+AIM7 benchmark with ramdisk filesystem. The table below show the
+performance improvement to the JPM (jobs per minutes) throughput due
+to this patch on an 8-socket 80-core x86-64 system with a 3.10-rc4
+kernel in a 1/2/4/8 node configuration by using numactl to restrict
+the execution of the workload on certain nodes.
+
++-----------------+----------------+-----------------+----------+
+|  Configuration  |    Mean JPM    |    Mean JPM     | % Change |
+|                 | Rate w/o patch | Rate with patch |          |
++-----------------+---------------------------------------------+
+|                 |              User Range 10 - 100            |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1596798     |     4748981     | +197.4%  |
+| 4 nodes, HT off |    1653817     |     4845590     | +193.0%  |
+| 2 nodes, HT off |    3802258     |     3832017     |   +0.8%  |
+| 1 node , HT off |    2403297     |     2386401     |   -0.7%  |
++-----------------+---------------------------------------------+
+|                 |              User Range 200 - 1000          |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1070992     |     6060457     | +465.9%  |
+| 4 nodes, HT off |    1367668     |     6799978     | +397.2%  |
+| 2 nodes, HT off |    4554370     |     4609893     |   +1.2%  |
+| 1 node , HT off |    2534826     |     2526519     |   -0.3%  |
++-----------------+---------------------------------------------+
+|                 |              User Range 1100 - 2000         |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1061322     |     6435537     | +506.37  |
+| 4 nodes, HT off |    1365111     |     6589983     | +382.7%  |
+| 2 nodes, HT off |    4583947     |     4648464     |   +1.4%  |
+| 1 node , HT off |    2563721     |     2566229     |   +0.1%  |
++-----------------+----------------+-----------------+----------+
+
+It can be seen that with 40 CPUs (4 nodes) or more, this patch can
+significantly improve the short workload performance. With only 1 or
+2 nodes, the performance is similar with or without the patch. The
+short workload also scales pretty well up to 4 nodes with this patch.
+
+A perf call-graph report of the short workload at 1500 users
+without the patch on the same 8-node machine indicates that about
+78% of the workload's total time were spent in the _raw_spin_lock()
+function. Almost all of which can be attributed to the following 2
+kernel functions:
+  1. dget_parent (49.91%)
+  2. dput (49.89%)
+
+The relevant perf report lines are:
++  78.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
++   0.09%           reaim  [kernel.kallsyms]     [k] dput
++   0.05%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irq
++   0.00%           reaim  [kernel.kallsyms]     [k] dget_parent
+
+With this patch installed, the new perf report lines are:
++  13.28%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
++   7.33%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
++   2.93%           reaim  [kernel.kallsyms]     [k] dget_parent
++   1.32%           reaim  [kernel.kallsyms]     [k] dput
+
+-   7.33%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+    - _raw_spin_lock
+       + 41.96% d_path
+       + 41.68% sys_getcwd
+       + 2.67% prepend_path
+       + 1.66% complete_walk
+       + 0.86% unlazy_walk
+       + 0.74% sem_lock
+       + 0.72% do_anonymous_page
+       + 0.69% dget_parent
+       + 0.67% dput
+       + 0.55% process_backlog
+       + 0.52% enqueue_to_backlog
+
+The dput used up only 0.67% of the _raw_spin_lock time while
+dget_parent used only 0.69%. The time spent on dput and dget_parent
+did increase because of busy waiting for unlock as well as the overhead
+of doing cmpxchg operations.
+
+This impact of this patch on other AIM7 workloads were much more
+modest.  The table below show the mean %change due to this patch on
+the same 8-socket system with a 3.10-rc4 kernel.
+
++--------------+---------------+----------------+-----------------+
+|   Workload   | mean % change | mean % change  | mean % change   |
+|              | 10-100 users  | 200-1000 users | 1100-2000 users |
++--------------+---------------+----------------+-----------------+
+| alltests     |      0.0%     |     -0.3%      |     -0.3%       |
+| five_sec     |     -4.6%     |     +6.5%      |     +3.1%       |
+| fserver      |     -1.2%     |     -4.0%      |     -3.4%       |
+| high_systime |     -0.1%     |     +1.7%      |     +7.2%       |
+| new_fserver  |     -2.8%     |     -3.3%      |     -2.1%       |
+| shared       |     -0.6%     |     -0.2%      |     +0.2%       |
++--------------+---------------+----------------+-----------------+
+
+There are slight drops in performance for fsever and new_fserver
+workloads, but slight increase in the high_systime and five_sec
+workloads.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- drivers/staging/serqt_usb2/serqt_usb2.c |  288 +++++++++++++++----------------
- 1 file changed, 144 insertions(+), 144 deletions(-)
+  fs/dcache.c            |   14 ++++++-
+  include/linux/dcache.h |  102 
++++++++++++++++++++++++++++++++++++++++++++++++-
+  2 files changed, 112 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index 8a6e5ea..0c87c6f 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -155,10 +155,10 @@ struct quatech_port {
- 	struct urb *read_urb;	/* read URB for this port */
- 	struct urb *int_urb;
- 
--	__u8 shadowLCR;		/* last LCR value received */
--	__u8 shadowMCR;		/* last MCR value received */
--	__u8 shadowMSR;		/* last MSR value received */
--	__u8 shadowLSR;		/* last LSR value received */
-+	__u8 shadow_lcr;		/* last LCR value received */
-+	__u8 shadow_mcr;		/* last MCR value received */
-+	__u8 shadow_msr;		/* last MSR value received */
-+	__u8 shadow_lsr;		/* last LSR value received */
- 	char open_ports;
- 
- 	/* Used for TIOCMIWAIT */
-@@ -170,12 +170,12 @@ struct quatech_port {
- 	struct async_icount icount;
- 
- 	struct usb_serial_port *port;	/* owner of this object */
--	struct qt_get_device_data DeviceData;
-+	struct qt_get_device_data device_data;
- 	struct mutex lock;
- 	bool read_urb_busy;
--	int RxHolding;
--	int ReadBulkStopped;
--	char closePending;
-+	int rx_holding;
-+	int read_bulk_stopped;
-+	char close_pending;
- };
- 
- static int port_paranoia_check(struct usb_serial_port *port,
-@@ -238,24 +238,24 @@ static struct usb_serial *get_usb_serial(struct usb_serial_port *port,
- 	return port->serial;
- }
- 
--static void ProcessLineStatus(struct quatech_port *qt_port,
-+static void process_line_status(struct quatech_port *qt_port,
- 			      unsigned char line_status)
- {
- 
--	qt_port->shadowLSR =
-+	qt_port->shadow_lsr =
- 	    line_status & (SERIAL_LSR_OE | SERIAL_LSR_PE | SERIAL_LSR_FE |
- 			   SERIAL_LSR_BI);
- }
- 
--static void ProcessModemStatus(struct quatech_port *qt_port,
-+static void process_modem_status(struct quatech_port *qt_port,
- 			       unsigned char modem_status)
- {
- 
--	qt_port->shadowMSR = modem_status;
-+	qt_port->shadow_msr = modem_status;
- 	wake_up_interruptible(&qt_port->wait);
- }
- 
--static void ProcessRxChar(struct usb_serial_port *port, unsigned char data)
-+static void process_rx_char(struct usb_serial_port *port, unsigned char data)
- {
- 	struct urb *urb = port->read_urb;
- 	if (urb->actual_length)
-@@ -291,35 +291,35 @@ static void qt_status_change_check(struct urb *urb,
- {
- 	int flag, i;
- 	unsigned char *data = urb->transfer_buffer;
--	unsigned int RxCount = urb->actual_length;
-+	unsigned int rx_count = urb->actual_length;
- 
--	for (i = 0; i < RxCount; ++i) {
-+	for (i = 0; i < rx_count; ++i) {
- 		/* Look ahead code here */
--		if ((i <= (RxCount - 3)) && (data[i] == 0x1b)
-+		if ((i <= (rx_count - 3)) && (data[i] == 0x1b)
- 		    && (data[i + 1] == 0x1b)) {
- 			flag = 0;
- 			switch (data[i + 2]) {
- 			case 0x00:
--				if (i > (RxCount - 4)) {
-+				if (i > (rx_count - 4)) {
- 					dev_dbg(&port->dev,
- 						"Illegal escape seuences in received data\n");
- 					break;
- 				}
- 
--				ProcessLineStatus(qt_port, data[i + 3]);
-+				process_line_status(qt_port, data[i + 3]);
- 
- 				i += 3;
- 				flag = 1;
- 				break;
- 
- 			case 0x01:
--				if (i > (RxCount - 4)) {
-+				if (i > (rx_count - 4)) {
- 					dev_dbg(&port->dev,
- 						"Illegal escape seuences in received data\n");
- 					break;
- 				}
- 
--				ProcessModemStatus(qt_port, data[i + 3]);
-+				process_modem_status(qt_port, data[i + 3]);
- 
- 				i += 3;
- 				flag = 1;
-@@ -328,8 +328,8 @@ static void qt_status_change_check(struct urb *urb,
- 			case 0xff:
- 				dev_dbg(&port->dev, "No status sequence.\n");
- 
--				ProcessRxChar(port, data[i]);
--				ProcessRxChar(port, data[i + 1]);
-+				process_rx_char(port, data[i]);
-+				process_rx_char(port, data[i + 1]);
- 
- 				i += 2;
- 				break;
-@@ -354,7 +354,7 @@ static void qt_read_bulk_callback(struct urb *urb)
- 	int result;
- 
- 	if (urb->status) {
--		qt_port->ReadBulkStopped = 1;
-+		qt_port->read_bulk_stopped = 1;
- 		dev_dbg(&urb->dev->dev,
- 			"%s - nonzero write bulk status received: %d\n",
- 			__func__, urb->status);
-@@ -362,36 +362,36 @@ static void qt_read_bulk_callback(struct urb *urb)
- 	}
- 
- 	dev_dbg(&port->dev,
--		"%s - port->RxHolding = %d\n", __func__, qt_port->RxHolding);
-+		"%s - port->rx_holding = %d\n", __func__, qt_port->rx_holding);
- 
- 	if (port_paranoia_check(port, __func__) != 0) {
--		qt_port->ReadBulkStopped = 1;
-+		qt_port->read_bulk_stopped = 1;
- 		return;
- 	}
- 
- 	if (!serial)
- 		return;
- 
--	if (qt_port->closePending == 1) {
-+	if (qt_port->close_pending == 1) {
- 		/* Were closing , stop reading */
- 		dev_dbg(&port->dev,
--			"%s - (qt_port->closepending == 1\n", __func__);
--		qt_port->ReadBulkStopped = 1;
-+			"%s - (qt_port->close_pending == 1\n", __func__);
-+		qt_port->read_bulk_stopped = 1;
- 		return;
- 	}
- 
- 	/*
--	 * RxHolding is asserted by throttle, if we assert it, we're not
-+	 * rx_holding is asserted by throttle, if we assert it, we're not
- 	 * receiving any more characters and let the box handle the flow
- 	 * control
- 	 */
--	if (qt_port->RxHolding == 1) {
--		qt_port->ReadBulkStopped = 1;
-+	if (qt_port->rx_holding == 1) {
-+		qt_port->read_bulk_stopped = 1;
- 		return;
- 	}
- 
- 	if (urb->status) {
--		qt_port->ReadBulkStopped = 1;
-+		qt_port->read_bulk_stopped = 1;
- 
- 		dev_dbg(&port->dev,
- 			"%s - nonzero read bulk status received: %d\n",
-@@ -455,10 +455,10 @@ static int qt_get_device(struct usb_serial *serial,
- }
- 
- /****************************************************************************
-- *  BoxSetPrebufferLevel
-+ *  box_set_prebuffer_level
-    TELLS BOX WHEN TO ASSERT FLOW CONTROL
-  ****************************************************************************/
--static int BoxSetPrebufferLevel(struct usb_serial *serial)
-+static int box_set_prebuffer_level(struct usb_serial *serial)
- {
- 	int result;
- 	__u16 buffer_length;
-@@ -471,10 +471,10 @@ static int BoxSetPrebufferLevel(struct usb_serial *serial)
- }
- 
- /****************************************************************************
-- *  BoxSetATC
-+ *  box_set_atc
-    TELLS BOX WHEN TO ASSERT automatic transmitter control
-    ****************************************************************************/
--static int BoxSetATC(struct usb_serial *serial, __u16 n_Mode)
-+static int box_set_atc(struct usb_serial *serial, __u16 n_mode)
- {
- 	int result;
- 	__u16 buffer_length;
-@@ -483,7 +483,7 @@ static int BoxSetATC(struct usb_serial *serial, __u16 n_Mode)
- 
- 	result =
- 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			    QT_SET_ATF, 0x40, n_Mode, 0, NULL, 0, 300);
-+			    QT_SET_ATF, 0x40, n_mode, 0, NULL, 0, 300);
- 
- 	return result;
- }
-@@ -499,42 +499,42 @@ static int qt_set_device(struct usb_serial *serial,
- {
- 	int result;
- 	__u16 length;
--	__u16 PortSettings;
-+	__u16 port_settings;
- 
--	PortSettings = ((__u16) (device_data->portb));
--	PortSettings = (PortSettings << 8);
--	PortSettings += ((__u16) (device_data->porta));
-+	port_settings = ((__u16) (device_data->portb));
-+	port_settings = (port_settings << 8);
-+	port_settings += ((__u16) (device_data->porta));
- 
- 	length = sizeof(struct qt_get_device_data);
- 
- 	result = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--				 QT_SET_GET_DEVICE, 0x40, PortSettings,
-+				 QT_SET_GET_DEVICE, 0x40, port_settings,
- 				 0, NULL, 0, 300);
- 	return result;
- }
- 
--static int qt_open_channel(struct usb_serial *serial, __u16 Uart_Number,
--			   struct qt_open_channel_data *pDeviceData)
-+static int qt_open_channel(struct usb_serial *serial, __u16 uart_number,
-+			   struct qt_open_channel_data *pdevice_data)
- {
- 	int result;
- 
- 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				 QT_OPEN_CLOSE_CHANNEL,
--				 USBD_TRANSFER_DIRECTION_IN, 1, Uart_Number,
--				 pDeviceData,
-+				 USBD_TRANSFER_DIRECTION_IN, 1, uart_number,
-+				 pdevice_data,
- 				 sizeof(struct qt_open_channel_data), 300);
- 
- 	return result;
- 
- }
- 
--static int qt_close_channel(struct usb_serial *serial, __u16 Uart_Number)
-+static int qt_close_channel(struct usb_serial *serial, __u16 uart_number)
- {
- 	int result;
- 
- 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				 QT_OPEN_CLOSE_CHANNEL,
--				 USBD_TRANSFER_DIRECTION_OUT, 0, Uart_Number,
-+				 USBD_TRANSFER_DIRECTION_OUT, 0, uart_number,
- 				 NULL, 0, 300);
- 
- 	return result;
-@@ -542,12 +542,12 @@ static int qt_close_channel(struct usb_serial *serial, __u16 Uart_Number)
- }
- 
- /****************************************************************************
--* BoxGetRegister
-+* box_get_register
- *	issuse a GET_REGISTER vendor-spcific request on the default control pipe
--*	If successful, fills in the  pValue with the register value asked for
-+*	If successful, fills in the  p_value with the register value asked for
- ****************************************************************************/
--static int BoxGetRegister(struct usb_serial *serial, unsigned short Uart_Number,
--			  unsigned short Register_Num, __u8 *pValue)
-+static int box_get_register(struct usb_serial *serial, unsigned short uart_number,
-+			  unsigned short register_num, __u8 *p_value)
- {
- 	int result;
- 	__u16 current_length;
-@@ -556,36 +556,36 @@ static int BoxGetRegister(struct usb_serial *serial, unsigned short Uart_Number,
- 
- 	result =
- 	    usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
--			    QT_GET_SET_REGISTER, 0xC0, Register_Num,
--			    Uart_Number, (void *)pValue, sizeof(*pValue), 300);
-+			    QT_GET_SET_REGISTER, 0xC0, register_num,
-+			    uart_number, (void *)p_value, sizeof(*p_value), 300);
- 
- 	return result;
- }
- 
- /****************************************************************************
--* BoxSetRegister
-+* box_set_register
- *	issuse a GET_REGISTER vendor-spcific request on the default control pipe
--*	If successful, fills in the  pValue with the register value asked for
-+*	If successful, fills in the  p_value with the register value asked for
- ****************************************************************************/
--static int BoxSetRegister(struct usb_serial *serial, unsigned short Uart_Number,
--			  unsigned short Register_Num, unsigned short Value)
-+static int box_set_register(struct usb_serial *serial, unsigned short uart_number,
-+			  unsigned short register_num, unsigned short value)
- {
- 	int result;
--	unsigned short RegAndByte;
-+	unsigned short reg_and_byte;
- 
--	RegAndByte = Value;
--	RegAndByte = RegAndByte << 8;
--	RegAndByte = RegAndByte + Register_Num;
-+	reg_and_byte = value;
-+	reg_and_byte = reg_and_byte << 8;
-+	reg_and_byte = reg_and_byte + register_num;
- 
- /*
- 	result = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--				 QT_GET_SET_REGISTER, 0xC0, Register_Num,
--				 Uart_Number, NULL, 0, 300);
-+				 QT_GET_SET_REGISTER, 0xC0, register_num,
-+				 uart_number, NULL, 0, 300);
- */
- 
- 	result =
- 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			    QT_GET_SET_REGISTER, 0x40, RegAndByte, Uart_Number,
-+			    QT_GET_SET_REGISTER, 0x40, reg_and_byte, uart_number,
- 			    NULL, 0, 300);
- 
- 	return result;
-@@ -596,30 +596,30 @@ static int BoxSetRegister(struct usb_serial *serial, unsigned short Uart_Number,
-  * issues a SET_UART vendor-specific request on the default control pipe
-  * If successful sets baud rate divisor and LCR value
-  */
--static int qt_setuart(struct usb_serial *serial, unsigned short Uart_Number,
--		      unsigned short default_divisor, unsigned char default_LCR)
-+static int qt_setuart(struct usb_serial *serial, unsigned short uart_number,
-+		      unsigned short default_divisor, unsigned char default_lcr)
- {
- 	int result;
--	unsigned short UartNumandLCR;
-+	unsigned short uart_num_and_lcr;
- 
--	UartNumandLCR = (default_LCR << 8) + Uart_Number;
-+	uart_num_and_lcr = (default_lcr << 8) + uart_number;
- 
- 	result =
- 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
- 			    QT_GET_SET_UART, 0x40, default_divisor,
--			    UartNumandLCR, NULL, 0, 300);
-+			    uart_num_and_lcr, NULL, 0, 300);
- 
- 	return result;
- }
- 
--static int BoxSetHW_FlowCtrl(struct usb_serial *serial, unsigned int index,
--			     int bSet)
-+static int box_set_hw_flow_ctrl(struct usb_serial *serial, unsigned int index,
-+			     int b_set)
- {
- 	__u8 mcr = 0;
--	__u8 msr = 0, MOUT_Value = 0;
-+	__u8 msr = 0, mout_value = 0;
- 	unsigned int status;
- 
--	if (bSet == 1) {
-+	if (b_set == 1) {
- 		/* flow control, box will clear RTS line to prevent remote */
- 		mcr = SERIAL_MCR_RTS;
- 	} /* device from xmitting more chars */
-@@ -628,9 +628,9 @@ static int BoxSetHW_FlowCtrl(struct usb_serial *serial, unsigned int index,
- 		mcr = 0;
- 
- 	}
--	MOUT_Value = mcr << 8;
-+	mout_value = mcr << 8;
- 
--	if (bSet == 1) {
-+	if (b_set == 1) {
- 		/* flow control, box will inhibit xmit data if CTS line is
- 		 * asserted */
- 		msr = SERIAL_MSR_CTS;
-@@ -638,34 +638,34 @@ static int BoxSetHW_FlowCtrl(struct usb_serial *serial, unsigned int index,
- 		/* Box will not inhimbe xmit data due to CTS line */
- 		msr = 0;
- 	}
--	MOUT_Value |= msr;
-+	mout_value |= msr;
- 
- 	status =
- 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			    QT_HW_FLOW_CONTROL_MASK, 0x40, MOUT_Value,
-+			    QT_HW_FLOW_CONTROL_MASK, 0x40, mout_value,
- 			    index, NULL, 0, 300);
- 	return status;
- 
- }
- 
--static int BoxSetSW_FlowCtrl(struct usb_serial *serial, __u16 index,
-+static int box_set_sw_flow_ctrl(struct usb_serial *serial, __u16 index,
- 			     unsigned char stop_char, unsigned char start_char)
- {
--	__u16 nSWflowout;
-+	__u16 n_sw_flow_out;
- 	int result;
- 
--	nSWflowout = start_char << 8;
--	nSWflowout = (unsigned short)stop_char;
-+	n_sw_flow_out = start_char << 8;
-+	n_sw_flow_out = (unsigned short)stop_char;
- 
- 	result =
- 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			    QT_SW_FLOW_CONTROL_MASK, 0x40, nSWflowout,
-+			    QT_SW_FLOW_CONTROL_MASK, 0x40, n_sw_flow_out,
- 			    index, NULL, 0, 300);
- 	return result;
- 
- }
- 
--static int BoxDisable_SW_FlowCtrl(struct usb_serial *serial, __u16 index)
-+static int box_disable_sw_flow_ctrl(struct usb_serial *serial, __u16 index)
- {
- 	int result;
- 
-@@ -682,7 +682,7 @@ static int qt_startup(struct usb_serial *serial)
- 	struct device *dev = &serial->dev->dev;
- 	struct usb_serial_port *port;
- 	struct quatech_port *qt_port;
--	struct qt_get_device_data DeviceData;
-+	struct qt_get_device_data device_data;
- 	int i;
- 	int status;
- 
-@@ -704,22 +704,22 @@ static int qt_startup(struct usb_serial *serial)
- 
- 	}
- 
--	status = qt_get_device(serial, &DeviceData);
-+	status = qt_get_device(serial, &device_data);
- 	if (status < 0)
- 		goto startup_error;
- 
--	dev_dbg(dev, "DeviceData.portb = 0x%x\n", DeviceData.portb);
-+	dev_dbg(dev, "device_data.portb = 0x%x\n", device_data.portb);
- 
--	DeviceData.portb &= ~FULLPWRBIT;
--	dev_dbg(dev, "Changing DeviceData.portb to 0x%x\n", DeviceData.portb);
-+	device_data.portb &= ~FULLPWRBIT;
-+	dev_dbg(dev, "Changing device_data.portb to 0x%x\n", device_data.portb);
- 
--	status = qt_set_device(serial, &DeviceData);
-+	status = qt_set_device(serial, &device_data);
- 	if (status < 0) {
- 		dev_dbg(dev, "qt_set_device failed\n");
- 		goto startup_error;
- 	}
- 
--	status = qt_get_device(serial, &DeviceData);
-+	status = qt_get_device(serial, &device_data);
- 	if (status < 0) {
- 		dev_dbg(dev, "qt_get_device failed\n");
- 		goto startup_error;
-@@ -734,10 +734,10 @@ static int qt_startup(struct usb_serial *serial)
- 	case QUATECH_HSU100B:
- 	case QUATECH_HSU100C:
- 	case QUATECH_HSU100D:
--		DeviceData.porta &= ~(RR_BITS | DUPMODE_BITS);
--		DeviceData.porta |= CLKS_X4;
--		DeviceData.portb &= ~(LOOPMODE_BITS);
--		DeviceData.portb |= RS232_MODE;
-+		device_data.porta &= ~(RR_BITS | DUPMODE_BITS);
-+		device_data.porta |= CLKS_X4;
-+		device_data.portb &= ~(LOOPMODE_BITS);
-+		device_data.portb |= RS232_MODE;
- 		break;
- 
- 	case QUATECH_SSU200:
-@@ -749,38 +749,38 @@ static int qt_startup(struct usb_serial *serial)
- 	case QUATECH_HSU200B:
- 	case QUATECH_HSU200C:
- 	case QUATECH_HSU200D:
--		DeviceData.porta &= ~(RR_BITS | DUPMODE_BITS);
--		DeviceData.porta |= CLKS_X4;
--		DeviceData.portb &= ~(LOOPMODE_BITS);
--		DeviceData.portb |= ALL_LOOPBACK;
-+		device_data.porta &= ~(RR_BITS | DUPMODE_BITS);
-+		device_data.porta |= CLKS_X4;
-+		device_data.portb &= ~(LOOPMODE_BITS);
-+		device_data.portb |= ALL_LOOPBACK;
- 		break;
- 	default:
--		DeviceData.porta &= ~(RR_BITS | DUPMODE_BITS);
--		DeviceData.porta |= CLKS_X4;
--		DeviceData.portb &= ~(LOOPMODE_BITS);
--		DeviceData.portb |= RS232_MODE;
-+		device_data.porta &= ~(RR_BITS | DUPMODE_BITS);
-+		device_data.porta |= CLKS_X4;
-+		device_data.portb &= ~(LOOPMODE_BITS);
-+		device_data.portb |= RS232_MODE;
- 		break;
- 
- 	}
- 
--	status = BoxSetPrebufferLevel(serial);	/* sets to default value */
-+	status = box_set_prebuffer_level(serial);	/* sets to default value */
- 	if (status < 0) {
--		dev_dbg(dev, "BoxSetPrebufferLevel failed\n");
-+		dev_dbg(dev, "box_set_prebuffer_level failed\n");
- 		goto startup_error;
- 	}
- 
--	status = BoxSetATC(serial, ATC_DISABLED);
-+	status = box_set_atc(serial, ATC_DISABLED);
- 	if (status < 0) {
--		dev_dbg(dev, "BoxSetATC failed\n");
-+		dev_dbg(dev, "box_set_atc failed\n");
- 		goto startup_error;
- 	}
- 
--	dev_dbg(dev, "DeviceData.portb = 0x%x\n", DeviceData.portb);
-+	dev_dbg(dev, "device_data.portb = 0x%x\n", device_data.portb);
- 
--	DeviceData.portb |= NEXT_BOARD_POWER_BIT;
--	dev_dbg(dev, "Changing DeviceData.portb to 0x%x\n", DeviceData.portb);
-+	device_data.portb |= NEXT_BOARD_POWER_BIT;
-+	dev_dbg(dev, "Changing device_data.portb to 0x%x\n", device_data.portb);
- 
--	status = qt_set_device(serial, &DeviceData);
-+	status = qt_set_device(serial, &device_data);
- 	if (status < 0) {
- 		dev_dbg(dev, "qt_set_device failed\n");
- 		goto startup_error;
-@@ -848,7 +848,7 @@ static int qt_open(struct tty_struct *tty,
- 	struct usb_serial *serial;
- 	struct quatech_port *quatech_port;
- 	struct quatech_port *port0;
--	struct qt_open_channel_data ChannelData;
-+	struct qt_open_channel_data channel_data;
- 
- 	int result;
- 
-@@ -870,10 +870,10 @@ static int qt_open(struct tty_struct *tty,
- 	usb_clear_halt(serial->dev, port->read_urb->pipe);
- 	port0->open_ports++;
- 
--	result = qt_get_device(serial, &port0->DeviceData);
-+	result = qt_get_device(serial, &port0->device_data);
- 
- 	/* Port specific setups */
--	result = qt_open_channel(serial, port->number, &ChannelData);
-+	result = qt_open_channel(serial, port->number, &channel_data);
- 	if (result < 0) {
- 		dev_dbg(&port->dev, "qt_open_channel failed\n");
- 		return result;
-@@ -881,10 +881,10 @@ static int qt_open(struct tty_struct *tty,
- 	dev_dbg(&port->dev, "qt_open_channel completed.\n");
- 
- /* FIXME: are these needed?  Does it even do anything useful? */
--	quatech_port->shadowLSR = ChannelData.line_status &
-+	quatech_port->shadow_lsr = channel_data.line_status &
- 	    (SERIAL_LSR_OE | SERIAL_LSR_PE | SERIAL_LSR_FE | SERIAL_LSR_BI);
- 
--	quatech_port->shadowMSR = ChannelData.modem_status &
-+	quatech_port->shadow_msr = channel_data.modem_status &
- 	    (SERIAL_MSR_CTS | SERIAL_MSR_DSR | SERIAL_MSR_RI | SERIAL_MSR_CD);
- 
- 	/* Set Baud rate to default and turn off (default)flow control here */
-@@ -1179,7 +1179,7 @@ static void qt_set_termios(struct tty_struct *tty,
- 			   struct ktermios *old_termios)
- {
- 	struct ktermios *termios = &tty->termios;
--	unsigned char new_LCR = 0;
-+	unsigned char new_lcr = 0;
- 	unsigned int cflag = termios->c_cflag;
- 	unsigned int index;
- 	int baud, divisor, remainder;
-@@ -1189,33 +1189,33 @@ static void qt_set_termios(struct tty_struct *tty,
- 
- 	switch (cflag & CSIZE) {
- 	case CS5:
--		new_LCR |= SERIAL_5_DATA;
-+		new_lcr |= SERIAL_5_DATA;
- 		break;
- 	case CS6:
--		new_LCR |= SERIAL_6_DATA;
-+		new_lcr |= SERIAL_6_DATA;
- 		break;
- 	case CS7:
--		new_LCR |= SERIAL_7_DATA;
-+		new_lcr |= SERIAL_7_DATA;
- 		break;
- 	default:
- 		termios->c_cflag &= ~CSIZE;
- 		termios->c_cflag |= CS8;
- 	case CS8:
--		new_LCR |= SERIAL_8_DATA;
-+		new_lcr |= SERIAL_8_DATA;
- 		break;
- 	}
- 
- 	/* Parity stuff */
- 	if (cflag & PARENB) {
- 		if (cflag & PARODD)
--			new_LCR |= SERIAL_ODD_PARITY;
-+			new_lcr |= SERIAL_ODD_PARITY;
- 		else
--			new_LCR |= SERIAL_EVEN_PARITY;
-+			new_lcr |= SERIAL_EVEN_PARITY;
- 	}
- 	if (cflag & CSTOPB)
--		new_LCR |= SERIAL_TWO_STOPB;
-+		new_lcr |= SERIAL_TWO_STOPB;
- 	else
--		new_LCR |= SERIAL_ONE_STOPB;
-+		new_lcr |= SERIAL_ONE_STOPB;
- 
- 	dev_dbg(&port->dev, "%s - 4\n", __func__);
- 
-@@ -1237,7 +1237,7 @@ static void qt_set_termios(struct tty_struct *tty,
- 	 * Set Baud rate to default and turn off (default)flow control here
- 	 */
- 	status =
--	    qt_setuart(port->serial, index, (unsigned short)divisor, new_LCR);
-+	    qt_setuart(port->serial, index, (unsigned short)divisor, new_lcr);
- 	if (status < 0) {
- 		dev_dbg(&port->dev, "qt_setuart failed\n");
- 		return;
-@@ -1249,10 +1249,10 @@ static void qt_set_termios(struct tty_struct *tty,
- 			__func__, port->number);
- 
- 		/* Enable RTS/CTS flow control */
--		status = BoxSetHW_FlowCtrl(port->serial, index, 1);
-+		status = box_set_hw_flow_ctrl(port->serial, index, 1);
- 
- 		if (status < 0) {
--			dev_dbg(&port->dev, "BoxSetHW_FlowCtrl failed\n");
-+			dev_dbg(&port->dev, "box_set_hw_flow_ctrl failed\n");
- 			return;
- 		}
- 	} else {
-@@ -1261,9 +1261,9 @@ static void qt_set_termios(struct tty_struct *tty,
- 			"%s - disabling HW flow control port %d\n",
- 			__func__, port->number);
- 
--		status = BoxSetHW_FlowCtrl(port->serial, index, 0);
-+		status = box_set_hw_flow_ctrl(port->serial, index, 0);
- 		if (status < 0) {
--			dev_dbg(&port->dev, "BoxSetHW_FlowCtrl failed\n");
-+			dev_dbg(&port->dev, "box_set_hw_flow_ctrl failed\n");
- 			return;
- 		}
- 
-@@ -1275,18 +1275,18 @@ static void qt_set_termios(struct tty_struct *tty,
- 		unsigned char stop_char = STOP_CHAR(tty);
- 		unsigned char start_char = START_CHAR(tty);
- 		status =
--		    BoxSetSW_FlowCtrl(port->serial, index, stop_char,
-+		    box_set_sw_flow_ctrl(port->serial, index, stop_char,
- 				      start_char);
- 		if (status < 0)
- 			dev_dbg(&port->dev,
--				"BoxSetSW_FlowCtrl (enabled) failed\n");
-+				"box_set_sw_flow_ctrl (enabled) failed\n");
- 
- 	} else {
- 		/* disable SW flow control */
--		status = BoxDisable_SW_FlowCtrl(port->serial, index);
-+		status = box_disable_sw_flow_ctrl(port->serial, index);
- 		if (status < 0)
- 			dev_dbg(&port->dev,
--				"BoxSetSW_FlowCtrl (diabling) failed\n");
-+				"box_set_sw_flow_ctrl (diabling) failed\n");
- 
- 	}
- 	termios->c_cflag &= ~CMSPAR;
-@@ -1334,10 +1334,10 @@ static inline int qt_real_tiocmget(struct tty_struct *tty,
- 
- 	index = tty->index - serial->minor;
- 	status =
--	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-+	    box_get_register(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
- 	if (status >= 0) {
- 		status =
--		    BoxGetRegister(port->serial, index,
-+		    box_get_register(port->serial, index,
- 				   MODEM_STATUS_REGISTER, &msr);
- 
- 	}
-@@ -1373,7 +1373,7 @@ static inline int qt_real_tiocmset(struct tty_struct *tty,
- 
- 	index = tty->index - serial->minor;
- 	status =
--	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-+	    box_get_register(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
- 	if (status < 0)
- 		return -ESPIPE;
- 
-@@ -1390,7 +1390,7 @@ static inline int qt_real_tiocmset(struct tty_struct *tty,
- 		mcr |= SERIAL_MCR_LOOP;
- 
- 	status =
--	    BoxSetRegister(port->serial, index, MODEM_CONTROL_REGISTER, mcr);
-+	    box_set_register(port->serial, index, MODEM_CONTROL_REGISTER, mcr);
- 	if (status < 0)
- 		return -ESPIPE;
- 	else
-@@ -1445,7 +1445,7 @@ static void qt_throttle(struct tty_struct *tty)
- 	mutex_lock(&qt_port->lock);
- 
- 	/* pass on to the driver specific version of this function */
--	qt_port->RxHolding = 1;
-+	qt_port->rx_holding = 1;
- 
- 	mutex_unlock(&qt_port->lock);
- }
-@@ -1484,14 +1484,14 @@ static void qt_unthrottle(struct tty_struct *tty)
- 
- 	mutex_lock(&qt_port->lock);
- 
--	if (qt_port->RxHolding == 1) {
--		dev_dbg(&port->dev, "%s -qt_port->RxHolding == 1\n", __func__);
-+	if (qt_port->rx_holding == 1) {
-+		dev_dbg(&port->dev, "%s -qt_port->rx_holding == 1\n", __func__);
- 
--		qt_port->RxHolding = 0;
--		dev_dbg(&port->dev, "%s - qt_port->RxHolding = 0\n", __func__);
-+		qt_port->rx_holding = 0;
-+		dev_dbg(&port->dev, "%s - qt_port->rx_holding = 0\n", __func__);
- 
- 		/* if we have a bulk endpoint, start it up */
--		if ((serial->num_bulk_in) && (qt_port->ReadBulkStopped == 1))
-+		if ((serial->num_bulk_in) && (qt_port->read_bulk_stopped == 1))
- 			qt_submit_urb_from_unthrottle(port, serial);
- 	}
- 	mutex_unlock(&qt_port->lock);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index f09b908..2190c34 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -515,6 +515,8 @@ void dput(struct dentry *dentry)
+  repeat:
+      if (dentry->d_count == 1)
+          might_sleep();
++    if (__dput_unless_lt2_or_locked(dentry))
++        return;
+      spin_lock(&dentry->d_lock);
+      BUG_ON(!dentry->d_count);
+      if (dentry->d_count > 1) {
+@@ -611,6 +613,8 @@ static inline void __dget_dlock(struct dentry *dentry)
+
+  static inline void __dget(struct dentry *dentry)
+  {
++    if (__dget_unless_zero_or_locked(dentry))
++        return;
+      spin_lock(&dentry->d_lock);
+      __dget_dlock(dentry);
+      spin_unlock(&dentry->d_lock);
+@@ -620,17 +624,23 @@ struct dentry *dget_parent(struct dentry *dentry)
+  {
+      struct dentry *ret;
+
++    rcu_read_lock();
++    ret = rcu_dereference(dentry->d_parent);
++    if (__dget_unless_zero_or_locked(ret)) {
++        rcu_read_unlock();
++        return ret;
++    }
+  repeat:
+      /*
+       * Don't need rcu_dereference because we re-check it was correct under
+       * the lock.
+       */
+-    rcu_read_lock();
+-    ret = dentry->d_parent;
++    ret = ACCESS_ONCE(dentry->d_parent);
+      spin_lock(&ret->d_lock);
+      if (unlikely(ret != dentry->d_parent)) {
+          spin_unlock(&ret->d_lock);
+          rcu_read_unlock();
++        rcu_read_lock();
+          goto repeat;
+      }
+      rcu_read_unlock();
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 1a6bb81..99ab699 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -112,8 +112,13 @@ struct dentry {
+      unsigned char d_iname[DNAME_INLINE_LEN];    /* small names */
+
+      /* Ref lookup also touches following */
+-    unsigned int d_count;        /* protected by d_lock */
+-    spinlock_t d_lock;        /* per dentry lock */
++    union {
++        struct {
++            unsigned int d_count;    /* protected by d_lock */
++            spinlock_t d_lock;    /* per dentry lock */
++        };
++        u64 d_cnt_lock;            /* combined count & lock */
++    };
+      const struct dentry_operations *d_op;
+      struct super_block *d_sb;    /* The root of the dentry tree */
+      unsigned long d_time;        /* used by d_revalidate */
+@@ -132,6 +137,19 @@ struct dentry {
+  };
+
+  /*
++ * The compiler does not allow named union in struct dentry without adding
++ * a named field. The union definition is repeated below to allow functions
++ * to reference it.
++ */
++union _d_cnt_lock {
++    struct {
++        unsigned int d_count;    /* protected by d_lock */
++        spinlock_t d_lock;    /* per dentry lock */
++    };
++    u64 d_cnt_lock;            /* combined count & lock */
++};
++
++/*
+   * dentry->d_lock spinlock nesting subclasses:
+   *
+   * 0: normal
+@@ -325,6 +343,84 @@ static inline int __d_rcu_to_refcount(struct dentry 
+*dentry
+, unsigned seq)
+      return ret;
+  }
+
++/**
++ * __dget_unless_zero_or_locked - atomically inc d_count if != 0 and 
+not locked
++ * @dentry: dentry to work on
++ * Return: 0 on failure, else 1
++ *
++ * __dget_if_notzero_and_locked tries to atomically increment d_count 
+without
++ * taking a lock as long as the count is not 0 and d_lock is not taken.
++ */
++static inline int __dget_unless_zero_or_locked(struct dentry *dentry)
++{
++    if (sizeof(union _d_cnt_lock) == sizeof(dentry->d_cnt_lock)) {
++        union _d_cnt_lock old, new;
++
++        spin_unlock_wait(&dentry->d_lock);
++        old.d_cnt_lock = ACCESS_ONCE(dentry->d_cnt_lock);
++        if ((old.d_count > 0) && spin_can_lock(&old.d_lock)) {
++            new.d_cnt_lock = old.d_cnt_lock;
++            new.d_count++;
++            if (cmpxchg(&dentry->d_cnt_lock, old.d_cnt_lock,
++                    new.d_cnt_lock) == old.d_cnt_lock)
++                return 1;
++            cpu_relax();
++            /*
++             * Try one more time
++             */
++            old.d_cnt_lock = ACCESS_ONCE(dentry->d_cnt_lock);
++            if ((old.d_count > 0) && spin_can_lock(&old.d_lock)) {
++                new.d_cnt_lock = old.d_cnt_lock;
++                new.d_count++;
++                if (cmpxchg(&dentry->d_cnt_lock, old.d_cnt_lock,
++                        new.d_cnt_lock) == old.d_cnt_lock)
++                    return 1;
++                cpu_relax();
++            }
++        }
++    }
++    return 0;
++}
++
++/**
++ * __dput_unless_lt2_or_locked - atomically dec d_count if >= 1 and not 
+locked
++ * @dentry: dentry to work on
++ * Return: 0 on failure, else 1
++ *
++ * __dput_unless_leone_or_locked tries to atomically decrement d_count 
+without
++ * taking a lock as long as the count is bigger than 1 and d_lock is 
+not taken.
++ */
++static inline int __dput_unless_lt2_or_locked(struct dentry *dentry)
++{
++    if (sizeof(union _d_cnt_lock) == sizeof(dentry->d_cnt_lock)) {
++        union _d_cnt_lock old, new;
++
++        spin_unlock_wait(&dentry->d_lock);
++        old.d_cnt_lock = ACCESS_ONCE(dentry->d_cnt_lock);
++        if ((old.d_count > 1) && spin_can_lock(&old.d_lock)) {
++            new.d_cnt_lock = old.d_cnt_lock;
++            new.d_count--;
++            if (cmpxchg(&dentry->d_cnt_lock, old.d_cnt_lock,
++                    new.d_cnt_lock) == old.d_cnt_lock)
++                return 1;
++            cpu_relax();
++            /*
++             * Try one more time
++             */
++            old.d_cnt_lock = ACCESS_ONCE(dentry->d_cnt_lock);
++            if ((old.d_count > 1) && spin_can_lock(&old.d_lock)) {
++                new.d_cnt_lock = old.d_cnt_lock;
++                new.d_count--;
++                if (cmpxchg(&dentry->d_cnt_lock, old.d_cnt_lock,
++                        new.d_cnt_lock) == old.d_cnt_lock)
++                    return 1;
++                cpu_relax();
++            }
++        }
++    }
++    return 0;
++}
++
+  /* validate "insecure" dentry pointer */
+  extern int d_validate(struct dentry *, struct dentry *);
+
+@@ -359,6 +455,8 @@ static inline struct dentry *dget_dlock(struct 
+dentry *dentr
+y)
+  static inline struct dentry *dget(struct dentry *dentry)
+  {
+      if (dentry) {
++        if (__dget_unless_zero_or_locked(dentry))
++            return dentry;
+          spin_lock(&dentry->d_lock);
+          dget_dlock(dentry);
+          spin_unlock(&dentry->d_lock);
 -- 
-1.7.10.4
+1.7.1
+
 
