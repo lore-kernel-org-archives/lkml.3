@@ -1,124 +1,445 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab3FNQzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:55:04 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:28098 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab3FNQzC convert rfc822-to-8bit (ORCPT
+	id S1753369Ab3FNQzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:55:11 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:50234 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3FNQzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:55:02 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-c5-51bb4ae4f2b4
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Greg KH <gregkh@linuxfoundation.org>, "joe@perches.com" <joe@perches.com>
-Cc: "pavel@ucw.cz" <pavel@ucw.cz>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH] power: Include additional information in pm_print_times
-Thread-topic: [PATCH] power: Include additional information in pm_print_times
-Thread-index: AQHOaR0F3iFbU9ddzEeUT9NYOzW7/A==
-Date: Fri, 14 Jun 2013 16:54:59 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6156A8FE@sisaex02sj>
-References: <1371227625-3141-1-git-send-email-shuah.kh@samsung.com>
- <20130614164546.GA26107@kroah.com>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9hP90nXrsDDc43SVg0L17PZjH7/mMW
-	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GWy+PrTwYHDY+esu+wei/e8ZPLYP3cNu8eXVdeY
-	PR4tbmH0WLH6O7vH501yAexRXDYpqTmZZalF+nYJXBn/umoKpkhVPNzwgq2BcZNoFyMnh4SA
-	icT/r79YIGwxiQv31rN1MXJxCAksY5R42tfCAuH0MklsmPWMGaRKSGA+o8Tu1bkgNpuAusTn
-	1zvYQWwRAV+Jcw0bmEEamAWmMUk8/TORCSQhLOAjsW3dGriiI7+3MELYehLN0xvAbBYBVYn5
-	Z2+BLeAVsJd4f+gEK8SyDImuZxfB4oxA530/tQZsJrOAuERz602oswUkluw5zwxhi0q8fPwP
-	qJcDyFaU2L7aCqJcS2L9zuNQrdoST95dYIVYJSjxY/I9lgmMYrOQTJ2FpGUWkpZZSFoWMLKs
-	YhQrLU4uKE5KT60w0itOzC0uzUvXS87P3cQIidXqHYx3v9ocYhTgYFTi4X2hsTtQiDWxrLgy
-	9xCjBAezkgjvXVWgEG9KYmVValF+fFFpTmrxIUYmDk6pBka5yO5tbUKLdG1+3163Yr+6VSXj
-	Sfue/6oNhYVrdogUWwgu4Wnamml86uxJpbO3SiZOMTkQ+uOiH+eXhHnBC4KudQnkHLEVTI66
-	3Fa169LrRRM8Iq7qOc66cDWtq4f9YVWxay9HTjrPrueT75nmlbcyHZwj/mcy70Ivv3f+t4Nz
-	S1jPXg68na/EUpyRaKjFXFScCAAGqUZyswIAAA==
+	Fri, 14 Jun 2013 12:55:08 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>, rtc-linux@googlegroups.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH 6/9 v3] RFC: timekeeping: rtc: remove CONFIG_RTC_HCTOSYS and RTC_HCTOSYS_DEVICE
+Date: Fri, 14 Jun 2013 18:52:09 +0200
+Message-Id: <1371228732-5749-7-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371228732-5749-1-git-send-email-holler@ahsoftware.de>
+References: <51BA1FF7.4000206@ahsoftware.de>
+ <1371228732-5749-1-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 10:45 AM, Greg KH wrote:
-> On Fri, Jun 14, 2013 at 10:33:45AM -0600, Shuah Khan wrote:
->> Change __device_suspend() path to include driver name and the ops that
->> get run for a device. This additional information helps associate driver
->> and the type of pm_ops the device uses in suspend path very quickly and
->> aid in debugging problems in suspend and resume paths. Added the additional
->> information at the end of the original message.
->>
->> dmesg output before the change:
->>
->> [  164.390032] calling  1-1+ @ 69, parent: usb1
->> [  164.390035] call 1-1+ returned 0 after 0 usecs
->>
->> [  164.390352] calling  00:0a+ @ 2457, parent: pnp0
->> [  164.390357] call 00:0a+ returned 0 after 3 usecs
->>
->> [  164.390361] calling  00:09+ @ 2457, parent: pnp0
->> [  164.496458] call 00:09+ returned 0 after 103500 usecs
->>
->> [  164.496494] calling  00:05+ @ 2457, parent: pnp0
->> [  164.496511] call 00:05+ returned 0 after 14 usecs
->>
->> dmesg output after the change:
->>
->> [  317.295499] calling 1-1+ @ 71, parent: usb1 driver: usb type pm ops
->> [  317.297671] call 1-1+ returned 0 after 2117 usecs
->>
->> [  318.134469] calling 00:0a+ @ 2941, parent: pnp0 driver: system legacy bus
->> [  318.134476] call 00:0a+ returned 0 after 5 usecs
->>
->> [  317.292894] calling 00:09+ @ 2941, parent: pnp0 driver: tpm_tis legacy bus pm ops
->> [  317.397315] call 00:09+ returned 0 after 101967 usecs
->>
->> [  317.397353] calling 00:05+ @ 2941, parent: pnp0 driver: rtc_cmos legacy bus pm ops
->> [  317.397369] call 00:05+ returned 0 after 13 usecs
->>
->> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->> CC: Shuah Khan <shuahkhan@gmail.com>
->> ---
->>   drivers/base/power/main.c |   35 ++++++++++++++++++++---------------
->>   1 file changed, 20 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
->> index 5a9b656..900266d 100644
->> --- a/drivers/base/power/main.c
->> +++ b/drivers/base/power/main.c
->> @@ -157,14 +157,15 @@ void device_pm_move_last(struct device *dev)
->>   	list_move_tail(&dev->power.entry, &dpm_list);
->>   }
->>
->> -static ktime_t initcall_debug_start(struct device *dev)
->> +static ktime_t initcall_debug_start(struct device *dev, char *info)
->>   {
->>   	ktime_t calltime = ktime_set(0, 0);
->>
->>   	if (pm_print_times_enabled) {
->> -		pr_info("calling  %s+ @ %i, parent: %s\n",
->> +		pr_info("calling %s+ @ %i, parent: %s driver: %s %s\n",
->>   			dev_name(dev), task_pid_nr(current),
->
-> As we have a 'struct device' here, why aren't we just using dev_info()
-> instead?  That will get us the "proper" structured logging information,
-> and the needed information that you are looking for as well, right?
->
-> thanks,
->
-> greg k-h
->
+Those config options don't make sense anymore with the new hctosys
+mechanism introduced with the previous patch.
 
-Good point.I see Joe saying the same thing. Will take care of it.
+That means two things:
 
-thanks,
--- Shuah
+- If a (hardware) clock is available it will be used to set the time at
+  boot. This was already the case for system which have a "persistent"
+  clock, e.g. most x86 systems. The only way to specify the device used
+  for hctosys is now by using the kernel parameter hctosys= introduced
+  with a previous patch.
 
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+- If a hardware clock was used for hctosys before suspend, this clock
+  will be used to adjust the clock at resume. Again, this doesn't change
+  anything on systems with a "persistent" clock.
+
+What's missing:
+
+I don't know much about those "persistent" clocks and I haven't had a
+deep look at them. That's especially true for the suspend/resume
+mechanism used by them. The mechanism I want to use is the following:
+The RTC subsystem now maintains the ID of the RTC device which was used
+for hctosys (in rtc_hctosys_dev_id) and therefor specifies the device
+which should be used to adjust the time after resume. Additionaly the
+(new) flag systime_was_set will be set to false at suspend and on resume
+this flag will be set to true if either the clock will be adjusted by
+the device used for hctosys or by userspace (through do_settimeofday()).
+
+That all should already work as expected for RTCs, what's missing for
+"persistent" clocks is that the flag systime_was_set is set to false on
+suspend and set to true on resume. Currently it just stays at true
+(which is set through hctosys if a "persistent" clock is found.
+But because "persistent" clocks don't go away (as it is possible with
+RTCs by removing the driver or the RTC itself), nor do "persistent"
+clocks might have two instances, this shouldn't be a problem at all.
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ Documentation/rtc.txt   |  8 +++---
+ drivers/rtc/Kconfig     | 35 ++---------------------
+ drivers/rtc/Makefile    |  1 -
+ drivers/rtc/class.c     | 30 ++++++++++++-------
+ drivers/rtc/hctosys.c   | 76 -------------------------------------------------
+ drivers/rtc/rtc-proc.c  | 25 ++--------------
+ drivers/rtc/rtc-sysfs.c |  6 +---
+ drivers/rtc/systohc.c   |  5 +++-
+ include/linux/rtc.h     |  7 ++---
+ 9 files changed, 34 insertions(+), 159 deletions(-)
+ delete mode 100644 drivers/rtc/hctosys.c
+
+diff --git a/Documentation/rtc.txt b/Documentation/rtc.txt
+index 32aa400..a1abfd8 100644
+--- a/Documentation/rtc.txt
++++ b/Documentation/rtc.txt
+@@ -121,8 +121,9 @@ three different userspace interfaces:
+ 
+     *	/proc/driver/rtc ... the system clock RTC may expose itself
+ 	using a procfs interface. If there is no RTC for the system clock,
+-	rtc0 is used by default. More information is (currently) shown
+-	here than through sysfs.
++	or a "persistent" clock is used to set the system clock,
++	/proc/driver/rtc will not exist.
++	More information is (currently) shown here than through sysfs.
+ 
+ The RTC Class framework supports a wide variety of RTCs, ranging from those
+ integrated into embeddable system-on-chip (SOC) processors to discrete chips
+@@ -144,8 +145,7 @@ rtc attributes without requiring the use of ioctls. All dates and times
+ are in the RTC's timezone, rather than in system time.
+ 
+ date:  	   	 RTC-provided date
+-hctosys:   	 1 if the RTC provided the system time at boot via the
+-		 CONFIG_RTC_HCTOSYS kernel option, 0 otherwise
++hctosys:   	 1 if the RTC provided the system time at boot, 0 otherwise
+ max_user_freq:	 The maximum interrupt rate an unprivileged user may request
+ 		 from this RTC.
+ name:		 The name of the RTC corresponding to this sysfs directory
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index b983813..b1d6691 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -17,44 +17,13 @@ menuconfig RTC_CLASS
+ 
+ if RTC_CLASS
+ 
+-config RTC_HCTOSYS
+-	bool "Set system time from RTC on startup and resume"
+-	default y
+-	help
+-	  If you say yes here, the system time (wall clock) will be set using
+-	  the value read from a specified RTC device. This is useful to avoid
+-	  unnecessary fsck runs at boot time, and to network better.
+-
+ config RTC_SYSTOHC
+ 	bool "Set the RTC time based on NTP synchronization"
+ 	default y
+ 	help
+ 	  If you say yes here, the system time (wall clock) will be stored
+-	  in the RTC specified by RTC_HCTOSYS_DEVICE approximately every 11
+-	  minutes if userspace reports synchronized NTP status.
+-
+-config RTC_HCTOSYS_DEVICE
+-	string "RTC used to set the system time"
+-	depends on RTC_HCTOSYS = y || RTC_SYSTOHC = y
+-	default "rtc0"
+-	help
+-	  The RTC device that will be used to (re)initialize the system
+-	  clock, usually rtc0. Initialization is done when the system
+-	  starts up, and when it resumes from a low power state. This
+-	  device should record time in UTC, since the kernel won't do
+-	  timezone correction.
+-
+-	  The driver for this RTC device must be loaded before late_initcall
+-	  functions run, so it must usually be statically linked.
+-
+-	  This clock should be battery-backed, so that it reads the correct
+-	  time when the system boots from a power-off state. Otherwise, your
+-	  system will need an external clock source (like an NTP server).
+-
+-	  If the clock you specify here is not battery backed, it may still
+-	  be useful to reinitialize system time when resuming from system
+-	  sleep states. Do not specify an RTC here unless it stays powered
+-	  during all this system's supported sleep states.
++	  in the RTC used to set the time at boot or resume approximately
++	  every 11 minutes if userspace reports synchronized NTP status.
+ 
+ config RTC_DEBUG
+ 	bool "RTC debug support"
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index c33f86f..b699504 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -5,7 +5,6 @@
+ ccflags-$(CONFIG_RTC_DEBUG)	:= -DDEBUG
+ 
+ obj-$(CONFIG_RTC_LIB)		+= rtc-lib.o
+-obj-$(CONFIG_RTC_HCTOSYS)	+= hctosys.o
+ obj-$(CONFIG_RTC_SYSTOHC)	+= systohc.o
+ obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
+ rtc-core-y			:= class.o interface.o
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 37a1647..625076b 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -26,6 +26,9 @@
+ static DEFINE_IDA(rtc_ida);
+ struct class *rtc_class;
+ 
++/* The ID of the RTC device used to set the system clock */
++int __read_mostly rtc_hctosys_dev_id = -1;
++
+ static void rtc_device_release(struct device *dev)
+ {
+ 	struct rtc_device *rtc = to_rtc_device(dev);
+@@ -33,12 +36,7 @@ static void rtc_device_release(struct device *dev)
+ 	kfree(rtc);
+ }
+ 
+-#ifdef CONFIG_RTC_HCTOSYS_DEVICE
+-/* Result of the last RTC to system clock attempt. */
+-int rtc_hctosys_ret = -ENODEV;
+-#endif
+-
+-#if defined(CONFIG_PM) && defined(CONFIG_RTC_HCTOSYS_DEVICE)
++#if defined(CONFIG_PM)
+ /*
+  * On suspend(), measure the delta between one RTC and the
+  * system's wall clock; restore it on resume().
+@@ -53,12 +51,18 @@ static int rtc_suspend(struct device *dev, pm_message_t mesg)
+ 	struct rtc_time		tm;
+ 	struct timespec		delta, delta_delta;
+ 
++
++	if (!systime_was_set)
++		return 0;
++
+ 	if (has_persistent_clock())
+ 		return 0;
+ 
+-	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
++	if (rtc->id != rtc_hctosys_dev_id)
+ 		return 0;
+ 
++	systime_was_set = false;
++
+ 	/* snapshot the current RTC and system time at suspend*/
+ 	rtc_read_time(rtc, &tm);
+ 	getnstimeofday(&old_system);
+@@ -94,11 +98,13 @@ static int rtc_resume(struct device *dev)
+ 	struct timespec		new_system, new_rtc;
+ 	struct timespec		sleep_time;
+ 
++	if (systime_was_set)
++		return 0;
++
+ 	if (has_persistent_clock())
+ 		return 0;
+ 
+-	rtc_hctosys_ret = -ENODEV;
+-	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
++	if (rtc->id != rtc_hctosys_dev_id)
+ 		return 0;
+ 
+ 	/* snapshot the current rtc and system time at resume */
+@@ -131,7 +137,7 @@ static int rtc_resume(struct device *dev)
+ 
+ 	if (sleep_time.tv_sec >= 0)
+ 		timekeeping_inject_sleeptime(&sleep_time);
+-	rtc_hctosys_ret = 0;
++	systime_was_set = true;
+ 	return 0;
+ }
+ 
+@@ -169,13 +175,15 @@ static void hctosys(struct rtc_device *rtc)
+ 		dev_err(rtc->dev.parent,
+ 			"rtc core: error setting system clock: %d\n", rc);
+ 		return;
+-	} else if (systime_was_set)
++	} else if (systime_was_set) {
++		rtc_hctosys_dev_id = rtc->id;
+ 		dev_info(rtc->dev.parent,
+ 			"rtc core: setting system clock to "
+ 			"%d-%02d-%02d %02d:%02d:%02d UTC (%u)\n",
+ 			now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+ 			now.tm_hour, now.tm_min, now.tm_sec,
+ 			(unsigned int) ts.tv_sec);
++	}
+ }
+ 
+ /**
+diff --git a/drivers/rtc/hctosys.c b/drivers/rtc/hctosys.c
+deleted file mode 100644
+index 4aa60d7..0000000
+--- a/drivers/rtc/hctosys.c
++++ /dev/null
+@@ -1,76 +0,0 @@
+-/*
+- * RTC subsystem, initialize system time on startup
+- *
+- * Copyright (C) 2005 Tower Technologies
+- * Author: Alessandro Zummo <a.zummo@towertech.it>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+-*/
+-
+-#include <linux/rtc.h>
+-
+-/* IMPORTANT: the RTC only stores whole seconds. It is arbitrary
+- * whether it stores the most close value or the value with partial
+- * seconds truncated. However, it is important that we use it to store
+- * the truncated value. This is because otherwise it is necessary,
+- * in an rtc sync function, to read both xtime.tv_sec and
+- * xtime.tv_nsec. On some processors (i.e. ARM), an atomic read
+- * of >32bits is not possible. So storing the most close value would
+- * slow down the sync API. So here we have the truncated value and
+- * the best guess is to add 0.5s.
+- */
+-
+-static int __init rtc_hctosys(void)
+-{
+-	int err = -ENODEV;
+-	struct rtc_time tm;
+-	struct timespec tv = {
+-		.tv_nsec = NSEC_PER_SEC >> 1,
+-	};
+-	struct rtc_device *rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
+-
+-	if (rtc == NULL) {
+-		pr_err("%s: unable to open rtc device (%s)\n",
+-			__FILE__, CONFIG_RTC_HCTOSYS_DEVICE);
+-		goto err_open;
+-	}
+-
+-	err = rtc_read_time(rtc, &tm);
+-	if (err) {
+-		dev_err(rtc->dev.parent,
+-			"hctosys: unable to read the hardware clock\n");
+-		goto err_read;
+-
+-	}
+-
+-	err = rtc_valid_tm(&tm);
+-	if (err) {
+-		dev_err(rtc->dev.parent,
+-			"hctosys: invalid date/time\n");
+-		goto err_invalid;
+-	}
+-
+-	rtc_tm_to_time(&tm, &tv.tv_sec);
+-
+-	err = do_settimeofday(&tv);
+-
+-	dev_info(rtc->dev.parent,
+-		"setting system clock to "
+-		"%d-%02d-%02d %02d:%02d:%02d UTC (%u)\n",
+-		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+-		tm.tm_hour, tm.tm_min, tm.tm_sec,
+-		(unsigned int) tv.tv_sec);
+-
+-err_invalid:
+-err_read:
+-	rtc_class_close(rtc);
+-
+-err_open:
+-	rtc_hctosys_ret = err;
+-
+-	return err;
+-}
+-
+-late_initcall(rtc_hctosys);
+diff --git a/drivers/rtc/rtc-proc.c b/drivers/rtc/rtc-proc.c
+index ffa69e1..fd59c1b 100644
+--- a/drivers/rtc/rtc-proc.c
++++ b/drivers/rtc/rtc-proc.c
+@@ -18,27 +18,6 @@
+ 
+ #include "rtc-core.h"
+ 
+-#define NAME_SIZE	10
+-
+-#if defined(CONFIG_RTC_HCTOSYS_DEVICE)
+-static bool is_rtc_hctosys(struct rtc_device *rtc)
+-{
+-	int size;
+-	char name[NAME_SIZE];
+-
+-	size = scnprintf(name, NAME_SIZE, "rtc%d", rtc->id);
+-	if (size > NAME_SIZE)
+-		return false;
+-
+-	return !strncmp(name, CONFIG_RTC_HCTOSYS_DEVICE, NAME_SIZE);
+-}
+-#else
+-static bool is_rtc_hctosys(struct rtc_device *rtc)
+-{
+-	return (rtc->id == 0);
+-}
+-#endif
+-
+ static int rtc_proc_show(struct seq_file *seq, void *offset)
+ {
+ 	int err;
+@@ -137,12 +116,12 @@ static const struct file_operations rtc_proc_fops = {
+ 
+ void rtc_proc_add_device(struct rtc_device *rtc)
+ {
+-	if (is_rtc_hctosys(rtc))
++	if (rtc->id == rtc_hctosys_dev_id)
+ 		proc_create_data("driver/rtc", 0, NULL, &rtc_proc_fops, rtc);
+ }
+ 
+ void rtc_proc_del_device(struct rtc_device *rtc)
+ {
+-	if (is_rtc_hctosys(rtc))
++	if (rtc->id == rtc_hctosys_dev_id)
+ 		remove_proc_entry("driver/rtc", NULL);
+ }
+diff --git a/drivers/rtc/rtc-sysfs.c b/drivers/rtc/rtc-sysfs.c
+index b70e2bb..6b8a41b 100644
+--- a/drivers/rtc/rtc-sysfs.c
++++ b/drivers/rtc/rtc-sysfs.c
+@@ -112,13 +112,9 @@ static ssize_t
+ rtc_sysfs_show_hctosys(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+ {
+-#ifdef CONFIG_RTC_HCTOSYS_DEVICE
+-	if (rtc_hctosys_ret == 0 &&
+-			strcmp(dev_name(&to_rtc_device(dev)->dev),
+-				CONFIG_RTC_HCTOSYS_DEVICE) == 0)
++	if (to_rtc_device(dev)->id == rtc_hctosys_dev_id)
+ 		return sprintf(buf, "1\n");
+ 	else
+-#endif
+ 		return sprintf(buf, "0\n");
+ }
+ 
+diff --git a/drivers/rtc/systohc.c b/drivers/rtc/systohc.c
+index bf3e242..1962f4c 100644
+--- a/drivers/rtc/systohc.c
++++ b/drivers/rtc/systohc.c
+@@ -25,13 +25,16 @@ int rtc_set_ntp_time(struct timespec now)
+ 	struct rtc_device *rtc;
+ 	struct rtc_time tm;
+ 	int err = -ENODEV;
++	char rtc_hctosys_name[10];
+ 
+ 	if (now.tv_nsec < (NSEC_PER_SEC >> 1))
+ 		rtc_time_to_tm(now.tv_sec, &tm);
+ 	else
+ 		rtc_time_to_tm(now.tv_sec + 1, &tm);
+ 
+-	rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
++	scnprintf(rtc_hctosys_name, sizeof(rtc_hctosys_name), "rtc%d",
++		rtc_hctosys_dev_id);
++	rtc = rtc_class_open(rtc_hctosys_name);
+ 	if (rtc) {
+ 		/* rtc_hctosys exclusively uses UTC, so we call set_time here,
+ 		 * not set_mmss. */
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index c2c2897..50caf0d 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -191,10 +191,7 @@ static inline bool is_leap_year(unsigned int year)
+ 	return (!(year % 4) && (year % 100)) || !(year % 400);
+ }
+ 
+-#ifdef CONFIG_RTC_HCTOSYS_DEVICE
+-extern int rtc_hctosys_ret;
+-#else
+-#define rtc_hctosys_ret -ENODEV
+-#endif
++/* The ID of the RTC device used to set the system clock */
++extern int rtc_hctosys_dev_id;
+ 
+ #endif /* _LINUX_RTC_H_ */
+-- 
+1.8.1.4
+
