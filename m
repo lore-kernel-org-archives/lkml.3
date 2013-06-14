@@ -1,61 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696Ab3FNB7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 21:59:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759660Ab3FNB7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 21:59:11 -0400
-Date: Thu, 13 Jun 2013 21:08:21 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
-Message-ID: <20130614000821.GA3183@amt.cnet>
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1759710Ab3FNB7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 21:59:40 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:38400 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759681Ab3FNB7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 21:59:34 -0400
+Message-ID: <51BA7831.4040003@huawei.com>
+Date: Fri, 14 Jun 2013 09:56:01 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH v4 9/9] memcg: don't need to free memcg via RCU or workqueue
+References: <51BA7794.2000305@huawei.com>
+In-Reply-To: <51BA7794.2000305@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
-> Changelog:
-> V3:
->   All of these changes are from Gleb's review:
->   1) rename RET_MMIO_PF_EMU to RET_MMIO_PF_EMULATE.
->   2) smartly adjust kvm generation number in kvm_current_mmio_generatio()
->      to avoid kvm_memslots->generation overflow.
-> 
-> V2:
->   - rename kvm_mmu_invalid_mmio_spte to kvm_mmu_invalid_mmio_sptes
->   - use kvm->memslots->generation as kvm global generation-number
->   - fix comment and codestyle
->   - init kvm generation close to mmio wrap-around value
->   - keep kvm_mmu_zap_mmio_sptes
-> 
-> The current way is holding hot mmu-lock and walking all shadow pages, this
-> is not scale. This patchset tries to introduce a very simple and scale way
-> to fast invalidate all mmio sptes - it need not walk any shadow pages and hold
-> any locks.
+Now memcg has the same life cycle with its corresponding cgroup, and
+a cgroup is freed via RCU and then mem_cgroup_css_free() will be
+called in a work function, so we can simply call __mem_cgroup_free()
+in mem_cgroup_css_free().
 
-Hi Xiao,
+This actually reverts 59927fb984de1703c67bc640c3e522d8b5276c73
+("memcg: free mem_cgroup by RCU to fix oops").
 
-- Where is the generation number increased?
-- Should use spinlock breakable code in kvm_mmu_zap_mmio_sptes()
-(picture guest with 512GB of RAM, even walking all those pages is
-expensive) (ah, patch to remove kvm_mmu_zap_mmio_sptes does that).
-- Is -13 enough to test wraparound? Its highly likely the guest has 
-not began executing by the time 13 kvm_set_memory_calls are made
-(so no sptes around). Perhaps -2000 is more sensible (should confirm
-though).
-- Why remove "if (change == KVM_MR_CREATE) || (change
-==  KVM_MR_MOVE)" from kvm_arch_commit_memory_region?
-Its instructive.
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c | 51 +++++----------------------------------------------
+ 1 file changed, 5 insertions(+), 46 deletions(-)
 
-Otherwise looks good.
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7b622c3..234f311 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -267,28 +267,10 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
+ 
+-	union {
+-		/*
+-		 * the counter to account for mem+swap usage.
+-		 */
+-		struct res_counter memsw;
+-
+-		/*
+-		 * rcu_freeing is used only when freeing struct mem_cgroup,
+-		 * so put it into a union to avoid wasting more memory.
+-		 * It must be disjoint from the css field.  It could be
+-		 * in a union with the res field, but res plays a much
+-		 * larger part in mem_cgroup life than memsw, and might
+-		 * be of interest, even at time of free, when debugging.
+-		 * So share rcu_head with the less interesting memsw.
+-		 */
+-		struct rcu_head rcu_freeing;
+-		/*
+-		 * We also need some space for a worker in deferred freeing.
+-		 * By the time we call it, rcu_freeing is no longer in use.
+-		 */
+-		struct work_struct work_freeing;
+-	};
++	/*
++	 * the counter to account for mem+swap usage.
++	 */
++	struct res_counter memsw;
+ 
+ 	/*
+ 	 * the counter to account for kernel memory usage.
+@@ -6182,29 +6164,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+ 		vfree(memcg);
+ }
+ 
+-
+-/*
+- * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+- * but in process context.  The work_freeing structure is overlaid
+- * on the rcu_freeing structure, which itself is overlaid on memsw.
+- */
+-static void free_work(struct work_struct *work)
+-{
+-	struct mem_cgroup *memcg;
+-
+-	memcg = container_of(work, struct mem_cgroup, work_freeing);
+-	__mem_cgroup_free(memcg);
+-}
+-
+-static void free_rcu(struct rcu_head *rcu_head)
+-{
+-	struct mem_cgroup *memcg;
+-
+-	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+-	INIT_WORK(&memcg->work_freeing, free_work);
+-	schedule_work(&memcg->work_freeing);
+-}
+-
+ /*
+  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
+  */
+@@ -6355,7 +6314,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+ 
+ 	mem_cgroup_sockets_destroy(memcg);
+ 
+-	call_rcu(&memcg->rcu_freeing, free_rcu);
++	__mem_cgroup_free(memcg);
+ }
+ 
+ #ifdef CONFIG_MMU
+-- 
+1.8.0.2
