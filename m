@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab3FNVI1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:08:27 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:62782 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab3FNVIY (ORCPT
+	id S1753950Ab3FNVIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:08:51 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54175 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab3FNVIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:08:24 -0400
+	Fri, 14 Jun 2013 17:08:22 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v2 11/11] irqdomain: Include hwirq number in /proc/interrupts
-Date: Fri, 14 Jun 2013 22:08:06 +0100
-Message-Id: <1371244086-9189-12-git-send-email-grant.likely@linaro.org>
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH v2 09/11] irqdomain: remove irq_domain_generate_simple()
+Date: Fri, 14 Jun 2013 22:08:04 +0100
+Message-Id: <1371244086-9189-10-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
 References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
@@ -22,41 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
+Nobody calls it; remove the function
 
-Add the hardware interrupt number to the output of /proc/interrupts.
-It is often important to have access to the hardware interrupt number because
-it identifies exactly how an interrupt signal is wired up to the interrupt
-controller.  This is especially important when using irq_domains since irq
-numbers get dynamically allocated in that case, and have no relation to the
-actual hardware number.
-
-Note: This output is currently conditional on whether or not the irq_domain
-pointer is set; however hwirq could still be used without irq_domain.  It
-may be worthwhile to always output the hwirq number regardless of the
-domain pointer.
-
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Olof Johansson <olof@lixom.net>
-Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 ---
- kernel/irq/proc.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/irqdomain.h |  8 --------
+ kernel/irq/irqdomain.c    | 15 ---------------
+ 2 files changed, 23 deletions(-)
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 19ed5c4..36f6ee1 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -462,6 +462,8 @@ int show_interrupts(struct seq_file *p, void *v)
- 	} else {
- 		seq_printf(p, " %8s", "None");
- 	}
-+	if (desc->irq_data.domain)
-+		seq_printf(p, " %*d", prec, (int) desc->irq_data.hwirq);
- #ifdef CONFIG_GENERIC_IRQ_SHOW_LEVEL
- 	seq_printf(p, " %-8s", irqd_is_level_type(&desc->irq_data) ? "Level" : "Edge");
- #endif
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index f9e8e06..fe7c57d 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -205,14 +205,6 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
+ 			const u32 *intspec, unsigned int intsize,
+ 			irq_hw_number_t *out_hwirq, unsigned int *out_type);
+ 
+-#if defined(CONFIG_OF_IRQ)
+-extern void irq_domain_generate_simple(const struct of_device_id *match,
+-					u64 phys_base, unsigned int irq_start);
+-#else /* CONFIG_OF_IRQ */
+-static inline void irq_domain_generate_simple(const struct of_device_id *match,
+-					u64 phys_base, unsigned int irq_start) { }
+-#endif /* !CONFIG_OF_IRQ */
+-
+ #else /* CONFIG_IRQ_DOMAIN */
+ static inline void irq_dispose_mapping(unsigned int virq) { }
+ #endif /* !CONFIG_IRQ_DOMAIN */
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 80e9249..e47b356 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -741,18 +741,3 @@ const struct irq_domain_ops irq_domain_simple_ops = {
+ 	.xlate = irq_domain_xlate_onetwocell,
+ };
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+-
+-#ifdef CONFIG_OF_IRQ
+-void irq_domain_generate_simple(const struct of_device_id *match,
+-				u64 phys_base, unsigned int irq_start)
+-{
+-	struct device_node *node;
+-	pr_debug("looking for phys_base=%llx, irq_start=%i\n",
+-		(unsigned long long) phys_base, (int) irq_start);
+-	node = of_find_matching_node_by_address(NULL, match, phys_base);
+-	if (node)
+-		irq_domain_add_legacy(node, 32, irq_start, 0,
+-				      &irq_domain_simple_ops, NULL);
+-}
+-EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
+-#endif
 -- 
 1.8.1.2
 
