@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab3FNP2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:28:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38539 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab3FNP2g (ORCPT
+	id S1753427Ab3FNP3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:29:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54992 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab3FNP3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:28:36 -0400
-Message-ID: <51BB369F.8000209@wwwdotorg.org>
-Date: Fri, 14 Jun 2013 09:28:31 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 11:29:18 -0400
+Date: Fri, 14 Jun 2013 17:29:17 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, leoli@freescale.com, scottwood@freescale.com,
+        Priyanka.Jain@freescale.com
+Subject: Re: [PATCH][RFC] kernel/cpu: do not change the cpus_allowed of the
+ current task when unplugging cpus
+Message-ID: <20130614152917.GA8597@linutronix.de>
+References: <1368699439-13034-1-git-send-email-chenhui.zhao@freescale.com>
+ <20130607090543.GD10280@linutronix.de>
+ <20130609095942.GA8548@localhost.localdomain>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Dave Martin <Dave.Martin@arm.com>, Alexandre Courbot <acourbot@nvidia.com>,
-        Joseph Lo <josephl@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
-        Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/3] ARM: tegra: basic support for Trusted Foundations
-References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com> <1371114745-24710-2-git-send-email-acourbot@nvidia.com> <20130613143536.GA18021@localhost.localdomain> <CAAVeFuLufKSfeQzP-tX1JpX9qtHa2EdFA9J8qpKE4Pyyrc8UQg@mail.gmail.com>
-In-Reply-To: <CAAVeFuLufKSfeQzP-tX1JpX9qtHa2EdFA9J8qpKE4Pyyrc8UQg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130609095942.GA8548@localhost.localdomain>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 02:43 AM, Alexandre Courbot wrote:
-> On Thu, Jun 13, 2013 at 11:35 PM, Dave Martin <Dave.Martin@arm.com> wrote:
-...
->>> +             compatible = "tl,trusted-foundations";
->>> +     };
->>
->> For now, it might make more sense to make this binding tegra-specific,
->> and to interpret the node is only implying the presence of the low-
->> level SoC functions you are using on Tegra, not TF as a whole.
-> 
-> Do you mean the vendor should be changed from "tl" to "nvidia" here?
-> 
->> Otherwise, it feels too generic.  There is no description of exactly
->> what functionality will be available if this node it present: if
->> this is going to be a generic binding for TF, then it needs to work
->> for all deployments of TF, not just your specific case.  For example,
->> how to you find out what functionality is present?  Will there be
->> a standard probing ABI for all versions and deployments of TF, or
->> would extra information need to be described in the DT?
->>
->> Partly, this depends on whether the TF_SET_CPU_BOOT_ADDR_SMC call will
->> be present, working, and with compatible ABI and semantics, on every SoC
->> where an implementation of TF is present.  Someone from Trusted Logic, or
->> someone with visibility of the relevant ABI/API specs would need to
->> judge on that -- do you have that info?
-> 
-> I'm currently looking into that. This patch makes the assumption that
-> all TF implementations have the same features and the same interface -
-> if this is the case, do you agree this binding is ok as it is?
-> 
-> If indeed TF's functionality and ABI is the same no matter whether we
-> are on Tegra on not, then its support should even be moved outside of
-> mach-tegra.
+* Zhao Chenhui | 2013-06-09 17:59:42 [+0800]:
 
-I expect we at least need a version number in the compatible value, even
-if we don't need a representation of the SoC or vendor for which the ABI
-was built.
+>No. _cpu_down() on mainline do not change the cpus_allowed.
+My bad.
 
->>> +     node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
->>> +     if (node && !IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))
->>> +             pr_warn("Trusted Foundations detected but support missing!\n");
->>
->> Should this be more than just a warning?
->>
->> It looks to me like tegra_cpu_reset_handler_set() might either silently
->> fail or trigger an external abort in this situation, depending on the
->> hardware and on how TF sets things up.
-> 
-> What will happen (from 3.10) is that tegra_cpu_reset_handler_set()
-> will output a "CPUX: failed to come online" for each secondary CPU and
-> boot will continue (albeit on one CPU). The system's features are
-> degraded, but it is not fatal, so I think it is reasonable to continue
-> here.
-> 
->> There seems to be no way to signal an error when attempting to set a
->> CPU's reset address.
-> 
-> Indeed. But even if that fails the system can still survive, at least on Tegra.
+>The problem is that the task which turned off cpu2 (for instance)
+>can not run on cpu2 again after cpu2 is turned on, because cpu2 has been
+>removed from the cpus_allowed of the task.
+>
+>The task can put himself back on cpu2 throuhg the system call,
+>but I think applications should not do this work and do not care which cpu
+>it is running on in most time.
 
-One more thought: Setting the CPU reset address isn't the only operation
-that'll be performed via firmware_ops; we'd also need to e.g. disable
-CPU power-gating and perhaps other things. Can that all be done at
-run-time? I guess it shouldn't be hard to fix that if we can't yet.
+The mask needs to be changed because you may not be on the CPU while it
+is going down. What do you think about:
+
+Subject: [PATCH] kernel/hotplug: restore original cpu mask oncpu/down
+
+If a task which is allowed to run only on CPU X puts CPU Y down then it
+will be allowed on all CPUs but the on CPU Y after it comes back from
+kernel. This patch ensures that we don't lose the initial setting unless
+the CPU the task is running is going down.
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/cpu.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 3acf17d..f5ad8e1 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -545,6 +545,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		.hcpu = hcpu,
+ 	};
+ 	cpumask_var_t cpumask;
++	cpumask_var_t cpumask_org;
+ 
+ 	if (num_online_cpus() == 1)
+ 		return -EBUSY;
+@@ -555,6 +556,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	/* Move the downtaker off the unplug cpu */
+ 	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+ 		return -ENOMEM;
++	if (!alloc_cpumask_var(&cpumask_org, GFP_KERNEL))  {
++		free_cpumask_var(cpumask);
++		return -ENOMEM;
++	}
++
++	cpumask_copy(cpumask_org, tsk_cpus_allowed(current));
+ 	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
+ 	set_cpus_allowed_ptr(current, cpumask);
+ 	free_cpumask_var(cpumask);
+@@ -563,7 +570,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (mycpu == cpu) {
+ 		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
+ 		migrate_enable();
+-		return -EBUSY;
++		err = -EBUSY;
++		goto restore_cpus;
+ 	}
+ 
+ 	cpu_hotplug_begin();
+@@ -622,6 +630,9 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	cpu_hotplug_done();
+ 	if (!err)
+ 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
++restore_cpus:
++	set_cpus_allowed_ptr(current, cpumask_org);
++	free_cpumask_var(cpumask_org);
+ 	return err;
+ }
+ 
+-- 
+1.7.10.4
+
+
+>
+>-Chenhui
+
+Sebastian
