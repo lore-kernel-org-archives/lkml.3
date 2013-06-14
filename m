@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3FNVgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:36:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34447 "EHLO
+	id S1753895Ab3FNVcC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:32:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34410 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab3FNVcZ (ORCPT
+	with ESMTP id S1753804Ab3FNVb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:32:25 -0400
-Date: Fri, 14 Jun 2013 14:32:14 -0700
+	Fri, 14 Jun 2013 17:31:58 -0400
+Date: Fri, 14 Jun 2013 14:31:40 -0700
 From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6@git.kernel.org>
+Message-ID: <tip-29206daa5831dc5b435a06387fd702875401c6bd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
+        tj@kernel.org, jacob.shin@amd.com, trenn@suse.de, tglx@linutronix.de,
+        hpa@linux.intel.com, rjw@sisk.pl
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com>
+        yinghai@kernel.org, penberg@kernel.org, tangchen@cn.fujitsu.com,
+        tj@kernel.org, jacob.shin@amd.com, tglx@linutronix.de, trenn@suse.de,
+        rjw@sisk.pl, hpa@linux.intel.com
+In-Reply-To: <1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm, numa:
-  Move two functions calling on successful path later
-Git-Commit-ID: f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
+Subject: [tip:x86/mm] x86, ACPI: Split acpi_initrd_override() into find/
+ copy two steps
+Git-Commit-ID: 29206daa5831dc5b435a06387fd702875401c6bd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,164 +32,176 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:32:20 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:31:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
-Gitweb:     http://git.kernel.org/tip/f5127d18677d45bdd17bb3d34e21c2a3f6b0eef6
+Commit-ID:  29206daa5831dc5b435a06387fd702875401c6bd
+Gitweb:     http://git.kernel.org/tip/29206daa5831dc5b435a06387fd702875401c6bd
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 21:02:57 +0800
+AuthorDate: Thu, 13 Jun 2013 21:02:53 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jun 2013 14:04:53 -0700
+CommitDate: Fri, 14 Jun 2013 14:04:01 -0700
 
-x86, mm, numa: Move two functions calling on successful path later
+x86, ACPI: Split acpi_initrd_override() into find/copy two steps
 
-We need to have numa info ready before init_mem_mappingi(), so that we
-can call init_mem_mapping per node, and alse trim node memory ranges to
-big alignment.
+To parse SRAT before memblock starts to work, we need to move acpi table
+probing procedure earlier. But acpi_initrd_table_override procedure must
+be executed before acpi table probing. So we need to move it earlier too,
+which means to move acpi_initrd_table_override procedure before memblock
+starts to work.
 
-Currently, parsing numa info needs to allocate some buffer and need to be
-called after init_mem_mapping. So try to split parsing numa info procedure
-into two steps:
-	- The first step will be called before init_mem_mapping, and it
-	  should not need allocate buffers.
-	- The second step will cantain all the buffer related code and be
-	  executed later.
+But acpi_initrd_table_override procedure needs memblock to allocate buffer
+for ACPI tables. To solve this problem, we need to split acpi_initrd_override()
+procedure into two steps: finding and copying.
+Find should be as early as possible. Copy should be after memblock is ready.
 
-At last we will have early_initmem_init() and initmem_init().
+Currently, acpi_initrd_table_override procedure is executed after
+init_mem_mapping() and relocate_initrd(), so it can scan initrd and copy
+acpi tables with kernel virtual addresses of initrd.
 
-This patch implements only the first step.
+Once we split it into finding and copying steps, it could be done like the
+following:
 
-setup_node_data() and numa_init_array() are only called for successful
-path, so we can move these two callings to x86_numa_init(). That will also
-make numa_init() smaller and more readable.
+Finding could be done in head_32.S and head64.c, just like microcode early
+scanning. In head_32.S, it is 32bit flat mode, we don't need to setup page
+table to access it. In head64.c, #PF set page table could help us to access
+initrd with kernel low mapping addresses.
 
--v2: remove online_node_map clear in numa_init(), as it is only
-     set in setup_node_data() at last in successful path.
+Copying need to be done just after memblock is ready, because it needs to
+allocate buffer for new acpi tables with memblock.
+Also it should be done before probing acpi tables, and we need early_ioremap
+to access source and target ranges, as init_mem_mapping is not called yet.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371128589-8953-11-git-send-email-tangchen@cn.fujitsu.com
+While a dummy version of acpi_initrd_override() was defined when
+!CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version were
+conditionalized inside CONFIG_ACPI. This forced setup_arch() to have its own
+#ifdefs around acpi_initrd_override() as otherwise build would fail when
+!CONFIG_ACPI. Move the prototypes and dummy implementations of the newly
+split functions out of CONFIG_ACPI block in acpi.h so that we can throw away
+the #ifdefs from its users.
+
+-v2: Split one patch out according to tj.
+     also don't pass table_nr around.
+-v3: Add Tj's changelog about moving down to #idef in acpi.h to
+     avoid #idef in setup.c
+
+Signed-off-by: Yinghai <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1371128589-8953-7-git-send-email-tangchen@cn.fujitsu.com
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
+Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa.c | 69 ++++++++++++++++++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 30 deletions(-)
+ arch/x86/kernel/setup.c |  6 +++---
+ drivers/acpi/osl.c      | 18 +++++++++++++-----
+ include/linux/acpi.h    | 16 ++++++++--------
+ 3 files changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a71c4e2..07ae800 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -477,7 +477,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- static int __init numa_register_memblks(struct numa_meminfo *mi)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 6ca5f2c..42f584c 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1119,9 +1119,9 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	reserve_initrd();
+ 
+-#if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
+-	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
+-#endif
++	acpi_initrd_override_find((void *)initrd_start,
++					initrd_end - initrd_start);
++	acpi_initrd_override_copy();
+ 
+ 	reserve_crashkernel();
+ 
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 53dd490..6ab6c54 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -572,14 +572,13 @@ static const char * const table_sigs[] = {
+ #define ACPI_OVERRIDE_TABLES 64
+ static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+ 
+-void __init acpi_initrd_override(void *data, size_t size)
++void __init acpi_initrd_override_find(void *data, size_t size)
  {
- 	unsigned long uninitialized_var(pfn_align);
--	int i, nid;
-+	int i;
+-	int sig, no, table_nr = 0, total_offset = 0;
++	int sig, no, table_nr = 0;
+ 	long offset = 0;
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
+-	char *p;
  
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -506,24 +506,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	/* Finally register nodes. */
--	for_each_node_mask(nid, node_possible_map) {
--		u64 start = PFN_PHYS(max_pfn);
--		u64 end = 0;
--
--		for (i = 0; i < mi->nr_blks; i++) {
--			if (nid != mi->blk[i].nid)
--				continue;
--			start = min(mi->blk[i].start, start);
--			end = max(mi->blk[i].end, end);
--		}
--
--		if (start < end)
--			setup_node_data(nid, start, end);
--	}
--
--	/* Dump memblock with node info and return. */
--	memblock_dump_all();
- 	return 0;
- }
- 
-@@ -559,7 +541,6 @@ static int __init numa_init(int (*init_func)(void))
- 
- 	nodes_clear(numa_nodes_parsed);
- 	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
- 	numa_reset_distance();
-@@ -577,15 +558,6 @@ static int __init numa_init(int (*init_func)(void))
- 	if (ret < 0)
- 		return ret;
- 
--	for (i = 0; i < nr_cpu_ids; i++) {
--		int nid = early_cpu_to_node(i);
--
--		if (nid == NUMA_NO_NODE)
--			continue;
--		if (!node_online(nid))
--			numa_clear_node(i);
--	}
--	numa_init_array();
- 	return 0;
- }
- 
-@@ -618,7 +590,7 @@ static int __init dummy_numa_init(void)
-  * last fallback is dummy single node config encomapssing whole memory and
-  * never fails.
-  */
--void __init x86_numa_init(void)
-+static void __init early_x86_numa_init(void)
- {
- 	if (!numa_off) {
- #ifdef CONFIG_X86_NUMAQ
-@@ -638,6 +610,43 @@ void __init x86_numa_init(void)
- 	numa_init(dummy_numa_init);
- }
- 
-+void __init x86_numa_init(void)
-+{
-+	int i, nid;
-+	struct numa_meminfo *mi = &numa_meminfo;
-+
-+	early_x86_numa_init();
-+
-+	/* Finally register nodes. */
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = PFN_PHYS(max_pfn);
-+		u64 end = 0;
-+
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
-+				continue;
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
-+		}
-+
-+		if (start < end)
-+			setup_node_data(nid, start, end); /* online is set */
-+	}
-+
-+	/* Dump memblock with node info */
-+	memblock_dump_all();
-+
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		int nid = early_cpu_to_node(i);
-+
-+		if (nid == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(nid))
-+			numa_clear_node(i);
-+	}
-+	numa_init_array();
+ 	if (data == NULL || size == 0)
+ 		return;
+@@ -620,7 +619,14 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		acpi_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
+ 	}
+-	if (table_nr == 0)
 +}
 +
- static __init int find_near_online_node(int node)
- {
- 	int n, val;
++void __init acpi_initrd_override_copy(void)
++{
++	int no, total_offset = 0;
++	char *p;
++
++	if (!all_tables_size)
+ 		return;
+ 
+ 	/* under 4G at first, then above 4G */
+@@ -652,9 +658,11 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	 * tables at one time, we will hit the limit. So we need to map tables
+ 	 * one by one during copying.
+ 	 */
+-	for (no = 0; no < table_nr; no++) {
++	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
+ 		phys_addr_t size = acpi_initrd_files[no].size;
+ 
++		if (!size)
++			break;
+ 		p = early_ioremap(acpi_tables_addr + total_offset, size);
+ 		memcpy(p, acpi_initrd_files[no].data, size);
+ 		early_iounmap(p, size);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 17b5b59..8dd917b 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -79,14 +79,6 @@ typedef int (*acpi_tbl_table_handler)(struct acpi_table_header *table);
+ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
+ 				      const unsigned long end);
+ 
+-#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+-void acpi_initrd_override(void *data, size_t size);
+-#else
+-static inline void acpi_initrd_override(void *data, size_t size)
+-{
+-}
+-#endif
+-
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+@@ -476,6 +468,14 @@ static inline bool acpi_driver_match_device(struct device *dev,
+ 
+ #endif	/* !CONFIG_ACPI */
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
++void acpi_initrd_override_find(void *data, size_t size);
++void acpi_initrd_override_copy(void);
++#else
++static inline void acpi_initrd_override_find(void *data, size_t size) { }
++static inline void acpi_initrd_override_copy(void) { }
++#endif
++
+ #ifdef CONFIG_ACPI
+ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+ 			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
