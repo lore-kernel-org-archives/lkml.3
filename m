@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3FNIzX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:55:23 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:58739 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab3FNIzT (ORCPT
+	id S1751807Ab3FNI5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:57:21 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:49445 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab3FNI5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:55:19 -0400
+	Fri, 14 Jun 2013 04:57:19 -0400
+Date: Fri, 14 Jun 2013 10:57:12 +0200
+From: Robert Richter <rric@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 13/14] perf, persistent: Exposing persistent events
+ using sysfs
+Message-ID: <20130614085712.GU12218@rric.localhost>
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+ <1370968960-22527-14-git-send-email-rric@kernel.org>
+ <87a9mt2zcf.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <51BA1C3D.1010608@wwwdotorg.org>
-References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com>
- <1371114745-24710-4-git-send-email-acourbot@nvidia.com> <51BA1C3D.1010608@wwwdotorg.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 14 Jun 2013 17:54:59 +0900
-Message-ID: <CAAVeFuLi6-WnFP9LvEdqfj2cuK7pgW0_pg33i-Ucoobcxb8RSQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] ARM: tegra: set CPU reset handler with firmware op
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9mt2zcf.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 4:23 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/13/2013 03:12 AM, Alexandre Courbot wrote:
->> Use a firmware operation to set the CPU reset handler and only resort to
->> doing it ourselves if there is none defined.
->>
->> This supports the booting of secondary CPUs on devices using a TrustZone
->> secure monitor.
->
->> diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
->
->> +     err = call_firmware_op(set_cpu_boot_addr, 0, reset_address);
->> +     switch (err) {
->> +     case -ENOSYS:
->> +             tegra_cpu_reset_handler_set(reset_address);
->> +             /* pass-through */
->
-> Rather than detecting -ENOSYS and falling back to the custom
-> tegra_cpu_reset_handler_set(), does it make sense to plug in
-> tegra_cpu_reset_handler_set as the firmware op when there is no secure
-> firmware detected? That way, this code wouldn't need the special case;
-> that would be isolated to firmware.c.
+On 14.06.13 11:36:00, Namhyung Kim wrote:
+> > +static int pers_event_sysfs_register(struct pers_event *event)
+> > +{
+> > +	struct device_attribute *attr = &event->sysfs.attr;
+> > +	int idx;
+> > +
+> > +	*attr = (struct device_attribute)__ATTR(, 0444, pers_event_sysfs_show,
+> > +						NULL);
+> > +	attr->attr.name = event->name;
+> 
+> When I added another persistent event with this API, I got an WARNING
+> from lockdep like this:
+> 
+> [    0.432506] BUG: key ffff88040946f140 not in .data!
+> [    0.432581] ------------[ cut here ]------------
+> [    0.432656] WARNING: at /home/namhyung/project/linux/kernel/lockdep.c:2987 lockdep_init_map+0x53d/0x570()
+> [    0.432763] DEBUG_LOCKS_WARN_ON(1)
+> 
+> 
+> I guess we need the following line here:
+> 
+> 	sysfs_attr_init(&attr->attr);
 
-Mmmm I admit I just followed what Exynos did without thinking much
-about it. I don't see any reason why your suggestion wouldn't work,
-but on second thought tegra_cpu_reset_handler_set() is not a firmware
-operation - wouldn't it be unexpected (and maybe confusing) to have it
-called through call_firmware_op()?
+Yes, added your change. Thanks Namhyung for reviewing and testing.
 
-Alex.
+-Robert
