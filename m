@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab3FNJf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:35:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35223 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab3FNJfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:35:55 -0400
+	id S1752165Ab3FNJgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:36:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37276 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3FNJgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:36:18 -0400
 From: Philip Avinash <avinashphilip@ti.com>
 To: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>
 CC: <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-kernel@vger.kernel.org>, <avinashphilip@ti.com>
-Subject: [PATCH v2 3/7] ARM: davinci: da8xx: creation of gpio platform device
-Date: Fri, 14 Jun 2013 15:05:28 +0530
-Message-ID: <1371202532-14628-4-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v2 4/7] ARM: davinci: creation of gpio platform device for dmxxx platforms
+Date: Fri, 14 Jun 2013 15:05:29 +0530
+Message-ID: <1371202532-14628-5-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
 References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
@@ -24,76 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KV Sujith <sujithkv@ti.com>
-
 gpio controller resource information being associated with
 davinci_soc_info structure and not created any device. Hence davinci
 gpio didn't fall under proper device model. This patch creates gpio
-davinci as a platform device for da8xx platforms.
+davinci as a platform device for dmxxx platforms.
+Also add daivinci_register_gpio API to create platform device for dmxxx
+platforms.
 
-- Add Memory and IRQ resources for da8xx
-- Register GPIO platform driver for da8xx.
-- Add da8xx_register_gpio API to create platform device for da8xx
-  platforms.
-
-Signed-off-by: KV Sujith <sujithkv@ti.com>
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 ---
- arch/arm/mach-davinci/devices-da8xx.c      |   26 ++++++++++++++++++++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
- 2 files changed, 27 insertions(+)
+ arch/arm/mach-davinci/devices.c             |   13 +++++++++++++
+ arch/arm/mach-davinci/include/mach/common.h |    2 ++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index bf57252..892ad86 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -640,6 +640,32 @@ int __init da8xx_register_lcdc(struct da8xx_lcdc_platform_data *pdata)
- 	return platform_device_register(&da8xx_lcdc_device);
+diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+index a7068a3..b4f345b 100644
+--- a/arch/arm/mach-davinci/devices.c
++++ b/arch/arm/mach-davinci/devices.c
+@@ -313,6 +313,19 @@ static void davinci_init_wdt(void)
+ 	platform_device_register(&davinci_wdt_device);
  }
  
-+static struct resource da8xx_gpio_resources[] = {
-+	{ /* registers */
-+		.start	= DA8XX_GPIO_BASE,
-+		.end	= DA8XX_GPIO_BASE + SZ_4K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{ /* interrupt */
-+		.start	= IRQ_DA8XX_GPIO0,
-+		.end	= IRQ_DA8XX_GPIO8,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device da8xx_gpio_device = {
++static struct platform_device davinci_gpio_device = {
 +	.name		= "davinci_gpio",
 +	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(da8xx_gpio_resources),
-+	.resource	= da8xx_gpio_resources,
 +};
 +
-+int __init da8xx_register_gpio(void *pdata)
++int davinci_gpio_register(struct resource *res, int size, void *pdata)
 +{
-+	da8xx_gpio_device.dev.platform_data = pdata;
-+	return platform_device_register(&da8xx_gpio_device);
++	davinci_gpio_device.resource = res;
++	davinci_gpio_device.num_resources = size;
++	davinci_gpio_device.dev.platform_data = pdata;
++	return platform_device_register(&davinci_gpio_device);
 +}
 +
- static struct resource da8xx_mmcsd0_resources[] = {
- 	{		/* registers */
- 		.start	= DA8XX_MMCSD0_BASE,
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index 2e1c9ea..aa66690 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -96,6 +96,7 @@ int da8xx_register_mmcsd0(struct davinci_mmc_config *config);
- int da850_register_mmcsd1(struct davinci_mmc_config *config);
- void __init da8xx_register_mcasp(int id, struct snd_platform_data *pdata);
- int da8xx_register_rtc(void);
-+int da8xx_register_gpio(void *pdata);
- int da850_register_cpufreq(char *async_clk);
- int da8xx_register_cpuidle(void);
- void __iomem * __init da8xx_get_mem_ctlr(void);
+ /*-------------------------------------------------------------------------*/
+ 
+ /*-------------------------------------------------------------------------*/
+diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
+index b124b77..bd389ba 100644
+--- a/arch/arm/mach-davinci/include/mach/common.h
++++ b/arch/arm/mach-davinci/include/mach/common.h
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/compiler.h>
+ #include <linux/types.h>
++#include <linux/ioport.h>
+ 
+ extern void davinci_timer_init(void);
+ 
+@@ -83,6 +84,7 @@ extern void davinci_common_init(struct davinci_soc_info *soc_info);
+ extern void davinci_init_ide(void);
+ void davinci_restart(char mode, const char *cmd);
+ void davinci_init_late(void);
++int davinci_gpio_register(struct resource *res, int size, void *pdata);
+ 
+ #ifdef CONFIG_DAVINCI_RESET_CLOCKS
+ int davinci_clk_disable_unused(void);
 -- 
 1.7.9.5
 
