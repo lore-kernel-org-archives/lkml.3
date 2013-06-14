@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563Ab3FNCaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 22:30:18 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:33752 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab3FNCaQ (ORCPT
+	id S1759547Ab3FNCgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 22:36:04 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51576 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab3FNCgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 22:30:16 -0400
+	Thu, 13 Jun 2013 22:36:02 -0400
+X-AuditID: 9c930197-b7b8cae000003b08-01-51ba8190f656
+From: Namhyung Kim <namhyung@kernel.org>
+To: Robert Richter <rric@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@linaro.org>
+Subject: Re: [PATCH v2 13/14] perf, persistent: Exposing persistent events using sysfs
+References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+	<1370968960-22527-14-git-send-email-rric@kernel.org>
+Date: Fri, 14 Jun 2013 11:36:00 +0900
+In-Reply-To: <1370968960-22527-14-git-send-email-rric@kernel.org> (Robert
+	Richter's message of "Tue, 11 Jun 2013 18:42:39 +0200")
+Message-ID: <87a9mt2zcf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <51BA7B3D.1020402@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQX1xVJA3MZc4LndWU7kx0mxC-YPE1R8JD4W2-Gg9zq3Zw@mail.gmail.com>
-	<51BA7B3D.1020402@huawei.com>
-Date: Thu, 13 Jun 2013 19:30:14 -0700
-X-Google-Sender-Auth: rq2aLVhrRdiA16K19bSJ8_Vb0pE
-Message-ID: <CAE9FiQX-jCZYPyxeHCp2h-6qx1GMyQYuaTk5JwZR6H1t4jRg9g@mail.gmail.com>
-Subject: Re: [BUGFIX 0/9] Fix bug 59501 and code improvement for dock driver
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Jiang Liu (Gerry)" <jiang.liu@huawei.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 7:09 PM, Jiang Liu (Gerry) <jiang.liu@huawei.com> wrote:
-> On 2013/6/14 2:42, Yinghai Lu wrote:
->>
->> On Thu, Jun 13, 2013 at 9:32 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
->>>
->>> Alexander E. Patrakov <patrakov@gmail.com> reports two bugs related to
->>> dock station support on Sony VAIO VPCZ23A4R. Actually there are at least
->>> four bugs related to Sony VAIO VPCZ23A4R dock support.
->>> 1) can't correctly detect hotplug slot for dock state
->>> 2) resource leak on undocking
->>> 3) resource allocation failure for dock devices
->>> 4) one bug in intel_snd_hda driver
->>>
->>> The first patch fixes issue 1, and the second patch fixes issue 2.
->>> These two patches, if accepted, should be material for stable branches
->>> too.
->>> Patch 3-9 are code improvement for ACPI and dock driver.
->>>
->>> I have found the root cause for issue three, but still working on
->>> solutions, and seems can't be solve in short time. So please help
->>> to review and test patches for issue 1) and 2) first.
->>
->>
->> the 3) is about pci resource allocation?
->> because pcibios_add_bus is called too early?
->>
->> If that is case, we should have something like attached patch for it.
->>
->> With that, we will not need to worry about _OSC set for 3.10 etc.
->>
-> Hi Yinghai,
->    Seems not related to pcibios_add_bus(). According to my
-> investigation, the issue is caused by difference in PCI resource
-> assignment between boot time and runtime hotplug. On x86 platforms,
-> it respects PCI resource assignment from BIOS and only reassign
-> resources for unassigned BARs. But with acpiphp, it ignores BIOS
-> resource assignment and reassign all resources by OS.
->    If we have enough resources, reassigning all PCI resources should
-> work too, but may fail if we are under resource constraints. On the
-> other handle, current PCI IOMM align algorithm may waste huge MMIO
-> address space if we have some PCI devices with huge IOMM BAR.
->    On this Sony laptop, BIOS allocates limited IOMM resources for
-> the dock station and the dock station has a gfx which has a 256MB
-> IOMM BAR. So current acpiphp driver fails to allocate resources
-> for most devices on the dock station.
+On Tue, 11 Jun 2013 18:42:39 +0200, Robert Richter wrote:
+> From: Robert Richter <robert.richter@linaro.org>
+>
+> Expose persistent events in the system to userland using sysfs. Perf
+> tools are able to read existing pmu events from sysfs. Now we use a
+> persistent pmu as an event container containing all registered
+> persistent events of the system. This patch adds dynamically
+> registration of persistent events to sysfs. E.g. something like this:
+>
+>  /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
+>  /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
+>
+> Perf tools need to support the attr<num> syntax that is added in a
+> separate patch set. With it we are able to run perf tool commands to
+> read persistent events, e.g.:
+>
+>  # perf record -e persistent/mce_record/ sleep 10
+>  # perf top -e persistent/mce_record/
+>
+> [ Document attr<index> syntax in sysfs ABI ]
+> Reported-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Robert Richter <robert.richter@linaro.org>
+> Signed-off-by: Robert Richter <rric@kernel.org>
+> ---
+[SNIP]
+> +static int pers_event_sysfs_register(struct pers_event *event)
+> +{
+> +	struct device_attribute *attr = &event->sysfs.attr;
+> +	int idx;
+> +
+> +	*attr = (struct device_attribute)__ATTR(, 0444, pers_event_sysfs_show,
+> +						NULL);
+> +	attr->attr.name = event->name;
 
-Is it a regression?
+When I added another persistent event with this API, I got an WARNING
+from lockdep like this:
 
->     Currently I'm trying to change acpiphp to respect BIOS resource
-> assignment by calling pcibios_survey_resource_bus(), as in pci_root.c.
-> The other way is to change the IOMM resource allocation algorithm,
-> but obviously it's much more risky of regressions if changing the
-> algorithm.
+[    0.432506] BUG: key ffff88040946f140 not in .data!
+[    0.432581] ------------[ cut here ]------------
+[    0.432656] WARNING: at /home/namhyung/project/linux/kernel/lockdep.c:2987 lockdep_init_map+0x53d/0x570()
+[    0.432763] DEBUG_LOCKS_WARN_ON(1)
 
-that is not going to help, need to increase bridge resource.
 
-please check if BIOS have setup option about hotplug MMIO pad size.
+I guess we need the following line here:
 
-Yinghai
+	sysfs_attr_init(&attr->attr);
+
+
+Thanks,
+Namhyung
+
+
+> +
+> +	/* add sysfs attr to events: */
+> +	for (idx = 0; idx < MAX_EVENTS; idx++) {
+> +		if (!cmpxchg(persistent_events_attr + idx, NULL, &attr->attr))
+> +			break;
+> +	}
+> +
+> +	if (idx >= MAX_EVENTS)
+> +		return -ENOSPC;
+> +	if (!idx)
+> +		EVENTS_GROUP = &persistent_events_group;
+> +	if (!persistent_pmu.dev)
+> +		return 0;	/* sysfs not yet initialized */
+> +	if (idx)
+> +		return sysfs_update_group(&persistent_pmu.dev->kobj,
+> +					EVENTS_GROUP);
+> +	return sysfs_create_group(&persistent_pmu.dev->kobj, EVENTS_GROUP);
+> +}
+>  
+>  static int persistent_pmu_init(struct perf_event *event)
+>  {
