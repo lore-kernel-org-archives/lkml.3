@@ -1,86 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab3FNNVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:21:45 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:52173 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3FNNVn (ORCPT
+	id S1752996Ab3FNNWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:22:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42122 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab3FNNV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:21:43 -0400
-Message-ID: <51BB18DF.1080702@cogentembedded.com>
-Date: Fri, 14 Jun 2013 17:21:35 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 09:21:57 -0400
+Message-ID: <51BB18EB.9080307@hitachi.com>
+Date: Fri, 14 Jun 2013 22:21:47 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        kvm@vger.kernel.org, Sanjay Lal <sanjayl@kymasys.com>,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 03/31] mips/kvm: Fix 32-bitisms in kvm_locore.S
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com> <1370646215-6543-4-git-send-email-ddaney.cavm@gmail.com> <20130614130933.GE15775@linux-mips.org>
-In-Reply-To: <20130614130933.GE15775@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base multibuffer
+References: <51BA7578.4080108@huawei.com>
+In-Reply-To: <51BA7578.4080108@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+(2013/06/14 10:44), zhangwei(Jovi) wrote:
+> Support multi-buffer on uprobe-based dynamic events by
+> using ftrace_event_file.
+> 
+> The code change is based on kprobe-based dynamic events
+> multibuffer support work commited by Masami(commit 41a7dd420c)
 
-On 14-06-2013 17:09, Ralf Baechle wrote:
+I'm not so sure that rcu_dereference_raw() can ensure the safety
+of accessing pointer in uprobe handler. ( since kprobes disables
+irq and preempt, it could use rcu.)
 
->> diff --git a/arch/mips/kvm/kvm_locore.S b/arch/mips/kvm/kvm_locore.S
->> index dca2aa6..e86fa2a 100644
->> --- a/arch/mips/kvm/kvm_locore.S
->> +++ b/arch/mips/kvm/kvm_locore.S
->> @@ -310,7 +310,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
->>       LONG_S  t0, VCPU_R26(k1)
->>
->>       /* Get GUEST k1 and save it in VCPU */
->> -    la      t1, ~0x2ff
->> +	PTR_LI	t1, ~0x2ff
->>       mfc0    t0, CP0_EBASE
->>       and     t0, t0, t1
->>       LONG_L  t0, 0x3000(t0)
->> @@ -384,14 +384,14 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
->>       mtc0        k0, CP0_DDATA_LO
->>
->>       /* Restore RDHWR access */
->> -    la      k0, 0x2000000F
->> +	PTR_LI	k0, 0x2000000F
->>       mtc0    k0,  CP0_HWRENA
->>
->>       /* Jump to handler */
->>   FEXPORT(__kvm_mips_jump_to_handler)
->>       /* XXXKYMA: not sure if this is safe, how large is the stack?? */
->>       /* Now jump to the kvm_mips_handle_exit() to see if we can deal with this in the kernel */
->> -    la          t9,kvm_mips_handle_exit
->> +	PTR_LA	t9, kvm_mips_handle_exit
->>       jalr.hb     t9
->>       addiu       sp,sp, -CALLFRAME_SIZ           /* BD Slot */
->>
->> @@ -566,7 +566,7 @@ __kvm_mips_return_to_host:
->>       mtlo    k0
->>
->>       /* Restore RDHWR access */
->> -    la      k0, 0x2000000F
->> +	PTR_LI	k0, 0x2000000F
->>       mtc0    k0,  CP0_HWRENA
+Srikar, Oleg, could you check that?
 
-> Technically ok, there's only a formatting issue because you indent the
-> changed lines with tabs while the existing file uses tab characters.
+Thank you,
 
-    I hope you meant the space characters? :-)
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  kernel/trace/trace_uprobe.c |  183 +++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 161 insertions(+), 22 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index d5d0cd3..31f08d6 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -53,6 +53,7 @@ struct trace_uprobe {
+>  	struct list_head		list;
+>  	struct ftrace_event_class	class;
+>  	struct ftrace_event_call	call;
+> +	struct ftrace_event_file * __rcu *files;
+>  	struct trace_uprobe_filter	filter;
+>  	struct uprobe_consumer		consumer;
+>  	struct inode			*inode;
+> @@ -513,7 +514,8 @@ static const struct file_operations uprobe_profile_ops = {
+>  };
+> 
+>  static void uprobe_trace_print(struct trace_uprobe *tu,
+> -				unsigned long func, struct pt_regs *regs)
+> +				unsigned long func, struct pt_regs *regs,
+> +				struct ftrace_event_file *ftrace_file)
+>  {
+>  	struct uprobe_trace_entry_head *entry;
+>  	struct ring_buffer_event *event;
+> @@ -522,9 +524,15 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  	int size, i;
+>  	struct ftrace_event_call *call = &tu->call;
+> 
+> +	WARN_ON(call != ftrace_file->event_call);
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> +		return;
+> +
+>  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+> -	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+> -						  size + tu->size, 0, 0);
+> +	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+> +						call->event.type,
+> +						size + tu->size, 0, 0);
+>  	if (!event)
+>  		return;
+> 
+> @@ -548,15 +556,35 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  /* uprobe handler */
+>  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  {
+> -	if (!is_ret_probe(tu))
+> -		uprobe_trace_print(tu, 0, regs);
+> +	struct ftrace_event_file **file;
+> +
+> +	if (is_ret_probe(tu))
+> +		return 0;
+> +
+> +	file = rcu_dereference_raw(tu->files);
+> +	if (unlikely(!file))
+> +		return 0;
+> +
+> +	while (*file) {
+> +		uprobe_trace_print(tu, 0, regs, *file);
+> +		file++;
+> +	}
+> +
+>  	return 0;
+>  }
+> 
+>  static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+>  				struct pt_regs *regs)
+>  {
+> -	uprobe_trace_print(tu, func, regs);
+> +	struct ftrace_event_file **file = rcu_dereference_raw(tu->files);
+> +
+> +	if (unlikely(!file))
+> +		return;
+> +
+> +	while (*file) {
+> +		uprobe_trace_print(tu, func, regs, *file);
+> +		file++;
+> +	}
+>  }
+> 
+>  /* Event entry printers */
+> @@ -597,6 +625,26 @@ partial:
+>  	return TRACE_TYPE_PARTIAL_LINE;
+>  }
+> 
+> +
+> +static int trace_uprobe_nr_files(struct trace_uprobe *tu)
+> +{
+> +	struct ftrace_event_file **file;
+> +	int ret = 0;
+> +
+> +	/*
+> +	 * Since all tu->files updater is protected by uprobe_enable_lock,
+> +	 * we don't need to lock an rcu_read_lock.
+> +	 */
+> +	file = rcu_dereference_raw(tu->files);
+> +	if (file)
+> +		while (*(file++))
+> +			ret++;
+> +
+> +	return ret;
+> +}
+> +
+> +static DEFINE_MUTEX(uprobe_enable_lock);
+> +
+>  static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
+>  {
+>  	return tu->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE);
+> @@ -607,33 +655,123 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+>  				struct mm_struct *mm);
+> 
+>  static int
+> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+> +		   filter_func_t filter)
+>  {
+> +	int enabled = 0;
+>  	int ret = 0;
+> 
+> +	mutex_lock(&uprobe_enable_lock);
+> +
+>  	if (is_trace_uprobe_enabled(tu))
+> -		return -EINTR;
+> +		enabled = 1;
+> +
+> +	if (file) {
+> +		struct ftrace_event_file **new, **old;
+> +		int n = trace_uprobe_nr_files(tu);
+> +
+> +		old = rcu_dereference_raw(tu->files);
+> +		/* 1 is for new one and 1 is for stopper */
+> +		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
+> +			      GFP_KERNEL);
+> +		if (!new) {
+> +			ret = -ENOMEM;
+> +			goto out_unlock;
+> +		}
+> +		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+> +		new[n] = file;
+> +		/* The last one keeps a NULL */
+> +
+> +		rcu_assign_pointer(tu->files, new);
+> +		tu->flags |= TP_FLAG_TRACE;
+> +
+> +		if (old) {
+> +			/* Make sure the probe is done with old files */
+> +			synchronize_sched();
+> +			kfree(old);
+> +		}
+> +	} else
+> +		tu->flags |= TP_FLAG_PROFILE;
+> 
+>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+> 
+> -	tu->flags |= flag;
+> -	tu->consumer.filter = filter;
+> -	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> -	if (ret)
+> -		tu->flags &= ~flag;
+> +	if (!enabled) {
+> +		tu->consumer.filter = filter;
+> +		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> +		if (ret)
+> +			tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+> +	}
+> 
+> + out_unlock:
+> +	mutex_unlock(&uprobe_enable_lock);
+>  	return ret;
+>  }
+> 
+> -static void probe_event_disable(struct trace_uprobe *tu, int flag)
+> +static int
+> +trace_uprobe_file_index(struct trace_uprobe *tu, struct ftrace_event_file *file)
+>  {
+> -	if (!is_trace_uprobe_enabled(tu))
+> -		return;
+> +	struct ftrace_event_file **files;
+> +	int i;
+> +
+> +	/*
+> +	 * Since all tu->files updater is protected by uprobe_enable_lock,
+> +	 * we don't need to lock an rcu_read_lock.
+> +	 */
+> +	files = rcu_dereference_raw(tu->files);
+> +	if (files) {
+> +		for (i = 0; files[i]; i++)
+> +			if (files[i] == file)
+> +				return i;
+> +	}
+> +
+> +	return -1;
+> +}
+> +
+> +static void
+> +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
+> +{
+> +	mutex_lock(&uprobe_enable_lock);
+> +
+> +	if (file) {
+> +		struct ftrace_event_file **new, **old;
+> +		int n = trace_uprobe_nr_files(tu);
+> +		int i, j;
+> +
+> +		old = rcu_dereference_raw(tu->files);
+> +		if (n == 0 || trace_uprobe_file_index(tu, file) < 0)
+> +			goto out_unlock;
+> +
+> +		if (n == 1) {	/* Remove the last file */
+> +			tu->flags &= ~TP_FLAG_TRACE;
+> +			new = NULL;
+> +		} else {
+> +			new = kzalloc(n * sizeof(struct ftrace_event_file *),
+> +				      GFP_KERNEL);
+> +			if (!new)
+> +				goto out_unlock;
+> +
+> +			/* This copy & check loop copies the NULL stopper too */
+> +			for (i = 0, j = 0; j < n && i < n + 1; i++)
+> +				if (old[i] != file)
+> +					new[j++] = old[i];
+> +		}
+> +
+> +		rcu_assign_pointer(tu->files, new);
+> +
+> +		/* Make sure the probe is done with old files */
+> +		synchronize_sched();
+> +		kfree(old);
+> +	} else
+> +		tu->flags &= ~TP_FLAG_PROFILE;
+> +
+> 
+>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+> 
+> -	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+> -	tu->flags &= ~flag;
+> +	if (!is_trace_uprobe_enabled(tu))
+> +		uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+> +
+> + out_unlock:
+> +	mutex_unlock(&uprobe_enable_lock);
+>  }
+> 
+>  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+> @@ -869,21 +1007,22 @@ static
+>  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+>  {
+>  	struct trace_uprobe *tu = event->data;
+> +	struct ftrace_event_file *file = data;
+> 
+>  	switch (type) {
+>  	case TRACE_REG_REGISTER:
+> -		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
+> +		return probe_event_enable(tu, file, NULL);
+> 
+>  	case TRACE_REG_UNREGISTER:
+> -		probe_event_disable(tu, TP_FLAG_TRACE);
+> +		probe_event_disable(tu, file);
+>  		return 0;
+> 
+>  #ifdef CONFIG_PERF_EVENTS
+>  	case TRACE_REG_PERF_REGISTER:
+> -		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
+> +		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+> 
+>  	case TRACE_REG_PERF_UNREGISTER:
+> -		probe_event_disable(tu, TP_FLAG_PROFILE);
+> +		probe_event_disable(tu, NULL);
+>  		return 0;
+> 
+>  	case TRACE_REG_PERF_OPEN:
+> 
 
-> I suggest you insert an extra cleanup patch to properly re-indent the
-> entire file into the series before this one?
 
-> So with that sorted:
-
-> Acked-by: Ralf Baechle <ralf@linux-mips.org>
-
->    Ralf
-
-WBR, Sergei
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
