@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab3FNHz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:55:58 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:41367 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3FNHz5 (ORCPT
+	id S1751157Ab3FNIDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:03:20 -0400
+Received: from lhrrgout.huawei.com ([194.213.3.17]:44193 "EHLO
+	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3FNIDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:55:57 -0400
-From: Rojhalat Ibrahim <imr@rtschenk.de>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Michael Guntsche <michael.guntsche@it-loops.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-Date: Fri, 14 Jun 2013 09:55:50 +0200
-Message-ID: <6071007.YKP3JmbiTP@pcimr>
-User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1371142157.2028.9@snotra>
-References: <1370971739.18413.27@snotra> <7706620.VNI3PE9pqO@pcimr> <1371142157.2028.9@snotra>
+	Fri, 14 Jun 2013 04:03:17 -0400
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jun 2013 04:03:16 EDT
+Message-ID: <51BACCCC.2000107@huawei.com>
+Date: Fri, 14 Jun 2013 09:57:00 +0200
+From: Mario Smarduch <mario.smarduch@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: <linux-kernel@vger.kernel.org>
+Subject: Fwd: show_interrupts() after free_irq issue 3.10-rc4?
+References: <51BACBCB.1030509@huawei.com>
+In-Reply-To: <51BACBCB.1030509@huawei.com>
+X-Forwarded-Message-Id: <51BACBCB.1030509@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.220.139.81]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 June 2013 11:49:17 Scott Wood wrote:
-> On 06/13/2013 02:21:24 AM, Rojhalat Ibrahim wrote:
-> > On Wednesday 12 June 2013 16:50:26 Scott Wood wrote:
-> > > On 06/12/2013 03:19:30 AM, Rojhalat Ibrahim wrote:
-> > > > On Tuesday 11 June 2013 12:28:59 Scott Wood wrote:
-> > > > > Yes, I figured it was non-PCIe because the code change that you
-> > 
-> > said
-> > 
-> > > > > helped was on the non-PCIe branch of the if/else.  Generally
-> > 
-> > it's
-> > 
-> > > > good
-> > > > 
-> > > > > to explicitly mention the chip you're using, though.
-> > > > > 
-> > > > > fsl_setup_indirect_pci should be renamed to
-> > 
-> > fsl_setup_indirect_pcie.
-> > 
-> > > > > Your patch above should be applied, and fsl_setup_indirect_pcie
-> > > > 
-> > > > should
-> > > > 
-> > > > > be moved into the booke/86xx ifdef to avoid an unused function
-> > > > 
-> > > > warning.
-> > > > 
-> > > > > -Scott
-> > > > 
-> > > > How about this patch? It uses setup_indirect_pci for the PCI case
-> > 
-> > in
-> > 
-> > > > mpc83xx_add_bridge. Additionally it adds a check in
-> > > > fsl_setup_indirect_pci
-> > > > to only use the modified read function in case of PCIe.
-> > > 
-> > > If we're adding the check to fsl_setup_indirect_pci, there's no
-> > 
-> > need to
-> > 
-> > > change the 83xx call back to setup_indirect_pci.  I see that 85xx is
-> > > also callirng fsl_setup_indirect_pci for both; it'd be good to be
-> > > consistent.
-> > > 
-> > > In any case, can you send a proper patch with a signoff and commit
-> > > message?
-> > > 
-> > > -Scott
-> > 
-> > Where is it called for 85xx? As far as I can tell
-> > fsl_setup_indirect_pci is
-> > called exactly once in fsl_add_bridge and nowhere else (after
-> > applying the
-> > proposed patch).
-> 
-> fsl_add_bridge() is where it's called for 85xx.
-> 
-> > For 83xx the decision between PCI and PCIe has already been made at
-> > the point where the setup function is called. So IMO it doesn't make
-> > sense
-> > to call fsl_setup_indirect_pci and do the check again. Moreover PCIe
-> > on 83xx
-> > uses a completely different set of functions.
-> 
-> My concern is consistency.  E.g. if 85xx is using
-> fsl_setup_indirect_pci for both, but 83xx isn't, then a developer using
-> 83xx could end up breaking 85xx by introducing another PCIe dependency
-> in fsl_setup_indirect_pci.  Or an 85xx developer could put something
-> non-PCIe-related in fsl_setup_indirect_pci that 83xx would benefit from.
-> 
-> Alternatively, you could call it fsl_setup_indirect_pcie, and move the
-> PCIe check into fsl_add_bridge().
-> 
-> -Scott
 
-Ok. I'll post a v2 of the patch.
+I've been working with device passthrough & irq
+on armv7 after disassociating the device from guest
+free_irq() is executed on host. Display of /proc/interrupts
+still shows the IRQ info with no irq name associated,
+and there is no irq_action associated with the IRQ.
+'show_interrupts()' in 'kernel/irq/proc.c' displays
+info on the IRQ due to prior stats accumulated.
+Few other arch specific ones only on irq_action.
 
-   Rojhalat
+Is there some specific reason for that? To me it
+appears misleading to display dormant IRQ info. 
+For the end user - use case like above or unloading
+driver and seeing the irq show up is confusing as well.
+Also not sure what you gain by displaying old IRQ info.
+
+Please cc on responses.
+
+<Sorry for the double copy misspelled mailing list>
+
+- Mario
+ 
+
+
 
