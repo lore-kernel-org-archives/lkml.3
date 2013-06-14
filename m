@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3FNTYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:24:46 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48893 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab3FNTYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:24:17 -0400
-From: Richard Yao <ryao@gentoo.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel@gentoo.org
-Subject: [PATCH 2/2] btrfs: Cleanup llseek()
-Date: Fri, 14 Jun 2013 15:23:34 -0400
-Message-Id: <1371237814-59365-3-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1371237814-59365-1-git-send-email-ryao@gentoo.org>
-References: <1371237814-59365-1-git-send-email-ryao@gentoo.org>
+	id S1753835Ab3FNT1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:27:36 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:51500 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab3FNT1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 15:27:35 -0400
+Date: Fri, 14 Jun 2013 21:27:04 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+Message-ID: <20130614192704.GA4857@electric-eye.fr.zoreil.com>
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+ <20130613221946.GA16632@electric-eye.fr.zoreil.com>
+ <4881796E12491D4BB15146FE0209CE643F5E3A07@DE02WEMBXB.internal.synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4881796E12491D4BB15146FE0209CE643F5E3A07@DE02WEMBXB.internal.synopsys.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are multiple issues with the custom llseek implemented in btrfs
-for implementing SEEK_HOLE/SEEK_DATA.
+Alexey Brodkin <Alexey.Brodkin@synopsys.com> :
+> On 06/14/2013 02:20 AM, Francois Romieu wrote:
+[...]
+> >> +struct arc_emac_priv {
+> >> +	struct net_device_stats stats;
+> >> +	unsigned int clock_frequency;
+> >> +	unsigned int max_speed;
+> >> +
+> >> +	/* Pointers to BD rings - CPU side */
+> >> +	struct arc_emac_bd_t *rxbd;
+> >
+> > There does not seem to be much need for rxbd->data.
+> 
+> Could you please clarify this comment? Not clear what do you mean.
 
-1. It takes the inode->i_mutex lock before calling
-generic_file_llseek(), which is unnecessary.
+Rx and Tx use the same struct but they don't work the same.
+They could/should use differents struct.
 
-2. It fails to take the filp->f_lock spinlock before modifying
-filp->f_pos and filp->f_version, which differs from
-generic_file_llseek().
+[...]
+> > The descriptor entry is left unchanged. Afaiu the driver will move to the
+> > next descriptor and crash on dereferencing NULL (rx_buff->)skb next time
+> > it wraps.
+> >
+> > I suggest avoiding holes: don't netif_receive_skb if you can't alloc a new
+> > skb.
+> 
+> Frankly I cannot understand how "don't netif_receive_skb" for one of the 
+> received packets helps to prevent crash on the next iteration?
+> And I don't see a way to return any error state from NAPI poll handler.
+> Could you please clarify your idea?
 
-3. It does a offset > inode->i_sb->s_maxbytes check that is dead code
-because the the offset >= i_size_read(inode) will evaluate to true and
-return ENXIO whenever the former comparison evaluates to true.
+The driver assigns the otherwise-netif_received skb to the current rx
+descriptor as if it was a newly allocated one. The driver increases
+stats.rx_dropped. The rx descriptor ring doesn't ever exhibit a hole.
 
-4. The switch statement tries to cover all whence values when in reality
-it should only care about SEEK_HOLE/SEEK_DATA. Any other cases should be
-passsed to generic_file_llseek().
+[...]
+> >> +static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
+> >> +{
+> >> +	struct arc_emac_priv *priv = netdev_priv(ndev);
+> >> +	unsigned int info, len, *txbd_curr = &priv->txbd_curr;
+> >> +	dma_addr_t addr;
+> >> +	char *pkt = skb->data;
+> >> +
+> >> +	len = max_t(unsigned int, ETH_ZLEN, skb->len);
+> >
+> > The device automatically pads, right ?
+> 
+> What do you mean here?
 
-btrfs_file_llseek() and ocfs2_file_llseek() are extremely similar and
-consequently, contain many of the same flaws. Li Dongyang filed a pull
-request with ZFSOnLinux for SEEK_HOLE/SEEK_DATA support that included a
-custom llseek function that appears to have been modelled after the one
-in ocfs2. The similarity was strong enough that it suffered from many of
-the same flaws, which I caught during review. I addressed the issues
-with his patch with one that I wrote. I decided to adapt that code to
-both btrfs and ocfs2 (separate patch) because a small percentage of
-Gentoo Linux users are affected by these flaws.
+Does the device fill a smaller than 64 bytes packet with zeroes or may
+the driver leak information ? The driver should use skb_pad if the
+latter applies.
 
-Note that #3 would have been worse had it not been for commit
-48802c8ae2a9d618ec734a61283d645ad527e06c by Jeff Liu at Oracle. Prior to
-his commit, btrfs llseek() would permit seeking up to the maximum file
-size possible on the btrfs filesystem, even when it is past the end of
-the file. Seeking beyond that (if possible), would return EINVAL instead
-of ENXIO. That was the same behavior that the ocfs2 llseek had.
-corrected that issue. However, the ocfs2 code was not fortunate enough
-to have had this corrected at that time.
-
-Signed-off-by: Richard Yao <ryao@gentoo.org>
----
- fs/btrfs/file.c | 49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
-
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 4205ba7..1f437d8 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -2400,48 +2400,39 @@ out:
- 	return ret;
- }
- 
--static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int whence)
-+static loff_t btrfs_file_llseek(struct file *filp, loff_t offset, int whence)
- {
--	struct inode *inode = file->f_mapping->host;
--	int ret;
-+	if (whence == SEEK_DATA || whence == SEEK_HOLE) {
-+		struct inode *inode = filp->f_mapping->host;
-+		int ret;
-+
-+		if (offset < 0 && !(filp->f_mode & FMODE_UNSIGNED_OFFSET))
-+			return -EINVAL;
- 
--	mutex_lock(&inode->i_mutex);
--	switch (whence) {
--	case SEEK_END:
--	case SEEK_CUR:
--		offset = generic_file_llseek(file, offset, whence);
--		goto out;
--	case SEEK_DATA:
--	case SEEK_HOLE:
- 		if (offset >= i_size_read(inode)) {
--			mutex_unlock(&inode->i_mutex);
- 			return -ENXIO;
- 		}
- 
-+		mutex_lock(&inode->i_mutex);
- 		ret = find_desired_extent(inode, &offset, whence);
-+		mutex_unlock(&inode->i_mutex);
-+
- 		if (ret) {
--			mutex_unlock(&inode->i_mutex);
- 			return ret;
- 		}
--	}
- 
--	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
--		offset = -EINVAL;
--		goto out;
--	}
--	if (offset > inode->i_sb->s_maxbytes) {
--		offset = -EINVAL;
--		goto out;
--	}
-+		if (offset != filp->f_pos) {
-+			spin_lock(&filp->f_lock);
-+			filp->f_pos = offset;
-+			filp->f_version = 0;
-+			spin_unlock(&filp->f_lock);
-+		}
- 
--	/* Special lock needed here? */
--	if (offset != file->f_pos) {
--		file->f_pos = offset;
--		file->f_version = 0;
-+		return offset;
- 	}
--out:
--	mutex_unlock(&inode->i_mutex);
--	return offset;
-+
-+	return generic_file_llseek(filp, offset, whence);
-+
- }
- 
- const struct file_operations btrfs_file_operations = {
 -- 
-1.8.1.5
-
+Ueimor
