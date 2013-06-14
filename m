@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3FNHjq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 03:39:46 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26635 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab3FNHjn (ORCPT
+	id S1752536Ab3FNHkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 03:40:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41793 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab3FNHko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 03:39:43 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-5e-51bac8bdbdfb
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH v3 3/3] cpufreq:exynos:Extend Exynos cpufreq driver to support
- boost framework
-Date: Fri, 14 Jun 2013 09:39:00 +0200
-Message-id: <1371195540-2991-4-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1371195540-2991-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371195540-2991-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jQd19J3YFGsz7y2Lx5+1yVounTT/Y
-	LeZ9lrXoPPuE2aJ3wVU2izePuC3ePNzMaHF51xw2i8+9RxgtbjeuYLPoX9jLZNFx5Buzxcav
-	Hg68Hneu7WHzWDftLbNH35ZVjB6PFrcwenzeJBfAGsVlk5Kak1mWWqRvl8CV0fb1IGPBdr6K
-	b3tamRoY+3m6GDk5JARMJF5cm8cCYYtJXLi3nq2LkYtDSGA6o8S5BTeYQRJCAl1MEjvnyYDY
-	bAJ6Ep/vPmUCsUUEfCV6lh1iAmlgFnjLLPFt4V+whLBAgsSL3f2sIDaLgKrEwp1bwTbwCrhK
-	TDjTxQSxTV7i6f0+NhCbU8BNYtqOhywQmxsZJZ4fecc0gZF3ASPDKkbR1ILkguKk9FwjveLE
-	3OLSvHS95PzcTYzgcHwmvYNxVYPFIUYBDkYlHt6ECzsDhVgTy4orcw8xSnAwK4nwhv8FCvGm
-	JFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamBUf3NsZa5SjPNs
-	nsNrD3yeq9z51bui9d3tw3FzbaSykjM/xWhdk81ub/9tvv21wkzxXSekm8JONq6b17joj7qo
-	8cMaA9Nbte0uL3Zy1AbH82RwX5U/9vv8km9WmWWlM3Z5KKtlvoyr+dv46uyv9HPrNPhv+tes
-	5JP+GpT6rOdB5QYZZxb/6xlKLMUZiYZazEXFiQDLF19ZQwIAAA==
+	Fri, 14 Jun 2013 03:40:44 -0400
+Message-ID: <51BAC8F6.5010601@codeaurora.org>
+Date: Fri, 14 Jun 2013 13:10:38 +0530
+From: Sujit Reddy Thumma <sthumma@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Santosh Y <santoshsy@gmail.com>
+CC: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] scsi: ufs: Add support for sending NOP OUT UPIU
+References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org> <1370873118-18468-2-git-send-email-draviv@codeaurora.org> <CALMYJDsJ3OGwmcEjgpLWv2SYYXiGQpk0GCmG6rEVD0KKCjj+ng@mail.gmail.com> <51B94BAF.2070203@codeaurora.org>
+In-Reply-To: <51B94BAF.2070203@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct cpufreq_driver has been extended to embrace the information
-related to boost support.
+On 6/13/2013 10:03 AM, Sujit Reddy Thumma wrote:
+>>   static struct scsi_host_template ufshcd_driver_template = {
+>> @@ -1771,8 +2064,8 @@ int ufshcd_init(struct device *dev, struct
+>> ufs_hba **hba_handle,
+>>          /* Configure LRB */
+>>          ufshcd_host_memory_configure(hba);
+>>
+>> -       host->can_queue = hba->nutrs;
+>> -       host->cmd_per_lun = hba->nutrs;
+>> +       host->can_queue = SCSI_CMD_QUEUE_SIZE;
+>
+>
+> I don't think this is appropriate. Reserving a slot exclusively for
+> query/DM requests is not optimal.  can_queue should be changed
+> dynamically, scsi_adjust_queue_depth() maybe?
 
-When "boost_mode" device tree attribute is defined for a platform, the
-boost_supported flag is set. Moreover boost related attributes were
-exported.
+The motivation to change the design for this patch  is that routing
+query command through SCSI layer raised problems when we are trying to
+improve the fatal error handling as we need to block the SCSI layer and
+recover the link. Hence, the need to have the query/DM command send as
+internal commands. Which probably makes sense.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+One possible option was to look for a free command slot whenever we
+try to send an internal command, but getting a free slot is not always 
+guaranteed.
 
-Changes for v2:
-- Removal of struct cpufreq_boost
-- Removal of the CONFIG_CPU_FREQ_BOOST flag
-- low_level_boost with valid address when boost is supported
+Even if we get hold of a tag, there is no way we can explain this to
+SCSI/block layer that particular tag is in use internally (case where
+normal query requests are sent in tandem with SCSI requests). In which
+case, other option is to use tag[31] as you have said on need basis
+and change the queue depth to 31. This again has problems - one
+changing queue depth doesn't take effect immediately but for the next
+command. Second, if the command in tag[31] is the root cause of the
+fatal error and is stuck, then the internal command has to wait forever
+(until scsi timesout) to plan recovery. Considering, all these factors
+it is better to reserve a tag and use it for internal commands instead 
+of playing around with the tags internally without/partially informing 
+SCSI/block layers.
 
-Changes for v3:
-- Remove low level boost code
-- Move boost management code to cpufreq core code
-- Use boost_supported flag to indicate if driver supports over clocking
+I am open for discussion, if there are any suggestions to handle such 
+LLD requirements in the SCSI layer optimally.
 
----
- drivers/cpufreq/exynos-cpufreq.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Coming to how optimal is to work with 31 slots instead of h/w defined 32 
+is something which we can answer when we have true multi queueing. 
+AFAIK, there may not exist real-world applications which utilize full 32 
+tags at particular instant. SATA AHCI controller driver which is 
+ubiquitous in modern systems also reserves a slot for internal commands 
+which is used only in case of error handling and AFAIK, no one has ever 
+reported performance problems with this (its about 7 years the commit to 
+reserve a slot is merged into Linux tree).
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 32ec2f6..0420d47 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -265,6 +265,7 @@ static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
- 
- static struct freq_attr *exynos_cpufreq_attr[] = {
- 	&cpufreq_freq_attr_scaling_available_freqs,
-+	&cpufreq_freq_attr_scaling_boost_freqs,
- 	NULL,
- };
- 
-@@ -360,6 +361,7 @@ static struct of_device_id exynos_cpufreq_of_match[] __initconst = {
- 
- static int __init exynos_cpufreq_probe(struct platform_device *pdev)
- {
-+	struct device_node *node = pdev->dev.of_node;
- 	int ret = -EINVAL;
- 
- 	exynos_info = kzalloc(sizeof(struct exynos_dvfs_info), GFP_KERNEL);
-@@ -392,6 +394,8 @@ static int __init exynos_cpufreq_probe(struct platform_device *pdev)
- 	}
- 
- 	locking_frequency = exynos_getspeed(0);
-+	if (of_property_read_bool(node, "boost_mode"))
-+		exynos_driver.boost_supported = 1;
- 
- 	register_pm_notifier(&exynos_cpufreq_nb);
- 
+I hope this explains the intent. Please let me know what do you think.
+
 -- 
-1.7.10.4
-
+Regards,
+Sujit
