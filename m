@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab3FNMzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:55:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45434 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab3FNMzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:55:42 -0400
-Date: Fri, 14 Jun 2013 14:55:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@gmail.com>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, koverstreet@google.com,
-        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        Mike Snitzer <snitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 11/11] cgroup: use percpu refcnt for cgroup_subsys_states
-Message-ID: <20130614125539.GC10084@dhcp22.suse.cz>
-References: <1371096298-24402-1-git-send-email-tj@kernel.org>
- <1371096298-24402-12-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371096298-24402-12-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752652Ab3FNM6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:58:14 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:64210 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3FNM6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 08:58:13 -0400
+Message-ID: <1371214687.3252.130.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] [PATCH v2] tcp: Fixed MD5 key lookups when
+ adding/removing MD5.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 14 Jun 2013 05:58:07 -0700
+In-Reply-To: <1371209403-28275-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+References: <1371209403-28275-1-git-send-email-aydin.arik@alliedtelesis.co.nz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-06-13 21:04:58, Tejun Heo wrote:
-[...]
-> +/**
-> + * cgroup_destroy_locked - the first stage of cgroup destruction
-> + * @cgrp: cgroup to be destroyed
-> + *
-> + * css's make use of percpu refcnts whose killing latency shouldn't be
-> + * exposed to userland and are RCU protected.  Also, cgroup core needs to
-> + * guarantee that css_tryget() won't succeed by the time ->css_offline() is
-> + * invoked.  To satisfy all the requirements, destruction is implemented in
-> + * the following two steps.
-> + *
-> + * s1. Verify @cgrp can be destroyed and mark it dying.  Remove all
-> + *     userland visible parts and start killing the percpu refcnts of
-> + *     css's.  Set up so that the next stage will be kicked off once all
-> + *     the percpu refcnts are confirmed to be killed.
-> + *
-> + * s2. Invoke ->css_offline(), mark the cgroup dead and proceed with the
-> + *     rest of destruction.  Once all cgroup references are gone, the
-> + *     cgroup is RCU-freed.
-> + *
-> + * This function implements s1.  After this step, @cgrp is gone as far as
-> + * the userland is concerned and a new cgroup with the same name may be
-> + * created.  As cgroup doesn't care about the names internally, this
-> + * doesn't cause any problem.
+On Fri, 2013-06-14 at 23:30 +1200, Aydin Arik wrote:
+> MD5 key lookups on a given TCP socket were being performed
+> incorrectly. This fix alters parameter inputs to the MD5
+> lookup function tcp_md5_do_lookup, which is called by functions
+> tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
+> inputs the correct address and address family required to make
+> a proper lookup.
+> 
+> Commit a915da9b69273815527ccb3789421cb7027b545b ("tcp: md5: rcu conversion")
+> is the source of the regression.
+> 
+> Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+> ---
+>  net/ipv4/tcp_ipv4.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+> index d09203c..da84cdb 100644
+> --- a/net/ipv4/tcp_ipv4.c
+> +++ b/net/ipv4/tcp_ipv4.c
+> @@ -1005,7 +1005,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
+>  	struct tcp_sock *tp = tcp_sk(sk);
+>  	struct tcp_md5sig_info *md5sig;
+>  
+> -	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
+> +	key = tcp_md5_do_lookup(sk, addr, family);
+>  	if (key) {
+>  		/* Pre-existing entry - just update that one. */
+>  		memcpy(key->key, newkey, newkeylen);
+> @@ -1050,7 +1050,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
+>  	struct tcp_md5sig_key *key;
+>  	struct tcp_md5sig_info *md5sig;
+>  
+> -	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
+> +	key = tcp_md5_do_lookup(sk, addr, family);
+>  	if (!key)
+>  		return -ENOENT;
+>  	hlist_del_rcu(&key->node);
 
-Glauber is this asumption correct for kmem caches naming scheme?
-I guess it should, but I would rather be sure this won't blow up later
-specially when caches might live longer than css_offline.
+Thanks !
 
-> + */
->  static int cgroup_destroy_locked(struct cgroup *cgrp)
->  	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
->  {
--- 
-Michal Hocko
-SUSE Labs
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+(No need for "[PATCH 1/1] " for a single patch)
+
+
+
