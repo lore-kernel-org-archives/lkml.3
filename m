@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3FNQMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:12:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15420 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3FNQMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:12:17 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tkaDFPjYVEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=apdwqXrHFoAA:10 a=iwrn97SKuRVz8EZBcckA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371226336.9844.328.camel@gandalf.local.home>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Jun 2013 12:12:16 -0400
-In-Reply-To: <CAK7N6vrCuWd4Q2hquJK9-HED4xyjC7hsCOUdvK3dHEetatzcfw@mail.gmail.com>
-References: <20130613131057.GA15997@somewhere>
-	 <20130613140207.GW133453@redhat.com> <20130613142210.GD16339@somewhere>
-	 <20130613144515.GX133453@redhat.com> <20130613145601.GE16339@somewhere>
-	 <20130613152059.GA133453@redhat.com>
-	 <1371138491.9844.288.camel@gandalf.local.home>
-	 <CAK7N6vqtnoNzRNodN6T0wysMYgPD+-SgPZLXAvRu3px7TUUvHQ@mail.gmail.com>
-	 <1371143779.9844.297.camel@gandalf.local.home>
-	 <CAK7N6vqOQijcZEEuJKFbHKEaULnx8bCkaxSpBaiTe1+VGT+D5w@mail.gmail.com>
-	 <20130614122608.GK5146@linux.vnet.ibm.com>
-	 <CAK7N6vrCuWd4Q2hquJK9-HED4xyjC7hsCOUdvK3dHEetatzcfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752981Ab3FNQMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:12:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39318 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754Ab3FNQM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:12:28 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@kernel.org>
+CC: Illia Smyrnov <illia.smyrnov@ti.com>, Daniel Mack <zonque@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v3 1/2] spi: omap2-mcspi: Move bytes per word calculation to the function
+Date: Fri, 14 Jun 2013 19:12:07 +0300
+Message-ID: <1371226328-24147-2-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1371226328-24147-1-git-send-email-illia.smyrnov@ti.com>
+References: <1371226328-24147-1-git-send-email-illia.smyrnov@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 21:33 +0530, anish singh wrote:
+Introduce mcspi_bytes_per_word function as replacement for the next code
+fragment:
 
-> May I know why we zeroed in on 1Hz? Is there any logical reason
-> or just because it is above 0Hz?
-> >
+int c = (word_len <= 8)  ? 1 :
+	(word_len <= 16) ? 2 :
+	/* word_len <= 32 */ 4;
 
-We had to keep a tick. What number would you have picked?
+This code used 2 times in current driver code and will be used 2 times in
+the next FIFO buffer support patch. Replace it with inline function with clear
+name to improve code legibility.
 
--- Steve
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 86d2158..707f1db 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -187,6 +187,16 @@ static inline void mcspi_write_chconf0(const struct spi_device *spi, u32 val)
+ 	mcspi_read_cs_reg(spi, OMAP2_MCSPI_CHCONF0);
+ }
+ 
++static inline int mcspi_bytes_per_word(int word_len)
++{
++	if (word_len <= 8)
++		return 1;
++	else if (word_len <= 16)
++		return 2;
++	else /* word_len <= 32 */
++		return 4;
++}
++
+ static void omap2_mcspi_set_dma_req(const struct spi_device *spi,
+ 		int is_read, int enable)
+ {
+@@ -433,10 +443,9 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
+ 			else /* word_len <= 32 */
+ 				((u32 *)xfer->rx_buf)[elements++] = w;
+ 		} else {
++			int bytes_per_word = mcspi_bytes_per_word(word_len);
+ 			dev_err(&spi->dev, "DMA RX penultimate word empty");
+-			count -= (word_len <= 8)  ? 2 :
+-				(word_len <= 16) ? 4 :
+-				/* word_len <= 32 */ 8;
++			count -= (bytes_per_word << 1);
+ 			omap2_mcspi_set_enable(spi, 1);
+ 			return count;
+ 		}
+@@ -454,9 +463,7 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
+ 			((u32 *)xfer->rx_buf)[elements] = w;
+ 	} else {
+ 		dev_err(&spi->dev, "DMA RX last word empty");
+-		count -= (word_len <= 8)  ? 1 :
+-			 (word_len <= 16) ? 2 :
+-		       /* word_len <= 32 */ 4;
++		count -= mcspi_bytes_per_word(word_len);
+ 	}
+ 	omap2_mcspi_set_enable(spi, 1);
+ 	return count;
+-- 
+1.7.0.4
 
