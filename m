@@ -1,137 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564Ab3FNCLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 22:11:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43517 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3FNCLf (ORCPT
+	id S1759628Ab3FNCLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 22:11:52 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22988 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741Ab3FNCLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 22:11:35 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51BA7BB6.1080104@jp.fujitsu.com>
-Date: Fri, 14 Jun 2013 11:11:02 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: bhelgaas@google.com
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
-        ishii.hironobu@jp.fujitsu.com, ddutile@redhat.com, bill.sumner@hp.com,
-        alex.williamson@redhat.com, vgoyal@redhat.com, hbabu@us.ibm.com
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com> <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com> <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
-In-Reply-To: <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jun 2013 22:11:46 -0400
+X-AuditID: cbfee68e-b7f276d000002279-0a-51ba7bdbcfb4
+Message-id: <51BA7BDB.9070801@samsung.com>
+Date: Fri, 14 Jun 2013 11:11:39 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
+Subject: Re: [RESEND][PATCH] cpufreq: stats: Add 'load_table' sysfs file to
+ show accumulated data of CPU
+References: <1370419882-16831-1-git-send-email-cw00.choi@samsung.com>
+ <11735265.3zXb8Z81XT@vostro.rjw.lan>
+ <CAKohpomwDonECPOPoSZvrOS+mRyNARX4Sk1XoEAGLXrOQQjYjA@mail.gmail.com>
+ <2801243.ZfLEluCnpU@vostro.rjw.lan>
+In-reply-to: <2801243.ZfLEluCnpU@vostro.rjw.lan>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkWPdO9a5Ag2fTWCyeNv1gtzjb9Ibd
+	4vKuOWwWn3uPMFrcblzBZtG/sJfJYuNXDwd2jzvX9rB59G1ZxejxaHELo8fnTXIBLFFcNimp
+	OZllqUX6dglcGdevvmMueMtb0XZrKlMD4zTuLkYODgkBE4mZzSJdjJxAppjEhXvr2boYuTiE
+	BJYySpw51ckKkTCRaGvoYYVITGeU+Ht3B5TzglGiZe5+RpAqXgEtiXM3FzKDTGURUJV49ykF
+	JMwGFN7/4gYbiC0qECaxcvoVFohyQYkfk++B2SJA5Vue/GcHmckssIVR4uT/u+wgCWGBLIll
+	835DLbvJKPHuWzPYAk4BA4mtmzRAapgF1CUmzVvEDGHLS2xe85YZpF5C4Bi7xKmnJ8ESLAIC
+	Et8mH2KBeFlWYtMBZojPJCUOrrjBMoFRbBaSm2YhGTsLydgFjMyrGEVTC5ILipPSi4z0ihNz
+	i0vz0vWS83M3MQJj7fS/Z307GG8esD7EmAy0ciKzlGhyPjBW80riDY3NjCxMTUyNjcwtzUgT
+	VhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAWCN6cO/6W8FfO8vvmhxVdyr78nTr
+	da+Gv3Ubl2avn6vExP+OI1to9ptvv9l3Lp0TOsFYNUVQWyL89VXWsx+0GOYuMTu1bcp53dNT
+	2Rnb51+Ob9polyR3MODNp+q1i47liG4Jnr5h5XLGND7mxo/Fczl/PGA+suTuo+J70xjrFx9h
+	Cos/yXng8zQlluKMREMt5qLiRABLQidjywIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jQd3b1bsCDTZstLR42vSD3eJs0xt2
+	i8u75rBZfO49wmhxu3EFm0X/wl4mi41fPRzYPe5c28Pm0bdlFaPHo8UtjB6fN8kFsEQ1MNpk
+	pCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAF2gpFCWmFMK
+	FApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcy4fvUdc8Fb3oq2W1OZGhincXcxcnJI
+	CJhItDX0sELYYhIX7q1n62Lk4hASmM4o8ffuDlYI5wWjRMvc/YwgVbwCWhLnbi5k7mLk4GAR
+	UJV49ykFJMwGFN7/4gYbiC0qECaxcvoVFohyQYkfk++B2SJA5Vue/GcHmckssIVR4uT/u+wg
+	CWGBLIll835DLbvJKPHuWzPYAk4BA4mtmzRAapgF1CUmzVvEDGHLS2xe85Z5AqPALCQ7ZiEp
+	m4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Fh+JrWDcWWDxSFGAQ5GJR7ehAs7
+	A4VYE8uKK3MPMUpwMCuJ8Ib/BQrxpiRWVqUW5ccXleakFh9iTAaGwERmKdHkfGCaySuJNzQ2
+	MTOyNDI3tDAyNidNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGRpe4e99/Wi4tnmC9JnTh
+	7f79zr/j9zF7boiWKgs/HG2qHssYv4DFPfp06smvJz5nbl+btOOpuezJdN8dja2/EsQXHuO6
+	fqM1PpJR7Ua58Z7yOJMJXDfv32C9ernvvFeEbq+dXIDfrTNv5XKjor9vn6//4WGdltNkQw/L
+	vJvr9h9Ztajg7t2LBUosxRmJhlrMRcWJAFRF7PYpAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/13 12:41), Bjorn Helgaas wrote:
-> On Wed, Jun 12, 2013 at 8:44 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
->> (2013/06/12 13:45), Bjorn Helgaas wrote:
->>> [+cc Vivek, Haren; sorry I didn't think to add you earlier]
->>>
->>> On Tue, Jun 11, 2013 at 12:08 AM, Takao Indoh
->>> <indou.takao@jp.fujitsu.com> wrote:
->>>> (2013/06/11 11:20), Bjorn Helgaas wrote:
->>>
->>>>> I'm not sure you need to reset legacy devices (or non-PCI devices)
->>>>> yet, but the current hook isn't anchored anywhere -- it's just an
->>>>> fs_initcall() that doesn't give the reader any clue about the
->>>>> connection between the reset and the problem it's solving.
->>>>>
->>>>> If we do something like this patch, I think it needs to be done at the
->>>>> point where we enable or disable the IOMMU.  That way, it's connected
->>>>> to the important event, and there's a clue about how to make
->>>>> corresponding fixes for other IOMMUs.
+On 06/12/2013 08:05 PM, Rafael J. Wysocki wrote:
+> On Wednesday, June 12, 2013 09:32:16 AM Viresh Kumar wrote:
+>> On 12 June 2013 03:44, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> On Wednesday, June 05, 2013 05:11:22 PM Chanwoo Choi wrote:
+>>>> This patch add new sysfs file to show previous accumulated data of CPU load
+>>>> as following path. This sysfs file is used to judge the correct system state
+>>>> or determine suitable system resource on user-space.
+>>>> - /sys/devices/system/cpu/cpu0/cpufreq/stats/load_table
 >>>>
->>>> Ok. pci_iommu_init() is appropriate place to add this hook?
+>>>> This sysfs file include following data:
+>>>> - Measurement point of time
+>>>> - CPU frequency
+>>>> - Per-CPU load
+>>>>
+>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 >>>
->>> I looked at various IOMMU init places today, and it's far more
->>> complicated and varied than I had hoped.
->>>
->>> This reset scheme depends on enumerating PCI devices before we
->>> initialize the IOMMU used by those devices.  x86 works that way today,
->>> but not all architectures do (see the sparc pci_fire_pbm_init(), for
+>>> Well, first of all, there is the "one value per file" rule for sysfs attributes
+>>> which is evidently violated by this code.
 >>
->> Sorry, could you tell me which part depends on architecture?
+>> Even this was enclosed in CONFIG_CPU_FREQ_STAT_DETAILS,
+>> so even sysfs isn't that bad as we already had something similar here.
 > 
-> Your patch works if PCIe devices are reset before the kdump kernel
-> enables the IOMMU.  On x86, this is possible because PCI enumeration
-> happens before the IOMMU initialization.  On sparc, the IOMMU is
-> initialized before PCI devices are enumerated, so there would still be
-> a window where ongoing DMA could cause an IOMMU error.
-
-Ok, understood, thanks.
-
-Hmmm, it seems to be difficult to find out method which is common to
-all architectures. So, what I can do for now is introducing reset scheme
-which is only for x86.
-
-1) Change this patch so that it work only on x86 platform. For example
-   call this reset code from x86_init.iommu.iommu_init() instead of
-   fs_initcall.
-
-Or another idea is:
-
-2) Enumerate PCI devices in IOMMU layer. That is:
-   PCI layer
-     Just provide interface to reset given strcut pci_dev. Maybe
-     pci_reset_function() looks good for this purpose.
-   IOMMU layer
-     Determine which devices should be reset. On kernel boot, check if
-     IOMMU is already active or not, and if active, check IOMMU page
-     table and reset devices whose entry exists there.
-
-> Of course, it might be possible to reorganize the sparc code to to the
-> IOMMU init *after* it enumerates PCI devices.  But I think that change
-> would be hard to justify.
+> Yes, we did, and yes, it was a mistake.  It should have been in debugfs from
+> the very beginning.
 > 
-> And I think even on x86, it would be better if we did the IOMMU init
-> before PCI enumeration -- the PCI devices depend on the IOMMU, so
-> logically the IOMMU should be initialized first so the PCI devices can
-> be associated with it as they are enumerated.
-
-So third idea is:
-
-3) Do reset before PCI enumeration(arch_initcall_sync or somewhere). We
-   need to implement new code to enumerate PCI devices and reset them
-   for this purpose.
-
-Idea 2 is not difficult to implement, but one problem is that this
-method may be dangerous. We need to scan IOMMU page table which is used
-in previous kernel, but it may be broken. Idea 3 seems to be difficult
-to implement...
-
-
-> 
->>> example).  And I think conceptually, the IOMMU should be enumerated
->>> and initialized *before* the devices that use it.
->>>
->>> So I'm uncomfortable with that aspect of this scheme.
->>>
->>> It would be at least conceivable to reset the devices in the system
->>> kernel, before the kexec.  I know we want to do as little as possible
->>> in the crashing kernel, but it's at least a possibility, and it might
->>> be cleaner.
+>>> Second, this looks like a feature needed to handle one particular platform, so
+>>> why do you want to add it to the cpufreq core?
 >>
->> I bet this will be not accepted by kdump maintainer. Everything in panic
->> kernel is unreliable.
+>> I really felt this would be useful to others. They can track the load on
+>> all cores for some time and that will really be useful. People can
+>> understand their loads and system more easily with this patch in.
 > 
-> kdump is inherently unreliable.  The kdump kernel doesn't start from
-> an arbitrary machine state.  We don't expect it to tolerate all CPUs
-> running, for example.  Maybe it should be expected to tolerate PCI
-> devices running, either.
+> If it were in debugfs, I'd have no objections.
+> 
 
-What I wanted to say is that any resources of first kernel are
-unreliable. Under panic situation, struct pci_dev tree may be broken, or
-pci_lock may be already hold by someone, etc. So, if we do this in first
-kernel, maybe kdump needs its own code to enumerate PCI devices and
-reset them.
+OK, I will reimplement load_table node by using debugfs instead of sysfs.
 
-Vivek?
+Thanks.
 
-Thanks,
-Takao Indoh
+Best Regards,
+Chanwoo Choi
+
 
