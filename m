@@ -1,228 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3FNPRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:17:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32944 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab3FNPQ4 (ORCPT
+	id S1753413Ab3FNPR3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:17:29 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:52176 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753081Ab3FNPR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:16:56 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dFsIWgdyB60A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0r9jeLNAZsMA:10 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=d2acpvzVWY5iGNuQgzYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371223012.9844.317.camel@gandalf.local.home>
-Subject: Re: [PATCH RT 2/4] acpi/rt: Convert acpi_gbl_hardware lock back to
- a raw_spinlock_t
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Clark Williams <clark@redhat.com>,
-        stable-rt@vger.kernel.org
-Date: Fri, 14 Jun 2013 11:16:52 -0400
-In-Reply-To: <20130219053159.965355809@goodmis.org>
-References: <20130219053116.706325380@goodmis.org>
-	 <20130219053159.965355809@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Fri, 14 Jun 2013 11:17:26 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51BB33FE.1020403@yandex-team.ru>
+Date: Fri, 14 Jun 2013 19:17:18 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Christoph Lameter <cl@gentwo.org>
+CC: penberg@kernel.org, mpm@selenic.com, akpm@linux-foundation.org,
+        mgorman@suse.de, rientjes@google.com, glommer@parallels.com,
+        hannes@cmpxchg.org, minchan@kernel.org, jiang.liu@huawei.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: Avoid direct compaction if possible
+References: <51BB1802.8050108@yandex-team.ru> <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com>
+In-Reply-To: <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On 14.06.2013 18:32, Christoph Lameter wrote:
+> On Fri, 14 Jun 2013, Roman Gushchin wrote:
+>
+>> Slub tries to allocate contiguous pages even if memory is fragmented and
+>> there are no free contiguous pages. In this case it calls direct compaction
+>> to allocate contiguous page. Compaction requires the taking of some heavily
+>> contended locks (e.g. zone locks). So, running compaction (direct and using
+>> kswapd) simultaneously on several processors can cause serious performance
+>> issues.
+>
+> The main thing that this patch does is to add a nocompact flag to the page
+> allocator. That needs to be a separate patch. Also fix the description.
+> Slub does not invoke compaction. The page allocator initiates compaction
+> under certain conditions.
 
-Any reason that this patch was dropped for 3.8? We hit this exact same
-bug recently with a 3.8-rt kernel.
+Ok, I'll do.
 
--- Steve
+>
+>> It's possible to avoid such problems (or at least to make them less probable)
+>> by avoiding direct compaction. If it's not possible to allocate a contiguous
+>> page without compaction, slub will fall back to order 0 page(s). In this case
+>> kswapd will be woken to perform asynchronous compaction. So, slub can return
+>> to default order allocations as soon as memory will be de-fragmented.
+>
+> Sounds like a good idea. Do you have some numbers to show the effect of
+> this patch?
 
+No.
+It seems that any numbers here depend on memory fragmentation,
+so it's not easy to make a reproducible measurement. If you have
+any ideas here, you are welcome.
 
-On Tue, 2013-02-19 at 00:31 -0500, Steven Rostedt wrote:
-> plain text document attachment
-> (0002-acpi-rt-Convert-acpi_gbl_hardware-lock-back-to-a-raw.patch)
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> We hit the following bug with 3.6-rt:
-> 
-> [    5.898990] BUG: scheduling while atomic: swapper/3/0/0x00000002
-> [    5.898991] no locks held by swapper/3/0.
-> [    5.898993] Modules linked in:
-> [    5.898996] Pid: 0, comm: swapper/3 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1
-> [    5.898997] Call Trace:
-> [    5.899011]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90
-> [    5.899028]  [<ffffffff81577923>] __schedule+0x793/0x7a0
-> [    5.899032]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200
-> [    5.899034]  [<ffffffff81577b89>] schedule+0x29/0x70
-> [    5.899036] BUG: scheduling while atomic: swapper/7/0/0x00000002
-> [    5.899037] no locks held by swapper/7/0.
-> [    5.899039]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0
-> [    5.899040] Modules linked in:
-> [    5.899041]
-> [    5.899045]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90
-> [    5.899046] Pid: 0, comm: swapper/7 Not tainted 3.6.11-rt28.19.el6rt.x86_64.debug #1
-> [    5.899047] Call Trace:
-> [    5.899049]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40
-> [    5.899052]  [<ffffffff810804e7>] __schedule_bug+0x67/0x90
-> [    5.899054]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80
-> [    5.899056]  [<ffffffff81577923>] __schedule+0x793/0x7a0
-> [    5.899059]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23
-> [    5.899062]  [<ffffffff810b4e40>] ? debug_rt_mutex_print_deadlock+0x50/0x200
-> [    5.899068]  [<ffffffff8130be64>] acpi_write_bit_register+0x33/0xb0
-> [    5.899071]  [<ffffffff81577b89>] schedule+0x29/0x70
-> [    5.899072]  [<ffffffff8130be13>] ? acpi_read_bit_register+0x33/0x51
-> [    5.899074]  [<ffffffff81578525>] rt_spin_lock_slowlock+0xe5/0x2f0
-> [    5.899077]  [<ffffffff8131d1fc>] acpi_idle_enter_bm+0x8a/0x28e
-> [    5.899079]  [<ffffffff81579a58>] ? _raw_spin_unlock_irqrestore+0x38/0x90
-> [    5.899081]  [<ffffffff8107e5da>] ? this_cpu_load+0x1a/0x30
-> [    5.899083]  [<ffffffff81578bc6>] rt_spin_lock+0x16/0x40
-> [    5.899087]  [<ffffffff8144c759>] cpuidle_enter+0x19/0x20
-> [    5.899088]  [<ffffffff8157d3f0>] ? notifier_call_chain+0x80/0x80
-> [    5.899090]  [<ffffffff8144c777>] cpuidle_enter_state+0x17/0x50
-> [    5.899092]  [<ffffffff812f2034>] acpi_os_acquire_lock+0x1f/0x23
-> [    5.899094]  [<ffffffff8144d1a1>] cpuidle899101]  [<ffffffff8130be13>] ?
-> 
-> As the acpi code disables interrupts in acpi_idle_enter_bm, and calls
-> code that grabs the acpi lock, it causes issues as the lock is currently
-> in RT a sleeping lock.
-> 
-> The lock was converted from a raw to a sleeping lock due to some
-> previous issues, and tests that showed it didn't seem to matter.
-> Unfortunately, it did matter for one of our boxes.
-> 
-> This patch converts the lock back to a raw lock. I've run this code on a
-> few of my own machines, one being my laptop that uses the acpi quite
-> extensively. I've been able to suspend and resume without issues.
-> 
-> [ tglx: Made the change exclusive for acpi_gbl_hardware_lock ]
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> Cc: John Kacur <jkacur@gmail.com>
-> Cc: Clark Williams <clark@redhat.com>
-> Link: http://lkml.kernel.org/r/1360765565.23152.5.camel@gandalf.local.home
-> Cc: stable-rt@vger.kernel.org
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  drivers/acpi/acpica/acglobal.h  |    2 +-
->  drivers/acpi/acpica/hwregs.c    |    4 ++--
->  drivers/acpi/acpica/hwxface.c   |    4 ++--
->  drivers/acpi/acpica/utmutex.c   |    4 ++--
->  include/acpi/platform/aclinux.h |   14 ++++++++++++++
->  5 files changed, 21 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/acglobal.h b/drivers/acpi/acpica/acglobal.h
-> index 73863d8..3d208c8 100644
-> --- a/drivers/acpi/acpica/acglobal.h
-> +++ b/drivers/acpi/acpica/acglobal.h
-> @@ -230,7 +230,7 @@ ACPI_EXTERN u8 acpi_gbl_global_lock_pending;
->   * interrupt level
->   */
->  ACPI_EXTERN acpi_spinlock acpi_gbl_gpe_lock;	/* For GPE data structs and registers */
-> -ACPI_EXTERN acpi_spinlock acpi_gbl_hardware_lock;	/* For ACPI H/W except GPE registers */
-> +ACPI_EXTERN acpi_raw_spinlock acpi_gbl_hardware_lock;	/* For ACPI H/W except GPE registers */
->  
->  /*****************************************************************************
->   *
-> diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
-> index 55accb7..1da9213 100644
-> --- a/drivers/acpi/acpica/hwregs.c
-> +++ b/drivers/acpi/acpica/hwregs.c
-> @@ -263,7 +263,7 @@ acpi_status acpi_hw_clear_acpi_status(void)
->  			  ACPI_BITMASK_ALL_FIXED_STATUS,
->  			  ACPI_FORMAT_UINT64(acpi_gbl_xpm1a_status.address)));
->  
-> -	lock_flags = acpi_os_acquire_lock(acpi_gbl_hardware_lock);
-> +	raw_spin_lock_irqsave(acpi_gbl_hardware_lock, lock_flags);
->  
->  	/* Clear the fixed events in PM1 A/B */
->  
-> @@ -278,7 +278,7 @@ acpi_status acpi_hw_clear_acpi_status(void)
->  	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
->  
->        unlock_and_exit:
-> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +	raw_spin_unlock_irqrestore(acpi_gbl_hardware_lock, lock_flags);
->  	return_ACPI_STATUS(status);
->  }
->  
-> diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
-> index f75f81a..94a33ce 100644
-> --- a/drivers/acpi/acpica/hwxface.c
-> +++ b/drivers/acpi/acpica/hwxface.c
-> @@ -386,7 +386,7 @@ acpi_status acpi_write_bit_register(u32 register_id, u32 value)
->  		return_ACPI_STATUS(AE_BAD_PARAMETER);
->  	}
->  
-> -	lock_flags = acpi_os_acquire_lock(acpi_gbl_hardware_lock);
-> +	raw_spin_lock_irqsave(acpi_gbl_hardware_lock, lock_flags);
->  
->  	/*
->  	 * At this point, we know that the parent register is one of the
-> @@ -447,7 +447,7 @@ acpi_status acpi_write_bit_register(u32 register_id, u32 value)
->  
->  unlock_and_exit:
->  
-> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +	raw_spin_unlock_irqrestore(acpi_gbl_hardware_lock, lock_flags);
->  	return_ACPI_STATUS(status);
->  }
->  
-> diff --git a/drivers/acpi/acpica/utmutex.c b/drivers/acpi/acpica/utmutex.c
-> index 7d797e2..b611bf3 100644
-> --- a/drivers/acpi/acpica/utmutex.c
-> +++ b/drivers/acpi/acpica/utmutex.c
-> @@ -88,7 +88,7 @@ acpi_status acpi_ut_mutex_initialize(void)
->  		return_ACPI_STATUS (status);
->  	}
->  
-> -	status = acpi_os_create_lock (&acpi_gbl_hardware_lock);
-> +	status = acpi_os_create_raw_lock (&acpi_gbl_hardware_lock);
->  	if (ACPI_FAILURE (status)) {
->  		return_ACPI_STATUS (status);
->  	}
-> @@ -135,7 +135,7 @@ void acpi_ut_mutex_terminate(void)
->  	/* Delete the spinlocks */
->  
->  	acpi_os_delete_lock(acpi_gbl_gpe_lock);
-> -	acpi_os_delete_lock(acpi_gbl_hardware_lock);
-> +	acpi_os_delete_raw_lock(acpi_gbl_hardware_lock);
->  
->  	/* Delete the reader/writer lock */
->  
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index 2ce1be9..17d24de 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -74,6 +74,7 @@
->  
->  #define acpi_cache_t                        struct kmem_cache
->  #define acpi_spinlock                       spinlock_t *
-> +#define acpi_raw_spinlock                   raw_spinlock_t *
->  #define acpi_cpu_flags                      unsigned long
->  
->  #else /* !__KERNEL__ */
-> @@ -177,6 +178,19 @@ static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
->  	lock ? AE_OK : AE_NO_MEMORY;				\
->  })
->  
-> +#define acpi_os_create_raw_lock(__handle)			\
-> +({								\
-> +	raw_spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock));	\
-> +								\
-> +	if (lock) {						\
-> +		*(__handle) = lock;				\
-> +		raw_spin_lock_init(*(__handle));		\
-> +	}							\
-> +	lock ? AE_OK : AE_NO_MEMORY;				\
-> +})
-> +
-> +#define acpi_os_delete_raw_lock(__handle)	kfree(__handle)
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __ACLINUX_H__ */
+But there is an actual problem, that this patch solves.
+Sometimes I saw the following issue on some machines:
+all CPUs are performing compaction, system time is about 80%,
+system is completely unreliable. It occurs only on machines
+with specific workload (distributed data storage system, so,
+intensive disk i/o is performed). A system can fall into
+this state fast and unexpectedly or by progressive degradation.
 
+This patch solves this problem.
+
+Thank you for your comments and suggestions!
+
+Regards,
+Roman
 
