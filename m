@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3FNVdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:33:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34532 "EHLO
+	id S1754289Ab3FNVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:33:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34537 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab3FNVdt (ORCPT
+	with ESMTP id S1753692Ab3FNVdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:33:49 -0400
-Date: Fri, 14 Jun 2013 14:33:34 -0700
+	Fri, 14 Jun 2013 17:33:54 -0400
+Date: Fri, 14 Jun 2013 14:33:43 -0700
 From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-ca099f2813b5dccf2383784dbcfb9589110bd846@git.kernel.org>
+Message-ID: <tip-7d5a256fc953dd80a4eb9a1870607ec991d23ec2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
-        tangchen@cn.fujitsu.com, tglx@linutronix.de, hpa@linux.intel.com
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com,
-        tangchen@cn.fujitsu.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1371128589-8953-20-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-20-git-send-email-tangchen@cn.fujitsu.com>
+        yinghai@kernel.org, tangchen@cn.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1371128589-8953-21-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128589-8953-21-git-send-email-tangchen@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Parse numa info earlier
-Git-Commit-ID: ca099f2813b5dccf2383784dbcfb9589110bd846
+Subject: [tip:x86/mm] x86, mm: Add comments for step_size shift
+Git-Commit-ID: 7d5a256fc953dd80a4eb9a1870607ec991d23ec2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,92 +29,68 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:33:40 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:33:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca099f2813b5dccf2383784dbcfb9589110bd846
-Gitweb:     http://git.kernel.org/tip/ca099f2813b5dccf2383784dbcfb9589110bd846
+Commit-ID:  7d5a256fc953dd80a4eb9a1870607ec991d23ec2
+Gitweb:     http://git.kernel.org/tip/7d5a256fc953dd80a4eb9a1870607ec991d23ec2
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 21:03:06 +0800
+AuthorDate: Thu, 13 Jun 2013 21:03:07 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jun 2013 14:05:13 -0700
+CommitDate: Fri, 14 Jun 2013 14:05:32 -0700
 
-x86, mm: Parse numa info earlier
+x86, mm: Add comments for step_size shift
 
-Parsing numa info has been separated into two steps now.
-
-early_initmem_info() only parses info in numa_meminfo and
-nodes_parsed. still keep numaq, acpi_numa, amd_numa, dummy
-fall back sequence working.
-
-SLIT and numa emulation handling are still left in initmem_init().
-
-Call early_initmem_init before init_mem_mapping() to prepare
-to use numa_info with it.
+As requested by hpa, add comments for why we choose 5 to be
+the step size shift.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371128589-8953-20-git-send-email-tangchen@cn.fujitsu.com
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1371128589-8953-21-git-send-email-tangchen@cn.fujitsu.com
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/setup.c | 24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
+ arch/x86/mm/init.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 301165e..fd0d5be 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1125,13 +1125,21 @@ void __init setup_arch(char **cmdline_p)
- 	trim_platform_memory_ranges();
- 	trim_low_memory_range();
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 3c21f16..5f38e72 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -395,8 +395,23 @@ static unsigned long __init init_range_memory_mapping(
+ 	return mapped_ram_size;
+ }
  
+-/* (PUD_SHIFT-PMD_SHIFT)/2 */
+-#define STEP_SIZE_SHIFT 5
++static unsigned long __init get_new_step_size(unsigned long step_size)
++{
 +	/*
-+	 * Parse the ACPI tables for possible boot-time SMP configuration.
++	 * initial mapped size is PMD_SIZE, aka 2M.
++	 * We can not set step_size to be PUD_SIZE aka 1G yet.
++	 * In worse case, when 1G is cross the 1G boundary, and
++	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
++	 * to map 1G range with PTE. Use 5 as shift for now.
 +	 */
-+	acpi_initrd_override_copy();
-+	acpi_boot_table_init();
-+	early_acpi_boot_init();
-+	early_initmem_init();
- 	init_mem_mapping();
--
-+	memblock.current_limit = get_max_mapped();
- 	early_trap_pf_init();
- 
-+	reserve_initrd();
++	unsigned long new_step_size = step_size << 5;
 +
- 	setup_real_mode();
- 
--	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
- 	/*
-@@ -1145,24 +1153,12 @@ void __init setup_arch(char **cmdline_p)
- 	/* Allocate bigger log buffer */
- 	setup_log_buf(1);
- 
--	acpi_initrd_override_copy();
--
--	reserve_initrd();
--
- 	reserve_crashkernel();
- 
- 	vsmp_init();
- 
- 	io_delay_init();
- 
--	/*
--	 * Parse the ACPI tables for possible boot-time SMP configuration.
--	 */
--	acpi_boot_table_init();
--
--	early_acpi_boot_init();
--
--	early_initmem_init();
- 	initmem_init();
- 	memblock_find_dma_reserve();
++	if (new_step_size > step_size)
++		step_size = new_step_size;
++
++	return  step_size;
++}
++
+ void __init init_mem_mapping(void)
+ {
+ 	unsigned long end, real_end, start, last_start;
+@@ -445,7 +460,7 @@ void __init init_mem_mapping(void)
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+-			step_size <<= STEP_SIZE_SHIFT;
++			step_size = get_new_step_size(step_size);
+ 		mapped_ram_size += new_mapped_ram_size;
+ 	}
  
