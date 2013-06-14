@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab3FNOD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:03:56 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53448 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab3FNODy (ORCPT
+	id S1753365Ab3FNOEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:04:22 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40783 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3FNOEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:03:54 -0400
-Message-ID: <51BB2295.1020105@parallels.com>
-Date: Fri, 14 Jun 2013 18:03:01 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 10:04:20 -0400
+Message-ID: <51BB22D1.9070204@gmail.com>
+Date: Fri, 14 Jun 2013 22:04:01 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 09/14] fuse: Implement writepages and write_begin/write_end
- callbacks - v3
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104202.19027.99619.stgit@maximpc.sw.ru> <CAJfpegskt2zmKyx5sB49em86HqEJH3mZFH5hnuDXPuD_EtYzyw@mail.gmail.com>
-In-Reply-To: <CAJfpegskt2zmKyx5sB49em86HqEJH3mZFH5hnuDXPuD_EtYzyw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shaohua Li <shaohua.li@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-4-git-send-email-jiang.liu@huawei.com> <1841512.D0ScSNfNgy@vostro.rjw.lan>
+In-Reply-To: <1841512.D0ScSNfNgy@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On 06/14/2013 02:26 AM, Rafael J. Wysocki wrote:
+> On Friday, June 14, 2013 12:32:26 AM Jiang Liu wrote:
+>> ACPI dock driver can't be built as a module any more, so clean up
+>> module related code.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Shaohua Li <shaohua.li@intel.com>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+>> Cc: linux-acpi@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+> 
+> How exactly does this depend on [2/9]?  If it doesn't at all, it should go
+> after [1/9].
+> 
+>> ---
+>>  drivers/acpi/dock.c | 41 -----------------------------------------
+>>  1 file changed, 41 deletions(-)
+>>
+>> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+>> index 79c8d9e..50e38b7 100644
+>> --- a/drivers/acpi/dock.c
+>> +++ b/drivers/acpi/dock.c
+>> @@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
+>>  
+>>  static struct atomic_notifier_head dock_notifier_list;
+>>  
+>> -static const struct acpi_device_id dock_device_ids[] = {
+>> -	{"LNXDOCK", 0},
+>> -	{"", 0},
+>> -};
+>> -MODULE_DEVICE_TABLE(acpi, dock_device_ids);
+>> -
+> 
+> Don't we actually need the device IDs?
+Now dock driver could only be built as built-in, and it doesn't really
+bind to ACPI dock devices, so I think the device ids are not used any
+more. Not sure whether any userspace tool has dependency on the device
+IDs.
 
-04/25/2013 02:35 PM, Miklos Szeredi пишет:
-> On Mon, Apr 1, 2013 at 12:42 PM, Maxim V. Patlasov
-> <MPatlasov@parallels.com> wrote:
->> The .writepages one is required to make each writeback request carry more than
->> one page on it.
-> I'd split this into two parts:
->
-> 1) implement ->writepages() and enable it unconditionally for mmaped
-> writeback (why is it not enabled by this patch?)
->
-> 2) implement ->write_begin() and ->write_end() and conditionally
-> enable cached writeback
->
-> More comments inline.
+> 
+>>  struct dock_station {
+>>  	acpi_handle handle;
+>>  	unsigned long last_dock_time;
+>> @@ -1013,30 +1007,6 @@ err_unregister:
+>>  }
+>>  
+>>  /**
+>> - * dock_remove - free up resources related to the dock station
+>> - */
+>> -static int dock_remove(struct dock_station *ds)
+>> -{
+>> -	struct dock_dependent_device *dd, *tmp;
+>> -	struct platform_device *dock_device = ds->dock_device;
+>> -
+>> -	if (!dock_station_count)
+>> -		return 0;
+>> -
+>> -	/* remove dependent devices */
+>> -	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
+>> -		kfree(dd);
+>> -
+>> -	list_del(&ds->sibling);
+>> -
+>> -	/* cleanup sysfs */
+>> -	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
+>> -	platform_device_unregister(dock_device);
+>> -
+>> -	return 0;
+>> -}
+>> -
+>> -/**
+>>   * find_dock_and_bay - look for dock stations and bays
+>>   * @handle: acpi handle of a device
+>>   * @lvl: unused
+>> @@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
+>>  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
+>>  	return 0;
+>>  }
+>> -
+>> -static void __exit dock_exit(void)
+>> -{
+>> -	struct dock_station *tmp, *dock_station;
+>> -
+>> -	unregister_acpi_bus_notifier(&dock_acpi_notifier);
+>> -	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
+>> -		dock_remove(dock_station);
+>> -}
+>> -
+>> -module_exit(dock_exit);
+> 
+> The other changes look OK to me.
+Thanks for review.
 
-Thanks a lot for careful review. I agree with most of your comments and 
-will address them in the next version of patchset. The only point I 
-disagree is the following:
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
->> +
->> +       spin_lock(&fc->lock);
->> +       list_add(&req->writepages_entry, &fi->writepages);
->> +       spin_unlock(&fc->lock);
->> +
->> +       for (i = 0; i < req->num_pages; i++) {
->> +               struct page *page = req->pages[i];
->> +               struct page *tmp_page;
->> +
->> +               tmp_page = alloc_page(GFP_NOFS | __GFP_HIGHMEM);
->> +               if (tmp_page) {
->> +                       copy_highpage(tmp_page, page);
->> +                       inc_bdi_stat(bdi, BDI_WRITEBACK);
->> +                       inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
-> Is there a reason why we do the page allocation/copying here instead
-> of at fill time?  I'd guess it would be simpler and more logical
-> there.
-
-There is a problem to have in mind: we can't call 
-end_page_writeback(page) before update of fuse writeback state 
-(fi->writepages). Otherwise a nasty race would be possible when an 
-activity for that particular page offset intervenes in the middle of 
-writeback leading to multiple in-flight fuse requests for given page offset.
-
-What you suggested is doable but would require additional space to stash 
-pointers to original pages because we cannot release them immediately 
-after copying (due to the problem described above). The size of the 
-space is not known in advance because we don't know how many pages 
-write_cache_pages() will process. The size is currently limited by 
-sizeof(struct page *) * FUSE_MAX_PAGES_PER_REQ, but may become variable 
-in future (a lot of people complain about 128K limit of fuse request). 
-Adding dynamically growing array of pages would make the code neither 
-simpler nor logical.
-
-The approach I implemented utilizes the fact that 
-fuse_page_is_writeback() and friends require only 
-req->misc.write.in.offset and req->num_pages to be set correctly. Actual 
-pointers in req->pages[] doesn't matter. Thus, as soon as the two 
-parameters are known, I add the request to fi->writepages (blocking 
-other operations on given page offset) and perform "in place" 
-allocation/copying avoiding need for extra space to stash page pointers.
-
-Thanks,
-Maxim
