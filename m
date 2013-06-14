@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab3FNNRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:17:40 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37826 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3FNNRi (ORCPT
+	id S1752798Ab3FNNSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:18:03 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:50200 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752163Ab3FNNSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:17:38 -0400
-Date: Fri, 14 Jun 2013 15:17:35 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 05/31] mips/kvm: Use generic cache flushing functions.
-Message-ID: <20130614131735.GG15775@linux-mips.org>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
- <1370646215-6543-6-git-send-email-ddaney.cavm@gmail.com>
+	Fri, 14 Jun 2013 09:18:00 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51BB1802.8050108@yandex-team.ru>
+Date: Fri, 14 Jun 2013 17:17:54 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370646215-6543-6-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        akpm@linux-foundation.org, mgorman@suse.de, rientjes@google.com,
+        glommer@parallels.com, hannes@cmpxchg.org, minchan@kernel.org,
+        jiang.liu@huawei.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] slub: Avoid direct compaction if possible
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 04:03:09PM -0700, David Daney wrote:
+Slub tries to use contiguous pages to fasten allocations and to minimize
+management overhead. If necessary, it can easily fall back to the minimum
+order allocations.
 
-> From: David Daney <david.daney@cavium.com>
-> 
-> We don't know if we have the r4k specific functions available, so use
-> universally available __flush_cache_all() instead.  This takes longer
-> as it flushes both i-cache and d-cache, but is available for all CPUs.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> ---
->  arch/mips/kvm/kvm_mips_emul.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/mips/kvm/kvm_mips_emul.c b/arch/mips/kvm/kvm_mips_emul.c
-> index af9a661..a2c6687 100644
-> --- a/arch/mips/kvm/kvm_mips_emul.c
-> +++ b/arch/mips/kvm/kvm_mips_emul.c
-> @@ -916,8 +916,6 @@ kvm_mips_emulate_cache(uint32_t inst, uint32_t *opc, uint32_t cause,
->  		       struct kvm_run *run, struct kvm_vcpu *vcpu)
->  {
->  	struct mips_coproc *cop0 = vcpu->arch.cop0;
-> -	extern void (*r4k_blast_dcache) (void);
-> -	extern void (*r4k_blast_icache) (void);
->  	enum emulation_result er = EMULATE_DONE;
->  	int32_t offset, cache, op_inst, op, base;
->  	struct kvm_vcpu_arch *arch = &vcpu->arch;
-> @@ -954,9 +952,9 @@ kvm_mips_emulate_cache(uint32_t inst, uint32_t *opc, uint32_t cause,
->  		     arch->gprs[base], offset);
->  
->  		if (cache == MIPS_CACHE_DCACHE)
-> -			r4k_blast_dcache();
+Slub tries to allocate contiguous pages even if memory is fragmented and
+there are no free contiguous pages. In this case it calls direct compaction
+to allocate contiguous page. Compaction requires the taking of some heavily
+contended locks (e.g. zone locks). So, running compaction (direct and using
+kswapd) simultaneously on several processors can cause serious performance
+issues.
 
-Only nukes the D-cache.
+It's possible to avoid such problems (or at least to make them less probable)
+by avoiding direct compaction. If it's not possible to allocate a contiguous
+page without compaction, slub will fall back to order 0 page(s). In this case
+kswapd will be woken to perform asynchronous compaction. So, slub can return
+to default order allocations as soon as memory will be de-fragmented.
 
-> +			__flush_cache_all();
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+---
+  include/linux/gfp.h | 4 +++-
+  mm/page_alloc.c     | 3 +++
+  mm/slub.c           | 3 ++-
+  3 files changed, 8 insertions(+), 2 deletions(-)
 
-This is also going to blow away the I-cache, so will be slower.
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 0f615eb..073a90a 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+  #define ___GFP_NO_KSWAPD	0x400000u
+  #define ___GFP_OTHER_NODE	0x800000u
+  #define ___GFP_WRITE		0x1000000u
++#define ___GFP_NOCOMPACT	0x2000000u
+  /* If the above are modified, __GFP_BITS_SHIFT may need updating */
 
->  		else if (cache == MIPS_CACHE_ICACHE)
-> -			r4k_blast_icache();
+  /*
+@@ -92,6 +93,7 @@ struct vm_area_struct;
+  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+  #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+  #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
++#define __GFP_NOCOMPACT ((__force gfp_t)___GFP_NOCOMPACT) /* Avoid direct compaction */
 
-Only nukes the I-cache.
+  /*
+   * This may seem redundant, but it's a way of annotating false positives vs.
+@@ -99,7 +101,7 @@ struct vm_area_struct;
+   */
+  #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
 
-> +			__flush_cache_all();
+-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
+  #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
-This is also going to blow away the D-cache, so will be slower.
+  /* This equals 0, but use constants in case they ever change */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c3edb62..292562f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2482,6 +2482,9 @@ rebalance:
+  	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
+  		goto nopage;
 
-  Ralf
++	if (order && (gfp_mask & __GFP_NOCOMPACT))
++		goto nopage;
++
+  	/*
+  	 * Try direct compaction. The first pass is asynchronous. Subsequent
+  	 * attempts after direct reclaim are synchronous
+diff --git a/mm/slub.c b/mm/slub.c
+index 57707f0..a38733b 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1287,7 +1287,8 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+  	 * Let the initial higher-order allocation fail under memory pressure
+  	 * so we fall-back to the minimum order allocation.
+  	 */
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
++	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NOCOMPACT) &
++		~__GFP_NOFAIL;
+
+  	page = alloc_slab_page(alloc_gfp, node, oo);
+  	if (unlikely(!page)) {
+-- 
+1.8.1.2
