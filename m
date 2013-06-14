@@ -1,102 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3FNW21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 18:28:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50574 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3FNW2Z (ORCPT
+	id S1753773Ab3FNWbe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 18:31:34 -0400
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:42741 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNWbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 18:28:25 -0400
-Date: Sat, 15 Jun 2013 01:26:31 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Joel A Fernandes <agnel.joel@gmail.com>
-CC: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
-Message-ID: <20130614222537.GA25428@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <41fde401c8e646689123d7c6d3a2dffc@DLEE71.ent.ti.com>
- <20130307141235.GQ6209@beef>
- <79CD15C6BA57404B839C016229A409A83EC20C57@DBDE01.ent.ti.com>
- <20130307144656.GR6209@beef>
- <79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
- <20130307150408.GU6209@beef>
- <79CD15C6BA57404B839C016229A409A83EC20D27@DBDE01.ent.ti.com>
- <20130307160236.GV6209@beef>
- <79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
- <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+	Fri, 14 Jun 2013 18:31:32 -0400
+Date: Fri, 14 Jun 2013 15:31:25 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, koverstreet@google.com,
+        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        Mike Snitzer <snitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Alasdair G. Kergon" <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 11/11] cgroup: use percpu refcnt for cgroup_subsys_states
+Message-ID: <20130614223125.GD6593@mtj.dyndns.org>
+References: <1371096298-24402-1-git-send-email-tj@kernel.org>
+ <1371096298-24402-12-git-send-email-tj@kernel.org>
+ <20130614132026.GD10084@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
+Content-Type: multipart/mixed; boundary="LQksG6bCIzRHxTLp"
 Content-Disposition: inline
-In-Reply-To: <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+In-Reply-To: <20130614132026.GD10084@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---dc+cDN39EJAMEtIO
+
+--LQksG6bCIzRHxTLp
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hello, Michal.
 
-On Fri, Jun 14, 2013 at 02:54:33PM -0500, Joel A Fernandes wrote:
-> Hi Tony, Vaibhav,
->=20
-> >> I just doublechecked MMC rootfs on bone and evmsk as it's the standard
-> >> smoke test. My EVM is intermittent now so trying to coax it to power up
-> >> to reverify.
-> >>
-> >
-> > Matt,
-> >
-> > Your branch is working for me, I tested it on EVM. Not sure what is wro=
-ng with manual rebasing
-> > I did yesterday. I will try to nail-down root-cause here.
-> >
-> > And you can submit the next version fixing the comments I have given.
->=20
-> The only comment I could find in the whole discussion was adding of
-> the interrupts property. I tested I don't have any problem booting
-> with Matt's patch, without having the interrupts property.
+On Fri, Jun 14, 2013 at 03:20:26PM +0200, Michal Hocko wrote:
+> I have no objections to change css reference counting scheme if the
+> guarantees we used to have are still valid. I am just missing some
+> comparisons. Do you have any numbers that would show benefits clearly?
 
-might very well be, but we want to figure out why adding "intrrupts"
-causes issues. Why does it have to come through hwmod ? You might have
-uncovered a real problem which needs fixing. Besides, at the end of the
-day, we want to remove the redundant hwmod data if we already have DTS
-bindings covering the same requirements.
---=20
-balbi
+Mikulas' high scalability dm test case on top of ramdisk was affected
+severely when css refcnting was added to track the original issuer's
+cgroup context.  That probably is one of the more severe cases.
 
---dc+cDN39EJAMEtIO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> You are mentioning that especially controllers that are strongly per-cpu
+> oriented will see the biggest improvements. What about others?
+> A single atomic_add resp. atomic_dec_return is much less heavy than the
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Even with preemption enabled, the percpu ref get/put will be under ten
+instructions which touch two memory areas - the preemption counter
+which is usually very hot anyway and the percpu refcnt itself.  It
+shouldn't be much slower than the atomic ops.  If the kernel has
+preemption disabled, percpu_ref is actually likely to be cheaper even
+on single CPU.
 
-iQIcBAEBAgAGBQJRu5iXAAoJEIaOsuA1yqRE5l0P/iHsoyrL4UuOAcKCyFnB+Biw
-UrRREW9xlAd4IG7Uiqhy3C04JVv0KCPtF1ngUiiNU1Nb0BhPrLKpgUpuOM0DyIOx
-r3pLNqoq5PsMGp7XNzjSdOwCm6y+Yu3wDuDaaO9OGuuLBmKucNXqYgGfJM+g+24s
-110vwTGpPqxW1TndYfzhNlw5qN/5OIbTJVORuuMQLhO/mK5EaNtb+7TAv68VBuub
-Xo4cDWfzYwNujV0QTzUOJYP0L/qNHWi5hnLpGlI5tZZf9N+z/QJo52A4B5paWGmb
-HCsfgMM2FUy3EMkXzjz2FDI72mSAPVgc0N7QVq5f4e25lJFgd/l/Xu34AZdUdxeo
-GYBIYkK6G+xAPT9uRAuadXizprEn+3FlVxGzFvrgKrW5B1HS/+8W3SIB9GO3keYz
-DLhjbNFBiEl7wnMr7DA5SjJ3rtopLirkn6bFd+KJXft867AOZnPu+rh5GgwfdbuO
-0dbxVJ16BrxPrIgPxYbi1EqpsrjLF9dCOel56zs/KBBeB3MN4srLP115P3MNg2OX
-VduXg7JsqSUPBfkaSEV5g0Ng2LZpTdCTblBKg6slVRak41iejjslChV62I9ORIZu
-SjvM8tFel/231KWoVdAHlVe8qaegUpYR87UFXBBLV4QLwUvERM01tQrumdnfszJg
-h+mXiEgLTS5iw+LeiteZ
-=R0Oe
------END PGP SIGNATURE-----
+So, here are some numbers from the attached test program.  The test is
+very simple - inc ref, copy N bytes into per-cpu buf, dec ref - and
+see how many times it can do that in given amount of time - 15s.  Both
+single CPU and all CPUs scenarios are tested.  The test is run inside
+qemu on my laptop - mobile i7 2 core / 4 threads.  Yeah, I know.  I'll
+run it on a proper test machine later today.
 
---dc+cDN39EJAMEtIO--
+Single CPU case.  Preemption enabled.  This is the best scenario for
+atomic_t.  No cacheline bouncing at all.
+
+    copy size  atomic_t		  percpu_ref	   diff
+
+	0      1198217077	  1747505555	  +45.84%
+	32	505504457	   465714742	   -7.87%
+	64	511521639	   470741887	   -7.97%
+	128	485319952	   434920137	  -10.38%
+	256	421809359	   384871731	   -8.76%
+	512	330527059	   307587622	   -6.94%
+
+For some reason, percpu_ref wins if copy_size is zero.  I don't know
+why that is.  The body isn't optimized out so it's still doing all the
+refcnting.  Maybe the CPU doesn't have enough work to mask pipeline
+bubbles from atomic ops?  In other cases, it's slower by around or
+under 10% which isn't exactly noise but this is the worst possible
+scenario.  Unless this is the only thing a pinned CPU is doing, it's
+unlikely to be noticeable.
+
+Now doing the same thing on multiple CPUs.  Note that while this is
+the best scenario for percpu_ref, the hardware the test is run on is
+very favorable to atomic_t - it's just two cores on the same package
+sharing the L3 cache, so cacheline ping-poinging is relatively cheap.
+
+    copy size  atomic_t		  percpu_ref	   diff
+
+	0      342659959	  3794775739	  +1007.45%
+	32     401933493	  1337286466	   +232.71%
+	64     385459752	  1353978982	   +251.26%
+	128    401379622	  1234780968	   +207.63%
+	256    401170676	  1052511682	   +162.36%
+	512    387796881	   794101245	   +104.77%
+
+Even on this machine, the difference is huge.  If the refcnt is used
+from different CPUs in any frequency, percpu_ref will destroy
+atomic_t.  Also note that percpu_ref will scale perfectly as the
+number of CPUs increases while atomic_t will get worse.
+
+I'll play with it a bit more on an actual machine and post more
+results.  Test program attached.
+
+Thanks.
+
+-- 
+tejun
+
+--LQksG6bCIzRHxTLp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="test-pcpuref.c"
+
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <asm/atomic.h>
+#include <linux/percpu-refcount.h>
+#include <linux/workqueue.h>
+#include <linux/completion.h>
+
+static struct workqueue_struct *my_wq;
+
+static int test_all_cpus = 0;
+module_param_named(all_cpus, test_all_cpus, int, 0444);
+
+static int test_duration = 15;
+module_param_named(duration, test_duration, int, 0444);
+
+static int test_copy_bytes = 32;
+module_param_named(copy_bytes, test_copy_bytes, int, 0444);
+
+static char test_src_buf[1024];
+static DEFINE_PER_CPU(char [1024], test_dst_buf);
+static DEFINE_PER_CPU(struct work_struct, test_work);
+
+static atomic_t test_atomic_ref = ATOMIC_INIT(1);
+
+static void test_atomic_workfn(struct work_struct *work)
+{
+	unsigned long end = jiffies + test_duration * HZ;
+	unsigned long cnt = 0;
+
+	do {
+		int bytes = test_copy_bytes;
+
+		atomic_inc(&test_atomic_ref);
+		while (bytes) {
+			int todo = min_t(int, bytes, 1024);
+
+			memcpy(*this_cpu_ptr(&test_dst_buf), test_src_buf, todo);
+			bytes -= todo;
+		}
+		cnt++;
+		atomic_dec(&test_atomic_ref);
+	} while (time_before(jiffies, end));
+
+	printk("XXX atomic on CPU %d completed %lu loops\n",
+	       smp_processor_id(), cnt);
+}
+
+static struct percpu_ref test_pcpu_ref;
+static DECLARE_COMPLETION(test_cpu_ref_done);
+
+static void test_pcpu_release(struct percpu_ref *ref)
+{
+	complete(&test_cpu_ref_done);
+}
+
+static void test_pcpu_workfn(struct work_struct *work)
+{
+	unsigned long end = jiffies + test_duration * HZ;
+	unsigned long cnt = 0;
+
+	do {
+		int bytes = test_copy_bytes;
+
+		percpu_ref_get(&test_pcpu_ref);
+		while (bytes) {
+			int todo = min_t(int, bytes, 1024);
+
+			memcpy(*this_cpu_ptr(&test_dst_buf), test_src_buf, todo);
+			bytes -= todo;
+		}
+		cnt++;
+		percpu_ref_put(&test_pcpu_ref);
+	} while (time_before(jiffies, end));
+
+	printk("XXX percpu on CPU %d completed %lu loops\n",
+	       smp_processor_id(), cnt);
+}
+
+static int test_pcpuref_init(void)
+{
+	int cpu;
+
+	if (percpu_ref_init(&test_pcpu_ref, test_pcpu_release))
+		return -ENOMEM;
+
+	my_wq = alloc_workqueue("test-pcpuref", WQ_CPU_INTENSIVE, 0);
+	if (!my_wq) {
+		percpu_ref_cancel_init(&test_pcpu_ref);
+		return -ENOMEM;
+	}
+
+	printk("XXX testing atomic_t for %d secs\n", test_duration);
+
+	for_each_online_cpu(cpu) {
+		INIT_WORK(per_cpu_ptr(&test_work, cpu), test_atomic_workfn);
+		queue_work_on(cpu, my_wq, per_cpu_ptr(&test_work, cpu));
+		if (!test_all_cpus)
+			break;
+	}
+
+	flush_workqueue(my_wq);
+
+	printk("XXX testing percpu_ref for %d secs\n", test_duration);
+
+	for_each_online_cpu(cpu) {
+		INIT_WORK(per_cpu_ptr(&test_work, cpu), test_pcpu_workfn);
+		queue_work_on(cpu, my_wq, per_cpu_ptr(&test_work, cpu));
+		if (!test_all_cpus)
+			break;
+	}
+
+	flush_workqueue(my_wq);
+
+	percpu_ref_kill(&test_pcpu_ref);
+	wait_for_completion(&test_cpu_ref_done);
+
+	return 0;
+}
+module_init(test_pcpuref_init);
+
+static void test_pcpuref_exit(void)
+{
+	destroy_workqueue(my_wq);
+}
+module_exit(test_pcpuref_exit);
+
+MODULE_LICENSE("GPL v2");
+
+--LQksG6bCIzRHxTLp--
