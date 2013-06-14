@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3FNVbd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:31:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34372 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3FNVbb (ORCPT
+	id S1753190Ab3FNVmW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:42:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:50287 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab3FNVmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:31:31 -0400
-Date: Fri, 14 Jun 2013 14:31:06 -0700
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-a795ab2d9c2113c63d2c9a0677012db13e746121@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, fenghua.yu@intel.com, tangchen@cn.fujitsu.com,
-        tj@kernel.org, tglx@linutronix.de, trenn@suse.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, fenghua.yu@intel.com, tangchen@cn.fujitsu.com,
-        tj@kernel.org, trenn@suse.de, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1371128589-8953-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-3-git-send-email-tangchen@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, microcode: Use common get_ramdisk_{image|size}(
- )
-Git-Commit-ID: a795ab2d9c2113c63d2c9a0677012db13e746121
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 14 Jun 2013 17:42:21 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: <wenyou.yang@atmel.com>, <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: soc updates for 3.11 #1
+Date: Fri, 14 Jun 2013 23:42:18 +0200
+Message-ID: <1371246138-22207-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 14 Jun 2013 14:31:11 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a795ab2d9c2113c63d2c9a0677012db13e746121
-Gitweb:     http://git.kernel.org/tip/a795ab2d9c2113c63d2c9a0677012db13e746121
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 13 Jun 2013 21:02:49 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jun 2013 14:03:30 -0700
+Arnd, Olof,
 
-x86, microcode: Use common get_ramdisk_{image|size}()
+A little AT91 pull-request for patches that are more targeted to SoC/boards
+modifications. It is prepared on top of the arm-soc/at91/cleanup branch.
 
-In patch1, we change get_ramdisk_image() and get_ramdisk_size()
-to global, so we can use them instead of using global variable
-boot_params.
+Thanks, best regards,
 
-We need this to get correct ramdisk adress for 64bits bzImage
-that initrd can be loaded above 4G by kexec-tools.
+The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
 
--v2: fix one typo that is found by Tang Chen
+  ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371128589-8953-3-git-send-email-tangchen@cn.fujitsu.com
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/microcode_intel_early.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+are available in the git repository at:
 
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index 2e9e128..54575a9 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
- 	struct boot_params *boot_params_p;
- 
- 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
--	ramdisk_image = boot_params_p->hdr.ramdisk_image;
--	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
- 	initrd_start_early = ramdisk_image;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
-@@ -753,8 +753,8 @@ load_ucode_intel_bsp(void)
- 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
- 		initrd_start_early, initrd_end_early, &uci);
- #else
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
+  git://github.com/at91linux/linux-at91.git tags/at91-soc
+
+for you to fetch changes up to 7e75545ea7fb972c3da759f92c3d0be84d1cee72:
+
+  ARM: at91: drop rm9200dk board support (2013-06-14 23:34:11 +0200)
+
+----------------------------------------------------------------
+Two non critical fixes that can go in 3.11.
+An old board removed.
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: drop rm9200dk board support
+
+Wenyou Yang (1):
+      ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED
+
+ arch/arm/configs/at91rm9200_defconfig |   1 -
+ arch/arm/mach-at91/Kconfig            |   1 +
+ arch/arm/mach-at91/Kconfig.non_dt     |   7 --
+ arch/arm/mach-at91/Makefile           |   1 -
+ arch/arm/mach-at91/board-dt-sama5.c   |   3 +-
+ arch/arm/mach-at91/board-rm9200dk.c   | 228 ----------------------------------
+ arch/arm/mach-at91/setup.c            |   2 +-
+ 7 files changed, 4 insertions(+), 239 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/board-rm9200dk.c
+
+-- 
+Nicolas Ferre
