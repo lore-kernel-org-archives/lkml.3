@@ -1,192 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab3FNIh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:37:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60250 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab3FNIhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:37:24 -0400
-Message-ID: <51BAD611.1070306@ti.com>
-Date: Fri, 14 Jun 2013 14:06:33 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751173Ab3FNImi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:42:38 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:52256 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab3FNImf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 04:42:35 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, sachin.kamat@linaro.org,
+        Miguel Aguilar <miguel.aguilar@ridgerun.com>
+Subject: =?UTF-8?q?=5BPATCH=20Resend=5D=20mfd=3A=20davinci=5Fvoicecodec=3A=20Convert=20to=20use=20devm=5F*=20APIs?=
+Date: Fri, 14 Jun 2013 13:57:56 +0530
+Message-Id: <1371198476-28373-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <myungjoo.ham@samsung.com>, <balbi@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <benoit.cousson@linaro.org>,
-        <anish198519851985@gmail.com>, <pmeerw@pmeerw.net>
-Subject: Re: [PATCH v2] extcon: Add an API to get extcon device from dt node
-References: <1370276020-17446-2-git-send-email-kishon@ti.com> <1371194146-17260-1-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1371194146-17260-1-git-send-email-cw00.choi@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+devm_* APIs are device managed and make code simpler.
 
-On Friday 14 June 2013 12:45 PM, Chanwoo Choi wrote:
-> From: Kishon Vijay Abraham I <kishon@ti.com>
->
-> Added an API of_extcon_get_extcon_dev() to be used by drivers to get
-> extcon device in the case of dt boot (this can be used instead of
-> extcon_get_extcon_dev()).
->
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> ---
-> Changes since v1:
-> - If edev->name is NULL, dev_name(dev) is used as edev->name.
-> - Change filename from of-extcon.* to of_extcon.*
-> - Fix build error when CONFIG_OF is not set
-> - Add header file(linux/err.h) to of_extcon.c
->
->   drivers/extcon/Makefile          |  2 ++
->   drivers/extcon/extcon-class.c    |  3 +-
->   drivers/extcon/of_extcon.c       | 64 ++++++++++++++++++++++++++++++++++++++++
->   include/linux/extcon/of_extcon.h | 30 +++++++++++++++++++
->   4 files changed, 98 insertions(+), 1 deletion(-)
->   create mode 100644 drivers/extcon/of_extcon.c
->   create mode 100644 include/linux/extcon/of_extcon.h
->
-> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> index 540e2c3..83468f7 100644
-> --- a/drivers/extcon/Makefile
-> +++ b/drivers/extcon/Makefile
-> @@ -2,6 +2,8 @@
->   # Makefile for external connector class (extcon) devices
->   #
->
-> +obj-$(CONFIG_OF)		+= of_extcon.o
-> +
->   obj-$(CONFIG_EXTCON)		+= extcon-class.o
->   obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
->   obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 23f11ea..08509ea 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -602,7 +602,8 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
->   	edev->dev->class = extcon_class;
->   	edev->dev->release = extcon_dev_release;
->
-> -	dev_set_name(edev->dev, edev->name ? edev->name : dev_name(dev));
-> +	edev->name = edev->name ? edev->name : dev_name(dev);
-> +	dev_set_name(edev->dev, edev->name);
->
->   	if (edev->max_supported) {
->   		char buf[10];
-> diff --git a/drivers/extcon/of_extcon.c b/drivers/extcon/of_extcon.c
-> new file mode 100644
-> index 0000000..72173ec
-> --- /dev/null
-> +++ b/drivers/extcon/of_extcon.c
-> @@ -0,0 +1,64 @@
-> +/*
-> + * OF helpers for External connector (extcon) framework
-> + *
-> + * Copyright (C) 2013 Texas Instruments, Inc.
-> + * Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * Copyright (C) 2013 Samsung Electronics
-> + * Chanwoo Choi <cw00.choi@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/extcon.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/extcon/of_extcon.h>
-> +
-> +/*
-> + * of_extcon_get_extcon_dev - Get the name of extcon device from devicetree
-> + * @dev - instance to the given device
-> + * @index - index into list of extcon_dev
-> + *
-> + * return the instance of extcon device
-> + */
-> +struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
-> +{
-> +	struct device_node *node;
-> +	struct extcon_dev *edev;
-> +	struct platform_device *extcon_parent_dev;
-> +
-> +	if (!dev->of_node) {
-> +		dev_dbg(dev, "device does not have a device node entry\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	node = of_parse_phandle(dev->of_node, "extcon", index);
-> +	if (!node) {
-> +		dev_dbg(dev, "failed to get phandle in %s node\n",
-> +			dev->of_node->full_name);
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	extcon_parent_dev = of_find_device_by_node(node);
-> +	if (!extcon_parent_dev) {
-> +		dev_dbg(dev, "unable to find device by node\n");
-> +		return ERR_PTR(-EPROBE_DEFER);
-> +	}
-> +
-> +	edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
-> +	if (!edev) {
-> +		dev_dbg(dev, "unable to get extcon device : %s\n",
-> +				dev_name(&extcon_parent_dev->dev));
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	return edev;
-> +}
-> +EXPORT_SYMBOL_GPL(of_extcon_get_extcon_dev);
-> diff --git a/include/linux/extcon/of_extcon.h b/include/linux/extcon/of_extcon.h
-> new file mode 100644
-> index 0000000..462f071
-> --- /dev/null
-> +++ b/include/linux/extcon/of_extcon.h
-> @@ -0,0 +1,30 @@
-> +/*
-> + * OF helpers for External connector (extcon) framework
-> + *
-> + * Copyright (C) 2013 Texas Instruments, Inc.
-> + * Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * Copyright (C) 2013 Samsung Electronics
-> + * Chanwoo Choi <cw00.choi@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#ifndef __LINUX_OF_EXTCON_H
-> +#define __LINUX_OF_EXTCON_H
-> +
-> +#if defined(CONFIG_OF) && defined(CONFIG_EXTCON)
-> +extern struct extcon_dev
-> +	*of_extcon_get_extcon_dev(struct device *dev, int index);
-> +#else
-> +static inline struct extcon_dev
-> +	*of_extcon_get_extcon_dev(struct device *dev, int index)
-> +{
-> +	return NULL;
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
+---
+Patch is based on mfd-next tree and compile tested.
+This driver gives following compilation error (not introduced by this patch):
+drivers/mfd/davinci_voicecodec.c:86:3: error: implicit declaration
+of function ‘io_v2p’ [-Werror=implicit-function-declaration]
+   (dma_addr_t)(io_v2p(davinci_vc->base) + DAVINCI_VC_WFIFO);
 
-Can we have some error value returned here instead of NULL?
-ERR_PTR(-ENOSYS)?
+In order to test my changes I added the following to davinci_voicecodec.h file:
++#define IO_OFFSET      0xfd000000 /* Virtual IO = 0xfec00000 */
++#define io_v2p(va)     ((va) - IO_OFFSET)
 
-Thanks
-Kishon
+I am not sure if these changes are right fix for the above error.
+---
+
+ drivers/mfd/davinci_voicecodec.c       |   48 +++++++-------------------------
+ include/linux/mfd/davinci_voicecodec.h |    2 --
+ 2 files changed, 10 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index b6e2973..fb64398 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -46,7 +46,7 @@ void davinci_vc_write(struct davinci_vc *davinci_vc,
+ static int __init davinci_vc_probe(struct platform_device *pdev)
+ {
+ 	struct davinci_vc *davinci_vc;
+-	struct resource *res, *mem;
++	struct resource *res;
+ 	struct mfd_cell *cell = NULL;
+ 	int ret;
+ 
+@@ -58,7 +58,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	davinci_vc->clk = clk_get(&pdev->dev, NULL);
++	davinci_vc->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(davinci_vc->clk)) {
+ 		dev_dbg(&pdev->dev,
+ 			    "could not get the clock for voice codec\n");
+@@ -67,35 +67,18 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	clk_enable(davinci_vc->clk);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "no mem resource\n");
+-		ret = -ENODEV;
+-		goto fail2;
+-	}
+-
+-	davinci_vc->pbase = res->start;
+-	davinci_vc->base_size = resource_size(res);
+ 
+-	mem = request_mem_region(davinci_vc->pbase, davinci_vc->base_size,
+-				 pdev->name);
+-	if (!mem) {
+-		dev_err(&pdev->dev, "VCIF region already claimed\n");
+-		ret = -EBUSY;
+-		goto fail2;
+-	}
+-
+-	davinci_vc->base = ioremap(davinci_vc->pbase, davinci_vc->base_size);
+-	if (!davinci_vc->base) {
+-		dev_err(&pdev->dev, "can't ioremap mem resource.\n");
+-		ret = -ENOMEM;
+-		goto fail3;
++	davinci_vc->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(davinci_vc->base)) {
++		ret = PTR_ERR(davinci_vc->base);
++		goto fail;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "no DMA resource\n");
+ 		ret = -ENXIO;
+-		goto fail4;
++		goto fail;
+ 	}
+ 
+ 	davinci_vc->davinci_vcif.dma_tx_channel = res->start;
+@@ -106,7 +89,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "no DMA resource\n");
+ 		ret = -ENXIO;
+-		goto fail4;
++		goto fail;
+ 	}
+ 
+ 	davinci_vc->davinci_vcif.dma_rx_channel = res->start;
+@@ -132,19 +115,13 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 			      DAVINCI_VC_CELLS, NULL, 0, NULL);
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "fail to register client devices\n");
+-		goto fail4;
++		goto fail;
+ 	}
+ 
+ 	return 0;
+ 
+-fail4:
+-	iounmap(davinci_vc->base);
+-fail3:
+-	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
+-fail2:
++fail:
+ 	clk_disable(davinci_vc->clk);
+-	clk_put(davinci_vc->clk);
+-	davinci_vc->clk = NULL;
+ 
+ 	return ret;
+ }
+@@ -155,12 +132,7 @@ static int davinci_vc_remove(struct platform_device *pdev)
+ 
+ 	mfd_remove_devices(&pdev->dev);
+ 
+-	iounmap(davinci_vc->base);
+-	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
+-
+ 	clk_disable(davinci_vc->clk);
+-	clk_put(davinci_vc->clk);
+-	davinci_vc->clk = NULL;
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/davinci_voicecodec.h b/include/linux/mfd/davinci_voicecodec.h
+index 0ab6132..94c53d4 100644
+--- a/include/linux/mfd/davinci_voicecodec.h
++++ b/include/linux/mfd/davinci_voicecodec.h
+@@ -112,8 +112,6 @@ struct davinci_vc {
+ 
+ 	/* Memory resources */
+ 	void __iomem *base;
+-	resource_size_t pbase;
+-	size_t base_size;
+ 
+ 	/* MFD cells */
+ 	struct mfd_cell cells[DAVINCI_VC_CELLS];
+-- 
+1.7.9.5
+
