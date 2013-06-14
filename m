@@ -1,175 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab3FNPps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:45:48 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49776 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3FNPpr (ORCPT
+	id S1751938Ab3FNPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:49:25 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:49458 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab3FNPtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:45:47 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 14 Jun 2013 08:45:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: nirinA raseliarison <nirina.raseliarison@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Francois Romieu <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
-        Ming Lei <ming.lei@canonical.com>, Hayes Wang <hayeswang@realtek.com>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000040
-Message-ID: <20130614154325.GA30105@roeck-us.net>
-References: <op.wyn5vzc89ey1ta@localhost>
- <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
+	Fri, 14 Jun 2013 11:49:22 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>, "mingo@elte.hu" <mingo@elte.hu>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Subject: RE: [PATCH v15 0/4] trace,x86: irq vector tracepoint support
+Thread-Topic: [PATCH v15 0/4] trace,x86: irq vector tracepoint support
+Thread-Index: AQHOY8CekDHD2kZxTEi/xfe/vZV94pk1ZXag
+Date: Fri, 14 Jun 2013 15:47:59 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B03B6CC@USINDEM103.corp.hds.com>
+References: <51B2472B.9040909@hds.com>
+In-Reply-To: <51B2472B.9040909@hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-14_05:2013-06-14,2013-06-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1306140130
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5EFnae7005931
 
-On Fri, Jun 14, 2013 at 08:30:29AM -0600, Bjorn Helgaas wrote:
-> [+cc Ming, Hayes, Francois, r8169 list]
+Any comments?
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Seiji Aguchi
+> Sent: Friday, June 07, 2013 4:49 PM
+> To: linux-kernel@vger.kernel.org; rostedt@goodmis.org; hpa@zytor.com
+> Cc: tglx@linutronix.de; mingo@elte.hu; bp@alien8.de; linux-edac@vger.kernel.org; tony.luck@intel.com; dle-
+> develop@lists.sourceforge.net; Tomoki Sekiyama
+> Subject: [PATCH v15 0/4] trace,x86: irq vector tracepoint support
 > 
-> On Fri, Jun 14, 2013 at 6:49 AM, nirinA raseliarison
-> <nirina.raseliarison@gmail.com> wrote:
-> > hello there,
-> > i have this ethernet controler:
-> >
-> >  Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast Ethernet
-> > controller (rev 05)
-> >
-> > that uses the r8169 module.
-> > it works fine, but sometimes after a reboot and issueing:
-> >
-> >  ifconfig eth0 192.168.1.1 up
-> >
-> > i got the message below. after another reboot the
-> > message disappears. i also get the same message this 3.9.5 and 3.9.4.
-> >
-> > it seems i catch my first oops and don't know what to do with it.
-> > currently running:
-> >
-> >  cat /proc/version
-> >  Linux version 3.9.6.20130614 (root@supernova) (gcc version 4.8.1 (GCC) ) #1
-> > SMP Fri Jun 14 09:14:50 EAT 2013
-> >
-> >  uname -a
-> >  Linux supernova 3.9.6.20130614 #1 SMP Fri Jun 14 09:14:50 EAT 2013 x86_64
-> > Intel(R) Celeron(R) CPU G1610 @ 2.60GHz GenuineIntel GNU/Linux
-> >
-> > thanks,
-> > -----------------8<------------------------------8<---------------------------------------
-> >
-> > [   57.877560] BUG: unable to handle kernel NULL pointer dereference at
-> > 0000000000000040
-> > [   57.877603] IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
-> > [   57.877634] PGD 21330a067 PUD 211a3a067 PMD 0
-> > [   57.877660] Oops: 0002 [#1] SMP
-> > [   57.877681] Modules linked in: fuse coretemp kvm_intel kvm evdev r8169
-> > microcode mii
-> > [   57.877735] CPU 0
-> > [   57.877746] Pid: 1950, comm: firmware Not tainted 3.9.6.20130614 #1 To be
-> > filled by O.E.M. To be filled by O.E.M./ONDA H61V Ver:4.01
-> > [   57.877790] RIP: 0010:[<ffffffff81491844>]  [<ffffffff81491844>]
-> > fw_load_abort.isra.5+0x4/0x20
-> > [   57.877824] RSP: 0018:ffff8802119a7e80  EFLAGS: 00010246
-> > [   57.877844] RAX: ffff8802158fe250 RBX: ffff880211a03b40 RCX:
-> > 0000000000000000
-> > [   57.877869] RDX: ffffffff81c742c8 RSI: ffff8802158fe250 RDI:
-> > 0000000000000000
-> > [   57.877895] RBP: ffff8802119a7e80 R08: ffff8802119a6000 R09:
-> > 00000000000005aa
-> > [   57.877920] R10: 0000000000000000 R11: 0000000000000000 R12:
-> > ffffffffffffffff
-> > [   57.877945] R13: ffff880213d34088 R14: 0000000000000003 R15:
-> > ffff88020eafc230
-> > [   57.877970] FS:  00007f3c6cb2a740(0000) GS:ffff88021f200000(0000)
-> > knlGS:0000000000000000
-> > [   57.877998] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [   57.878019] CR2: 0000000000000040 CR3: 0000000203155000 CR4:
-> > 00000000001407f0
-> > [   57.878044] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> > 0000000000000000
-> > [   57.878069] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> > 0000000000000400
-> > [   57.878094] Process firmware (pid: 1950, threadinfo ffff8802119a6000,
-> > task ffff8802158fe250)
-> > [   57.878124] Stack:
-> > [   57.878133]  ffff8802119a7eb0 ffffffff81491917 ffff880211a4d5a0
-> > 0000000000000003
-> > [   57.878168]  ffff8802119a7f50 ffffffff818765a0 ffff8802119a7ec0
-> > ffffffff81483063
-> > [   57.878203]  ffff8802119a7f08 ffffffff8119bc9e ffff880213d34098
-> > ffff880211a4d5c0
-> > [   57.878237] Call Trace:
-> > [   57.878251]  [<ffffffff81491917>] firmware_loading_store+0x77/0x150
-> > [   57.878275]  [<ffffffff81483063>] dev_attr_store+0x13/0x20
-> > [   57.878297]  [<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
-> > [   57.878320]  [<ffffffff81133e8a>] vfs_write+0x9a/0x160
-> > [   57.878340]  [<ffffffff81134164>] sys_write+0x44/0x90
-> > [   57.878360]  [<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
-> > [   57.879379] Code: 6b ff ff ff 48 89 df 31 db e8 b9 b0 c9 ff e9 79 ff ff
-> > ff 0f 1f 40 00 48 83 c4 10 5b 41 5c 41 5d 41 5e 5d c3 0f 1f 00 55 48 89 e5
-> > <f0> 80 4f 40 04 48 83 c7 18 e8 8e a9 bd ff 5d c3 66 66 66 2e 0f
-> > [   57.881753] RIP  [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
-> > [   57.882888]  RSP <ffff8802119a7e80>
-> > [   57.884019] CR2: 0000000000000040
-> > [   57.885166] ---[ end trace 6705f6d4ce6b6a12 ]---
-> >
-
-Please try the following patch.
-
-[ Bjorn, sorry I dropped you from the recipient list, but unfortunately
-Google still considers me to be a spammer and doesn't let me send any
-e-mail to you ]
-
-Guenter
-
-----------
-
->From 9feae0b1b33721573c41fbf2323db2a12c34c725 Mon Sep 17 00:00:00 2001
-From: Guenter Roeck <linux@roeck-us.net>
-Date: Fri, 14 Jun 2013 08:39:06 -0700
-Subject: [PATCH] firmware: Fix race condition in firmware_loading_store
-
-Fix:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-IP: [<ffffffff81491844>] fw_load_abort.isra.5+0x4/0x20
-...
-Call Trace:
-[<ffffffff81491917>] firmware_loading_store+0x77/0x150
-[<ffffffff81483063>] dev_attr_store+0x13/0x20
-[<ffffffff8119bc9e>] sysfs_write_file+0xce/0x140
-[<ffffffff81133e8a>] vfs_write+0x9a/0x160
-[<ffffffff81134164>] sys_write+0x44/0x90
-[<ffffffff817d70ed>] system_call_fastpath+0x1a/0x1f
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/base/firmware_class.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 4b1f926..f34b489 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -570,12 +570,13 @@ static ssize_t firmware_loading_store(struct device *dev,
- 				      const char *buf, size_t count)
- {
- 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
--	struct firmware_buf *fw_buf = fw_priv->buf;
- 	int loading = simple_strtol(buf, NULL, 10);
-+	struct firmware_buf *fw_buf;
- 	int i;
- 
- 	mutex_lock(&fw_lock);
- 
-+	fw_buf = fw_priv->buf;
- 	if (!fw_buf)
- 		goto out;
- 
--- 
-1.7.9.7
-
+> Change log
+>   v14 -> v15
+>  - Patch 2/4
+>    Introduce non-trace irq handlers with entering/exiting_irq()
+>    by separating it from previous "patch v14 3/3".
+> 
+>  - Patch 3/4 (newly created)
+>    Separate a patch renaming variables for debugging and introducing
+>    load_current_idt() from previous "patch v14 3/3".
+> 
+>  - Patch 4/4
+>    Introduce load_current_idt() to cpu_init() for i386 to handle cpu-hotplug.
+> 
+>  v13 -> v14
+>  - Rebase to 3.10-rc4
+>  - Patch 3/3
+>    - Add comments above load_current_idt() in arch/x86/include/asm/desc.h.
+>    - Introduce a logic selecting IDT that we currently should be using,
+>      based on the current state instead of current_idt_desc_ptr.
+>    - Rename some "nmi" variables to "debug".
+>    - Introduce local_irq_save/restore() in load_current_idt() to avoid races
+>      regardless of process/interrupt context.
+> 
+>  v12 -> v13
+>  - Rebase to 3.10-rc3
+>  - Patch 2/3
+>    - Separate a patch introducing entering/exiting_irq() from patch-v12 3/3.
+>  - Patch 3/3
+>    - Introduce write_trace_idt_entry() to remove "ifdef CONFIG_TRACING"
+>      from _set_gate().
+>    - Change DEFINE_IRQ_VECTOR_EVENT to save on repeat code.
+>    - Add a path of irq_vector.h to Makefile.
+>    - Introduce current_idt_descr_ptr and load_current_idt() to switch
+>      IDT in a generic way with handling Debug traps/NMI and cpu hotplug.
+> 
+>  v11 -> v12
+>  - Rebase to 3.9-rc5
+> 
+>  v10 -> v11
+>  - Rebase to 3.9-rc2
+>  - Add a modification for hyperv_callback vector. (patch 2/3)
+>  - Change a way to switch idt to check the table in use instead of saving/restoring it,
+>    because saving/restoring functions will break if we have to add another one. (patch 2/3)
+> 
+>  v9 -> v10
+>  - Add an explanation the reason why tracepoints has to place inside irq enter/exit handling. (patch 3/3)
+> 
+>  v8 -> v9
+>  - Rebase to 3.8-rc6
+>  - Add Steven's email address at the top of the message and
+>    move my signed-off-by below Steven's one because it is
+>    originally created by Steven. (patch 1/3)
+>  - Introduce a irq_vector_mutex to avoid a race at registering/unregistering
+>    time. (patch 2/3)
+>  - Use a per_cpu data to orig_idt_descr because IDT descritor is needed to each cpu
+>    and the appropriate data type is per_cpu data. It is suggested by Steven.
+>    (patch 2/3)
+> 
+>  v7 -> v8
+>  - Rebase to 3.8-rc4
+>  - Add a patch 1 introducing DEFINE_EVENT_FN() macro.
+>  - Rename original patches 1 and 2 to 2 and 3.
+>  - Change a definition of tracepoint to use DEFINE_EVENT_FN(). (patch 2)
+>  - Change alloc_intr_gate() to use do{}while(0) to avoid a warning
+>    of checkpatch.pl. (patch 2)
+>  - Move entering_irq()/exiting_irq() to arch/x86/include/asm/apic.h (patch 3)
+> 
+>  v6 -> v7
+>  - Divide into two patches to make a code review easier.
+>    Summery of each patch is as follows.
+>     - Patch 1/2
+>       - Add an irq_vector tracing infrastructure.
+>       - Create idt_table for tracing. It is refactored to avoid duplicating
+>         existing logic.
+>       - Duplicate new irq handlers inserted tracepoints.
+> 
+>     - Patch 2/2
+>       - Share a common logic among irq handlers to make them
+>         manageable and readable.
+> 
+>  v5 -> v6
+>  - Rebased to 3.7
+> 
+>  v4 -> v5
+>  - Rebased to 3.6.0
+> 
+>  - Introduce a logic switching IDT at enabling/disabling TP time
+>    so that a time penalty makes a zero when tracepoints are disabled.
+>    This IDT is created only when CONFIG_TRACEPOINTS is enabled.
+> 
+>  - Remove arch_irq_vector_entry/exit and add followings again
+>    so that we can add each tracepoint in a generic way.
+>    - error_apic_vector
+>    - thermal_apic_vector
+>    - threshold_apic_vector
+>    - spurious_apic_vector
+>    - x86_platform_ipi_vector
+> 
+>  - Drop nmi tracepoints to begin with apic interrupts and discuss a logic switching
+>    IDT first.
+> 
+>  - Move irq_vectors.h in the directory of arch/x86/include/asm/trace because
+>    I'm not sure if a logic switching IDT is sharable with other architectures.
+> 
+>  v3 -> v4
+>  - Add a latency measurement of each tracepoint
+>  - Rebased to 3.6-rc6
+> 
+>  v2 -> v3
+>  - Remove an invalidate_tlb_vector event because it was replaced by a call function vector
+>    in a following commit.
+>    http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=52aec3308db85f4e9f5c8b9f5dc4fbd0138c6fa4
+> 
+>  v1 -> v2
+>  - Modify variable name from irq to vector.
+>  - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
+>    - error_apic_vector
+>    - thermal_apic_vector
+>    - threshold_apic_vector
+>    - spurious_apic_vector
+>    - x86_platform_ipi_vector
+> 
+> [Purpose of this patch]
+> 
+> As Vaibhav explained in the thread below, tracepoints for irq vectors are useful.
+> 
+> http://www.spinics.net/lists/mm-commits/msg85707.html
+> 
+> <snip>
+> The current interrupt traces from irq_handler_entry and irq_handler_exit provide
+> when an interrupt is handled.
+> They provide good data about when the system has switched to kernel space and
+> how it affects the currently running processes.
+> 
+> There are some IRQ vectors which trigger the system into kernel space, which are
+> not handled in generic IRQ handlers.
+> Tracing such events gives us the information about IRQ interaction with other
+> system events.
+> 
+> The trace also tells where the system is spending its time.  We want to know which
+> cores are handling interrupts and
+> how they are affecting other processes in the system.  Also, the trace provides
+> information about when the cores are
+> idle and which interrupts are changing that state.
+> <snip>
+> 
+> On the other hand, my usecase is tracing just local timer event and getting
+>  a value of instruction pointer.
+> 
+> I suggested to add an argument local timer event to get instruction pointer before.
+> But there is another way to get it with external module like systemtap.
+> So, I don't need to add any argument to irq vector tracepoints now.
+> 
+> [Patch Description]
+> 
+> Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
+> But there is an above use case to trace specific irq_vector rather than tracing all events.
+> In this case, we are concerned about overhead due to unwanted events.
+> 
+> This patch adds following tracepoints instead of introducing irq_vector_entry/exit.
+> so that we can enable them independently.
+>    - local_timer_vector
+>    - reschedule_vector
+>    - call_function_vector
+>    - call_function_single_vector
+>    - irq_work_entry_vector
+>    - error_apic_vector
+>    - thermal_apic_vector
+>    - threshold_apic_vector
+>    - spurious_apic_vector
+>    - x86_platform_ipi_vector
+> 
+> Seiji Aguchi (3):
+>   trace,x86: Introduce entering/exiting_irq()
+>   x86: Rename variables for debugging
+>   trace,x86: Add irq vector tracepoints
+> 
+> Steven Rostedt (1):
+>   tracing: Add DEFINE_EVENT_FN() macro
+> 
+>  arch/x86/include/asm/apic.h              |   27 +++++++
+>  arch/x86/include/asm/desc.h              |  119 ++++++++++++++++++++++++++++-
+>  arch/x86/include/asm/entry_arch.h        |    8 +-
+>  arch/x86/include/asm/hw_irq.h            |   17 ++++
+>  arch/x86/include/asm/mshyperv.h          |    1 +
+>  arch/x86/include/asm/trace/irq_vectors.h |  104 ++++++++++++++++++++++++++
+>  arch/x86/kernel/Makefile                 |    1 +
+>  arch/x86/kernel/apic/Makefile            |    1 +
+>  arch/x86/kernel/apic/apic.c              |   71 +++++++++++++++---
+>  arch/x86/kernel/cpu/common.c             |   20 +++---
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |   24 +++++--
+>  arch/x86/kernel/cpu/mcheck/threshold.c   |   24 +++++--
+>  arch/x86/kernel/entry_32.S               |   12 +++-
+>  arch/x86/kernel/entry_64.S               |   31 ++++++--
+>  arch/x86/kernel/head_64.S                |    8 ++-
+>  arch/x86/kernel/irq.c                    |   31 +++++---
+>  arch/x86/kernel/irq_work.c               |   24 ++++++-
+>  arch/x86/kernel/smp.c                    |   65 ++++++++++++++--
+>  arch/x86/kernel/tracepoint.c             |   57 ++++++++++++++
+>  arch/x86/kernel/traps.c                  |    2 +-
+>  include/linux/tracepoint.h               |    2 +
+>  include/trace/define_trace.h             |    5 +
+>  include/trace/ftrace.h                   |    4 +
+>  include/xen/events.h                     |    3 +
+>  24 files changed, 589 insertions(+), 72 deletions(-)
+>  create mode 100644 arch/x86/include/asm/trace/irq_vectors.h
+>  create mode 100644 arch/x86/kernel/tracepoint.c
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
