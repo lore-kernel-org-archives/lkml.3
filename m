@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab3FNQOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:14:48 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34233 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751964Ab3FNQOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:14:46 -0400
-Message-ID: <1371226483.2726.19.camel@dabdike>
-Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Date: Fri, 14 Jun 2013 09:14:43 -0700
-In-Reply-To: <201306141636.29390.arnd@arndb.de>
-References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
-	 <201306121706.39368.arnd@arndb.de> <1371157181.2261.8.camel@dabdike>
-	 <201306141636.29390.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
+	id S1752673Ab3FNQQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:16:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49858 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab3FNQQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:16:35 -0400
+Message-ID: <51BB41CC.9080403@ti.com>
+Date: Fri, 14 Jun 2013 19:16:12 +0300
+From: Illia Smyrnov <x0194613@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Illia Smyrnov <illia.smyrnov@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Daniel Mack <zonque@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] spi: omap2-mcspi: Add FIFO buffer support
+References: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com> <1370970556-11713-3-git-send-email-illia.smyrnov@ti.com> <20130612154755.GJ1403@sirena.org.uk>
+In-Reply-To: <20130612154755.GJ1403@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.193]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 16:36 +0200, Arnd Bergmann wrote:
-> On Thursday 13 June 2013, James Bottomley wrote:
-> > On Wed, 2013-06-12 at 17:06 +0200, Arnd Bergmann wrote:
-> > > On Tuesday 11 June 2013, James Bottomley wrote:
-> > > > Really, no, it's not a good idea at all.  It invites tons of patches
-> > > > littering the code with BUG_ONs where we might possibly get a NULL
-> > > > dereference.  All it does is add extra instructions to a code path for
-> > > > no actual benefit.
-> > > > 
-> > > > If you can answer the question: what more information does the BUG_ON
-> > > > give you than the NULL deref Oops would not? then it might be
-> > > > reasonable.
-> > > 
-> > > The question is if a user can trigger the NULL dereference intentionally,
-> > > in which case they might get the kernel to jump into a  user-provided
-> > > buffer.
-> > 
-> > Can you elaborate on how they could do this?  If you're thinking they
-> > could alter the pointer and trigger the jump, then yes, but a BUG_ON
-> > won't prevent that because the altered pointer won't be NULL.
-> 
-> The attack that has been demonstrated a couple of times uses an anomymous
-> mmap to virtual address 0. You fill that page with pointers to a
-> function in your program. If there is a NULL pointer to some operations
-> structure and kernel code calls an operation without checking the
-> ops pointer first, it gets read from the NULL page and the kernel
-> jumps into user space.
-
-This is the MMAP_PAGE_ZERO exploit.  The original exploit relied on a
-leaky personality capability clearing mask and was fixed in 2.6.31 by
-
-commit f9fabcb58a6d26d6efde842d1703ac7cfa9427b6
-Author: Julien Tinnes <jt@cr0.org>
-Date:   Fri Jun 26 20:27:40 2009 +0200
-
-    personality: fix PER_CLEAR_ON_SETID
-
-So it's not really relevant to 3.x kernels, is it?
-
-James
 
 
+On 06/12/2013 06:47 PM, Mark Brown wrote:
+> On Tue, Jun 11, 2013 at 08:09:15PM +0300, Illia Smyrnov wrote:
+>> The MCSPI controller has a built-in FIFO buffer to unload the DMA or interrupt
+>> handler and improve data throughput. This patch adds FIFO buffer support for SPI
+>> transfers in DMA mode.
+>
+>> The FIFO could be enabled for SPI module by setting up the "ti,spi-fifo-enabled"
+>> configuration parameter in DT.
+>> If FIFO enabled, the largest possible FIFO buffer size will be calculated and
+>> setup for each SPI transfer. Even if the FIFO is enabled in DT, it won't be used
+>> for the SPI transfers when: calculated FIFO buffer size is less then 2 bytes or
+>> the FIFO buffer size isn't multiple of the SPI word length.
+>
+> Why is the default to disable the FIFO?
+>
+
+I have changed this and sent v3 patches of the MCSPI FIFO support 
+implementation. In this version driver set up the FIFO (if possible) for 
+all the SPI transfers in DMA mode.
