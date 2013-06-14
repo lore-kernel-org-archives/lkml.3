@@ -1,358 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab3FNQVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:21:51 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48310 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab3FNQVt (ORCPT
+	id S1753127Ab3FNQV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:21:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab3FNQVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:21:49 -0400
-Date: Fri, 14 Jun 2013 09:21:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	Fri, 14 Jun 2013 12:21:54 -0400
+Date: Fri, 14 Jun 2013 09:22:31 -0700
+From: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Fernando Soto <fsoto@bluecatnetworks.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base
- multibuffer
-Message-ID: <20130614162112.GO5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <51BA7578.4080108@huawei.com>
- <51BB18EB.9080307@hitachi.com>
- <1371223918.9844.324.camel@gandalf.local.home>
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] Drivers: hv: vmbus: incorrect device name is printed
+ when child device is unregistered
+Message-ID: <20130614162231.GA14829@kroah.com>
+References: <88E08D85EE353144A618C55479FE1117411FD9A9@TORMBXW01.bluecatnetworks.corp>
+ <21ce39ca10234c2fae6f98b029d86b5c@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1371223918.9844.324.camel@gandalf.local.home>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <21ce39ca10234c2fae6f98b029d86b5c@SN2PR03MB061.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061416-3620-0000-0000-0000031E14A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 11:31:58AM -0400, Steven Rostedt wrote:
-> On Fri, 2013-06-14 at 22:21 +0900, Masami Hiramatsu wrote:
-> > (2013/06/14 10:44), zhangwei(Jovi) wrote:
-> > > Support multi-buffer on uprobe-based dynamic events by
-> > > using ftrace_event_file.
-> > > 
-> > > The code change is based on kprobe-based dynamic events
-> > > multibuffer support work commited by Masami(commit 41a7dd420c)
-> > 
-> > I'm not so sure that rcu_dereference_raw() can ensure the safety
-> > of accessing pointer in uprobe handler. ( since kprobes disables
-> > irq and preempt, it could use rcu.)
+On Fri, Jun 14, 2013 at 02:13:44AM +0000, KY Srinivasan wrote:
 > 
-> Correct.
 > 
+> > -----Original Message-----
+> > From: Fernando Soto [mailto:fsoto@bluecatnetworks.com]
+> > Sent: Thursday, June 13, 2013 8:11 PM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: KY Srinivasan; Haiyang Zhang
+> > Subject: [PATCH] Drivers: hv: vmbus: incorrect device name is printed when child
+> > device is unregistered
 > > 
-> > Srikar, Oleg, could you check that?
+> > From: Fernando Soto <fsoto@bluecatnetworks.com>
+> > Please CC me, I am not subscribed to the list.
 > > 
-> > Thank you,
+> > Whenever a device is unregistered in vmbus_device_unregister
+> > (drivers/hv/vmbus_drv.c), the device name in the log message may contain
+> > garbage as the memory has already been freed by the time pr_info is called. Log
+> > example:
+> >  [ 3149.170475] hv_vmbus: child device ахsии0_5 unregistered
 > > 
-> > > 
-> > > Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> > > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Oleg Nesterov <oleg@redhat.com>
-> > > Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > > ---
-> > >  kernel/trace/trace_uprobe.c |  183 +++++++++++++++++++++++++++++++++++++------
-> > >  1 file changed, 161 insertions(+), 22 deletions(-)
-> > > 
-> > > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> > > index d5d0cd3..31f08d6 100644
-> > > --- a/kernel/trace/trace_uprobe.c
-> > > +++ b/kernel/trace/trace_uprobe.c
-> > > @@ -53,6 +53,7 @@ struct trace_uprobe {
-> > >  	struct list_head		list;
-> > >  	struct ftrace_event_class	class;
-> > >  	struct ftrace_event_call	call;
-> > > +	struct ftrace_event_file * __rcu *files;
-> > >  	struct trace_uprobe_filter	filter;
-> > >  	struct uprobe_consumer		consumer;
-> > >  	struct inode			*inode;
-> > > @@ -513,7 +514,8 @@ static const struct file_operations uprobe_profile_ops = {
-> > >  };
-> > > 
-> > >  static void uprobe_trace_print(struct trace_uprobe *tu,
-> > > -				unsigned long func, struct pt_regs *regs)
-> > > +				unsigned long func, struct pt_regs *regs,
-> > > +				struct ftrace_event_file *ftrace_file)
-> > >  {
-> > >  	struct uprobe_trace_entry_head *entry;
-> > >  	struct ring_buffer_event *event;
-> > > @@ -522,9 +524,15 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
-> > >  	int size, i;
-> > >  	struct ftrace_event_call *call = &tu->call;
-> > > 
-> > > +	WARN_ON(call != ftrace_file->event_call);
-> > > +
-> > > +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> > > +		return;
-> > > +
-> > >  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> > > -	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> > > -						  size + tu->size, 0, 0);
-> > > +	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-> > > +						call->event.type,
-> > > +						size + tu->size, 0, 0);
-> > >  	if (!event)
-> > >  		return;
-> > > 
-> > > @@ -548,15 +556,35 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
-> > >  /* uprobe handler */
-> > >  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
-> > >  {
-> > > -	if (!is_ret_probe(tu))
-> > > -		uprobe_trace_print(tu, 0, regs);
-> > > +	struct ftrace_event_file **file;
-> > > +
-> > > +	if (is_ret_probe(tu))
-> > > +		return 0;
-> > > +
-> > > +	file = rcu_dereference_raw(tu->files);
+> > By logging the message just before calling device_unregister, the correct device
+> > name is printed:
+> > [ 3145.034652] hv_vmbus: child device vmbus_0_5 unregistered
+> > 
+> > Signed-off-by: Fernando M Soto <fsoto@bluecatnetworks.com>
+> Acked-by: K. Y. Srinivasan <kys@microsoft.com>
 > 
-> Why are you using rcu_dereference_raw() and not rcu_dereference(). The
-> _raw() is a bit special, and unless you know what you are doing with RCU
-> here, don't use it.
-> 
-> As I see you using rcu_dereference_raw() all over this patch, along with
-> mutexes, I believe that you are not using RCU correctly here.
+> > --- linux-3.10-rc5/drivers/hv/vmbus_drv.c.orig	2013-06-13 19:20:55.359511352 -
+> > 0400
+> > +++ linux-3.10-rc5/drivers/hv/vmbus_drv.c	2013-06-13 19:21:39.299511695 -
+> > 0400
+> > @@ -698,14 +698,14 @@ int vmbus_device_register(struct hv_devi
+> >   */
+> >  void vmbus_device_unregister(struct hv_device *device_obj)
+> >  {
+> > +	pr_info("child device %s unregistered\n",
+> > +		dev_name(&device_obj->device));
+> > +
+> >  	/*
+> >  	 * Kick off the process of unregistering the device.
+> >  	 * This will call vmbus_remove() and eventually vmbus_device_release()
+> >  	 */
+> >  	device_unregister(&device_obj->device);
+> > -
+> > -	pr_info("child device %s unregistered\n",
+> > -		dev_name(&device_obj->device));
 
-If irqs and preempt are disabled, I suggest using rcu_dereference_sched().
-That is what it is there for.  ;-)
+No, please just remove these entirely, or make them pr_debug(), you
+shouldn't clutter up the kernel log for stuff like this.
 
-							Thanx, Paul
+thanks,
 
-> -- Steve
-> 
-> > > +	if (unlikely(!file))
-> > > +		return 0;
-> > > +
-> > > +	while (*file) {
-> > > +		uprobe_trace_print(tu, 0, regs, *file);
-> > > +		file++;
-> > > +	}
-> > > +
-> > >  	return 0;
-> > >  }
-> > > 
-> > >  static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
-> > >  				struct pt_regs *regs)
-> > >  {
-> > > -	uprobe_trace_print(tu, func, regs);
-> > > +	struct ftrace_event_file **file = rcu_dereference_raw(tu->files);
-> > > +
-> > > +	if (unlikely(!file))
-> > > +		return;
-> > > +
-> > > +	while (*file) {
-> > > +		uprobe_trace_print(tu, func, regs, *file);
-> > > +		file++;
-> > > +	}
-> > >  }
-> > > 
-> > >  /* Event entry printers */
-> > > @@ -597,6 +625,26 @@ partial:
-> > >  	return TRACE_TYPE_PARTIAL_LINE;
-> > >  }
-> > > 
-> > > +
-> > > +static int trace_uprobe_nr_files(struct trace_uprobe *tu)
-> > > +{
-> > > +	struct ftrace_event_file **file;
-> > > +	int ret = 0;
-> > > +
-> > > +	/*
-> > > +	 * Since all tu->files updater is protected by uprobe_enable_lock,
-> > > +	 * we don't need to lock an rcu_read_lock.
-> > > +	 */
-> > > +	file = rcu_dereference_raw(tu->files);
-> > > +	if (file)
-> > > +		while (*(file++))
-> > > +			ret++;
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +
-> > > +static DEFINE_MUTEX(uprobe_enable_lock);
-> > > +
-> > >  static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
-> > >  {
-> > >  	return tu->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE);
-> > > @@ -607,33 +655,123 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
-> > >  				struct mm_struct *mm);
-> > > 
-> > >  static int
-> > > -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-> > > +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-> > > +		   filter_func_t filter)
-> > >  {
-> > > +	int enabled = 0;
-> > >  	int ret = 0;
-> > > 
-> > > +	mutex_lock(&uprobe_enable_lock);
-> > > +
-> > >  	if (is_trace_uprobe_enabled(tu))
-> > > -		return -EINTR;
-> > > +		enabled = 1;
-> > > +
-> > > +	if (file) {
-> > > +		struct ftrace_event_file **new, **old;
-> > > +		int n = trace_uprobe_nr_files(tu);
-> > > +
-> > > +		old = rcu_dereference_raw(tu->files);
-> > > +		/* 1 is for new one and 1 is for stopper */
-> > > +		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
-> > > +			      GFP_KERNEL);
-> > > +		if (!new) {
-> > > +			ret = -ENOMEM;
-> > > +			goto out_unlock;
-> > > +		}
-> > > +		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
-> > > +		new[n] = file;
-> > > +		/* The last one keeps a NULL */
-> > > +
-> > > +		rcu_assign_pointer(tu->files, new);
-> > > +		tu->flags |= TP_FLAG_TRACE;
-> > > +
-> > > +		if (old) {
-> > > +			/* Make sure the probe is done with old files */
-> > > +			synchronize_sched();
-> > > +			kfree(old);
-> > > +		}
-> > > +	} else
-> > > +		tu->flags |= TP_FLAG_PROFILE;
-> > > 
-> > >  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-> > > 
-> > > -	tu->flags |= flag;
-> > > -	tu->consumer.filter = filter;
-> > > -	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> > > -	if (ret)
-> > > -		tu->flags &= ~flag;
-> > > +	if (!enabled) {
-> > > +		tu->consumer.filter = filter;
-> > > +		ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> > > +		if (ret)
-> > > +			tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
-> > > +	}
-> > > 
-> > > + out_unlock:
-> > > +	mutex_unlock(&uprobe_enable_lock);
-> > >  	return ret;
-> > >  }
-> > > 
-> > > -static void probe_event_disable(struct trace_uprobe *tu, int flag)
-> > > +static int
-> > > +trace_uprobe_file_index(struct trace_uprobe *tu, struct ftrace_event_file *file)
-> > >  {
-> > > -	if (!is_trace_uprobe_enabled(tu))
-> > > -		return;
-> > > +	struct ftrace_event_file **files;
-> > > +	int i;
-> > > +
-> > > +	/*
-> > > +	 * Since all tu->files updater is protected by uprobe_enable_lock,
-> > > +	 * we don't need to lock an rcu_read_lock.
-> > > +	 */
-> > > +	files = rcu_dereference_raw(tu->files);
-> > > +	if (files) {
-> > > +		for (i = 0; files[i]; i++)
-> > > +			if (files[i] == file)
-> > > +				return i;
-> > > +	}
-> > > +
-> > > +	return -1;
-> > > +}
-> > > +
-> > > +static void
-> > > +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
-> > > +{
-> > > +	mutex_lock(&uprobe_enable_lock);
-> > > +
-> > > +	if (file) {
-> > > +		struct ftrace_event_file **new, **old;
-> > > +		int n = trace_uprobe_nr_files(tu);
-> > > +		int i, j;
-> > > +
-> > > +		old = rcu_dereference_raw(tu->files);
-> > > +		if (n == 0 || trace_uprobe_file_index(tu, file) < 0)
-> > > +			goto out_unlock;
-> > > +
-> > > +		if (n == 1) {	/* Remove the last file */
-> > > +			tu->flags &= ~TP_FLAG_TRACE;
-> > > +			new = NULL;
-> > > +		} else {
-> > > +			new = kzalloc(n * sizeof(struct ftrace_event_file *),
-> > > +				      GFP_KERNEL);
-> > > +			if (!new)
-> > > +				goto out_unlock;
-> > > +
-> > > +			/* This copy & check loop copies the NULL stopper too */
-> > > +			for (i = 0, j = 0; j < n && i < n + 1; i++)
-> > > +				if (old[i] != file)
-> > > +					new[j++] = old[i];
-> > > +		}
-> > > +
-> > > +		rcu_assign_pointer(tu->files, new);
-> > > +
-> > > +		/* Make sure the probe is done with old files */
-> > > +		synchronize_sched();
-> > > +		kfree(old);
-> > > +	} else
-> > > +		tu->flags &= ~TP_FLAG_PROFILE;
-> > > +
-> > > 
-> > >  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-> > > 
-> > > -	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> > > -	tu->flags &= ~flag;
-> > > +	if (!is_trace_uprobe_enabled(tu))
-> > > +		uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> > > +
-> > > + out_unlock:
-> > > +	mutex_unlock(&uprobe_enable_lock);
-> > >  }
-> > > 
-> > >  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-> > > @@ -869,21 +1007,22 @@ static
-> > >  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
-> > >  {
-> > >  	struct trace_uprobe *tu = event->data;
-> > > +	struct ftrace_event_file *file = data;
-> > > 
-> > >  	switch (type) {
-> > >  	case TRACE_REG_REGISTER:
-> > > -		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
-> > > +		return probe_event_enable(tu, file, NULL);
-> > > 
-> > >  	case TRACE_REG_UNREGISTER:
-> > > -		probe_event_disable(tu, TP_FLAG_TRACE);
-> > > +		probe_event_disable(tu, file);
-> > >  		return 0;
-> > > 
-> > >  #ifdef CONFIG_PERF_EVENTS
-> > >  	case TRACE_REG_PERF_REGISTER:
-> > > -		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
-> > > +		return probe_event_enable(tu, NULL, uprobe_perf_filter);
-> > > 
-> > >  	case TRACE_REG_PERF_UNREGISTER:
-> > > -		probe_event_disable(tu, TP_FLAG_PROFILE);
-> > > +		probe_event_disable(tu, NULL);
-> > >  		return 0;
-> > > 
-> > >  	case TRACE_REG_PERF_OPEN:
-> > > 
-> > 
-> > 
-> 
-> 
-
+greg k-h
