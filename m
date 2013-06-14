@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3FNMYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:24:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37235 "EHLO hydra.sisk.pl"
+	id S1752597Ab3FNMYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:24:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37233 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab3FNMYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:24:16 -0400
+	id S1752471Ab3FNMYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 08:24:15 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
         Aaron Lu <aaron.lu@intel.com>, Lan Tianyu <tianyu.lan@intel.com>
-Subject: [PATCH 3/4] ACPI / PM: Rework and clean up acpi_dev_pm_get_state()
-Date: Fri, 14 Jun 2013 14:32:30 +0200
-Message-ID: <1756031.gcnLRAM3xz@vostro.rjw.lan>
+Subject: [PATCH 4/4] ACPI / PM: Drop two functions that are not used any more
+Date: Fri, 14 Jun 2013 14:33:24 +0200
+Message-ID: <2934743.cl2LaccKZx@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <6895318.cKDBc4OdI0@vostro.rjw.lan>
 References: <6895318.cKDBc4OdI0@vostro.rjw.lan>
@@ -26,266 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The acpi_dev_pm_get_state() function defined in device_pm.c is quite
-convoluted, which isn't really necessary, and it doesn't validate the
-values returned by the ACPI methods executed by it appropriately.
+Two functions defined in device_pm.c, acpi_dev_pm_add_dependent()
+and acpi_dev_pm_remove_dependent(), have no callers and may be
+dropped, so drop them.
 
-To address these shortcomings modify it in the following way.
-
- (1) Make its return value only mean whether or not it succeeded and
-     pass the device power states determined by it through pointers.
-
- (2) Drop the d_max_in argument, used by only one of its callers,
-     from it, and move the code related to d_max_in into that caller,
-     acpi_pm_device_sleep_state().
-
- (3) Make it always check the return value of acpi_evaluate_integer()
-     and handle failures as appropriate.  Moreover, make it check if
-     the values returned by the executed ACPI methods are not out of
-     range.
-
- (4) Make it check if the values returned by the executed ACPI
-     methods represent valid power states of the given device and
-     handle situations in which that's not the case gracefully.
-
-Also update the kerneldoc comments of acpi_dev_pm_get_state() and
-acpi_pm_device_sleep_state() to reflect the code changes.
+Moreover, they are the only functions adding entries to and removing
+entries from the power_dependent list in struct acpi_device, so drop
+that list and the loop walking it in acpi_power_resume_dependent()
+too.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/device_pm.c |  158 +++++++++++++++++++++++++++--------------------
- 1 file changed, 92 insertions(+), 66 deletions(-)
+ drivers/acpi/device_pm.c |   56 -----------------------------------------------
+ drivers/acpi/power.c     |    3 --
+ drivers/acpi/scan.c      |    1 
+ include/acpi/acpi_bus.h  |    7 -----
+ 4 files changed, 67 deletions(-)
 
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -308,7 +308,6 @@ struct acpi_device {
+ 	struct list_head physical_node_list;
+ 	struct mutex physical_node_lock;
+ 	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
+-	struct list_head power_dependent;
+ 	void (*remove)(struct acpi_device *);
+ };
+ 
+@@ -461,8 +460,6 @@ acpi_status acpi_add_pm_notifier(struct
+ acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
+ 				    acpi_notify_handler handler);
+ int acpi_pm_device_sleep_state(struct device *, int *, int);
+-void acpi_dev_pm_add_dependent(acpi_handle handle, struct device *depdev);
+-void acpi_dev_pm_remove_dependent(acpi_handle handle, struct device *depdev);
+ #else
+ static inline acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
+ 					       acpi_notify_handler handler,
+@@ -482,10 +479,6 @@ static inline int acpi_pm_device_sleep_s
+ 
+ 	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+ }
+-static inline void acpi_dev_pm_add_dependent(acpi_handle handle,
+-					     struct device *depdev) {}
+-static inline void acpi_dev_pm_remove_dependent(acpi_handle handle,
+-						struct device *depdev) {}
+ #endif
+ 
+ #ifdef CONFIG_PM_RUNTIME
 Index: linux-pm/drivers/acpi/device_pm.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/device_pm.c
 +++ linux-pm/drivers/acpi/device_pm.c
-@@ -403,44 +403,37 @@ EXPORT_SYMBOL(acpi_bus_can_wakeup);
-  * @dev: Device whose preferred target power state to return.
-  * @adev: ACPI device node corresponding to @dev.
-  * @target_state: System state to match the resultant device state.
-- * @d_max_in: Deepest low-power state to take into consideration.
-- * @d_min_p: Location to store the upper limit of the allowed states range.
-- * Return value: Preferred power state of the device on success, -ENODEV
-- * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-+ * @d_min_p: Location to store the highest power state available to the device.
-+ * @d_max_p: Location to store the lowest power state available to the device.
-  *
-- * Find the lowest power (highest number) ACPI device power state that the
-- * device can be in while the system is in the state represented by
-- * @target_state.  If @d_min_p is set, the highest power (lowest number) device
-- * power state that @dev can be in for the given system sleep state is stored
-- * at the location pointed to by it.
-+ * Find the lowest power (highest number) and highest power (lowest number) ACPI
-+ * device power states that the device can be in while the system is in the
-+ * state represented by @target_state.  Store the integer numbers representing
-+ * those stats in the memory locations pointed to by @d_max_p and @d_min_p,
-+ * respectively.
-  *
-  * Callers must ensure that @dev and @adev are valid pointers and that @adev
-  * actually corresponds to @dev before using this function.
-+ *
-+ * Returns 0 on success or -ENODATA when one of the ACPI methods fails or
-+ * returns a value that doesn't make sense.  The memory locations pointed to by
-+ * @d_max_p and @d_min_p are only modified on success.
-  */
- static int acpi_dev_pm_get_state(struct device *dev, struct acpi_device *adev,
--				 u32 target_state, int d_max_in, int *d_min_p)
-+				 u32 target_state, int *d_min_p, int *d_max_p)
- {
--	char acpi_method[] = "_SxD";
--	unsigned long long d_min, d_max;
-+	char method[] = { '_', 'S', '0' + target_state, 'D', '\0' };
-+	acpi_handle handle = adev->handle;
-+	unsigned long long ret;
-+	int d_min, d_max;
- 	bool wakeup = false;
-+	acpi_status status;
- 
--	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
--		return -EINVAL;
+@@ -994,60 +994,4 @@ void acpi_dev_pm_detach(struct device *d
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(acpi_dev_pm_detach);
 -
--	if (d_max_in > ACPI_STATE_D3_HOT) {
--		enum pm_qos_flags_status stat;
+-/**
+- * acpi_dev_pm_add_dependent - Add physical device depending for PM.
+- * @handle: Handle of ACPI device node.
+- * @depdev: Device depending on that node for PM.
+- */
+-void acpi_dev_pm_add_dependent(acpi_handle handle, struct device *depdev)
+-{
+-	struct acpi_device_physical_node *dep;
+-	struct acpi_device *adev;
 -
--		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
--		if (stat == PM_QOS_FLAGS_ALL)
--			d_max_in = ACPI_STATE_D3_HOT;
+-	if (!depdev || acpi_bus_get_device(handle, &adev))
+-		return;
+-
+-	mutex_lock(&adev->physical_node_lock);
+-
+-	list_for_each_entry(dep, &adev->power_dependent, node)
+-		if (dep->dev == depdev)
+-			goto out;
+-
+-	dep = kzalloc(sizeof(*dep), GFP_KERNEL);
+-	if (dep) {
+-		dep->dev = depdev;
+-		list_add_tail(&dep->node, &adev->power_dependent);
 -	}
 -
--	acpi_method[2] = '0' + target_state;
- 	/*
--	 * If the sleep state is S0, the lowest limit from ACPI is D3,
--	 * but if the device has _S0W, we will use the value from _S0W
--	 * as the lowest limit from ACPI.  Finally, we will constrain
--	 * the lowest limit with the specified one.
-+	 * If the system state is S0, the lowest power state the device can be
-+	 * in is D3cold, unless the device has _S0W and is supposed to signal
-+	 * wakeup, in which case the return value of _S0W has to be used as the
-+	 * lowest power state available to the device.
- 	 */
- 	d_min = ACPI_STATE_D0;
- 	d_max = ACPI_STATE_D3_COLD;
-@@ -449,12 +442,30 @@ static int acpi_dev_pm_get_state(struct
- 	 * If present, _SxD methods return the minimum D-state (highest power
- 	 * state) we can use for the corresponding S-states.  Otherwise, the
- 	 * minimum D-state is D0 (ACPI 3.x).
--	 *
--	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
--	 * provided -- that's our fault recovery, we ignore retval.
- 	 */
- 	if (target_state > ACPI_STATE_S0) {
--		acpi_evaluate_integer(adev->handle, acpi_method, NULL, &d_min);
-+		/*
-+		 * We rely on acpi_evaluate_integer() not clobbering the integer
-+		 * provided if AE_NOT_FOUND is returned.
-+		 */
-+		ret = d_min;
-+		status = acpi_evaluate_integer(handle, method, NULL, &ret);
-+		if ((ACPI_FAILURE(status) && status != AE_NOT_FOUND)
-+		    || ret > ACPI_STATE_D3_COLD)
-+			return -ENODATA;
-+
-+		/*
-+		 * We need to handle legacy systems where D3hot and D3cold are
-+		 * the same and 3 is returned in both cases, so fall back to
-+		 * D3cold if D3hot is not a valid state.
-+		 */
-+		if (!adev->power.states[ret].flags.valid) {
-+			if (ret == ACPI_STATE_D3_HOT)
-+				ret = ACPI_STATE_D3_COLD;
-+			else
-+				return -ENODATA;
-+		}
-+		d_min = ret;
- 		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
- 			&& adev->wakeup.sleep_state >= target_state;
- 	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
-@@ -470,36 +481,29 @@ static int acpi_dev_pm_get_state(struct
- 	 * can wake the system.  _S0W may be valid, too.
- 	 */
- 	if (wakeup) {
--		acpi_status status;
+- out:
+-	mutex_unlock(&adev->physical_node_lock);
+-}
+-EXPORT_SYMBOL_GPL(acpi_dev_pm_add_dependent);
 -
--		acpi_method[3] = 'W';
--		status = acpi_evaluate_integer(adev->handle, acpi_method, NULL,
--						&d_max);
--		if (ACPI_FAILURE(status)) {
--			if (target_state != ACPI_STATE_S0 ||
--			    status != AE_NOT_FOUND)
-+		method[3] = 'W';
-+		status = acpi_evaluate_integer(handle, method, NULL, &ret);
-+		if (status == AE_NOT_FOUND) {
-+			if (target_state > ACPI_STATE_S0)
- 				d_max = d_min;
--		} else if (d_max < d_min) {
--			/* Warn the user of the broken DSDT */
--			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
--				acpi_method);
--			/* Sanitize it */
--			d_min = d_max;
-+		} else if (ACPI_SUCCESS(status) && ret <= ACPI_STATE_D3_COLD) {
-+			/* Fall back to D3cold if ret is not a valid state. */
-+			if (!adev->power.states[ret].flags.valid)
-+				ret = ACPI_STATE_D3_COLD;
-+
-+			d_max = ret > d_min ? ret : d_min;
-+		} else {
-+			return -ENODATA;
- 		}
- 	}
- 
--	if (d_max_in < d_min)
--		return -EINVAL;
- 	if (d_min_p)
- 		*d_min_p = d_min;
--	/* constrain d_max with specified lowest limit (max number) */
--	if (d_max > d_max_in) {
--		for (d_max = d_max_in; d_max > d_min; d_max--) {
--			if (adev->power.states[d_max].flags.valid)
--				break;
+-/**
+- * acpi_dev_pm_remove_dependent - Remove physical device depending for PM.
+- * @handle: Handle of ACPI device node.
+- * @depdev: Device depending on that node for PM.
+- */
+-void acpi_dev_pm_remove_dependent(acpi_handle handle, struct device *depdev)
+-{
+-	struct acpi_device_physical_node *dep;
+-	struct acpi_device *adev;
+-
+-	if (!depdev || acpi_bus_get_device(handle, &adev))
+-		return;
+-
+-	mutex_lock(&adev->physical_node_lock);
+-
+-	list_for_each_entry(dep, &adev->power_dependent, node)
+-		if (dep->dev == depdev) {
+-			list_del(&dep->node);
+-			kfree(dep);
+-			break;
 -		}
--	}
--	return d_max;
-+
-+	if (d_max_p)
-+		*d_max_p = d_max;
-+
-+	return 0;
- }
- 
- /**
-@@ -508,7 +512,8 @@ static int acpi_dev_pm_get_state(struct
-  * @d_min_p: Location to store the upper limit of the allowed states range.
-  * @d_max_in: Deepest low-power state to take into consideration.
-  * Return value: Preferred power state of the device on success, -ENODEV
-- * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-+ * if there's no 'struct acpi_device' for @dev, -EINVAL if @d_max_in is
-+ * incorrect, or -ENODATA on ACPI method failure.
-  *
-  * The caller must ensure that @dev is valid before using this function.
-  */
-@@ -516,14 +521,39 @@ int acpi_pm_device_sleep_state(struct de
- {
- 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
- 	struct acpi_device *adev;
-+	int ret, d_max;
-+
-+	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3_COLD)
-+		return -EINVAL;
-+
-+	if (d_max_in > ACPI_STATE_D3_HOT) {
-+		enum pm_qos_flags_status stat;
-+
-+		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-+		if (stat == PM_QOS_FLAGS_ALL)
-+			d_max_in = ACPI_STATE_D3_HOT;
-+	}
- 
- 	if (!handle || acpi_bus_get_device(handle, &adev)) {
- 		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
- 		return -ENODEV;
- 	}
- 
--	return acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
--				     d_max_in, d_min_p);
-+	ret = acpi_dev_pm_get_state(dev, adev, acpi_target_system_state(),
-+				    d_min_p, &d_max);
-+	if (ret)
-+		return ret;
-+
-+	if (d_max_in < *d_min_p)
-+		return -EINVAL;
-+
-+	if (d_max > d_max_in) {
-+		for (d_max = d_max_in; d_max > *d_min_p; d_max--) {
-+			if (adev->power.states[d_max].flags.valid)
-+				break;
-+		}
-+	}
-+	return d_max;
- }
- EXPORT_SYMBOL(acpi_pm_device_sleep_state);
- 
-@@ -674,17 +704,13 @@ struct acpi_device *acpi_dev_pm_get_node
- static int acpi_dev_pm_low_power(struct device *dev, struct acpi_device *adev,
- 				 u32 system_state)
- {
--	int power_state;
-+	int ret, state;
- 
- 	if (!acpi_device_power_manageable(adev))
- 		return 0;
- 
--	power_state = acpi_dev_pm_get_state(dev, adev, system_state,
--					    ACPI_STATE_D3_COLD, NULL);
--	if (power_state < ACPI_STATE_D0 || power_state > ACPI_STATE_D3_COLD)
--		return -EIO;
 -
--	return acpi_device_set_power(adev, power_state);
-+	ret = acpi_dev_pm_get_state(dev, adev, system_state, NULL, &state);
-+	return ret ? ret : acpi_device_set_power(adev, state);
+-	mutex_unlock(&adev->physical_node_lock);
+-}
+-EXPORT_SYMBOL_GPL(acpi_dev_pm_remove_dependent);
+ #endif /* CONFIG_PM */
+Index: linux-pm/drivers/acpi/power.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/power.c
++++ linux-pm/drivers/acpi/power.c
+@@ -253,9 +253,6 @@ static void acpi_power_resume_dependent(
+ 	list_for_each_entry(pn, &adev->physical_node_list, node)
+ 		pm_request_resume(pn->dev);
+ 
+-	list_for_each_entry(pn, &adev->power_dependent, node)
+-		pm_request_resume(pn->dev);
+-
+ 	mutex_unlock(&adev->physical_node_lock);
  }
  
- /**
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1018,7 +1018,6 @@ int acpi_device_add(struct acpi_device *
+ 	INIT_LIST_HEAD(&device->wakeup_list);
+ 	INIT_LIST_HEAD(&device->physical_node_list);
+ 	mutex_init(&device->physical_node_lock);
+-	INIT_LIST_HEAD(&device->power_dependent);
+ 
+ 	new_bus_id = kzalloc(sizeof(struct acpi_device_bus_id), GFP_KERNEL);
+ 	if (!new_bus_id) {
 
