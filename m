@@ -1,193 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3FNNg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:36:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19039 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751381Ab3FNNg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:36:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,866,1363158000"; 
-   d="scan'208";a="317030191"
-Message-ID: <51BB1C6E.8040402@linux.intel.com>
-Date: Fri, 14 Jun 2013 16:36:46 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752727Ab3FNNsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:48:08 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:64079 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab3FNNsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 09:48:06 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: [PATCH v2 sockperf] sockperf: add SO_LL socketop support
-References: <20130614133314.6126.77315.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130614133314.6126.77315.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51BAC8F6.5010601@codeaurora.org>
+References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
+ <1370873118-18468-2-git-send-email-draviv@codeaurora.org> <CALMYJDsJ3OGwmcEjgpLWv2SYYXiGQpk0GCmG6rEVD0KKCjj+ng@mail.gmail.com>
+ <51B94BAF.2070203@codeaurora.org> <51BAC8F6.5010601@codeaurora.org>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Fri, 14 Jun 2013 19:17:42 +0530
+Message-ID: <CALMYJDvL3pfnzPLPK-B9ULQABB0WZiGKYLMfS=OJEtYaKmurKA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] scsi: ufs: Add support for sending NOP OUT UPIU
+To: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Cc: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lls socket option support.
-use --lls (value in usecs) to override global setting.
-Right now we always get and print the value of the option before we set,
-to show that the option works properly.
-This should be removed in an official release.
----
+On Fri, Jun 14, 2013 at 1:10 PM, Sujit Reddy Thumma
+<sthumma@codeaurora.org> wrote:
+> On 6/13/2013 10:03 AM, Sujit Reddy Thumma wrote:
+>>>
+>>>   static struct scsi_host_template ufshcd_driver_template = {
+>>> @@ -1771,8 +2064,8 @@ int ufshcd_init(struct device *dev, struct
+>>> ufs_hba **hba_handle,
+>>>          /* Configure LRB */
+>>>          ufshcd_host_memory_configure(hba);
+>>>
+>>> -       host->can_queue = hba->nutrs;
+>>> -       host->cmd_per_lun = hba->nutrs;
+>>> +       host->can_queue = SCSI_CMD_QUEUE_SIZE;
+>>
+>>
+>>
+>> I don't think this is appropriate. Reserving a slot exclusively for
+>> query/DM requests is not optimal.  can_queue should be changed
+>> dynamically, scsi_adjust_queue_depth() maybe?
+>
+>
+> The motivation to change the design for this patch  is that routing
+> query command through SCSI layer raised problems when we are trying to
+> improve the fatal error handling as we need to block the SCSI layer and
+> recover the link. Hence, the need to have the query/DM command send as
+> internal commands. Which probably makes sense.
+>
 
-  src/Defs.h       |    3 +++
-  src/SockPerf.cpp |   58 
-+++++++++++++++++++++++++++++++++++++++++++++++++++---
-  2 files changed, 58 insertions(+), 3 deletions(-)
+If fatal error handling is the only concern then the only required
+query/DM commands, I guess you are talking about fDeviceInit and NOP,
+for the recovery can be sent internally. Moreover, it doesn't matter
+on which available slot the query/DM commands are sent during the
+fatal error handling since the SCSI layer is blocked. Once the
+recovery completes,  query commands can go on without reserving an
+exclusive slot.
 
-diff --git a/src/Defs.h b/src/Defs.h
-index e38e3a4..041fa0d 100644
---- a/src/Defs.h
-+++ b/src/Defs.h
-@@ -161,6 +161,7 @@ enum {
-      OPT_OUTPUT_PRECISION,           //35
-      OPT_CLIENTPORT,                 //36
-      OPT_CLIENTIP,                   //37
-+    OPT_LLS,            //38
-  };
+> One possible option was to look for a free command slot whenever we
+> try to send an internal command, but getting a free slot is not always
+> guaranteed.
+>
+> Even if we get hold of a tag, there is no way we can explain this to
+> SCSI/block layer that particular tag is in use internally (case where
+> normal query requests are sent in tandem with SCSI requests). In which
+> case, other option is to use tag[31] as you have said on need basis
+> and change the queue depth to 31. This again has problems - one
+> changing queue depth doesn't take effect immediately but for the next
+> command. Second, if the command in tag[31] is the root cause of the
+> fatal error and is stuck, then the internal command has to wait forever
+> (until scsi timesout) to plan recovery. Considering, all these factors
+> it is better to reserve a tag and use it for internal commands instead of
+> playing around with the tags internally without/partially informing
+> SCSI/block layers.
+>
+> I am open for discussion, if there are any suggestions to handle such LLD
+> requirements in the SCSI layer optimally.
+>
+> Coming to how optimal is to work with 31 slots instead of h/w defined 32 is
+> something which we can answer when we have true multi queueing. AFAIK, there
+> may not exist real-world applications which utilize full 32 tags at
+> particular instant. SATA AHCI controller driver which is ubiquitous in
+> modern systems also reserves a slot for internal commands which is used only
+> in case of error handling and AFAIK, no one has ever reported performance
+> problems with this (its about 7 years the commit to reserve a slot is merged
+> into Linux tree).
+>
+> I hope this explains the intent. Please let me know what do you think.
+>
 
-  #define MODULE_NAME            "sockperf"
-@@ -527,6 +528,8 @@ struct user_params_t {
-  //    bool stream_mode; - use b_stream instead
-      int mthread_server;
-      struct timeval* select_timeout;
-+    unsigned int lls_usecs;
-+    bool lls_is_set;
-      int sock_buff_size;
-      int threads_num;
-      char threads_affinity[MAX_ARGV_SIZE];
-diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
-index 41daf95..28569c9 100644
---- a/src/SockPerf.cpp
-+++ b/src/SockPerf.cpp
-@@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
-          "Limit the lifetime of the message (default 2)."
-      },
-      {
-+        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string( "lls" ),
-+        "Turn on LLS via socket option (value = us to poll)."
-+    },
-+    {
-          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ), 
-aopt_set_string( "buffer-size" ),
-          "Set total socket receive/send buffer <size> in bytes (system 
-defined by default)."
-      },
-@@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const 
-char **argv )
-      int   i = 0;
-
-      printf(MODULE_NAME " is a tool for testing network latency and 
-throughput.\n");
--    printf("version %s\n", STR(VERSION));
-+    printf("version %s-lls\n", STR(VERSION));
-      printf("\n");
-      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
-      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on 
-a specific subcommand.\n");
-@@ -1382,8 +1386,8 @@ static int proc_mode_server( int id, int argc, 
-const char **argv )
-          {
-              'B', AOPT_NOARG,    aopt_set_literal( 'B' ), 
-aopt_set_string( "Bridge" ),
-              "Run in Bridge mode."
--        },
--*/
-+        },
-+*/
-          {
-               OPT_THREADS_NUM, AOPT_ARG, aopt_set_literal( 0 ), 
-aopt_set_string( "threads-num" ),
-               "Run <N> threads on server side (requires '-f' option)."
-@@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT 
-*common_obj )
-              s_user_params.is_nonblocked_send = true;
-          }
-
-+        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
-+            const char* optarg = aopt_value(common_obj, OPT_LLS);
-+            if (optarg) {
-+                errno = 0;
-+                int value = strtoul(optarg, NULL, 0);
-+                if (errno != 0 || value < 0) {
-+                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS, 
-optarg);
-+                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+                }
-+                else {
-+                    s_user_params.lls_usecs = value;
-+                    s_user_params.lls_is_set = true;
-+                }
-+            }
-+            else {
-+                log_msg("'-%d' Invalid value", OPT_LLS);
-+                rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+            }
-+        }
-+
-          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
-
-              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
-@@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
-      return rc;
-  }
-
-+#ifndef SO_LL
-+#define SO_LL 46
-+#endif
-+int sock_set_lls(int fd)
-+{
-+    int rc = SOCKPERF_ERR_NONE;
-+    unsigned int lls;
-+    int size = sizeof(lls);
-+
-+    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
-+        log_err("getsockopt(SO_LL) failed");
-+        return SOCKPERF_ERR_SOCKET;
-+    } else
-+        log_msg("socket option SO_LL default was %u, changing to %u", 
-lls, s_user_params.lls_usecs);
-+
-+    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs), 
-sizeof(s_user_params.lls_usecs)) < 0) {
-+        log_err("setsockopt(SO_LL) failed");
-+        rc = SOCKPERF_ERR_SOCKET;
-+    }
-+    return rc;
-+}
-+
-+
-  int sock_set_snd_rcv_bufs(int fd)
-  {
-      /*
-@@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
-      }
-
-      if (!rc &&
-+            (s_user_params.lls_is_set == true))
-+    {
-+        rc = sock_set_lls(fd);
-+    }
-+    if (!rc &&
-              (s_user_params.sock_buff_size > 0))
-      {
-          rc = sock_set_snd_rcv_bufs(fd);
+Always nutrs=32 is the assumption you are making. Spec mentions that
+(1 <= nutrs <=32) and (1 <= nutmrs <= 8), and unfortunately I did come
+across a host controller with nutrs=4, nutmrs=2 sometime back.
+Reserving an exclusive slot for query in such cases would make a
+difference. Hope this helps.
 
 
-
-
-
+-- 
+~Santosh
