@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab3FNIDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 04:03:20 -0400
-Received: from lhrrgout.huawei.com ([194.213.3.17]:44193 "EHLO
-	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab3FNIDR (ORCPT
+	id S1751341Ab3FNIFg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 04:05:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60103 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3FNIFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 04:03:17 -0400
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jun 2013 04:03:16 EDT
-Message-ID: <51BACCCC.2000107@huawei.com>
-Date: Fri, 14 Jun 2013 09:57:00 +0200
-From: Mario Smarduch <mario.smarduch@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 14 Jun 2013 04:05:30 -0400
+Date: Fri, 14 Jun 2013 09:05:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [RFC] should read(2) update the position if it returns an error?
+Message-ID: <20130614080528.GM4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Subject: Fwd: show_interrupts() after free_irq issue 3.10-rc4?
-References: <51BACBCB.1030509@huawei.com>
-In-Reply-To: <51BACBCB.1030509@huawei.com>
-X-Forwarded-Message-Id: <51BACBCB.1030509@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.220.139.81]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	We have an unpleasant HPFS (at least) race with read(2) vs. unlink(2)
+The thing is, HPFS and several other filesystems keep track of all opened
+struct file for directory and update the position in it upon directory
+modifications.  For HPFS it's particulary painful, since it encodes the
+location of directory block (times 64 + number of entry in block) as ->f_pos.
+lseek() validates the offset under i_mutex, directory modifications update
+->f_pos of all files (again, under i_mutex) and readdir does all accesses
+under i_mutex.  The trouble with that scheme is sys_read().  There we
+save the current position, pass the address of local copy to vfs_read()
+and, once vfs_read() has returned an error, store the value in that local
+copy back into ->f_pos.  The value is unmodified, of course, and everything
+would be fine if not for the following problem: directory modification
+done in parallel with that has no idea of that local copy and does *not*
+update it.  It does update ->f_pos, but that update gets reverted as soon
+as vfs_read() returns and sys_read() does file_pos_write().
 
-I've been working with device passthrough & irq
-on armv7 after disassociating the device from guest
-free_irq() is executed on host. Display of /proc/interrupts
-still shows the IRQ info with no irq name associated,
-and there is no irq_action associated with the IRQ.
-'show_interrupts()' in 'kernel/irq/proc.c' displays
-info on the IRQ due to prior stats accumulated.
-Few other arch specific ones only on irq_action.
+	It's not just HPFS - HFS, HFS+ and sysfs have a similar (but probably
+milder) issue.  For HPFS it's really nasty - we might end up with subsequent
+readdir() reading from a completely unrelated directory ;-/
 
-Is there some specific reason for that? To me it
-appears misleading to display dormant IRQ info. 
-For the end user - use case like above or unloading
-driver and seeing the irq show up is confusing as well.
-Also not sure what you gain by displaying old IRQ info.
+	We obviously don't want to grab i_mutex in sys_read(), but I really
+wonder if we should do file_pos_write() there in case of vfs_read() returning
+an error.  Most of the ->read() instances leave *pos unchanged if they
+decide to return an error - after all, if we'd consumed some data, the right
+thing is short read, with whatever errors happening on subsequent reads.
+I'm not sure if it's mandated by POSIX, but it seems to be what the userland
+would reasonably expect.  And that matches the usual logics with e.g.
+interruptible waits catching signals in ->read() instances...
 
-Please cc on responses.
-
-<Sorry for the double copy misspelled mailing list>
-
-- Mario
- 
-
-
-
+	Comments?  I'd obviously prefer to solve it that way (i.e. leave
+->f_pos untouched if vfs_read() returns an error), but I might be missing
+some case where we want position updated even though read() returns an
+error.  I can't come up with one, but then I hadn't RTFS through every
+->read() instance in drivers in search of weird cases like that - we've
+too many instances ;-/
