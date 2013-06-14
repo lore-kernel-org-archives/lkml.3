@@ -1,100 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab3FNUdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 16:33:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50855 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab3FNUdD (ORCPT
+	id S1753872Ab3FNUfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 16:35:32 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:44808 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753380Ab3FNUfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 16:33:03 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH v2 1/2] ARM: mmu: Add debug_ll_io_init() mappings to early mappings
-Date: Fri, 14 Jun 2013 13:32:57 -0700
-Message-Id: <1371241978-6224-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.1.378.g9926f66
+	Fri, 14 Jun 2013 16:35:30 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, gregkh@linuxfoundation.org,
+        joe@perches.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v2] power: Include additional information in pm_print_times
+Date: Fri, 14 Jun 2013 14:35:24 -0600
+Message-Id: <1371242124-11452-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure to add the mapping created in debug_ll_io_init() can lead
-to the BUG_ON() triggering in lib/ioremap.c:27 if the static
-virtual address decided for the debug_ll mapping overlaps with
-another mapping that is created later. This happens because the
-generic ioremap code has no idea there is a mapping there and it
-tries to place a mapping in the same location and blows up when
-it sees that there is a pte already present.
+Change __device_suspend() path to include driver name and the ops that
+get run for a device. This additional information helps associate the
+driver and the type of pm_ops the device uses in the suspend path very
+quickly which will aid in debugging problems in suspend and resume paths.
+Changed both start and end debug messages to include pm_ops information
+and use dev_info() instead of pr_info().
 
-kernel BUG at lib/ioremap.c:27!
-Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-00042-g2af0c67-dirty #316
-task: ef088000 ti: ef082000 task.ti: ef082000
-PC is at ioremap_page_range+0x16c/0x198
-LR is at ioremap_page_range+0xf0/0x198
-pc : [<c04cb874>]    lr : [<c04cb7f8>]    psr: 20000113
-sp : ef083e78  ip : af140000  fp : ef083ebc
-r10: ef7fc100  r9 : ef7fc104  r8 : 000af174
-r7 : 00000647  r6 : beffffff  r5 : f004c000  r4 : f0040000
-r3 : af173417  r2 : 16440653  r1 : af173e07  r0 : ef7fc8fc
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5787d  Table: 8020406a  DAC: 00000015
-Process swapper/0 (pid: 1, stack limit = 0xef082238)
-Stack: (0xef083e78 to 0xef084000)
-3e60:                                                       00040000 ef083eec
-3e80: bf134000 f004bfff c0207c00 f004c000 c02fc120 f000c000 c15e7800 00040000
-3ea0: ef083eec 00000647 c098ba9c c0953544 ef083edc ef083ec0 c021b82c c04cb714
-3ec0: c09cdc50 00000040 ef0f1e00 ef1003c0 ef083f14 ef083ee0 c09535bc c021b7bc
-3ee0: c0953544 c04d0c6c c094e2cc c1600be4 c07440c4 c09a6888 00000002 c0a15f00
-3f00: ef082000 00000000 ef083f54 ef083f18 c0208728 c0953550 00000002 c1600bfc
-3f20: c08e3fac c0839918 ef083f54 c1600b80 c09a6888 c0a15f00 0000008b c094e2cc
-3f40: c098ba9c c098bab8 ef083f94 ef083f58 c094ea0c c020865c 00000002 00000002
-3f60: c094e2cc 00000000 c025b674 00000000 c06ff860 00000000 00000000 00000000
-3f80: 00000000 00000000 ef083fac ef083f98 c06ff878 c094e910 00000000 00000000
-3fa0: 00000000 ef083fb0 c020efe8 c06ff86c 00000000 00000000 00000000 00000000
-3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 c0595108
-[<c04cb874>] (ioremap_page_range+0x16c/0x198) from [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4)
-[<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4) from [<c09535bc>] (atomic_pool_init+0x78/0x128)
-[<c09535bc>] (atomic_pool_init+0x78/0x128) from [<c0208728>] (do_one_initcall+0xd8/0x198)
-[<c0208728>] (do_one_initcall+0xd8/0x198) from [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0)
-[<c094ea0c>] (kernel_init_freeable+0x108/0x1d0) from [<c06ff878>] (kernel_init+0x18/0xf4)
-[<c06ff878>] (kernel_init+0x18/0xf4) from [<c020efe8>] (ret_from_fork+0x14/0x20)
-Code: e50b0040 ebf54b2f e51b0040 eaffffee (e7f001f2)
+dmesg output before the change:
 
-Fix it by telling generic layers about the static mapping via
-iotable_init().  This also has the nice side effect of letting
-you see the mapping in procfs' vmallocinfo file.
+[  164.390032] calling  1-1+ @ 69, parent: usb1
+[  164.390035] call 1-1+ returned 0 after 0 usecs
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+[  164.390352] calling  00:0a+ @ 2457, parent: pnp0
+[  164.390357] call 00:0a+ returned 0 after 3 usecs
+
+[  164.390361] calling  00:09+ @ 2457, parent: pnp0
+[  164.496458] call 00:09+ returned 0 after 103500 usecs
+
+[  164.496494] calling  00:05+ @ 2457, parent: pnp0
+[  164.496511] call 00:05+ returned 0 after 14 usecs
+
+dmesg output after the change:
+
+[   58.707002] usb usb1: calling type pm ops @ 57, parent: 0000:00:1d.0
+[   58.707641] usb usb1: call type pm ops returned 0 after 611 usecs
+
+[   58.702014] system 00:0a: calling legacy bus pm ops @ 2173, parent: pnp0
+[   58.702018] system 00:0a: call legacy bus pm ops returned 0 after 2 usecs
+
+[   58.702023] tpm_tis 00:09: calling legacy bus pm ops @ 2173, parent: pnp0
+[   58.806909] tpm_tis 00:09: call legacy bus pm ops returned 0 after 102425 usecs
+
+[   58.806927] rtc_cmos 00:05: calling legacy bus pm ops @ 2173, parent: pnp0
+[   58.806935] rtc_cmos 00:05: call legacy bus pm ops returned 0 after 5 usecs
+
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
+ drivers/base/power/main.c |   44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
 
-Changes since v1:
- * Use iotable_init() instead of open coding it
-
- arch/arm/mm/mmu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e0d8565..18b8aeb 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -947,7 +947,7 @@ void __init debug_ll_io_init(void)
- 	map.virtual &= PAGE_MASK;
- 	map.length = PAGE_SIZE;
- 	map.type = MT_DEVICE;
--	create_mapping(&map);
-+	iotable_init(&map, 1);
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 5a9b656..e8d2de7 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -157,13 +157,14 @@ void device_pm_move_last(struct device *dev)
+ 	list_move_tail(&dev->power.entry, &dpm_list);
  }
- #endif
+ 
+-static ktime_t initcall_debug_start(struct device *dev)
++static ktime_t initcall_debug_start(struct device *dev, char *info)
+ {
+ 	ktime_t calltime = ktime_set(0, 0);
+ 
+ 	if (pm_print_times_enabled) {
+-		pr_info("calling  %s+ @ %i, parent: %s\n",
+-			dev_name(dev), task_pid_nr(current),
++		/* string in info has an extra space at the end */
++		dev_info(dev, "calling %s@ %i, parent: %s\n",
++			info, task_pid_nr(current),
+ 			dev->parent ? dev_name(dev->parent) : "none");
+ 		calltime = ktime_get();
+ 	}
+@@ -172,14 +173,15 @@ static ktime_t initcall_debug_start(struct device *dev)
+ }
+ 
+ static void initcall_debug_report(struct device *dev, ktime_t calltime,
+-				  int error)
++				  int error, char *info)
+ {
+ 	ktime_t delta, rettime;
+ 
+ 	if (pm_print_times_enabled) {
+ 		rettime = ktime_get();
+ 		delta = ktime_sub(rettime, calltime);
+-		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
++		/* string in info has an extra space at the end */
++		dev_info(dev, "call %sreturned %d after %llu usecs\n", info,
+ 			error, (unsigned long long)ktime_to_ns(delta) >> 10);
+ 	}
+ }
+@@ -373,13 +375,13 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 	if (!cb)
+ 		return 0;
+ 
+-	calltime = initcall_debug_start(dev);
++	calltime = initcall_debug_start(dev, info);
+ 
+ 	pm_dev_dbg(dev, state, info);
+ 	error = cb(dev);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, info);
+ 
+ 	return error;
+ }
+@@ -1027,17 +1029,19 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
+  * @cb: Suspend callback to execute.
+  */
+ static int legacy_suspend(struct device *dev, pm_message_t state,
+-			  int (*cb)(struct device *dev, pm_message_t state))
++			  int (*cb)(struct device *dev, pm_message_t state),
++			  char *info)
+ {
+ 	int error;
+ 	ktime_t calltime;
+ 
+-	calltime = initcall_debug_start(dev);
++	calltime = initcall_debug_start(dev, info);
+ 
++	pm_dev_dbg(dev, state, info);
+ 	error = cb(dev, state);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, info);
+ 
+ 	return error;
+ }
+@@ -1079,43 +1083,45 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	device_lock(dev);
+ 
+ 	if (dev->pm_domain) {
+-		info = "power domain ";
++		info = "power domain pm ops ";
+ 		callback = pm_op(&dev->pm_domain->ops, state);
+ 		goto Run;
+ 	}
+ 
+ 	if (dev->type && dev->type->pm) {
+-		info = "type ";
++		info = "type pm ops ";
+ 		callback = pm_op(dev->type->pm, state);
+ 		goto Run;
+ 	}
+ 
+ 	if (dev->class) {
+ 		if (dev->class->pm) {
+-			info = "class ";
++			info = "class pm ops ";
+ 			callback = pm_op(dev->class->pm, state);
+ 			goto Run;
+ 		} else if (dev->class->suspend) {
+-			pm_dev_dbg(dev, state, "legacy class ");
+-			error = legacy_suspend(dev, state, dev->class->suspend);
++			info = "legacy class pm ops ";
++			error = legacy_suspend(dev, state, dev->class->suspend,
++				info);
+ 			goto End;
+ 		}
+ 	}
+ 
+ 	if (dev->bus) {
+ 		if (dev->bus->pm) {
+-			info = "bus ";
++			info = "bus pm ops ";
+ 			callback = pm_op(dev->bus->pm, state);
+ 		} else if (dev->bus->suspend) {
+-			pm_dev_dbg(dev, state, "legacy bus ");
+-			error = legacy_suspend(dev, state, dev->bus->suspend);
++			info = "legacy bus pm ops ";
++			error = legacy_suspend(dev, state, dev->bus->suspend,
++				info);
+ 			goto End;
+ 		}
+ 	}
+ 
+  Run:
+ 	if (!callback && dev->driver && dev->driver->pm) {
+-		info = "driver ";
++		info = "driver pm ops ";
+ 		callback = pm_op(dev->driver->pm, state);
+ 	}
  
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.10.4
 
