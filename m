@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3FNQ2p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 12:28:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47400 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab3FNQ2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 12:28:42 -0400
-Date: Fri, 14 Jun 2013 12:28:31 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: George Dunlap <george.dunlap@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] xen/pci: Deal with toolstack missing an
- 'XenbusStateClosing'.
-Message-ID: <20130614162831.GA16636@phenom.dumpdata.com>
-References: <20130610202456.GA17822@phenom.dumpdata.com>
- <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
- <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com>
- <51B743EA.5020800@eu.citrix.com>
- <51B74B77.1000806@oracle.com>
- <51B74DA9.7060509@eu.citrix.com>
- <20130612134504.GG2918@phenom.dumpdata.com>
- <CAErSpo7zw3MSNzdjRcZuy44uOGT_GZ8T4vaqgkd1fvWG4fadTA@mail.gmail.com>
+	id S1753428Ab3FNQ30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 12:29:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870Ab3FNQ3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 12:29:25 -0400
+Date: Fri, 14 Jun 2013 18:22:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v2] MIPS: Reduce _NSIG from 128 to 127 to avoid BUG_ON
+Message-ID: <20130614162244.GA15754@redhat.com>
+References: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo7zw3MSNzdjRcZuy44uOGT_GZ8T4vaqgkd1fvWG4fadTA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> So at least part of the problem *is* a bug in Linux.
-> >
-> > Good! Bjorn, would you be OK Ack-ing the patch I sent (attached here
-> > for reference) or putting it in your queue for Linus?
-> >
-> > My plan would be to send it to Linus in the 3.11 merge window.
-> 
-> Sure; this is your baby :)  Why don't you handle it via your tree,
-> since it's more related to xen than any PCI core stuff.
+On 06/14, James Hogan wrote:
+>
+> However do_group_exit() checks for the core dump bit (0x80) in the exit
+> code which matches in this particular case and the kernel panics:
+>
+>   BUG_ON(exit_code & 0x80); /* core dumps don't get here */
+>
+> Lets avoid this by changing the ABI by reducing the number of signals to
+> 127 (so that the maximum signal number is 127).
 
-OK. Thanks!
+Agreed.
+
+Of course I can't ack the change in arch/mips, but to me this looks
+like a best solution.
+
+Oleg.
+
