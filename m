@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3FNNsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 09:48:08 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:64079 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3FNNsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 09:48:06 -0400
+	id S1752776Ab3FNNue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 09:50:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463Ab3FNNuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 09:50:32 -0400
+Date: Fri, 14 Jun 2013 09:49:47 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130614134947.GB133453@redhat.com>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+ <20130613131057.GA15997@somewhere>
+ <20130613140207.GW133453@redhat.com>
+ <20130613142210.GD16339@somewhere>
+ <20130613144515.GX133453@redhat.com>
+ <20130613145601.GE16339@somewhere>
+ <20130613152059.GA133453@redhat.com>
+ <1371138491.9844.288.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <51BAC8F6.5010601@codeaurora.org>
-References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
- <1370873118-18468-2-git-send-email-draviv@codeaurora.org> <CALMYJDsJ3OGwmcEjgpLWv2SYYXiGQpk0GCmG6rEVD0KKCjj+ng@mail.gmail.com>
- <51B94BAF.2070203@codeaurora.org> <51BAC8F6.5010601@codeaurora.org>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Fri, 14 Jun 2013 19:17:42 +0530
-Message-ID: <CALMYJDvL3pfnzPLPK-B9ULQABB0WZiGKYLMfS=OJEtYaKmurKA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] scsi: ufs: Add support for sending NOP OUT UPIU
-To: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Cc: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371138491.9844.288.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 1:10 PM, Sujit Reddy Thumma
-<sthumma@codeaurora.org> wrote:
-> On 6/13/2013 10:03 AM, Sujit Reddy Thumma wrote:
->>>
->>>   static struct scsi_host_template ufshcd_driver_template = {
->>> @@ -1771,8 +2064,8 @@ int ufshcd_init(struct device *dev, struct
->>> ufs_hba **hba_handle,
->>>          /* Configure LRB */
->>>          ufshcd_host_memory_configure(hba);
->>>
->>> -       host->can_queue = hba->nutrs;
->>> -       host->cmd_per_lun = hba->nutrs;
->>> +       host->can_queue = SCSI_CMD_QUEUE_SIZE;
->>
->>
->>
->> I don't think this is appropriate. Reserving a slot exclusively for
->> query/DM requests is not optimal.  can_queue should be changed
->> dynamically, scsi_adjust_queue_depth() maybe?
->
->
-> The motivation to change the design for this patch  is that routing
-> query command through SCSI layer raised problems when we are trying to
-> improve the fatal error handling as we need to block the SCSI layer and
-> recover the link. Hence, the need to have the query/DM command send as
-> internal commands. Which probably makes sense.
->
+On Thu, Jun 13, 2013 at 11:48:11AM -0400, Steven Rostedt wrote:
+> On Thu, 2013-06-13 at 11:20 -0400, Don Zickus wrote:
+> 
+> > I don't know enough about how full dynticks work to even present a
+> > solution.  But currently I was working with the Red Hat performance team
+> > to enhance perf to help our customers diagnose performance problems
+> > easier.
+> > 
+> > My fear is anyone who uses full dynticks and has issues, can't use perf to
+> > help diagnose their problems because it will change the dynamics of the
+> > problem.  And with the current huge drop in performance in cpu_idle (as
+> > compared to RHEL-6's 2.6.32 kernel) due to what seems to be miscalculated
+> > c-states, one might have a hard time evaluating if full dynticks is doing
+> > the right thing or not.
+> 
+> This needs to be fixed, but not for 3.11. Although, you can still use
+> ftrace to diagnose it.
 
-If fatal error handling is the only concern then the only required
-query/DM commands, I guess you are talking about fDeviceInit and NOP,
-for the recovery can be sent internally. Moreover, it doesn't matter
-on which available slot the query/DM commands are sent during the
-fatal error handling since the SCSI layer is blocked. Once the
-recovery completes,  query commands can go on without reserving an
-exclusive slot.
+Ok.  At least we both agree it shouldn't stay like this and needs fixing.
 
-> One possible option was to look for a free command slot whenever we
-> try to send an internal command, but getting a free slot is not always
-> guaranteed.
->
-> Even if we get hold of a tag, there is no way we can explain this to
-> SCSI/block layer that particular tag is in use internally (case where
-> normal query requests are sent in tandem with SCSI requests). In which
-> case, other option is to use tag[31] as you have said on need basis
-> and change the queue depth to 31. This again has problems - one
-> changing queue depth doesn't take effect immediately but for the next
-> command. Second, if the command in tag[31] is the root cause of the
-> fatal error and is stuck, then the internal command has to wait forever
-> (until scsi timesout) to plan recovery. Considering, all these factors
-> it is better to reserve a tag and use it for internal commands instead of
-> playing around with the tags internally without/partially informing
-> SCSI/block layers.
->
-> I am open for discussion, if there are any suggestions to handle such LLD
-> requirements in the SCSI layer optimally.
->
-> Coming to how optimal is to work with 31 slots instead of h/w defined 32 is
-> something which we can answer when we have true multi queueing. AFAIK, there
-> may not exist real-world applications which utilize full 32 tags at
-> particular instant. SATA AHCI controller driver which is ubiquitous in
-> modern systems also reserves a slot for internal commands which is used only
-> in case of error handling and AFAIK, no one has ever reported performance
-> problems with this (its about 7 years the commit to reserve a slot is merged
-> into Linux tree).
->
-> I hope this explains the intent. Please let me know what do you think.
->
+> 
+> > 
+> > Then again perhaps full dynticks isn't useful for distros like RHEL.
+> 
+> It will be very useful for RHEL. But its still very new, and I wouldn't
+> recommend using it in a production environment yet. There's still a few
+> issues that need to be worked out, including this one. When the issues
+> are fixed, then RHEL and other distributions will definitely want to
+> enable this.
+> 
+> > 
+> > That's why I was hoping to solve the underlying problem as opposed to
+> > accepting patches like this which work around the symptoms.
+> 
+> For now it's just to get things working as people expect it to. First
+> impressions are very important, and if someone enables it and sees it
+> makes no difference, they may from then on never trust it. The way to
+> handle that is to make sure it works when enabled, even if it disables
+> some other cool features. But as I said, it shouldn't be used in
+> production quite yet.
+> 
+> > 
+> > Again, my knowledge of full dynticks is poor, so I have almost no idea of
+> > the complexities surrounding the problem and how hard it is to even solve
+> > it.
+> 
+> The concept behind full dynamic ticks is very easy. When you set a given
+> CPU(s) to dynamic tick, when it only has a single task scheduled on that
+> CPU, it disables the periodic tick. This removes essentially *all*
+> latency from the kernel! That is, if the task is doing some complex
 
-Always nutrs=32 is the assumption you are making. Spec mentions that
-(1 <= nutrs <=32) and (1 <= nutmrs <= 8), and unfortunately I did come
-across a host controller with nutrs=4, nutmrs=2 sometime back.
-Reserving an exclusive slot for query in such cases would make a
-difference. Hope this helps.
+Including SMMi latency? ;-)
 
+> calculations, it wont be interrupted for kernel maintenance. A lot of
+> Red Hat customers would love to have this feature. It allows for
+> extremely low latency actions even without a real-time kernel. Heck, it
+> works without even kernel preemption.
 
--- 
-~Santosh
+Interesting.
+
+> 
+> Now removing the periodic tick is not a trivial task, and this is where
+> all our issues come from. In fact, we can not even completely remove the
+> tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
+> set to. We have to handle everything that depends on that tick, which
+> includes perf, among other things.
+
+Which part of perf is dependent on the tick?  Just curious.
+
+Cheers,
+Don
