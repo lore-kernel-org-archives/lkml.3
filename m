@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3FNS4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:56:43 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:52768 "EHLO
+	id S1753772Ab3FNS46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:56:58 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:52602 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719Ab3FNSzD (ORCPT
+	with ESMTP id S1753678Ab3FNSzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:55:03 -0400
+	Fri, 14 Jun 2013 14:55:00 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com, Andreas Gruenbacher <agruen@linbit.com>,
         Philipp Reisner <philipp.reisner@linbit.com>
-Subject: [PATCH 3/6] drbd: Fix rcu_read_lock balance on error path
-Date: Fri, 14 Jun 2013 20:54:20 +0200
-Message-Id: <1371236063-17198-4-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 1/6] drbd: Do not sleep inside rcu
+Date: Fri, 14 Jun 2013 20:54:18 +0200
+Message-Id: <1371236063-17198-2-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
 References: <1371236063-17198-1-git-send-email-philipp.reisner@linbit.com>
@@ -26,47 +26,31 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_nl.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 9e3f441..0936d6a 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2658,7 +2658,6 @@ int nla_put_status_info(struct sk_buff *skb, struct drbd_conf *mdev,
- 		const struct sib_info *sib)
- {
- 	struct state_info *si = NULL; /* for sizeof(si->member); */
--	struct net_conf *nc;
- 	struct nlattr *nla;
- 	int got_ldev;
- 	int err = 0;
-@@ -2688,13 +2687,19 @@ int nla_put_status_info(struct sk_buff *skb, struct drbd_conf *mdev,
- 		goto nla_put_failure;
- 
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 4222aff..adee58e 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -1039,6 +1039,8 @@ randomize:
  	rcu_read_lock();
--	if (got_ldev)
--		if (disk_conf_to_skb(skb, rcu_dereference(mdev->ldev->disk_conf), exclude_sensitive))
--			goto nla_put_failure;
-+	if (got_ldev) {
-+		struct disk_conf *disk_conf;
- 
--	nc = rcu_dereference(mdev->tconn->net_conf);
--	if (nc)
--		err = net_conf_to_skb(skb, nc, exclude_sensitive);
-+		disk_conf = rcu_dereference(mdev->ldev->disk_conf);
-+		err = disk_conf_to_skb(skb, disk_conf, exclude_sensitive);
-+	}
-+	if (!err) {
-+		struct net_conf *nc;
+ 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
+ 		kref_get(&mdev->kref);
++		rcu_read_unlock();
 +
-+		nc = rcu_dereference(mdev->tconn->net_conf);
-+		if (nc)
-+			err = net_conf_to_skb(skb, nc, exclude_sensitive);
-+	}
- 	rcu_read_unlock();
- 	if (err)
- 		goto nla_put_failure;
+ 		/* Prevent a race between resync-handshake and
+ 		 * being promoted to Primary.
+ 		 *
+@@ -1049,8 +1051,6 @@ randomize:
+ 		mutex_lock(mdev->state_mutex);
+ 		mutex_unlock(mdev->state_mutex);
+ 
+-		rcu_read_unlock();
+-
+ 		if (discard_my_data)
+ 			set_bit(DISCARD_MY_DATA, &mdev->flags);
+ 		else
 -- 
 1.7.9.5
 
