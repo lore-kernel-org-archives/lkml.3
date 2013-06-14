@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab3FNVJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:09:49 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64802 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab3FNVIV (ORCPT
+	id S1754043Ab3FNVKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:10:07 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:34125 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab3FNVIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:08:21 -0400
+	Fri, 14 Jun 2013 17:08:19 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v2 08/11] irqdomain: Refactor irq_domain_associate_many()
-Date: Fri, 14 Jun 2013 22:08:03 +0100
-Message-Id: <1371244086-9189-9-git-send-email-grant.likely@linaro.org>
+        Grant Likely <grant.likely@secretlab.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 04/11] irqdomain: merge linear and tree reverse mappings.
+Date: Fri, 14 Jun 2013 22:07:59 +0100
+Message-Id: <1371244086-9189-5-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
 References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
@@ -22,385 +24,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally, irq_domain_associate_many() was designed to unwind the
-mapped irqs on a failure of any individual association. However, that
-proved to be a problem with certain IRQ controllers. Some of them only
-support a subset of irqs, and will fail when attempting to map a
-reserved IRQ. In those cases we want to map as many IRQs as possible, so
-instead it is better for irq_domain_associate_many() to make a
-best-effort attempt to map irqs, but not fail if any or all of them
-don't succeed. If a caller really cares about how many irqs got
-associated, then it should instead go back and check that all of the
-irqs is cares about were mapped.
+From: Grant Likely <grant.likely@secretlab.ca>
 
-The original design open-coded the individual association code into the
-body of irq_domain_associate_many(), but with no longer needing to
-unwind associations, the code becomes simpler to split out
-irq_domain_associate() to contain the bulk of the logic, and
-irq_domain_associate_many() to be a simple loop wrapper.
+Keeping them separate makes irq_domain more complex and adds a lot of
+code (as proven by the diffstat).  Merging them simplifies the whole
+scheme.  This change makes it so both the tree and linear methods can be
+used by the same irq_domain instance.  If the hwirq is less than the
+->linear_size, then the linear map is used to reverse map the hwirq.
+Otherwise the radix tree is used.  The test for which map to use is no
+more expensive that the existing code, so the performance of fast path
+is preserved.
 
-This patch also adds a new error check to the associate path to make
-sure it isn't called for an irq larger than the controller can handle,
-and adds locking so that the irq_domain_mutex is held while setting up a
-new association.
+It also means that complex interrupt controllers can use both the
+linear map and a tree in the same domain.  This may be useful for an
+interrupt controller with a base set of core irqs and a large number
+of GPIOs which might be used as irqs.  The linear map could cover the
+core irqs, and the tree used for thas irqs.  The linear map could
+cover the core irqs, and the tree used for the gpios.
 
-v2: Fixup x86 warning. irq_domain_associate_many() no longer returns an
-    error code, but reports errors to the printk log directly. In the
-    majority of cases we don't actually want to fail if there is a
-    problem, but rather log it and still try to boot the system.
+v2: Drop reorganization of revmap data
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
 ---
- arch/x86/kernel/devicetree.c |   4 +-
- include/linux/irqdomain.h    |  22 +++--
- kernel/irq/irqdomain.c       | 185 +++++++++++++++++++++----------------------
- 3 files changed, 102 insertions(+), 109 deletions(-)
+ include/linux/irqdomain.h |  18 ++++----
+ kernel/irq/irqdomain.c    | 107 +++++++++++++---------------------------------
+ 2 files changed, 39 insertions(+), 86 deletions(-)
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index b158152..4934890 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -364,9 +364,7 @@ static void dt_add_ioapic_domain(unsigned int ioapic_num,
- 		 * and assigned so we can keep the 1:1 mapping which the ioapic
- 		 * is having.
- 		 */
--		ret = irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
--		if (ret)
--			pr_err("Error mapping legacy IRQs: %d\n", ret);
-+		irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
- 
- 		if (num > NR_IRQS_LEGACY) {
- 			ret = irq_create_strict_mappings(id, NR_IRQS_LEGACY,
 diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index fd4b26f..f9e8e06 100644
+index e5e513c..1cbb741 100644
 --- a/include/linux/irqdomain.h
 +++ b/include/linux/irqdomain.h
-@@ -103,6 +103,7 @@ struct irq_domain {
- 	struct irq_domain_chip_generic *gc;
+@@ -75,7 +75,6 @@ struct irq_domain_chip_generic;
+  * @link: Element in global irq_domain list.
+  * @revmap_type: Method used for reverse mapping hwirq numbers to linux irq. This
+  *               will be one of the IRQ_DOMAIN_MAP_* values.
+- * @revmap_data: Revmap method specific data.
+  * @ops: pointer to irq_domain methods
+  * @host_data: private data pointer for use by owner.  Not touched by irq_domain
+  *             core code.
+@@ -93,10 +92,9 @@ struct irq_domain {
  
- 	/* reverse map data. The linear map gets appended to the irq_domain */
-+	irq_hw_number_t hwirq_max;
- 	unsigned int revmap_direct_max_irq;
- 	unsigned int revmap_size;
- 	struct radix_tree_root revmap_tree;
-@@ -110,8 +111,8 @@ struct irq_domain {
+ 	/* type of reverse mapping_technique */
+ 	unsigned int revmap_type;
+-	union {
++	struct {
+ 		struct {
+ 			unsigned int size;
+-			unsigned int *revmap;
+ 		} linear;
+ 		struct {
+ 			unsigned int max_irq;
+@@ -111,11 +109,13 @@ struct irq_domain {
+ 	struct device_node *of_node;
+ 	/* Optional pointer to generic interrupt chips */
+ 	struct irq_domain_chip_generic *gc;
++
++	/* Linear reverse map */
++	unsigned int linear_revmap[];
  };
  
+ #define IRQ_DOMAIN_MAP_NOMAP 1 /* no fast reverse mapping */
+ #define IRQ_DOMAIN_MAP_LINEAR 2 /* linear map of interrupts */
+-#define IRQ_DOMAIN_MAP_TREE 3 /* radix tree */
+ 
  #ifdef CONFIG_IRQ_DOMAIN
--struct irq_domain *__irq_domain_add(struct device_node *of_node,
--				    int size, int direct_max,
-+struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
-+				    irq_hw_number_t hwirq_max, int direct_max,
- 				    const struct irq_domain_ops *ops,
- 				    void *host_data);
  struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-@@ -140,14 +141,14 @@ static inline struct irq_domain *irq_domain_add_linear(struct device_node *of_no
- 					 const struct irq_domain_ops *ops,
- 					 void *host_data)
- {
--	return __irq_domain_add(of_node, size, 0, ops, host_data);
-+	return __irq_domain_add(of_node, size, size, 0, ops, host_data);
- }
- static inline struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
+@@ -137,10 +137,6 @@ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
  					 unsigned int max_irq,
  					 const struct irq_domain_ops *ops,
- 					 void *host_data)
- {
--	return __irq_domain_add(of_node, 0, max_irq, ops, host_data);
-+	return __irq_domain_add(of_node, 0, max_irq, max_irq, ops, host_data);
+ 					 void *host_data);
+-struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
+-					 const struct irq_domain_ops *ops,
+-					 void *host_data);
+-
+ extern struct irq_domain *irq_find_host(struct device_node *node);
+ extern void irq_set_default_host(struct irq_domain *host);
+ 
+@@ -152,6 +148,12 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
+ 	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
+ 				     host_data);
  }
- static inline struct irq_domain *irq_domain_add_legacy_isa(
- 				struct device_node *of_node,
-@@ -166,14 +167,11 @@ static inline struct irq_domain *irq_domain_add_tree(struct device_node *of_node
++static inline struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
++					 const struct irq_domain_ops *ops,
++					 void *host_data)
++{
++	return irq_domain_add_linear(of_node, 0, ops, host_data);
++}
  
  extern void irq_domain_remove(struct irq_domain *host);
  
--extern int irq_domain_associate_many(struct irq_domain *domain,
--				     unsigned int irq_base,
--				     irq_hw_number_t hwirq_base, int count);
--static inline int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
--					irq_hw_number_t hwirq)
--{
--	return irq_domain_associate_many(domain, irq, hwirq, 1);
--}
-+extern int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
-+					irq_hw_number_t hwirq);
-+extern void irq_domain_associate_many(struct irq_domain *domain,
-+				      unsigned int irq_base,
-+				      irq_hw_number_t hwirq_base, int count);
- 
- extern unsigned int irq_create_mapping(struct irq_domain *host,
- 				       irq_hw_number_t hwirq);
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 280b804..80e9249 100644
+index b1b5e67..5a1d8ec 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -35,8 +35,8 @@ static struct irq_domain *irq_default_domain;
-  * register allocated irq_domain with irq_domain_register().  Returns pointer
+@@ -34,22 +34,24 @@ static struct irq_domain *irq_default_domain;
   * to IRQ domain, or NULL on failure.
   */
--struct irq_domain *__irq_domain_add(struct device_node *of_node,
--				    int size, int direct_max,
-+struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
-+				    irq_hw_number_t hwirq_max, int direct_max,
- 				    const struct irq_domain_ops *ops,
- 				    void *host_data)
+ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
+-					   unsigned int revmap_type,
++					   unsigned int revmap_type, int size,
+ 					   const struct irq_domain_ops *ops,
+ 					   void *host_data)
  {
-@@ -52,6 +52,7 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node,
+ 	struct irq_domain *domain;
+ 
+-	domain = kzalloc_node(sizeof(*domain), GFP_KERNEL,
+-			      of_node_to_nid(of_node));
++	domain = kzalloc_node(sizeof(*domain) + (sizeof(unsigned int) * size),
++			      GFP_KERNEL, of_node_to_nid(of_node));
+ 	if (WARN_ON(!domain))
+ 		return NULL;
+ 
+ 	/* Fill structure */
++	INIT_RADIX_TREE(&domain->revmap_data.tree, GFP_KERNEL);
+ 	domain->revmap_type = revmap_type;
  	domain->ops = ops;
  	domain->host_data = host_data;
  	domain->of_node = of_node_get(of_node);
-+	domain->hwirq_max = hwirq_max;
- 	domain->revmap_size = size;
- 	domain->revmap_direct_max_irq = direct_max;
- 
-@@ -126,7 +127,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
- {
- 	struct irq_domain *domain;
- 
--	domain = __irq_domain_add(of_node, size, 0, ops, host_data);
-+	domain = __irq_domain_add(of_node, size, size, 0, ops, host_data);
- 	if (!domain)
- 		return NULL;
- 
-@@ -139,7 +140,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
- 				pr_info("Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
- 					first_irq);
- 		}
--		WARN_ON(irq_domain_associate_many(domain, first_irq, 0, size));
-+		irq_domain_associate_many(domain, first_irq, 0, size);
- 	}
- 
- 	return domain;
-@@ -170,11 +171,12 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
- {
- 	struct irq_domain *domain;
- 
--	domain = __irq_domain_add(of_node, first_hwirq + size, 0, ops, host_data);
-+	domain = __irq_domain_add(of_node, first_hwirq + size,
-+				  first_hwirq + size, 0, ops, host_data);
- 	if (!domain)
- 		return NULL;
- 
--	WARN_ON(irq_domain_associate_many(domain, first_irq, first_hwirq, size));
-+	irq_domain_associate_many(domain, first_irq, first_hwirq, size);
++	domain->revmap_data.linear.size = size;
  
  	return domain;
  }
-@@ -228,109 +230,109 @@ void irq_set_default_host(struct irq_domain *domain)
- }
- EXPORT_SYMBOL_GPL(irq_set_default_host);
- 
--static void irq_domain_disassociate_many(struct irq_domain *domain,
--					 unsigned int irq_base, int count)
-+static void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
+@@ -81,22 +83,12 @@ void irq_domain_remove(struct irq_domain *domain)
  {
--	/*
--	 * disassociate in reverse order;
--	 * not strictly necessary, but nice for unwinding
--	 */
--	while (count--) {
--		int irq = irq_base + count;
--		struct irq_data *irq_data = irq_get_irq_data(irq);
--		irq_hw_number_t hwirq;
-+	struct irq_data *irq_data = irq_get_irq_data(irq);
-+	irq_hw_number_t hwirq;
+ 	mutex_lock(&irq_domain_mutex);
  
--		if (WARN_ON(!irq_data || irq_data->domain != domain))
--			continue;
-+	if (WARN(!irq_data || irq_data->domain != domain,
-+		 "virq%i doesn't exist; cannot disassociate\n", irq))
-+		return;
+-	switch (domain->revmap_type) {
+-	case IRQ_DOMAIN_MAP_TREE:
+-		/*
+-		 * radix_tree_delete() takes care of destroying the root
+-		 * node when all entries are removed. Shout if there are
+-		 * any mappings left.
+-		 */
+-		WARN_ON(domain->revmap_data.tree.height);
+-		break;
+-	case IRQ_DOMAIN_MAP_LINEAR:
+-		kfree(domain->revmap_data.linear.revmap);
+-		domain->revmap_data.linear.size = 0;
+-		break;
+-	case IRQ_DOMAIN_MAP_NOMAP:
+-		break;
+-	}
++	/*
++	 * radix_tree_delete() takes care of destroying the root
++	 * node when all entries are removed. Shout if there are
++	 * any mappings left.
++	 */
++	WARN_ON(domain->revmap_data.tree.height);
  
--		hwirq = irq_data->hwirq;
--		irq_set_status_flags(irq, IRQ_NOREQUEST);
-+	hwirq = irq_data->hwirq;
-+	irq_set_status_flags(irq, IRQ_NOREQUEST);
+ 	list_del(&domain->link);
  
--		/* remove chip and handler */
--		irq_set_chip_and_handler(irq, NULL, NULL);
-+	/* remove chip and handler */
-+	irq_set_chip_and_handler(irq, NULL, NULL);
- 
--		/* Make sure it's completed */
--		synchronize_irq(irq);
-+	/* Make sure it's completed */
-+	synchronize_irq(irq);
- 
--		/* Tell the PIC about it */
--		if (domain->ops->unmap)
--			domain->ops->unmap(domain, irq);
--		smp_mb();
-+	/* Tell the PIC about it */
-+	if (domain->ops->unmap)
-+		domain->ops->unmap(domain, irq);
-+	smp_mb();
- 
--		irq_data->domain = NULL;
--		irq_data->hwirq = 0;
-+	irq_data->domain = NULL;
-+	irq_data->hwirq = 0;
- 
--		/* Clear reverse map for this hwirq */
--		if (hwirq < domain->revmap_size) {
--			domain->linear_revmap[hwirq] = 0;
--		} else {
--			mutex_lock(&revmap_trees_mutex);
--			radix_tree_delete(&domain->revmap_tree, hwirq);
--			mutex_unlock(&revmap_trees_mutex);
--		}
-+	/* Clear reverse map for this hwirq */
-+	if (hwirq < domain->revmap_size) {
-+		domain->linear_revmap[hwirq] = 0;
-+	} else {
-+		mutex_lock(&revmap_trees_mutex);
-+		radix_tree_delete(&domain->revmap_tree, hwirq);
-+		mutex_unlock(&revmap_trees_mutex);
- 	}
- }
- 
--int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
--			      irq_hw_number_t hwirq_base, int count)
-+int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
-+			 irq_hw_number_t hwirq)
+@@ -223,20 +215,11 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
+ 					 void *host_data)
  {
--	unsigned int virq = irq_base;
--	irq_hw_number_t hwirq = hwirq_base;
--	int i, ret;
-+	struct irq_data *irq_data = irq_get_irq_data(virq);
-+	int ret;
+ 	struct irq_domain *domain;
+-	unsigned int *revmap;
  
--	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
--		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
-+	if (WARN(hwirq >= domain->hwirq_max,
-+		 "error: hwirq 0x%x is too large for %s\n", (int)hwirq, domain->name))
-+		return -EINVAL;
-+	if (WARN(!irq_data, "error: virq%i is not allocated", virq))
-+		return -EINVAL;
-+	if (WARN(irq_data->domain, "error: virq%i is already associated", virq))
-+		return -EINVAL;
+-	revmap = kzalloc_node(sizeof(*revmap) * size, GFP_KERNEL,
+-			      of_node_to_nid(of_node));
+-	if (WARN_ON(!revmap))
++	domain = irq_domain_alloc(of_node, IRQ_DOMAIN_MAP_LINEAR, size, ops, host_data);
++	if (!domain)
+ 		return NULL;
  
--	for (i = 0; i < count; i++) {
--		struct irq_data *irq_data = irq_get_irq_data(virq + i);
--
--		if (WARN(!irq_data, "error: irq_desc not allocated; "
--			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
--			return -EINVAL;
--		if (WARN(irq_data->domain, "error: irq_desc already associated; "
--			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
--			return -EINVAL;
--	};
--
--	for (i = 0; i < count; i++, virq++, hwirq++) {
--		struct irq_data *irq_data = irq_get_irq_data(virq);
--
--		irq_data->hwirq = hwirq;
--		irq_data->domain = domain;
--		if (domain->ops->map) {
--			ret = domain->ops->map(domain, virq, hwirq);
--			if (ret != 0) {
--				/*
--				 * If map() returns -EPERM, this interrupt is protected
--				 * by the firmware or some other service and shall not
--				 * be mapped. Don't bother telling the user about it.
--				 */
--				if (ret != -EPERM) {
--					pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
--					       domain->name, hwirq, virq, ret);
--				}
--				irq_data->domain = NULL;
--				irq_data->hwirq = 0;
--				continue;
-+	mutex_lock(&irq_domain_mutex);
-+	irq_data->hwirq = hwirq;
-+	irq_data->domain = domain;
-+	if (domain->ops->map) {
-+		ret = domain->ops->map(domain, virq, hwirq);
-+		if (ret != 0) {
-+			/*
-+			 * If map() returns -EPERM, this interrupt is protected
-+			 * by the firmware or some other service and shall not
-+			 * be mapped. Don't bother telling the user about it.
-+			 */
-+			if (ret != -EPERM) {
-+				pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
-+				       domain->name, hwirq, virq, ret);
- 			}
--			/* If not already assigned, give the domain the chip's name */
--			if (!domain->name && irq_data->chip)
--				domain->name = irq_data->chip->name;
-+			irq_data->domain = NULL;
-+			irq_data->hwirq = 0;
-+			mutex_unlock(&irq_domain_mutex);
-+			return ret;
- 		}
- 
--		if (hwirq < domain->revmap_size) {
--			domain->linear_revmap[hwirq] = virq;
--		} else {
--			mutex_lock(&revmap_trees_mutex);
--			radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
--			mutex_unlock(&revmap_trees_mutex);
--		}
-+		/* If not already assigned, give the domain the chip's name */
-+		if (!domain->name && irq_data->chip)
-+			domain->name = irq_data->chip->name;
-+	}
- 
--		irq_clear_status_flags(virq, IRQ_NOREQUEST);
-+	if (hwirq < domain->revmap_size) {
-+		domain->linear_revmap[hwirq] = virq;
-+	} else {
-+		mutex_lock(&revmap_trees_mutex);
-+		radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
-+		mutex_unlock(&revmap_trees_mutex);
- 	}
-+	mutex_unlock(&irq_domain_mutex);
-+
-+	irq_clear_status_flags(virq, IRQ_NOREQUEST);
- 
- 	return 0;
+-	domain = irq_domain_alloc(of_node, IRQ_DOMAIN_MAP_LINEAR, ops, host_data);
+-	if (!domain) {
+-		kfree(revmap);
+-		return NULL;
+-	}
+-	domain->revmap_data.linear.size = size;
+-	domain->revmap_data.linear.revmap = revmap;
+ 	irq_domain_add(domain);
+ 	return domain;
  }
-+EXPORT_SYMBOL_GPL(irq_domain_associate);
-+
-+void irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
-+			       irq_hw_number_t hwirq_base, int count)
-+{
-+	int i;
-+
-+	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
-+		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
-+
-+	for (i = 0; i < count; i++) {
-+		irq_domain_associate(domain, irq_base + i, hwirq_base + i);
-+	}
-+}
- EXPORT_SYMBOL_GPL(irq_domain_associate_many);
+@@ -248,7 +231,7 @@ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
+ 					 void *host_data)
+ {
+ 	struct irq_domain *domain = irq_domain_alloc(of_node,
+-					IRQ_DOMAIN_MAP_NOMAP, ops, host_data);
++					IRQ_DOMAIN_MAP_NOMAP, 0, ops, host_data);
+ 	if (domain) {
+ 		domain->revmap_data.nomap.max_irq = max_irq ? max_irq : ~0;
+ 		irq_domain_add(domain);
+@@ -258,28 +241,6 @@ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
+ EXPORT_SYMBOL_GPL(irq_domain_add_nomap);
  
  /**
-@@ -460,12 +462,7 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
- 	if (unlikely(ret < 0))
- 		return ret;
- 
--	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
--	if (unlikely(ret < 0)) {
--		irq_free_descs(irq_base, count);
--		return ret;
+- * irq_domain_add_tree()
+- * @of_node: pointer to interrupt controller's device tree node.
+- * @ops: map/unmap domain callbacks
+- *
+- * Note: The radix tree will be allocated later during boot automatically
+- * (the reverse mapping will use the slow path until that happens).
+- */
+-struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
+-					 const struct irq_domain_ops *ops,
+-					 void *host_data)
+-{
+-	struct irq_domain *domain = irq_domain_alloc(of_node,
+-					IRQ_DOMAIN_MAP_TREE, ops, host_data);
+-	if (domain) {
+-		INIT_RADIX_TREE(&domain->revmap_data.tree, GFP_KERNEL);
+-		irq_domain_add(domain);
 -	}
+-	return domain;
+-}
+-EXPORT_SYMBOL_GPL(irq_domain_add_tree);
 -
-+	irq_domain_associate_many(domain, irq_base, hwirq_base, count);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
-@@ -535,7 +532,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	if (WARN_ON(domain == NULL))
- 		return;
+-/**
+  * irq_find_host() - Locates a domain for a given device node
+  * @node: device-tree node of the interrupt controller
+  */
+@@ -359,17 +320,13 @@ static void irq_domain_disassociate_many(struct irq_domain *domain,
+ 		irq_data->domain = NULL;
+ 		irq_data->hwirq = 0;
  
--	irq_domain_disassociate_many(domain, virq, 1);
-+	irq_domain_disassociate(domain, virq);
- 	irq_free_desc(virq);
+-		/* Clear reverse map */
+-		switch(domain->revmap_type) {
+-		case IRQ_DOMAIN_MAP_LINEAR:
+-			if (hwirq < domain->revmap_data.linear.size)
+-				domain->revmap_data.linear.revmap[hwirq] = 0;
+-			break;
+-		case IRQ_DOMAIN_MAP_TREE:
++		/* Clear reverse map for this hwirq */
++		if (hwirq < domain->revmap_data.linear.size) {
++			domain->linear_revmap[hwirq] = 0;
++		} else {
+ 			mutex_lock(&revmap_trees_mutex);
+ 			radix_tree_delete(&domain->revmap_data.tree, hwirq);
+ 			mutex_unlock(&revmap_trees_mutex);
+-			break;
+ 		}
+ 	}
  }
- EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+@@ -421,16 +378,12 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
+ 				domain->name = irq_data->chip->name;
+ 		}
+ 
+-		switch (domain->revmap_type) {
+-		case IRQ_DOMAIN_MAP_LINEAR:
+-			if (hwirq < domain->revmap_data.linear.size)
+-				domain->revmap_data.linear.revmap[hwirq] = virq;
+-			break;
+-		case IRQ_DOMAIN_MAP_TREE:
++		if (hwirq < domain->revmap_data.linear.size) {
++			domain->linear_revmap[hwirq] = virq;
++		} else {
+ 			mutex_lock(&revmap_trees_mutex);
+ 			radix_tree_insert(&domain->revmap_data.tree, hwirq, irq_data);
+ 			mutex_unlock(&revmap_trees_mutex);
+-			break;
+ 		}
+ 
+ 		irq_clear_status_flags(virq, IRQ_NOREQUEST);
+@@ -667,13 +620,6 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 	switch (domain->revmap_type) {
+ 	case IRQ_DOMAIN_MAP_LINEAR:
+ 		return irq_linear_revmap(domain, hwirq);
+-	case IRQ_DOMAIN_MAP_TREE:
+-		rcu_read_lock();
+-		data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
+-		rcu_read_unlock();
+-		if (data)
+-			return data->irq;
+-		break;
+ 	case IRQ_DOMAIN_MAP_NOMAP:
+ 		data = irq_get_irq_data(hwirq);
+ 		if (data && (data->domain == domain) && (data->hwirq == hwirq))
+@@ -696,13 +642,18 @@ EXPORT_SYMBOL_GPL(irq_find_mapping);
+ unsigned int irq_linear_revmap(struct irq_domain *domain,
+ 			       irq_hw_number_t hwirq)
+ {
++	struct irq_data *data;
+ 	BUG_ON(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR);
+ 
+ 	/* Check revmap bounds; complain if exceeded */
+-	if (WARN_ON(hwirq >= domain->revmap_data.linear.size))
+-		return 0;
++	if (hwirq >= domain->revmap_data.linear.size) {
++		rcu_read_lock();
++		data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
++		rcu_read_unlock();
++		return data ? data->irq : 0;
++	}
+ 
+-	return domain->revmap_data.linear.revmap[hwirq];
++	return domain->linear_revmap[hwirq];
+ }
+ EXPORT_SYMBOL_GPL(irq_linear_revmap);
+ 
 -- 
 1.8.1.2
 
