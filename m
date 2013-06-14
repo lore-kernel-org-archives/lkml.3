@@ -1,116 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab3FNERe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 00:17:34 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:62512 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab3FNERc (ORCPT
+	id S1751206Ab3FNETs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 00:19:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55726 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab3FNETr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 00:17:32 -0400
+	Fri, 14 Jun 2013 00:19:47 -0400
+Message-ID: <51BA99CE.8000902@canonical.com>
+Date: Thu, 13 Jun 2013 23:19:26 -0500
+From: Dave Chiluk <chiluk@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1371143779.9844.297.camel@gandalf.local.home>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
-	<1371045758-5296-5-git-send-email-fweisbec@gmail.com>
-	<20130612170316.GO133453@redhat.com>
-	<20130613131057.GA15997@somewhere>
-	<20130613140207.GW133453@redhat.com>
-	<20130613142210.GD16339@somewhere>
-	<20130613144515.GX133453@redhat.com>
-	<20130613145601.GE16339@somewhere>
-	<20130613152059.GA133453@redhat.com>
-	<1371138491.9844.288.camel@gandalf.local.home>
-	<CAK7N6vqtnoNzRNodN6T0wysMYgPD+-SgPZLXAvRu3px7TUUvHQ@mail.gmail.com>
-	<1371143779.9844.297.camel@gandalf.local.home>
-Date: Fri, 14 Jun 2013 09:47:31 +0530
-Message-ID: <CAK7N6vqOQijcZEEuJKFbHKEaULnx8bCkaxSpBaiTe1+VGT+D5w@mail.gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-From: anish singh <anish198519851985@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Don Zickus <dzickus@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Petr Vandrovec <petr@vandrovec.name>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
+References: <1369781410-24473-1-git-send-email-chiluk@canonical.com> <51A918B8.20303@canonical.com> <CA+i2_De5HHw2H9SvZ=W+QAOcy0M7jFac88OK6aeYdJVCGL6b+A@mail.gmail.com> <51AF9D77.2000901@canonical.com> <CA+i2_DfEhn_CPRBmyy4scG7UEL5bGsjodcq00Nyx4JZjnuSBGQ@mail.gmail.com> <51B205A1.4040405@canonical.com> <20130607161452.GI13110@ZenIV.linux.org.uk> <20130613020122.GA20274@ZenIV.linux.org.uk> <20130613064235.GK4165@ZenIV.linux.org.uk>
+In-Reply-To: <20130613064235.GK4165@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:46 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2013-06-13 at 21:51 +0530, anish singh wrote:
->
->> > The concept behind full dynamic ticks is very easy. When you set a given
->> > CPU(s) to dynamic tick, when it only has a single task scheduled on that
->> > CPU, it disables the periodic tick. This removes essentially *all*
+On 06/13/2013 01:42 AM, Al Viro wrote:
+> On Thu, Jun 13, 2013 at 03:01:22AM +0100, Al Viro wrote:
+>> On Fri, Jun 07, 2013 at 05:14:52PM +0100, Al Viro wrote:
+>>> On Fri, Jun 07, 2013 at 11:09:05AM -0500, Dave Chiluk wrote:
+>>>> Can't you just use the patch from my original e-mail?  Anyhow I attached
+>>>> it an already signed-off patch.
+>>>>
+>>>> Al Viro Can you integrate it now?
+>>>
+>>> Applied...  FWIW, patch directly in mail body is more convenient to deal with.
 >>
->> Documentation/timers/highres.txt states that
->> hrtimer_stop_sched_tick() is called when a CPU goes into idle state.Would
->> you mind elaborating "single task scheduled on that CPU"?
->> I am bit new to this so please excuse me if the question is too basic.
->
-> That's the old CONFIG_NO_HZ, which only disables the tick on idle. What
-> we are working on is to also disable the tick when there's only one task
-> running on a given CPU. Why have as schedule tick when there's nothing
-> to schedule?
->
-> 3.10 now has new config options:
->
-> CONFIG_NO_HZ_PERIODIC - which is NO_HZ disabled
->    (the old # CONFIG_NO_HZ not set)
->
-> CONFIG_NO_HZ_IDLE - which is what CONFIG_NO_HZ use to be.
->
-> Note, CONFIG_NO_HZ still exists and if set, will make CONFIG_NO_HZ_IDLE
-> the default. This was to keep the same configuration for people who
-> update their kernel and run make oldconfig.
->
-> Then there's the new:
->
-> CONFIG_NO_HZ_FULL - this enables CONFIG_NO_HZ_IDLE plus adds the new
-> feature with disabling the tick when only one task is running on a given
-> CPU.
-
-Thanks and some more explanation in below documents.
-Documentation/timers/NO_HZ.txt
-Documentation/timers/highres.txt
->
->
->> > latency from the kernel! That is, if the task is doing some complex
->> > calculations, it wont be interrupted for kernel maintenance. A lot of
->> > Red Hat customers would love to have this feature. It allows for
->> > extremely low latency actions even without a real-time kernel. Heck, it
->> > works without even kernel preemption.
->> >
->> > Now removing the periodic tick is not a trivial task, and this is where
+>> Actually, looking at that stuff...  Why are we bothering with -EBUSY for
+>> removal of busy directories on ncpfs, anyway?  It's not just rmdir(), it's
+>> overwriting rename() as well.  IS_DEADDIR checks in fs/namei.c and fs/readdir.c
+>> mean that the only method of ncpfs directories that might get called after
+>> successful removal is ->setattr() and it would be trivial to add the check
+>> in ncp_notify_change() that would make it fail for dead directories without
+>> bothering the server at all...
 >>
->> You mean getting rid of period ticks in the kernel code is not easy as there
->> are many features such as perf is dependent on it right and that is why
->> instead of completely removing periodic ticks we just set the periodic tick
->> to happen at 1HZ instead of CONFIG_HZ value?
->
-> IIRC, the reason for moving to 1 HZ is so that the scheduler doesn't get
-> confused with overflows. It still needs to handle time keeping for
-"overflows" meaning the tick happening at 1HZ?
-However as I see here in this patch http://lwn.net/Articles/549592/ -
-you have plans to move it to 0Hz then how does scheduler cope
-with this?Does it not need this information to schedule a different
-task when the current task on "adaptive-ticks CPU" is done?
+>> Related question: what happens if you open / unlink / fchmod on ncpfs?
+> 
+> Speaking of crap used only by ncpfs: I think we can use ->d_iput() to get rid
+> of d_validate() for good.  The only remaining user is ncpfs; what happens there
+> is that we use the page cache of directory to cache the references to dentries
+> made by readdir.  We could do the following trick:
+> 	* have ->d_fsdata for these dentries a pointer into the cache page where
+> the reference back to dentry is stored
+> 	* ->freepage() for those pages consisting of
+> 		grab global spinlock
+> 		go through all dentries still pointed to by pointers in that
+> page, zeroing ->d_fsdata
+> 		drop the spinlock
+> 	* ->d_iput() for those dentries consisting of
+> 		grab the same spinlock
+> 		if ->d_fsdata is non-zero, store NULL at the address pointed
+> to by it
+> 		drop the spinlock
+> 	* ncp_dget_fpos() would
+> 		grab that spinlock
+> 		check if the reference to dentry in the position we are
+> interested in is non-NULL
+> 			grab ->d_lock
+> 			if DCACHE_DENTRY_KILLED is not set
+> 				bump ->d_count
+> 				drop ->d_lock
+> 				drop the spinlock
+> 				return dentry
+> 			// dentry is doomed
+> 			clear the reference
+> 			drop ->d_lock
+> 		drop the spinlock
+> 		return NULL
+> 	* ncp_fill_cache() would insert the sucker into cache and set
+> ->d_fsdata under the same spinlock.
+> 
+> IOW, instead of wanking with untrusted pointers to dentries, we simply make
+> sure we clean the pointer when dentry is going away and clean the reference
+> from dentry to the location of that pointer when the page is going away.
+> 
+> Objections?  I can do a patch along those lines, but I've nothing to test it
+> on.  Had that been cifs, I could at least use samba to test the fucker, but
+> I've no idea how to do that with ncpfs and I'm not too fond of checking how
+> much bitrot has mars_nwe suffered...
+> 
+I'm afraid you are way beyond my current vfs experience level on this
+one.  While you're getting rid of things you might consider
+dentry_unhash as well, as only hpfs_unlink, ncp_rmdir, and ncp_rename
+call that.
 
-Anyway doesn't "future works" should be part of No-hz.txt document?
-> managing how to schedule tasks according to CFS.
->
-> Everything else shouldn't depend on the tick... period.
->
-> -- Steve
->
->> > all our issues come from. In fact, we can not even completely remove the
->> > tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
->> > set to. We have to handle everything that depends on that tick, which
->> > includes perf, among other things.
->> >
->
->
+If you get a patch together, I'll do my best to test it.  Looks like
+only ncp_readdir calls that, so afaik, a few varying ls commands should
+be all that's needed for a test.
+
+Dave.
+p.s. are you sure you don't just want to just deprecate all of ncpfs?
