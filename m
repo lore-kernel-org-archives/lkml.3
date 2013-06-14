@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3FNVsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 17:48:10 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:57311 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752232Ab3FNVsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 17:48:08 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.10-rc6
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20130614214804.26550500B4B@whiskey.americas.sgi.com>
-Date: Fri, 14 Jun 2013 16:48:04 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1752538Ab3FNVuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 17:50:37 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34997 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751126Ab3FNVuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 17:50:35 -0400
+Message-ID: <1371246633.2726.59.camel@dabdike>
+Subject: Re: [PATCH RESEND] fix WARNING: at kernel/cpu/idle.c:96
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 14 Jun 2013 14:50:33 -0700
+In-Reply-To: <alpine.DEB.2.02.1306142227260.24522@ionos.tec.linutronix.de>
+References: <1371236142.2726.43.camel@dabdike>
+	 <alpine.DEB.2.02.1306142227260.24522@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2013-06-14 at 22:39 +0200, Thomas Gleixner wrote:
+> On Fri, 14 Jun 2013, James Bottomley wrote:
+> 
+> > >From 48bbf44a96676ce6f520a408378730c976e9a11e Mon Sep 17 00:00:00 2001
+> > From: James Bottomley <JBottomley@Parallels.com>
+> > Date: Wed, 8 May 2013 14:05:34 -0700
+> > Subject: [PATCH] [PARISC] fix WARNING: at kernel/cpu/idle.c:96
+> > 
+> > On PA-RISC (and presumably any other arch that doesn't implement its own
+> > arch_cpu_idle), we get this spurious boot warning.  The problem is that the
+> > way the idle task is selected initially using the weak arch_cpu_idle() in
+> > idle.c causes us to enter this place once with interrupts enabled.  Fix this
+> > by disabling interrupts in the weak arch_cpu_idle() code.
+> > 
+> > Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > Cc: stable@vger.kernel.org
+> 
+> What's the stable tag for? This code got merged in 3,10, so stable is
+> totally irrelevant.
 
-   Please pull these fixes for XFS.  These fixes remove shouty warnings which
-   spam system logs, align dir/attr structures with CRCs correctly, set the
-   block number on the new child block during a btree root split correctly, and
-   the last one disables verifiers as a temporary workaround for a flaw in
-   recovery.
+Hm, OK, it's been so long I'm misremembering which kernel versions need
+it.
 
-Thanks,
-	Ben
+> > Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> > 
+> > ---
+> > 
+> > Thomas, I'm getting a bit impatient: this is a clear bug in the cpu idle
+> > code and we keep getting reports of this as a boot crash on parisc.  If
+> > you don't push it through your tree, I'll take it through the parisc
+> > one.
+> 
+> Hold your breath. I was not even CC'ed on the original patch and I
+> admit that I ignored the patch which starts with [PARISC].
 
-The following changes since commit 0a8aa1939777dd114479677f0044652c1fd72398:
+Oh, you were ... I made sure of that. It's thread with subject
 
-  xfs: increase number of ACL entries for V5 superblocks (2013-06-06 10:52:15 -0500)
+Re: [PATCH] parisc: avoid WARNING: at kernel/cpu/idle.c:96
 
-are available in the git repository at:
+You were cc'd from the one dated Wed, 08 May 2013 14:05:34 -0700
 
-  git://oss.sgi.com/xfs/xfs.git tags/for-linus-v3.10-rc6
+> If the subject line would have started with [idle], [core/idle] I
+> definitely would have paid attention.
+> 
+> Aside of that the rest of the subject line is just annoyingly
+> sloppy. We do not fix a WARNING. That's not what this patch is
+> about. The patch fixes a problem which got introduced with the idle
+> rework, period.
+> 
+> I'll pick it up and fix the changelog.
 
-for you to fetch changes up to d302cf1d316dca5f567e89872cf5d475c9a55f74:
+Sure, whatever you think is best ... Given Linus' current mood I think
+leading with a description of the actual user visible problem being
+fixed is a good way to make sure he doesn't get annoyed, but it's your
+call.
 
-  xfs: don't shutdown log recovery on validation errors (2013-06-14 15:59:45 -0500)
+James
 
-----------------------------------------------------------------
-xfs: fixes for 3.10-rc6
 
-- Remove noisy warnings about experimental support which spams the logs
-- Add padding to align directory and attr structures correctly
-- Set block number on child buffer on a root btree split
-- Disable verifiers during log recovery for non-CRC filesystems
 
-----------------------------------------------------------------
-Dave Chinner (4):
-      xfs: don't emit v5 superblock warnings on write
-      xfs: fix implicit padding in directory and attr CRC formats
-      xfs: ensure btree root split sets blkno correctly
-      xfs: don't shutdown log recovery on validation errors
-
- fs/xfs/xfs_attr_leaf.h   |  1 +
- fs/xfs/xfs_btree.c       | 10 ++++++++++
- fs/xfs/xfs_dir2_format.h |  5 +++--
- fs/xfs/xfs_log_recover.c | 19 +++++++++++++++++--
- fs/xfs/xfs_mount.c       | 18 +++++++++++-------
- 5 files changed, 42 insertions(+), 11 deletions(-)
