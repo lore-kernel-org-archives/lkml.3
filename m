@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3FNMoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 08:44:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38973 "EHLO mail.skyhub.de"
+	id S1752737Ab3FNMoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 08:44:16 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37271 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab3FNMoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 08:44:05 -0400
-Date: Fri, 14 Jun 2013 14:44:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, Borislav Petkov <bp@suse.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130614124400.GA8693@pd.tnic>
-References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
- <1645236.hTWQPUhyIx@vostro.rjw.lan>
- <20130613223740.GE32112@pd.tnic>
- <1469773.K3KVgsTfzW@vostro.rjw.lan>
+	id S1752579Ab3FNMoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 08:44:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when handling dock notification
+Date: Fri, 14 Jun 2013 14:53:26 +0200
+Message-ID: <6382542.YexNMucoL5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAN_LGv1_b16XDAS-hrP2w=ERBgJ+V+P3kgKrksR0qO3navXiOg@mail.gmail.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <2301639.HY0nSRLtah@vostro.rjw.lan> <CAN_LGv1_b16XDAS-hrP2w=ERBgJ+V+P3kgKrksR0qO3navXiOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1469773.K3KVgsTfzW@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 02:46:38PM +0200, Rafael J. Wysocki wrote:
-> OK, so here's a deal. After 3.10-rc1 goes out, I'll put this into
-> linux-next
+On Friday, June 14, 2013 06:30:58 PM Alexander E. Patrakov wrote:
+> 2013/6/14 Rafael J. Wysocki <rjw@sisk.pl>:
+> 
+> > What about the appended patch (on top of [1/9], untested)?
+> >
+> > Rafael
+> 
+> Sorry, I have lost the track of which patches, on top of 3.10-rc5, I
+> should include in my testing and which I shouldn't. Could you please
+> restore my understanding? I.e., please provide a full list of LKML or
+> Bugzilla links to patches which I should test during the next boot of
+> the laptop.
+> 
+> Thanks in advance.
 
-Yeah, you mean 3.11-rc1 here...
+As far as I'm concerned, please test these two for now:
 
-> for 3.12, so that people have a few more weeks to complain. If they
-> don't, it'll go into 3.12.
+https://patchwork.kernel.org/patch/2717851/
+https://patchwork.kernel.org/patch/2721271/
 
-but yep, sounds like a deal.
+They are targeted at the ordering problems only, however, so they won't address
+the resource allocation issues you're seeing.
 
-Thanks.
+There are some other patches Jiang Liu and Yinghai are working on as far as
+I can say, but I'm not sure what their status is at the moment.
+
+Thanks,
+Rafael
+
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
