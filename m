@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3FNFnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 01:43:51 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:64022 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3FNFnu (ORCPT
+	id S1751535Ab3FNFqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 01:46:05 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53741 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3FNFqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 01:43:50 -0400
-Message-ID: <51BAAD93.6020308@contentreich.de>
-Date: Fri, 14 Jun 2013 05:43:47 +0000
-From: Andreas Steffan <a.steffan@contentreich.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 01:46:03 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: TCP through vpnx dev stalls
+In-Reply-To: <1371172023-16004-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1371172023-16004-1-git-send-email-ddaney.cavm@gmail.com>
+Date: Thu, 13 Jun 2013 22:46:02 -0700
+X-Google-Sender-Auth: tWEb3uaffCgVTxnwnpixhXtPFjE
+Message-ID: <CA+55aFziBGnSgLimDe7WBRPQ+f3RVAsrdbo212oj85c-XSz4oA@mail.gmail.com>
+Subject: Re: [PATCH] smp.h: Use local_irq_{save,restore}() in !SMP version of on_each_cpu().
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mips <linux-mips@linux-mips.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo everybody,
+On Thu, Jun 13, 2013 at 6:07 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+>
+> Suggested fix: Do what we already do in the SMP version of
+> on_each_cpu(), and use local_irq_save/local_irq_restore.
 
-I see certain tcp traffing stalling with kernel 3.8.0-22.33 (current
-Raring Ringtail version). It is 100% reproducible when I scp a file
-(>100 kB) to a machine on the other side. Copying a file of any size in
-the other direction (from the remote machine) to my box works fine. I
-see somewhat similiar problems doing large HTTP POSTs to the remote
-machine or when I run a remote X application.
+I was going to apply this, but started looking a bit more.
 
-I tried several versions of openconnect 4.06, 4.07 and 4.99 on linux
-3.8.0-22 and see this behaviour with all versions.
+Using "flags" as a variable name inside a macro like this is a
+*really* bad idea.
 
-On the same system everything works fine by just swapping the kernel
-booting to 3.5.0-27.46 (latest from Quantal Quetzal).
+Lookie here:
 
+    [torvalds@pixel linux]$ git grep on_each_cpu.*flags
+    arch/s390/kernel/perf_cpum_cf.c:        on_each_cpu(setup_pmc_cpu,
+&flags, 1);
+    arch/s390/kernel/perf_cpum_cf.c:        on_each_cpu(setup_pmc_cpu,
+&flags, 1);
 
-Additional information (e.g. tcpdump output) is at launchpad (bug 1185884)
-where I originally reported to bug.
+and ask yourself what happens when the "info" argument expands to
+"&flags", and it all compiles perfectly fine, but the "&flags" takes
+the address of the new _inner_ variable called "flags" from the macro
+expansion. Not the one that the caller actually intends..
 
-Linux mcgyver 3.8.0-23-generic #34-Ubuntu SMP Wed May 29 20:22:58 UTC
-2013 x86_64 x86_64 x86_64 GNU/Linux
- 
-Gnu C                  4.7
-Gnu make               3.81
-binutils               2.23.2
-util-linux             2.20.1
-mount                  support
-module-init-tools      9
-e2fsprogs              1.42.5
-jfsutils               1.1.15
-reiserfsprogs          3.6.21
-xfsprogs               3.1.9
-pcmciautils            018
-Linux C Library        2.17
-Dynamic linker (ldd)   2.17
-Procps                 3.3.3
-Net-tools              1.60
-Kbd                    1.15.5
-Sh-utils               8.20
-wireless-tools         30
-Modules Loaded         nls_utf8 isofs snd_hrtimer pci_stub vboxpci
-vboxnetadp vboxnetflt vboxdrv nfnetlink_log nfnetlink ip6table_filter
-ip6_t_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat
-nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT
-xt_CHECKSUM ipta_tcpudp iptable_filter ip_tables x_tables bridge stp llc
-autofs4 deflate zlib_deflate dm_crypt ctr twofish_generic
-twofish_x86_64_3way twofishsh_common camellia_generic camellia_x86_64
-serpent_sse2_x86_64 serpent_generic glue_helper blowfish_generic
+Oops.
 
-best regards
-Andreas
+Not a good idea.
 
--- 
-Andreas Steffan
+So I would suggest trivially renaming "flags" as "__flags" or
+something, or perhaps even just making it a real function and avoiding
+the whole namespace issue.
 
-Achter Billing 14
-22399 Hamburg
-Germany
+And rather than doing that blindly by editing the patch at after -rc5,
+I'm just going to ask you to re-send a tested patch. Ok?
 
-skype: contentreich
-M: +49 1793903615
-T: +49 40 23943542
-F: +49 40 23943542
-
-http://www.contentreich.de
-
-Contentreich : Alfresco WCM / ECM, JEE, Grails
-
+                    Linus
