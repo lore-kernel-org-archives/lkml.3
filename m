@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3FNOE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 10:04:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49990 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab3FNOEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 10:04:25 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] ARM: dts: AM43x EPOS EVM support
-Date: Fri, 14 Jun 2013 19:33:34 +0530
-Message-ID: <1371218614-26311-1-git-send-email-afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
+	id S1753106Ab3FNOF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 10:05:59 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:45581 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab3FNOF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 10:05:57 -0400
+Message-ID: <51BB233B.3040009@gmail.com>
+Date: Fri, 14 Jun 2013 22:05:47 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shaohua Li <shaohua.li@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: [BUGFIX 5/9] ACPI, DOCK: kill redundant spin lock in dock device
+ object
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-6-git-send-email-jiang.liu@huawei.com> <1490442.eFer0nddaj@vostro.rjw.lan>
+In-Reply-To: <1490442.eFer0nddaj@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add AM43x ePOS EVM minimal DT source - this is a minimal one to get
-it booting. Also include it in omap2plus dtbs and document bindings.
-The hardware is under development.
+On 06/14/2013 02:28 AM, Rafael J. Wysocki wrote:
+> On Friday, June 14, 2013 12:32:28 AM Jiang Liu wrote:
+>> All dock device related data structures are created during driver
+>> initialization, so kill the redundant spin lock in dock device object.
+> 
+> As a cleanup, it definitely makes sense, but does it fix anything?
+> 
+> Rafael
+Patch 3-9 are code cleanup only, I will resend them as separate patchset
+later.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
-
-Hi Benoit,
-
-This is based on your for_3.11/dts branch.
-
-Ideally I wanted to split this into 3 patches - first doc, second dts
-and last adding build support. As changes in total is trivial, it was
-made a single one.
-
-Regards
-Afzal
-
-
- Documentation/devicetree/bindings/arm/omap/omap.txt |  3 +++
- arch/arm/boot/dts/Makefile                          |  3 ++-
- arch/arm/boot/dts/am43x-epos-evm.dts                | 18 ++++++++++++++++++
- 3 files changed, 23 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/am43x-epos-evm.dts
-
-diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-index f8288ea..6d498c7 100644
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@ -56,3 +56,6 @@ Boards:
- 
- - OMAP5 EVM : Evaluation Module
-   compatible = "ti,omap5-evm", "ti,omap5"
-+
-+- AM43x EPOS EVM
-+  compatible = "ti,am43x-epos-evm", "ti,am4372", "ti,am43"
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 8e50761..05da469 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -155,7 +155,8 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	am335x-evmsk.dtb \
- 	am335x-bone.dtb \
- 	am3517-evm.dtb \
--	am3517_mt_ventoux.dtb
-+	am3517_mt_ventoux.dtb \
-+	am43x-epos-evm.dtb
- dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
- dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
- dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
-diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-new file mode 100644
-index 0000000..74174d4
---- /dev/null
-+++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-@@ -0,0 +1,18 @@
-+/*
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/* AM43x EPOS EVM */
-+
-+/dts-v1/;
-+
-+#include "am4372.dtsi"
-+
-+/ {
-+	model = "TI AM43x EPOS EVM";
-+	compatible = "ti,am43x-epos-evm","ti,am4372","ti,am43";
-+};
--- 
-1.7.12
+> 
+> 
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Shaohua Li <shaohua.li@intel.com>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+>> Cc: linux-acpi@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>  drivers/acpi/dock.c | 15 +++------------
+>>  1 file changed, 3 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+>> index 8e578aa..cd2d5df 100644
+>> --- a/drivers/acpi/dock.c
+>> +++ b/drivers/acpi/dock.c
+>> @@ -57,7 +57,6 @@ struct dock_station {
+>>  	acpi_handle handle;
+>>  	unsigned long last_dock_time;
+>>  	u32 flags;
+>> -	spinlock_t dd_lock;
+>>  	struct mutex hp_lock;
+>>  	struct task_struct *owner;
+>>  	struct list_head dependent_devices;
+>> @@ -107,10 +106,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+>>  	dd->handle = handle;
+>>  	INIT_LIST_HEAD(&dd->list);
+>>  	INIT_LIST_HEAD(&dd->hotplug_list);
+>> -
+>> -	spin_lock(&ds->dd_lock);
+>>  	list_add_tail(&dd->list, &ds->dependent_devices);
+>> -	spin_unlock(&ds->dd_lock);
+>>  
+>>  	return 0;
+>>  }
+>> @@ -168,14 +164,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+>>  {
+>>  	struct dock_dependent_device *dd;
+>>  
+>> -	spin_lock(&ds->dd_lock);
+>> -	list_for_each_entry(dd, &ds->dependent_devices, list) {
+>> -		if (handle == dd->handle) {
+>> -			spin_unlock(&ds->dd_lock);
+>> +	list_for_each_entry(dd, &ds->dependent_devices, list)
+>> +		if (handle == dd->handle)
+>>  			return dd;
+>> -		}
+>> -	}
+>> -	spin_unlock(&ds->dd_lock);
+>> +
+>>  	return NULL;
+>>  }
+>>  
+>> @@ -964,7 +956,6 @@ static int __init dock_add(acpi_handle handle)
+>>  	dock_station->last_dock_time = jiffies - HZ;
+>>  
+>>  	mutex_init(&dock_station->hp_lock);
+>> -	spin_lock_init(&dock_station->dd_lock);
+>>  	INIT_LIST_HEAD(&dock_station->sibling);
+>>  	INIT_LIST_HEAD(&dock_station->hotplug_devices);
+>>  	INIT_LIST_HEAD(&dock_station->dependent_devices);
+>>
 
