@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3FNJcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 05:32:39 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:28325 "EHLO multi.imgtec.com"
+	id S1751989Ab3FNJdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 05:33:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34765 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab3FNJci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 05:32:38 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH] metag: fix mm/hugetlb.c build breakage
-Date: Fri, 14 Jun 2013 10:31:01 +0100
-Message-ID: <1371202261-30931-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751595Ab3FNJds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 05:33:48 -0400
+From: Philip Avinash <avinashphilip@ti.com>
+To: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, <avinashphilip@ti.com>
+Subject: [PATCH v2 0/7] Convert GPIO Davinci to platform driver
+Date: Fri, 14 Jun 2013 15:05:25 +0530
+Message-ID: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_06_14_10_32_36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 106c992a5ebef28193cf5958e49ceff5e4aebb04 ("mm/hugetlb: add more
-arch-defined huge_pte functions") merged in v3.10-rc1.
+To support DT booting of da850 EVM, davinci gpio driver converted to platform
+driver. Also when here, start using gpiolib API for gpio get/set functionalities.
+Hence removing gpio inline functionalities. However usage of gpiolib API will
+cause an additional software latencies.
 
-The above commit added an include of <asm-generic/hugetlb.h> to each
-architecture's <asm/hugetlb.h> (except s390). Unfortunately metag was
-missed which resulted in build errors when hugetlbfs is enabled (see
-below). Add the include for metag too to fix the build errors.
+In this patch series
+- Cleaned gpio Davinci driver code with proper commenting style.
+- Create platform driver for GPIO Davinci in da8xx and dmxxx platforms and
+  removed gpio related member updation in davinci_soc_info structure.
+- Remove soc_info reference in the gpio davinci driver and start uses
+  gpiolib interface.
+- gpio-tnetv107x driver also modified to use gpiolib API interface.
 
-mm/hugetlb.c In function 'make_huge_pte':
-mm/hugetlb.c +2250 : error: implicit declaration of function 'huge_pte_mkwrite'
-mm/hugetlb.c +2250 : error: implicit declaration of function 'huge_pte_mkdirty'
-mm/hugetlb.c +2250 : error: implicit declaration of function 'mk_huge_pte'
-mm/hugetlb.c +2251 : error: incompatible types in assignment
-mm/hugetlb.c +2254 : error: incompatible type for argument 1 of 'huge_pte_wrprotect'
-mm/hugetlb.c In function 'set_huge_ptep_writable':
-mm/hugetlb.c +2268 : error: incompatible types in assignment
-mm/hugetlb.c In function '__unmap_hugepage_range':
-mm/hugetlb.c +2383 : error: implicit declaration of function 'huge_pte_clear'
-mm/hugetlb.c +2407 : error: implicit declaration of function 'huge_pte_dirty'
-mm/hugetlb.c In function 'hugetlb_fault':
-mm/hugetlb.c +2860 : error: implicit declaration of function 'huge_pte_write'
-mm/hugetlb.c +2895 : error: incompatible types in assignment
-mm/hugetlb.c In function 'hugetlb_change_protection':
-mm/hugetlb.c +3047 : error: implicit declaration of function 'huge_pte_modify'
-mm/hugetlb.c +3047 : error: incompatible type for argument 1 of 'pte_mkhuge'
-make[1]: *** [mm/hugetlb.o] Error 1
-make: *** [mm/hugetlb.o] Error 2
+This series has been tested on da850 EVM for gpio interrupt generation.
+This patch series is based on Linux 3.10-rc4 and is availabel at [1].
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>
----
- arch/metag/include/asm/hugetlb.h | 1 +
- 1 file changed, 1 insertion(+)
+1. https://github.com/avinashphilip/am335x_linux/tree/linux_davinci_v3.10_soc_gpio_v310-rc4
 
-diff --git a/arch/metag/include/asm/hugetlb.h b/arch/metag/include/asm/hugetlb.h
-index f545477..471f481 100644
---- a/arch/metag/include/asm/hugetlb.h
-+++ b/arch/metag/include/asm/hugetlb.h
-@@ -2,6 +2,7 @@
- #define _ASM_METAG_HUGETLB_H
- 
- #include <asm/page.h>
-+#include <asm-generic/hugetlb.h>
- 
- 
- static inline int is_hugepage_only_range(struct mm_struct *mm,
+KV Sujith (2):
+  gpio: davinci: move to platform device
+  ARM: davinci: da8xx: creation of gpio platform device
+
+Philip Avinash (5):
+  gpio: davinci: coding style correction
+  ARM: davinci: creation of gpio platform device for dmxxx platforms
+  ARM: davinci: da8xx: gpio device creation
+  ARM: davinci: dmxxx: gpio device creation
+  ARM: davinci: Start using gpiolib API inplace of inline functions
+
+ arch/arm/Kconfig                                  |    1 -
+ arch/arm/mach-davinci/board-da830-evm.c           |   19 ++-
+ arch/arm/mach-davinci/board-da850-evm.c           |   11 ++
+ arch/arm/mach-davinci/board-dm355-evm.c           |   27 ++++
+ arch/arm/mach-davinci/board-dm355-leopard.c       |    1 +
+ arch/arm/mach-davinci/board-dm365-evm.c           |   28 ++++
+ arch/arm/mach-davinci/board-dm644x-evm.c          |   26 ++++
+ arch/arm/mach-davinci/board-dm646x-evm.c          |   27 ++++
+ arch/arm/mach-davinci/board-neuros-osd2.c         |    1 +
+ arch/arm/mach-davinci/board-omapl138-hawk.c       |    2 +
+ arch/arm/mach-davinci/da830.c                     |    5 -
+ arch/arm/mach-davinci/da850.c                     |    5 -
+ arch/arm/mach-davinci/devices-da8xx.c             |   26 ++++
+ arch/arm/mach-davinci/devices.c                   |   13 ++
+ arch/arm/mach-davinci/dm355.c                     |    5 -
+ arch/arm/mach-davinci/dm365.c                     |    6 -
+ arch/arm/mach-davinci/dm644x.c                    |    5 -
+ arch/arm/mach-davinci/dm646x.c                    |    5 -
+ arch/arm/mach-davinci/include/mach/common.h       |    4 +
+ arch/arm/mach-davinci/include/mach/da8xx.h        |    1 +
+ arch/arm/mach-davinci/include/mach/gpio-davinci.h |   91 -------------
+ arch/arm/mach-davinci/include/mach/gpio.h         |   88 -------------
+ arch/arm/mach-davinci/tnetv107x.c                 |    2 +-
+ drivers/gpio/gpio-davinci.c                       |  144 ++++++++++++++-------
+ drivers/gpio/gpio-tnetv107x.c                     |    1 +
+ include/linux/platform_data/gpio-davinci.h        |   59 +++++++++
+ 26 files changed, 341 insertions(+), 262 deletions(-)
+ delete mode 100644 arch/arm/mach-davinci/include/mach/gpio-davinci.h
+ delete mode 100644 arch/arm/mach-davinci/include/mach/gpio.h
+ create mode 100644 include/linux/platform_data/gpio-davinci.h
+
 -- 
-1.8.1.2
-
+1.7.9.5
 
