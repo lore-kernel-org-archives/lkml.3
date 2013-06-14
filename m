@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3FNSG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 14:06:27 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:42820 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab3FNSG0 (ORCPT
+	id S1753261Ab3FNSH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 14:07:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21097 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3FNSHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 14:06:26 -0400
-Message-ID: <51BB5B65.3000400@ahsoftware.de>
-Date: Fri, 14 Jun 2013 20:05:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 14 Jun 2013 14:07:53 -0400
+Date: Fri, 14 Jun 2013 14:07:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH v2, part3 07/11] PCI, xen-pcifront: use new PCI
+ interfaces to simplify implementation
+Message-ID: <20130614180719.GA21729@phenom.dumpdata.com>
+References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com>
+ <1368719459-24800-8-git-send-email-jiang.liu@huawei.com>
+ <20130607145024.GA16631@phenom.dumpdata.com>
+ <20130607153822.GA24882@phenom.dumpdata.com>
+ <51B20F57.7050100@gmail.com>
+ <20130607170706.GB3730@phenom.dumpdata.com>
+ <51B4B266.5010100@gmail.com>
+ <20130610165801.GA24823@phenom.dumpdata.com>
+ <51B607FE.3020108@gmail.com>
 MIME-Version: 1.0
-To: rtc-linux@googlegroups.com
-CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] Re: [PATCH 4/9 RESEND] RFC: timekeeping: introduce
- flag systime_was_set
-References: <51BA1FF7.4000206@ahsoftware.de> <1371228732-5749-1-git-send-email-holler@ahsoftware.de> <1371228732-5749-5-git-send-email-holler@ahsoftware.de> <51BB55C0.7090603@linaro.org>
-In-Reply-To: <51BB55C0.7090603@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B607FE.3020108@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.06.2013 19:41, schrieb John Stultz:
-> On 06/14/2013 09:52 AM, Alexander Holler wrote:
->> In order to let an RTC set the time at boot without the problem that a
->> second RTC overwrites it, the flag systime_was_set is introduced.
->>
->> systime_was_set will be true, if a persistent clock sets the time at
->> boot,
->> or if do_settimeofday() is called (e.g. by the RTC subsystem or
->> userspace).
->>
->> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->> ---
->>   include/linux/time.h      |  6 ++++++
->>   kernel/time/timekeeping.c | 10 +++++++++-
->>   2 files changed, 15 insertions(+), 1 deletion(-)
->>
->> diff --git a/include/linux/time.h b/include/linux/time.h
->> index d5d229b..888280f 100644
->> --- a/include/linux/time.h
->> +++ b/include/linux/time.h
->> @@ -129,6 +129,12 @@ extern int update_persistent_clock(struct
->> timespec now);
->>   void timekeeping_init(void);
->>   extern int timekeeping_suspended;
->> +/*
->> + * Will be true if the system time was set at least once by
->> + * a persistent clock, RTC or userspace.
->> + */
->> +extern bool systime_was_set;
->> +
->
-> Probably should make this static to timekeeping.c and create an accessor
-> function so you don't have to export locking rules on this.
->
->
->>   unsigned long get_seconds(void);
->>   struct timespec current_kernel_time(void);
->>   struct timespec __current_kernel_time(void); /* does not take
->> xtime_lock */
->> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
->> index baeeb5c..07d8531 100644
->> --- a/kernel/time/timekeeping.c
->> +++ b/kernel/time/timekeeping.c
->> @@ -37,6 +37,9 @@ int __read_mostly timekeeping_suspended;
->>   /* Flag for if there is a persistent clock on this platform */
->>   bool __read_mostly persistent_clock_exist = false;
->> +/* Flag for if the system time was set at least once */
->> +bool __read_mostly systime_was_set;
->> +
-> Probably should also move this to be part of the timekeeper structure
-> (since it will be protected by the timekeeper lock.
->
+On Tue, Jun 11, 2013 at 01:08:14AM +0800, Jiang Liu wrote:
+> On Tue 11 Jun 2013 12:58:01 AM CST, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Jun 10, 2013 at 12:50:46AM +0800, Jiang Liu wrote:
+> >> On Sat 08 Jun 2013 01:07:06 AM CST, Konrad Rzeszutek Wilk wrote:
+> >>> On Sat, Jun 08, 2013 at 12:50:31AM +0800, Jiang Liu wrote:
+> >>>> On 06/07/2013 11:38 PM, Konrad Rzeszutek Wilk wrote:
+> >>>>> On Fri, Jun 07, 2013 at 10:50:24AM -0400, Konrad Rzeszutek Wilk wrote:
+> >>>>>> On Thu, May 16, 2013 at 11:50:55PM +0800, Jiang Liu wrote:
+> >>>>>>> Use new PCI interfaces to simplify xen-pcifront implementation:
+> >>>>>>> 1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
+> >>>>>>>    because pci_scan_bus_parented() is marked as __deprecated.This
+> >>>>>>>    also gets rid of a duplicated call of pci_bus_start_devices().
+> >>>>>>> 2) Use pci_stop_root_bus() and pci_remove_root_bus() instead of
+> >>>>>>>    open-coded private implementation.
+> >>>>>>> 3) Use pci_set_host_bridge_release() to release data structures
+> >>>>>>>    associated with PCI root buses.
+> >>>>>>> 4) Use pci_bus_get()/pci_bus_put() to manage PCI root bus reference
+> >>>>>>>    count.
+> >>>>>>>
+> >>>>>>> This is also a preparation for coming PCI bus lock enhancement.
+> >>>>>
+> >>>>> With this patch from :
+> >>>>>
+> >>>>>  Merge branch 'pci_lock_v3' of https://github.com/jiangliu/linux into testing
+> >>>>>
+> >>>>>
+> >>>>> it blows up when detaching the device.
+> >>>> Hi Konrad,
+> >>>>    Thanks for testing! According to the log messages, this issue should
+> >>>> be related to pci bus reference counter management. Seems we have done
+> >>>> an extra(unbalanced) release of pci bus device.
+> >>>>    Will investigate it tomorrow!
+> >>>
+> >>> That is quite commendable that you are willing to look over this on
+> >>> the weekend but I am not going to be able to rerun this test until
+> >>> some time in the week. You could enjoy the weekend and just look at
+> >>> this during the week.
+> >>
+> >> Hi Konrad,
+> >>      We should have root-caused this bug, which is caused by
+> >> for_each_pci_root_bus().
+> >> Current implementation doesn't support root bus deletion when walking
+> >> PCI root
+> >> buses by for_each_pci_root_bus(). The reference counter
+> >> (pci_bus->dev.knode_class.n_ref)
+> >> becomes zero after returning from pci_remove_root_bus(), so it triggers
+> >> kref warnings
+> >> and double-free of klist_node object when we call
+> >> pci_get_next_root_bus() to get the
+> >> next PCI root bus.
+> >>      So we will first revert to  list_for_each_entry_safe(bus, temp,
+> >> &pci_root_buses, node)
+> >> and solve this issue in next version of for_each_pci_root_bus().
+> >
+> > That definitly solves the issue. Thanks!
+> >
+> > I used pci_lock_v3 of https://github.com/jiangliu/linux and the fix
+> > below.
+> >
+> > Is there a new patchset you are going to be posting or a git branch
+> > that I can look over?
+> >
+> > Thanks.
+> Hi Konrad,
+>      Really appreciate your support! I will try to post a new version 
+> tomorrow,
+> but I think there won't be big changes except addressing some review
+> comments from you.
 
-I wanted to avoid locks for this silly flag at all. It is only set once 
-at boot (and resume) and set to 0 at suspend. And I don't see any 
-possible race condition which could make a lock necessary. Therefor I've 
-decided to not use a lock or atomic_* in order to skip any delay in 
-setting the time.
+I also get this:
 
-Of course, I might be wrong and there might be a use case where multiple 
-things do set the system time concurrently and nothing else did set 
-system time before, but I found that extremly unlikely.
+ERROR: "pci_set_host_bridge_release" [drivers/pci/xen-pcifront.ko] undefined!
+ERROR: "pci_create_root_bus" [drivers/pci/xen-pcifront.ko] undefined!
+ERROR: "pci_remove_root_bus" [drivers/pci/xen-pcifront.ko] undefined!
+ERROR: "pci_stop_root_bus" [drivers/pci/xen-pcifront.ko] undefined!
 
-
->>   static inline void tk_normalize_xtime(struct timekeeper *tk)
->>   {
->>       while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
->> @@ -498,6 +501,9 @@ int do_settimeofday(const struct timespec *tv)
->>       raw_spin_lock_irqsave(&timekeeper_lock, flags);
->>       write_seqcount_begin(&timekeeper_seq);
->> +    systime_was_set = true;
->> +
->> +
->>       timekeeping_forward_now(tk);
->>       xt = tk_xtime(tk);
->
-> Might also want to add the flag to inject_offset as well, since that
-> could be used to set the time.
-
-I wasn't sure about that because I had only a quick look at 
-inject_offset() and had the impression it's only able to inject a 
-relative small offset (so not usable at boot). And, as written sometimes 
-before, I haven't had a deep look at suspend/resume, which might be the 
-only place where it is really used to set the clock when
-systime_was_set is false.
-
-Regards,
-
-Alexander
+when building it as a module.
