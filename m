@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3FNPxR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 11:53:17 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:26333 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab3FNPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 11:53:13 -0400
-Message-ID: <51BB3C62.4070000@imgtec.com>
-Date: Fri, 14 Jun 2013 16:53:06 +0100
-From: James Hogan <james.hogan@imgtec.com>
+	id S1752645Ab3FNPxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 11:53:37 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:46607 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752537Ab3FNPxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 11:53:35 -0400
+Message-ID: <51BB3C7C.70304@semaphore.gr>
+Date: Fri, 14 Jun 2013 18:53:32 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 0/5] pinctrl: fix some issues with new pinconfig dt parsing
-References: <201306141741.46077.heiko@sntech.de>
-In-Reply-To: <201306141741.46077.heiko@sntech.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_14_16_53_10
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
+        Borislav Petkov <bp@suse.de>, Viresh Kumar <viresh.kumar@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target
+ frequency
+References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com> <1469773.K3KVgsTfzW@vostro.rjw.lan> <20130614124400.GA8693@pd.tnic> <2227190.21dzlq2WhC@vostro.rjw.lan>
+In-Reply-To: <2227190.21dzlq2WhC@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/13 16:41, Heiko Stübner wrote:
-> Some issues with the recently submitted generic pinconfig parsing from dt
-> came up, so fix these in this follow-up series.
-> 
-> Hopefully I did catch all of them.
-> 
-> Tested on my rk3066 device.
-> 
-> Heiko Stuebner (5):
->   pinctrl: update the documentation for some pinconfig params
->   pinctrl: clarify some dt pinconfig options
->   pinctrl: handle zero found dt pinconfig properties better
->   pinctrl: dynamically alloc temp array when parsing dt pinconf options
+Hi,
 
-patches 1-4:
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-
-Cheers
-James
-
->   pinctrl: rockchip: correctly handle arguments of pinconf options
+On 06/14/2013 03:55 PM, Rafael J. Wysocki wrote:
+> On Friday, June 14, 2013 02:44:01 PM Borislav Petkov wrote:
+>> On Fri, Jun 14, 2013 at 02:46:38PM +0200, Rafael J. Wysocki wrote:
+>>> OK, so here's a deal. After 3.10-rc1 goes out, I'll put this into
+>>> linux-next
+>>
+>> Yeah, you mean 3.11-rc1 here...
 > 
->  .../bindings/pinctrl/pinctrl-bindings.txt          |   22 +++++++++++-
->  drivers/pinctrl/pinconf-generic.c                  |   38 +++++++++++++++-----
->  drivers/pinctrl/pinctrl-rockchip.c                 |   37 ++++++++++++++++---
->  include/linux/pinctrl/pinconf-generic.h            |   18 ++++++----
->  4 files changed, 93 insertions(+), 22 deletions(-)
+> Sure, sorry for the confusion.
 > 
+>>> for 3.12, so that people have a few more weeks to complain. If they
+>>> don't, it'll go into 3.12.
+>>
+>> but yep, sounds like a deal.
+> 
+> Cool, thanks!
+
+
+Great news! :-)
+
+Thank you all, for your help and for your valuable time!
+
+Regards,
+Stratos
 
