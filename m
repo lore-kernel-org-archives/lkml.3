@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3FNTeg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:34:36 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59086 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3FNTee (ORCPT
+	id S1753934Ab3FNTe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:34:57 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:53143 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab3FNTey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:34:34 -0400
+	Fri, 14 Jun 2013 15:34:54 -0400
 From: Jiang Liu <jiang.liu@huawei.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
         Yinghai Lu <yinghai@kernel.org>,
@@ -15,10 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
         Jiang Liu <liuj97@gmail.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, <stable@vger.kernel.org>
-Subject: [BUGFIX v2 1/4] ACPI, DOCK: initialize dock subsystem before scanning PCI root buses
-Date: Sat, 15 Jun 2013 03:27:58 +0800
-Message-Id: <1371238081-32260-2-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        <stable@vger.kernel.org>
+Subject: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
+Date: Sat, 15 Jun 2013 03:27:59 +0800
+Message-Id: <1371238081-32260-3-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
 References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
@@ -26,83 +27,328 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changeset "3b63aaa70e1 PCI: acpiphp: Do not use ACPI PCI subdriver
-mechanism" causes a regression which breaks ACPI dock support,
-please refer to https://bugzilla.kernel.org/show_bug.cgi?id=59501
+This is a preparation for next patch to avoid breaking bisecting.
+If next patch is applied without this one, it will cause deadlock
+as below:
 
-The root cause is that changeset 3b63aaa70e1 changed the relative
-initialization order of ACPI dock subsystem and acpiphp driver,
-and acpiphp driver has dependency on ACPI dock subsystem's
-initialization result, so that acpiphp can't correctly detect ACPI
-dock stations now.
+Case 1:
+[   31.015593]  Possible unsafe locking scenario:
 
-On the other hand, ACPI dock is a built-in driver, so we could
-explicitly initialize it before the acpiphp driver is used.
+[   31.018350]        CPU0                    CPU1
+[   31.019691]        ----                    ----
+[   31.021002]   lock(&dock_station->hp_lock);
+[   31.022327]                                lock(&slot->crit_sect);
+[   31.023650]                                lock(&dock_station->hp_lock);
+[   31.025010]   lock(&slot->crit_sect);
+[   31.026342]
+
+Case 2:
+        hotplug_dock_devices()
+                mutex_lock(&ds->hp_lock)
+                        dd->ops->handler()
+                                register_hotplug_dock_device()
+                                        mutex_lock(&ds->hp_lock)
+[   34.316570] [ INFO: possible recursive locking detected ]
+[   34.316573] 3.10.0-rc4 #6 Tainted: G         C
+[   34.316575] ---------------------------------------------
+[   34.316577] kworker/0:0/4 is trying to acquire lock:
+[   34.316579]  (&dock_station->hp_lock){+.+.+.}, at:
+[<ffffffff813c766b>] register_hotplug_dock_device+0x6a/0xbf
+[   34.316588]
+but task is already holding lock:
+[   34.316590]  (&dock_station->hp_lock){+.+.+.}, at:
+[<ffffffff813c7270>] hotplug_dock_devices+0x2c/0xda
+[   34.316595]
+other info that might help us debug this:
+[   34.316597]  Possible unsafe locking scenario:
+
+[   34.316599]        CPU0
+[   34.316601]        ----
+[   34.316602]   lock(&dock_station->hp_lock);
+[   34.316605]   lock(&dock_station->hp_lock);
+[   34.316608]
+ *** DEADLOCK ***
+
+So fix this deadlock by not taking ds->hp_lock in function
+register_hotplug_dock_device(). This patch also fixes a possible
+race conditions in function dock_event() because previously it
+accesses ds->hotplug_devices list without holding ds->hp_lock.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
+Cc: Len Brown <lenb@kernel.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Cc: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: <stable@vger.kernel.org> # 3.9+
+Cc: linux-pci@vger.kernel.org
+Cc: <stable@vger.kernel.org> # 3.8+
 ---
- drivers/acpi/dock.c     | 7 +------
- drivers/acpi/internal.h | 5 +++++
- drivers/acpi/scan.c     | 1 +
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/acpi/dock.c                | 109 ++++++++++++++++++++++---------------
+ drivers/pci/hotplug/acpiphp_glue.c |  15 +++++
+ include/acpi/acpi_drivers.h        |   2 +
+ 3 files changed, 82 insertions(+), 44 deletions(-)
 
 diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index 4fdea38..02b0563 100644
+index 02b0563..602bce5 100644
 --- a/drivers/acpi/dock.c
 +++ b/drivers/acpi/dock.c
-@@ -1033,7 +1033,7 @@ find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
+@@ -66,7 +66,7 @@ struct dock_station {
+ 	spinlock_t dd_lock;
+ 	struct mutex hp_lock;
+ 	struct list_head dependent_devices;
+-	struct list_head hotplug_devices;
++	struct klist hotplug_devices;
+ 
+ 	struct list_head sibling;
+ 	struct platform_device *dock_device;
+@@ -76,12 +76,18 @@ static int dock_station_count;
+ 
+ struct dock_dependent_device {
+ 	struct list_head list;
+-	struct list_head hotplug_list;
++	acpi_handle handle;
++};
++
++struct dock_hotplug_info {
++	struct klist_node node;
+ 	acpi_handle handle;
+ 	const struct acpi_dock_ops *ops;
+ 	void *context;
+ };
+ 
++#define node_to_info(n)	container_of((n), struct dock_hotplug_info, node)
++
+ #define DOCK_DOCKING	0x00000001
+ #define DOCK_UNDOCKING  0x00000002
+ #define DOCK_IS_DOCK	0x00000010
+@@ -111,7 +117,6 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+ 
+ 	dd->handle = handle;
+ 	INIT_LIST_HEAD(&dd->list);
+-	INIT_LIST_HEAD(&dd->hotplug_list);
+ 
+ 	spin_lock(&ds->dd_lock);
+ 	list_add_tail(&dd->list, &ds->dependent_devices);
+@@ -120,36 +125,19 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+ 	return 0;
  }
  
--static int __init dock_init(void)
-+int __init acpi_dock_init(void)
- {
- 	if (acpi_disabled)
- 		return 0;
-@@ -1062,9 +1062,4 @@ static void __exit dock_exit(void)
- 		dock_remove(dock_station);
- }
- 
--/*
-- * Must be called before drivers of devices in dock, otherwise we can't know
-- * which devices are in a dock
+-/**
+- * dock_add_hotplug_device - associate a hotplug handler with the dock station
+- * @ds: The dock station
+- * @dd: The dependent device struct
+- *
+- * Add the dependent device to the dock's hotplug device list
 - */
--subsys_initcall(dock_init);
- module_exit(dock_exit);
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 297cbf4..c610a76 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -40,6 +40,11 @@ void acpi_container_init(void);
- #else
- static inline void acpi_container_init(void) {}
- #endif
-+#ifdef CONFIG_ACPI_DOCK
-+void acpi_dock_init(void);
-+#else
-+static inline void acpi_dock_init(void) {}
-+#endif
- #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
- void acpi_memory_hotplug_init(void);
- #else
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 44225cb..4148163 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -2045,6 +2045,7 @@ int __init acpi_scan_init(void)
- 	acpi_lpss_init();
- 	acpi_container_init();
- 	acpi_memory_hotplug_init();
-+	acpi_dock_init();
+-static void
+-dock_add_hotplug_device(struct dock_station *ds,
+-			struct dock_dependent_device *dd)
++static void hotplug_info_get(struct klist_node *node)
+ {
+-	mutex_lock(&ds->hp_lock);
+-	list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
+-	mutex_unlock(&ds->hp_lock);
++	struct dock_hotplug_info *info = node_to_info(node);
++
++	info->ops->get(info->context);
+ }
  
- 	mutex_lock(&acpi_scan_lock);
+-/**
+- * dock_del_hotplug_device - remove a hotplug handler from the dock station
+- * @ds: The dock station
+- * @dd: the dependent device struct
+- *
+- * Delete the dependent device from the dock's hotplug device list
+- */
+-static void
+-dock_del_hotplug_device(struct dock_station *ds,
+-			struct dock_dependent_device *dd)
++static void hotplug_info_put(struct klist_node *node)
+ {
+-	mutex_lock(&ds->hp_lock);
+-	list_del(&dd->hotplug_list);
+-	mutex_unlock(&ds->hp_lock);
++	struct dock_hotplug_info *info = node_to_info(node);
++
++	info->ops->put(info->context);
++	kfree(info);
+ }
+ 
+ /**
+@@ -354,15 +342,22 @@ static void dock_remove_acpi_device(acpi_handle handle)
+ static void hotplug_dock_devices(struct dock_station *ds, u32 event)
+ {
+ 	struct dock_dependent_device *dd;
++	struct klist_iter iter;
++	struct klist_node *node;
++	struct dock_hotplug_info *info;
+ 
+ 	mutex_lock(&ds->hp_lock);
+ 
  	/*
+ 	 * First call driver specific hotplug functions
+ 	 */
+-	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
+-		if (dd->ops && dd->ops->handler)
+-			dd->ops->handler(dd->handle, event, dd->context);
++	klist_iter_init(&ds->hotplug_devices, &iter);
++	while ((node = klist_next(&iter))) {
++		info = node_to_info(node);
++		if (info->ops && info->ops->handler)
++			info->ops->handler(info->handle, event, info->context);
++	}
++	klist_iter_exit(&iter);
+ 
+ 	/*
+ 	 * Now make sure that an acpi_device is created for each
+@@ -384,7 +379,9 @@ static void dock_event(struct dock_station *ds, u32 event, int num)
+ 	struct device *dev = &ds->dock_device->dev;
+ 	char event_string[13];
+ 	char *envp[] = { event_string, NULL };
+-	struct dock_dependent_device *dd;
++	struct klist_iter iter;
++	struct klist_node *node;
++	struct dock_hotplug_info *info;
+ 
+ 	if (num == UNDOCK_EVENT)
+ 		sprintf(event_string, "EVENT=undock");
+@@ -398,9 +395,13 @@ static void dock_event(struct dock_station *ds, u32 event, int num)
+ 	if (num == DOCK_EVENT)
+ 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
+ 
+-	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
+-		if (dd->ops && dd->ops->uevent)
+-			dd->ops->uevent(dd->handle, event, dd->context);
++	klist_iter_init(&ds->hotplug_devices, &iter);
++	while ((node = klist_next(&iter))) {
++		info = node_to_info(node);
++		if (info->ops && info->ops->handler)
++			info->ops->handler(info->handle, event, info->context);
++	}
++	klist_iter_exit(&iter);
+ 
+ 	if (num != DOCK_EVENT)
+ 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
+@@ -580,12 +581,16 @@ register_hotplug_dock_device(acpi_handle handle, const struct acpi_dock_ops *ops
+ 			     void *context)
+ {
+ 	struct dock_dependent_device *dd;
++	struct dock_hotplug_info *info;
+ 	struct dock_station *dock_station;
+ 	int ret = -EINVAL;
+ 
+ 	if (!dock_station_count)
+ 		return -ENODEV;
+ 
++	if (ops == NULL || ops->get == NULL || ops->put == NULL)
++		return -EINVAL;
++
+ 	/*
+ 	 * make sure this handle is for a device dependent on the dock,
+ 	 * this would include the dock station itself
+@@ -598,9 +603,18 @@ register_hotplug_dock_device(acpi_handle handle, const struct acpi_dock_ops *ops
+ 		 */
+ 		dd = find_dock_dependent_device(dock_station, handle);
+ 		if (dd) {
+-			dd->ops = ops;
+-			dd->context = context;
+-			dock_add_hotplug_device(dock_station, dd);
++			info = kzalloc(sizeof(*info), GFP_KERNEL);
++			if (!info) {
++				unregister_hotplug_dock_device(handle);
++				ret = -ENOMEM;
++				break;
++			}
++
++			info->ops = ops;
++			info->context = context;
++			info->handle = dd->handle;
++			klist_add_tail(&info->node,
++				       &dock_station->hotplug_devices);
+ 			ret = 0;
+ 		}
+ 	}
+@@ -615,16 +629,22 @@ EXPORT_SYMBOL_GPL(register_hotplug_dock_device);
+  */
+ void unregister_hotplug_dock_device(acpi_handle handle)
+ {
+-	struct dock_dependent_device *dd;
+ 	struct dock_station *dock_station;
++	struct klist_iter iter;
++	struct klist_node *node;
++	struct dock_hotplug_info *info;
+ 
+ 	if (!dock_station_count)
+ 		return;
+ 
+ 	list_for_each_entry(dock_station, &dock_stations, sibling) {
+-		dd = find_dock_dependent_device(dock_station, handle);
+-		if (dd)
+-			dock_del_hotplug_device(dock_station, dd);
++		klist_iter_init(&dock_station->hotplug_devices, &iter);
++		while ((node = klist_next(&iter))) {
++			info = node_to_info(node);
++			if (info->handle == handle)
++				klist_del(&info->node);
++		}
++		klist_iter_exit(&iter);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(unregister_hotplug_dock_device);
+@@ -951,7 +971,8 @@ static int __init dock_add(acpi_handle handle)
+ 	mutex_init(&dock_station->hp_lock);
+ 	spin_lock_init(&dock_station->dd_lock);
+ 	INIT_LIST_HEAD(&dock_station->sibling);
+-	INIT_LIST_HEAD(&dock_station->hotplug_devices);
++	klist_init(&dock_station->hotplug_devices,
++		   hotplug_info_get, hotplug_info_put);
+ 	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+ 	INIT_LIST_HEAD(&dock_station->dependent_devices);
+ 
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 716aa93..5d696f5 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -145,9 +145,24 @@ static int post_dock_fixups(struct notifier_block *nb, unsigned long val,
+ 	return NOTIFY_OK;
+ }
+ 
++static void acpiphp_dock_get(void *data)
++{
++	struct acpiphp_func *func = data;
++
++	get_bridge(func->slot->bridge);
++}
++
++static void acpiphp_dock_put(void *data)
++{
++	struct acpiphp_func *func = data;
++
++	put_bridge(func->slot->bridge);
++}
+ 
+ static const struct acpi_dock_ops acpiphp_dock_ops = {
+ 	.handler = handle_hotplug_event_func,
++	.get = acpiphp_dock_get,
++	.put = acpiphp_dock_put,
+ };
+ 
+ /* Check whether the PCI device is managed by native PCIe hotplug driver */
+diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
+index e6168a2..8fcc9ac 100644
+--- a/include/acpi/acpi_drivers.h
++++ b/include/acpi/acpi_drivers.h
+@@ -115,6 +115,8 @@ void pci_acpi_crs_quirks(void);
+ struct acpi_dock_ops {
+ 	acpi_notify_handler handler;
+ 	acpi_notify_handler uevent;
++	void (*get)(void *data);
++	void (*put)(void *data);
+ };
+ 
+ #if defined(CONFIG_ACPI_DOCK) || defined(CONFIG_ACPI_DOCK_MODULE)
 -- 
 1.8.1.2
 
