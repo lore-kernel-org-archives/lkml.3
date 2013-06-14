@@ -1,138 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab3FNTgz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 15:36:55 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57455 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3FNTgw (ORCPT
+	id S1753026Ab3FNTxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 15:53:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48724 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab3FNTw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 15:36:52 -0400
-From: Jiang Liu <jiang.liu@huawei.com>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, <stable@vger.kernel.org>
-Subject: [BUGFIX v2 4/4] ACPIPHP: fix bug 56531 Sony VAIO VPCZ23A4R: can't assign mem/io after docking
-Date: Sat, 15 Jun 2013 03:28:01 +0800
-Message-Id: <1371238081-32260-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
+	Fri, 14 Jun 2013 15:52:58 -0400
+Date: Fri, 14 Jun 2013 12:52:55 -0700
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL 3/3] msm clock for 3.11
+Message-ID: <20130614195238.GA2381@codeaurora.org>
+References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please refer to https://bugzilla.kernel.org/show_bug.cgi?id=56531 for
-more information.
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-This issue is caused by differences in PCI resource assignment between
-boot time and runtime hotplug. On x86 platforms, OS respects PCI
-resource assignment from BIOS and only reassign resources for unassigned
-BARs at boot time. But with acpiphp, it ignores BIOS resource assignment
-and reassign all resources by itself.
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
-If we have enough resources, reassigning all PCI resources should work
-too, but it may fail if we are under resource constraints. On the other
-handle, current PCI MMIO alignment algorithm may waste huge MMIO address
-space if we have some PCI devices with huge MMIO BARs.
+are available in the git repository at:
 
-On this Sony laptop, BIOS allocates limited MMIO resources for the dock
-station and the dock station has a gfx which has a 256MB MMIO BAR.
-So current acpiphp driver fails to allocate resources for most devices
-on the dock station.
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-clock-for-3.11
 
-So change acpiphp driver to follow boot time behavior to respect BIOS
-resource assignment.
+for you to fetch changes up to f54c1c11053d8aaf318a096b8b332fd41a394a66:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: <stable@vger.kernel.org>
----
- drivers/pci/hotplug/acpiphp_glue.c | 7 +++++--
- drivers/pci/pci.h                  | 5 +++++
- drivers/pci/setup-bus.c            | 8 ++++----
- 3 files changed, 14 insertions(+), 6 deletions(-)
+  ARM: msm: Migrate to common clock framework (2013-06-12 14:43:31 -0700)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index a65203b..f4a53e9 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -687,6 +687,7 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 	struct pci_bus *bus = slot->bridge->pci_bus;
- 	struct acpiphp_func *func;
- 	int num, max, pass;
-+	LIST_HEAD(add_list);
- 
- 	if (slot->flags & SLOT_ENABLED)
- 		goto err_exit;
-@@ -711,13 +712,15 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 				max = pci_scan_bridge(bus, dev, max, pass);
- 				if (pass && dev->subordinate) {
- 					check_hotplug_bridge(slot, dev);
--					pci_bus_size_bridges(dev->subordinate);
-+					pcibios_resource_survey_bus(dev->subordinate);
-+					__pci_bus_size_bridges(dev->subordinate,
-+							       &add_list);
- 				}
- 			}
- 		}
- 	}
- 
--	pci_bus_assign_resources(bus);
-+	__pci_bus_assign_resources(bus, &add_list, NULL);
- 	acpiphp_sanitize_bus(bus);
- 	acpiphp_set_hpp_values(bus);
- 	acpiphp_set_acpi_region(slot);
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 68678ed..d1182c4 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -202,6 +202,11 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 		    struct resource *res, unsigned int reg);
- int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
- void pci_configure_ari(struct pci_dev *dev);
-+void __ref __pci_bus_size_bridges(struct pci_bus *bus,
-+			struct list_head *realloc_head);
-+void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
-+				      struct list_head *realloc_head,
-+				      struct list_head *fail_head);
- 
- /**
-  * pci_ari_enabled - query ARI forwarding status
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 16abaaa..d254e23 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1044,7 +1044,7 @@ handle_done:
- 	;
- }
- 
--static void __ref __pci_bus_size_bridges(struct pci_bus *bus,
-+void __ref __pci_bus_size_bridges(struct pci_bus *bus,
- 			struct list_head *realloc_head)
- {
- 	struct pci_dev *dev;
-@@ -1115,9 +1115,9 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
- }
- EXPORT_SYMBOL(pci_bus_size_bridges);
- 
--static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
--					 struct list_head *realloc_head,
--					 struct list_head *fail_head)
-+void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
-+				      struct list_head *realloc_head,
-+				      struct list_head *fail_head)
- {
- 	struct pci_bus *b;
- 	struct pci_dev *dev;
+----------------------------------------------------------------
+MSM clock updates for 3.11.
+
+Per Stephen Boyd's coverletter:
+
+This patchset moves the existing MSM clock code and affected drivers
+to the common clock framework. A prerequisite of moving to the common
+clock framework is to use clk_prepare() and clk_enable() so the first
+few patches migrate drivers to that call (clk_prepare() is a no-op on
+MSM right now). It also removes some custom clock APIs that MSM
+provides and finally moves the proc_comm clock code to the common
+struct clk.
+
+This patch series will be used as the foundation of the MSM 8660/8960
+clock code that I plan to send out after this series.
+
+----------------------------------------------------------------
+Stephen Boyd (12):
+      msm_serial: Convert to clk_prepare/unprepare
+      msm_serial: Use devm_clk_get() and properly return errors
+      usb: otg: msm: Convert to clk_prepare/unprepare
+      msm_sdcc: Convert to clk_prepare/unprepare
+      msm: iommu: Convert to clk_prepare/unprepare
+      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
+      ARM: msm: Remove custom clk_set_flags() API
+      ARM: msm: Remove custom clk_set_{max,min}_rate() API
+      ARM: msm: Remove clock-7x30.h include file
+      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
+      ARM: msm: Make proc_comm clock control into a platform driver
+      ARM: msm: Migrate to common clock framework
+
+ arch/arm/Kconfig                       |   2 +-
+ arch/arm/mach-msm/Makefile             |  10 +-
+ arch/arm/mach-msm/board-halibut.c      |   2 +-
+ arch/arm/mach-msm/board-msm7x30.c      |   2 +-
+ arch/arm/mach-msm/board-qsd8x50.c      |   2 +-
+ arch/arm/mach-msm/board-trout-panel.c  |  19 ++--
+ arch/arm/mach-msm/board-trout.c        |   3 +-
+ arch/arm/mach-msm/clock-7x30.h         | 155 ------------------------------
+ arch/arm/mach-msm/clock-debug.c        | 130 --------------------------
+ arch/arm/mach-msm/clock-pcom.c         | 149 ++++++++++++++++++-----------
+ arch/arm/mach-msm/clock-pcom.h         |  31 +++---
+ arch/arm/mach-msm/clock.c              | 166 +--------------------------------
+ arch/arm/mach-msm/clock.h              |  51 +++-------
+ arch/arm/mach-msm/devices-msm7x00.c    |  12 ++-
+ arch/arm/mach-msm/devices-msm7x30.c    |  14 ++-
+ arch/arm/mach-msm/devices-qsd8x50.c    |  11 ++-
+ arch/arm/mach-msm/devices.h            |  15 +--
+ arch/arm/mach-msm/dma.c                |   5 +-
+ arch/arm/mach-msm/include/mach/board.h |   5 -
+ arch/arm/mach-msm/include/mach/clk.h   |   9 --
+ drivers/iommu/msm_iommu_dev.c          |  20 ++--
+ drivers/mmc/host/msm_sdcc.c            |  14 ++-
+ drivers/tty/serial/msm_serial.c        |  35 +++----
+ drivers/usb/phy/phy-msm-usb.c          |  38 ++++----
+ 24 files changed, 241 insertions(+), 659 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/clock-7x30.h
+ delete mode 100644 arch/arm/mach-msm/clock-debug.c
+
 -- 
-1.8.1.2
-
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
