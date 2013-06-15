@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3FOLFx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 07:05:53 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37119 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab3FOLFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 07:05:23 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 5/6] tty: Fix hangup race with TIOCSETD ioctl
-Date: Sat, 15 Jun 2013 07:04:50 -0400
-Message-Id: <1371294291-3807-6-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
-References: <20130603192436.GB22733@kroah.com>
- <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1754322Ab3FOLGT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:06:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753529Ab3FOLGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 07:06:15 -0400
+Date: Sat, 15 Jun 2013 07:05:35 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Simo <idra@samba.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 06/14] locks: don't walk inode->i_flock list in
+ locks_show
+Message-ID: <20130615070535.6367eed9@tlielax.poochiereds.net>
+In-Reply-To: <51BB040C.3050101@samba.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+	<1370948948-31784-7-git-send-email-jlayton@redhat.com>
+	<20130613194545.GC19218@fieldses.org>
+	<20130613162648.176979bc@tlielax.poochiereds.net>
+	<51BB040C.3050101@samba.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hangup may already have happened; check for that state also.
+On Fri, 14 Jun 2013 07:52:44 -0400
+Simo <idra@samba.org> wrote:
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldisc.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+> On 06/13/2013 04:26 PM, Jeff Layton wrote:
+> > The only real solution I can think of is to put flock locks into the
+> > blocked_list/blocked_hash too, or maybe giving them a simple hlist to
+> > sit on.
+> >
+> > I'll fix that up in the next iteration. It'll probably make flock()
+> > tests run slower, but such is the cost of preserving this procfile...
+> 
+> How hard would it be to make the procfile stuff optional ?
+> So that those that need performance can decide to not use it ?
+> Maybe even something that can be disabled at run time ? Not just compile 
+> time.
+> 
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 6c63b73..08b8a1b 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -546,10 +546,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	old_ldisc = tty->ldisc;
- 	tty_lock(tty);
- 
--	/* FIXME: for testing only */
--	WARN_ON(test_bit(TTY_HUPPED, &tty->flags));
--
--	if (test_bit(TTY_HUPPING, &tty->flags)) {
-+	if (test_bit(TTY_HUPPING, &tty->flags) ||
-+	    test_bit(TTY_HUPPED, &tty->flags)) {
- 		/* We were raced by the hangup method. It will have stomped
- 		   the ldisc data and closed the ldisc down */
- 		tty_ldisc_enable_pair(tty, o_tty);
+(re-adding back the cc lists...)
+
+It'd be tricky, especially if you want to do it at runtime. The
+procfile itself is not a problem per-se. The real problem is the
+tracking you have to do in order to eventually present the procfile. So
+a boot-time or compile-time switch might be reasonable, but a runtime
+switch will probably never really be.
+
+I have a new patchset that I'm testing now though that should address
+Bruce's concerns about iterating over that global list. So far, it
+seems to be at least as fast as the latest patchset I posted.
+
+It makes the (spin)locking a bit more complex, but hopefully I can
+document this well enough that it's not a great concern.
+
+Stay tuned...
+
 -- 
-1.8.1.2
-
+Jeff Layton <jlayton@redhat.com>
