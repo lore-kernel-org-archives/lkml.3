@@ -1,60 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3FOCvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:51:43 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:48223 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab3FOCvm (ORCPT
+	id S1753596Ab3FODF3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 23:05:29 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53987 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab3FODF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 22:51:42 -0400
-Date: Fri, 14 Jun 2013 19:51:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rojhalat Ibrahim <imr@rtschenk.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-Message-ID: <20130615025139.GU5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1626500.7WAVXjfS9F@pcimr>
- <20130614122800.GL5146@linux.vnet.ibm.com>
- <1645938.As0LR1yeVd@pcimr>
- <1371243967.9844.338.camel@gandalf.local.home>
- <1371261741.21896.20.camel@pasglop>
- <1371262654.9844.340.camel@gandalf.local.home>
- <1371262867.21896.27.camel@pasglop>
- <1371263472.9844.341.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371263472.9844.341.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061502-2876-0000-0000-000009DE00E9
+	Fri, 14 Jun 2013 23:05:27 -0400
+From: Liu Jiang <liuj97@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Liu Jiang <liu97@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        Aaron Lu <aaron.lu@intel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Liu Jiang <jiang.liu@huawei.com>
+Subject: [PATCH] libata: remove dead code from libata-acpi.c
+Date: Sat, 15 Jun 2013 11:02:48 +0800
+Message-Id: <1371265368-7334-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 10:31:12PM -0400, Steven Rostedt wrote:
-> On Sat, 2013-06-15 at 12:21 +1000, Benjamin Herrenschmidt wrote:
-> > On Fri, 2013-06-14 at 22:17 -0400, Steven Rostedt wrote:
-> > > On Sat, 2013-06-15 at 12:02 +1000, Benjamin Herrenschmidt wrote:
-> > > > On Fri, 2013-06-14 at 17:06 -0400, Steven Rostedt wrote:
-> > > > > I was pretty much able to reproduce this on my PA Semi PPC box. Funny
-> > > > > thing is, when I type on the console, it makes progress. Anyway, it
-> > > > > seems that powerpc has an issue with irq_work(). I'll try to get some
-> > > > > time either tonight or next week to figure it out.
-> > > > 
-> > > > Does this help ?
-> > > 
-> > > It did for me. Rojhalat, did this fix your issue too?
-> > 
-> > Ok, adding that to what I'm about to send to Linus.
-> 
-> Feel free to add: Tested-by: Steven Rostedt <rostedt@goodmis.org>
+From: Liu Jiang <liu97@gmail.com>
 
-Thank you both!!!
+Commit 30dcf76acc69 "libata: migrate ACPI code over to new bindings"
+removed ACPI dock notification related code, but there's some dead
+code left, so clean up it.
 
-							Thanx, Paul
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Liu Jiang <jiang.liu@huawei.com>
+---
+ drivers/ata/libata-acpi.c | 123 ----------------------------------------------
+ 1 file changed, 123 deletions(-)
+
+diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
+index 87f2f39..e50c987 100644
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -91,129 +91,6 @@ acpi_handle ata_dev_acpi_handle(struct ata_device *dev)
+ }
+ EXPORT_SYMBOL(ata_dev_acpi_handle);
+ 
+-/* @ap and @dev are the same as ata_acpi_handle_hotplug() */
+-static void ata_acpi_detach_device(struct ata_port *ap, struct ata_device *dev)
+-{
+-	if (dev)
+-		dev->flags |= ATA_DFLAG_DETACH;
+-	else {
+-		struct ata_link *tlink;
+-		struct ata_device *tdev;
+-
+-		ata_for_each_link(tlink, ap, EDGE)
+-			ata_for_each_dev(tdev, tlink, ALL)
+-				tdev->flags |= ATA_DFLAG_DETACH;
+-	}
+-
+-	ata_port_schedule_eh(ap);
+-}
+-
+-/**
+- * ata_acpi_handle_hotplug - ACPI event handler backend
+- * @ap: ATA port ACPI event occurred
+- * @dev: ATA device ACPI event occurred (can be NULL)
+- * @event: ACPI event which occurred
+- *
+- * All ACPI bay / device realted events end up in this function.  If
+- * the event is port-wide @dev is NULL.  If the event is specific to a
+- * device, @dev points to it.
+- *
+- * Hotplug (as opposed to unplug) notification is always handled as
+- * port-wide while unplug only kills the target device on device-wide
+- * event.
+- *
+- * LOCKING:
+- * ACPI notify handler context.  May sleep.
+- */
+-static void ata_acpi_handle_hotplug(struct ata_port *ap, struct ata_device *dev,
+-				    u32 event)
+-{
+-	struct ata_eh_info *ehi = &ap->link.eh_info;
+-	int wait = 0;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(ap->lock, flags);
+-	/*
+-	 * When dock driver calls into the routine, it will always use
+-	 * ACPI_NOTIFY_BUS_CHECK/ACPI_NOTIFY_DEVICE_CHECK for add and
+-	 * ACPI_NOTIFY_EJECT_REQUEST for remove
+-	 */
+-	switch (event) {
+-	case ACPI_NOTIFY_BUS_CHECK:
+-	case ACPI_NOTIFY_DEVICE_CHECK:
+-		ata_ehi_push_desc(ehi, "ACPI event");
+-
+-		ata_ehi_hotplugged(ehi);
+-		ata_port_freeze(ap);
+-		break;
+-	case ACPI_NOTIFY_EJECT_REQUEST:
+-		ata_ehi_push_desc(ehi, "ACPI event");
+-
+-		ata_acpi_detach_device(ap, dev);
+-		wait = 1;
+-		break;
+-	}
+-
+-	spin_unlock_irqrestore(ap->lock, flags);
+-
+-	if (wait)
+-		ata_port_wait_eh(ap);
+-}
+-
+-static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
+-{
+-	struct ata_device *dev = data;
+-
+-	ata_acpi_handle_hotplug(dev->link->ap, dev, event);
+-}
+-
+-static void ata_acpi_ap_notify_dock(acpi_handle handle, u32 event, void *data)
+-{
+-	struct ata_port *ap = data;
+-
+-	ata_acpi_handle_hotplug(ap, NULL, event);
+-}
+-
+-static void ata_acpi_uevent(struct ata_port *ap, struct ata_device *dev,
+-	u32 event)
+-{
+-	struct kobject *kobj = NULL;
+-	char event_string[20];
+-	char *envp[] = { event_string, NULL };
+-
+-	if (dev) {
+-		if (dev->sdev)
+-			kobj = &dev->sdev->sdev_gendev.kobj;
+-	} else
+-		kobj = &ap->dev->kobj;
+-
+-	if (kobj) {
+-		snprintf(event_string, 20, "BAY_EVENT=%d", event);
+-		kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
+-	}
+-}
+-
+-static void ata_acpi_ap_uevent(acpi_handle handle, u32 event, void *data)
+-{
+-	ata_acpi_uevent(data, NULL, event);
+-}
+-
+-static void ata_acpi_dev_uevent(acpi_handle handle, u32 event, void *data)
+-{
+-	struct ata_device *dev = data;
+-	ata_acpi_uevent(dev->link->ap, dev, event);
+-}
+-
+-static const struct acpi_dock_ops ata_acpi_dev_dock_ops = {
+-	.handler = ata_acpi_dev_notify_dock,
+-	.uevent = ata_acpi_dev_uevent,
+-};
+-
+-static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
+-	.handler = ata_acpi_ap_notify_dock,
+-	.uevent = ata_acpi_ap_uevent,
+-};
+-
+ /**
+  * ata_acpi_dissociate - dissociate ATA host from ACPI objects
+  * @host: target ATA host
+-- 
+1.8.1.2
 
