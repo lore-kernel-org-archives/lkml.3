@@ -1,355 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab3FOK2X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 06:28:23 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:53198 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab3FOK2W (ORCPT
+	id S1753710Ab3FOKuY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 06:50:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37943 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab3FOKuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 06:28:22 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Oliver Schinagl <oliver+list@schinagl.nl>, arnd@arndb.de,
-        gregkh@linuxfoundation.org, linux@arm.linux.org.uk,
-        Oliver Schinagl <oliver@schinagl.nl>, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
-        maxime.ripard@free-electrons.com
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Date: Sat, 15 Jun 2013 12:28:18 +0200
-Message-ID: <2828921.i3T9JhMInt@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl>
-References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl> <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sat, 15 Jun 2013 06:50:23 -0400
+Date: Sat, 15 Jun 2013 03:50:20 -0700 (PDT)
+Message-Id: <20130615.035020.382818503653292818.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Some comments inline.
+1) Fix RTNL locking in batman-adv, from Matthias Schiffer.
 
-On Saturday 15 of June 2013 01:16:20 Oliver Schinagl wrote:
-> From: Oliver Schinagl <oliver@schinagl.nl>
-> 
-> Allwinner has electric fuses (efuse) on their line of chips. This driver
-> reads those fuses, seeds the kernel entropy and exports them as a sysfs
-> node.
-> 
-> These fuses are most likly to be programmed at the factory, encoding
-> things like Chip ID, some sort of serial number etc and appear to be
-> reasonable unique.
-> While in theory, these should be writeable by the user, it will probably
-> be inconvinient to do so. Allwinner recommends that a certain input
-> pin, labeled 'efuse_vddq', be connected to GND. To write these fuses,
-> 2.5 V needs to be applied to this pin.
-> 
-> Even so, they can still be used to generate a board-unique mac from,
-> board unique RSA key and seed the kernel RNG.
-> 
-> Currently supported are the following known chips:
-> Allwinner sun4i (A10)
-> Allwinner sun5i (A10s, A13)
-> 
-> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
-> ---
->  drivers/misc/eeprom/Kconfig     |  17 ++++
->  drivers/misc/eeprom/Makefile    |   1 +
->  drivers/misc/eeprom/sunxi_sid.c | 167
-> ++++++++++++++++++++++++++++++++++++++++ 3 files changed, 185
-> insertions(+)
->  create mode 100644 drivers/misc/eeprom/sunxi_sid.c
-> 
-> diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-> index 04f2e1f..c7bc6ed 100644
-> --- a/drivers/misc/eeprom/Kconfig
-> +++ b/drivers/misc/eeprom/Kconfig
-> @@ -96,4 +96,21 @@ config EEPROM_DIGSY_MTC_CFG
-> 
->  	  If unsure, say N.
-> 
-> +config EEPROM_SUNXI_SID
-> +	tristate "Allwinner sunxi security ID support"
-> +	depends on ARCH_SUNXI && SYSFS
-> +	help
-> +	  This is a driver for the 'security ID' available on various
-> Allwinner +	  devices. Currently supported are:
-> +		sun4i (A10)
-> +		sun5i (A13)
-> +
-> +	  Due to the potential risks involved with changing e-fuses,
-> +	  this driver is read-only
-> +
-> +	  For more information visit http://linux-sunxi.org/SID
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called sunxi_sid.
-> +
->  endmenu
-> diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
-> index fc1e81d..9507aec 100644
-> --- a/drivers/misc/eeprom/Makefile
-> +++ b/drivers/misc/eeprom/Makefile
-> @@ -4,4 +4,5 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
->  obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
->  obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
->  obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
-> +obj-$(CONFIG_EEPROM_SUNXI_SID)	+= sunxi_sid.o
->  obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
-> diff --git a/drivers/misc/eeprom/sunxi_sid.c
-> b/drivers/misc/eeprom/sunxi_sid.c new file mode 100644
-> index 0000000..f014e1b
-> --- /dev/null
-> +++ b/drivers/misc/eeprom/sunxi_sid.c
-> @@ -0,0 +1,167 @@
-> +/*
-> + * Copyright (c) 2013 Oliver Schinagl
-> + * http://www.linux-sunxi.org
-> + *
-> + * Oliver Schinagl <oliver@schinagl.nl>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published
-> by + * the Free Software Foundation; either version 2 of the License,
-> or + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> + * GNU General Public License for more details.
-> + *
-> + * This driver exposes the Allwinner security ID, a 128 bit eeprom, in
-> byte + * sized chunks.
-> + */
-> +
-> +#include <linux/compiler.h>
-> +#include <linux/device.h>
-> +#include <linux/err.h>
-> +#include <linux/errno.h>
-> +#include <linux/export.h>
-> +#include <linux/fs.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/kobject.h>
-> +#include <linux/module.h>
-> +#include <linux/of_address.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/random.h>
-> +#include <linux/stat.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/types.h>
-> +
-> +#define DRV_NAME "sunxi-sid"
-> +#define DRV_VERSION "1.0"
+2) Don't allow non-passthrough macvlan devices to set NOPROMISC
+   via netlink, otherwise we can end up with corrupted promisc
+   counter values on the device.  From Michael S. Tsirkin.
 
-What is this version thingy?
+3) Fix stmmac driver build with debugging defines enabled, from
+   Dinh Nguyen.
 
-Is there a versioning scheme defined for this driver? Do you expect it to 
-be changed every modification of this driver?
+4) Make sure name string we give in socket address in AF_PACKET
+   is NULL terminated, from Daniel Borkmann.
 
-I don't see any point of having such thing in a project with a version 
-control system, where you have all change history.
+5) Fix leaking of two uninitialized bytes of memory to userspace
+   in l2tp, from Guillaume Nault.
 
-> +
-> +/* There are 4 32-bit keys */
-> +#define SID_KEYS 4
-> +/* and 4 byte sized keys per 32-bit key */
-> +#define SID_SIZE (SID_KEYS * 4)
+6) Clear IPCB(skb) before tunneling otherwise we touch dangling
+   IP options state and crash.  From Saurabh Mohan.
 
->From this definition it looks like there are just 4 32-bit keys, I don't 
-see those extra four byte-sized keys accounted by this size.
+7) Fix suspend/resume for davinci_mdio by using suspend_late
+   and resume_early.  From Mugunthan V N.
 
-> +
-> +
+8) Don't tag ip_tunnel_init_net and ip_tunnel_delete_net
+   with __net_{init,exit}, they can be called outside of
+   those contexts.  From Eric Dumazet.
 
-One _empty_ line is enough to separate definitions from code.
+9) Fix RX length error in sh_eth driver, from Yoshihiro Shimoda.
 
-> +/* We read the entire key, but only return the requested byte. This is
-> of + * course slower then it could be and uses 4 times more reads as
-> needed but + * keeps code simpler.
+10) Fix missing sctp_outq initialization in some code paths of
+    SCTP stack, from Neil Horman.
 
-I have no idea how often this is going to be read, but since the whole sid 
-is really small (16 bytes), maybe it would be better to simply read the ID 
-in probe to a buffer and then just memcpy from it in read().
+Please pull, thanks a lot!
 
-> + */
-> +static u8 sunxi_sid_read_byte(const void __iomem *sid_reg_base,
-> +			      const unsigned int offset)
-> +{
-> +	u32 sid_key = 0;
+The following changes since commit 26e04462c8b78d079d3231396ec72d58a14f114b:
 
-	u32 sid_key; ...
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-06-12 17:18:29 -0700)
 
-> +
-> +	if (offset >= SID_SIZE)
-> +		goto exit;
+are available in the git repository at:
 
-		return 0; ...
 
-> +
-> +	sid_key = ioread32be(sid_reg_base + round_down(offset, 4));
-> +	sid_key >>= (offset % 4) * 8;
-> +	sid_key &= 0xff;
-> +	/* fall through */
-> +
-> +exit:
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
 
-...and now magically here you can remove two unneeded lines.
+for you to fetch changes up to c5c7774d7eb4397891edca9ebdf750ba90977a69:
 
-> +	return (u8)sid_key;
+  sctp: fully initialize sctp_outq in sctp_outq_init (2013-06-13 18:05:24 -0700)
 
-Unnecessary casting.
+----------------------------------------------------------------
+Benjamin Poirier (1):
+      netiucv: Hold rtnl between name allocation and device registration.
 
-> +}
-> +
-> +static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-> +			struct bin_attribute *attr, char *buf,
-> +			loff_t pos, size_t size)
-> +{
-> +	int i;
-> +	struct platform_device *pdev;
-> +	void __iomem *sid_reg_base;
-> +
-> +	pdev = (struct platform_device
-> *)to_platform_device(kobj_to_dev(kobj)); +	sid_reg_base = (void 
-__iomem
-> *)platform_get_drvdata(pdev);
-> +
-> +	for (i = 0; i < size; i++) {
-> +		if ((pos + i) >= SID_SIZE || (pos < 0))
-> +			break;
-> +		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
-> +	}
+Daniel Borkmann (1):
+      packet: packet_getname_spkt: make sure string is always 0-terminated
 
-This could be greatly simplified if you just read the whole sid to memory 
-in probe and memcpy from it here.
+David S. Miller (1):
+      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
 
-> +	return i;
-> +}
-> +
-> +static const struct of_device_id sunxi_sid_of_match[] = {
-> +	{
-> +		.compatible = "allwinner,sun4i-sid",
-> +	},
+Dinh Nguyen (1):
+      net: ethernet: stmicro: stmmac: Fix compile error when STMMAC_XMIT_DEBUG used
 
-Above 3 lines could be put in single line.
+Eric Dumazet (1):
+      ip_tunnel: remove __net_init/exit from exported functions
 
-> +	{/* sentinel */}
-> +};
-> +MODULE_DEVICE_TABLE(of, sunxi_sid_of_match);
-> +
-> +static const struct bin_attribute sid_bin_attr = {
-> +	.attr = {
-> +		.name = "eeprom",
-> +		.mode = S_IRUGO,
-> +	},
-> +	.size = SID_SIZE,
-> +	.read = sid_read,
-> +};
-> +
-> +static int sunxi_sid_remove(struct platform_device *pdev)
-> +{
-> +	device_remove_bin_file(&pdev->dev, &sid_bin_attr);
-> +	dev_info(&pdev->dev, "sunxi SID driver unloaded\n");
+Guillaume Nault (2):
+      l2tp: Fix PPP header erasure and memory leak
+      l2tp: Fix sendmsg() return value
 
-Please either make this dev_dbg or remove it completely, as it is not 
-something that users should be concerned about.
+Jan Beulich (1):
+      xen-netback: don't de-reference vif pointer after having called xenvif_put()
 
-> +	return 0;
-> +}
-> +
-> +static int __init sunxi_sid_probe(struct platform_device *pdev)
-> +{
-> +	int entropy[SID_SIZE], i;
-> +	struct resource *res;
-> +	void __iomem *sid_reg_base;
-> +	int ret;
-> +
-> +	if (!pdev->dev.of_node) {
-> +		dev_err(&pdev->dev, "No devicetree data available\n");
-> +		ret = -ENXIO;
-> +		goto exit;
-> +	}
+Matthias Schiffer (1):
+      batman-adv: wait for rtnl in batadv_store_mesh_iface instead of failing if it is taken
 
-What is this check for? You don't seem to need anything from dev.of_node 
-in this driver.
+Michael S. Tsirkin (1):
+      macvlan: don't touch promisc without passthrough
 
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(sid_reg_base)) {
-> +		ret = PTR_ERR(sid_reg_base);
-> +		goto exit;
-> +	}
+Mugunthan V N (2):
+      drivers: net: davinci_mdio: moving mdio resume earlier than cpsw ethernet driver
+      drivers: net: davinci_mdio: restore mdio clk divider in mdio resume
 
-One of the points of having devm_ helpers was removing the need to use 
-error paths at functions end. You can save 2 lines of code by changing 
-this check to:
+Neil Horman (2):
+      tulip: Properly check dma mapping result
+      sctp: fully initialize sctp_outq in sctp_outq_init
 
-	if (IS_ERR(sid_reg_base))
-		return PTR_ERR(sid_reg_base);
+Nikolay Aleksandrov (2):
+      bonding: reset master mac on first enslave failure
+      bonding: fix igmp_retrans type and two related races
 
-> +	platform_set_drvdata(pdev, sid_reg_base);
-> +
-> +	ret = device_create_bin_file(&pdev->dev, &sid_bin_attr);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to create sysfs bin entry\n");
-> +		goto exit;
-> +	}
+Nithin Sujir (1):
+      tg3: Wait for boot code to finish after power on
 
-Same here.
+Saurabh Mohan (1):
+      net/ipv4: ip_vti clear skb cb before tunneling.
 
-> +
-> +	for (i = 0; i < SID_SIZE; i++)
-> +		entropy[i] = sunxi_sid_read_byte(sid_reg_base, i);
+Simon Wunderlich (2):
+      batman-adv: forward late OGMs from best next hop
+      batman-adv: Don't handle address updates when bla is disabled
 
-You seem to read bytes into an array of ints. Your entropy data will 
-always have most significant 24-bits cleared. Is this behavior correct?
+Somnath Kotur (1):
+      be2net: Fix 32-bit DMA Mask handling
 
-> +	add_device_randomness(entropy, SID_SIZE);
+Yoshihiro Shimoda (1):
+      net: sh_eth: fix incorrect RX length error if R8A7740
 
-Now I'm pretty sure that above is not the correct behavior. You are adding 
-here first 16 bytes (=SID_SIZE) of entropy[], while it is an array of 16 
-ints (=4*SID_SIZE)...
-
-> +	dev_info(&pdev->dev, "sunxi SID ver %s loaded\n", DRV_VERSION);
-
-Same comment as for the message in remove().
-
-> +	ret = 0;
-> +	/* fall through */
-> +
-> +exit:
-> +	return ret;
-
-Above 4 non-empty lines can be replaced by a single
-
-	return 0;
-
-> +}
-> +
-> +static struct platform_driver sunxi_sid_driver = {
-> +	.probe = sunxi_sid_probe,
-> +	.remove = sunxi_sid_remove,
-> +	.driver = {
-> +		.name = DRV_NAME,
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = sunxi_sid_of_match,
-> +	},
-> +};
-> +module_platform_driver(sunxi_sid_driver);
-> +
-> +
-
-One empty line is enough.
-
-Best regards,
-Tomasz
-
-> +MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
-> +MODULE_DESCRIPTION("Allwinner sunxi security id driver");
-> +MODULE_VERSION(DRV_VERSION);
-> +MODULE_LICENSE("GPL");
+ drivers/net/bonding/bond_main.c                   | 19 ++++++++++++++----
+ drivers/net/bonding/bonding.h                     |  2 +-
+ drivers/net/ethernet/broadcom/tg3.c               | 10 +++++++++
+ drivers/net/ethernet/dec/tulip/interrupt.c        |  6 ++++++
+ drivers/net/ethernet/emulex/benet/be_main.c       |  3 +++
+ drivers/net/ethernet/renesas/sh_eth.c             | 15 ++++++++++----
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  2 +-
+ drivers/net/ethernet/ti/davinci_mdio.c            |  9 +++------
+ drivers/net/macvlan.c                             | 20 +++++++++++-------
+ drivers/net/xen-netback/netback.c                 | 11 +++++-----
+ drivers/s390/net/netiucv.c                        |  6 +++++-
+ include/net/ip_tunnels.h                          |  6 +++---
+ net/batman-adv/bat_iv_ogm.c                       | 86 ++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------
+ net/batman-adv/bridge_loop_avoidance.c            |  4 ++++
+ net/batman-adv/sysfs.c                            |  5 +----
+ net/ipv4/ip_tunnel.c                              |  4 ++--
+ net/ipv4/ip_vti.c                                 |  3 +--
+ net/l2tp/l2tp_ppp.c                               |  6 +++---
+ net/packet/af_packet.c                            |  5 ++---
+ net/sctp/outqueue.c                               |  6 ++----
+ 20 files changed, 147 insertions(+), 81 deletions(-)
