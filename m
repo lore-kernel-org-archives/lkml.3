@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab3FOL3H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 07:29:07 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37966 "EHLO
+	id S1754272Ab3FOL3c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:29:32 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37974 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3FOL2w (ORCPT
+	with ESMTP id S1753952Ab3FOL24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 07:28:52 -0400
+	Sat, 15 Jun 2013 07:28:56 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 1/4] n_tty: Encapsulate minimum_to_wake within N_TTY
-Date: Sat, 15 Jun 2013 07:28:28 -0400
-Message-Id: <1371295711-3963-2-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 3/4] n_tty: Fix unsafe update of available buffer space
+Date: Sat, 15 Jun 2013 07:28:30 -0400
+Message-Id: <1371295711-3963-4-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371295711-3963-1-git-send-email-peter@hurleysoftware.com>
 References: <20130319141017.GB24900@kroah.com>
@@ -23,230 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-minimum_to_wake is unique to N_TTY processing, and belongs in
-per-ldisc data.
+receive_room is used to control the amount of data the flip
+buffer work can push to the read buffer. This update is unsafe:
 
-Add the ldisc method, ldisc_ops::fasync(), to notify line disciplines
-when signal-driven I/O is enabled or disabled. When enabled for N_TTY
-(by fcntl(F_SETFL, O_ASYNC)), blocking reader/polls will be woken
-for any readable input. When disabled, blocking reader/polls are not
-woken until the read buffer is full.
+  CPU 0                        |  CPU 1
+                               |
+                               | n_tty_read()
+                               |   n_tty_set_room()
+                               |     left = <calc of space>
+n_tty_receive_buf()            |
+  <push data to buffer>        |
+  n_tty_set_room()             |
+    left = <calc of space>     |
+    tty->receive_room = left   |
+                               |     tty->receive_room = left
 
-Canonical mode (L_ICANON(tty), n_tty_data::icanon) is not affected by
-the minimum_to_wake setting.
+receive_room is now updated with a stale calculation of the
+available buffer space, and the subsequent work loop will likely
+overwrite unread data in the input buffer.
+
+Update receive_room atomically with the calculation of the
+available buffer space.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c       | 39 +++++++++++++++++++++++++++------------
- drivers/tty/tty_io.c      | 17 +++++++++--------
- include/linux/tty.h       |  1 -
- include/linux/tty_ldisc.h |  6 ++++++
- 4 files changed, 42 insertions(+), 21 deletions(-)
+ drivers/tty/n_tty.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index cdcdb0e..f1806de 100644
+index fa5cb46..0646165 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -89,6 +89,7 @@ struct n_tty_data {
- 	int read_head;
- 	int read_tail;
- 	int read_cnt;
-+	int minimum_to_wake;
- 
- 	unsigned char *echo_buf;
- 	unsigned int echo_pos;
-@@ -1455,7 +1456,7 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 
- 	n_tty_set_room(tty);
- 
--	if ((!ldata->icanon && (ldata->read_cnt >= tty->minimum_to_wake)) ||
-+	if ((!ldata->icanon && (ldata->read_cnt >= ldata->minimum_to_wake)) ||
- 		L_EXTPROC(tty)) {
- 		kill_fasync(&tty->fasync, SIGIO, POLL_IN);
- 		if (waitqueue_active(&tty->read_wait))
-@@ -1636,7 +1637,7 @@ static int n_tty_open(struct tty_struct *tty)
- 	tty->disc_data = ldata;
- 	reset_buffer_flags(tty->disc_data);
- 	ldata->column = 0;
--	tty->minimum_to_wake = 1;
-+	ldata->minimum_to_wake = 1;
- 	tty->closing = 0;
- 	/* indicate buffer work may resume */
- 	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-@@ -1804,17 +1805,17 @@ do_it_again:
- 		minimum = MIN_CHAR(tty);
- 		if (minimum) {
- 			if (time)
--				tty->minimum_to_wake = 1;
-+				ldata->minimum_to_wake = 1;
- 			else if (!waitqueue_active(&tty->read_wait) ||
--				 (tty->minimum_to_wake > minimum))
--				tty->minimum_to_wake = minimum;
-+				 (ldata->minimum_to_wake > minimum))
-+				ldata->minimum_to_wake = minimum;
- 		} else {
- 			timeout = 0;
- 			if (time) {
- 				timeout = time;
- 				time = 0;
- 			}
--			tty->minimum_to_wake = minimum = 1;
-+			ldata->minimum_to_wake = minimum = 1;
- 		}
- 	}
- 
-@@ -1854,9 +1855,9 @@ do_it_again:
- 		   TASK_RUNNING. */
- 		set_current_state(TASK_INTERRUPTIBLE);
- 
--		if (((minimum - (b - buf)) < tty->minimum_to_wake) &&
-+		if (((minimum - (b - buf)) < ldata->minimum_to_wake) &&
- 		    ((minimum - (b - buf)) >= 1))
--			tty->minimum_to_wake = (minimum - (b - buf));
-+			ldata->minimum_to_wake = (minimum - (b - buf));
- 
- 		if (!input_available_p(tty, 0)) {
- 			if (test_bit(TTY_OTHER_CLOSED, &tty->flags)) {
-@@ -1973,7 +1974,7 @@ do_it_again:
- 	remove_wait_queue(&tty->read_wait, &wait);
- 
- 	if (!waitqueue_active(&tty->read_wait))
--		tty->minimum_to_wake = minimum;
-+		ldata->minimum_to_wake = minimum;
- 
- 	__set_current_state(TASK_RUNNING);
- 	size = b - buf;
-@@ -2105,6 +2106,7 @@ break_out:
- static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
- 							poll_table *wait)
- {
-+	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned int mask = 0;
- 
- 	poll_wait(file, &tty->read_wait, wait);
-@@ -2119,9 +2121,9 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
- 		mask |= POLLHUP;
- 	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
- 		if (MIN_CHAR(tty) && !TIME_CHAR(tty))
--			tty->minimum_to_wake = MIN_CHAR(tty);
-+			ldata->minimum_to_wake = MIN_CHAR(tty);
- 		else
--			tty->minimum_to_wake = 1;
-+			ldata->minimum_to_wake = 1;
- 	}
- 	if (tty->ops->write && !tty_is_writelocked(tty) &&
- 			tty_chars_in_buffer(tty) < WAKEUP_CHARS &&
-@@ -2169,6 +2171,18 @@ static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
- 	}
+@@ -115,13 +115,14 @@ static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
  }
- 
-+static void n_tty_fasync(struct tty_struct *tty, int on)
-+{
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	if (!waitqueue_active(&tty->read_wait)) {
-+		if (on)
-+			ldata->minimum_to_wake = 1;
-+		else if (!tty->fasync)
-+			ldata->minimum_to_wake = N_TTY_BUF_SIZE;
-+	}
-+}
-+
- struct tty_ldisc_ops tty_ldisc_N_TTY = {
- 	.magic           = TTY_LDISC_MAGIC,
- 	.name            = "n_tty",
-@@ -2182,7 +2196,8 @@ struct tty_ldisc_ops tty_ldisc_N_TTY = {
- 	.set_termios     = n_tty_set_termios,
- 	.poll            = n_tty_poll,
- 	.receive_buf     = n_tty_receive_buf,
--	.write_wakeup    = n_tty_write_wakeup
-+	.write_wakeup    = n_tty_write_wakeup,
-+	.fasync		 = n_tty_fasync,
- };
  
  /**
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 5ee51ba..6cd08d9 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2137,6 +2137,7 @@ static unsigned int tty_poll(struct file *filp, poll_table *wait)
- static int __tty_fasync(int fd, struct file *filp, int on)
- {
- 	struct tty_struct *tty = file_tty(filp);
-+	struct tty_ldisc *ldisc;
- 	unsigned long flags;
- 	int retval = 0;
- 
-@@ -2147,11 +2148,17 @@ static int __tty_fasync(int fd, struct file *filp, int on)
- 	if (retval <= 0)
- 		goto out;
- 
-+	ldisc = tty_ldisc_ref(tty);
-+	if (ldisc) {
-+		if (ldisc->ops->fasync)
-+			ldisc->ops->fasync(tty, on);
-+		tty_ldisc_deref(ldisc);
-+	}
-+
- 	if (on) {
- 		enum pid_type type;
- 		struct pid *pid;
--		if (!waitqueue_active(&tty->read_wait))
--			tty->minimum_to_wake = 1;
-+
- 		spin_lock_irqsave(&tty->ctrl_lock, flags);
- 		if (tty->pgrp) {
- 			pid = tty->pgrp;
-@@ -2164,13 +2171,7 @@ static int __tty_fasync(int fd, struct file *filp, int on)
- 		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
- 		retval = __f_setown(filp, pid, type, 0);
- 		put_pid(pid);
--		if (retval)
--			goto out;
--	} else {
--		if (!tty->fasync && !waitqueue_active(&tty->read_wait))
--			tty->minimum_to_wake = N_TTY_BUF_SIZE;
- 	}
--	retval = 0;
- out:
- 	return retval;
- }
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index a665c7e..7269daf 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -272,7 +272,6 @@ struct tty_struct {
- #define N_TTY_BUF_SIZE 4096
- 
- 	unsigned char closing:1;
--	unsigned short minimum_to_wake;
- 	unsigned char *write_buf;
- 	int write_cnt;
- 	/* If the tty has a pending do_SAK, queue it here - akpm */
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index 22ee107..23bdd9d 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -100,6 +100,11 @@
-  *	seek to perform this action quickly but should wait until
-  *	any pending driver I/O is completed.
+- *	n_tty_set__room	-	receive space
++ *	n_tty_set_room	-	receive space
+  *	@tty: terminal
   *
-+ * void (*fasync)(struct tty_struct *, int on)
+- *	Called by the driver to find out how much data it is
+- *	permitted to feed to the line discipline without any being lost
+- *	and thus to manage flow control. Not serialized. Answers for the
+- *	"instant".
++ *	Sets tty->receive_room to reflect the currently available space
++ *	in the input buffer, and re-schedules the flip buffer work if space
++ *	just became available.
 + *
-+ *	Notify line discipline when signal-driven I/O is enabled or
-+ *	disabled.
-+ *
-  * void (*dcd_change)(struct tty_struct *tty, unsigned int status)
-  *
-  *	Tells the discipline that the DCD pin has changed its status.
-@@ -189,6 +194,7 @@ struct tty_ldisc_ops {
- 			       char *fp, int count);
- 	void	(*write_wakeup)(struct tty_struct *);
- 	void	(*dcd_change)(struct tty_struct *, unsigned int);
-+	void	(*fasync)(struct tty_struct *tty, int on);
++ *	Locks: Concurrent update is protected with read_lock
+  */
  
- 	struct  module *owner;
+ static void n_tty_set_room(struct tty_struct *tty)
+@@ -129,8 +130,10 @@ static void n_tty_set_room(struct tty_struct *tty)
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	int left;
+ 	int old_left;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&ldata->read_lock, flags);
  
+-	/* ldata->read_cnt is not read locked ? */
+ 	if (I_PARMRK(tty)) {
+ 		/* Multiply read_cnt by 3, since each byte might take up to
+ 		 * three times as many spaces when PARMRK is set (depending on
+@@ -150,6 +153,8 @@ static void n_tty_set_room(struct tty_struct *tty)
+ 	old_left = tty->receive_room;
+ 	tty->receive_room = left;
+ 
++	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
++
+ 	/* Did this open up the receive buffer? We may need to flip */
+ 	if (left && !old_left) {
+ 		WARN_RATELIMIT(tty->port->itty == NULL,
+@@ -1872,7 +1877,6 @@ do_it_again:
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			/* FIXME: does n_tty_set_room need locking ? */
+ 			n_tty_set_room(tty);
+ 			timeout = schedule_timeout(timeout);
+ 			continue;
 -- 
 1.8.1.2
 
