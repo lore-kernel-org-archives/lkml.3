@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3FOUrg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 16:47:36 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:38596 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab3FOUra convert rfc822-to-8bit (ORCPT
+	id S1754662Ab3FOUuj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 16:50:39 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:59049 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab3FOUui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 16:47:30 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: Joe Perches <joe@perches.com>
-CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v4] ethernet/arc/arc_emac - Add new driver
-Thread-Topic: [PATCH v4] ethernet/arc/arc_emac - Add new driver
-Thread-Index: AQHOagXe8tugec+MDUSro7F/hI5nuQ==
-Date: Sat, 15 Jun 2013 20:47:25 +0000
-Message-ID: <4881796E12491D4BB15146FE0209CE643F5E7779@DE02WEMBXB.internal.synopsys.com>
-References: <1371327652-9368-1-git-send-email-abrodkin@synopsys.com>
- <1371328671.2117.6.camel@joe-AO722>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.225.15.131]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 15 Jun 2013 16:50:38 -0400
+Message-ID: <201306152050.r5FKobPY025904@farm-0013.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sat, 15 Jun 2013 16:47:47 -0400
+Subject: [PATCH] tilepro: work around module link error with gcc 4.7
+To: <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2013 12:37 AM, Joe Perches wrote:
-> On Sun, 2013-06-16 at 00:20 +0400, Alexey Brodkin wrote:
->> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
->> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
->> ARCAngel4/ML50x.
->
->> diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-> []
->> +		if (DUPLEX_FULL == phy_dev->duplex)
->
-> Most all kernel code uses "if (var == constant)"
-> as that's how most people think.
+gcc 4.7.x is emitting calls to __ffsdi2 where previously
+it used to inline the appropriate ctz instructions.
+While this needs to be fixed in gcc, it's also easy to avoid
+having it cause build failures when building with those
+compilers by exporting __ffsdi2 to modules.
 
-Makes sense.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: stable@kernel.org
+---
+ arch/tile/lib/exports.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> []
->
->> +static int arc_emac_rx(struct net_device *ndev, int budget)
-> []
->> +		/* Prepare the BD for next cycle */
->> +		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
->> +		if (unlikely(!rx_buff->skb)) {
->> +			if (net_ratelimit())
->> +				netdev_err(ndev, "cannot allocate skb\n");
->
-> Unnecessary OOM message, might as well remove it.
-> rx_dropped gives the same info.
+diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
+index 4385cb6..a93b02a 100644
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -84,4 +84,6 @@ uint64_t __ashrdi3(uint64_t, unsigned int);
+ EXPORT_SYMBOL(__ashrdi3);
+ uint64_t __ashldi3(uint64_t, unsigned int);
+ EXPORT_SYMBOL(__ashldi3);
++int __ffsdi2(uint64_t);
++EXPORT_SYMBOL(__ffsdi2);
+ #endif
+-- 
+1.7.10.3
 
-With all those error messages I wanted to make life easier (especially 
-for me) if errors appear. User will immediately know where problem 
-happened. Indeed "rx_dropped" (when it is used only once in driver) may 
-show where issue happened, but if later at some point "rx_dropped" will 
-be incremented in other locations then user won't understand immediately 
-where error happened.
-
--Alexey
