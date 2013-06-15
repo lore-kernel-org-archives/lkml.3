@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab3FOUfs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 16:35:48 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:46773 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab3FOUfq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 16:35:46 -0400
-Date: Sat, 15 Jun 2013 22:35:34 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Aaron Lu <aaron.lwe@gmail.com>, Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
- firmware expects Windows 8
-Message-ID: <20130615203534.GC6424@phenom.ffwll.local>
-Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Aaron Lu <aaron.lu@intel.com>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	Seth Forshee <seth.forshee@canonical.com>,
-	"Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-	Aaron Lu <aaron.lwe@gmail.com>,
-	Alex Deucher <alexdeucher@gmail.com>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
- <20130615151628.GA9868@srcf.ucam.org>
- <20130615182942.GA6424@phenom.ffwll.local>
- <6834259.1uPUZ8EFRd@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6834259.1uPUZ8EFRd@vostro.rjw.lan>
-X-Operating-System: Linux phenom 3.10.0-rc5+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754661Ab3FOUhx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 16:37:53 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59685 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754532Ab3FOUhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 16:37:52 -0400
+Message-ID: <1371328671.2117.6.camel@joe-AO722>
+Subject: Re: [PATCH v4] ethernet/arc/arc_emac - Add new driver
+From: Joe Perches <joe@perches.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: netdev@vger.kernel.org, Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Date: Sat, 15 Jun 2013 13:37:51 -0700
+In-Reply-To: <1371327652-9368-1-git-send-email-abrodkin@synopsys.com>
+References: <1371327652-9368-1-git-send-email-abrodkin@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 10:27:06PM +0200, Rafael J. Wysocki wrote:
-> On Saturday, June 15, 2013 08:29:42 PM Daniel Vetter wrote:
-> > Hi all,
-> > 
-> > So to me it looks like the discussion is going in circles a bit, hence let
-> > me drop my maintainer-opinion here:
-> > 
-> > 1. Matthew's patch series here looks reasonable, and if it fixes a bunch
-> > of systems (which it seems to) it has my Ack and imo should go in. If acpi
-> > maintainers can smash their Ack onto the acpi parts I'd very much like to
-> > merge this into drm-intel-next, that should give us the most coverage for
-> > intel systems.
-> > 
-> > Len, Rafael, are you ok with the acpi part of this and merging it through
-> > drm-intel-next?
-> 
-> It has to go through the ACPI tree because of the ACPICA patch that needs to
-> be synchronized with the ACPICA upstream.  Sorry.
+On Sun, 2013-06-16 at 00:20 +0400, Alexey Brodkin wrote:
+> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+> ARCAngel4/ML50x.
 
-No problem, since we're pretty close to the merge window that would have
-at most resulted in a few more weeks of testing in i915 trees anyway. -rc
-kernels should still give us plenty of time to catch fallout, if there is
-any.
+> diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+[]
+> +		if (DUPLEX_FULL == phy_dev->duplex)
 
-> That said, I'm going to take this patchset.
+Most all kernel code uses "if (var == constant)"
+as that's how most people think.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+[]
+
+> +static int arc_emac_rx(struct net_device *ndev, int budget)
+[]
+> +		/* Prepare the BD for next cycle */
+> +		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
+> +		if (unlikely(!rx_buff->skb)) {
+> +			if (net_ratelimit())
+> +				netdev_err(ndev, "cannot allocate skb\n");
+
+Unnecessary OOM message, might as well remove it.
+rx_dropped gives the same info.
+
+
