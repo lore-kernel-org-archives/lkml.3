@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3FONhs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 09:37:48 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:39778 "EHLO
+	id S1754632Ab3FONiF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 09:38:05 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:39770 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab3FONgt (ORCPT
+	with ESMTP id S1754523Ab3FONgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 09:36:49 -0400
+	Sat, 15 Jun 2013 09:36:43 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 07/16] tty: Simplify flip buffer list with 0-sized sentinel
-Date: Sat, 15 Jun 2013 09:36:07 -0400
-Message-Id: <1371303376-5028-8-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 05/16] tty: Use generic names for flip buffer list cursors
+Date: Sat, 15 Jun 2013 09:36:05 -0400
+Message-Id: <1371303376-5028-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
 References: <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
@@ -23,169 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a 0-sized sentinel to avoid assigning the head ptr from
-the driver side thread. This also eliminates testing head/tail
-for NULL.
-
-When the sentinel is first 'consumed' by the buffer work
-(or by tty_buffer_flush()), it is detached from the list but not
-freed nor added to the free list. Both buffer work and
-tty_buffer_flush() continue to preserve at least 1 flip buffer
-to which head & tail is pointed.
-
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 49 ++++++++++++++++++------------------------------
- include/linux/tty.h      |  1 +
- 2 files changed, 19 insertions(+), 31 deletions(-)
+ drivers/tty/tty_buffer.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 069640e..231b7a8 100644
+index a428fa2..0259a76 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -49,13 +49,16 @@ void tty_buffer_free_all(struct tty_port *port)
+@@ -44,15 +44,15 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
+ void tty_buffer_free_all(struct tty_port *port)
+ {
+ 	struct tty_bufhead *buf = &port->buf;
+-	struct tty_buffer *thead;
++	struct tty_buffer *p;
  
- 	while ((p = buf->head) != NULL) {
- 		buf->head = p->next;
--		kfree(p);
-+		if (p->size > 0)
-+			kfree(p);
+-	while ((thead = buf->head) != NULL) {
+-		buf->head = thead->next;
+-		kfree(thead);
++	while ((p = buf->head) != NULL) {
++		buf->head = p->next;
++		kfree(p);
  	}
- 	llist = llist_del_all(&buf->free);
- 	llist_for_each_entry_safe(p, next, llist, free)
- 		kfree(p);
- 
--	buf->tail = NULL;
-+	tty_buffer_reset(&buf->sentinel, 0);
-+	buf->head = &buf->sentinel;
-+	buf->tail = &buf->sentinel;
+-	while ((thead = buf->free) != NULL) {
+-		buf->free = thead->next;
+-		kfree(thead);
++	while ((p = buf->free) != NULL) {
++		buf->free = p->next;
++		kfree(p);
+ 	}
+ 	buf->tail = NULL;
  	buf->memory_used = 0;
- }
- 
-@@ -120,7 +123,7 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
- 
- 	if (b->size > MIN_TTYB_SIZE)
- 		kfree(b);
--	else
-+	else if (b->size > 0)
- 		llist_add(&b->free, &buf->free);
- }
- 
-@@ -140,8 +143,6 @@ static void __tty_buffer_flush(struct tty_port *port)
+@@ -143,13 +143,13 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
+ static void __tty_buffer_flush(struct tty_port *port)
+ {
  	struct tty_bufhead *buf = &port->buf;
- 	struct tty_buffer *next;
+-	struct tty_buffer *thead;
++	struct tty_buffer *next;
  
--	if (unlikely(buf->head == NULL))
--		return;
- 	while ((next = buf->head->next) != NULL) {
+ 	if (unlikely(buf->head == NULL))
+ 		return;
+-	while ((thead = buf->head->next) != NULL) {
++	while ((next = buf->head->next) != NULL) {
  		tty_buffer_free(port, buf->head);
- 		buf->head = next;
-@@ -200,23 +201,14 @@ int tty_buffer_request_room(struct tty_port *port, size_t size)
- 	int left;
- 	unsigned long flags;
- 	spin_lock_irqsave(&buf->lock, flags);
--	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
--	   remove this conditional if its worth it. This would be invisible
--	   to the callers */
- 	b = buf->tail;
--	if (b != NULL)
--		left = b->size - b->used;
--	else
--		left = 0;
-+	left = b->size - b->used;
- 
- 	if (left < size) {
- 		/* This is the slow path - looking for new buffers to use */
- 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
--			if (b != NULL) {
--				b->next = n;
--				b->commit = b->used;
--			} else
--				buf->head = n;
-+			b->next = n;
-+			b->commit = b->used;
- 			buf->tail = n;
- 		} else
- 			size = left;
-@@ -247,10 +239,8 @@ int tty_insert_flip_string_fixed_flag(struct tty_port *port,
- 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
- 		int space = tty_buffer_request_room(port, goal);
- 		struct tty_buffer *tb = port->buf.tail;
--		/* If there is no space then tb may be NULL */
--		if (unlikely(space == 0)) {
-+		if (unlikely(space == 0))
- 			break;
--		}
- 		memcpy(char_buf_ptr(tb, tb->used), chars, space);
- 		memset(flag_buf_ptr(tb, tb->used), flag, space);
- 		tb->used += space;
-@@ -285,10 +275,8 @@ int tty_insert_flip_string_flags(struct tty_port *port,
- 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
- 		int space = tty_buffer_request_room(port, goal);
- 		struct tty_buffer *tb = port->buf.tail;
--		/* If there is no space then tb may be NULL */
--		if (unlikely(space == 0)) {
-+		if (unlikely(space == 0))
- 			break;
--		}
- 		memcpy(char_buf_ptr(tb, tb->used), chars, space);
- 		memcpy(flag_buf_ptr(tb, tb->used), flags, space);
- 		tb->used += space;
-@@ -322,8 +310,7 @@ void tty_schedule_flip(struct tty_port *port)
- 	WARN_ON(port->low_latency);
- 
- 	spin_lock_irqsave(&buf->lock, flags);
--	if (buf->tail != NULL)
--		buf->tail->commit = buf->tail->used;
-+	buf->tail->commit = buf->tail->used;
- 	spin_unlock_irqrestore(&buf->lock, flags);
- 	schedule_work(&buf->work);
- }
-@@ -438,8 +425,8 @@ static void flush_to_ldisc(struct work_struct *work)
- 	spin_lock_irqsave(&buf->lock, flags);
- 
- 	if (!test_and_set_bit(TTYP_FLUSHING, &port->iflags)) {
--		struct tty_buffer *head;
--		while ((head = buf->head) != NULL) {
-+		while (1) {
-+			struct tty_buffer *head = buf->head;
- 			int count;
- 
- 			count = head->commit - head->read;
-@@ -509,8 +496,7 @@ void tty_flip_buffer_push(struct tty_port *port)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&buf->lock, flags);
--	if (buf->tail != NULL)
--		buf->tail->commit = buf->tail->used;
-+	buf->tail->commit = buf->tail->used;
- 	spin_unlock_irqrestore(&buf->lock, flags);
- 
- 	if (port->low_latency)
-@@ -535,8 +521,9 @@ void tty_buffer_init(struct tty_port *port)
- 	struct tty_bufhead *buf = &port->buf;
- 
- 	spin_lock_init(&buf->lock);
--	buf->head = NULL;
--	buf->tail = NULL;
-+	tty_buffer_reset(&buf->sentinel, 0);
-+	buf->head = &buf->sentinel;
-+	buf->tail = &buf->sentinel;
- 	init_llist_head(&buf->free);
- 	buf->memory_used = 0;
- 	INIT_WORK(&buf->work, flush_to_ldisc);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 5043b12..2e93eb8 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -67,6 +67,7 @@ static inline char *flag_buf_ptr(struct tty_buffer *b, int ofs)
- struct tty_bufhead {
- 	struct work_struct work;
- 	spinlock_t lock;
-+	struct tty_buffer sentinel;
- 	struct tty_buffer *head;	/* Queue head */
- 	struct tty_buffer *tail;	/* Active buffer */
- 	struct llist_head free;		/* Free queue head */
+-		buf->head = thead;
++		buf->head = next;
+ 	}
+ 	WARN_ON(buf->head != buf->tail);
+ 	buf->head->read = buf->head->commit;
 -- 
 1.8.1.2
 
