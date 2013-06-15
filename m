@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3FOGcA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 02:32:00 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58307 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab3FOGb6 (ORCPT
+	id S1754023Ab3FOGg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 02:36:28 -0400
+Received: from nm23-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.141]:40773
+	"EHLO nm23-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751521Ab3FOGg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 02:31:58 -0400
-Date: Fri, 14 Jun 2013 23:31:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, koverstreet@google.com,
-        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        Mike Snitzer <snitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 11/11] cgroup: use percpu refcnt for cgroup_subsys_states
-Message-ID: <20130615063155.GC7017@htj.dyndns.org>
-References: <1371096298-24402-1-git-send-email-tj@kernel.org>
- <1371096298-24402-12-git-send-email-tj@kernel.org>
- <20130614132026.GD10084@dhcp22.suse.cz>
- <20130614223125.GD6593@mtj.dyndns.org>
- <20130615053522.GA7017@htj.dyndns.org>
+	Sat, 15 Jun 2013 02:36:27 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Jun 2013 02:36:26 EDT
+X-Yahoo-Newman-Id: 332084.47206.bm@smtp104.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: V7xr7TYVM1lKfpRwdB6iNBcyF0z16U9JH7eCUkleZ8agb.F
+ EfOSNpiAeAP98oIjkX4xuULLkPymypKoP__SHq9IQh2vd2_9dlpOuzHLTiuq
+ rzHd_8ZQCGPRJrhjmYW81jOCbpfo9VUX3FHE2H3Q3bHlZJ3cEdYG3xCzFCLm
+ pu4CLJu4chnYZHKL08bCAS7eoEqVJdNCzRNl_SV_03tDj7hTkAiPvoTzzgXc
+ Np75RJgtqq9q5R_ItHP.hESZSl1GQfz27UcAsUbf6WLiozgSX5nqeZPrST8Z
+ qZE3IQ_OQDm2C6JEUhUKAd8MIuIh09.pFxKwbLhiEhm3fBqA0csoMSyoIi0n
+ cOzQVRNWN4Bhj63Cgk_gNE27kiXT1x6AX8loSiYe4XlrAcNjKLaPQx5A7qzp
+ n25tySnpba_.WswkCDUAbBpkFxmxfChqpsgTJawCDdYPlu7b2LwBwwChD46F
+ Eu0f4FB5ke1dFIhsgYnIM_GZsMNq3egczgGbGbFvGTbCuBKPO3cSgtZdpFGX
+ 8AWJjJV._rxdRMw--
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp104.sbc.mail.ne1.yahoo.com with SMTP; 15 Jun 2013 06:30:52 +0000 UTC
+Date: Fri, 14 Jun 2013 23:30:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: nirinA raseliarison <nirina.raseliarison@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
+ 0000000000000040
+Message-ID: <20130615063055.GA13766@roeck-us.net>
+References: <op.wyn5vzc89ey1ta@localhost>
+ <CAErSpo5nxKi+dNDRn95GtufddncnsC2VyP+NWa=QBMt0aH3AoA@mail.gmail.com>
+ <20130614154325.GA30105@roeck-us.net>
+ <op.wyoht9hm9ey1ta@localhost>
+ <CACVXFVP5-d_1RUC+vBTLxnHZje3F1rYaJvDCgbV2-ngXfb_KNw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130615053522.GA7017@htj.dyndns.org>
+In-Reply-To: <CACVXFVP5-d_1RUC+vBTLxnHZje3F1rYaJvDCgbV2-ngXfb_KNw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 10:35:22PM -0700, Tejun Heo wrote:
-> On Fri, Jun 14, 2013 at 03:31:25PM -0700, Tejun Heo wrote:
-> > I'll play with it a bit more on an actual machine and post more
-> > results.  Test program attached.
+On Sat, Jun 15, 2013 at 10:32:14AM +0800, Ming Lei wrote:
+> On Sat, Jun 15, 2013 at 1:07 AM, nirinA raseliarison
+> <nirina.raseliarison@gmail.com> wrote:
 > 
-> So, here are the results from the same test on a dual-socket 2-way
-> NUMA opteron 8 core machine.
+> > patch applied and no longer have the bug message when i
+> > reboot and wake up the ethernet controller.
 > 
-> Running on one CPU.
+> I am wondering if Guenter's patch can fix the race really, but I'd like to
+> see Guenter's explanation on his patch.
 > 
->   copy size	atomic		percpu		diff in pct
->   0		535964443	616756827	+15.07%
->   32		399988186	378678713	 -5.33%
->   64		389067476	355073979	 -8.74%
->   128		342192631	315615300	 -7.77%
->   256		281208005	260598931	 -7.33%
->   512		188070912	193225269	 +2.74%
+> The race should be caused by below:
 > 
-> Running on all eight cores.
+> - request timeout triggered by internal timer
 > 
->   copy size	atomic		percpu		diff in pct
->   0		121324328	4889425511	+3,930.05%
->   32		 96170193	2999613380	+3,019.07%
->   64		 98139061	2813894184	+2,767.25%
->   128		112610025	2503229487	+2,122.92%
->   256		 96828114	2069865752	+2,037.67%
->   512		 95858297	1537726109	+1,504.17%
+> - user space aborts the requests before the line in _request_firmware_load()
 > 
-> Ration of all cores / single core.
+>              fw_priv->buf = NULL
 > 
->   copy size	atomic		percpu
->   0		0.23		7.93
->   32		0.24		7.92
->   64		0.25		7.92
->   128		0.33		7.93
->   256		0.34		7.94
->   512		0.51		7.96
+> which is run in timeout path
+> 
+> - then the abort() called from firmware_loading_store() may use a freed fw buf
+> since the timeout path will free the fw buffer.
+> 
+> Considered clearing 'fw_priv->buf' in _request_firmware_load()() isn't protected
+> by fw_lock now, so Guenter's patch can't avoid the race entirely.
+> 
+I agree; my patch only protects one specific path, and was based on the
+observation that access to fw_priv->buf is protected elsewhwere in the code.
+My suspicion was that fw_priv->buf was freed while waiting for the mutex in
+firmware_loading_store().
 
-I was testing with CONFIG_PREEMPT, which makes rcu_read_[un]lock()s
-quite a bit more expensive.  The following is the same test results
-with CONFIG_PREEMPT_VOLUNTARY which would the most preemptive server
-distros would get anyway.
+Your patch is more comprehensive.
 
-One CPU.
-
-  copy size	atomic		percpu		diff in pct
-  0		534583387	1521561724	+184.63%
-  32		399098138	 615962137	+ 54.34%
-  64		388128431	 555599274	+ 43.15%
-  128		341336474	 464502792	+ 36.08%
-  256		280471681	 354186740	+ 26.28%
-  512		203784802	 240067596	+ 17.80%
-
-All eight CPUs.
-
-  copy size	atomic		percpu		diff in pct
-  0		117213982	12488998111	+10,554.87%
-  32		103545751	4940695158	+ 4,671.51%
-  64		 98135094	4456370409	+ 4,441.06%
-  128		117729659	3725434154	+ 3,064.40%
-  256		 95916768	2840992396	+ 2,861.94%
-  512		 95795993	1926044518	+ 1,910.57%
-
-Ration of all cores / single core.
-
-  copy size	atomic		percpu
-  0		0.22		8.21
-  32		0.26		8.02
-  64		0.25		8.02
-  128		0.34		8.02
-  256		0.34		8.02
-  512		0.47		8.02	
-
-So, it's faster even with only one CPU.
-
-Thanks.
-
--- 
-tejun
+Guenter
