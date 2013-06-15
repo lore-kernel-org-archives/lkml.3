@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3FOCCw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:02:52 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43120 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab3FOCCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 22:02:51 -0400
-Message-ID: <1371261741.21896.20.camel@pasglop>
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rojhalat Ibrahim <imr@rtschenk.de>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Sat, 15 Jun 2013 12:02:21 +1000
-In-Reply-To: <1371243967.9844.338.camel@gandalf.local.home>
-References: <1626500.7WAVXjfS9F@pcimr>
-	 <20130614122800.GL5146@linux.vnet.ibm.com> <1645938.As0LR1yeVd@pcimr>
-	 <1371243967.9844.338.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754061Ab3FOCDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 22:03:40 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38742 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab3FOCDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 22:03:39 -0400
+Date: Fri, 14 Jun 2013 19:03:43 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, balbi@ti.com,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL v3] at91: USBA DT support / drivers update for 3.11 #1
+Message-ID: <20130615020343.GB25585@quad.lixom.net>
+References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+ <1371247364-23213-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371247364-23213-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 17:06 -0400, Steven Rostedt wrote:
-> I was pretty much able to reproduce this on my PA Semi PPC box. Funny
-> thing is, when I type on the console, it makes progress. Anyway, it
-> seems that powerpc has an issue with irq_work(). I'll try to get some
-> time either tonight or next week to figure it out.
+On Sat, Jun 15, 2013 at 12:02:44AM +0200, Nicolas Ferre wrote:
+> Arnd, Olof,
+> 
+> This is a rework of the previous pull-request done by Jean-Christophe
+> PLAGNIOL-VILLARD ([GIT PULL] at91: USBA DT support for 3.11).
+> It is also the division of my previous pull request (v2) to extract only
+> patches related to drivers. The DT patches will be stacked on top of our
+> arm-soc/at91/dt branch in an upcoming pull-request.
+> You should see that this material is based on the cleanup branch that you
+> already have in arm-soc/at91/cleanup.
+> 
+> This adds the DT support for USBA gadget driver present in the most recent
+> AT91 SoCs.
+> As agreed with Arnd and Felipe we send these drivers updates via arm-soc.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
+> 
+>   ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-drivers
 
-Does this help ?
-
-diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-index 5cbcf4d..ea185e0 100644
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -162,7 +162,7 @@ notrace unsigned int __check_irq_replay(void)
- 	 * in case we also had a rollover while hard disabled
- 	 */
- 	local_paca->irq_happened &= ~PACA_IRQ_DEC;
--	if (decrementer_check_overflow())
-+	if ((happened & PACA_IRQ_DEC) || decrementer_check_overflow())
- 		return 0x900;
- 
- 	/* Finally check if an external interrupt happened */
-
-Cheers,
-Ben.
+Pulled, thanks. This had conflicts with some code from fixes. The change/remove
+ones were easy (cs-gpio vs interrupts), but there was one dealing with pinctrl.
+PLease double-check that there wasn't a need to carry over a fix to the
+include-file-based version.
 
 
+-Olof
