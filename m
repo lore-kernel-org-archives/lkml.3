@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3FOA5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:57:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47595 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3FOA5D (ORCPT
+	id S1753963Ab3FOA5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 20:57:25 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:47347 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3FOA5X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:03 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 13/22] x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
-Date: Fri, 14 Jun 2013 17:56:31 -0700
-Message-Id: <1371257800-11720-14-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 14 Jun 2013 20:57:23 -0400
+References: <1368917790-23770-1-git-send-email-tomasz.figa@gmail.com> <54821523.hBKS2L2vLj@flatron> <20130614220030.82ECF3E0A56@localhost>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20130614220030.82ECF3E0A56@localhost>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <19FA54F4-522D-4976-9D98-8EA2827D22F6@collabora.co.uk>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (10B329)
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH] of: irq: Pass trigger type in IRQ resource flags
+Date: Sat, 15 Jun 2013 02:57:17 +0200
+To: Grant Likely <grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could use numa_meminfo directly instead of memblock nid.
 
-So we could move down set memblock nid and only do it one time
-for successful path.
+On 15/06/2013, at 00:00, Grant Likely <grant.likely@linaro.org> wrote:
 
--v2: according to tj, separate moving to another patch.
+> On Wed, 05 Jun 2013 20:20:39 +0200, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi,
+>> 
+>> On Sunday 19 of May 2013 00:56:30 Tomasz Figa wrote:
+>>> Some drivers might rely on availability of trigger flags in IRQ
+>>> resource, for example to configure the hardware for particular interrupt
+>>> type. However current code creating IRQ resources from data in device
+>>> tree does not configure trigger flags in resulting resources.
+>>> 
+>>> This patch solves the problem, based on the fact that
+>>> irq_of_parse_and_map() configures the trigger based on DT interrupt
+>>> specifier, IRQD_TRIGGER_* flags are consistent with IORESOURCE_IRQ_*,
+>>> and we can get trigger type by calling irqd_get_trigger_type() after
+>>> mapping the interrupt.
+>>> 
+>>> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+>>> ---
+>>> drivers/of/irq.c | 10 ++++++++++
+>>> 1 file changed, 10 insertions(+)
+>>> 
+>>> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+>>> index a3c1c5a..79a7a26 100644
+>>> --- a/drivers/of/irq.c
+>>> +++ b/drivers/of/irq.c
+>>> @@ -355,6 +355,16 @@ int of_irq_to_resource(struct device_node *dev, int
+>>> index, struct resource *r) r->start = r->end = irq;
+>>>        r->flags = IORESOURCE_IRQ;
+>>>        r->name = name ? name : dev->full_name;
+>>> +
+>>> +        /*
+>>> +         * Some drivers might rely on availability of trigger
+>> flags
+>>> +         * in IRQ resource. Since irq_of_parse_and_map()
+>> configures the
+>>> +         * trigger based on interrupt specifier and IRQD_TRIGGER_*
+>>> +         * flags are consistent with IORESOURCE_IRQ_*, we can get
+>>> +         * trigger type that was just set and pass it through
+>> resource
+>>> +         * flags as well.
+>>> +         */
+>>> +        r->flags |= irqd_get_trigger_type(irq_get_irq_data(irq));
+>>>    }
+>>> 
+>>>    return irq;
+>> 
+>> Any comments on this patch?
+> 
+> That's actually a pretty good solution and a whole lot less invasive
+> that the approach that Javier was pursuing. Javier, I'm going to pick
+> up this patch. Please yell if it doesn't solve the problem that you're
+> trying to solve.
+> 
+> g.
+> 
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/mm/numa.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+It solves the issue I was trying to solve and the solution is indeed more elegant and simpler than the one I posted.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 10c6240..cff565a 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -493,14 +493,18 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
-  * Returns the determined alignment in pfn's.  0 if there is no alignment
-  * requirement (single node).
-  */
--unsigned long __init node_map_pfn_alignment(void)
-+#ifdef NODE_NOT_IN_PAGE_FLAGS
-+static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
- {
- 	unsigned long accl_mask = 0, last_end = 0;
- 	unsigned long start, end, mask;
- 	int last_nid = -1;
- 	int i, nid;
- 
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		start = mi->blk[i].start >> PAGE_SHIFT;
-+		end = mi->blk[i].end >> PAGE_SHIFT;
-+		nid = mi->blk[i].nid;
- 		if (!start || last_nid < 0 || last_nid == nid) {
- 			last_nid = nid;
- 			last_end = end;
-@@ -523,10 +527,16 @@ unsigned long __init node_map_pfn_alignment(void)
- 	/* convert mask to number of pages */
- 	return ~accl_mask + 1;
- }
-+#else
-+static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
-+{
-+	return 0;
-+}
-+#endif
- 
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
--	unsigned long uninitialized_var(pfn_align);
-+	unsigned long pfn_align;
- 	int i;
- 
- 	/* Account for nodes with cpus and no memory */
-@@ -538,24 +548,22 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	for (i = 0; i < mi->nr_blks; i++) {
--		struct numa_memblk *mb = &mi->blk[i];
--		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
--	}
--
- 	/*
- 	 * If sections array is gonna be used for pfn -> nid mapping, check
- 	 * whether its granularity is fine enough.
- 	 */
--#ifdef NODE_NOT_IN_PAGE_FLAGS
--	pfn_align = node_map_pfn_alignment();
-+	pfn_align = node_map_pfn_alignment(mi);
- 	if (pfn_align && pfn_align < PAGES_PER_SECTION) {
- 		printk(KERN_WARNING "Node alignment %LuMB < min %LuMB, rejecting NUMA config\n",
- 		       PFN_PHYS(pfn_align) >> 20,
- 		       PFN_PHYS(PAGES_PER_SECTION) >> 20);
- 		return -EINVAL;
- 	}
--#endif
-+
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		struct numa_memblk *mb = &mi->blk[i];
-+		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-+	}
- 
- 	return 0;
- }
--- 
-1.8.1.4
+Thanks a lot for pointing this out.
 
+Best regards,
+Javier
