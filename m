@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3FOOX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:23:26 -0400
-Received: from smtp-out-220.synserver.de ([212.40.185.220]:1041 "EHLO
-	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab3FOOXW (ORCPT
+	id S1754689Ab3FOOWa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 10:22:30 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40485 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473Ab3FOOWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:23:22 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7545
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Peter Huewe <peter.huewe@infineon.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] tpm: tpm_i2c_infinion: Don't modify i2c_client->driver
-Date: Sat, 15 Jun 2013 16:23:24 +0200
-Message-Id: <1371306204-7547-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Sat, 15 Jun 2013 10:22:03 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 05/20] n_tty: Simplify __receive_buf loop count
+Date: Sat, 15 Jun 2013 10:21:21 -0400
+Message-Id: <1371306096-5571-6-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
+References: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C client driver is not supposed to modify the client's driver pointer,
-this is handled by the I2C core.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/char/tpm/tpm_i2c_infineon.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/tty/n_tty.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index 37d5dcc..dbc7042 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -74,7 +74,6 @@ struct tpm_inf_dev {
- };
- 
- static struct tpm_inf_dev tpm_dev;
--static struct i2c_driver tpm_tis_i2c_driver;
- 
- /*
-  * iic_tpm_read() - read from TPM register
-@@ -744,11 +743,9 @@ static int tpm_tis_i2c_probe(struct i2c_client *client,
- 		return -ENODEV;
- 	}
- 
--	client->driver = &tpm_tis_i2c_driver;
- 	tpm_dev.client = client;
- 	rc = tpm_tis_i2c_init(&client->dev);
- 	if (rc != 0) {
--		client->driver = NULL;
- 		tpm_dev.client = NULL;
- 		rc = -ENODEV;
- 	}
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index caf37d3..f959dc9 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1504,21 +1504,19 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 		memcpy(read_buf_addr(ldata, head), cp, n);
+ 		ldata->read_head += n;
+ 	} else {
+-		int i;
+-
+-		for (i = count; i; i--, cp++) {
++		while (count--) {
+ 			if (fp)
+ 				flags = *fp++;
+ 			switch (flags) {
+ 			case TTY_NORMAL:
+-				n_tty_receive_char(tty, *cp);
++				n_tty_receive_char(tty, *cp++);
+ 				break;
+ 			case TTY_BREAK:
+ 				n_tty_receive_break(tty);
+ 				break;
+ 			case TTY_PARITY:
+ 			case TTY_FRAME:
+-				n_tty_receive_parity_error(tty, *cp);
++				n_tty_receive_parity_error(tty, *cp++);
+ 				break;
+ 			case TTY_OVERRUN:
+ 				n_tty_receive_overrun(tty);
 -- 
-1.8.0
+1.8.1.2
 
