@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab3FOHJj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 03:09:39 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:46698 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab3FOHJi (ORCPT
+	id S1754146Ab3FOHOb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 03:14:31 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:46463 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab3FOHOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 03:09:38 -0400
-Date: Sat, 15 Jun 2013 16:09:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        kyungmin.park@samsung.com, d.j.shin@samsung.com, sunae.seo@samsung.com
-Subject: Re: [PATCH] mm: vmscan: remove redundant querying to shrinker
-Message-ID: <20130615070930.GC7470@gmail.com>
-References: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
+	Sat, 15 Jun 2013 03:14:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 15 Jun 2013 15:14:29 +0800
+Message-ID: <CAHnt0GUrw+XznoUaJ31YO9yoB7JZmpbo+oAXUPud3HK-LiEiAA@mail.gmail.com>
+Subject: PPC440GX (taishan config) compilation errors
+From: Peter Teoh <htmldeveloper@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Compiling the latest linus-git image for PPC440GX (taishan config) I
+got the following errors:
 
-Andrew want to merge this so I try to review.
+git describe
+v3.10-rc5-219-ga2648eb
 
-On Fri, Jun 14, 2013 at 07:07:51PM +0900, Heesub Shin wrote:
-> shrink_slab() queries each slab cache to get the number of
-> elements in it. In most cases such queries are cheap but,
-> on some caches. For example, Android low-memory-killer,
-> which is operates as a slab shrinker, does relatively
-> long calculation once invoked and it is quite expensive.
+Issuing "make V=1 ARCH=powerpc CROSS_COMPILE=ppc_4xx- oldconfig" where
+the config file ".config" is from powerpc/configs/44x gives:
 
-long calculation?
-I am looking at lowmem_shrink in v3.9 and I couldn't find
-anything  which would make slow in case of slab query.
-It does have rather unnecessary code with calulating
-global vmstat but I think it's not culprit for your slowness.
+make -f scripts/Makefile.build obj=net/wireless
+make -f scripts/Makefile.build obj=lib
+make -f scripts/Makefile.build obj=lib/zlib_inflate
+make ARCH=ppc64 -f scripts/Makefile.build obj=arch/powerpc/boot
+arch/powerpc/boot/uImage
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+mkdir -p arch/powerpc/boot/
+  ppc_4xx-gcc -m32 -Wp,-MD,arch/powerpc/boot/.treeboot-currituck.o.d
+-Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing
+-Os -msoft-float -pipe -fomit-frame-pointer -fno-builtin -fPIC
+-nostdinc -isystem
+/opt/eldk-4.2/usr/bin/../lib/gcc/powerpc-linux/4.2.2/include
+-fno-stack-protector -Iarch/powerpc/boot
+-I/media/d4fdcf1c-c7f1-419a-8418-3d0e7b1ad883/linux_latest/arch/powerpc/boot
+-mcpu=405 -c -o arch/powerpc/boot/treeboot-currituck.o
+arch/powerpc/boot/treeboot-currituck.c
+{standard input}: Assembler messages:
+{standard input}:82: Error: Unrecognized opcode: `mfdcrx'
+make[1]: *** [arch/powerpc/boot/treeboot-currituck.o] Error 1
+make: *** [uImage] Error 2
 
-Could you say how does it makes slow with some number?
-If it's true, we have to fix LMK.
-We already have been said following as.
+Question:
 
- * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
- * querying the cache size, so a fastpath for that case is appropriate.
+a.   why is the "mkdir -p arch/powerpc/boot/" repeated so many times?
+b.   what is the cause of error "mfdcrx"?
 
-> 
-> This patch removes redundant queries to shrinker function
-> in the loop of shrink batch.
-> 
-> Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
-> ---
->  mm/vmscan.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index fa6a853..11b6695 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -282,9 +282,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->  					max_pass, delta, total_scan);
->  
->  		while (total_scan >= batch_size) {
-> -			int nr_before;
-> +			int nr_before = max_pass;
->  
-> -			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
->  			shrink_ret = do_shrinker_shrink(shrinker, shrink,
->  							batch_size);
->  			if (shrink_ret == -1)
-> @@ -293,6 +292,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->  				ret += nr_before - shrink_ret;
->  			count_vm_events(SLABS_SCANNED, batch_size);
->  			total_scan -= batch_size;
-> +			max_pass = shrink_ret;
->  
->  			cond_resched();
->  		}
+Any idea what is the cause of error?
 
-It might be a good optimization but one of the problem I can see
-is cond_resched. If the process is scheduled out and other task
-consume more object from the slab, shrink_ret would be obsolete
-so that shrink_ret would be greater than nr_before in next iteration.
-In such case, we can lose the number of slab objects.
 
--- 
-Kind regards,
-Minchan Kim
+--
+Regards,
+Peter Teoh
