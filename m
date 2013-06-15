@@ -1,176 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3FOA5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:57:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47592 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab3FOA5D (ORCPT
+	id S1753967Ab3FOA5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 20:57:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17693 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab3FOA5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:03 -0400
+	Fri, 14 Jun 2013 20:57:10 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 12/22] x86, mm, numa: Move node_map_pfn alignment() to x86
-Date: Fri, 14 Jun 2013 17:56:30 -0700
-Message-Id: <1371257800-11720-13-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v5 22/22] x86, mm, numa: Put pagetable on local node ram for 64bit
+Date: Fri, 14 Jun 2013 17:56:40 -0700
+Message-Id: <1371257800-11720-23-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
 References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
+If node with ram is hotplugable, local node mem for page table and vmemmap
+should be on that node ram.
 
-Will update it to use numa_meminfo instead of memblock.
+This patch is some kind of refreshment of
+| commit 1411e0ec3123ae4c4ead6bfc9fe3ee5a3ae5c327
+| Date:   Mon Dec 27 16:48:17 2010 -0800
+|
+|    x86-64, numa: Put pgtable to local node memory
+That was reverted before.
+
+We have reason to reintroduce it to make memory hotplug work.
+
+Calling init_mem_mapping in early_initmem_init for every node.
+alloc_low_pages will alloc page table in following order:
+	BRK, local node, low range
+So page table will be on low range or local nodes.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h |  1 -
- mm/page_alloc.c    | 50 --------------------------------------------------
- 3 files changed, 50 insertions(+), 51 deletions(-)
+ arch/x86/mm/numa.c | 34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 1bb565d..10c6240 100644
+index 9b18ee8..5adf803 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -474,6 +474,56 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 	return true;
- }
- 
-+/**
-+ * node_map_pfn_alignment - determine the maximum internode alignment
-+ *
-+ * This function should be called after node map is populated and sorted.
-+ * It calculates the maximum power of two alignment which can distinguish
-+ * all the nodes.
-+ *
-+ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-+ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-+ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-+ * shifted, 1GiB is enough and this function will indicate so.
-+ *
-+ * This is used to test whether pfn -> nid mapping of the chosen memory
-+ * model has fine enough granularity to avoid incorrect mapping for the
-+ * populated node map.
-+ *
-+ * Returns the determined alignment in pfn's.  0 if there is no alignment
-+ * requirement (single node).
-+ */
-+unsigned long __init node_map_pfn_alignment(void)
-+{
-+	unsigned long accl_mask = 0, last_end = 0;
-+	unsigned long start, end, mask;
+@@ -670,7 +670,39 @@ static void __init early_x86_numa_init(void)
+ #ifdef CONFIG_X86_64
+ static void __init early_x86_numa_init_mapping(void)
+ {
+-	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
++	unsigned long last_start = 0, last_end = 0;
++	struct numa_meminfo *mi = &numa_meminfo;
++	unsigned long start, end;
 +	int last_nid = -1;
 +	int i, nid;
 +
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
-+		if (!start || last_nid < 0 || last_nid == nid) {
-+			last_nid = nid;
++	for (i = 0; i < mi->nr_blks; i++) {
++		nid   = mi->blk[i].nid;
++		start = mi->blk[i].start;
++		end   = mi->blk[i].end;
++
++		if (last_nid == nid) {
 +			last_end = end;
 +			continue;
 +		}
 +
-+		/*
-+		 * Start with a mask granular enough to pin-point to the
-+		 * start pfn and tick off bits one-by-one until it becomes
-+		 * too coarse to separate the current node from the last.
-+		 */
-+		mask = ~((1 << __ffs(start)) - 1);
-+		while (mask && last_end <= (start & (mask << 1)))
-+			mask <<= 1;
++		/* other nid now */
++		if (last_nid >= 0) {
++			printk(KERN_DEBUG "Node %d: [mem %#016lx-%#016lx]\n",
++					last_nid, last_start, last_end - 1);
++			init_mem_mapping(last_start, last_end);
++		}
 +
-+		/* accumulate all internode masks */
-+		accl_mask |= mask;
++		/* for next nid */
++		last_nid   = nid;
++		last_start = start;
++		last_end   = end;
 +	}
++	/* last one */
++	printk(KERN_DEBUG "Node %d: [mem %#016lx-%#016lx]\n",
++			last_nid, last_start, last_end - 1);
++	init_mem_mapping(last_start, last_end);
 +
-+	/* convert mask to number of pages */
-+	return ~accl_mask + 1;
-+}
-+
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 28e9470..b827743 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1384,7 +1384,6 @@ static inline unsigned long free_initmem_default(int poison)
-  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
-  */
- extern void free_area_init_nodes(unsigned long *max_zone_pfn);
--unsigned long node_map_pfn_alignment(void);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern void get_pfn_range_for_nid(unsigned int nid,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c427f46..28c4a97 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4760,56 +4760,6 @@ void __init setup_nr_node_ids(void)
+ 	if (max_pfn > max_low_pfn)
+ 		max_low_pfn = max_pfn;
  }
- #endif
- 
--/**
-- * node_map_pfn_alignment - determine the maximum internode alignment
-- *
-- * This function should be called after node map is populated and sorted.
-- * It calculates the maximum power of two alignment which can distinguish
-- * all the nodes.
-- *
-- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-- * shifted, 1GiB is enough and this function will indicate so.
-- *
-- * This is used to test whether pfn -> nid mapping of the chosen memory
-- * model has fine enough granularity to avoid incorrect mapping for the
-- * populated node map.
-- *
-- * Returns the determined alignment in pfn's.  0 if there is no alignment
-- * requirement (single node).
-- */
--unsigned long __init node_map_pfn_alignment(void)
--{
--	unsigned long accl_mask = 0, last_end = 0;
--	unsigned long start, end, mask;
--	int last_nid = -1;
--	int i, nid;
--
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
--		if (!start || last_nid < 0 || last_nid == nid) {
--			last_nid = nid;
--			last_end = end;
--			continue;
--		}
--
--		/*
--		 * Start with a mask granular enough to pin-point to the
--		 * start pfn and tick off bits one-by-one until it becomes
--		 * too coarse to separate the current node from the last.
--		 */
--		mask = ~((1 << __ffs(start)) - 1);
--		while (mask && last_end <= (start & (mask << 1)))
--			mask <<= 1;
--
--		/* accumulate all internode masks */
--		accl_mask |= mask;
--	}
--
--	/* convert mask to number of pages */
--	return ~accl_mask + 1;
--}
--
- /* Find the lowest pfn for a node */
- static unsigned long __init find_min_pfn_for_node(int nid)
- {
 -- 
 1.8.1.4
 
