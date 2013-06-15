@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab3FORez (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 13:34:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48561 "EHLO mx1.redhat.com"
+	id S1754365Ab3FORfA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 13:35:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab3FORex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 13:34:53 -0400
-Date: Sat, 15 Jun 2013 19:30:39 +0200
+	id S1754288Ab3FORe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 13:34:57 -0400
+Date: Sat, 15 Jun 2013 19:30:46 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         David Howells <dhowells@redhat.com>, Huang Ying <ying.huang@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] fput: turn "list_head delayed_fput_list" into
-	llist_head
-Message-ID: <20130615173039.GA15058@redhat.com>
+Subject: [PATCH 3/3] llist: llist_add() can use llist_add_batch()
+Message-ID: <20130615173046.GA15068@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,90 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fput() and delayed_fput() can use llist and avoid the locking.
+llist_add(new, head) can simply use llist_add_batch(new, new, head),
+no need to duplicate the code.
 
-This is unlikely path, it is not that this change can improve
-the performance, but this way the code looks simpler.
+This obviously uninlines llist_add() and to me this is a win. But we
+can make llist_add_batch() inline if this is desirable, in this case
+gcc can notice that new_first == new_last if the caller is llist_add().
 
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/file_table.c    |   25 ++++++++++---------------
- include/linux/fs.h |    2 ++
- 2 files changed, 12 insertions(+), 15 deletions(-)
+ include/linux/llist.h |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 3a2bbc5..94b1bfa 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -265,18 +265,15 @@ static void __fput(struct file *file)
- 	mntput(mnt);
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index 3e2b969..cdaa7f0 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -142,6 +142,9 @@ static inline struct llist_node *llist_next(struct llist_node *node)
+ 	return node->next;
  }
  
--static DEFINE_SPINLOCK(delayed_fput_lock);
--static LIST_HEAD(delayed_fput_list);
-+static LLIST_HEAD(delayed_fput_list);
- static void delayed_fput(struct work_struct *unused)
++extern bool llist_add_batch(struct llist_node *new_first,
++			    struct llist_node *new_last,
++			    struct llist_head *head);
+ /**
+  * llist_add - add a new entry
+  * @new:	new entry to be added
+@@ -151,13 +154,7 @@ static inline struct llist_node *llist_next(struct llist_node *node)
+  */
+ static inline bool llist_add(struct llist_node *new, struct llist_head *head)
  {
--	LIST_HEAD(head);
--	spin_lock_irq(&delayed_fput_lock);
--	list_splice_init(&delayed_fput_list, &head);
--	spin_unlock_irq(&delayed_fput_lock);
--	while (!list_empty(&head)) {
--		struct file *f = list_first_entry(&head, struct file, f_u.fu_list);
--		list_del_init(&f->f_u.fu_list);
--		__fput(f);
-+	struct llist_node *node = llist_del_all(&delayed_fput_list);
-+	struct llist_node *next;
-+
-+	for (; node; node = next) {
-+		next = llist_next(node);
-+		__fput(llist_entry(node, struct file, f_u.fu_llist));
- 	}
+-	struct llist_node *first;
+-
+-	do {
+-		new->next = first = ACCESS_ONCE(head->first);
+-	} while (cmpxchg(&head->first, first, new) != first);
+-
+-	return !first;
++	return llist_add_batch(new, new, head);
  }
  
-@@ -306,7 +303,6 @@ void fput(struct file *file)
- {
- 	if (atomic_long_dec_and_test(&file->f_count)) {
- 		struct task_struct *task = current;
--		unsigned long flags;
- 
- 		file_sb_list_del(file);
- 		if (likely(!in_interrupt() && !(task->flags & PF_KTHREAD))) {
-@@ -320,10 +316,9 @@ void fput(struct file *file)
- 			 * fput to avoid leaking *file.
- 			 */
- 		}
--		spin_lock_irqsave(&delayed_fput_lock, flags);
--		list_add(&file->f_u.fu_list, &delayed_fput_list);
--		schedule_work(&delayed_fput_work);
--		spin_unlock_irqrestore(&delayed_fput_lock, flags);
-+
-+		if (llist_add(&file->f_u.fu_llist, &delayed_fput_list))
-+			schedule_work(&delayed_fput_work);
- 	}
+ /**
+@@ -173,9 +170,6 @@ static inline struct llist_node *llist_del_all(struct llist_head *head)
+ 	return xchg(&head->first, NULL);
  }
  
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 43db02e..8a60d99 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -10,6 +10,7 @@
- #include <linux/stat.h>
- #include <linux/cache.h>
- #include <linux/list.h>
-+#include <linux/llist.h>
- #include <linux/radix-tree.h>
- #include <linux/rbtree.h>
- #include <linux/init.h>
-@@ -767,6 +768,7 @@ struct file {
- 	 */
- 	union {
- 		struct list_head	fu_list;
-+		struct llist_node	fu_llist;
- 		struct rcu_head 	fu_rcuhead;
- 	} f_u;
- 	struct path		f_path;
+-extern bool llist_add_batch(struct llist_node *new_first,
+-			    struct llist_node *new_last,
+-			    struct llist_head *head);
+ extern struct llist_node *llist_del_first(struct llist_head *head);
+ 
+ #endif /* LLIST_H */
 -- 
 1.5.5.1
 
