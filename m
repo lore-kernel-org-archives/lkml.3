@@ -1,133 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3FOGrq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 02:47:46 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:62972 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3FOGrp (ORCPT
+	id S1754124Ab3FOGuj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 02:50:39 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:61369 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3FOGug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 02:47:45 -0400
-Date: Sat, 15 Jun 2013 15:47:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: HeeSub Shin <heesub@gmail.com>, Heesub Shin <heesub.shin@samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, kyungmin.park@samsung.com, d.j.shin@samsung.com,
-        sunae.seo@samsung.com
-Subject: Re: [PATCH] mm: vmscan: remove redundant querying to shrinker
-Message-ID: <20130615064737.GB7470@gmail.com>
-References: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
- <20130614111034.GA306@gmail.com>
- <CALSv+Dht=1ghRmiXdLwkFcXgRTwV=erSeoXc2AEh7+8XmHh1xQ@mail.gmail.com>
- <20130614160425.237b0fe0cb3f711740734b32@linux-foundation.org>
+	Sat, 15 Jun 2013 02:50:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130614160425.237b0fe0cb3f711740734b32@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371238081-32260-4-git-send-email-jiang.liu@huawei.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
+	<1371238081-32260-4-git-send-email-jiang.liu@huawei.com>
+Date: Fri, 14 Jun 2013 23:50:35 -0700
+X-Google-Sender-Auth: i9e_Z8_7fjQ275rqFnLeFCpykSc
+Message-ID: <CAE9FiQXGqWRUdeVL8txJSY93dC47ZrTBZiMjDt6=LY=iX_MGNA@mail.gmail.com>
+Subject: Re: [BUGFIX v2 3/4] PCI, ACPI: fix device destroying order issue when
+ handling dock notification
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Fri, Jun 14, 2013 at 12:28 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> Current ACPI glue logic expects that physical devices are destroyed
+> before destroying companion ACPI devices, otherwise it will break the
+> ACPI unbind logic and cause following warning messages:
+> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
+> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
+> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
+> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
+> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
+> for full log message.
+>
+> Above warning messages are caused by following scenario:
+> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
+> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
+>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
+> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
+>    destroy physical devices, then destroys all affected ACPI devices.
+>    Everything seems perfect until now. But the acpiphp dock notification
+>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
+>    destroy affected physical devices.
+> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
+>    been destroyed.
+> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
+>    devices.
+>
+> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
+> in step 3 and physical devices are destroyed in step 5.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: stable@vger.kernel.org # 3.8+
 
-On Fri, Jun 14, 2013 at 04:04:25PM -0700, Andrew Morton wrote:
-> On Sat, 15 Jun 2013 03:13:26 +0900 HeeSub Shin <heesub@gmail.com> wrote:
-> 
-> > Hello,
-> > 
-> > On Fri, Jun 14, 2013 at 8:10 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > 
-> > >
-> > > Hello,
-> > >
-> > > On Fri, Jun 14, 2013 at 07:07:51PM +0900, Heesub Shin wrote:
-> > > > shrink_slab() queries each slab cache to get the number of
-> > > > elements in it. In most cases such queries are cheap but,
-> > > > on some caches. For example, Android low-memory-killer,
-> > > > which is operates as a slab shrinker, does relatively
-> > > > long calculation once invoked and it is quite expensive.
-> > >
-> > > LMK as shrinker is really bad, which everybody didn't want
-> > > when we reviewed it a few years ago so that's a one of reason
-> > > LMK couldn't be promoted to mainline yet. So your motivation is
-> > > already not atrractive. ;-)
-> > >
-> > > >
-> > > > This patch removes redundant queries to shrinker function
-> > > > in the loop of shrink batch.
-> > >
-> > > I didn't review the patch and others don't want it, I guess.
-> > > Because slab shrink is under construction and many patches were
-> > > already merged into mmtom. Please look at latest mmotm tree.
-> > >
-> > >         git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > 
-> > 
-> > >
-> > > If you concern is still in there and it's really big concern of MM
-> > > we should take care, NOT LMK, plese, resend it.
-> > >
-> > >
-> > I've noticed that there are huge changes there in the recent mmotm and you
-> > guys already settled the issue of my concern. I usually keep track changes
-> > in recent mm-tree, but this time I didn't. My bad :-)
-> > 
-> 
-> I'm not averse to merging an improvement like this even if it gets
-> rubbed out by forthcoming changes.  The big changes may never get
-> merged or may be reverted.  And by merging this patch, others are more
-> likely to grab it, backport it into earlier kernels and benefit from
-> it.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-Fair enough.
-
-> 
-> Also, the problem which this simple patch fixes might be present in a
-> different form after the large patchset has been merged.  That does not
-> appear to be the case this time.
-> 
-> So I'd actually like to merge Heesub's patch.  Problem is, I don't have
-> a way to redistribute it for testing - I'd need to effectively revert
-> the whole thing when integrating Glauber's stuff on top, so nobody who
-> is using linux-next would test Heesub's change.  Drat.
-
-True but if you suggest a good reason to review the patch, I will do.
-I will reply on his patch mail.
-
-> 
-> 
-> 
-> 
-> However I'm a bit sceptical about the description here.  The shrinker
-> is supposed to special-case the "nr_to_scan == 0" case and AFAICT
-> drivers/staging/android/lowmemorykiller.c:lowmem_shrink() does do this,
-> and it looks like the function will be pretty quick in this case.
-> 
-> In other words, the behaviour of lowmem_shrink(nr_to_scan == 0) does
-> not match Heesub's description.  What's up with that?
-> 
-> 
-> 
-> Also, there is an obvious optimisation which we could make to
-> lowmem_shrink().  All this stuff:
-> 
-> 	if (lowmem_adj_size < array_size)
-> 		array_size = lowmem_adj_size;
-> 	if (lowmem_minfree_size < array_size)
-> 		array_size = lowmem_minfree_size;
-> 	for (i = 0; i < array_size; i++) {
-> 		if (other_free < lowmem_minfree[i] &&
-> 		    other_file < lowmem_minfree[i]) {
-> 			min_score_adj = lowmem_adj[i];
-> 			break;
-> 		}
-> 	}
-> 
-> does nothing useful in the nr_to_scan==0 case and should be omitted for
-> this special case.  But this problem was fixed in the large shrinker
-> rework in -mm.
-
--- 
-Kind regards,
-Minchan Kim
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c | 32 ++++++++++++++++++--------------
+>  1 file changed, 18 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 5d696f5..a65203b 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -61,6 +61,8 @@ static DEFINE_MUTEX(bridge_mutex);
+>  static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
+>  static void acpiphp_sanitize_bus(struct pci_bus *bus);
+>  static void acpiphp_set_hpp_values(struct pci_bus *bus);
+> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
+> +                                      void *context);
+>  static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
+>  static void free_bridge(struct kref *kref);
+>
+> @@ -160,7 +162,7 @@ static void acpiphp_dock_put(void *data)
+>  }
+>
+>  static const struct acpi_dock_ops acpiphp_dock_ops = {
+> -       .handler = handle_hotplug_event_func,
+> +       .handler = _handle_hotplug_event_func,
+>         .get = acpiphp_dock_get,
+>         .put = acpiphp_dock_put,
+>  };
+> @@ -1080,22 +1082,13 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+>         alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+>  }
+>
+> -static void _handle_hotplug_event_func(struct work_struct *work)
+> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
+> +                                      void *context)
+>  {
+> -       struct acpiphp_func *func;
+> +       struct acpiphp_func *func = context;
+>         char objname[64];
+>         struct acpi_buffer buffer = { .length = sizeof(objname),
+>                                       .pointer = objname };
+> -       struct acpi_hp_work *hp_work;
+> -       acpi_handle handle;
+> -       u32 type;
+> -
+> -       hp_work = container_of(work, struct acpi_hp_work, work);
+> -       handle = hp_work->handle;
+> -       type = hp_work->type;
+> -       func = (struct acpiphp_func *)hp_work->context;
+> -
+> -       acpi_scan_lock_acquire();
+>
+>         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>
+> @@ -1128,7 +1121,18 @@ static void _handle_hotplug_event_func(struct work_struct *work)
+>                 warn("notify_handler: unknown event type 0x%x for %s\n", type, objname);
+>                 break;
+>         }
+> +}
+> +
+> +static void _handle_hotplug_event_cb(struct work_struct *work)
+> +{
+> +       struct acpiphp_func *func;
+> +       struct acpi_hp_work *hp_work;
+>
+> +       hp_work = container_of(work, struct acpi_hp_work, work);
+> +       func = (struct acpiphp_func *)hp_work->context;
+> +       acpi_scan_lock_acquire();
+> +       _handle_hotplug_event_func(hp_work->handle, hp_work->type,
+> +                                   hp_work->context);
+>         acpi_scan_lock_release();
+>         kfree(hp_work); /* allocated in handle_hotplug_event_func */
+>         put_bridge(func->slot->bridge);
+> @@ -1156,7 +1160,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+>          * don't deadlock on hotplug actions.
+>          */
+>         get_bridge(func->slot->bridge);
+> -       alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
+> +       alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_cb);
+>  }
+>
+>  /*
+> --
+> 1.8.1.2
+>
