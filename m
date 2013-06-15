@@ -1,122 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3FOA5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:57:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47590 "EHLO
+	id S1754028Ab3FOA6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 20:58:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47623 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3FOA5D (ORCPT
+	with ESMTP id S1753574Ab3FOA5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:03 -0400
+	Fri, 14 Jun 2013 20:57:07 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 00/22] x86, ACPI, numa: Parse numa info early
-Date: Fri, 14 Jun 2013 17:56:18 -0700
-Message-Id: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v5 17/22] x86, ACPI, numa, ia64: split SLIT handling out
+Date: Fri, 14 Jun 2013 17:56:35 -0700
+Message-Id: <1371257800-11720-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+We need to handle slit later, as it need to allocate buffer for distance
+matrix. Also we do not need SLIT info before init_mem_mapping.
 
-| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-| Author: Tang Chen <tangchen@cn.fujitsu.com>
-| Date:   Fri Feb 22 16:33:44 2013 -0800
-|
-|    acpi, memory-hotplug: parse SRAT before memblock is ready
+So move SLIT parsing later.
 
-It broke several things, like acpi override and fall back path etc.
+x86_acpi_numa_init become x86_acpi_numa_init_srat/x86_acpi_numa_init_slit.
 
-This patchset is clean implementation that will parse numa info early.
-1. keep the acpi table initrd override working by split finding with copying.
-   finding is done at head_32.S and head64.c stage,
-        in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
-        in head64.c, initrd is accessed via kernel low mapping address
-        with help of #PF set page table.
-   copying is done with early_ioremap just after memblock is setup.
-2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
-   seperate initmem_init to two stages.
-   early_initmem_init will only extract numa info early into numa_meminfo.
-   initmem_init will keep slit and emulation handling.
-3. keep other old code flow untouched like relocate_initrd and initmem_init.
-   early_initmem_init will take old init_mem_mapping position.
-   it call early_x86_numa_init and init_mem_mapping for every nodes.
-   For 64bit, we avoid having size limit on initrd, as relocate_initrd
-   is still after init_mem_mapping for all memory.
-4. last patch will try to put page table on local node, so that memory
-   hotplug will be happy.
+It should not break ia64 by replacing acpi_numa_init with
+acpi_numa_init_srat/acpi_numa_init_slit/acpi_num_arch_fixup.
 
-In short, early_initmem_init will parse numa info early and call
-init_mem_mapping to set page table for every nodes's mem.
+-v2: Change name to acpi_numa_init_srat/acpi_numa_init_slit according tj.
+     remove the reset_numa_distance() in numa_init(), as get we only set
+     distance in slit handling.
 
-could be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+Tested-by: Tony Luck <tony.luck@intel.com>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/ia64/kernel/setup.c    |  4 +++-
+ arch/x86/include/asm/acpi.h |  3 ++-
+ arch/x86/mm/numa.c          | 14 ++++++++++++--
+ arch/x86/mm/srat.c          | 11 +++++++----
+ drivers/acpi/numa.c         | 13 +++++++------
+ include/linux/acpi.h        |  3 ++-
+ 6 files changed, 33 insertions(+), 15 deletions(-)
 
-and it is based on today's Linus tree.
-
--v2: Address tj's review and split patches to small ones.
--v3: Add some Acked-by from tj, also stop abusing cpio_data for acpi_files info
--v4: fix one typo found by Tang Chen.
-     Also added tested-by from Thomas Renninger and Tony.
--v5: rebase to v3.10-rc3, and add tested-by from Tang Chang
-     fix one warning for 32bit found by Fengguang.
-     resend as Tang's rebase seems broken and fail the compiling test
-       in Fengguang test bots.
-
-Thanks
-
-Yinghai
-
-Yinghai Lu (22):
-  x86: Change get_ramdisk_image() to global
-  x86, microcode: Use common get_ramdisk_image()
-  x86, ACPI, mm: Kill max_low_pfn_mapped
-  x86, ACPI: Search buffer above 4G in second try for acpi override tables
-  x86, ACPI: Increase override tables number limit
-  x86, ACPI: Split acpi_initrd_override to find/copy two functions
-  x86, ACPI: Store override acpi tables phys addr in cpio files info array
-  x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
-  x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-  x86, mm, numa: Move two functions calling on successful path later
-  x86, mm, numa: Call numa_meminfo_cover_memory() checking early
-  x86, mm, numa: Move node_map_pfn alignment() to x86
-  x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
-  x86, mm, numa: Set memblock nid later
-  x86, mm, numa: Move node_possible_map setting later
-  x86, mm, numa: Move emulation handling down.
-  x86, ACPI, numa, ia64: split SLIT handling out
-  x86, mm, numa: Add early_initmem_init() stub
-  x86, mm: Parse numa info early
-  x86, mm: Add comments for step_size shift
-  x86, mm: Make init_mem_mapping be able to be called several times
-  x86, mm, numa: Put pagetable on local node ram for 64bit
-
- arch/ia64/kernel/setup.c                |   4 +-
- arch/x86/include/asm/acpi.h             |   3 +-
- arch/x86/include/asm/page_types.h       |   2 +-
- arch/x86/include/asm/pgtable.h          |   2 +-
- arch/x86/include/asm/setup.h            |   9 ++
- arch/x86/kernel/head64.c                |   2 +
- arch/x86/kernel/head_32.S               |   4 +
- arch/x86/kernel/microcode_intel_early.c |   8 +-
- arch/x86/kernel/setup.c                 |  86 +++++++-----
- arch/x86/mm/init.c                      | 122 ++++++++++------
- arch/x86/mm/numa.c                      | 240 +++++++++++++++++++++++++-------
- arch/x86/mm/numa_emulation.c            |   2 +-
- arch/x86/mm/numa_internal.h             |   2 +
- arch/x86/mm/srat.c                      |  11 +-
- drivers/acpi/numa.c                     |  13 +-
- drivers/acpi/osl.c                      | 139 ++++++++++++------
- include/linux/acpi.h                    |  20 +--
- include/linux/mm.h                      |   3 -
- mm/page_alloc.c                         |  52 +------
- 19 files changed, 477 insertions(+), 247 deletions(-)
-
+diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+index 13bfdd2..5f7db4a 100644
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -558,7 +558,9 @@ setup_arch (char **cmdline_p)
+ 	acpi_table_init();
+ 	early_acpi_boot_init();
+ # ifdef CONFIG_ACPI_NUMA
+-	acpi_numa_init();
++	acpi_numa_init_srat();
++	acpi_numa_init_slit();
++	acpi_numa_arch_fixup();
+ #  ifdef CONFIG_ACPI_HOTPLUG_CPU
+ 	prefill_possible_map();
+ #  endif
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index b31bf97..651db0b 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -178,7 +178,8 @@ static inline void disable_acpi(void) { }
+ 
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+-extern int x86_acpi_numa_init(void);
++int x86_acpi_numa_init_srat(void);
++void x86_acpi_numa_init_slit(void);
+ #endif /* CONFIG_ACPI_NUMA */
+ 
+ #define acpi_unlazy_tlb(x)	leave_mm(x)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 3254f22..630e09f 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -595,7 +595,6 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	nodes_clear(numa_nodes_parsed);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+-	numa_reset_distance();
+ 
+ 	ret = init_func();
+ 	if (ret < 0)
+@@ -633,6 +632,10 @@ static int __init dummy_numa_init(void)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ACPI_NUMA
++static bool srat_used __initdata;
++#endif
++
+ /**
+  * x86_numa_init - Initialize NUMA
+  *
+@@ -648,8 +651,10 @@ static void __init early_x86_numa_init(void)
+ 			return;
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+-		if (!numa_init(x86_acpi_numa_init))
++		if (!numa_init(x86_acpi_numa_init_srat)) {
++			srat_used = true;
+ 			return;
++		}
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 		if (!numa_init(amd_numa_init))
+@@ -667,6 +672,11 @@ void __init x86_numa_init(void)
+ 
+ 	early_x86_numa_init();
+ 
++#ifdef CONFIG_ACPI_NUMA
++	if (srat_used)
++		x86_acpi_numa_init_slit();
++#endif
++
+ 	numa_emulation(&numa_meminfo, numa_distance_cnt);
+ 
+ 	node_possible_map = numa_nodes_parsed;
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index cdd0da9..443f9ef 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -185,14 +185,17 @@ out_err:
+ 	return -1;
+ }
+ 
+-void __init acpi_numa_arch_fixup(void) {}
+-
+-int __init x86_acpi_numa_init(void)
++int __init x86_acpi_numa_init_srat(void)
+ {
+ 	int ret;
+ 
+-	ret = acpi_numa_init();
++	ret = acpi_numa_init_srat();
+ 	if (ret < 0)
+ 		return ret;
+ 	return srat_disabled() ? -EINVAL : 0;
+ }
++
++void __init x86_acpi_numa_init_slit(void)
++{
++	acpi_numa_init_slit();
++}
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 33e609f..6460db4 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -282,7 +282,7 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ 					    handler, max_entries);
+ }
+ 
+-int __init acpi_numa_init(void)
++int __init acpi_numa_init_srat(void)
+ {
+ 	int cnt = 0;
+ 
+@@ -303,11 +303,6 @@ int __init acpi_numa_init(void)
+ 					    NR_NODE_MEMBLKS);
+ 	}
+ 
+-	/* SLIT: System Locality Information Table */
+-	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
+-
+-	acpi_numa_arch_fixup();
+-
+ 	if (cnt < 0)
+ 		return cnt;
+ 	else if (!parsed_numa_memblks)
+@@ -315,6 +310,12 @@ int __init acpi_numa_init(void)
+ 	return 0;
+ }
+ 
++void __init acpi_numa_init_slit(void)
++{
++	/* SLIT: System Locality Information Table */
++	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
++}
++
+ int acpi_get_pxm(acpi_handle h)
+ {
+ 	unsigned long long pxm;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 4e3731b..92463b5 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -85,7 +85,8 @@ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
+ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+-int acpi_numa_init (void);
++int acpi_numa_init_srat(void);
++void acpi_numa_init_slit(void);
+ 
+ int acpi_table_init (void);
+ int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
 -- 
 1.8.1.4
 
