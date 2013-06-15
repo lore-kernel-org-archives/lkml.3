@@ -1,123 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab3FOKFl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 06:05:41 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:60188 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab3FOKFi (ORCPT
+	id S1754133Ab3FOKJl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 06:09:41 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:39782 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab3FOKJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 06:05:38 -0400
-Message-ID: <51BC3C6B.9010908@gmail.com>
-Date: Sat, 15 Jun 2013 18:05:31 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 15 Jun 2013 06:09:39 -0400
+Date: Sat, 15 Jun 2013 12:09:36 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/omap: change "!CONFIG_FB_OMAP2" to "!FB_OMAP2"
+Message-ID: <20130615100935.GA2477@mithrandir>
+References: <1363204102.1335.6.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [BUGFIX v2 1/4] ACPI, DOCK: initialize dock subsystem before
- scanning PCI root buses
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <1371238081-32260-2-git-send-email-jiang.liu@huawei.com> <CAE9FiQWOMF4HWdQRfxF68BBYC4ONcr8wOHWvVGt6Jvb_-p6S8w@mail.gmail.com>
-In-Reply-To: <CAE9FiQWOMF4HWdQRfxF68BBYC4ONcr8wOHWvVGt6Jvb_-p6S8w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
+Content-Disposition: inline
+In-Reply-To: <1363204102.1335.6.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2013 02:51 PM, Yinghai Lu wrote:
-> On Fri, Jun 14, 2013 at 12:27 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
->> Changeset "3b63aaa70e1 PCI: acpiphp: Do not use ACPI PCI subdriver
->> mechanism" causes a regression which breaks ACPI dock support,
->> please refer to https://bugzilla.kernel.org/show_bug.cgi?id=59501
->>
->> The root cause is that changeset 3b63aaa70e1 changed the relative
->> initialization order of ACPI dock subsystem and acpiphp driver,
->> and acpiphp driver has dependency on ACPI dock subsystem's
->> initialization result, so that acpiphp can't correctly detect ACPI
->> dock stations now.
->>
->> On the other hand, ACPI dock is a built-in driver, so we could
->> explicitly initialize it before the acpiphp driver is used.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
->> Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
->> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
->> Cc: linux-acpi@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Cc: <stable@vger.kernel.org> # 3.9+
->> ---
->>  drivers/acpi/dock.c     | 7 +------
->>  drivers/acpi/internal.h | 5 +++++
->>  drivers/acpi/scan.c     | 1 +
->>  3 files changed, 7 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
->> index 4fdea38..02b0563 100644
->> --- a/drivers/acpi/dock.c
->> +++ b/drivers/acpi/dock.c
->> @@ -1033,7 +1033,7 @@ find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
->>         return AE_OK;
->>  }
->>
->> -static int __init dock_init(void)
->> +int __init acpi_dock_init(void)
->>  {
->>         if (acpi_disabled)
->>                 return 0;
->> @@ -1062,9 +1062,4 @@ static void __exit dock_exit(void)
->>                 dock_remove(dock_station);
->>  }
->>
->> -/*
->> - * Must be called before drivers of devices in dock, otherwise we can't know
->> - * which devices are in a dock
->> - */
->> -subsys_initcall(dock_init);
->>  module_exit(dock_exit);
-> 
-> why not remove dock_exit?
-I have a pending patchset to clean up dock driver, Rafael suggested to
-focus on bugfix first, so I will send out the clean up patchset later.
 
-> 
->> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
->> index 297cbf4..c610a76 100644
->> --- a/drivers/acpi/internal.h
->> +++ b/drivers/acpi/internal.h
->> @@ -40,6 +40,11 @@ void acpi_container_init(void);
->>  #else
->>  static inline void acpi_container_init(void) {}
->>  #endif
->> +#ifdef CONFIG_ACPI_DOCK
->> +void acpi_dock_init(void);
->> +#else
->> +static inline void acpi_dock_init(void) {}
->> +#endif
->>  #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
->>  void acpi_memory_hotplug_init(void);
->>  #else
->> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
->> index 44225cb..4148163 100644
->> --- a/drivers/acpi/scan.c
->> +++ b/drivers/acpi/scan.c
->> @@ -2045,6 +2045,7 @@ int __init acpi_scan_init(void)
->>         acpi_lpss_init();
->>         acpi_container_init();
->>         acpi_memory_hotplug_init();
->> +       acpi_dock_init();
->>
->>         mutex_lock(&acpi_scan_lock);
->>         /*
->> --
->> 1.8.1.2
->>
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, Mar 13, 2013 at 08:48:22PM +0100, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested. Perhaps the first test that people with access to the relevant
+> hardware might do, is to test _before applying this patch_ with FB_OMAP2
+> set. Perhaps this negative dependency isn't needed at all. Or is it
+> obvious?
+
+I don't think you need access to hardware to test this. Checking that
+the dependencies work properly (using menuconfig for example) and
+build testing should be enough.
+
+>  drivers/gpu/drm/omapdrm/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/omapdrm/Kconfig b/drivers/gpu/drm/omapdrm/Kc=
+onfig
+> index 09f65dc..45875a0 100644
+> --- a/drivers/gpu/drm/omapdrm/Kconfig
+> +++ b/drivers/gpu/drm/omapdrm/Kconfig
+> @@ -1,7 +1,7 @@
+> =20
+>  config DRM_OMAP
+>  	tristate "OMAP DRM"
+> -	depends on DRM && !CONFIG_FB_OMAP2
+> +	depends on DRM && !FB_OMAP2
+>  	depends on ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM
+>  	depends on OMAP2_DSS
+>  	select DRM_KMS_HELPER
+
+Regardless of whether the dependency is needed or not, the typo should
+be fixed, so:
+
+Reviewed-by: Thierry Reding <thierry.reding@gmail.com>
+
+--CE+1k2dSO48ffgeK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRvD1fAAoJEN0jrNd/PrOh4vkQAJlGgL6eOjujuoAwSTR4nmWc
+fonYX16HfY8Ttcc52vHgINTHBQaD56OsfVNyNwyuzxf3w0SaxLtxLPeLPCDFcfaQ
+KDgITTzLb3sj8LjLR0IgC7uVdIKis4+TktNVGEKa1jcrjrUIYaglX5EuK9gPofz1
+5My8yMbRYOmvnKuxYOcN21M7GmBBYBFEhPa5fvilvj+AdxTc5us6/KcEZgixEaYi
+yybxujZrtXl7zriTfNyJ12BHptsWDgE6TN9YM7NuMsA0iuQSx3vbR4WtlTMhBTbB
+8o+XPaSa6SqmKfVCVduD2UyjItAg3DKnseOCJ+iskcidpQS7Ubj9x9LxlmiCq+Hk
+VmEVgJaksnzGz+n2if0kEAufbxPnAKcIRnX48dnrmVfBKq/LPIXBLbHoZ73ihW+E
+K4YlA3T6zV0j1nTJ6LOpQZDSxPVGl+RaR5MADUYhoQyMiU1DO9Ptwb+N1IIeD8L2
+Cp+zHiJYEprPHaFsZoblifmi6ggHJthKWqRmHOE1n1WujK+3+MXsVVceTb1RcNFB
+/hxg6E5/gpVVg5snCagCmddD7RGAeBCSuZYoL42zVpM/72U9qaFsMnGLOVFC4YsY
+d+/vaD57+7agU8Vq934JYSROF133HHY3eezT0Ow8ytHrgSWeZR4se4YpDrGWUPiX
+CV1RdUiwCGNLWZLSLM6q
+=ls+N
+-----END PGP SIGNATURE-----
+
+--CE+1k2dSO48ffgeK--
