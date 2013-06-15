@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab3FOW5V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 18:57:21 -0400
-Received: from muin.pair.com ([209.68.1.55]:50976 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754610Ab3FOW5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 18:57:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1371061871.18413.44@snotra>
-References: <1371041258-15298-1-git-send-email-ogabbay@advaoptical.com>
-	<51B88EED.6090709@linutronix.de>
-	<1371061871.18413.44@snotra>
-Date: Sat, 15 Jun 2013 17:57:18 -0500
-Message-ID: <CAOZdJXVjdkMF5rpTVd9tnwCRDqXWtJTUAbywcuzoVehRrgPPsg@mail.gmail.com>
-Subject: Re: [PATCH] MDIO: FSL_PQ_MDIO: Fix bug on incorrect offset of tbipa register
-From: Timur Tabi <timur@tabi.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Oded Gabbay <ogabbay@advaoptical.com>,
-        Stef van Os <stef.van.os@prodrive.nl>, Timur Tabi <timur@tabi.org>,
-        Dongsheng.Wang@freescale.com, Paul Mackerras <paulus@samba.org>,
-        netdev@vger.kernel.org,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        David Miller <davem@davemloft.net>,
-        lkml <linux-kernel@vger.kernel.org>, B38951@freescale.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754790Ab3FOXPO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 19:15:14 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60819 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab3FOXPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 19:15:12 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: Nicolas Pitre <nico@linaro.org>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [RFC] arm: Remove sa1111 special case from mm setup code
+Date: Sun, 16 Jun 2013 00:15:08 +0100
+Message-Id: <1371338108-26354-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 1:31 PM, Scott Wood <scottwood@freescale.com> wrote:
->
-> I'm not sure it's stable material if this is something that has never
-> worked...
->
-> The device tree binding will also need to be fixed to note the difference in
-> "reg" between "fsl,gianfar-mdio" and "fsl-gianfar-tbi" -- and should give an
-> example of the latter.
+I don't think this special case is needed anymore. From what I can tell,
+setup_dma_zone() takes care of marking the region to be reserved for
+DMA, and that happens before arm_memblock_init() which calls
+arm_mm_memblock_reserve(). Therefore the mm setup should already know
+about the reserved region and it won't need to be explicitly reserved
+and then freed. That means the special case can be dropped from the
+common code.
 
-I don't remember how much I tested it, but I'm pretty sure that at
-some of the suspect devices did work for me.  My goal was to maintain
-compatibility with existing device trees, and just refactor the code
-so that it's easier to read.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+
+Hi Russell and Nicolas,
+
+I really don't know if this is correct. The MM code is not my strong
+area. Please take a look.
+
+Thanks,
+g.
+
+ arch/arm/mm/init.c | 5 -----
+ arch/arm/mm/mmu.c  | 8 --------
+ 2 files changed, 13 deletions(-)
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 9a5cdc0..73212fe 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -598,11 +598,6 @@ void __init mem_init(void)
+ 
+ 	totalram_pages += free_all_bootmem();
+ 
+-#ifdef CONFIG_SA1111
+-	/* now that our DMA memory is actually so designated, we can free it */
+-	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
+-#endif
+-
+ 	free_highpages();
+ 
+ 	reserved_pages = free_pages = 0;
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index e0d8565..f281a24 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1147,14 +1147,6 @@ void __init arm_mm_memblock_reserve(void)
+ 	 * and can only be in node 0.
+ 	 */
+ 	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_PG_DIR_SIZE);
+-
+-#ifdef CONFIG_SA1111
+-	/*
+-	 * Because of the SA1111 DMA bug, we want to preserve our
+-	 * precious DMA-able memory...
+-	 */
+-	memblock_reserve(PHYS_OFFSET, __pa(swapper_pg_dir) - PHYS_OFFSET);
+-#endif
+ }
+ 
+ /*
+-- 
+1.8.1.2
+
