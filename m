@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3FOCd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:33:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37760 "EHLO comal.ext.ti.com"
+	id S1754332Ab3FOCff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 22:35:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51652 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327Ab3FOCdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 22:33:51 -0400
+	id S1754145Ab3FOCdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 22:33:54 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Matt Porter <matt@ohporter.com>,
@@ -29,9 +29,9 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v10 2/8] ARM: edma: Add AM33XX EDMA crossbar event mux support
-Date: Fri, 14 Jun 2013 21:32:44 -0500
-Message-ID: <1371263570-9323-2-git-send-email-joelagnel@ti.com>
+Subject: [PATCH v10 6/8] spi: omap2-mcspi: add generic DMA request support to the DT binding
+Date: Fri, 14 Jun 2013 21:32:48 -0500
+Message-ID: <1371263570-9323-6-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
 References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
@@ -43,125 +43,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Porter <mporter@ti.com>
 
-Changes by Joel:
-* Split EDMA xbar support out of original EDMA DT parsing patch
-to keep it easier for review.
-* rewrite shift and offset calculation as per
+The binding definition is based on the generic DMA request binding
 
-Suggested-by: Sekhar Nori <nsekhar@ti.com>
-Suggested by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Signed-off-by: Matt Porter <mporter@ti.com>
 Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
-
-Reference:
-[1] https://patchwork.kernel.org/patch/2226991/
 ---
- arch/arm/common/edma.c             |   59 ++++++++++++++++++++++++++++++++++++
- include/linux/platform_data/edma.h |    1 +
- 2 files changed, 60 insertions(+)
+ Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 9823b79..1c2fb15 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -1410,6 +1410,52 @@ static int edma_of_read_u32_to_s16_array(const struct device_node *np,
- 	return 0;
- }
+diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
+index 938809c..4c85c4c 100644
+--- a/Documentation/devicetree/bindings/spi/omap-spi.txt
++++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
+@@ -10,7 +10,18 @@ Required properties:
+ 			  input. The default is D0 as input and
+ 			  D1 as output.
  
-+static int edma_xbar_event_map(struct device *dev,
-+			       struct device_node *node,
-+			       struct edma_soc_info *pdata, int len)
-+{
-+	int ret = 0;
-+	int i;
-+	struct resource res;
-+	void *xbar;
-+	const s16 (*xbar_chans)[2];
-+	u32 shift, offset, mux;
+-Example:
++Optional properties:
++- dmas: List of DMA specifiers with the controller specific format
++	as described in the generic DMA client binding. A tx and rx
++	specifier is required for each chip select.
++- dma-names: List of DMA request names. These strings correspond
++	1:1 with the DMA specifiers listed in dmas. The string naming
++	is to be "rxN" and "txN" for RX and TX requests,
++	respectively, where N equals the chip select number.
 +
-+	xbar_chans = devm_kzalloc(dev,
-+				  len/sizeof(s16) + 2*sizeof(s16),
-+				  GFP_KERNEL);
-+	if (!xbar_chans)
-+		return -ENOMEM;
++Examples:
 +
-+	ret = of_address_to_resource(node, 1, &res);
-+	if (ret)
-+		return -EIO;
-+
-+	xbar = devm_ioremap(dev, res.start, resource_size(&res));
-+	if (!xbar)
-+		return -ENOMEM;
-+
-+	ret = edma_of_read_u32_to_s16_array(node,
-+					    "ti,edma-xbar-event-map",
-+					    (s16 *)xbar_chans,
-+					    len/sizeof(u32));
-+	if (ret)
-+		return -EIO;
-+
-+	for (i = 0; xbar_chans[i][0] != -1; i++) {
-+		shift = (xbar_chans[i][1] & 0x03) << 3;
-+		offset = xbar_chans[i][1] & 0xfffffffc;
-+		mux = readl((void *)((u32)xbar + offset));
-+		mux &= ~(0xff << shift);
-+		mux |= xbar_chans[i][0] << shift;
-+		writel(mux, (void *)((u32)xbar + offset));
-+	}
-+
-+	pdata->xbar_chans = xbar_chans;
-+
-+	return 0;
-+}
-+
- static int edma_of_parse_dt(struct device *dev,
- 			    struct device_node *node,
- 			    struct edma_soc_info *pdata)
-@@ -1470,6 +1516,9 @@ static int edma_of_parse_dt(struct device *dev,
++[hwmod populated DMA resources]
  
- 	pdata->default_queue = 0;
- 
-+	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
-+	if (prop)
-+		ret = edma_xbar_event_map(dev, node, pdata, sz);
- 
- 	return ret;
- }
-@@ -1489,6 +1538,7 @@ static int edma_probe(struct platform_device *pdev)
- 	int			status = -1;
- 	const s16		(*rsv_chans)[2];
- 	const s16		(*rsv_slots)[2];
-+	const s16		(*xbar_chans)[2];
- 	int			irq[EDMA_MAX_CC] = {0, 0};
- 	int			err_irq[EDMA_MAX_CC] = {0, 0};
- 	struct resource		*r[EDMA_MAX_CC] = {NULL, NULL};
-@@ -1617,6 +1667,15 @@ static int edma_probe(struct platform_device *pdev)
- 			}
- 		}
- 
-+		/* Clear the xbar mapped channels in unused list */
-+		xbar_chans = info[j]->xbar_chans;
-+		if (xbar_chans) {
-+			for (i = 0; xbar_chans[i][1] != -1; i++) {
-+				off = xbar_chans[i][1];
-+				clear_bits(off, 1,
-+					edma_cc[j]->edma_unused);
-+			}
-+		}
- 
- 		if (node)
- 			irq[j] = irq_of_parse_and_map(node, 0);
-diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-index 317f2be..57300fd 100644
---- a/include/linux/platform_data/edma.h
-+++ b/include/linux/platform_data/edma.h
-@@ -177,6 +177,7 @@ struct edma_soc_info {
- 
- 	s8	(*queue_tc_mapping)[2];
- 	s8	(*queue_priority_mapping)[2];
-+	const s16	(*xbar_chans)[2];
+ mcspi1: mcspi@1 {
+     #address-cells = <1>;
+@@ -20,3 +31,17 @@ mcspi1: mcspi@1 {
+     ti,spi-num-cs = <4>;
  };
  
- #endif
++[generic DMA request binding]
++
++mcspi1: mcspi@1 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    compatible = "ti,omap4-mcspi";
++    ti,hwmods = "mcspi1";
++    ti,spi-num-cs = <2>;
++    dmas = <&edma 42
++	    &edma 43
++	    &edma 44
++	    &edma 45>;
++    dma-names = "tx0", "rx0", "tx1", "rx1";
++};
 -- 
 1.7.9.5
 
