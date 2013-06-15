@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3FOLQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 07:16:27 -0400
-Received: from sauhun.de ([89.238.76.85]:38241 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab3FOLQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 07:16:25 -0400
-Date: Sat, 15 Jun 2013 13:18:17 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] i2c: vt8500: Add support for I2C bus on Wondermedia
- SoCs
-Message-ID: <20130615111817.GA2938@katana>
-References: <1371246736-5460-1-git-send-email-linux@prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
-Content-Disposition: inline
-In-Reply-To: <1371246736-5460-1-git-send-email-linux@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753889Ab3FOL2u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:28:50 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37960 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3FOL2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 07:28:49 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 0/4] [resend] n_tty fixes
+Date: Sat, 15 Jun 2013 07:28:27 -0400
+Message-Id: <1371295711-3963-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130319141017.GB24900@kroah.com>
+References: <20130319141017.GB24900@kroah.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/19/2013 10:10 AM, Greg Kroah-Hartman wrote:> On Tue, Mar 19, 2013 at 09:57:09AM -0400, Peter Hurley wrote:
+>> On Mon, 2013-03-18 at 16:15 -0700, Greg Kroah-Hartman wrote:
+>>> On Wed, Mar 06, 2013 at 08:38:22AM -0500, Peter Hurley wrote:
+>>>> minimum_to_wake is unique to N_TTY processing, and belongs in
+>>>> per-ldisc data.
+>>>>
+>>>> Add the ldisc method, ldisc_ops::fasync(), to notify line disciplines
+>>>> when signal-driven I/O is enabled or disabled. When enabled for N_TTY
+>>>> (by fcntl(F_SETFL, O_ASYNC)), blocking reader/polls will be woken
+>>>> for any readable input. When disabled, blocking reader/polls are not
+>>>> woken until the read buffer is full.
+>>>>
+>>>> Canonical mode (L_ICANON(tty), n_tty_data::icanon) is not affected by
+>>>> the minimum_to_wake setting.
+>>>>
+>>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>>
+>>> For some reason, this patch doesn't apply.  Care to refresh this one,
+>>> and the rest in this series, and resend?
+>>
+>> Sorry. There was probably some accidental dependency on one of the other
+>> patchsets of mine you did apply.
+>>
+>> This and patch 5 now apply without error to tty-next.
+> 
+> Ok, but they are now long gone from my queue.  Can you please resend
+> what I haven't applied?
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Greg,
 
-On Sat, Jun 15, 2013 at 09:52:16AM +1200, Tony Prisk wrote:
-> This patch adds support for the I2C bus controllers found on Wondermedia
-> 8xxx-series SoCs. Only master-mode is supported.
->=20
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
+I resent these back on 19 Mar but they never got applied. (maybe because
+I resent them as 4,5,6 & 7/7 ??)
 
-=2E..
+Anyway, these apply cleanly to tty-next.
 
-> +/* REG_TR */
-> +#define SCL_TIMEOUT(x)		(((x) & 0xFF) << 16)
-
-I assume this should be << 8 since all regs are 16 bit wide.
-
-Fixed it locally and ready to apply. Please confirm or send a proper
-fix. Rest looks fine.
-
-Thanks for the submission!
+Regards,
+Peter Hurley
 
 
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Peter Hurley (4):
+  n_tty: Encapsulate minimum_to_wake within N_TTY
+  n_tty: Untangle read completion variables
+  n_tty: Fix unsafe update of available buffer space
+  n_tty: Buffer work should not reschedule itself
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ drivers/tty/n_tty.c       | 76 ++++++++++++++++++++++++++++++-----------------
+ drivers/tty/tty_io.c      | 17 ++++++-----
+ include/linux/tty.h       |  1 -
+ include/linux/tty_ldisc.h |  6 ++++
+ 4 files changed, 63 insertions(+), 37 deletions(-)
 
-iQIcBAEBAgAGBQJRvE15AAoJEBQN5MwUoCm2vskP/0atjG5GaYROyNQTQCETUIEt
-W1k6UaadDxequLaNPABfQHo542/fU/x43t/gt9WTm13oujyMs1S10FwE8mev0zQ9
-ZxbKfhjOerk9Ku2OE5+5LPdIHNYQajnKGOT4QmooGn59LMDVNcXM+9lBVRTilE9K
-FxzEuPUirEwSrxv+E34JujEWWm3x7iXnUcrgDgfFAZiqlzqQc7Vrx1mYtMj1TWYE
-9z+eW7j6pV9YkVnaL+wSsVq9zbKcs0zOsJHCwI7QYwPZYxfHJkSFQeDcJrJu5bdE
-7IrHLMUZAYySyeOTn3wb9n42ShE4LWYi/DXhZh6Y6KfSFSNgdVtAFsQZSdWKcpZS
-g7T0ZwAm9YO4LRBWnaCapd6crsLYAqClGSIWifjl7jTTQM60PK44CSGuIXq92aQ7
-zuyFhZCNXPsmOr/sv56Wsek6gcmbpze5oveo2WEygHwcXAE6rPESgeb0DTXPHv9r
-2aEoUGILnTxlHDtlm++ryVBBIkLdA2YWK09+Ek6q2DuqYe4eeZNmJcl8OeuScjm9
-4VfPBP9RtWr+MYIrrjzMTk3o6hcpJEFiQ98Env89V9tw1RSxTHC73qUPMaJ6poRp
-4pJ5pbmfzQ7LXqsb6Ba7BfJBUip7pMdigoiCP7erpvCuJuWMgHoECdRjW7+W5NE6
-1gMGPvvAjtw/xDAmZOfX
-=0+j6
------END PGP SIGNATURE-----
+-- 
+1.8.1.2
 
---WIyZ46R2i8wDzkSu--
