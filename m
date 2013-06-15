@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3FOCdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:33:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58472 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3FOCdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 22:33:44 -0400
+	id S1754211Ab3FOCd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 22:33:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37761 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754133Ab3FOCdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 22:33:51 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Matt Porter <matt@ohporter.com>,
@@ -30,9 +29,9 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v10 3/8] ARM: dts: add AM33XX EDMA support
-Date: Fri, 14 Jun 2013 21:32:45 -0500
-Message-ID: <1371263570-9323-3-git-send-email-joelagnel@ti.com>
+Subject: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
+Date: Fri, 14 Jun 2013 21:32:47 -0500
+Message-ID: <1371263570-9323-5-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
 References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
@@ -44,42 +43,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Porter <mdp@ti.com>
 
-Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-Documentation/devicetree/bindings/dma/ti-edma.txt
+The binding definition is based on the generic DMA controller
+binding.
 
-Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
-
-[1] https://patchwork.kernel.org/patch/2226761/
+Joel: Droped reserved and queue DT entries from Documentation
+for now from the original patch series.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   26 +++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 70c86a0..f8a8f19 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -89,6 +89,18 @@
- 			reg = <0x48200000 0x1000>;
- 		};
- 
-+		edma: edma@49000000 {
-+			compatible = "ti,edma3";
-+			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+			reg =	<0x49000000 0x10000>,
-+				<0x44e10f90 0x10>;
-+			interrupts = <12 13 14>;
-+			#dma-cells = <1>;
-+			dma-channels = <64>;
-+			ti,edma-regions = <4>;
-+			ti,edma-slots = <256>;
-+		};
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..ada0018
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,26 @@
++TI EDMA
 +
- 		gpio0: gpio@44e07000 {
- 			compatible = "ti,omap4-gpio";
- 			ti,hwmods = "gpio1";
++Required properties:
++- compatible : "ti,edma3"
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++
++Optional properties:
++- ti,edma-xbar-event-map: Crossbar event to channel map
++
++Example:
++
++edma: edma@49000000 {
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-xbar-event-map = <1 12
++				  2 13>;
++};
 -- 
 1.7.9.5
 
