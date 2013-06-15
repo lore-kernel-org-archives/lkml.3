@@ -1,77 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3FOA6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:58:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47618 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab3FOA5G (ORCPT
+	id S1753958Ab3FOA7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 20:59:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17650 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3FOA5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:06 -0400
+	Fri, 14 Jun 2013 20:57:05 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 20/22] x86, mm: Add comments for step_size shift
-Date: Fri, 14 Jun 2013 17:56:38 -0700
-Message-Id: <1371257800-11720-21-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH v5 08/22] x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
+Date: Fri, 14 Jun 2013 17:56:26 -0700
+Message-Id: <1371257800-11720-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
 References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As request by hpa, add comments for why we choose 5 for
-step size shift.
+For finding with 32bit, it would be easy to access initrd in 32bit
+flat mode, as we don't need to set page table.
+
+That is from head_32.S, and microcode updating already use this trick.
+
+Need to change acpi_initrd_override_find to use phys to access global
+variables.
+
+Pass is_phys in the function, as we can not use address to decide if it
+is phys or virtual address on 32 bit. Boot loader could load initrd above
+max_low_pfn.
+
+Don't call printk as it uses global variables, so delay print later
+during copying.
+
+Change table_sigs to use stack instead, otherwise it is too messy to change
+string array to phys and still keep offset calculating correct.
+That size is about 36x4 bytes, and it is small to settle in stack.
+
+Also remove "continue" in MARCO to make code more readable.
+
+-v2: add (size_t) castint according to hpa to fix compiling warning
+	found by Fengguan Wu.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/init.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ arch/x86/kernel/setup.c |  2 +-
+ drivers/acpi/osl.c      | 86 ++++++++++++++++++++++++++++++++++---------------
+ include/linux/acpi.h    |  5 +--
+ 3 files changed, 64 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 3c21f16..5f38e72 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -395,8 +395,23 @@ static unsigned long __init init_range_memory_mapping(
- 	return mapped_ram_size;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 42f584c..142e042 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1120,7 +1120,7 @@ void __init setup_arch(char **cmdline_p)
+ 	reserve_initrd();
+ 
+ 	acpi_initrd_override_find((void *)initrd_start,
+-					initrd_end - initrd_start);
++					initrd_end - initrd_start, false);
+ 	acpi_initrd_override_copy();
+ 
+ 	reserve_crashkernel();
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 3a307ec..3b2beac 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -551,21 +551,9 @@ u8 __init acpi_table_checksum(u8 *buffer, u32 length)
+ 	return sum;
  }
  
--/* (PUD_SHIFT-PMD_SHIFT)/2 */
--#define STEP_SIZE_SHIFT 5
-+static unsigned long __init get_new_step_size(unsigned long step_size)
-+{
-+	/*
-+	 * initial mapped size is PMD_SIZE, aka 2M.
-+	 * We can not set step_size to be PUD_SIZE aka 1G yet.
-+	 * In worse case, when 1G is cross the 1G boundary, and
-+	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
-+	 * to map 1G range with PTE. Use 5 as shift for now.
-+	 */
-+	unsigned long new_step_size = step_size << 5;
-+
-+	if (new_step_size > step_size)
-+		step_size = new_step_size;
-+
-+	return  step_size;
-+}
-+
- void __init init_mem_mapping(void)
+-/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
+-static const char * const table_sigs[] = {
+-	ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
+-	ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
+-	ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
+-	ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
+-	ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
+-	ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
+-	ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
+-	ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
+-	ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
+-
+ /* Non-fatal errors: Affected tables/files are ignored */
+ #define INVALID_TABLE(x, path, name)					\
+-	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
++	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+ 
+ #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+ 
+@@ -576,17 +564,45 @@ struct file_pos {
+ };
+ static struct file_pos __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+ 
+-void __init acpi_initrd_override_find(void *data, size_t size)
++/*
++ * acpi_initrd_override_find() is called from head_32.S and head64.c.
++ * head_32.S calling path is with 32bit flat mode, so we can access
++ * initrd early without setting pagetable or relocating initrd. For
++ * global variables accessing, we need to use phys address instead of
++ * kernel virtual address, try to put table_sigs string array in stack,
++ * so avoid switching for it.
++ * Also don't call printk as it uses global variables.
++ */
++void __init acpi_initrd_override_find(void *data, size_t size, bool is_phys)
  {
- 	unsigned long end, real_end, start, last_start;
-@@ -445,7 +460,7 @@ void __init init_mem_mapping(void)
- 		min_pfn_mapped = last_start >> PAGE_SHIFT;
- 		/* only increase step_size after big range get mapped */
- 		if (new_mapped_ram_size > mapped_ram_size)
--			step_size <<= STEP_SIZE_SHIFT;
-+			step_size = get_new_step_size(step_size);
- 		mapped_ram_size += new_mapped_ram_size;
+ 	int sig, no, table_nr = 0;
+ 	long offset = 0;
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
++	struct file_pos *files = acpi_initrd_files;
++	int *all_tables_size_p = &all_tables_size;
++
++	/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
++	char *table_sigs[] = {
++		ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
++		ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
++		ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
++		ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
++		ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
++		ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
++		ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
++		ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
++		ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
+ 
+ 	if (data == NULL || size == 0)
+ 		return;
+ 
++	if (is_phys) {
++		files = (struct file_pos *)__pa_symbol(acpi_initrd_files);
++		all_tables_size_p = (int *)__pa_symbol(&all_tables_size);
++	}
++
+ 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
+ 		file = find_cpio_data(cpio_path, data, size, &offset);
+ 		if (!file.data)
+@@ -595,9 +611,12 @@ void __init acpi_initrd_override_find(void *data, size_t size)
+ 		data += offset;
+ 		size -= offset;
+ 
+-		if (file.size < sizeof(struct acpi_table_header))
+-			INVALID_TABLE("Table smaller than ACPI header",
++		if (file.size < sizeof(struct acpi_table_header)) {
++			if (!is_phys)
++				INVALID_TABLE("Table smaller than ACPI header",
+ 				      cpio_path, file.name);
++			continue;
++		}
+ 
+ 		table = file.data;
+ 
+@@ -605,22 +624,34 @@ void __init acpi_initrd_override_find(void *data, size_t size)
+ 			if (!memcmp(table->signature, table_sigs[sig], 4))
+ 				break;
+ 
+-		if (!table_sigs[sig])
+-			INVALID_TABLE("Unknown signature",
++		if (!table_sigs[sig]) {
++			if (!is_phys)
++				 INVALID_TABLE("Unknown signature",
+ 				      cpio_path, file.name);
+-		if (file.size != table->length)
+-			INVALID_TABLE("File length does not match table length",
++			continue;
++		}
++		if (file.size != table->length) {
++			if (!is_phys)
++				INVALID_TABLE("File length does not match table length",
+ 				      cpio_path, file.name);
+-		if (acpi_table_checksum(file.data, table->length))
+-			INVALID_TABLE("Bad table checksum",
++			continue;
++		}
++		if (acpi_table_checksum(file.data, table->length)) {
++			if (!is_phys)
++				INVALID_TABLE("Bad table checksum",
+ 				      cpio_path, file.name);
++			continue;
++		}
+ 
+-		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
++		if (!is_phys)
++			pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
+ 			table->signature, cpio_path, file.name, table->length);
+ 
+-		all_tables_size += table->length;
+-		acpi_initrd_files[table_nr].data = __pa_nodebug(file.data);
+-		acpi_initrd_files[table_nr].size = file.size;
++		(*all_tables_size_p) += table->length;
++		files[table_nr].data = is_phys ?
++						(phys_addr_t)(size_t)file.data :
++						__pa_nodebug(file.data);
++		files[table_nr].size = file.size;
+ 		table_nr++;
  	}
+ }
+@@ -670,6 +701,9 @@ void __init acpi_initrd_override_copy(void)
+ 			break;
+ 		q = early_ioremap(addr, size);
+ 		p = early_ioremap(acpi_tables_addr + total_offset, size);
++		pr_info("%4.4s ACPI table found in initrd [%#010llx-%#010llx]\n",
++				((struct acpi_table_header *)q)->signature,
++				(u64)addr, (u64)(addr + size - 1));
+ 		memcpy(p, q, size);
+ 		early_iounmap(q, size);
+ 		early_iounmap(p, size);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 8dd917b..4e3731b 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -469,10 +469,11 @@ static inline bool acpi_driver_match_device(struct device *dev,
+ #endif	/* !CONFIG_ACPI */
+ 
+ #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+-void acpi_initrd_override_find(void *data, size_t size);
++void acpi_initrd_override_find(void *data, size_t size, bool is_phys);
+ void acpi_initrd_override_copy(void);
+ #else
+-static inline void acpi_initrd_override_find(void *data, size_t size) { }
++static inline void acpi_initrd_override_find(void *data, size_t size,
++						 bool is_phys) { }
+ static inline void acpi_initrd_override_copy(void) { }
+ #endif
  
 -- 
 1.8.1.4
