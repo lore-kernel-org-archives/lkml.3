@@ -1,50 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3FOLHb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 07:07:31 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47058 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab3FOLFr (ORCPT
+	id S1754068Ab3FOLFq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:05:46 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37108 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab3FOLFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 07:05:47 -0400
-Message-ID: <51BC4A83.50302@gmail.com>
-Date: Sat, 15 Jun 2013 19:05:39 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Add unlikely for current_order test
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Jun 2013 07:05:16 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 2/6] tty: Add lock/unlock ldisc pair functions
+Date: Sat, 15 Jun 2013 07:04:47 -0400
+Message-Id: <1371294291-3807-3-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
+References: <20130603192436.GB22733@kroah.com>
+ <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Just as the tty pair must be locked in a stable sequence
+(ie, independent of which is consider the 'other' tty), so must
+the ldisc pair be locked in a stable sequence as well.
 
-Since we have an unlikely for the "current_order >= pageblock_order / 2"
-test above, adding an unlikely for this "current_order >= pageblock_order"
-test seems more appropriate.
-
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c3edb62..1b6d7de 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1071,7 +1071,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 			rmv_page_order(page);
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 8166260..418c9f6 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -31,6 +31,13 @@
+ #define tty_ldisc_debug(tty, f, args...)
+ #endif
  
- 			/* Take ownership for orders >= pageblock_order */
--			if (current_order >= pageblock_order &&
-+			if (unlikely(current_order >= pageblock_order) &&
- 			    !is_migrate_cma(migratetype))
- 				change_pageblock_range(page, current_order,
- 							start_migratetype);
++/* lockdep nested classes for tty->ldisc_sem */
++enum {
++	LDISC_SEM_NORMAL,
++	LDISC_SEM_OTHER,
++};
++
++
+ /*
+  *	This guards the refcounted line discipline lists. The lock
+  *	must be taken with irqs off because there are hangup path
+@@ -351,6 +358,86 @@ void tty_ldisc_deref(struct tty_ldisc *ld)
+ }
+ EXPORT_SYMBOL_GPL(tty_ldisc_deref);
+ 
++
++static inline int __lockfunc
++tty_ldisc_lock(struct tty_struct *tty, unsigned long timeout)
++{
++	return ldsem_down_write(&tty->ldisc_sem, timeout);
++}
++
++static inline int __lockfunc
++tty_ldisc_lock_nested(struct tty_struct *tty, unsigned long timeout)
++{
++	return ldsem_down_write_nested(&tty->ldisc_sem,
++				       LDISC_SEM_OTHER, timeout);
++}
++
++static inline void tty_ldisc_unlock(struct tty_struct *tty)
++{
++	return ldsem_up_write(&tty->ldisc_sem);
++}
++
++static int __lockfunc
++tty_ldisc_lock_pair_timeout(struct tty_struct *tty, struct tty_struct *tty2,
++			    unsigned long timeout)
++{
++	int ret;
++
++	if (tty < tty2) {
++		ret = tty_ldisc_lock(tty, timeout);
++		if (ret) {
++			ret = tty_ldisc_lock_nested(tty2, timeout);
++			if (!ret)
++				tty_ldisc_unlock(tty);
++		}
++	} else {
++		/* if this is possible, it has lots of implications */
++		WARN_ON_ONCE(tty == tty2);
++		if (tty2 && tty != tty2) {
++			ret = tty_ldisc_lock(tty2, timeout);
++			if (ret) {
++				ret = tty_ldisc_lock_nested(tty, timeout);
++				if (!ret)
++					tty_ldisc_unlock(tty2);
++			}
++		} else
++			ret = tty_ldisc_lock(tty, timeout);
++	}
++
++	if (!ret)
++		return -EBUSY;
++
++	set_bit(TTY_LDISC_HALTED, &tty->flags);
++	if (tty2)
++		set_bit(TTY_LDISC_HALTED, &tty2->flags);
++	return 0;
++}
++
++static void __lockfunc
++tty_ldisc_lock_pair(struct tty_struct *tty, struct tty_struct *tty2)
++{
++	tty_ldisc_lock_pair_timeout(tty, tty2, MAX_SCHEDULE_TIMEOUT);
++}
++
++static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
++					     struct tty_struct *tty2)
++{
++	tty_ldisc_unlock(tty);
++	if (tty2)
++		tty_ldisc_unlock(tty2);
++}
++
++static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
++					     struct tty_struct *tty2)
++{
++	clear_bit(TTY_LDISC_HALTED, &tty->flags);
++	if (tty2)
++		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
++
++	tty_ldisc_unlock_pair(tty, tty2);
++}
++
++
+ /**
+  *	tty_ldisc_enable	-	allow ldisc use
+  *	@tty: terminal to activate ldisc on
 -- 
-1.7.1
+1.8.1.2
+
