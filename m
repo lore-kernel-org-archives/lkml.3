@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3FOBAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:00:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17645 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3FOA5E (ORCPT
+	id S1754139Ab3FOBC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:02:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47594 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3FOA5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:04 -0400
+	Fri, 14 Jun 2013 20:57:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 15/22] x86, mm, numa: Move node_possible_map setting later
-Date: Fri, 14 Jun 2013 17:56:33 -0700
-Message-Id: <1371257800-11720-16-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH v5 05/22] x86, ACPI: Increase override tables number limit
+Date: Fri, 14 Jun 2013 17:56:23 -0700
+Message-Id: <1371257800-11720-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
 References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move node_possible_map handling out of numa_check_memblks to avoid side
-changing in numa_check_memblks().
+Current acpi tables in initrd is limited to 10, that is too small.
+64 should be good enough as we have 35 sigs and could have several
+SSDT.
 
-Only set once for successful path instead of resetting in numa_init()
-every time.
+Two problems in current code prevent us from increasing limit:
+1. that cpio file info array is put in stack, as every element is 32
+   bytes, could run out of stack if we have that array size to 64.
+   We can move it out from stack, and make it as global and put it in
+   __initdata section.
+2. early_ioremap only can remap 256k one time. Current code is mapping
+   10 tables one time. If we increase that limit, whole size could be
+   more than 256k, early_ioremap will fail with that.
+   We can map table one by one during copying, instead of mapping
+   all them one time.
 
-Suggested-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+-v2: According to tj, split it out to separated patch, also
+     rename array name to acpi_initrd_files.
+-v3: Add some comments about mapping table one by one during copying
+     per tj.
+
+Signed-off-by: Yinghai <yinghai@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
+Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/acpi/osl.c | 26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index e448b6f..da2ebab 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -536,12 +536,13 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 42c48fc..c4ea2b7 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -569,8 +569,8 @@ static const char * const table_sigs[] = {
  
- static int __init numa_check_memblks(struct numa_meminfo *mi)
+ #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+ 
+-/* Must not increase 10 or needs code modification below */
+-#define ACPI_OVERRIDE_TABLES 10
++#define ACPI_OVERRIDE_TABLES 64
++static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+ 
+ void __init acpi_initrd_override(void *data, size_t size)
  {
-+	nodemask_t nodes_parsed;
- 	unsigned long pfn_align;
+@@ -579,7 +579,6 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
+-	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
+ 	char *p;
  
- 	/* Account for nodes with cpus and no memory */
--	node_possible_map = numa_nodes_parsed;
--	numa_nodemask_from_meminfo(&node_possible_map, mi);
--	if (WARN_ON(nodes_empty(node_possible_map)))
-+	nodes_parsed = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&nodes_parsed, mi);
-+	if (WARN_ON(nodes_empty(nodes_parsed)))
- 		return -EINVAL;
+ 	if (data == NULL || size == 0)
+@@ -617,8 +616,8 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 			table->signature, cpio_path, file.name, table->length);
  
- 	if (!numa_meminfo_cover_memory(mi))
-@@ -593,7 +594,6 @@ static int __init numa_init(int (*init_func)(void))
- 		set_apicid_to_node(i, NUMA_NO_NODE);
+ 		all_tables_size += table->length;
+-		early_initrd_files[table_nr].data = file.data;
+-		early_initrd_files[table_nr].size = file.size;
++		acpi_initrd_files[table_nr].data = file.data;
++		acpi_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
+ 	}
+ 	if (table_nr == 0)
+@@ -648,14 +647,19 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	memblock_reserve(acpi_tables_addr, all_tables_size);
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
  
- 	nodes_clear(numa_nodes_parsed);
--	nodes_clear(node_possible_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 	numa_reset_distance();
- 
-@@ -669,6 +669,9 @@ void __init x86_numa_init(void)
- 
- 	early_x86_numa_init();
- 
-+	node_possible_map = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&node_possible_map, mi);
+-	p = early_ioremap(acpi_tables_addr, all_tables_size);
+-
++	/*
++	 * early_ioremap only can remap 256k one time. If we map all
++	 * tables one time, we will hit the limit. Need to map table
++	 * one by one during copying.
++	 */
+ 	for (no = 0; no < table_nr; no++) {
+-		memcpy(p + total_offset, early_initrd_files[no].data,
+-		       early_initrd_files[no].size);
+-		total_offset += early_initrd_files[no].size;
++		phys_addr_t size = acpi_initrd_files[no].size;
 +
- 	for (i = 0; i < mi->nr_blks; i++) {
- 		struct numa_memblk *mb = &mi->blk[i];
- 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
++		p = early_ioremap(acpi_tables_addr + total_offset, size);
++		memcpy(p, acpi_initrd_files[no].data, size);
++		early_iounmap(p, size);
++		total_offset += size;
+ 	}
+-	early_iounmap(p, all_tables_size);
+ }
+ #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ 
 -- 
 1.8.1.4
 
