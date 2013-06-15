@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3FOBCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:02:23 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47597 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab3FOA5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:03 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH v5 07/22] x86, ACPI: Store override acpi tables phys addr in cpio files info array
-Date: Fri, 14 Jun 2013 17:56:25 -0700
-Message-Id: <1371257800-11720-8-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1753814Ab3FOBEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:04:40 -0400
+Received: from trent.utfs.org ([94.185.90.103]:46666 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753058Ab3FOBEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 21:04:39 -0400
+Date: Fri, 14 Jun 2013 18:04:34 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+cc: nico-linuxsetlocalversion@schottelius.org
+Subject: [PATCH] scripts/setlocalversion on write-protected source tree
+Message-ID: <alpine.DEB.2.10.1306141756510.13746@trent.utfs.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-ID: <alpine.DEB.2.10.1306141756512.13746@trent.utfs.org>
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 32bit we will find table with phys address during 32bit flat mode
-in head_32.S, because at that time we don't need set page table to
-access initrd.
 
-For copying we could use early_ioremap() with phys directly before mem mapping
-is set.
+Since no one objected[0] and Nico kinda approved of my suggestion to 
+remove "git update-index", I propose the 2nd version of this patch
+for 3.11 (Linux, that is)
 
-To keep 32bit and 64bit consistent, use phys_addr for all.
+[0] https://lkml.org/lkml/2013/6/9/185
 
--v2: introduce file_pos to save phys address instead of abusing cpio_data
-	that tj is not happy with.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/acpi/osl.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fea73af..3a307ec 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -570,7 +570,11 @@ static const char * const table_sigs[] = {
- #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+  Signed-off-by: Christian Kujau <lists@nerdbynature.de>
+  Cc: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
+
+I just stumbled across another[0] issue when scripts/setlocalversion 
+operates on a write-protected source tree. Back then[0] the source tree 
+was on an read-only NFS share, so "test -w" was introduced before "git 
+update-index" was run.
+
+This time, the source tree is on read/write NFS share, but the permissions 
+are world-readable and only a specific user (or root) can write. 
+Thus, "test -w ." returns "0" and then runs "git update-index", 
+producing the following message (on a dirty tree):
+
+  fatal: Unable to create '/usr/local/src/linux-git/.git/index.lock': Permission denied
+
+While it says "fatal", compilation continues just fine.
+
+However, I don't think a kernel compilation should alter the source 
+tree (or the .git directory) in any way and I don't see how removing 
+"git update-index" could do any harm. The Mercurial and SVN routines in 
+scripts/setlocalversion don't have any tree-modifying commands, AFAICS. 
+So, maybe the patch below would be acceptable.
+
+[0] https://patchwork.kernel.org/patch/29718/
+
+---
+
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 84b88f1..d105a44 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -71,9 +71,6 @@ scm_version()
+ 			printf -- '-svn%s' "`git svn find-rev $head`"
+ 		fi
  
- #define ACPI_OVERRIDE_TABLES 64
--static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
-+struct file_pos {
-+	phys_addr_t data;
-+	phys_addr_t size;
-+};
-+static struct file_pos __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
- 
- void __init acpi_initrd_override_find(void *data, size_t size)
- {
-@@ -615,7 +619,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
- 			table->signature, cpio_path, file.name, table->length);
- 
- 		all_tables_size += table->length;
--		acpi_initrd_files[table_nr].data = file.data;
-+		acpi_initrd_files[table_nr].data = __pa_nodebug(file.data);
- 		acpi_initrd_files[table_nr].size = file.size;
- 		table_nr++;
- 	}
-@@ -624,7 +628,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
- void __init acpi_initrd_override_copy(void)
- {
- 	int no, total_offset = 0;
--	char *p;
-+	char *p, *q;
- 
- 	if (!all_tables_size)
- 		return;
-@@ -659,12 +663,15 @@ void __init acpi_initrd_override_copy(void)
- 	 * one by one during copying.
- 	 */
- 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
-+		phys_addr_t addr = acpi_initrd_files[no].data;
- 		phys_addr_t size = acpi_initrd_files[no].size;
- 
- 		if (!size)
- 			break;
-+		q = early_ioremap(addr, size);
- 		p = early_ioremap(acpi_tables_addr + total_offset, size);
--		memcpy(p, acpi_initrd_files[no].data, size);
-+		memcpy(p, q, size);
-+		early_iounmap(q, size);
- 		early_iounmap(p, size);
- 		total_offset += size;
- 	}
+-		# Update index only on r/w media
+-		[ -w . ] && git update-index --refresh --unmerged > /dev/null
+-
+ 		# Check for uncommitted changes
+ 		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
+ 			printf '%s' -dirty
+
+
+
+
 -- 
-1.8.1.4
+BOFH excuse #359:
 
+YOU HAVE AN I/O ERROR -> Incompetent Operator error
