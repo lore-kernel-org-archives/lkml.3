@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3FOB0d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:26:33 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17460 "EHLO mga14.intel.com"
+	id S1753803Ab3FOB2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:28:52 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51056 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204Ab3FOB0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 21:26:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,869,1363158000"; 
-   d="scan'208";a="255282355"
-Message-ID: <51BBC2E1.9040401@intel.com>
-Date: Sat, 15 Jun 2013 09:26:57 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lwe@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware
- expects Windows 8
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>  <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>  <51BABC6F.3050201@intel.com> <1371230988.2490.2.camel@x230>
-In-Reply-To: <1371230988.2490.2.camel@x230>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753364Ab3FOB2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 21:28:51 -0400
+Message-ID: <1371259580.21896.18.camel@pasglop>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, ????????? <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>
+Date: Sat, 15 Jun 2013 11:26:20 +1000
+In-Reply-To: <51BB5E27.5010009@hp.com>
+References: <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
+	 <1370974231.9844.212.camel@gandalf.local.home>
+	 <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
+	 <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
+	 <20130612233224.GH4165@ZenIV.linux.org.uk>
+	 <CA+55aFw2=3ua32vkpWc_9ckCNweFmmH3c0d-VqoaUD86rkR-=w@mail.gmail.com>
+	 <20130613002058.GI4165@ZenIV.linux.org.uk>
+	 <CA+55aFxEnNvj1SoOL+ChVQqK+ouSNgsM+6cQt+=PpmTGdcFggg@mail.gmail.com>
+	 <20130613004941.GJ4165@ZenIV.linux.org.uk>
+	 <CA+55aFz-=xewm_6MuxK9JK_GoqyFSo6L-beXyEv83awe+B_rVw@mail.gmail.com>
+	 <51BB2FFC.8060209@hp.com>
+	 <CA+55aFxmdPAeknSVH8fhdJW4VH=EcJ4dfBQUuQp_M_hnrr295g@mail.gmail.com>
+	 <51BB5E27.5010009@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2013 01:29 AM, Matthew Garrett wrote:
-> On Fri, 2013-06-14 at 14:47 +0800, Aaron Lu wrote:
+On Fri, 2013-06-14 at 14:17 -0400, Waiman Long wrote:
 > 
->> What about a priority based solution? We can introduce a new field named
->> priority to backlight_device and instead of calling another module's
->> function like the unregister one here(which cause unnecessary module
->> dependency), we only need to boost priority for its own interface. This
->> field will be exported to sysfs, so user can change it during runtime
->> too. And we can also introduce a new kernel command line as
->> backlight.force_interface=raw/firmware/platform, to overcome the limited
->> functionality provided by acpi_backlight=video/vendor, which does not
->> involve GPU's interface.
-> 
-> How would that work with existing userspace?
+> With some minor changes, the current patch can be modified to support 
+> debugging lock for 32-bit system. For 64-bit system, we can apply a 
+> similar concept for debugging lock with cmpxchg_double. However, for 
+> architecture that does not have cmpxchg_double support, it will be out 
+> of luck and we probably couldn't support the same feature in debugging 
+> mode. It will have to fall back to taking the lock.
 
-User space tool will need to be updated to use this as stated in the
-gist page, I've patches for gsd-backlight-helper and xorg-x11-drv-intel,
-for others we can add I think if the priority based solution is deemed
-useful.
+That means only x86_64 and s390 would benefit from it ... I'm sure we can do better :-)
 
-> 
->> And we can place the quirk code in backlight layer instead of individual
->> backlight functionality provider module. Suppose we have a backlight
->> manager there, for all win8 systems, we can boost the raw type's
->> priority on its registration, so no need to add code in
->> intel/amd/etc./'s GPU driver code.
-> 
-> But we'd need to add code to every piece of userspace that currently
-> uses the backlight, right?
+Cheers,
+Ben.
 
-Yes that's the case.
 
-> 
->> With priority based solution, all backlight control interfaces stay,
->> the priority field is an indication given by kernel to user space.
-> 
-> We shouldn't export interfaces if we don't expect them to work.
-
-It's not easy to decide if they work or not sometimes, e.g. I came
-across a system that claims win8 in ACPI table and has an Intel GPU,
-while its ACPI video interface also works. With this patch, the working
-ACPI video interface is removed, while with the priority based solution,
-the GPU's interface priority gets higher, but the ACPI video interface
-still stays.
-
-Thanks,
-Aaron
