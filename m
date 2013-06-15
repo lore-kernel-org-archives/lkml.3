@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3FON6R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 09:58:17 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40067 "EHLO
+	id S1754508Ab3FON55 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 09:57:57 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40058 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab3FON56 (ORCPT
+	with ESMTP id S1754370Ab3FON5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 09:57:58 -0400
+	Sat, 15 Jun 2013 09:57:54 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 11/16] tty: Only perform flip buffer flush from tty_buffer_flush()
-Date: Sat, 15 Jun 2013 09:36:11 -0400
-Message-Id: <1371303376-5028-12-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 16/16] tty: Remove private constant from global namespace
+Date: Sat, 15 Jun 2013 09:36:16 -0400
+Message-Id: <1371303376-5028-17-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
 References: <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
@@ -23,116 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that dropping the buffer lock is not necessary (as result of
-converting the spin lock to a mutex), the flip buffer flush no
-longer needs to be handled by the buffer work.
-
-Simply signal a flush is required; the buffer work will exit the
-i/o loop, which allows tty_buffer_flush() to proceed.
+TTY_BUFFER_PAGE is only used within drivers/tty/tty_buffer.c;
+relocate to that file scope.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 63 ++++++++++++++++--------------------------------
- include/linux/tty.h      |  1 -
- 2 files changed, 21 insertions(+), 43 deletions(-)
+ drivers/tty/tty_buffer.c | 10 ++++++++++
+ include/linux/tty.h      | 11 -----------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index c3c606c..39cae61 100644
+index f22e116..c043136f 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -189,19 +189,11 @@ void tty_buffer_flush(struct tty_struct *tty)
- 	struct tty_port *port = tty->port;
- 	struct tty_bufhead *buf = &port->buf;
+@@ -28,6 +28,16 @@
+  */
+ #define TTYB_MEM_LIMIT	65536
  
--	mutex_lock(&buf->flush_mutex);
--	/* If the data is being pushed to the tty layer then we can't
--	   process it here. Instead set a flag and the flush_to_ldisc
--	   path will process the flush request before it exits */
--	if (test_bit(TTYP_FLUSHING, &port->iflags)) {
--		set_bit(TTYP_FLUSHPENDING, &port->iflags);
--		mutex_unlock(&buf->flush_mutex);
--		wait_event(tty->read_wait,
--				test_bit(TTYP_FLUSHPENDING, &port->iflags) == 0);
--		return;
--	}
-+	set_bit(TTYP_FLUSHPENDING, &port->iflags);
- 
-+	mutex_lock(&buf->flush_mutex);
- 	__tty_buffer_flush(port);
-+	clear_bit(TTYP_FLUSHPENDING, &port->iflags);
- 	mutex_unlock(&buf->flush_mutex);
- }
- 
-@@ -429,39 +421,26 @@ static void flush_to_ldisc(struct work_struct *work)
- 
- 	mutex_lock(&buf->flush_mutex);
- 
--	if (!test_and_set_bit(TTYP_FLUSHING, &port->iflags)) {
--		while (1) {
--			struct tty_buffer *head = buf->head;
--			int count;
--
--			count = head->commit - head->read;
--			if (!count) {
--				if (head->next == NULL)
--					break;
--				buf->head = head->next;
--				tty_buffer_free(port, head);
--				continue;
--			}
--
--			mutex_unlock(&buf->flush_mutex);
--
--			count = receive_buf(tty, head, count);
--
--			mutex_lock(&buf->flush_mutex);
--
--			/* Ldisc or user is trying to flush the buffers.
--			   We may have a deferred request to flush the
--			   input buffer, if so pull the chain under the lock
--			   and empty the queue */
--			if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
--				__tty_buffer_flush(port);
--				clear_bit(TTYP_FLUSHPENDING, &port->iflags);
--				wake_up(&tty->read_wait);
--				break;
--			} else if (!count)
-+	while (1) {
-+		struct tty_buffer *head = buf->head;
-+		int count;
++/*
++ * We default to dicing tty buffer allocations to this many characters
++ * in order to avoid multiple page allocations. We know the size of
++ * tty_buffer itself but it must also be taken into account that the
++ * the buffer is 256 byte aligned. See tty_buffer_find for the allocation
++ * logic this must match
++ */
 +
-+		/* Ldisc or user is trying to flush the buffers. */
-+		if (test_bit(TTYP_FLUSHPENDING, &port->iflags))
-+			break;
++#define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
 +
-+		count = head->commit - head->read;
-+		if (!count) {
-+			if (head->next == NULL)
- 				break;
-+			buf->head = head->next;
-+			tty_buffer_free(port, head);
-+			continue;
- 		}
--		clear_bit(TTYP_FLUSHING, &port->iflags);
-+
-+		count = receive_buf(tty, head, count);
-+		if (!count)
-+			break;
- 	}
  
- 	mutex_unlock(&buf->flush_mutex);
+ /**
+  *	tty_buffer_lock_exclusive	-	gain exclusive access to buffer
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 1c8fef0..1d5bacc 100644
+index 7a9a3b0..5fd5d6f 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -213,7 +213,6 @@ struct tty_port {
- 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
- 	unsigned long		flags;		/* TTY flags ASY_*/
- 	unsigned long		iflags;		/* TTYP_ internal flags */
--#define TTYP_FLUSHING			1  /* Flushing to ldisc in progress */
- #define TTYP_FLUSHPENDING		2  /* Queued buffer flush pending */
- 	unsigned char		console:1,	/* port is a console */
- 				low_latency:1;	/* direct buffer flush */
+@@ -53,17 +53,6 @@ static inline char *flag_buf_ptr(struct tty_buffer *b, int ofs)
+ 	return (char *)char_buf_ptr(b, ofs) + b->size;
+ }
+ 
+-/*
+- * We default to dicing tty buffer allocations to this many characters
+- * in order to avoid multiple page allocations. We know the size of
+- * tty_buffer itself but it must also be taken into account that the
+- * the buffer is 256 byte aligned. See tty_buffer_find for the allocation
+- * logic this must match
+- */
+-
+-#define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
+-
+-
+ struct tty_bufhead {
+ 	struct tty_buffer *head;	/* Queue head */
+ 	struct work_struct work;
 -- 
 1.8.1.2
 
