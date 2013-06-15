@@ -1,148 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3FOKuY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 06:50:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37943 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab3FOKuX (ORCPT
+	id S1753727Ab3FOLFP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:05:15 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37099 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3FOLFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 06:50:23 -0400
-Date: Sat, 15 Jun 2013 03:50:20 -0700 (PDT)
-Message-Id: <20130615.035020.382818503653292818.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Jun 2013 07:05:11 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 0/6] ldsem patchset, reordered and rebased
+Date: Sat, 15 Jun 2013 07:04:45 -0400
+Message-Id: <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130603192436.GB22733@kroah.com>
+References: <20130603192436.GB22733@kroah.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2013 03:24 PM, Greg Kroah-Hartman wrote:> On Mon, May 20, 2013 at 07:38:57PM -0400, Peter Hurley wrote:
+>> On 05/20/2013 07:06 PM, Greg Kroah-Hartman wrote:
+>>> On Mon, May 20, 2013 at 05:44:00PM -0400, Peter Hurley wrote:
+>>>> On 05/20/2013 03:34 PM, Greg Kroah-Hartman wrote:
+>>>>> On Tue, Apr 16, 2013 at 06:15:51AM -0400, Peter Hurley wrote:
+>>>>>> Just as the tty pair must be locked in a stable sequence
+>>>>>> (ie, independent of which is consider the 'other' tty), so must
+>>>>>> the ldisc pair be locked in a stable sequence as well.
+>>>>>>
+>>>>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>>>>> ---
+>>>>>>   drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>>   1 file changed, 87 insertions(+)
+>>>>>
+>>>>> This patch breaks the build :(
+>>>>
+>>>> Sorry about that.
+>>>>
+>>>>> I've taken the first one, care to mush this one with the 7/7 patch, so
+>>>>> there are no build breaks, and resend the 5 resulting patches so I can
+>>>>> apply these?
+>>>>
+>>>> Maybe it would be better to reorder 7/7 to be 1/6, if that's ok?
+>>>> More work for me but the history will be cleaner.
+>>>
+>>> Sure, that works for me as well, care to just resend them?  Or, I can
+>>> dig them out of my archive if needed.
+>>
+>> I'll resend them because the rebase will require some re-editing.
+> 
+> Did you ever resend these?  If so, I didn't see them :(
 
-1) Fix RTNL locking in batman-adv, from Matthias Schiffer.
+Greg,
 
-2) Don't allow non-passthrough macvlan devices to set NOPROMISC
-   via netlink, otherwise we can end up with corrupted promisc
-   counter values on the device.  From Michael S. Tsirkin.
+Sorry for the delay here. In addition to the re-editing required,
+I merged in a couple of fixes and these needed re-testing.
 
-3) Fix stmmac driver build with debugging defines enabled, from
-   Dinh Nguyen.
+These apply cleanly to tty-next.
 
-4) Make sure name string we give in socket address in AF_PACKET
-   is NULL terminated, from Daniel Borkmann.
+Changes from previous 7-patch series:
+1. In tty_ldisc_ref(), snapshot tty->ldisc holding ldsem.
+   The conditions for this to be a fix cannot actually occur but
+   this is better anyway.
+2. In tty_set_ldisc(), the new ldisc needs to be released if
+   tty_ldisc_lock_pair_timeout() fails.
 
-5) Fix leaking of two uninitialized bytes of memory to userspace
-   in l2tp, from Guillaume Nault.
+Regards,
+Peter Hurley
 
-6) Clear IPCB(skb) before tunneling otherwise we touch dangling
-   IP options state and crash.  From Saurabh Mohan.
+Peter Hurley (6):
+  tty: Fix tty_ldisc_lock name collision
+  tty: Add lock/unlock ldisc pair functions
+  tty: Replace ldisc locking with ldisc_sem
+  tty: Clarify ldisc variable
+  tty: Fix hangup race with TIOCSETD ioctl
+  tty: Clarify multiple-references comment in TIOCSETD ioctl
 
-7) Fix suspend/resume for davinci_mdio by using suspend_late
-   and resume_early.  From Mugunthan V N.
+ drivers/tty/tty_buffer.c  |   2 +-
+ drivers/tty/tty_io.c      |  11 +-
+ drivers/tty/tty_ldisc.c   | 450 ++++++++++++++++------------------------------
+ include/linux/tty.h       |   4 +-
+ include/linux/tty_ldisc.h |   3 +-
+ 5 files changed, 158 insertions(+), 312 deletions(-)
 
-8) Don't tag ip_tunnel_init_net and ip_tunnel_delete_net
-   with __net_{init,exit}, they can be called outside of
-   those contexts.  From Eric Dumazet.
+-- 
+1.8.1.2
 
-9) Fix RX length error in sh_eth driver, from Yoshihiro Shimoda.
-
-10) Fix missing sctp_outq initialization in some code paths of
-    SCTP stack, from Neil Horman.
-
-Please pull, thanks a lot!
-
-The following changes since commit 26e04462c8b78d079d3231396ec72d58a14f114b:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-06-12 17:18:29 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
-
-for you to fetch changes up to c5c7774d7eb4397891edca9ebdf750ba90977a69:
-
-  sctp: fully initialize sctp_outq in sctp_outq_init (2013-06-13 18:05:24 -0700)
-
-----------------------------------------------------------------
-Benjamin Poirier (1):
-      netiucv: Hold rtnl between name allocation and device registration.
-
-Daniel Borkmann (1):
-      packet: packet_getname_spkt: make sure string is always 0-terminated
-
-David S. Miller (1):
-      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
-
-Dinh Nguyen (1):
-      net: ethernet: stmicro: stmmac: Fix compile error when STMMAC_XMIT_DEBUG used
-
-Eric Dumazet (1):
-      ip_tunnel: remove __net_init/exit from exported functions
-
-Guillaume Nault (2):
-      l2tp: Fix PPP header erasure and memory leak
-      l2tp: Fix sendmsg() return value
-
-Jan Beulich (1):
-      xen-netback: don't de-reference vif pointer after having called xenvif_put()
-
-Matthias Schiffer (1):
-      batman-adv: wait for rtnl in batadv_store_mesh_iface instead of failing if it is taken
-
-Michael S. Tsirkin (1):
-      macvlan: don't touch promisc without passthrough
-
-Mugunthan V N (2):
-      drivers: net: davinci_mdio: moving mdio resume earlier than cpsw ethernet driver
-      drivers: net: davinci_mdio: restore mdio clk divider in mdio resume
-
-Neil Horman (2):
-      tulip: Properly check dma mapping result
-      sctp: fully initialize sctp_outq in sctp_outq_init
-
-Nikolay Aleksandrov (2):
-      bonding: reset master mac on first enslave failure
-      bonding: fix igmp_retrans type and two related races
-
-Nithin Sujir (1):
-      tg3: Wait for boot code to finish after power on
-
-Saurabh Mohan (1):
-      net/ipv4: ip_vti clear skb cb before tunneling.
-
-Simon Wunderlich (2):
-      batman-adv: forward late OGMs from best next hop
-      batman-adv: Don't handle address updates when bla is disabled
-
-Somnath Kotur (1):
-      be2net: Fix 32-bit DMA Mask handling
-
-Yoshihiro Shimoda (1):
-      net: sh_eth: fix incorrect RX length error if R8A7740
-
- drivers/net/bonding/bond_main.c                   | 19 ++++++++++++++----
- drivers/net/bonding/bonding.h                     |  2 +-
- drivers/net/ethernet/broadcom/tg3.c               | 10 +++++++++
- drivers/net/ethernet/dec/tulip/interrupt.c        |  6 ++++++
- drivers/net/ethernet/emulex/benet/be_main.c       |  3 +++
- drivers/net/ethernet/renesas/sh_eth.c             | 15 ++++++++++----
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  2 +-
- drivers/net/ethernet/ti/davinci_mdio.c            |  9 +++------
- drivers/net/macvlan.c                             | 20 +++++++++++-------
- drivers/net/xen-netback/netback.c                 | 11 +++++-----
- drivers/s390/net/netiucv.c                        |  6 +++++-
- include/net/ip_tunnels.h                          |  6 +++---
- net/batman-adv/bat_iv_ogm.c                       | 86 ++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------
- net/batman-adv/bridge_loop_avoidance.c            |  4 ++++
- net/batman-adv/sysfs.c                            |  5 +----
- net/ipv4/ip_tunnel.c                              |  4 ++--
- net/ipv4/ip_vti.c                                 |  3 +--
- net/l2tp/l2tp_ppp.c                               |  6 +++---
- net/packet/af_packet.c                            |  5 ++---
- net/sctp/outqueue.c                               |  6 ++----
- 20 files changed, 147 insertions(+), 81 deletions(-)
