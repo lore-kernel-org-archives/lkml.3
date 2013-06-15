@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab3FODLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 23:11:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53948 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166Ab3FODLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 23:11:13 -0400
-Message-ID: <1371265846.21896.29.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1753816Ab3FODer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 23:34:47 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34411 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3FODep (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 23:34:45 -0400
+Date: Sat, 15 Jun 2013 04:34:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 15 Jun 2013 13:10:46 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git
+Message-ID: <20130615033440.GN4165@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+	Several fixes + obvious cleanup (you've missed a couple of
+open-coded can_lookup() back then).  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-Hopefully this one smells better ...
+Shortlog:
+Al Viro (2):
+      use can_lookup() instead of direct checks of ->i_op->lookup
+      snd_pcm_link(): fix a leak...
 
-So here are 3 fixes still for 3.10. Fixes are simple, bugs are nasty
-(though not recent regressions, nasty enough) and all targeted at
-stable. Please apply.
+Dave Chiluk (1):
+      ncpfs: fix rmdir returns Device or resource busy
 
-Thanks !
+Oleg Nesterov (2):
+      fput: task_work_add() can fail if the caller has passed exit_task_work()
+      move exit_task_namespaces() outside of exit_notify()
 
-Cheers,
-Ben.
-
-The following changes since commit 34376a50fb1fa095b9d0636fa41ed2e73125f214:
-
-  Fix lockup related to stop_machine being stuck in __do_softirq. (2013-06-10 17:46:57 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 230b3034793247f61e6a0b08c44cf415f6d92981:
-
-  powerpc: Fix missing/delayed calls to irq_work (2013-06-15 12:33:30 +1000)
-
-----------------------------------------------------------------
-Benjamin Herrenschmidt (1):
-      powerpc: Fix missing/delayed calls to irq_work
-
-Michael Ellerman (1):
-      powerpc: Fix stack overflow crash in resume_kernel when ftracing
-
-Paul Mackerras (1):
-      powerpc: Fix emulation of illegal instructions on PowerNV platform
-
- arch/powerpc/include/asm/exception-64s.h |    2 +-
- arch/powerpc/kernel/exceptions-64s.S     |    2 +-
- arch/powerpc/kernel/irq.c                |    2 +-
- arch/powerpc/kernel/process.c            |    4 ++--
- arch/powerpc/kernel/traps.c              |   10 ++++++++++
- 5 files changed, 15 insertions(+), 5 deletions(-)
-
-
+Diffstat:
+ fs/file_table.c         |   19 ++++++++++---------
+ fs/namei.c              |    4 ++--
+ fs/ncpfs/dir.c          |    9 ---------
+ kernel/exit.c           |    2 +-
+ sound/core/pcm_native.c |    4 ++--
+ 5 files changed, 15 insertions(+), 23 deletions(-)
