@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3FOBfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:35:43 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53766 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3FOBfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 21:35:41 -0400
-Date: Fri, 14 Jun 2013 18:35:46 -0700
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL 3/3] msm clock for 3.11
-Message-ID: <20130615013546.GV18124@quad.lixom.net>
-References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
- <20130614195238.GA2381@codeaurora.org>
+	id S1753998Ab3FOBkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:40:20 -0400
+Received: from [207.46.163.209] ([207.46.163.209]:31042 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753899Ab3FOBkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 21:40:16 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Aaron Lu <aaron.lu@intel.com>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lwe@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
+ firmware expects Windows 8
+Thread-Topic: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
+ firmware expects Windows 8
+Thread-Index: AQHOZWVb86pe7osyu0+xw9CXu6ntE5k0yzOAgACziwCAAIVRgIAAAxsA
+Date: Sat, 15 Jun 2013 01:38:05 +0000
+Message-ID: <1371260284.523.2.camel@x230>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
+	 <51BABC6F.3050201@intel.com> <1371230988.2490.2.camel@x230>
+	 <51BBC2E1.9040401@intel.com>
+In-Reply-To: <51BBC2E1.9040401@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2861A50AFD728848B4788028958ADD4A@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130614195238.GA2381@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5F1eVuv009266
 
-On Fri, Jun 14, 2013 at 12:52:55PM -0700, David Brown wrote:
-> The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+On Sat, 2013-06-15 at 09:26 +0800, Aaron Lu wrote:
+> On 06/15/2013 01:29 AM, Matthew Garrett wrote: 
+> > How would that work with existing userspace?
 > 
->  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-> 
-> are available in the git repository at:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-clock-for-3.11
-> 
-> for you to fetch changes up to f54c1c11053d8aaf318a096b8b332fd41a394a66:
-> 
->  ARM: msm: Migrate to common clock framework (2013-06-12 14:43:31 -0700)
-> 
-> ----------------------------------------------------------------
-> MSM clock updates for 3.11.
-> 
-> Per Stephen Boyd's coverletter:
-> 
-> This patchset moves the existing MSM clock code and affected drivers
-> to the common clock framework. A prerequisite of moving to the common
-> clock framework is to use clk_prepare() and clk_enable() so the first
-> few patches migrate drivers to that call (clk_prepare() is a no-op on
-> MSM right now). It also removes some custom clock APIs that MSM
-> provides and finally moves the proc_comm clock code to the common
-> struct clk.
-> 
-> This patch series will be used as the foundation of the MSM 8660/8960
-> clock code that I plan to send out after this series.
-> 
-> ----------------------------------------------------------------
-> Stephen Boyd (12):
->      msm_serial: Convert to clk_prepare/unprepare
->      msm_serial: Use devm_clk_get() and properly return errors
->      usb: otg: msm: Convert to clk_prepare/unprepare
->      msm_sdcc: Convert to clk_prepare/unprepare
->      msm: iommu: Convert to clk_prepare/unprepare
->      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
->      ARM: msm: Remove custom clk_set_flags() API
->      ARM: msm: Remove custom clk_set_{max,min}_rate() API
->      ARM: msm: Remove clock-7x30.h include file
->      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
->      ARM: msm: Make proc_comm clock control into a platform driver
->      ARM: msm: Migrate to common clock framework
+> User space tool will need to be updated to use this as stated in the
+> gist page, I've patches for gsd-backlight-helper and xorg-x11-drv-intel,
+> for others we can add I think if the priority based solution is deemed
+> useful.
 
-I don't see a single ack from any of the driver subsystem maintainers for
-serial, usb or iommu. Some of them have been acked though, for example Felipe
-acked the USB one on the mailing list.
+Right, that's not a great solution.
 
-I also didn't see Greg cc:d on the serial patches, which would explain why
-there was no ack for them.
+> > We shouldn't export interfaces if we don't expect them to work.
+> 
+> It's not easy to decide if they work or not sometimes, e.g. I came
+> across a system that claims win8 in ACPI table and has an Intel GPU,
+> while its ACPI video interface also works. With this patch, the working
+> ACPI video interface is removed, while with the priority based solution,
+> the GPU's interface priority gets higher, but the ACPI video interface
+> still stays.
 
-Care to repost/collect/rebuild this branch, please? It's a great cleanup and
-I'd be happy to take it even if it ends up coming in after -rc6.
+Well, Windows 8 will only use the ACPI backlight interface if the GPU
+driver decides to, right? So the logic for deciding whether to remove
+the ACPI backlight control or not should be left up to the GPU. There's
+no harm in refusing to expose a working method if there's another
+working method, but there is harm in exposing a broken one and expecting
+userspace to know the difference.
 
-
--Olof
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
