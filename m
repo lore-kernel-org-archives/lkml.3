@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3FOMJP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 08:09:15 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:45437 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab3FOMJN (ORCPT
+	id S1754144Ab3FOMUh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 08:20:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46259 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab3FOMUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 08:09:13 -0400
+	Sat, 15 Jun 2013 08:20:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <51BB21D8.6000109@intel.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-	<1370589652-24549-4-git-send-email-alex.shi@intel.com>
-	<CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
-	<51BB21D8.6000109@intel.com>
-Date: Sat, 15 Jun 2013 20:09:12 +0800
-Message-ID: <CALZhoSTxKUD2oE7YUFvwASKqnpJBgPP6mnJG3KhFUre5OqYBFQ@mail.gmail.com>
-Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
- forked task
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
+In-Reply-To: <1371119474.1357.6.camel@x61.thuisdomein>
+References: <1363204102.1335.6.camel@x61.thuisdomein>
+	<1371119474.1357.6.camel@x61.thuisdomein>
+Date: Sat, 15 Jun 2013 08:20:35 -0400
+Message-ID: <CAF6AEGs_LS1ZFFj+C67dmRj4G122O1YSqTH_EpgtkLkQOKb2LQ@mail.gmail.com>
+Subject: Re: [PATCH] drm/omap: change "!CONFIG_FB_OMAP2" to "!FB_OMAP2"
+From: Rob Clark <robdclark@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 9:59 PM, Alex Shi <alex.shi@intel.com> wrote:
-> On 06/14/2013 06:02 PM, Lei Wen wrote:
->>> >         enqueue_entity
->>> >             enqueue_entity_load_avg
->>> >
->>> > and make forking balancing imbalance since incorrect load_avg_contrib.
->>> >
->>> > Further more, Morten Rasmussen notice some tasks were not launched at
->>> > once after created. So Paul and Peter suggest giving a start value for
->>> > new task runnable avg time same as sched_slice().
->> I am confused at this comment, how set slice to runnable avg would change
->> the behavior of "some tasks were not launched at once after created"?
+On Thu, Jun 13, 2013 at 6:31 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Wed, 2013-03-13 at 20:48 +0100, Paul Bolle wrote:
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> Untested. Perhaps the first test that people with access to the relevant
+>> hardware might do, is to test _before applying this patch_ with FB_OMAP2
+>> set. Perhaps this negative dependency isn't needed at all. Or is it
+>> obvious?
+>>
+>>  drivers/gpu/drm/omapdrm/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> I also don't know the details on Morten's machine. but just guess, there
-> are much tasks on in the run queue. the minimum load avg make the new
-> task wait its time...
+> This patch was sent exactly three months ago, shortly after v3.9-rc2 was
+> released. This obvious typo is still present in v3.10-rc5.
+>
+> I didn't received any feedback on this patch. Did anyone had a look at
+> it? Is it perhaps queued somewhere?
 
-Is there some possibility that since task structure is allocated without being
-set to 0, and it cause the imbalance between runqueues. Then the new forked
-is migrated to other cpus, so that it cause its execution being delayed?
+oh, sorry, at the time I was in the middle of moving, and wasn't
+watching dri-devel so much.
 
-It is better for Morten to give us more details here. :)
+Yeah, this should probably either be merged, or we should just drop
+the negative dependency.  (I guess in theory you could build both
+omapfb and omapdrm as modules and just load one.)
 
-Thanks,
-Lei
+BR
+-R
 
+>
+> Paul Bolle
+>
+>> diff --git a/drivers/gpu/drm/omapdrm/Kconfig b/drivers/gpu/drm/omapdrm/Kconfig
+>> index 09f65dc..45875a0 100644
+>> --- a/drivers/gpu/drm/omapdrm/Kconfig
+>> +++ b/drivers/gpu/drm/omapdrm/Kconfig
+>> @@ -1,7 +1,7 @@
 >>
->> IMHO, I could only tell that for the new forked task, it could be run if current
->> task already be set as need_resched, and preempt_schedule or
->> preempt_schedule_irq
->> is called.
->>
->> Since the set slice to avg behavior would not affect this task's vruntime,
->> and hence cannot make current running task be need_sched, if
->> previously it cannot.
->>
->> Could you help correct if I am wrong at somewhere? ....
->>
->> Thanks,
+>>  config DRM_OMAP
+>>       tristate "OMAP DRM"
+>> -     depends on DRM && !CONFIG_FB_OMAP2
+>> +     depends on DRM && !FB_OMAP2
+>>       depends on ARCH_OMAP2PLUS || ARCH_MULTIPLATFORM
+>>       depends on OMAP2_DSS
+>>       select DRM_KMS_HELPER
 >
 >
-> --
-> Thanks
->     Alex
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
