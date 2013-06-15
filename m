@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab3FOO1z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:27:55 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40627 "EHLO
+	id S1754692Ab3FOO3c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 10:29:32 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40633 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab3FOO1y (ORCPT
+	with ESMTP id S1754226Ab3FOO14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:27:54 -0400
+	Sat, 15 Jun 2013 10:27:56 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 18/20] n_tty: Un-inline single-use functions
-Date: Sat, 15 Jun 2013 10:21:34 -0400
-Message-Id: <1371306096-5571-19-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 20/20] tty: Remove extra wakeup from pty write() path
+Date: Sat, 15 Jun 2013 10:21:36 -0400
+Message-Id: <1371306096-5571-21-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
 References: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
@@ -23,64 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc will likely inline these single-use functions anyway; remove
-inline modifier.
+Acquiring the write_wait queue spin lock now accounts for the largest
+slice of cpu time on the tty write path. Two factors contribute to
+this situation; a overly-pessimistic line discipline write loop which
+_always_ sets up a wait loop even if i/o will immediately succeed, and
+on ptys, a wakeup storm from reads and writes.
+
+Writer wakeup does not need to be performed by the pty driver.
+Firstly, since the actual i/o is performed within the write, the
+line discipline write loop will continue while space remains in
+the flip buffers. Secondly, when space becomes avail in the
+line discipline receive buffer (and thus also in the flip buffers),
+the pty unthrottle re-wakes the writer (non-flow-controlled line
+disciplines unconditionally unthrottle the driver when data is
+received). Thus, existing in-kernel i/o is guaranteed to advance.
+Finally, writer wakeup occurs at the conclusion of the line discipline
+write (in tty_write_unlock()). This guarantees that any user-space write
+waiters are woken to continue additional i/o.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/tty/pty.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 633cfcf..5e06aa1 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -263,7 +263,7 @@ static void n_tty_check_throttle(struct tty_struct *tty)
- 	__tty_set_flow_change(tty, 0);
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 0634dd9..b9bc5be 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -121,10 +121,8 @@ static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
+ 		/* Stuff the data into the input queue of the other end */
+ 		c = tty_insert_flip_string(to->port, buf, c);
+ 		/* And shovel */
+-		if (c) {
++		if (c)
+ 			tty_flip_buffer_push(to->port);
+-			tty_wakeup(tty);
+-		}
+ 	}
+ 	return c;
  }
- 
--static inline void n_tty_check_unthrottle(struct tty_struct *tty)
-+static void n_tty_check_unthrottle(struct tty_struct *tty)
- {
- 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY) {
- 		if (chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
-@@ -1108,7 +1108,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
-  *	Locking: ctrl_lock
-  */
- 
--static inline void isig(int sig, struct tty_struct *tty)
-+static void isig(int sig, struct tty_struct *tty)
- {
- 	struct pid *tty_pgrp = tty_get_pgrp(tty);
- 	if (tty_pgrp) {
-@@ -1131,7 +1131,7 @@ static inline void isig(int sig, struct tty_struct *tty)
-  *	Note: may get exclusive termios_rwsem if flushing input buffer
-  */
- 
--static inline void n_tty_receive_break(struct tty_struct *tty)
-+static void n_tty_receive_break(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 
-@@ -1169,7 +1169,7 @@ static inline void n_tty_receive_break(struct tty_struct *tty)
-  *	private.
-  */
- 
--static inline void n_tty_receive_overrun(struct tty_struct *tty)
-+static void n_tty_receive_overrun(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 	char buf[64];
-@@ -1197,8 +1197,7 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
-  *		caller holds non-exclusive termios_rwsem
-  *		publishes read_head via put_tty_queue()
-  */
--static inline void n_tty_receive_parity_error(struct tty_struct *tty,
--					      unsigned char c)
-+static void n_tty_receive_parity_error(struct tty_struct *tty, unsigned char c)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 
 -- 
 1.8.1.2
 
