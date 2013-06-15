@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab3FOBwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:52:20 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39758 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3FOBwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 21:52:19 -0400
-Date: Fri, 14 Jun 2013 18:52:24 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, balbi@ti.com, richard.genoud@gmail.com,
-        voice.shen@atmel.com, vinod.koul@intel.com,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: Device Tree update for 3.11 #2
-Message-ID: <20130615015224.GA25585@quad.lixom.net>
-References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
- <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754010Ab3FOCCw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 22:02:52 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43120 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753688Ab3FOCCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 22:02:51 -0400
+Message-ID: <1371261741.21896.20.camel@pasglop>
+Subject: Re: Regression in RCU subsystem in latest mainline kernel
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Rojhalat Ibrahim <imr@rtschenk.de>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Date: Sat, 15 Jun 2013 12:02:21 +1000
+In-Reply-To: <1371243967.9844.338.camel@gandalf.local.home>
+References: <1626500.7WAVXjfS9F@pcimr>
+	 <20130614122800.GL5146@linux.vnet.ibm.com> <1645938.As0LR1yeVd@pcimr>
+	 <1371243967.9844.338.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 12:47:47AM +0200, Nicolas Ferre wrote:
-> Arnd, Olof,
-> 
-> Additional pull-request for AT91 DT patches.
-> It contains the remaining part of the USB gadget pull-request that I sent you
-> last week. After having split it, here is the DT part.
-> It also contains the update of DMA bindings: it is the AT91 part the should go
-> through arm-soc. I have included the patch (ARM: at91: dt: add header to define
-> at_hdmac configuration) so that we avoid build errors whichever git tree
-> (slave-dma or arm-soc) is merged first.
-> A SPI DT patch for at91sam9x5 is also added.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
-> 
->   ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-dt
+On Fri, 2013-06-14 at 17:06 -0400, Steven Rostedt wrote:
+> I was pretty much able to reproduce this on my PA Semi PPC box. Funny
+> thing is, when I type on the console, it makes progress. Anyway, it
+> seems that powerpc has an issue with irq_work(). I'll try to get some
+> time either tonight or next week to figure it out.
 
-Pulled, thanks.
+Does this help ?
+
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 5cbcf4d..ea185e0 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -162,7 +162,7 @@ notrace unsigned int __check_irq_replay(void)
+ 	 * in case we also had a rollover while hard disabled
+ 	 */
+ 	local_paca->irq_happened &= ~PACA_IRQ_DEC;
+-	if (decrementer_check_overflow())
++	if ((happened & PACA_IRQ_DEC) || decrementer_check_overflow())
+ 		return 0x900;
+ 
+ 	/* Finally check if an external interrupt happened */
+
+Cheers,
+Ben.
 
 
--Olof
