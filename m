@@ -1,134 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3FOTyR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 15:54:17 -0400
-Received: from smtp103.biz.mail.ne1.yahoo.com ([98.138.207.10]:42465 "HELO
-	smtp103.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754351Ab3FOTyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 15:54:15 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: rTQEUTEVM1ktgAkXmvN3PyQr5KZetDcq0WTJ86sI.f4azEV
- 9bBrhhOnW18I89O8o_rKUMMgKLY9yHXKYsp0MJ_QjO0hVNSh2C6yAyaGIQPX
- uTlgdTUSV3DocuLRoyeCqEQXtmEiooBOm9epTQRQJo0aYv4Hg.Cs5YTBcHGV
- j.JZoXcwJVaF1T4ZMHyDC46uRoCwtxGe3V8WQHY_sXlsCzWrvkqBXqZilGei
- LAEJaS7Fmi7GWHdZP6a1CfoNtPKr_C41EyFvQydXgeEr1IZV33fT_rQzRRzW
- U.H9gOJuHVFwM64Zx6.jnWDvTxtzhtuLxhNAzeQLvUX7j.5RzQS74smhAkw.
- qaKgPan24UTm45zJg1fL_m_HuVOz9I1iO31BIfGp1jIJoHdoVcyJHJNKI98U
- 9BCzy8okCWnQskpPBRhWSSb2dSl2M.MDIoXpb8eP7HFzdx8Y_ZjzolTQJL1j
- TyskkekwcWdioQBc7mfpekCI1s73QngApZBjeHmTCOoY-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
-        by smtp103.biz.mail.ne1.yahoo.com with SMTP; 15 Jun 2013 12:54:14 -0700 PDT
-Message-ID: <51BCC673.10302@schaufler-ca.com>
-Date: Sat, 15 Jun 2013 12:54:27 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1754602Ab3FOTyj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 15:54:39 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38620 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754400Ab3FOTyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 15:54:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [BUGFIX v2 1/4] ACPI, DOCK: initialize dock subsystem before scanning PCI root buses
+Date: Sat, 15 Jun 2013 22:03:48 +0200
+Message-ID: <6161178.guRcsL2k7p@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51BC3C6B.9010908@gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <CAE9FiQWOMF4HWdQRfxF68BBYC4ONcr8wOHWvVGt6Jvb_-p6S8w@mail.gmail.com> <51BC3C6B.9010908@gmail.com>
 MIME-Version: 1.0
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-CC: linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC 3/5] security: smack: fix memleak in smk_write_rules_list()
-References: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com> <1371137352-31273-4-git-send-email-t.stanislaws@samsung.com>
-In-Reply-To: <1371137352-31273-4-git-send-email-t.stanislaws@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/13/2013 8:29 AM, Tomasz Stanislawski wrote:
-> The smack_parsed_rule structure is allocated.  If a rule is successfully
-> installed then the last reference to the object is lost.  This patch fixes this
-> leak. Moreover smack_parsed_rule is allocated on stack because it no longer
-> needed ofter smk_write_rules_list() is finished.
->
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+On Saturday, June 15, 2013 06:05:31 PM Jiang Liu wrote:
+> On 06/15/2013 02:51 PM, Yinghai Lu wrote:
+> > On Fri, Jun 14, 2013 at 12:27 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> >> Changeset "3b63aaa70e1 PCI: acpiphp: Do not use ACPI PCI subdriver
+> >> mechanism" causes a regression which breaks ACPI dock support,
+> >> please refer to https://bugzilla.kernel.org/show_bug.cgi?id=59501
+> >>
+> >> The root cause is that changeset 3b63aaa70e1 changed the relative
+> >> initialization order of ACPI dock subsystem and acpiphp driver,
+> >> and acpiphp driver has dependency on ACPI dock subsystem's
+> >> initialization result, so that acpiphp can't correctly detect ACPI
+> >> dock stations now.
+> >>
+> >> On the other hand, ACPI dock is a built-in driver, so we could
+> >> explicitly initialize it before the acpiphp driver is used.
+> >>
+> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> >> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+> >> Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
+> >> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> >> Cc: linux-acpi@vger.kernel.org
+> >> Cc: linux-kernel@vger.kernel.org
+> >> Cc: <stable@vger.kernel.org> # 3.9+
+> >> ---
+> >>  drivers/acpi/dock.c     | 7 +------
+> >>  drivers/acpi/internal.h | 5 +++++
+> >>  drivers/acpi/scan.c     | 1 +
+> >>  3 files changed, 7 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> >> index 4fdea38..02b0563 100644
+> >> --- a/drivers/acpi/dock.c
+> >> +++ b/drivers/acpi/dock.c
+> >> @@ -1033,7 +1033,7 @@ find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
+> >>         return AE_OK;
+> >>  }
+> >>
+> >> -static int __init dock_init(void)
+> >> +int __init acpi_dock_init(void)
+> >>  {
+> >>         if (acpi_disabled)
+> >>                 return 0;
+> >> @@ -1062,9 +1062,4 @@ static void __exit dock_exit(void)
+> >>                 dock_remove(dock_station);
+> >>  }
+> >>
+> >> -/*
+> >> - * Must be called before drivers of devices in dock, otherwise we can't know
+> >> - * which devices are in a dock
+> >> - */
+> >> -subsys_initcall(dock_init);
+> >>  module_exit(dock_exit);
+> > 
+> > why not remove dock_exit?
+> I have a pending patchset to clean up dock driver, Rafael suggested to
+> focus on bugfix first, so I will send out the clean up patchset later.
 
-It looks like this was introduced with the change-rule support.
-Prior to that, the rule passed into smk_set_access() was added
-to the rule list if it was new. The change-rule support added a
-new structure and missed the fact the rule was already allocated.
+Well, you can remove dock_exit() in the same patch.  This is kind of not
+directly related to the fix, but since you're changing it from modular to
+non-modular, it'd be prudent to remove all of the "modular" code in the
+process.
 
-The patch needs to be rebased so that it does not depend on the
-changes from patches 1 and 2 of the set.
+Thanks,
+Rafael
 
 
-> ---
->  security/smack/smackfs.c |   30 ++++++++++--------------------
->  1 file changed, 10 insertions(+), 20 deletions(-)
->
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 46f111e..e8c57f3 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -447,7 +447,7 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
->  					struct mutex *rule_lock, int format)
->  {
->  	struct smack_known *skp;
-> -	struct smack_parsed_rule *rule;
-> +	struct smack_parsed_rule rule;
->  	char data[SMK_LOAD2LEN + 1];
->  	int rc = -EINVAL;
->  	int load = 0;
-> @@ -475,49 +475,39 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
->  		goto out;
->  	}
->  
-> -	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
-> -	if (rule == NULL) {
-> -		rc = -ENOMEM;
-> -		goto out;
-> -	}
-> -
->  	if (format == SMK_LONG_FMT) {
->  		/*
->  		 * Be sure the data string is terminated.
->  		 */
->  		data[count] = '\0';
-> -		if (smk_parse_long_rule(data, rule, 1, 0))
-> -			goto out_free_rule;
-> +		if (smk_parse_long_rule(data, &rule, 1, 0))
-> +			goto out;
->  	} else if (format == SMK_CHANGE_FMT) {
->  		data[count] = '\0';
-> -		if (smk_parse_long_rule(data, rule, 1, 1))
-> -			goto out_free_rule;
-> +		if (smk_parse_long_rule(data, &rule, 1, 1))
-> +			goto out;
->  	} else {
->  		/*
->  		 * More on the minor hack for backward compatibility
->  		 */
->  		if (count == (SMK_OLOADLEN))
->  			data[SMK_OLOADLEN] = '-';
-> -		if (smk_parse_rule(data, rule, 1))
-> -			goto out_free_rule;
-> +		if (smk_parse_rule(data, &rule, 1))
-> +			goto out;
->  	}
->  
->  
->  	if (rule_list == NULL) {
->  		load = 1;
-> -		skp = smk_find_entry(rule->smk_subject);
-> +		skp = smk_find_entry(rule.smk_subject);
->  		rule_list = &skp->smk_rules;
->  		rule_lock = &skp->smk_rules_lock;
->  	}
->  
-> -	rc = smk_set_access(rule, rule_list, rule_lock, load);
-> -	if (rc == 0) {
-> +	rc = smk_set_access(&rule, rule_list, rule_lock, load);
-> +	if (rc == 0)
->  		rc = count;
-> -		goto out;
-> -	}
->  
-> -out_free_rule:
-> -	kfree(rule);
->  out:
->  	return rc;
->  }
-
+> >> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> >> index 297cbf4..c610a76 100644
+> >> --- a/drivers/acpi/internal.h
+> >> +++ b/drivers/acpi/internal.h
+> >> @@ -40,6 +40,11 @@ void acpi_container_init(void);
+> >>  #else
+> >>  static inline void acpi_container_init(void) {}
+> >>  #endif
+> >> +#ifdef CONFIG_ACPI_DOCK
+> >> +void acpi_dock_init(void);
+> >> +#else
+> >> +static inline void acpi_dock_init(void) {}
+> >> +#endif
+> >>  #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
+> >>  void acpi_memory_hotplug_init(void);
+> >>  #else
+> >> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> >> index 44225cb..4148163 100644
+> >> --- a/drivers/acpi/scan.c
+> >> +++ b/drivers/acpi/scan.c
+> >> @@ -2045,6 +2045,7 @@ int __init acpi_scan_init(void)
+> >>         acpi_lpss_init();
+> >>         acpi_container_init();
+> >>         acpi_memory_hotplug_init();
+> >> +       acpi_dock_init();
+> >>
+> >>         mutex_lock(&acpi_scan_lock);
+> >>         /*
+> >> --
+> >> 1.8.1.2
+> >>
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
