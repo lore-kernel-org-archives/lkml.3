@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab3FOOFl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:05:41 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40214 "EHLO
+	id S1754704Ab3FOOFj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 10:05:39 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40211 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3FOOFH (ORCPT
+	with ESMTP id S1754456Ab3FOOFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:05:07 -0400
+	Sat, 15 Jun 2013 10:05:05 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 7/9] n_tty: Only flush echo output if actually output
-Date: Sat, 15 Jun 2013 10:04:27 -0400
-Message-Id: <1371305069-5366-8-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 6/9] n_tty: Process echoes in blocks
+Date: Sat, 15 Jun 2013 10:04:26 -0400
+Message-Id: <1371305069-5366-7-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
 References: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
@@ -23,82 +23,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't have the driver flush received echoes if no echoes were
-actually output.
+Byte-by-byte echo output is painfully slow, requiring a lock/unlock
+cycle for every input byte.
+
+Instead, perform the echo output in blocks of 256 characters, and
+at least once per flip buffer receive. Enough space is reserved in
+the echo buffer to guarantee a full block can be saved without
+overrunning the echo output. Overrun is prevented by discarding
+the oldest echoes until enough space exists in the echo buffer
+to receive at least a full block of new echoes.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/tty/n_tty.c | 70 +++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 47 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f298890..4a2da9e 100644
+index c595264..f298890 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -645,14 +645,14 @@ break_out:
-  *	Locking: callers must hold output_lock
-  */
+@@ -74,6 +74,11 @@
+ #define ECHO_OP_SET_CANON_COL 0x81
+ #define ECHO_OP_ERASE_TAB 0x82
  
--static void __process_echoes(struct tty_struct *tty)
-+static size_t __process_echoes(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
--	int	space, nr;
-+	int	space, old_space;
- 	size_t tail;
- 	unsigned char c;
- 
--	space = tty_write_room(tty);
-+	old_space = space = tty_write_room(tty);
- 
- 	tail = ldata->echo_tail;
- 	nr = ldata->echo_commit - ldata->echo_tail;
-@@ -784,12 +784,13 @@ static void __process_echoes(struct tty_struct *tty)
++#define ECHO_COMMIT_WATERMARK	256
++#define ECHO_BLOCK		256
++#define ECHO_DISCARD_WATERMARK	N_TTY_BUF_SIZE - (ECHO_BLOCK + 32)
++
++
+ #undef N_TTY_TRACE
+ #ifdef N_TTY_TRACE
+ # define n_tty_trace(f, args...)	trace_printk(f, ##args)
+@@ -765,15 +770,40 @@ static void __process_echoes(struct tty_struct *tty)
+ 		}
  	}
  
++	/* If the echo buffer is nearly full (so that the possibility exists
++	 * of echo overrun before the next commit), then discard enough
++	 * data at the tail to prevent a subsequent overrun */
++	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
++		if (echo_buf(ldata, tail == ECHO_OP_START)) {
++			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
++				tail += 3;
++			else
++				tail += 2;
++		} else
++			tail++;
++	}
++
  	ldata->echo_tail = tail;
-+	return old_space - space;
  }
  
  static void commit_echoes(struct tty_struct *tty)
  {
  	struct n_tty_data *ldata = tty->disc_data;
--	size_t nr, old;
-+	size_t nr, old, echoed;
- 	size_t head;
- 
- 	head = ldata->echo_head;
-@@ -804,25 +805,26 @@ static void commit_echoes(struct tty_struct *tty)
++	size_t nr, old;
++	size_t head;
++
++	head = ldata->echo_head;
++	old = ldata->echo_commit - ldata->echo_tail;
++
++	/* Process committed echoes if the accumulated # of bytes
++	 * is over the threshold (and try again each time another
++	 * block is accumulated) */
++	nr = head - ldata->echo_tail;
++	if (nr < ECHO_COMMIT_WATERMARK || (nr % ECHO_BLOCK > old % ECHO_BLOCK))
++		return;
  
  	mutex_lock(&ldata->output_lock);
- 	ldata->echo_commit = head;
--	__process_echoes(tty);
-+	echoed = __process_echoes(tty);
+-	ldata->echo_commit = ldata->echo_head;
++	ldata->echo_commit = head;
+ 	__process_echoes(tty);
  	mutex_unlock(&ldata->output_lock);
  
--	if (tty->ops->flush_chars)
-+	if (echoed && tty->ops->flush_chars)
+@@ -796,37 +826,29 @@ static void process_echoes(struct tty_struct *tty)
  		tty->ops->flush_chars(tty);
  }
  
- static void process_echoes(struct tty_struct *tty)
++static void flush_echoes(struct tty_struct *tty)
++{
++	struct n_tty_data *ldata = tty->disc_data;
++
++	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_head)
++		return;
++
++	mutex_lock(&ldata->output_lock);
++	ldata->echo_commit = ldata->echo_head;
++	__process_echoes(tty);
++	mutex_unlock(&ldata->output_lock);
++}
++
+ /**
+  *	add_echo_byte	-	add a byte to the echo buffer
+  *	@c: unicode byte to echo
+  *	@ldata: n_tty data
+  *
+  *	Add a character or operation byte to the echo buffer.
+- *
+- *	Locks: may claim output_lock to prevent concurrent modify of
+- *	       echo_tail by process_echoes().
+  */
+ 
+-static void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
++static inline void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
  {
- 	struct n_tty_data *ldata = tty->disc_data;
-+	size_t echoed;
- 
- 	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
- 		return;
- 
- 	mutex_lock(&ldata->output_lock);
--	__process_echoes(tty);
-+	echoed = __process_echoes(tty);
- 	mutex_unlock(&ldata->output_lock);
- 
--	if (tty->ops->flush_chars)
-+	if (echoed && tty->ops->flush_chars)
- 		tty->ops->flush_chars(tty);
+-	if (ldata->echo_head - ldata->echo_tail == N_TTY_BUF_SIZE) {
+-		size_t head = ldata->echo_head;
+-
+-		mutex_lock(&ldata->output_lock);
+-		/*
+-		 * Since the buffer start position needs to be advanced,
+-		 * be sure to step by a whole operation byte group.
+-		 */
+-		if (echo_buf(ldata, head) == ECHO_OP_START) {
+-			if (echo_buf(ldata, head + 1) == ECHO_OP_ERASE_TAB)
+-				ldata->echo_tail += 3;
+-			else
+-				ldata->echo_tail += 2;
+-		} else
+-			ldata->echo_tail++;
+-		mutex_unlock(&ldata->output_lock);
+-	}
+-
+ 	*echo_buf_addr(ldata, ldata->echo_head++) = c;
  }
  
+@@ -1514,6 +1536,8 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 				break;
+ 			}
+ 		}
++
++		flush_echoes(tty);
+ 		if (tty->ops->flush_chars)
+ 			tty->ops->flush_chars(tty);
+ 	}
 -- 
 1.8.1.2
 
