@@ -1,231 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab3FOOsj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:48:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37578 "EHLO mail.skyhub.de"
+	id S1754434Ab3FOPG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 11:06:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38177 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab3FOOsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:48:37 -0400
-Date: Sat, 15 Jun 2013 16:48:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH] Re: [Patch] MCE, APEI: Don't enable CMCI when Firmware
- First mode is set in
-Message-ID: <20130615144830.GA13310@pd.tnic>
-References: <3908561D78D1C84285E8C5FCA982C28F2DA47F03@ORSMSX101.amr.corp.intel.com>
- <20130614181721.11206.95341.stgit@localhost.localdomain>
+	id S1753471Ab3FOPGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 11:06:54 -0400
+Date: Sat, 15 Jun 2013 18:05:01 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+CC: "balbi@ti.com" <balbi@ti.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+Message-ID: <20130615150500.GA27629@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <79CD15C6BA57404B839C016229A409A83EC20C57@DBDE01.ent.ti.com>
+ <20130307144656.GR6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
+ <20130307150408.GU6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20D27@DBDE01.ent.ti.com>
+ <20130307160236.GV6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
+ <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+ <20130614222537.GA25428@arwen.pp.htv.fi>
+ <CAD=GYpYfMAZeV1RUC=DqhYGZaKiiukpTZg7bhO582eKwimS9aA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
 Content-Disposition: inline
-In-Reply-To: <20130614181721.11206.95341.stgit@localhost.localdomain>
+In-Reply-To: <CAD=GYpYfMAZeV1RUC=DqhYGZaKiiukpTZg7bhO582eKwimS9aA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 11:47:21PM +0530, Naveen N. Rao wrote:
-> HEST for corrected machine checks
-> 
-> Here's a patch that implements this technique. If the firmware advertises
-> support for firmware first mode in the CMC structure, we disable CMCI and
-> polling for all the MCA banks listed in the CMC structure.
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, this commit message needs a bit massaging. Don't be afraid to be
-more verbose than you feel is necessary. :-)
+Hi,
 
-> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/mce.h             |    3 ++
->  arch/x86/kernel/cpu/mcheck/mce_intel.c |   38 +++++++++++++++++++++++++++++++
->  drivers/acpi/apei/hest.c               |   39 ++++++++++++++++++++++++++++++++
->  3 files changed, 80 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index fa5f71e..9c91683 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -188,6 +188,9 @@ extern void register_mce_write_callback(ssize_t (*)(struct file *filp,
->  				    const char __user *ubuf,
->  				    size_t usize, loff_t *off));
->  
-> +/* Disable CMCI/polling for MCA bank claimed by firmware */
-> +extern void mce_disable_bank(int bank);
-> +
->  /*
->   * Exception handler
->   */
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> index ae1697c..bc0307d 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> @@ -26,6 +26,9 @@
->  
->  static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
->  
-> +/* MCA banks controlled through firmware first */
-> +static mce_banks_t mce_banks_disabled;
-> +
->  /*
->   * cmci_discover_lock protects against parallel discovery attempts
->   * which could race against each other.
-> @@ -191,6 +194,10 @@ static void cmci_discover(int banks)
->  		if (test_bit(i, owned))
->  			continue;
->  
-> +		/* Skip banks in firmware first mode */
-> +		if (test_bit(i, mce_banks_disabled))
-> +			continue;
-> +
->  		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
->  
->  		/* Already owned by someone else? */
-> @@ -315,6 +322,37 @@ void cmci_reenable(void)
->  		cmci_discover(banks);
->  }
->  
-> +static void cmci_disable_bank(void *arg)
-> +{
-> +	int banks;
-> +	unsigned long flags;
-> +	u64 val;
-> +	int bank = *((int *)arg);
-> +
-> +	/* Ensure we don't poll this bank */
-> +	__clear_bit(bank, __get_cpu_var(mce_poll_banks));
-> +
-> +	if (!cmci_supported(&banks))
-> +		return;
+On Fri, Jun 14, 2013 at 06:43:51PM -0500, Joel A Fernandes wrote:
+> > > >> I just doublechecked MMC rootfs on bone and evmsk as it's the stan=
+dard
+> > > >> smoke test. My EVM is intermittent now so trying to coax it to pow=
+er
+> > up
+> > > >> to reverify.
+> > > >>
+> > > >
+> > > > Matt,
+> > > >
+> > > > Your branch is working for me, I tested it on EVM. Not sure what is
+> > wrong with manual rebasing
+> > > > I did yesterday. I will try to nail-down root-cause here.
+> > > >
+> > > > And you can submit the next version fixing the comments I have give=
+n.
+> > >
+> > > The only comment I could find in the whole discussion was adding of
+> > > the interrupts property. I tested I don't have any problem booting
+> > > with Matt's patch, without having the interrupts property.
+> >
+> > might very well be, but we want to figure out why adding "intrrupts"
+> > causes issues. Why does it have to come through hwmod ? You might have
+> > uncovered a real problem which needs fixing. Besides, at the end of the
+>=20
+>=20
+> No actually I think I wasn't very descriptive in my post. There is no
+> problem here. Whether it comes from DT or not, it works in both cases . (I
+> haven't tried adding interrupt node to dts but what I gathered from
+> Vaibhav's post is that it works also when added to dts)
+>=20
+> But I can revisit Vaibhav's suggestion of adding it to dts for completene=
+ss
+> sake. My tree currently works and picks up the interrupt info from hwmod.=
+ I
+> just didn't see any activity on this thread for a while so I thought of
+> enquiring it was ok to pull it in for the 3.11 merge window or if the
+> consensus was that interrupt node be added to dts even though it works
+> without it.
 
-Hmm, so if CMCI is not supported, you just disabled polling of this bank
-and returned here. Not good.
+fair enough, then let's just add those interrupts to hwmod which will,
+eventually, let us drop all of that data from hwmod.
 
-> +
-> +	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
-> +
-> +	/* Disable CMCI */
-> +	rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
-> +	val &= ~MCI_CTL2_CMCI_EN;
-> +	wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
-> +
-> +	__clear_bit(bank, __get_cpu_var(mce_banks_owned));
-> +
-> +	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+cheers
 
-Almost the exact sequence is also in cmci_clear(). How about a static
-function called __cmci_disable_bank which does that and the other
-functions call it?
+--=20
+balbi
 
-> +}
-> +
-> +void mce_disable_bank(int bank)
-> +{
-> +	set_bit(bank, mce_banks_disabled);
-> +	on_each_cpu(cmci_disable_bank, &bank, 1);
-> +}
-> +
->  static void intel_init_cmci(void)
->  {
->  	int banks;
-> diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
-> index f5ef5d5..765d8bf 100644
-> --- a/drivers/acpi/apei/hest.c
-> +++ b/drivers/acpi/apei/hest.c
-> @@ -36,6 +36,7 @@
->  #include <linux/io.h>
->  #include <linux/platform_device.h>
->  #include <acpi/apei.h>
-> +#include <asm/mce.h>
->  
->  #include "apei-internal.h"
->  
-> @@ -121,6 +122,42 @@ int apei_hest_parse(apei_hest_func_t func, void *data)
->  }
->  EXPORT_SYMBOL_GPL(apei_hest_parse);
->  
-> +/*
-> + * Check if firmware advertises firmware first mode. We need FF bit to be set
-> + * along with a set of MC banks which work in FF mode.
-> + */
-> +static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
-> +{
-> +	int i;
-> +	struct acpi_hest_ia_corrected *cmc;
-> +	struct acpi_hest_ia_error_bank *mc_bank;
-> +
-> +	if (hest_hdr->type != ACPI_HEST_TYPE_IA32_CORRECTED_CHECK)
-> +		return 0;
-> +
-> +	if (!((struct acpi_hest_generic *)hest_hdr)->enabled)
-> +		return 0;
-> +
-> +	cmc = (struct acpi_hest_ia_corrected *)hest_hdr;
+--5mCyUwZo2JvN/JJP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-There is some crazy casting going on here: hest_hdr can be struct
-acpi_hest_generic and struct acpi_hest_ia_corrected.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Since the ->enabled field overlaps in both structs and you want only it
-as a struct acpi_hest_generic, and want the cmc later, why don't you do
-this:
+iQIcBAEBAgAGBQJRvIKcAAoJEIaOsuA1yqREoT4P/33N3NwRRLlQBRTySoCkdXQ1
+iGeud8gRTCDOaiRmJ6lLKjObERpLKh29cnzs4hcPOLavXeBfORRj9VMWyK0o2D0o
+XQaDCbk1n2S2kZ79+bkLrCnvd2FhHJWpLlaTTpWz+WFgU0lQ+zS2lIK5iNHEPQGX
+a+zsZ3DlCeL7Qjc5eR/9gjsBdLPGaCMb0PMjCsIUpNg1dZ3Iuq8WnHO5gs0Kf4hf
+MVcIQNcLM77GRKpkgwAX5FiCTfH08aIqnkwGhixp/GkKM9Qq2VnxSzLWc6GivW7i
+GZYCVXLII8i5IIcAbIaDScNdd8JzDfWP/AYc9MjothySomoR9Z05uJb18vTRbtPf
+70TtJpeztXQflUdN8GFUkcoHnpysyHIbkGGFuSy+9fgnoq9kIoPF53JC544qQn3Y
+KFAExhd9IDvTO/nzp28HSwOZUgYDCoLd1KedXMasAwRUa5a/s6RsxocvFDu0XiIw
+dClRT1sizLd39E8ELdgj1Arzs7doCZ1/g2NTJeW4xHgs8YDr6iIhZZxKMbFXl1vh
+I6PVLuQEkwO7268jY02qEyvVDFM+AIXrJqbL/O3Dn0w2VgycrDj0k9xvbshKBpYo
+jisgYm5osz2NpAHztdH1tHPku1los4lixEFTVyfccCHqS3e2NbFy/2T09TEweyCs
+bB2ZkwTWWyQfqBUOvquc
+=qdGk
+-----END PGP SIGNATURE-----
 
-	struct acpi_hest_ia_corrected *cmc = (struct acpi_hest_ia_corrected *)hest_hdr;
-
-	if (!cmc->enabled)
-		...
-
-Then this below:
-
-> +	if (!(cmc->flags & ACPI_HEST_FIRMWARE_FIRST))
-> +		return 0;
-
-and so on... It should simplify the code a bit and drop the fun games
-with casting.
-
-> +
-> +	/*
-> +	 * We expect HEST to provide a list of MC banks that
-> +	 * report errors through firmware first mode.
-> +	 */
-> +	if (cmc->num_hardware_banks <= 0)
-
-->num_hardware_banks is unsigned char, so "== 0"
-
-> +		return 0;
-> +
-> +	pr_info("HEST: Enabling Firmware First mode for corrected errors\n");
-
-	pr_info(HEST_PFX "Enabling..." (fullstop at the end of the sentence).
-
-Btw, this hest.c could use the standard pr_fmt mechanism.
-
-> +
-> +	mc_bank = (struct acpi_hest_ia_error_bank *)(cmc + 1);
-> +	for (i = 0; i < cmc->num_hardware_banks; i++, mc_bank++)
-> +		mce_disable_bank(mc_bank->bank_number);
-> +
-> +	return 0;
-> +}
-> +
->  struct ghes_arr {
->  	struct platform_device **ghes_devs;
->  	unsigned int count;
-> @@ -227,6 +264,8 @@ void __init acpi_hest_init(void)
->  		goto err;
->  	}
->  
-> +	apei_hest_parse(hest_parse_cmc, NULL);
-> +
->  	if (!ghes_disable) {
->  		rc = apei_hest_parse(hest_parse_ghes_count, &ghes_count);
->  		if (rc)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--5mCyUwZo2JvN/JJP--
