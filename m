@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3FONg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 09:36:56 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:39786 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3FONgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754625Ab3FONgy (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 15 Jun 2013 09:36:54 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:39783 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab3FONgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 09:36:51 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 09/16] tty: Make driver-side flip buffers lockless
-Date: Sat, 15 Jun 2013 09:36:09 -0400
-Message-Id: <1371303376-5028-10-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 08/16] tty: Track flip buffer memory limit atomically
+Date: Sat, 15 Jun 2013 09:36:08 -0400
+Message-Id: <1371303376-5028-9-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
 References: <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
@@ -23,139 +23,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver-side flip buffer input is already single-threaded; 'publish'
-the .next link as the last operation on the tail buffer so the
-'consumer' sees the already-completed flip buffer.
+Lockless flip buffers require atomically updating the bytes-in-use
+watermark.
 
-The commit buffer index is already 'published' by driver-side functions.
+The pty driver also peeks at the watermark value to limit
+memory consumption to a much lower value than the default; query
+the watermark with new fn, tty_buffer_space_avail().
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 31 ++++---------------------------
- 1 file changed, 4 insertions(+), 27 deletions(-)
+ drivers/tty/pty.c        | 10 +++-------
+ drivers/tty/tty_buffer.c | 37 +++++++++++++++++++++++++++++++------
+ include/linux/tty.h      |  3 +--
+ include/linux/tty_flip.h |  1 +
+ 4 files changed, 36 insertions(+), 15 deletions(-)
 
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index bbd9693..0634dd9 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -89,17 +89,13 @@ static void pty_unthrottle(struct tty_struct *tty)
+  *	pty_space	-	report space left for writing
+  *	@to: tty we are writing into
+  *
+- *	The tty buffers allow 64K but we sneak a peak and clip at 8K this
+- *	allows a lot of overspill room for echo and other fun messes to
+- *	be handled properly
++ *	Limit the buffer space used by ptys to 8k.
+  */
+ 
+ static int pty_space(struct tty_struct *to)
+ {
+-	int n = 8192 - to->port->buf.memory_used;
+-	if (n < 0)
+-		return 0;
+-	return n;
++	int n = tty_buffer_space_avail(to->port);
++	return min(n, 8192);
+ }
+ 
+ /**
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 5d5a564..685757c 100644
+index 231b7a8..5d5a564 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -62,8 +62,6 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
-  *
-  *	Remove all the buffers pending on a tty whether queued with data
-  *	or in the free ring. Must be called when the tty is no longer in use
-- *
-- *	Locking: none
-  */
+@@ -22,6 +22,31 @@
+ #define MIN_TTYB_SIZE	256
+ #define TTYB_ALIGN_MASK	255
  
- void tty_buffer_free_all(struct tty_port *port)
-@@ -216,29 +214,26 @@ void tty_buffer_flush(struct tty_struct *tty)
-  *
-  *	Make at least size bytes of linear space available for the tty
-  *	buffer. If we fail return the size we managed to find.
-- *
-- *	Locking: Takes port->buf.lock
-  */
- int tty_buffer_request_room(struct tty_port *port, size_t size)
- {
- 	struct tty_bufhead *buf = &port->buf;
- 	struct tty_buffer *b, *n;
- 	int left;
--	unsigned long flags;
--	spin_lock_irqsave(&buf->lock, flags);
++/*
++ * Byte threshold to limit memory consumption for flip buffers.
++ * The actual memory limit is > 2x this amount.
++ */
++#define TTYB_MEM_LIMIT	65536
 +
- 	b = buf->tail;
- 	left = b->size - b->used;
- 
- 	if (left < size) {
- 		/* This is the slow path - looking for new buffers to use */
- 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
--			b->next = n;
--			b->commit = b->used;
- 			buf->tail = n;
-+			b->commit = b->used;
-+			smp_mb();
-+			b->next = n;
- 		} else
- 			size = left;
- 	}
--	spin_unlock_irqrestore(&buf->lock, flags);
- 	return size;
- }
- EXPORT_SYMBOL_GPL(tty_buffer_request_room);
-@@ -252,8 +247,6 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
-  *
-  *	Queue a series of bytes to the tty buffering. All the characters
-  *	passed are marked with the supplied flag. Returns the number added.
-- *
-- *	Locking: Called functions may take port->buf.lock
-  */
- 
- int tty_insert_flip_string_fixed_flag(struct tty_port *port,
-@@ -288,8 +281,6 @@ EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
-  *	Queue a series of bytes to the tty buffering. For each character
-  *	the flags array indicates the status of the character. Returns the
-  *	number added.
-- *
-- *	Locking: Called functions may take port->buf.lock
-  */
- 
- int tty_insert_flip_string_flags(struct tty_port *port,
-@@ -324,19 +315,14 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
-  *	processing by the line discipline.
-  *	Note that this function can only be used when the low_latency flag
-  *	is unset. Otherwise the workqueue won't be flushed.
-- *
-- *	Locking: Takes port->buf.lock
-  */
- 
- void tty_schedule_flip(struct tty_port *port)
++
++/**
++ *	tty_buffer_space_avail	-	return unused buffer space
++ *	@port - tty_port owning the flip buffer
++ *
++ *	Returns the # of bytes which can be written by the driver without
++ *	reaching the buffer limit.
++ *
++ *	Note: this does not guarantee that memory is available to write
++ *	the returned # of bytes (use tty_prepare_flip_string_xxx() to
++ *	pre-allocate if memory guarantee is required).
++ */
++
++int tty_buffer_space_avail(struct tty_port *port)
++{
++	int space = TTYB_MEM_LIMIT - atomic_read(&port->buf.memory_used);
++	return max(space, 0);
++}
++
+ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
  {
- 	struct tty_bufhead *buf = &port->buf;
--	unsigned long flags;
- 	WARN_ON(port->low_latency);
- 
--	spin_lock_irqsave(&buf->lock, flags);
- 	buf->tail->commit = buf->tail->used;
--	spin_unlock_irqrestore(&buf->lock, flags);
- 	schedule_work(&buf->work);
+ 	p->used = 0;
+@@ -59,7 +84,8 @@ void tty_buffer_free_all(struct tty_port *port)
+ 	tty_buffer_reset(&buf->sentinel, 0);
+ 	buf->head = &buf->sentinel;
+ 	buf->tail = &buf->sentinel;
+-	buf->memory_used = 0;
++
++	atomic_set(&buf->memory_used, 0);
  }
- EXPORT_SYMBOL(tty_schedule_flip);
-@@ -352,8 +338,6 @@ EXPORT_SYMBOL(tty_schedule_flip);
-  *	accounted for as ready for normal characters. This is used for drivers
-  *	that need their own block copy routines into the buffer. There is no
-  *	guarantee the buffer is a DMA target!
-- *
-- *	Locking: May call functions taking port->buf.lock
-  */
  
- int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
-@@ -382,8 +366,6 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
-  *	accounted for as ready for characters. This is used for drivers
-  *	that need their own block copy routines into the buffer. There is no
-  *	guarantee the buffer is a DMA target!
-- *
-- *	Locking: May call functions taking port->buf.lock
-  */
+ /**
+@@ -92,7 +118,7 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
  
- int tty_prepare_flip_string_flags(struct tty_port *port,
-@@ -511,18 +493,13 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-- *
-- *	Locking: tty buffer lock. Driver locks in low latency mode.
-  */
+ 	/* Should possibly check if this fails for the largest buffer we
+ 	   have queued and recycle that ? */
+-	if (port->buf.memory_used + size > 65536)
++	if (atomic_read(&port->buf.memory_used) > TTYB_MEM_LIMIT)
+ 		return NULL;
+ 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
+ 	if (p == NULL)
+@@ -100,7 +126,7 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
  
- void tty_flip_buffer_push(struct tty_port *port)
- {
+ found:
+ 	tty_buffer_reset(p, size);
+-	port->buf.memory_used += size;
++	atomic_add(size, &port->buf.memory_used);
+ 	return p;
+ }
+ 
+@@ -118,8 +144,7 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
  	struct tty_bufhead *buf = &port->buf;
--	unsigned long flags;
  
--	spin_lock_irqsave(&buf->lock, flags);
- 	buf->tail->commit = buf->tail->used;
--	spin_unlock_irqrestore(&buf->lock, flags);
+ 	/* Dumb strategy for now - should keep some stats */
+-	buf->memory_used -= b->size;
+-	WARN_ON(buf->memory_used < 0);
++	WARN_ON(atomic_sub_return(b->size, &buf->memory_used) < 0);
  
- 	if (port->low_latency)
- 		flush_to_ldisc(&buf->work);
+ 	if (b->size > MIN_TTYB_SIZE)
+ 		kfree(b);
+@@ -525,7 +550,7 @@ void tty_buffer_init(struct tty_port *port)
+ 	buf->head = &buf->sentinel;
+ 	buf->tail = &buf->sentinel;
+ 	init_llist_head(&buf->free);
+-	buf->memory_used = 0;
++	atomic_set(&buf->memory_used, 0);
+ 	INIT_WORK(&buf->work, flush_to_ldisc);
+ }
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 2e93eb8..7c12454 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -71,8 +71,7 @@ struct tty_bufhead {
+ 	struct tty_buffer *head;	/* Queue head */
+ 	struct tty_buffer *tail;	/* Active buffer */
+ 	struct llist_head free;		/* Free queue head */
+-	int memory_used;		/* Buffer space used excluding
+-								free queue */
++	atomic_t	   memory_used; /* In-use buffers excluding free list */
+ };
+ /*
+  * When a break, frame error, or parity error happens, these codes are
+diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
+index ad03039..6944ed2 100644
+--- a/include/linux/tty_flip.h
++++ b/include/linux/tty_flip.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_TTY_FLIP_H
+ #define _LINUX_TTY_FLIP_H
+ 
++extern int tty_buffer_space_avail(struct tty_port *port);
+ extern int tty_buffer_request_room(struct tty_port *port, size_t size);
+ extern int tty_insert_flip_string_flags(struct tty_port *port,
+ 		const unsigned char *chars, const char *flags, size_t size);
 -- 
 1.8.1.2
 
