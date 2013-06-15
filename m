@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3FOBAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 21:00:32 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17637 "EHLO
+	id S1754106Ab3FOBAa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:00:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17643 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab3FOA5D (ORCPT
+	with ESMTP id S1753159Ab3FOA5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Jun 2013 20:57:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,121 +13,96 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 01/22] x86: Change get_ramdisk_image() to global
-Date: Fri, 14 Jun 2013 17:56:19 -0700
-Message-Id: <1371257800-11720-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v5 11/22] x86, mm, numa: Call numa_meminfo_cover_memory() checking early
+Date: Fri, 14 Jun 2013 17:56:29 -0700
+Message-Id: <1371257800-11720-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
 References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to use get_ramdisk_image() with early microcode_updating in other file.
-Change it to global.
+For the separation, we need to set memblock nid later, as it
+could change memblock array, and possible doube memblock.memory
+array that will need to allocate buffer.
 
-Also make it to take boot_params pointer, as head_32.S need to access it via
-phys address during 32bit flat mode.
+We do not need to use nid in memblock to find out absent pages.
+So we can move that numa_meminfo_cover_memory() early.
+
+Also could change __absent_pages_in_range() to static and use
+absent_pages_in_range() directly.
+
+Later we can only set memblock nid one time on successful path.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/include/asm/setup.h |  3 +++
- arch/x86/kernel/setup.c      | 28 ++++++++++++++--------------
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ arch/x86/mm/numa.c | 7 ++++---
+ include/linux/mm.h | 2 --
+ mm/page_alloc.c    | 2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index b7bf350..4f71d48 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
- 	RESERVE_BRK(name, sizeof(type) * entries)
- 
- extern void probe_roms(void);
-+u64 get_ramdisk_image(struct boot_params *bp);
-+u64 get_ramdisk_size(struct boot_params *bp);
-+
- #ifdef __i386__
- 
- void __init i386_start_kernel(void);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 56f7fcf..66ab495 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -297,19 +297,19 @@ static void __init reserve_brk(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static u64 __init get_ramdisk_image(void)
-+u64 __init get_ramdisk_image(struct boot_params *bp)
- {
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_image = bp->hdr.ramdisk_image;
- 
--	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
- 
- 	return ramdisk_image;
- }
--static u64 __init get_ramdisk_size(void)
-+u64 __init get_ramdisk_size(struct boot_params *bp)
- {
--	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_size = bp->hdr.ramdisk_size;
- 
--	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
- 
- 	return ramdisk_size;
- }
-@@ -318,8 +318,8 @@ static u64 __init get_ramdisk_size(void)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -358,8 +358,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 07ae800..1bb565d 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -457,7 +457,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ 		u64 s = mi->blk[i].start >> PAGE_SHIFT;
+ 		u64 e = mi->blk[i].end >> PAGE_SHIFT;
+ 		numaram += e - s;
+-		numaram -= __absent_pages_in_range(mi->blk[i].nid, s, e);
++		numaram -= absent_pages_in_range(s, e);
+ 		if ((s64)numaram < 0)
+ 			numaram = 0;
  	}
+@@ -485,6 +485,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (WARN_ON(nodes_empty(node_possible_map)))
+ 		return -EINVAL;
  
--	ramdisk_image = get_ramdisk_image();
--	ramdisk_size  = get_ramdisk_size();
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -369,8 +369,8 @@ static void __init relocate_initrd(void)
- static void __init early_reserve_initrd(void)
++	if (!numa_meminfo_cover_memory(mi))
++		return -EINVAL;
++
+ 	for (i = 0; i < mi->nr_blks; i++) {
+ 		struct numa_memblk *mb = &mi->blk[i];
+ 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+@@ -503,8 +506,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 		return -EINVAL;
+ 	}
+ #endif
+-	if (!numa_meminfo_cover_memory(mi))
+-		return -EINVAL;
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e0c8528..28e9470 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1385,8 +1385,6 @@ static inline unsigned long free_initmem_default(int poison)
+  */
+ extern void free_area_init_nodes(unsigned long *max_zone_pfn);
+ unsigned long node_map_pfn_alignment(void);
+-unsigned long __absent_pages_in_range(int nid, unsigned long start_pfn,
+-						unsigned long end_pfn);
+ extern unsigned long absent_pages_in_range(unsigned long start_pfn,
+ 						unsigned long end_pfn);
+ extern void get_pfn_range_for_nid(unsigned int nid,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 378a15b..c427f46 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4395,7 +4395,7 @@ static unsigned long __meminit zone_spanned_pages_in_node(int nid,
+  * Return the number of holes in a range on a node. If nid is MAX_NUMNODES,
+  * then all holes in the requested range will be accounted for.
+  */
+-unsigned long __meminit __absent_pages_in_range(int nid,
++static unsigned long __meminit __absent_pages_in_range(int nid,
+ 				unsigned long range_start_pfn,
+ 				unsigned long range_end_pfn)
  {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -382,8 +382,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
 -- 
 1.8.1.4
 
