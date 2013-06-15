@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab3FOGuj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 02:50:39 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:61369 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3FOGug (ORCPT
+	id S1754150Ab3FOGvk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 02:51:40 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:44134 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3FOGvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 02:50:36 -0400
+	Sat, 15 Jun 2013 02:51:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1371238081-32260-4-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1371238081-32260-2-git-send-email-jiang.liu@huawei.com>
 References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
-	<1371238081-32260-4-git-send-email-jiang.liu@huawei.com>
-Date: Fri, 14 Jun 2013 23:50:35 -0700
-X-Google-Sender-Auth: i9e_Z8_7fjQ275rqFnLeFCpykSc
-Message-ID: <CAE9FiQXGqWRUdeVL8txJSY93dC47ZrTBZiMjDt6=LY=iX_MGNA@mail.gmail.com>
-Subject: Re: [BUGFIX v2 3/4] PCI, ACPI: fix device destroying order issue when
- handling dock notification
+	<1371238081-32260-2-git-send-email-jiang.liu@huawei.com>
+Date: Fri, 14 Jun 2013 23:51:38 -0700
+X-Google-Sender-Auth: 0_lsQpw4wJJQmx62ZyoGdRTQR6M
+Message-ID: <CAE9FiQWOMF4HWdQRfxF68BBYC4ONcr8wOHWvVGt6Jvb_-p6S8w@mail.gmail.com>
+Subject: Re: [BUGFIX v2 1/4] ACPI, DOCK: initialize dock subsystem before
+ scanning PCI root buses
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jiang Liu <jiang.liu@huawei.com>
 Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -26,131 +26,93 @@ Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
         Jiang Liu <liuj97@gmail.com>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 12:28 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> Current ACPI glue logic expects that physical devices are destroyed
-> before destroying companion ACPI devices, otherwise it will break the
-> ACPI unbind logic and cause following warning messages:
-> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
-> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
-> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
-> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
-> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
-> for full log message.
+On Fri, Jun 14, 2013 at 12:27 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> Changeset "3b63aaa70e1 PCI: acpiphp: Do not use ACPI PCI subdriver
+> mechanism" causes a regression which breaks ACPI dock support,
+> please refer to https://bugzilla.kernel.org/show_bug.cgi?id=59501
 >
-> Above warning messages are caused by following scenario:
-> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
-> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
->    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
-> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
->    destroy physical devices, then destroys all affected ACPI devices.
->    Everything seems perfect until now. But the acpiphp dock notification
->    handler will queue another task (T2) onto kacpi_hotplug_wq to really
->    destroy affected physical devices.
-> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
->    been destroyed.
-> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
->    devices.
+> The root cause is that changeset 3b63aaa70e1 changed the relative
+> initialization order of ACPI dock subsystem and acpiphp driver,
+> and acpiphp driver has dependency on ACPI dock subsystem's
+> initialization result, so that acpiphp can't correctly detect ACPI
+> dock stations now.
 >
-> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
-> in step 3 and physical devices are destroyed in step 5.
+> On the other hand, ACPI dock is a built-in driver, so we could
+> explicitly initialize it before the acpiphp driver is used.
 >
 > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 > Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> Cc: linux-pci@vger.kernel.org
+> Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
 > Cc: linux-kernel@vger.kernel.org
-> Cc: stable@vger.kernel.org # 3.8+
-
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
+> Cc: <stable@vger.kernel.org> # 3.9+
 > ---
->  drivers/pci/hotplug/acpiphp_glue.c | 32 ++++++++++++++++++--------------
->  1 file changed, 18 insertions(+), 14 deletions(-)
+>  drivers/acpi/dock.c     | 7 +------
+>  drivers/acpi/internal.h | 5 +++++
+>  drivers/acpi/scan.c     | 1 +
+>  3 files changed, 7 insertions(+), 6 deletions(-)
 >
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 5d696f5..a65203b 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -61,6 +61,8 @@ static DEFINE_MUTEX(bridge_mutex);
->  static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
->  static void acpiphp_sanitize_bus(struct pci_bus *bus);
->  static void acpiphp_set_hpp_values(struct pci_bus *bus);
-> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
-> +                                      void *context);
->  static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
->  static void free_bridge(struct kref *kref);
->
-> @@ -160,7 +162,7 @@ static void acpiphp_dock_put(void *data)
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index 4fdea38..02b0563 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -1033,7 +1033,7 @@ find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
+>         return AE_OK;
 >  }
 >
->  static const struct acpi_dock_ops acpiphp_dock_ops = {
-> -       .handler = handle_hotplug_event_func,
-> +       .handler = _handle_hotplug_event_func,
->         .get = acpiphp_dock_get,
->         .put = acpiphp_dock_put,
->  };
-> @@ -1080,22 +1082,13 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
->         alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
->  }
->
-> -static void _handle_hotplug_event_func(struct work_struct *work)
-> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
-> +                                      void *context)
+> -static int __init dock_init(void)
+> +int __init acpi_dock_init(void)
 >  {
-> -       struct acpiphp_func *func;
-> +       struct acpiphp_func *func = context;
->         char objname[64];
->         struct acpi_buffer buffer = { .length = sizeof(objname),
->                                       .pointer = objname };
-> -       struct acpi_hp_work *hp_work;
-> -       acpi_handle handle;
-> -       u32 type;
-> -
-> -       hp_work = container_of(work, struct acpi_hp_work, work);
-> -       handle = hp_work->handle;
-> -       type = hp_work->type;
-> -       func = (struct acpiphp_func *)hp_work->context;
-> -
-> -       acpi_scan_lock_acquire();
->
->         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->
-> @@ -1128,7 +1121,18 @@ static void _handle_hotplug_event_func(struct work_struct *work)
->                 warn("notify_handler: unknown event type 0x%x for %s\n", type, objname);
->                 break;
->         }
-> +}
-> +
-> +static void _handle_hotplug_event_cb(struct work_struct *work)
-> +{
-> +       struct acpiphp_func *func;
-> +       struct acpi_hp_work *hp_work;
->
-> +       hp_work = container_of(work, struct acpi_hp_work, work);
-> +       func = (struct acpiphp_func *)hp_work->context;
-> +       acpi_scan_lock_acquire();
-> +       _handle_hotplug_event_func(hp_work->handle, hp_work->type,
-> +                                   hp_work->context);
->         acpi_scan_lock_release();
->         kfree(hp_work); /* allocated in handle_hotplug_event_func */
->         put_bridge(func->slot->bridge);
-> @@ -1156,7 +1160,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
->          * don't deadlock on hotplug actions.
->          */
->         get_bridge(func->slot->bridge);
-> -       alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
-> +       alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_cb);
+>         if (acpi_disabled)
+>                 return 0;
+> @@ -1062,9 +1062,4 @@ static void __exit dock_exit(void)
+>                 dock_remove(dock_station);
 >  }
 >
->  /*
+> -/*
+> - * Must be called before drivers of devices in dock, otherwise we can't know
+> - * which devices are in a dock
+> - */
+> -subsys_initcall(dock_init);
+>  module_exit(dock_exit);
+
+why not remove dock_exit?
+
+> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> index 297cbf4..c610a76 100644
+> --- a/drivers/acpi/internal.h
+> +++ b/drivers/acpi/internal.h
+> @@ -40,6 +40,11 @@ void acpi_container_init(void);
+>  #else
+>  static inline void acpi_container_init(void) {}
+>  #endif
+> +#ifdef CONFIG_ACPI_DOCK
+> +void acpi_dock_init(void);
+> +#else
+> +static inline void acpi_dock_init(void) {}
+> +#endif
+>  #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
+>  void acpi_memory_hotplug_init(void);
+>  #else
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 44225cb..4148163 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -2045,6 +2045,7 @@ int __init acpi_scan_init(void)
+>         acpi_lpss_init();
+>         acpi_container_init();
+>         acpi_memory_hotplug_init();
+> +       acpi_dock_init();
+>
+>         mutex_lock(&acpi_scan_lock);
+>         /*
 > --
 > 1.8.1.2
 >
