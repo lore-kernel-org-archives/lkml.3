@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab3FOSoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 14:44:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:40176 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab3FOSoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 14:44:15 -0400
-Date: Sat, 15 Jun 2013 19:44:05 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Aaron Lu <aaron.lu@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lwe@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
- firmware expects Windows 8
-Message-ID: <20130615184405.GA11196@srcf.ucam.org>
-References: <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
- <51BABC6F.3050201@intel.com>
- <1371230988.2490.2.camel@x230>
- <51BBC2E1.9040401@intel.com>
- <1371260284.523.2.camel@x230>
- <51BBEA32.1040002@intel.com>
- <20130615041945.GA4756@srcf.ucam.org>
- <51BC5E1B.2020400@intel.com>
- <20130615151628.GA9868@srcf.ucam.org>
- <20130615182942.GA6424@phenom.ffwll.local>
+	id S1754533Ab3FOSoe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 14:44:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784Ab3FOSod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 14:44:33 -0400
+Date: Sat, 15 Jun 2013 20:40:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] vfree: don't schedule free_work() if llist_add() returns F
+Message-ID: <20130615184026.GA21287@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130615182942.GA6424@phenom.ffwll.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 08:29:42PM +0200, Daniel Vetter wrote:
+vfree() only needs schedule_work(&p->wq) if p->list was empty,
+otherwise vfree_deferred->wq is already pending or it is running
+and didn't do llist_del_all() yet.
 
-> Aside at the end: If the gnome tool indeed has its own backlight code and
-> doesn't just use that as a fallback if the xrandr backligh property isn't
-> available, then that's just a serious bug in gnome and should be fixed
-> asap. But imo that's not something we should try to (nor do I see any way
-> how to) work around in the kernel.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ mm/vmalloc.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-It's only used if there's no backlight property on the display.
-
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index d365724..2b8f644 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1524,7 +1524,6 @@ static void __vunmap(const void *addr, int deallocate_pages)
+  *	conventions for vfree() arch-depenedent would be a really bad idea)
+  *
+  *	NOTE: assumes that the object at *addr has a size >= sizeof(llist_node)
+- *	
+  */
+ void vfree(const void *addr)
+ {
+@@ -1536,8 +1535,8 @@ void vfree(const void *addr)
+ 		return;
+ 	if (unlikely(in_interrupt())) {
+ 		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
+-		llist_add((struct llist_node *)addr, &p->list);
+-		schedule_work(&p->wq);
++		if (llist_add((struct llist_node *)addr, &p->list))
++			schedule_work(&p->wq);
+ 	} else
+ 		__vunmap(addr, 1);
+ }
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.5.5.1
+
+
