@@ -1,83 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab3FOOVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:21:53 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40465 "EHLO
+	id S1754449Ab3FOOWA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 10:22:00 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40470 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab3FOOVw (ORCPT
+	with ESMTP id S1752510Ab3FOOVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:21:52 -0400
+	Sat, 15 Jun 2013 10:21:54 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 00/20] tty: streamline per-char receiving
-Date: Sat, 15 Jun 2013 10:21:16 -0400
-Message-Id: <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 01/20] n_tty: Fix EOF push handling
+Date: Sat, 15 Jun 2013 10:21:17 -0400
+Message-Id: <1371306096-5571-2-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
 References: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-** v2 changes **
-- Rebase on v2 of 'mostly lockless tty echo'
+In canonical mode, an EOF which is not the first character of the line
+causes read() to complete and return the number of characters read so
+far (commonly referred to as EOF push). However, if the previous read()
+returned because the user buffer was full _and_ the next character
+is an EOF not at the beginning of the line, read() must not return 0,
+thus mistakenly indicating the end-of-file condition.
 
-This 4th of 4 patchsets implements efficient per-char receiving
-in the N_TTY line discipline. As mentioned in the initial patchset,
-'lockless n_tty receive path', casual performance measurements show
-a 9~15x speedup in end-to-end copying.
+The TTY_PUSH flag is used to indicate an EOF was received which is not
+at the beginning of the line. Because the EOF push condition is
+evaluated by a thread other than the read(), multiple EOF pushes can
+cause a premature end-of-file to be indicated.
 
-Most of this patchset factors out modal conditions from the per-char
-i/o path. For example, regardless of if ISTRIP is set or not, the modal
-condition, I_ISTRIP(tty), was tested on every char received, despite
-that ISTRIP can only be set by termios changes.
+Instead, discover the 'EOF push as first read character' condition
+from the read() thread itself, and restart the i/o loop if detected.
 
-The modes handled by separate code paths are:
-1) 'real raw' mode (which was already handled separately)
-2) raw mode
-3) EXTPROC when ISTRIP and IUCLC are not selected
-4) tty closing mode
-5) LNEXT mode
-6) ISTRIP or IUCLC or IPARMRK set
-7) everything else
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c  | 34 +++++++++++++++++-----------------
+ drivers/tty/tty_io.c |  1 -
+ include/linux/tty.h  |  1 -
+ 3 files changed, 17 insertions(+), 19 deletions(-)
 
-The code duplication is kept to a minimum by carefully factoring out
-shared slow paths (such as specially handled chars in canonical mode
-or receiving PARITY or OVERRUN flags); only the per-char loops themselves
-are duplicated.
-
-
-Peter Hurley (20):
-  n_tty: Fix EOF push handling
-  n_tty: Remove alias ptrs in __receive_buf()
-  n_tty: Move buffers into n_tty_data
-  n_tty: Rename process_char_map to char_map
-  n_tty: Simplify __receive_buf loop count
-  n_tty: Factor 'real raw' receive_buf into standalone fn
-  n_tty: Factor signal char handling into separate fn
-  n_tty: Factor flagged char handling into separate fn
-  n_tty: Factor raw mode receive_buf() into separate fn
-  n_tty: Special case EXTPROC receive_buf() as raw mode
-  n_tty: Factor tty->closing receive_buf() into separate fn
-  n_tty: Factor standard per-char i/o into separate fn
-  n_tty: Eliminate char tests from IXANY restart test
-  n_tty: Split n_tty_receive_char()
-  n_tty: Factor ISTRIP and IUCLC receive_buf into separate fn
-  n_tty: Factor PARMRK from normal per-char i/o
-  n_tty: Remove overflow tests from receive_buf() path
-  n_tty: Un-inline single-use functions
-  n_tty: Factor LNEXT processing from per-char i/o path
-  tty: Remove extra wakeup from pty write() path
-
- drivers/tty/n_tty.c  | 617 +++++++++++++++++++++++++++++++--------------------
- drivers/tty/pty.c    |   4 +-
- drivers/tty/tty_io.c |   1 -
- include/linux/tty.h  |   1 -
- 4 files changed, 381 insertions(+), 242 deletions(-)
-
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index b9ccb49..55e4e38 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -113,6 +113,7 @@ struct n_tty_data {
+ 
+ 	/* consumer-published */
+ 	size_t read_tail;
++	size_t line_start;
+ 
+ 	/* protected by output lock */
+ 	unsigned int column;
+@@ -336,6 +337,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
+ {
+ 	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
+ 	ldata->echo_head = ldata->echo_tail = ldata->echo_commit = 0;
++	ldata->line_start = 0;
+ 
+ 	ldata->erasing = 0;
+ 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+@@ -1395,8 +1397,6 @@ send_signal:
+ 		if (c == EOF_CHAR(tty)) {
+ 			if (read_cnt(ldata) >= N_TTY_BUF_SIZE)
+ 				return;
+-			if (ldata->canon_head != ldata->read_head)
+-				set_bit(TTY_PUSH, &tty->flags);
+ 			c = __DISABLED_CHAR;
+ 			goto handle_newline;
+ 		}
+@@ -1603,6 +1603,7 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 		canon_change = (old->c_lflag ^ tty->termios.c_lflag) & ICANON;
+ 	if (canon_change) {
+ 		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
++		ldata->line_start = 0;
+ 		ldata->canon_head = ldata->read_tail;
+ 		ldata->erasing = 0;
+ 		ldata->lnext = 0;
+@@ -1836,6 +1837,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 	size_t eol;
+ 	size_t tail;
+ 	int ret, found = 0;
++	bool eof_push = 0;
+ 
+ 	/* N.B. avoid overrun if nr == 0 */
+ 	n = min(*nr, read_cnt(ldata));
+@@ -1862,8 +1864,10 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 	n = (found + eol + size) & (N_TTY_BUF_SIZE - 1);
+ 	c = n;
+ 
+-	if (found && read_buf(ldata, eol) == __DISABLED_CHAR)
++	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
+ 		n--;
++		eof_push = !n && ldata->read_tail != ldata->line_start;
++	}
+ 
+ 	n_tty_trace("%s: eol:%zu found:%d n:%zu c:%zu size:%zu more:%zu\n",
+ 		    __func__, eol, found, n, c, size, more);
+@@ -1886,9 +1890,11 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 	smp_mb__after_clear_bit();
+ 	ldata->read_tail += c;
+ 
+-	if (found)
++	if (found) {
++		ldata->line_start = ldata->read_tail;
+ 		tty_audit_push(tty);
+-	return 0;
++	}
++	return eof_push ? -EAGAIN : 0;
+ }
+ 
+ extern ssize_t redirected_tty_write(struct file *, const char __user *,
+@@ -1963,12 +1969,10 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 	int c;
+ 	int minimum, time;
+ 	ssize_t retval = 0;
+-	ssize_t size;
+ 	long timeout;
+ 	unsigned long flags;
+ 	int packet;
+ 
+-do_it_again:
+ 	c = job_control(tty, file);
+ 	if (c < 0)
+ 		return c;
+@@ -2075,7 +2079,10 @@ do_it_again:
+ 
+ 		if (ldata->icanon && !L_EXTPROC(tty)) {
+ 			retval = canon_copy_from_read_buf(tty, &b, &nr);
+-			if (retval)
++			if (retval == -EAGAIN) {
++				retval = 0;
++				continue;
++			} else if (retval)
+ 				break;
+ 		} else {
+ 			int uncopied;
+@@ -2103,15 +2110,8 @@ do_it_again:
+ 		ldata->minimum_to_wake = minimum;
+ 
+ 	__set_current_state(TASK_RUNNING);
+-	size = b - buf;
+-	if (size) {
+-		retval = size;
+-		if (nr)
+-			clear_bit(TTY_PUSH, &tty->flags);
+-	} else if (test_and_clear_bit(TTY_PUSH, &tty->flags)) {
+-		up_read(&tty->termios_rwsem);
+-		goto do_it_again;
+-	}
++	if (b - buf)
++		retval = b - buf;
+ 
+ 	n_tty_set_room(tty);
+ 	up_read(&tty->termios_rwsem);
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 7dbea58..b83c5c5 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -664,7 +664,6 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+ 
+ 	spin_lock_irq(&tty->ctrl_lock);
+ 	clear_bit(TTY_THROTTLED, &tty->flags);
+-	clear_bit(TTY_PUSH, &tty->flags);
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+ 	put_pid(tty->session);
+ 	put_pid(tty->pgrp);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 5fd5d6f..554b732 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -304,7 +304,6 @@ struct tty_file_private {
+ #define TTY_EXCLUSIVE 		3	/* Exclusive open mode */
+ #define TTY_DEBUG 		4	/* Debugging */
+ #define TTY_DO_WRITE_WAKEUP 	5	/* Call write_wakeup after queuing new */
+-#define TTY_PUSH 		6	/* n_tty private */
+ #define TTY_CLOSING 		7	/* ->close() in progress */
+ #define TTY_LDISC_OPEN	 	11	/* Line discipline is open */
+ #define TTY_PTY_LOCK 		16	/* pty private */
 -- 
 1.8.1.2
 
