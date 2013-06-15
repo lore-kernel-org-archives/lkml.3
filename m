@@ -1,142 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3FOLFq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 07:05:46 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37108 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab3FOLFQ (ORCPT
+	id S1753956Ab3FOLKX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 07:10:23 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:55542 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab3FOLKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 07:05:16 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 2/6] tty: Add lock/unlock ldisc pair functions
-Date: Sat, 15 Jun 2013 07:04:47 -0400
-Message-Id: <1371294291-3807-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
-References: <20130603192436.GB22733@kroah.com>
- <1371294291-3807-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sat, 15 Jun 2013 07:10:21 -0400
+Message-ID: <51BC4B99.4050506@colorfullife.com>
+Date: Sat, 15 Jun 2013 13:10:17 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/6] ipc/sem.c: performance improvements, FIFO
+References: <1370884611-3861-1-git-send-email-manfred@colorfullife.com> <51BB38FA.6080607@colorfullife.com> <1371236750.5796.54.camel@marge.simpson.net>
+In-Reply-To: <1371236750.5796.54.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just as the tty pair must be locked in a stable sequence
-(ie, independent of which is consider the 'other' tty), so must
-the ldisc pair be locked in a stable sequence as well.
+On 06/14/2013 09:05 PM, Mike Galbraith wrote:
+> # Events: 802K cycles
+> #
+> # Overhead                                      Symbol
+> # ........  ..........................................
+> #
+>      18.42%  [k] SYSC_semtimedop
+>      15.39%  [k] sem_lock
+>      10.26%  [k] _raw_spin_lock
+>       9.00%  [k] perform_atomic_semop
+>       7.89%  [k] system_call
+>       7.70%  [k] ipc_obtain_object_check
+>       6.95%  [k] ipcperms
+>       6.62%  [k] copy_user_generic_string
+>       4.16%  [.] __semop
+>       2.57%  [.] worker_thread(void*)
+>       2.30%  [k] copy_from_user
+>       1.75%  [k] sem_unlock
+>       1.25%  [k] ipc_obtain_object
+~ 280 mio ops.
+2.3% copy_from_user,
+9% perform_atomic_semop.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
+> # Events: 802K cycles
+> #
+> # Overhead                           Symbol
+> # ........  ...............................
+> #
+>      17.38%  [k] SYSC_semtimedop
+>      13.26%  [k] system_call
+>      11.31%  [k] copy_user_generic_string
+>       7.62%  [.] __semop
+>       7.18%  [k] _raw_spin_lock
+>       5.66%  [k] ipcperms
+>       5.40%  [k] sem_lock
+>       4.65%  [k] perform_atomic_semop
+>       4.22%  [k] ipc_obtain_object_check
+>       4.08%  [.] worker_thread(void*)
+>       4.06%  [k] copy_from_user
+>       2.40%  [k] ipc_obtain_object
+>       1.98%  [k] pid_vnr
+>       1.45%  [k] wake_up_sem_queue_do
+>       1.39%  [k] sys_semop
+>       1.35%  [k] sys_semtimedop
+>       1.30%  [k] sem_unlock
+>       1.14%  [k] security_ipc_permission
+~ 700 mio ops.
+4% copy_from_user -> as expected a bit more
+4.6% perform_atomic_semop --> less.
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 8166260..418c9f6 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -31,6 +31,13 @@
- #define tty_ldisc_debug(tty, f, args...)
- #endif
- 
-+/* lockdep nested classes for tty->ldisc_sem */
-+enum {
-+	LDISC_SEM_NORMAL,
-+	LDISC_SEM_OTHER,
-+};
-+
-+
- /*
-  *	This guards the refcounted line discipline lists. The lock
-  *	must be taken with irqs off because there are hangup path
-@@ -351,6 +358,86 @@ void tty_ldisc_deref(struct tty_ldisc *ld)
- }
- EXPORT_SYMBOL_GPL(tty_ldisc_deref);
- 
-+
-+static inline int __lockfunc
-+tty_ldisc_lock(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write(&tty->ldisc_sem, timeout);
-+}
-+
-+static inline int __lockfunc
-+tty_ldisc_lock_nested(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write_nested(&tty->ldisc_sem,
-+				       LDISC_SEM_OTHER, timeout);
-+}
-+
-+static inline void tty_ldisc_unlock(struct tty_struct *tty)
-+{
-+	return ldsem_up_write(&tty->ldisc_sem);
-+}
-+
-+static int __lockfunc
-+tty_ldisc_lock_pair_timeout(struct tty_struct *tty, struct tty_struct *tty2,
-+			    unsigned long timeout)
-+{
-+	int ret;
-+
-+	if (tty < tty2) {
-+		ret = tty_ldisc_lock(tty, timeout);
-+		if (ret) {
-+			ret = tty_ldisc_lock_nested(tty2, timeout);
-+			if (!ret)
-+				tty_ldisc_unlock(tty);
-+		}
-+	} else {
-+		/* if this is possible, it has lots of implications */
-+		WARN_ON_ONCE(tty == tty2);
-+		if (tty2 && tty != tty2) {
-+			ret = tty_ldisc_lock(tty2, timeout);
-+			if (ret) {
-+				ret = tty_ldisc_lock_nested(tty, timeout);
-+				if (!ret)
-+					tty_ldisc_unlock(tty2);
-+			}
-+		} else
-+			ret = tty_ldisc_lock(tty, timeout);
-+	}
-+
-+	if (!ret)
-+		return -EBUSY;
-+
-+	set_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		set_bit(TTY_LDISC_HALTED, &tty2->flags);
-+	return 0;
-+}
-+
-+static void __lockfunc
-+tty_ldisc_lock_pair(struct tty_struct *tty, struct tty_struct *tty2)
-+{
-+	tty_ldisc_lock_pair_timeout(tty, tty2, MAX_SCHEDULE_TIMEOUT);
-+}
-+
-+static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	tty_ldisc_unlock(tty);
-+	if (tty2)
-+		tty_ldisc_unlock(tty2);
-+}
-+
-+static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
-+
-+	tty_ldisc_unlock_pair(tty, tty2);
-+}
-+
-+
- /**
-  *	tty_ldisc_enable	-	allow ldisc use
-  *	@tty: terminal to activate ldisc on
--- 
-1.8.1.2
+Thus: Could you send the oprofile output from perform_atomic_semop()?
 
+Perhaps that gives us a hint.
+
+My current guess:
+sem_lock() somehow ends up in lock_array.
+Lock_array scans all struct sem -> transfer of that cacheline from all 
+cpus to the cpu that does the lock_array..
+Then the next write by the "correct" cpu causes a transfer back when 
+setting sem->pid.
+
+--
+     Manfred
