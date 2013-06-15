@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab3FOCeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:34:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51660 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab3FOCd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754185Ab3FOCd4 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Jun 2013 22:33:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37760 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab3FOCdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 22:33:51 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Matt Porter <matt@ohporter.com>,
@@ -29,9 +29,9 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v10 7/8] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-Date: Fri, 14 Jun 2013 21:32:49 -0500
-Message-ID: <1371263570-9323-7-git-send-email-joelagnel@ti.com>
+Subject: [PATCH v10 2/8] ARM: edma: Add AM33XX EDMA crossbar event mux support
+Date: Fri, 14 Jun 2013 21:32:44 -0500
+Message-ID: <1371263570-9323-2-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
 References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
@@ -43,118 +43,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Porter <mporter@ti.com>
 
-Convert dmaengine channel requests to use
-dma_request_slave_channel_compat(). This supports the DT case of
-platforms requiring channel selection from either the OMAP DMA or
-the EDMA engine. AM33xx only boots from DT and is the only user
-implementing EDMA so in the !DT case we can default to the OMAP DMA
-filter.
+Changes by Joel:
+* Split EDMA xbar support out of original EDMA DT parsing patch
+to keep it easier for review.
+* rewrite shift and offset calculation as per
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Suggested-by: Sekhar Nori <nsekhar@ti.com>
+Suggested by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |   64 ++++++++++++++++++++++++++++-------------
- 1 file changed, 44 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 86d2158..ca4ab78 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -102,6 +102,9 @@ struct omap2_mcspi_dma {
+Reference:
+[1] https://patchwork.kernel.org/patch/2226991/
+---
+ arch/arm/common/edma.c             |   59 ++++++++++++++++++++++++++++++++++++
+ include/linux/platform_data/edma.h |    1 +
+ 2 files changed, 60 insertions(+)
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 9823b79..1c2fb15 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1410,6 +1410,52 @@ static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+ 	return 0;
+ }
  
- 	struct completion dma_tx_completion;
- 	struct completion dma_rx_completion;
++static int edma_xbar_event_map(struct device *dev,
++			       struct device_node *node,
++			       struct edma_soc_info *pdata, int len)
++{
++	int ret = 0;
++	int i;
++	struct resource res;
++	void *xbar;
++	const s16 (*xbar_chans)[2];
++	u32 shift, offset, mux;
 +
-+	char dma_rx_ch_name[14];
-+	char dma_tx_ch_name[14];
++	xbar_chans = devm_kzalloc(dev,
++				  len/sizeof(s16) + 2*sizeof(s16),
++				  GFP_KERNEL);
++	if (!xbar_chans)
++		return -ENOMEM;
++
++	ret = of_address_to_resource(node, 1, &res);
++	if (ret)
++		return -EIO;
++
++	xbar = devm_ioremap(dev, res.start, resource_size(&res));
++	if (!xbar)
++		return -ENOMEM;
++
++	ret = edma_of_read_u32_to_s16_array(node,
++					    "ti,edma-xbar-event-map",
++					    (s16 *)xbar_chans,
++					    len/sizeof(u32));
++	if (ret)
++		return -EIO;
++
++	for (i = 0; xbar_chans[i][0] != -1; i++) {
++		shift = (xbar_chans[i][1] & 0x03) << 3;
++		offset = xbar_chans[i][1] & 0xfffffffc;
++		mux = readl((void *)((u32)xbar + offset));
++		mux &= ~(0xff << shift);
++		mux |= xbar_chans[i][0] << shift;
++		writel(mux, (void *)((u32)xbar + offset));
++	}
++
++	pdata->xbar_chans = xbar_chans;
++
++	return 0;
++}
++
+ static int edma_of_parse_dt(struct device *dev,
+ 			    struct device_node *node,
+ 			    struct edma_soc_info *pdata)
+@@ -1470,6 +1516,9 @@ static int edma_of_parse_dt(struct device *dev,
+ 
+ 	pdata->default_queue = 0;
+ 
++	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
++	if (prop)
++		ret = edma_xbar_event_map(dev, node, pdata, sz);
+ 
+ 	return ret;
+ }
+@@ -1489,6 +1538,7 @@ static int edma_probe(struct platform_device *pdev)
+ 	int			status = -1;
+ 	const s16		(*rsv_chans)[2];
+ 	const s16		(*rsv_slots)[2];
++	const s16		(*xbar_chans)[2];
+ 	int			irq[EDMA_MAX_CC] = {0, 0};
+ 	int			err_irq[EDMA_MAX_CC] = {0, 0};
+ 	struct resource		*r[EDMA_MAX_CC] = {NULL, NULL};
+@@ -1617,6 +1667,15 @@ static int edma_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
++		/* Clear the xbar mapped channels in unused list */
++		xbar_chans = info[j]->xbar_chans;
++		if (xbar_chans) {
++			for (i = 0; xbar_chans[i][1] != -1; i++) {
++				off = xbar_chans[i][1];
++				clear_bits(off, 1,
++					edma_cc[j]->edma_unused);
++			}
++		}
+ 
+ 		if (node)
+ 			irq[j] = irq_of_parse_and_map(node, 0);
+diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+index 317f2be..57300fd 100644
+--- a/include/linux/platform_data/edma.h
++++ b/include/linux/platform_data/edma.h
+@@ -177,6 +177,7 @@ struct edma_soc_info {
+ 
+ 	s8	(*queue_tc_mapping)[2];
+ 	s8	(*queue_priority_mapping)[2];
++	const s16	(*xbar_chans)[2];
  };
  
- /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
-@@ -830,12 +833,20 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 	sig = mcspi_dma->dma_rx_sync_dev;
--	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+
-+	mcspi_dma->dma_rx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_rx_ch_name);
- 	if (!mcspi_dma->dma_rx)
- 		goto no_dma;
- 
- 	sig = mcspi_dma->dma_tx_sync_dev;
--	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+	mcspi_dma->dma_tx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_tx_ch_name);
-+
- 	if (!mcspi_dma->dma_tx) {
- 		dma_release_channel(mcspi_dma->dma_rx);
- 		mcspi_dma->dma_rx = NULL;
-@@ -1256,29 +1267,42 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
- 		goto free_master;
- 
- 	for (i = 0; i < master->num_chipselect; i++) {
--		char dma_ch_name[14];
-+		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
-+		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
- 		struct resource *dma_res;
- 
--		sprintf(dma_ch_name, "rx%d", i);
--		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
--		if (!dma_res) {
--			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
--			status = -ENODEV;
--			break;
--		}
-+		sprintf(dma_rx_ch_name, "rx%d", i);
-+		if (!pdev->dev.of_node) {
-+			dma_res =
-+				platform_get_resource_byname(pdev,
-+							     IORESOURCE_DMA,
-+							     dma_rx_ch_name);
-+			if (!dma_res) {
-+				dev_dbg(&pdev->dev,
-+					"cannot get DMA RX channel\n");
-+				status = -ENODEV;
-+				break;
-+			}
- 
--		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
--		sprintf(dma_ch_name, "tx%d", i);
--		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
--		if (!dma_res) {
--			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
--			status = -ENODEV;
--			break;
-+			mcspi->dma_channels[i].dma_rx_sync_dev =
-+				dma_res->start;
- 		}
-+		sprintf(dma_tx_ch_name, "tx%d", i);
-+		if (!pdev->dev.of_node) {
-+			dma_res =
-+				platform_get_resource_byname(pdev,
-+							     IORESOURCE_DMA,
-+							     dma_tx_ch_name);
-+			if (!dma_res) {
-+				dev_dbg(&pdev->dev,
-+					"cannot get DMA TX channel\n");
-+				status = -ENODEV;
-+				break;
-+			}
- 
--		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
-+			mcspi->dma_channels[i].dma_tx_sync_dev =
-+				dma_res->start;
-+		}
- 	}
- 
- 	if (status < 0)
+ #endif
 -- 
 1.7.9.5
 
