@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3FOWpp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 18:45:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:38740 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754558Ab3FOWpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 18:45:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
-Date: Sun, 16 Jun 2013 00:54:59 +0200
-Message-ID: <2139297.LeMhgEjsya@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <18797091.iPZsNWFGi1@vostro.rjw.lan>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <8974656.5GmDyxHW7F@vostro.rjw.lan> <18797091.iPZsNWFGi1@vostro.rjw.lan>
+	id S1754723Ab3FOWsn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 18:48:43 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:59769 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab3FOWsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 18:48:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CACRpkda2isXNCrd8Auiv7bNtKYBH3cwRx6idebMDbDPZrbqfJQ@mail.gmail.com>
+References: <1370825362-11145-1-git-send-email-grant.likely@linaro.org>
+ <1370825362-11145-11-git-send-email-grant.likely@linaro.org>
+ <CACRpkda+WD5dMoZ9s7mTLgOgUrm+EH3Mqxio=BuLTDr3aOEruw@mail.gmail.com>
+ <CACxGe6tW+k6dN6gi6MoPQ2zehP4R+THmzFGZQkhOZGH7oS+S2g@mail.gmail.com>
+ <CACRpkdZcnjwQNap=i+LvzEeEFwDFgHw2BD7KVAUCNh0mRtX26w@mail.gmail.com> <CACRpkda2isXNCrd8Auiv7bNtKYBH3cwRx6idebMDbDPZrbqfJQ@mail.gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Sat, 15 Jun 2013 23:48:22 +0100
+X-Google-Sender-Auth: Z6IOC9KtDtGhCEECtzvUoxyGjCI
+Message-ID: <CACxGe6tvSptNKJMz6eUXwahH0VbXVgnjdj2ARD1BfLiS-x6z_Q@mail.gmail.com>
+Subject: Re: [RFC 10/10] irqchip: Make versatile fpga irq driver a generic chip
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 15, 2013 11:20:40 PM Rafael J. Wysocki wrote:
-> On Saturday, June 15, 2013 10:17:42 PM Rafael J. Wysocki wrote:
+On Sat, Jun 15, 2013 at 10:22 PM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Sat, Jun 15, 2013 at 11:19 PM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> It still works like a charm on the Integrator/AP.
+>> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> BTW here is the new hwirq output in /proc/interrupts and it's really nice:
+>
+> root@integrator:/proc cat interrupts
+>            CPU0
+>  17:       1845       pic   1  uart-pl010
+>  22:      13716       pic   6  timer
+>  24:          0       pic   8  rtc-pl030
+> Err:          0
 
-[...]
+Glad you like it. :-)
 
-> 
-> Which sysfs interfaces do you mean, by the way?
-> 
-> If you mean "eject", then it takes acpi_scan_lock and hotplug_dock_devices()
-> should always be run under acpi_scan_lock too.  It isn't at the moment,
-> because write_undock() doesn't take acpi_scan_lock(), but this is an obvious
-> bug (so I'm going to send a patch to fix it in a while).
-> 
-> With that bug fixed, the possible race between acpi_eject_store() and
-> hotplug_dock_devices() should be prevented from happening, so perhaps we're
-> worrying about something that cannot happen?
-
-So here's a question: What particular races are possible if we remove
-ds->hp_lock entirely without doing anything else just yet?  I mean, how to
-*trigger* them from the start to the end and not how they can possibly happen
-but never do, because there's no way they can be actually triggered?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+g.
