@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3FOXPO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 19:15:14 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:60819 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab3FOXPM (ORCPT
+	id S1754752Ab3FOXfZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 19:35:25 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:38158 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3FOXfY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 19:15:12 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: Nicolas Pitre <nico@linaro.org>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [RFC] arm: Remove sa1111 special case from mm setup code
-Date: Sun, 16 Jun 2013 00:15:08 +0100
-Message-Id: <1371338108-26354-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Sat, 15 Jun 2013 19:35:24 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
+Subject: Re: [RFC] pinctrl: generic: Add DT bindings
+Date: Sun, 16 Jun 2013 01:35:34 +0200
+Message-ID: <1795038.rqcr6GWLdP@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <201306152216.14252.heiko@sntech.de>
+References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CACRpkdaF7V3FGhNNj+N+Dc-NWhsfQ=bqh+ETx0wGBFbLmxfGTw@mail.gmail.com> <201306152216.14252.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think this special case is needed anymore. From what I can tell,
-setup_dma_zone() takes care of marking the region to be reserved for
-DMA, and that happens before arm_memblock_init() which calls
-arm_mm_memblock_reserve(). Therefore the mm setup should already know
-about the reserved region and it won't need to be explicitly reserved
-and then freed. That means the special case can be dropped from the
-common code.
+Hi Heiko,
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
+On Saturday 15 June 2013 22:16:13 Heiko Stübner wrote:
+> Am Samstag, 15. Juni 2013, 21:56:05 schrieb Linus Walleij:
+> > On Fri, Jun 14, 2013 at 12:39 AM, Laurent Pinchart wrote:
+> > >         mmcif_pins: mmcif {
+> > >                 mux {
+> > >                         renesas,groups = "mmc0_data8_0", "mmc0_ctrl_0";
+> > >                         renesas,function = "mmc0";
+> > >                 };
+> > >                 cfg {
+> > >                         renesas,groups = "mmc0_data8_0";
+> > >                         renesas,pins = "PORT279";
+> > >                         bias-pull-up = <1>;
+> > 
+> > If I understood your code correctly that last statement can *optionally*
+> > 
+> > be written like just:
+> >  bias-pull-up;
+> > 
+> > Without the parameter?
+> > 
+> > I think that Heiko's implementation does this anyway.
+> 
+> Yep, with the fixes-series from yesterday the bias-pull-* now have a better
+> default value of <1>.
+> 
+> so you can do
+> 	bias-pull-up;
+> which is then identical to the
+> 	bias-pull-up = <1>;
+> above (both are valid of course).
 
-Hi Russell and Nicolas,
+My patch used bias-pull-up = <1>; as the current version of Heiko's DT parser 
+didn't support bias-pull-up; correctly at that time. It's fixed now, and my 
+prefered is then bias-pull-up;.
 
-I really don't know if this is correct. The MM code is not my strong
-area. Please take a look.
+> Disable would the be either
+> 	bias-disable;
+> or
+> 	bias-pull-up = <0>;
+> 
+> A driver should probably handle both, as both are valid pinconf options or
+> this.
 
-Thanks,
-g.
+I feel a bit uneasy about that. Do we really need to support two different 
+ways to achieve the same result ?
 
- arch/arm/mm/init.c | 5 -----
- arch/arm/mm/mmu.c  | 8 --------
- 2 files changed, 13 deletions(-)
-
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 9a5cdc0..73212fe 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -598,11 +598,6 @@ void __init mem_init(void)
- 
- 	totalram_pages += free_all_bootmem();
- 
--#ifdef CONFIG_SA1111
--	/* now that our DMA memory is actually so designated, we can free it */
--	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
--#endif
--
- 	free_highpages();
- 
- 	reserved_pages = free_pages = 0;
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e0d8565..f281a24 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1147,14 +1147,6 @@ void __init arm_mm_memblock_reserve(void)
- 	 * and can only be in node 0.
- 	 */
- 	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_PG_DIR_SIZE);
--
--#ifdef CONFIG_SA1111
--	/*
--	 * Because of the SA1111 DMA bug, we want to preserve our
--	 * precious DMA-able memory...
--	 */
--	memblock_reserve(PHYS_OFFSET, __pa(swapper_pg_dir) - PHYS_OFFSET);
--#endif
- }
- 
- /*
 -- 
-1.8.1.2
+Regards,
+
+Laurent Pinchart
 
