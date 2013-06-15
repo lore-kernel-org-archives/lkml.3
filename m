@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3FOCcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 22:32:54 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:33874 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3FOCcx (ORCPT
+	id S1754128Ab3FOCdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 22:33:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58472 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3FOCdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 22:32:53 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] ARM: ux500: minor code cleanup
-Date: Fri, 14 Jun 2013 19:32:47 -0700
-Message-Id: <1371263567-8520-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.1.192.gc4361b8
+	Fri, 14 Jun 2013 22:33:44 -0400
+From: Joel A Fernandes <joelagnel@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>
+CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
+Subject: [PATCH v10 3/8] ARM: dts: add AM33XX EDMA support
+Date: Fri, 14 Jun 2013 21:32:45 -0500
+Message-ID: <1371263570-9323-3-git-send-email-joelagnel@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
+References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up coding style a bit in cpu-db8500.
+From: Matt Porter <mdp@ti.com>
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Adds AM33XX EDMA support to the am33xx.dtsi as documented in
+Documentation/devicetree/bindings/dma/ti-edma.txt
+
+Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
+
+[1] https://patchwork.kernel.org/patch/2226761/
+
+Signed-off-by: Matt Porter <mporter@ti.com>
+Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
 ---
+ arch/arm/boot/dts/am33xx.dtsi |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Linus,
-
-Noticed the last chunk of this patch when I resolved one of the recent
-conflicts, so I did a once-over of the file. Feel free to drop the
-first chunk when applying if you'd prefer to do a sweeping DEFINE_RES()
-cleanup instead.
-
- arch/arm/mach-ux500/cpu-db8500.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 27e5566..d25db87 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -95,11 +95,7 @@ void __init u8500_map_io(void)
- }
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 70c86a0..f8a8f19 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -89,6 +89,18 @@
+ 			reg = <0x48200000 0x1000>;
+ 		};
  
- static struct resource db8500_pmu_resources[] = {
--	[0] = {
--		.start		= IRQ_DB8500_PMU,
--		.end		= IRQ_DB8500_PMU,
--		.flags		= IORESOURCE_IRQ,
--	},
-+	[0] = DEFINE_RES_IRQ(IRQ_DB8500_PMU),
- };
- 
- /*
-@@ -281,8 +277,8 @@ static const struct of_device_id u8500_local_bus_nodes[] = {
- 	/* only create devices below soc node */
- 	{ .compatible = "stericsson,db8500", },
- 	{ .compatible = "stericsson,db8500-prcmu", },
--	{ .compatible = "simple-bus"},
--	{ },
-+	{ .compatible = "simple-bus" },
-+	{},
- };
- 
- static void __init u8500_init_machine(void)
-@@ -290,15 +286,16 @@ static void __init u8500_init_machine(void)
- 	struct device *parent = db8500_soc_device_init();
- 
- 	/* Pinmaps must be in place before devices register */
--	if (of_machine_is_compatible("st-ericsson,mop500"))
-+	if (of_machine_is_compatible("st-ericsson,mop500")) {
- 		mop500_pinmaps_init();
--	else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
-+	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
- 		snowball_pinmaps_init();
- 		mop500_snowball_ethernet_clock_enable();
--	} else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
-+	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
- 		hrefv60_pinmaps_init();
--	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
-+	} else if (of_machine_is_compatible("st-ericsson,ccu9540")) {
- 		/* TODO: Add pinmaps for ccu9540 board. */
-+	}
- 
- 	/* automatically probe child nodes of dbx5x0 devices */
- 	if (of_machine_is_compatible("st-ericsson,u8540"))
++		edma: edma@49000000 {
++			compatible = "ti,edma3";
++			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++			reg =	<0x49000000 0x10000>,
++				<0x44e10f90 0x10>;
++			interrupts = <12 13 14>;
++			#dma-cells = <1>;
++			dma-channels = <64>;
++			ti,edma-regions = <4>;
++			ti,edma-slots = <256>;
++		};
++
+ 		gpio0: gpio@44e07000 {
+ 			compatible = "ti,omap4-gpio";
+ 			ti,hwmods = "gpio1";
 -- 
-1.8.1.192.gc4361b8
+1.7.9.5
 
