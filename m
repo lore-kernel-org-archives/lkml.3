@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab3FONRl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 09:17:41 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42752 "EHLO
+	id S1754315Ab3FONVq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 09:21:46 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:43160 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab3FONO5 (ORCPT
+	with ESMTP id S1752083Ab3FONVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 09:14:57 -0400
+	Sat, 15 Jun 2013 09:21:45 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v4 01/24] tty: Don't change receive_room for ioctl(TIOCSETD)
-Date: Sat, 15 Jun 2013 09:14:13 -0400
-Message-Id: <1371302076-4688-2-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v4 20/24] n_tty: Move chars_in_buffer() to factor throttle/unthrottle
+Date: Sat, 15 Jun 2013 09:14:32 -0400
+Message-Id: <1371302076-4688-21-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
@@ -23,29 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_set_ldisc() is guaranteed exclusive use of the line discipline
-by tty_ldisc_lock_pair_timeout(); shutting off input by resetting
-receive_room is unnecessary.
+Prepare to factor throttle and unthrottle into helper functions;
+relocate chars_in_buffer() to avoid forward declaration.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_ldisc.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/tty/n_tty.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index edeb1dd..86356e3 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -540,9 +540,6 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 		return 0;
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index b78ee464..9ec0c68 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -202,6 +202,18 @@ static void n_tty_set_room(struct tty_struct *tty)
  	}
+ }
  
--	/* FIXME: why 'shutoff' input if the ldisc is locked? */
--	tty->receive_room = 0;
++static ssize_t chars_in_buffer(struct tty_struct *tty)
++{
++	struct n_tty_data *ldata = tty->disc_data;
++	ssize_t n = 0;
++
++	if (!ldata->icanon)
++		n = read_cnt(ldata);
++	else
++		n = ldata->canon_head - ldata->read_tail;
++	return n;
++}
++
+ /**
+  *	put_tty_queue		-	add character to tty
+  *	@c: character
+@@ -285,18 +297,6 @@ static void n_tty_flush_buffer(struct tty_struct *tty)
+ 	up_write(&tty->termios_rwsem);
+ }
+ 
+-static ssize_t chars_in_buffer(struct tty_struct *tty)
+-{
+-	struct n_tty_data *ldata = tty->disc_data;
+-	ssize_t n = 0;
 -
- 	old_ldisc = tty->ldisc;
- 	tty_lock(tty);
- 
+-	if (!ldata->icanon)
+-		n = read_cnt(ldata);
+-	else
+-		n = ldata->canon_head - ldata->read_tail;
+-	return n;
+-}
+-
+ /**
+  *	n_tty_chars_in_buffer	-	report available bytes
+  *	@tty: tty device
 -- 
 1.8.1.2
 
