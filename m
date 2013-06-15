@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3FODJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 23:09:33 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:27366 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753012Ab3FODJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 23:09:32 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqEOAITZu1F5LHzw/2dsb2JhbABbgwmDD7cJhSEEAYEMF3SCIwEBBAE6HCMFCwgDGAklDwUlAyETiAgFugUWjhWBHQeCf2EDl0CKHYcmgyEqgS4k
-Date: Sat, 15 Jun 2013 13:09:28 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: XFS (vdb): Corruption detected. Unmount and run xfs_repair
-Message-ID: <20130615030928.GC29338@dastard>
-References: <20130615023620.GA23586@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130615023620.GA23586@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754000Ab3FODLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 23:11:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53948 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab3FODLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jun 2013 23:11:13 -0400
+Message-ID: <1371265846.21896.29.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Sat, 15 Jun 2013 13:10:46 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs@oss.sgi.com, where XFS bug reports should go]
+Hi Linus !
 
-On Sat, Jun 15, 2013 at 10:36:20AM +0800, Fengguang Wu wrote:
-> Greetings,
-> 
-> I got the below dmesg in both upstream and linux-next, and the first
-> bad commit *might be* commit 211d022c43ca ("xfs: Avoid pathological
-> backwards allocation").
->     
-> [   74.595386] 
-> [   74.603826] CPU: 0 PID: 2137 Comm: kworker/0:1H Not tainted 3.10.0-rc1-00031-gade1335 #1508
-> [   74.609255] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> [   74.612498] Workqueue: xfslogd xfs_buf_iodone_work
-> [   74.615690]  0000000000000001 ffff880016815c68 ffffffff81aa456f ffff880016815c88
-> [   74.621548]  ffffffff8130b179 ffffffff81309514 0000000000000001 ffff880016815cc8
-> [   74.627417]  ffffffff8130b1d0 0000000000000000 00000000000002da 0000000000000016
-> [   74.633321] Call Trace:
-> [   74.635427]  [<ffffffff81aa456f>] dump_stack+0x19/0x1b
-> [   74.638412]  [<ffffffff8130b179>] xfs_error_report+0x3d/0x3f
-> [   74.641627]  [<ffffffff81309514>] ? xfs_buf_iodone_work+0x4a/0x83
-> [   74.644970]  [<ffffffff8130b1d0>] xfs_corruption_error+0x55/0x71
-> [   74.648217]  [<ffffffff81352ce1>] xfs_sb_read_verify+0xee/0x105
-> [   74.651478]  [<ffffffff81309514>] ? xfs_buf_iodone_work+0x4a/0x83
-> [   74.654820]  [<ffffffff8108045d>] ? ftrace_raw_event_workqueue_execute_start+0x92/0xa1
-> [   74.659821]  [<ffffffff81309514>] xfs_buf_iodone_work+0x4a/0x83
-> [   74.663042]  [<ffffffff81082561>] process_one_work+0x26c/0x470
-> [   74.666296]  [<ffffffff810824bf>] ? process_one_work+0x1ca/0x470
-> [   74.669647]  [<ffffffff81082ee6>] worker_thread+0x1d0/0x2cb
-> [   74.672770]  [<ffffffff81082d16>] ? manage_workers.isra.19+0x1c3/0x1c3
-> [   74.676201]  [<ffffffff8108a590>] kthread+0xd5/0xdd
-> [   74.679151]  [<ffffffff810bd47c>] ? trace_hardirqs_on+0xd/0xf
-> [   74.682411]  [<ffffffff8108a4bb>] ? __init_kthread_worker+0x5a/0x5a
-> [   74.685776]  [<ffffffff81ab74dc>] ret_from_fork+0x7c/0xb0
-> [   74.688798]  [<ffffffff8108a4bb>] ? __init_kthread_worker+0x5a/0x5a
-> [   74.692206] XFS (vdb): Corruption detected. Unmount and run xfs_repair
-> [   74.696000] XFS (vdb): SB validate failed with error 22.
+Hopefully this one smells better ...
 
-EINVAL, which means there should have been some kind of output in
-the log before the -corruption report- that explains why EINVAL was
-returned.
+So here are 3 fixes still for 3.10. Fixes are simple, bugs are nasty
+(though not recent regressions, nasty enough) and all targeted at
+stable. Please apply.
 
-> I'm not sure whether it's the first bad commit because
-
-It's not, because it isn't in the upstream kernel and so if you are
-seeing it in the upstream kernel, it can't be the cause. And,
-besides:
-
-> [   74.570969] XFS (vdb): bad magic number
-> [   74.573837] ffff8800170ed000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.579266] ffff8800170ed010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.584581] ffff8800170ed020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.590036] ffff8800170ed030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.595386] XFS (vdb): Internal error xfs_sb_read_verify at line 730 of file /c/kernel-tests/src/stable/fs/xfs/xfs_mount.c.  Caller 0xffffffff81309514
-.....
-> [   74.692206] XFS (vdb): Corruption detected. Unmount and run xfs_repair
-> [   74.696000] XFS (vdb): SB validate failed with error 22.
-
-It's obviously not an XFS filesystem you are asking the kernel to
-mount, so it's perfectly valid to throw a corruption error at you.
-What it has actually thrown is EWRONGFS, but because you've asked
-the kernel specifically to mount the device as an XFS filesystem,
-the kernel is explicitly telling you that it's a corrupt
-filesystem... :)
-
-> common.rc: retrying test device mount with external set
-> [   74.782247] XFS (vdb): bad magic number
-> [   74.784895] ffff8800170e7000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.790201] ffff8800170e7010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.795466] ffff8800170e7020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.800759] ffff8800170e7030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> [   74.806031] XFS (vdb): Internal error xfs_sb_read_verify at line 730 of file /c/kernel-tests/src/stable/fs/xfs/xfs_mount.c.  Caller 0xffffffff81309514
-
-It still isn't an XFS filesystem.... :/
-
-This looks like user error, not a bug.
+Thanks !
 
 Cheers,
+Ben.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+The following changes since commit 34376a50fb1fa095b9d0636fa41ed2e73125f214:
+
+  Fix lockup related to stop_machine being stuck in __do_softirq. (2013-06-10 17:46:57 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 230b3034793247f61e6a0b08c44cf415f6d92981:
+
+  powerpc: Fix missing/delayed calls to irq_work (2013-06-15 12:33:30 +1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (1):
+      powerpc: Fix missing/delayed calls to irq_work
+
+Michael Ellerman (1):
+      powerpc: Fix stack overflow crash in resume_kernel when ftracing
+
+Paul Mackerras (1):
+      powerpc: Fix emulation of illegal instructions on PowerNV platform
+
+ arch/powerpc/include/asm/exception-64s.h |    2 +-
+ arch/powerpc/kernel/exceptions-64s.S     |    2 +-
+ arch/powerpc/kernel/irq.c                |    2 +-
+ arch/powerpc/kernel/process.c            |    4 ++--
+ arch/powerpc/kernel/traps.c              |   10 ++++++++++
+ 5 files changed, 15 insertions(+), 5 deletions(-)
+
+
