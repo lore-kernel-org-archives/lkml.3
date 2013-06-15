@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3FOOFc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 10:05:32 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40200 "EHLO
+	id S1754623Ab3FOOF3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 10:05:29 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40196 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3FOOE5 (ORCPT
+	with ESMTP id S1754414Ab3FOOEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 10:04:57 -0400
+	Sat, 15 Jun 2013 10:04:55 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 3/9] n_tty: Replace echo_cnt with computed value
-Date: Sat, 15 Jun 2013 10:04:23 -0400
-Message-Id: <1371305069-5366-4-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 2/9] n_tty: Use separate head and tail indices for echo_buf
+Date: Sat, 15 Jun 2013 10:04:22 -0400
+Message-Id: <1371305069-5366-3-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
 References: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
@@ -23,90 +23,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for lockless echo_buf handling; compute current byte count
-of echo_buf from head and tail indices.
+Instead of using a single index to track the current echo_buf position,
+use a head index when adding to the buffer and a tail index when
+consuming from the buffer. Allow these head and tail indices to wrap
+at max representable value; perform modulo reduction via helper
+functions when accessing the buffer.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ drivers/tty/n_tty.c | 88 +++++++++++++++++++++--------------------------------
+ 1 file changed, 35 insertions(+), 53 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f90e171..68dc9fd 100644
+index 160d9d2..f90e171 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -110,7 +110,6 @@ struct n_tty_data {
+@@ -108,7 +108,8 @@ struct n_tty_data {
+ 
+ 	/* protected by echo_lock */
  	unsigned char *echo_buf;
- 	size_t echo_head;
- 	size_t echo_tail;
--	unsigned int echo_cnt;
+-	unsigned int echo_pos;
++	size_t echo_head;
++	size_t echo_tail;
+ 	unsigned int echo_cnt;
  
  	/* protected by output lock */
- 	unsigned int column;
-@@ -335,7 +334,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
+@@ -135,6 +136,16 @@ static inline unsigned char *read_buf_addr(struct n_tty_data *ldata, size_t i)
+ 	return &ldata->read_buf[i & (N_TTY_BUF_SIZE - 1)];
+ }
+ 
++static inline unsigned char echo_buf(struct n_tty_data *ldata, size_t i)
++{
++	return ldata->echo_buf[i & (N_TTY_BUF_SIZE - 1)];
++}
++
++static inline unsigned char *echo_buf_addr(struct n_tty_data *ldata, size_t i)
++{
++	return &ldata->echo_buf[i & (N_TTY_BUF_SIZE - 1)];
++}
++
+ static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
+ 			       unsigned char __user *ptr)
+ {
+@@ -324,7 +335,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
  	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
  
  	mutex_lock(&ldata->echo_lock);
--	ldata->echo_head = ldata->echo_tail = ldata->echo_cnt = 0;
-+	ldata->echo_head = ldata->echo_tail  = 0;
+-	ldata->echo_pos = ldata->echo_cnt = 0;
++	ldata->echo_head = ldata->echo_tail = ldata->echo_cnt = 0;
  	mutex_unlock(&ldata->echo_lock);
  
  	ldata->erasing = 0;
-@@ -653,7 +652,7 @@ static void process_echoes(struct tty_struct *tty)
- 	size_t tail;
+@@ -639,8 +650,8 @@ static void process_echoes(struct tty_struct *tty)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	int	space, nr;
++	size_t tail;
  	unsigned char c;
+-	unsigned char *cp, *buf_end;
  
--	if (!ldata->echo_cnt)
-+	if (ldata->echo_head == ldata->echo_tail)
+ 	if (!ldata->echo_cnt)
  		return;
+@@ -650,14 +661,12 @@ static void process_echoes(struct tty_struct *tty)
  
- 	mutex_lock(&ldata->output_lock);
-@@ -662,7 +661,7 @@ static void process_echoes(struct tty_struct *tty)
  	space = tty_write_room(tty);
  
- 	tail = ldata->echo_tail;
--	nr = ldata->echo_cnt;
-+	nr = ldata->echo_head - ldata->echo_tail;
+-	buf_end = ldata->echo_buf + N_TTY_BUF_SIZE;
+-	cp = ldata->echo_buf + ldata->echo_pos;
++	tail = ldata->echo_tail;
+ 	nr = ldata->echo_cnt;
  	while (nr > 0) {
- 		c = echo_buf(ldata, tail);
+-		c = *cp;
++		c = echo_buf(ldata, tail);
  		if (c == ECHO_OP_START) {
-@@ -778,7 +777,6 @@ static void process_echoes(struct tty_struct *tty)
+ 			unsigned char op;
+-			unsigned char *opp;
+ 			int no_space_left = 0;
+ 
+ 			/*
+@@ -665,18 +674,13 @@ static void process_echoes(struct tty_struct *tty)
+ 			 * operation, get the next byte, which is either the
+ 			 * op code or a control character value.
+ 			 */
+-			opp = cp + 1;
+-			if (opp == buf_end)
+-				opp -= N_TTY_BUF_SIZE;
+-			op = *opp;
++			op = echo_buf(ldata, tail + 1);
+ 
+ 			switch (op) {
+ 				unsigned int num_chars, num_bs;
+ 
+ 			case ECHO_OP_ERASE_TAB:
+-				if (++opp == buf_end)
+-					opp -= N_TTY_BUF_SIZE;
+-				num_chars = *opp;
++				num_chars = echo_buf(ldata, tail + 2);
+ 
+ 				/*
+ 				 * Determine how many columns to go back
+@@ -702,20 +706,20 @@ static void process_echoes(struct tty_struct *tty)
+ 					if (ldata->column > 0)
+ 						ldata->column--;
+ 				}
+-				cp += 3;
++				tail += 3;
+ 				nr -= 3;
+ 				break;
+ 
+ 			case ECHO_OP_SET_CANON_COL:
+ 				ldata->canon_column = ldata->column;
+-				cp += 2;
++				tail += 2;
+ 				nr -= 2;
+ 				break;
+ 
+ 			case ECHO_OP_MOVE_BACK_COL:
+ 				if (ldata->column > 0)
+ 					ldata->column--;
+-				cp += 2;
++				tail += 2;
+ 				nr -= 2;
+ 				break;
+ 
+@@ -728,7 +732,7 @@ static void process_echoes(struct tty_struct *tty)
+ 				tty_put_char(tty, ECHO_OP_START);
+ 				ldata->column++;
+ 				space--;
+-				cp += 2;
++				tail += 2;
+ 				nr -= 2;
+ 				break;
+ 
+@@ -750,7 +754,7 @@ static void process_echoes(struct tty_struct *tty)
+ 				tty_put_char(tty, op ^ 0100);
+ 				ldata->column += 2;
+ 				space -= 2;
+-				cp += 2;
++				tail += 2;
+ 				nr -= 2;
+ 			}
+ 
+@@ -768,24 +772,13 @@ static void process_echoes(struct tty_struct *tty)
+ 				tty_put_char(tty, c);
+ 				space -= 1;
+ 			}
+-			cp += 1;
++			tail += 1;
+ 			nr -= 1;
+ 		}
+-
+-		/* When end of circular buffer reached, wrap around */
+-		if (cp >= buf_end)
+-			cp -= N_TTY_BUF_SIZE;
  	}
  
- 	ldata->echo_tail = tail;
--	ldata->echo_cnt = nr;
+-	if (nr == 0) {
+-		ldata->echo_pos = 0;
+-		ldata->echo_cnt = 0;
+-	} else {
+-		int num_processed = ldata->echo_cnt - nr;
+-		ldata->echo_pos += num_processed;
+-		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
+-		ldata->echo_cnt = nr;
+-	}
++	ldata->echo_tail = tail;
++	ldata->echo_cnt = nr;
  
  	mutex_unlock(&ldata->echo_lock);
  	mutex_unlock(&ldata->output_lock);
-@@ -799,24 +797,20 @@ static void process_echoes(struct tty_struct *tty)
+@@ -806,37 +799,26 @@ static void process_echoes(struct tty_struct *tty)
  
  static void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
  {
--	if (ldata->echo_cnt == N_TTY_BUF_SIZE) {
-+	if (ldata->echo_head - ldata->echo_tail == N_TTY_BUF_SIZE) {
- 		size_t head = ldata->echo_head;
+-	int	new_byte_pos;
+-
+ 	if (ldata->echo_cnt == N_TTY_BUF_SIZE) {
+-		/* Circular buffer is already at capacity */
+-		new_byte_pos = ldata->echo_pos;
+-
++		size_t head = ldata->echo_head;
  		/*
  		 * Since the buffer start position needs to be advanced,
  		 * be sure to step by a whole operation byte group.
  		 */
- 		if (echo_buf(ldata, head) == ECHO_OP_START) {
--			if (echo_buf(ldata, head + 1) == ECHO_OP_ERASE_TAB) {
-+			if (echo_buf(ldata, head + 1) == ECHO_OP_ERASE_TAB)
- 				ldata->echo_tail += 3;
--				ldata->echo_cnt -= 2;
--			} else {
-+			else
- 				ldata->echo_tail += 2;
--				ldata->echo_cnt -= 1;
--			}
- 		} else
- 			ldata->echo_tail++;
--	} else
--		ldata->echo_cnt++;
-+	}
+-		if (ldata->echo_buf[ldata->echo_pos] == ECHO_OP_START) {
+-			if (ldata->echo_buf[(ldata->echo_pos + 1) &
+-					  (N_TTY_BUF_SIZE - 1)] ==
+-						ECHO_OP_ERASE_TAB) {
+-				ldata->echo_pos += 3;
++		if (echo_buf(ldata, head) == ECHO_OP_START) {
++			if (echo_buf(ldata, head + 1) == ECHO_OP_ERASE_TAB) {
++				ldata->echo_tail += 3;
+ 				ldata->echo_cnt -= 2;
+ 			} else {
+-				ldata->echo_pos += 2;
++				ldata->echo_tail += 2;
+ 				ldata->echo_cnt -= 1;
+ 			}
+-		} else {
+-			ldata->echo_pos++;
+-		}
+-		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
+-	} else {
+-		new_byte_pos = ldata->echo_pos + ldata->echo_cnt;
+-		new_byte_pos &= N_TTY_BUF_SIZE - 1;
++		} else
++			ldata->echo_tail++;
++	} else
+ 		ldata->echo_cnt++;
+-	}
  
- 	*echo_buf_addr(ldata, ldata->echo_head++) = c;
+-	ldata->echo_buf[new_byte_pos] = c;
++	*echo_buf_addr(ldata, ldata->echo_head++) = c;
  }
+ 
+ /**
 -- 
 1.8.1.2
 
