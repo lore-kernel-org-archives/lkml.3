@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3FOErw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 00:47:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49144 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab3FOEru (ORCPT
+	id S1753679Ab3FOExi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 00:53:38 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58534 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751650Ab3FOExh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 00:47:50 -0400
-Date: Fri, 14 Jun 2013 21:48:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Ross Lagerwall <rosslagerwall@gmail.com>, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty/vt: Return EBUSY if deallocating VT1 and it is busy
-Message-ID: <20130615044824.GA13946@kroah.com>
-References: <20130614213543.GA1896@kroah.com>
- <1371248665-1176-1-git-send-email-rosslagerwall@gmail.com>
- <51BBA0E4.6030602@hurleysoftware.com>
+	Sat, 15 Jun 2013 00:53:37 -0400
+From: Qiao Zhou <zhouqiao@marvell.com>
+To: <djbw@fb.com>, <vinod.koul@intel.com>, <zhangfei.gao@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+CC: Qiao Zhou <zhouqiao@marvell.com>
+Subject: [PATCH V2] dma: mmp_tdma: disable irq when disabling dma channel
+Date: Sat, 15 Jun 2013 12:51:47 +0800
+Message-ID: <1371271908-29596-1-git-send-email-zhouqiao@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BBA0E4.6030602@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 07:01:56PM -0400, Peter Hurley wrote:
-> On 06/14/2013 06:24 PM, Ross Lagerwall wrote:
-> >Commit 421b40a6286e ("tty/vt: Fix vc_deallocate() lock order") changed
-> >the behavior when deallocating VT 1.  Previously if trying to
-> >deallocate VT1 and it is busy, we would return EBUSY.  The commit
-> >changed this to return 0 (success).
-> >
-> >This commit restores the old behavior.
-> >
-> >Signed-off-by: Ross Lagerwall <rosslagerwall@gmail.com>
-> 
-> Thanks.
-> 
-> Acked-by: Peter Hurley <peter@hurleysoftware.com>
+V2 -> V1:
+1, mask dma interrupt when disable DMA channel.
+2, remove patch v1.
 
-Thanks for this, I'll queue it up for Linus soon.
+if the dma channel is disabled without interrupt masked, the interrupt
+status may still be set. next time when dma channel is enabled again,
+the old interrupt status may trigger the interrupt wrongly. we need to
+mask the interrupt when dma channel is disabled.
 
-greg k-h
+Qiao Zhou (1):
+  dma: mmp_tdma: disable irq when disabling dma channel
+
+ drivers/dma/mmp_tdma.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
