@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3FOFsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 01:48:47 -0400
-Received: from mout.gmx.net ([212.227.15.15]:51982 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab3FOFsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 01:48:46 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/qxQVclqXqHbYAEEkmrCBZAkR7ATu+EAW9dJgVcp
-	0gG6pb+LkFZ0iP
-Message-ID: <1371275319.5789.13.camel@marge.simpson.net>
-Subject: Re: [PATCH 0/6] ipc/sem.c: performance improvements, FIFO
-From: Mike Galbraith <efault@gmx.de>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 15 Jun 2013 07:48:39 +0200
-In-Reply-To: <51BBFB34.20206@colorfullife.com>
-References: <1370884611-3861-1-git-send-email-manfred@colorfullife.com>
-	 <51BB38FA.6080607@colorfullife.com>
-	 <1371236750.5796.54.camel@marge.simpson.net>
-	 <51BBFB34.20206@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1754026Ab3FOF5F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 01:57:05 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:60231 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab3FOF5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 01:57:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130614220119.GA12954@localhost>
+References: <20130614220119.GA12954@localhost>
+Date: Sat, 15 Jun 2013 13:57:02 +0800
+Message-ID: <CAM_iQpWu2U5UmHhvmnqNenbWyz7vng8W+b0AssE31FSgSd9DLg@mail.gmail.com>
+Subject: Re: [netlink] WARNING: at mm/vmalloc.c:1487 __vunmap()
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-15 at 07:27 +0200, Manfred Spraul wrote:
+On Sat, Jun 15, 2013 at 6:01 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> I got the below dmesg and the first bad commit is
+>
+> commit c05cdb1b864f548c0c3d8ae3b51264e6739a69b1
+> Author: Pablo Neira Ayuso <pablo@netfilter.org>
+> Date:   Mon Jun 3 09:46:28 2013 +0000
+>
+>     netlink: allow large data transfers from user-space
 
-> Assume there is one op (semctl(), whatever) that acquires the global 
-> lock - and a continuous stream of simple ops.
-> - spin_is_locked() returns true due to the semctl().
-> - then simple ops will switch to spin_lock(&sma->sem_perm.lock).
-> - since the spinlock is acquired, the next operation will get true from 
-> spin_is_locked().
-> 
-> It will stay that way around - as long as there is at least one op 
-> waiting for sma->sem_perm.lock.
-> With enough cpus, it will stay like this forever.
+Hi, Fengguang,
 
-Yup, pondered that yesterday, scratching my head over how to do better.
-Hints highly welcome.  Maybe if I figure out how to scratch dual lock
-thingy properly for -rt, non-rt will start acting sane too, as that spot
-seems to be itchy in both kernels.
+Could you try the following quick fix?
 
--Mike
-
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 8978755..d8c6c03 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -750,7 +750,7 @@ static void netlink_skb_destructor(struct sk_buff *skb)
+                skb->head = NULL;
+        }
+ #endif
+-       if (is_vmalloc_addr(skb->head)) {
++       else if (is_vmalloc_addr(skb->head)) {
+                vfree(skb->head);
+                skb->head = NULL;
+        }
