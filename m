@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab3FOUr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 16:47:26 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:44448 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab3FOUrZ (ORCPT
+	id S1754708Ab3FOUrg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 16:47:36 -0400
+Received: from kiruna.synopsys.com ([198.182.44.80]:38596 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab3FOUra convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 16:47:25 -0400
+	Sat, 15 Jun 2013 16:47:30 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Joe Perches <joe@perches.com>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v4] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v4] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHOagXe8tugec+MDUSro7F/hI5nuQ==
+Date: Sat, 15 Jun 2013 20:47:25 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5E7779@DE02WEMBXB.internal.synopsys.com>
+References: <1371327652-9368-1-git-send-email-abrodkin@synopsys.com>
+ <1371328671.2117.6.camel@joe-AO722>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.225.15.131]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <51BB090F.5060002@linux.intel.com>
-References: <1371135983-12592-1-git-send-email-mathias.nyman@linux.intel.com>
-	<CACRpkdbuGeciwhh=FC=ekZ4di11rdPve7g79aG5wNvJAbAxx1g@mail.gmail.com>
-	<51BB090F.5060002@linux.intel.com>
-Date: Sat, 15 Jun 2013 22:47:24 +0200
-Message-ID: <CACRpkdbbVuuPMp__Ba+Ru=GAFLyUcahPakrsa6yjnBShq_0Bww@mail.gmail.com>
-Subject: Re: [PATCH v2 0/1] gpio driver for Intel Baytrail platforms
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 2:14 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-> [Me]
->> I would still vote to put the thing in drivers/pinctrl anyway,
->> I am perfectly happy to house pure GPIO drivers there,
->> especially if they're obviously masking something more
->> pinctrl-like in reality, it will be way more flexible the day that
->> you just want to add "this one little quirk for this pin config
->> thing", then it'll fit just fine.
->>
+On 06/16/2013 12:37 AM, Joe Perches wrote:
+> On Sun, 2013-06-16 at 00:20 +0400, Alexey Brodkin wrote:
+>> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+>> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+>> ARCAngel4/ML50x.
 >
-> I'm fine with having it under drivers/pinctrl as a GPIO driver, either just
-> as it is, or by using the pinctrl_gpio_range structure and helper functions
-> such as gpio_to_pad(), once Christian Rupperts patch is accepted.
+>> diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+> []
+>> +		if (DUPLEX_FULL == phy_dev->duplex)
+>
+> Most all kernel code uses "if (var == constant)"
+> as that's how most people think.
 
-Christian's patch is merged into the pinctrl tree for v3.11.
+Makes sense.
 
-> any naming preference?
+> []
+>
+>> +static int arc_emac_rx(struct net_device *ndev, int budget)
+> []
+>> +		/* Prepare the BD for next cycle */
+>> +		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
+>> +		if (unlikely(!rx_buff->skb)) {
+>> +			if (net_ratelimit())
+>> +				netdev_err(ndev, "cannot allocate skb\n");
+>
+> Unnecessary OOM message, might as well remove it.
+> rx_dropped gives the same info.
 
-> pinctrl-baytrail.c
+With all those error messages I wanted to make life easier (especially 
+for me) if errors appear. User will immediately know where problem 
+happened. Indeed "rx_dropped" (when it is used only once in driver) may 
+show where issue happened, but if later at some point "rx_dropped" will 
+be incremented in other locations then user won't understand immediately 
+where error happened.
 
-Bingo!
-
-Because the hardware is a pin controller after all.
-
-I know there is some BIOS or ROM very much wanting it to look
-simpler than it is, but it sure is a pin controller :-)
-
-Thanks,
-Linus Walleij
+-Alexey
