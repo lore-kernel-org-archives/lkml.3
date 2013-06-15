@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3FOA7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:59:32 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17648 "EHLO
+	id S1754091Ab3FOBA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 21:00:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17638 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3FOA5E (ORCPT
+	with ESMTP id S1753176Ab3FOA5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:04 -0400
+	Fri, 14 Jun 2013 20:57:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH v5 09/22] x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-Date: Fri, 14 Jun 2013 17:56:27 -0700
-Message-Id: <1371257800-11720-10-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v5 14/22] x86, mm, numa: Set memblock nid later
+Date: Fri, 14 Jun 2013 17:56:32 -0700
+Message-Id: <1371257800-11720-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
 References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
@@ -26,133 +24,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-head64.c could use #PF handler set page table to access initrd before
-init mem mapping and initrd relocating.
+For the separation, we need to set memblock nid later, as it
+could change memblock array, and possible doube memblock.memory
+array that will need to allocate buffer.
 
-head_32.S could use 32bit flat mode to access initrd before init mem
-mapping initrd relocating.
+Only set memblock nid one time for successful path.
 
-That make 32bit and 64 bit more consistent.
-
--v2: use inline function in header file instead according to tj.
-     also still need to keep #idef head_32.S to avoid compiling error.
--v3: need to move down reserve_initrd() after acpi_initrd_override_copy(),
-     to make sure we are using right address.
+Also rename numa_register_memblks to numa_check_memblks()
+after move out code for setting memblock nid.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
-Tested-by: Thomas Renninger <trenn@suse.de>
 Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/include/asm/setup.h |  6 ++++++
- arch/x86/kernel/head64.c     |  2 ++
- arch/x86/kernel/head_32.S    |  4 ++++
- arch/x86/kernel/setup.c      | 34 ++++++++++++++++++++++++++++++----
- 4 files changed, 42 insertions(+), 4 deletions(-)
+ arch/x86/mm/numa.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index 4f71d48..6f885b7 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -42,6 +42,12 @@ extern void visws_early_detect(void);
- static inline void visws_early_detect(void) { }
- #endif
- 
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void x86_acpi_override_find(void);
-+#else
-+static inline void x86_acpi_override_find(void) { }
-+#endif
-+
- extern unsigned long saved_video_mode;
- 
- extern void reserve_standard_io_resources(void);
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 55b6761..229b281 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -175,6 +175,8 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	if (console_loglevel == 10)
- 		early_printk("Kernel alive\n");
- 
-+	x86_acpi_override_find();
-+
- 	clear_page(init_level4_pgt);
- 	/* set init_level4_pgt kernel high mapping*/
- 	init_level4_pgt[511] = early_level4_pgt[511];
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 73afd11..ca08f0e 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -149,6 +149,10 @@ ENTRY(startup_32)
- 	call load_ucode_bsp
- #endif
- 
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+	call x86_acpi_override_find
-+#endif
-+
- /*
-  * Initialize page tables.  This creates a PDE and a set of page
-  * tables, which are located immediately beyond __brk_base.  The variable
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 142e042..d11b1b7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -421,6 +421,34 @@ static void __init reserve_initrd(void)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index cff565a..e448b6f 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -534,10 +534,9 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
  }
- #endif /* CONFIG_BLK_DEV_INITRD */
+ #endif
  
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void __init x86_acpi_override_find(void)
-+{
-+	unsigned long ramdisk_image, ramdisk_size;
-+	unsigned char *p = NULL;
-+
-+#ifdef CONFIG_X86_32
-+	struct boot_params *boot_params_p;
-+
-+	/*
-+	 * 32bit is from head_32.S, and it is 32bit flat mode.
-+	 * So need to use phys address to access global variables.
-+	 */
-+	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
-+	p = (unsigned char *)ramdisk_image;
-+	acpi_initrd_override_find(p, ramdisk_size, true);
-+#else
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
-+	if (ramdisk_image)
-+		p = __va(ramdisk_image);
-+	acpi_initrd_override_find(p, ramdisk_size, false);
-+#endif
-+}
-+#endif
-+
- static void __init parse_setup_data(void)
+-static int __init numa_register_memblks(struct numa_meminfo *mi)
++static int __init numa_check_memblks(struct numa_meminfo *mi)
  {
- 	struct setup_data *data;
-@@ -1117,12 +1145,10 @@ void __init setup_arch(char **cmdline_p)
- 	/* Allocate bigger log buffer */
- 	setup_log_buf(1);
+ 	unsigned long pfn_align;
+-	int i;
  
--	reserve_initrd();
+ 	/* Account for nodes with cpus and no memory */
+ 	node_possible_map = numa_nodes_parsed;
+@@ -560,11 +559,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 		return -EINVAL;
+ 	}
+ 
+-	for (i = 0; i < mi->nr_blks; i++) {
+-		struct numa_memblk *mb = &mi->blk[i];
+-		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+-	}
 -
--	acpi_initrd_override_find((void *)initrd_start,
--					initrd_end - initrd_start, false);
- 	acpi_initrd_override_copy();
+ 	return 0;
+ }
  
-+	reserve_initrd();
+@@ -601,7 +595,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	nodes_clear(numa_nodes_parsed);
+ 	nodes_clear(node_possible_map);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+-	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+ 
+ 	ret = init_func();
+@@ -613,7 +606,7 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	numa_emulation(&numa_meminfo, numa_distance_cnt);
+ 
+-	ret = numa_register_memblks(&numa_meminfo);
++	ret = numa_check_memblks(&numa_meminfo);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -676,6 +669,11 @@ void __init x86_numa_init(void)
+ 
+ 	early_x86_numa_init();
+ 
++	for (i = 0; i < mi->nr_blks; i++) {
++		struct numa_memblk *mb = &mi->blk[i];
++		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
++	}
 +
- 	reserve_crashkernel();
- 
- 	vsmp_init();
+ 	/* Finally register nodes. */
+ 	for_each_node_mask(nid, node_possible_map) {
+ 		u64 start = PFN_PHYS(max_pfn);
 -- 
 1.8.1.4
 
