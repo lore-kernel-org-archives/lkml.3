@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3FON5w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 09:57:52 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40049 "EHLO
+	id S1754543Ab3FON57 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 09:57:59 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40055 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab3FON5u (ORCPT
+	with ESMTP id S1752987Ab3FON5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 09:57:50 -0400
+	Sat, 15 Jun 2013 09:57:53 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 10/16] tty: Ensure single-threaded flip buffer consumer with mutex
-Date: Sat, 15 Jun 2013 09:36:10 -0400
-Message-Id: <1371303376-5028-11-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v2 15/16] tty: Fix unsafe vt paste_selection()
+Date: Sat, 15 Jun 2013 09:36:15 -0400
+Message-Id: <1371303376-5028-16-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
 References: <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
@@ -23,170 +23,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buffer work may race with parallel tty_buffer_flush. Use a
-mutex to guarantee exclusive modify access to the head flip
-buffer.
-
-Remove the unneeded spin lock.
+Convert the tty_buffer_flush() exclusion mechanism to a
+public interface - tty_buffer_lock/unlock_exclusive() - and use
+the interface to safely write the paste selection to the line
+discipline.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/staging/dgrp/dgrp_tty.c |  2 ++
- drivers/tty/tty_buffer.c        | 40 +++++++++++++++++++---------------------
- include/linux/tty.h             |  2 +-
- 3 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/tty/tty_buffer.c   | 61 ++++++++++++++++++++++++++++++++++++----------
+ drivers/tty/vt/selection.c |  4 ++-
+ include/linux/tty.h        |  4 +--
+ include/linux/tty_flip.h   |  3 +++
+ 4 files changed, 56 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/dgrp/dgrp_tty.c b/drivers/staging/dgrp/dgrp_tty.c
-index 654f601..0d52de3 100644
---- a/drivers/staging/dgrp/dgrp_tty.c
-+++ b/drivers/staging/dgrp/dgrp_tty.c
-@@ -1120,7 +1120,9 @@ static void dgrp_tty_close(struct tty_struct *tty, struct file *file)
- 				if (!sent_printer_offstr)
- 					dgrp_tty_flush_buffer(tty);
- 
-+				spin_unlock_irqrestore(&nd->nd_lock, lock_flags);
- 				tty_ldisc_flush(tty);
-+				spin_lock_irqsave(&nd->nd_lock, lock_flags);
- 				break;
- 		}
- 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 685757c..c3c606c 100644
+index dbe4a71..f22e116 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -157,8 +157,6 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
-  *	flush all the buffers containing receive data. Caller must
-  *	hold the buffer lock and must have ensured no parallel flush to
-  *	ldisc is running.
-- *
-- *	Locking: Caller must hold tty->buf.lock
-  */
+@@ -30,6 +30,42 @@
  
- static void __tty_buffer_flush(struct tty_port *port)
-@@ -182,29 +180,29 @@ static void __tty_buffer_flush(struct tty_port *port)
+ 
+ /**
++ *	tty_buffer_lock_exclusive	-	gain exclusive access to buffer
++ *	tty_buffer_unlock_exclusive	-	release exclusive access
++ *
++ *	@port - tty_port owning the flip buffer
++ *
++ *	Guarantees safe use of the line discipline's receive_buf() method by
++ *	excluding the buffer work and any pending flush from using the flip
++ *	buffer. Data can continue to be added concurrently to the flip buffer
++ *	from the driver side.
++ *
++ *	On release, the buffer work is restarted if there is data in the
++ *	flip buffer
++ */
++
++void tty_buffer_lock_exclusive(struct tty_port *port)
++{
++	struct tty_bufhead *buf = &port->buf;
++
++	atomic_inc(&buf->priority);
++	mutex_lock(&buf->lock);
++}
++
++void tty_buffer_unlock_exclusive(struct tty_port *port)
++{
++	struct tty_bufhead *buf = &port->buf;
++	int restart;
++
++	restart = buf->head->commit != buf->head->read;
++
++	atomic_dec(&buf->priority);
++	mutex_unlock(&buf->lock);
++	if (restart)
++		queue_work(system_unbound_wq, &buf->work);
++}
++
++/**
+  *	tty_buffer_space_avail	-	return unused buffer space
+  *	@port - tty_port owning the flip buffer
+  *
+@@ -158,7 +194,7 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
   *	being processed by flush_to_ldisc then we defer the processing
   *	to that function
   *
-- *	Locking: none
-+ *	Locking: takes flush_mutex to ensure single-threaded flip buffer
-+ *		 'consumer'
+- *	Locking: takes flush_mutex to ensure single-threaded flip buffer
++ *	Locking: takes buffer lock to ensure single-threaded flip buffer
+  *		 'consumer'
   */
  
- void tty_buffer_flush(struct tty_struct *tty)
- {
- 	struct tty_port *port = tty->port;
+@@ -168,16 +204,16 @@ void tty_buffer_flush(struct tty_struct *tty)
  	struct tty_bufhead *buf = &port->buf;
--	unsigned long flags;
--
--	spin_lock_irqsave(&buf->lock, flags);
+ 	struct tty_buffer *next;
  
-+	mutex_lock(&buf->flush_mutex);
- 	/* If the data is being pushed to the tty layer then we can't
- 	   process it here. Instead set a flag and the flush_to_ldisc
- 	   path will process the flush request before it exits */
- 	if (test_bit(TTYP_FLUSHING, &port->iflags)) {
- 		set_bit(TTYP_FLUSHPENDING, &port->iflags);
--		spin_unlock_irqrestore(&buf->lock, flags);
-+		mutex_unlock(&buf->flush_mutex);
- 		wait_event(tty->read_wait,
- 				test_bit(TTYP_FLUSHPENDING, &port->iflags) == 0);
- 		return;
--	} else
--		__tty_buffer_flush(port);
--	spin_unlock_irqrestore(&buf->lock, flags);
-+	}
-+
-+	__tty_buffer_flush(port);
-+	mutex_unlock(&buf->flush_mutex);
+-	buf->flushpending = 1;
++	atomic_inc(&buf->priority);
+ 
+-	mutex_lock(&buf->flush_mutex);
++	mutex_lock(&buf->lock);
+ 	while ((next = buf->head->next) != NULL) {
+ 		tty_buffer_free(port, buf->head);
+ 		buf->head = next;
+ 	}
+ 	buf->head->read = buf->head->commit;
+-	buf->flushpending = 0;
+-	mutex_unlock(&buf->flush_mutex);
++	atomic_dec(&buf->priority);
++	mutex_unlock(&buf->lock);
  }
  
  /**
-@@ -408,9 +406,10 @@ receive_buf(struct tty_struct *tty, struct tty_buffer *head, int count)
-  *	This routine is called out of the software interrupt to flush data
-  *	from the buffer chain to the line discipline.
+@@ -383,7 +419,7 @@ receive_buf(struct tty_struct *tty, struct tty_buffer *head, int count)
   *
-- *	Locking: holds tty->buf.lock to guard buffer list. Drops the lock
-- *	while invoking the line discipline receive_buf method. The
-- *	receive_buf method is single threaded for each tty instance.
-+ *	The receive_buf method is single threaded for each tty instance.
-+ *
-+ *	Locking: takes flush_mutex to ensure single-threaded flip buffer
-+ *		 'consumer'
+  *	The receive_buf method is single threaded for each tty instance.
+  *
+- *	Locking: takes flush_mutex to ensure single-threaded flip buffer
++ *	Locking: takes buffer lock to ensure single-threaded flip buffer
+  *		 'consumer'
   */
  
- static void flush_to_ldisc(struct work_struct *work)
-@@ -418,7 +417,6 @@ static void flush_to_ldisc(struct work_struct *work)
- 	struct tty_port *port = container_of(work, struct tty_port, buf.work);
- 	struct tty_bufhead *buf = &port->buf;
- 	struct tty_struct *tty;
--	unsigned long 	flags;
- 	struct tty_ldisc *disc;
- 
- 	tty = port->itty;
-@@ -429,7 +427,7 @@ static void flush_to_ldisc(struct work_struct *work)
+@@ -402,14 +438,14 @@ static void flush_to_ldisc(struct work_struct *work)
  	if (disc == NULL)
  		return;
  
--	spin_lock_irqsave(&buf->lock, flags);
-+	mutex_lock(&buf->flush_mutex);
+-	mutex_lock(&buf->flush_mutex);
++	mutex_lock(&buf->lock);
  
- 	if (!test_and_set_bit(TTYP_FLUSHING, &port->iflags)) {
- 		while (1) {
-@@ -444,11 +442,13 @@ static void flush_to_ldisc(struct work_struct *work)
- 				tty_buffer_free(port, head);
- 				continue;
- 			}
--			spin_unlock_irqrestore(&buf->lock, flags);
-+
-+			mutex_unlock(&buf->flush_mutex);
+ 	while (1) {
+ 		struct tty_buffer *head = buf->head;
+ 		int count;
  
- 			count = receive_buf(tty, head, count);
+-		/* Ldisc or user is trying to flush the buffers. */
+-		if (buf->flushpending)
++		/* Ldisc or user is trying to gain exclusive access */
++		if (atomic_read(&buf->priority))
+ 			break;
  
--			spin_lock_irqsave(&buf->lock, flags);
-+			mutex_lock(&buf->flush_mutex);
-+
- 			/* Ldisc or user is trying to flush the buffers.
- 			   We may have a deferred request to flush the
- 			   input buffer, if so pull the chain under the lock
-@@ -464,7 +464,7 @@ static void flush_to_ldisc(struct work_struct *work)
- 		clear_bit(TTYP_FLUSHING, &port->iflags);
+ 		count = head->commit - head->read;
+@@ -426,7 +462,7 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			break;
  	}
  
--	spin_unlock_irqrestore(&buf->lock, flags);
-+	mutex_unlock(&buf->flush_mutex);
+-	mutex_unlock(&buf->flush_mutex);
++	mutex_unlock(&buf->lock);
  
  	tty_ldisc_deref(disc);
  }
-@@ -514,15 +514,13 @@ EXPORT_SYMBOL(tty_flip_buffer_push);
-  *
-  *	Set up the initial state of the buffer management for a tty device.
-  *	Must be called before the other tty buffer functions are used.
-- *
-- *	Locking: none
-  */
- 
- void tty_buffer_init(struct tty_port *port)
+@@ -482,13 +518,12 @@ void tty_buffer_init(struct tty_port *port)
  {
  	struct tty_bufhead *buf = &port->buf;
  
--	spin_lock_init(&buf->lock);
-+	mutex_init(&buf->flush_mutex);
+-	mutex_init(&buf->flush_mutex);
++	mutex_init(&buf->lock);
  	tty_buffer_reset(&buf->sentinel, 0);
  	buf->head = &buf->sentinel;
  	buf->tail = &buf->sentinel;
+ 	init_llist_head(&buf->free);
+ 	atomic_set(&buf->memory_used, 0);
+-	buf->flushpending = 0;
++	atomic_set(&buf->priority, 0);
+ 	INIT_WORK(&buf->work, flush_to_ldisc);
+ }
+-
+diff --git a/drivers/tty/vt/selection.c b/drivers/tty/vt/selection.c
+index 2ca8d6b..ea27804 100644
+--- a/drivers/tty/vt/selection.c
++++ b/drivers/tty/vt/selection.c
+@@ -24,6 +24,7 @@
+ #include <linux/selection.h>
+ #include <linux/tiocl.h>
+ #include <linux/console.h>
++#include <linux/tty_flip.h>
+ 
+ /* Don't take this from <ctype.h>: 011-015 on the screen aren't spaces */
+ #define isspace(c)	((c) == ' ')
+@@ -346,8 +347,8 @@ int paste_selection(struct tty_struct *tty)
+ 	console_unlock();
+ 
+ 	ld = tty_ldisc_ref_wait(tty);
++	tty_buffer_lock_exclusive(&vc->port);
+ 
+-	/* FIXME: this is completely unsafe */
+ 	add_wait_queue(&vc->paste_wait, &wait);
+ 	while (sel_buffer && sel_buffer_lth > pasted) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+@@ -363,6 +364,7 @@ int paste_selection(struct tty_struct *tty)
+ 	remove_wait_queue(&vc->paste_wait, &wait);
+ 	__set_current_state(TASK_RUNNING);
+ 
++	tty_buffer_unlock_exclusive(&vc->port);
+ 	tty_ldisc_deref(ld);
+ 	return 0;
+ }
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 7c12454..1c8fef0 100644
+index 991575f..7a9a3b0 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -66,7 +66,7 @@ static inline char *flag_buf_ptr(struct tty_buffer *b, int ofs)
- 
+@@ -67,8 +67,8 @@ static inline char *flag_buf_ptr(struct tty_buffer *b, int ofs)
  struct tty_bufhead {
- 	struct work_struct work;
--	spinlock_t lock;
-+	struct mutex flush_mutex;
- 	struct tty_buffer sentinel;
  	struct tty_buffer *head;	/* Queue head */
- 	struct tty_buffer *tail;	/* Active buffer */
+ 	struct work_struct work;
+-	struct mutex flush_mutex;
+-	unsigned int flushpending:1;
++	struct mutex	   lock;
++	atomic_t	   priority;
+ 	struct tty_buffer sentinel;
+ 	struct llist_head free;		/* Free queue head */
+ 	atomic_t	   memory_used; /* In-use buffers excluding free list */
+diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
+index 6944ed2..21ddd7d 100644
+--- a/include/linux/tty_flip.h
++++ b/include/linux/tty_flip.h
+@@ -32,4 +32,7 @@ static inline int tty_insert_flip_string(struct tty_port *port,
+ 	return tty_insert_flip_string_fixed_flag(port, chars, TTY_NORMAL, size);
+ }
+ 
++extern void tty_buffer_lock_exclusive(struct tty_port *port);
++extern void tty_buffer_unlock_exclusive(struct tty_port *port);
++
+ #endif /* _LINUX_TTY_FLIP_H */
 -- 
 1.8.1.2
 
