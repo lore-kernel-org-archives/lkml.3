@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3FOXvM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 19:51:12 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38231 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639Ab3FOXvL (ORCPT
+	id S1754814Ab3FOXve (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 19:51:34 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:64847 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab3FOXvd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 19:51:11 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] media: i2c: ths7303: remove unused member driver_data
-Date: Sun, 16 Jun 2013 01:51:22 +0200
-Message-ID: <2064603.dg6NN5EgtL@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1371314050-25866-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1371314050-25866-1-git-send-email-prabhakar.csengg@gmail.com>
+	Sat, 15 Jun 2013 19:51:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1795038.rqcr6GWLdP@avalon>
+References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<CACRpkdaF7V3FGhNNj+N+Dc-NWhsfQ=bqh+ETx0wGBFbLmxfGTw@mail.gmail.com>
+	<201306152216.14252.heiko@sntech.de>
+	<1795038.rqcr6GWLdP@avalon>
+Date: Sun, 16 Jun 2013 01:51:32 +0200
+Message-ID: <CACRpkdYi=ekV8okmz68HZ8Ydv9hTrHnHvQh0HYMs5SfURd9mdA@mail.gmail.com>
+Subject: Re: [RFC] pinctrl: generic: Add DT bindings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Sun, Jun 16, 2013 at 1:35 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Saturday 15 June 2013 22:16:13 Heiko Stübner wrote:
+>> Am Samstag, 15. Juni 2013, 21:56:05 schrieb Linus Walleij:
 
-Thanks for the patch.
+>> Disable would the be either
+>>       bias-disable;
+>> or
+>>       bias-pull-up = <0>;
+>>
+>> A driver should probably handle both, as both are valid pinconf options or
+>> this.
+>
+> I feel a bit uneasy about that. Do we really need to support two different
+> ways to achieve the same result ?
 
-On Saturday 15 June 2013 22:04:10 Prabhakar Lad wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> This patch removes the driver_data member from ths7303_state structure.
-> The driver_data member was intended to differentiate between ths7303 and
-> ths7353 chip and get the g_chip_ident, But as of now g_chip_ident is
-> obsolete, so there is no need of driver_data.
+In this specific case I think yes, but not on all options.
 
-What tree it this based on ? linuxtv/master still uses driver_data in the 
-ths7303_g_chip_ident() function.
+As dicussed earlier this was designed for systems where
+you could set the pull-up resistance, like
 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/media/i2c/ths7303.c |    4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
-> index 2e17abc..0a2dacb 100644
-> --- a/drivers/media/i2c/ths7303.c
-> +++ b/drivers/media/i2c/ths7303.c
-> @@ -38,7 +38,6 @@ struct ths7303_state {
->  	struct v4l2_bt_timings		bt;
->  	int std_id;
->  	int stream_on;
-> -	int driver_data;
->  };
-> 
->  enum ths7303_filter_mode {
-> @@ -355,9 +354,6 @@ static int ths7303_probe(struct i2c_client *client,
->  	sd = &state->sd;
->  	v4l2_i2c_subdev_init(sd, client, &ths7303_ops);
-> 
-> -	/* store the driver data to differntiate the chip */
-> -	state->driver_data = (int)id->driver_data;
-> -
->  	/* set to default 480I_576I filter mode */
->  	if (ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I) < 0) {
->  		v4l_err(client, "Setting to 480I_576I filter mode failed!\n");
--- 
-Regards,
+bias-pull-up = <600000>;
 
-Laurent Pinchart
+would give 600kOhm pull up.
 
+In most existing systems that is silly, as they can't specify
+it, so they should be able to do just:
+
+bias-pull-up;
+
+as that is all they can do. If we have to cut one way, we
+should cut the former until such a system appears.
+
+Yours,
+Linus Walleij
