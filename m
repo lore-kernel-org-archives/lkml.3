@@ -1,96 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3FOA5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jun 2013 20:57:25 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:47347 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3FOA5X convert rfc822-to-8bit (ORCPT
+	id S1753862Ab3FOA5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jun 2013 20:57:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47592 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab3FOA5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jun 2013 20:57:23 -0400
-References: <1368917790-23770-1-git-send-email-tomasz.figa@gmail.com> <54821523.hBKS2L2vLj@flatron> <20130614220030.82ECF3E0A56@localhost>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20130614220030.82ECF3E0A56@localhost>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <19FA54F4-522D-4976-9D98-8EA2827D22F6@collabora.co.uk>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (10B329)
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH] of: irq: Pass trigger type in IRQ resource flags
-Date: Sat, 15 Jun 2013 02:57:17 +0200
-To: Grant Likely <grant.likely@linaro.org>
+	Fri, 14 Jun 2013 20:57:03 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v5 12/22] x86, mm, numa: Move node_map_pfn alignment() to x86
+Date: Fri, 14 Jun 2013 17:56:30 -0700
+Message-Id: <1371257800-11720-13-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
 
-On 15/06/2013, at 00:00, Grant Likely <grant.likely@linaro.org> wrote:
+Will update it to use numa_meminfo instead of memblock.
 
-> On Wed, 05 Jun 2013 20:20:39 +0200, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> Hi,
->> 
->> On Sunday 19 of May 2013 00:56:30 Tomasz Figa wrote:
->>> Some drivers might rely on availability of trigger flags in IRQ
->>> resource, for example to configure the hardware for particular interrupt
->>> type. However current code creating IRQ resources from data in device
->>> tree does not configure trigger flags in resulting resources.
->>> 
->>> This patch solves the problem, based on the fact that
->>> irq_of_parse_and_map() configures the trigger based on DT interrupt
->>> specifier, IRQD_TRIGGER_* flags are consistent with IORESOURCE_IRQ_*,
->>> and we can get trigger type by calling irqd_get_trigger_type() after
->>> mapping the interrupt.
->>> 
->>> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
->>> ---
->>> drivers/of/irq.c | 10 ++++++++++
->>> 1 file changed, 10 insertions(+)
->>> 
->>> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
->>> index a3c1c5a..79a7a26 100644
->>> --- a/drivers/of/irq.c
->>> +++ b/drivers/of/irq.c
->>> @@ -355,6 +355,16 @@ int of_irq_to_resource(struct device_node *dev, int
->>> index, struct resource *r) r->start = r->end = irq;
->>>        r->flags = IORESOURCE_IRQ;
->>>        r->name = name ? name : dev->full_name;
->>> +
->>> +        /*
->>> +         * Some drivers might rely on availability of trigger
->> flags
->>> +         * in IRQ resource. Since irq_of_parse_and_map()
->> configures the
->>> +         * trigger based on interrupt specifier and IRQD_TRIGGER_*
->>> +         * flags are consistent with IORESOURCE_IRQ_*, we can get
->>> +         * trigger type that was just set and pass it through
->> resource
->>> +         * flags as well.
->>> +         */
->>> +        r->flags |= irqd_get_trigger_type(irq_get_irq_data(irq));
->>>    }
->>> 
->>>    return irq;
->> 
->> Any comments on this patch?
-> 
-> That's actually a pretty good solution and a whole lot less invasive
-> that the approach that Javier was pursuing. Javier, I'm going to pick
-> up this patch. Please yell if it doesn't solve the problem that you're
-> trying to solve.
-> 
-> g.
-> 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mm.h |  1 -
+ mm/page_alloc.c    | 50 --------------------------------------------------
+ 3 files changed, 50 insertions(+), 51 deletions(-)
 
-It solves the issue I was trying to solve and the solution is indeed more elegant and simpler than the one I posted.
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1bb565d..10c6240 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -474,6 +474,56 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ 	return true;
+ }
+ 
++/**
++ * node_map_pfn_alignment - determine the maximum internode alignment
++ *
++ * This function should be called after node map is populated and sorted.
++ * It calculates the maximum power of two alignment which can distinguish
++ * all the nodes.
++ *
++ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
++ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
++ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
++ * shifted, 1GiB is enough and this function will indicate so.
++ *
++ * This is used to test whether pfn -> nid mapping of the chosen memory
++ * model has fine enough granularity to avoid incorrect mapping for the
++ * populated node map.
++ *
++ * Returns the determined alignment in pfn's.  0 if there is no alignment
++ * requirement (single node).
++ */
++unsigned long __init node_map_pfn_alignment(void)
++{
++	unsigned long accl_mask = 0, last_end = 0;
++	unsigned long start, end, mask;
++	int last_nid = -1;
++	int i, nid;
++
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
++		if (!start || last_nid < 0 || last_nid == nid) {
++			last_nid = nid;
++			last_end = end;
++			continue;
++		}
++
++		/*
++		 * Start with a mask granular enough to pin-point to the
++		 * start pfn and tick off bits one-by-one until it becomes
++		 * too coarse to separate the current node from the last.
++		 */
++		mask = ~((1 << __ffs(start)) - 1);
++		while (mask && last_end <= (start & (mask << 1)))
++			mask <<= 1;
++
++		/* accumulate all internode masks */
++		accl_mask |= mask;
++	}
++
++	/* convert mask to number of pages */
++	return ~accl_mask + 1;
++}
++
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+ 	unsigned long uninitialized_var(pfn_align);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 28e9470..b827743 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1384,7 +1384,6 @@ static inline unsigned long free_initmem_default(int poison)
+  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
+  */
+ extern void free_area_init_nodes(unsigned long *max_zone_pfn);
+-unsigned long node_map_pfn_alignment(void);
+ extern unsigned long absent_pages_in_range(unsigned long start_pfn,
+ 						unsigned long end_pfn);
+ extern void get_pfn_range_for_nid(unsigned int nid,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c427f46..28c4a97 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4760,56 +4760,6 @@ void __init setup_nr_node_ids(void)
+ }
+ #endif
+ 
+-/**
+- * node_map_pfn_alignment - determine the maximum internode alignment
+- *
+- * This function should be called after node map is populated and sorted.
+- * It calculates the maximum power of two alignment which can distinguish
+- * all the nodes.
+- *
+- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
+- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
+- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
+- * shifted, 1GiB is enough and this function will indicate so.
+- *
+- * This is used to test whether pfn -> nid mapping of the chosen memory
+- * model has fine enough granularity to avoid incorrect mapping for the
+- * populated node map.
+- *
+- * Returns the determined alignment in pfn's.  0 if there is no alignment
+- * requirement (single node).
+- */
+-unsigned long __init node_map_pfn_alignment(void)
+-{
+-	unsigned long accl_mask = 0, last_end = 0;
+-	unsigned long start, end, mask;
+-	int last_nid = -1;
+-	int i, nid;
+-
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
+-		if (!start || last_nid < 0 || last_nid == nid) {
+-			last_nid = nid;
+-			last_end = end;
+-			continue;
+-		}
+-
+-		/*
+-		 * Start with a mask granular enough to pin-point to the
+-		 * start pfn and tick off bits one-by-one until it becomes
+-		 * too coarse to separate the current node from the last.
+-		 */
+-		mask = ~((1 << __ffs(start)) - 1);
+-		while (mask && last_end <= (start & (mask << 1)))
+-			mask <<= 1;
+-
+-		/* accumulate all internode masks */
+-		accl_mask |= mask;
+-	}
+-
+-	/* convert mask to number of pages */
+-	return ~accl_mask + 1;
+-}
+-
+ /* Find the lowest pfn for a node */
+ static unsigned long __init find_min_pfn_for_node(int nid)
+ {
+-- 
+1.8.1.4
 
-Thanks a lot for pointing this out.
-
-Best regards,
-Javier
