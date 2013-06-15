@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3FOV64 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 17:58:56 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:59351 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab3FOV6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 17:58:55 -0400
-Message-ID: <51BCE39D.4030505@prisktech.co.nz>
-Date: Sun, 16 Jun 2013 09:58:53 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754725Ab3FOWHR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 18:07:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38713 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559Ab3FOWHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 18:07:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] ACPI / dock: Take ACPI scan lock in write_undock()
+Date: Sun, 16 Jun 2013 00:16:31 +0200
+Message-ID: <1886227.aipra45Zvt@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] i2c: vt8500: Add support for I2C bus on Wondermedia
- SoCs
-References: <1371246736-5460-1-git-send-email-linux@prisktech.co.nz> <20130615111817.GA2938@katana>
-In-Reply-To: <20130615111817.GA2938@katana>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/06/13 23:18, Wolfram Sang wrote:
-> On Sat, Jun 15, 2013 at 09:52:16AM +1200, Tony Prisk wrote:
->> This patch adds support for the I2C bus controllers found on Wondermedia
->> 8xxx-series SoCs. Only master-mode is supported.
->>
->> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
->> ---
-> ...
->
->> +/* REG_TR */
->> +#define SCL_TIMEOUT(x)		(((x) & 0xFF) << 16)
-> I assume this should be << 8 since all regs are 16 bit wide.
->
-> Fixed it locally and ready to apply. Please confirm or send a proper
-> fix. Rest looks fine.
->
-> Thanks for the submission!
->
-It should be << 8. Please apply your locally corrected version.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Regards
-Tony Prisk
+Since commit 3757b94 (ACPI / hotplug: Fix concurrency issues and
+memory leaks) acpi_bus_scan() and acpi_bus_trim() must always be
+called under acpi_scan_lock, but currently the following scenario
+violating that requirement is possible:
+
+ write_undock()
+  handle_eject_request()
+   hotplug_dock_devices()
+    dock_remove_acpi_device()
+     acpi_bus_trim()
+
+Fix that by making write_undock() acquire acpi_scan_lock before
+calling handle_eject_request() as appropriate (begin_undock() is
+under the lock too in analogy with acpi_dock_deferred_cb()).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: 3.9+ <stable@vger.kernel.org>
+---
+ drivers/acpi/dock.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-pm/drivers/acpi/dock.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/dock.c
++++ linux-pm/drivers/acpi/dock.c
+@@ -868,8 +868,10 @@ static ssize_t write_undock(struct devic
+ 	if (!count)
+ 		return -EINVAL;
+ 
++	acpi_scan_lock_acquire();
+ 	begin_undock(dock_station);
+ 	ret = handle_eject_request(dock_station, ACPI_NOTIFY_EJECT_REQUEST);
++	acpi_scan_lock_release();
+ 	return ret ? ret: count;
+ }
+ static DEVICE_ATTR(undock, S_IWUSR, NULL, write_undock);
+
