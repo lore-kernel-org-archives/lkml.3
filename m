@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab3FPUzF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 16:55:05 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:48703 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab3FPUzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755548Ab3FPUzA (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 16 Jun 2013 16:55:00 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:55677 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755650Ab3FPUy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 16:54:56 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,9 +27,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Alban Bedel <alban.bedel@avionic-design.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC PATCH 11/11] ARM: s3c64xx: Add support for DMA using generic amba-pl08x driver
-Date: Sun, 16 Jun 2013 22:54:18 +0200
-Message-Id: <1371416058-22047-12-git-send-email-tomasz.figa@gmail.com>
+Subject: [RFC PATCH 10/11] ASoC: samsung: Do not require legacy DMA API in case of S3C64XX
+Date: Sun, 16 Jun 2013 22:54:17 +0200
+Message-Id: <1371416058-22047-11-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
 References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
@@ -37,416 +37,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds all required platform-specific data and initialization
-code to support the generic amba-pl08x driver on S3C64xx SoCs.
-
-Also some compatibility definitions are added to make the transition from
-legacy API to DMA engine easier. The biggest hack here is passing const
-char * pointers through DMA resource, casted to unsigned long, but this
-is how Samsung DMA wrappers (used to support both s3c-dma and DMA engine
-in drivers) is designed.
+With support for amba-pl08x driver, on S3C64xx the generic DMA engine API
+can be used instead of the private s3c-dma interface.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- arch/arm/Kconfig                         |   1 +
- arch/arm/mach-s3c64xx/Kconfig            |   8 +-
- arch/arm/mach-s3c64xx/Makefile           |   1 +
- arch/arm/mach-s3c64xx/common.h           |   5 +
- arch/arm/mach-s3c64xx/include/mach/dma.h |  65 ++++++++
- arch/arm/mach-s3c64xx/pl080.c            | 244 +++++++++++++++++++++++++++++++
- 6 files changed, 323 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-s3c64xx/pl080.c
+ sound/soc/samsung/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 42d6ea2..fab8f3c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -714,6 +714,7 @@ config ARCH_S3C64XX
- 	bool "Samsung S3C64XX"
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
- 	select ARM_VIC
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_MMIO
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index 2057853..704c5e4 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -28,9 +28,15 @@ config CPU_S3C6410
+diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
+index ae0ea87..dbced1e 100644
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -1,7 +1,7 @@
+ config SND_SOC_SAMSUNG
+ 	tristate "ASoC support for Samsung"
+ 	depends on PLAT_SAMSUNG
+-	select S3C64XX_DMA if ARCH_S3C64XX
++	select S3C64XX_DMA if ARCH_S3C64XX && !S3C64XX_PL080
+ 	select S3C2410_DMA if ARCH_S3C24XX
  	help
- 	  Enable S3C6410 CPU support
- 
-+config S3C64XX_PL080
-+	bool "S3C64XX DMA using generic PL08x driver"
-+	select AMBA_PL08X
-+	select SAMSUNG_DMADEV
-+
- config S3C64XX_DMA
--	bool "S3C64XX DMA"
-+	bool "S3C64XX DMA using legacy S3C DMA API"
- 	select S3C_DMA
-+	depends on !S3C64XX_PL080
- 
- config S3C64XX_SETUP_SDHCI
- 	bool
-diff --git a/arch/arm/mach-s3c64xx/Makefile b/arch/arm/mach-s3c64xx/Makefile
-index 31d0c91..4e3326a 100644
---- a/arch/arm/mach-s3c64xx/Makefile
-+++ b/arch/arm/mach-s3c64xx/Makefile
-@@ -27,6 +27,7 @@ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- # DMA support
- 
- obj-$(CONFIG_S3C64XX_DMA)	+= dma.o
-+obj-$(CONFIG_S3C64XX_PL080)	+= pl080.o
- 
- # Device support
- 
-diff --git a/arch/arm/mach-s3c64xx/common.h b/arch/arm/mach-s3c64xx/common.h
-index 6cfc99b..60a667a 100644
---- a/arch/arm/mach-s3c64xx/common.h
-+++ b/arch/arm/mach-s3c64xx/common.h
-@@ -58,4 +58,9 @@ int __init s3c64xx_pm_late_initcall(void);
- static inline int s3c64xx_pm_late_initcall(void) { return 0; }
- #endif
- 
-+#ifdef CONFIG_S3C64XX_PL080
-+extern struct pl08x_platform_data s3c64xx_dma0_plat_data;
-+extern struct pl08x_platform_data s3c64xx_dma1_plat_data;
-+#endif
-+
- #endif /* __ARCH_ARM_MACH_S3C64XX_COMMON_H */
-diff --git a/arch/arm/mach-s3c64xx/include/mach/dma.h b/arch/arm/mach-s3c64xx/include/mach/dma.h
-index fe1a98c..6f88965 100644
---- a/arch/arm/mach-s3c64xx/include/mach/dma.h
-+++ b/arch/arm/mach-s3c64xx/include/mach/dma.h
-@@ -11,6 +11,8 @@
- #ifndef __ASM_ARCH_DMA_H
- #define __ASM_ARCH_DMA_H __FILE__
- 
-+#ifdef CONFIG_S3C64XX_DMA
-+
- #define S3C_DMA_CHANNELS	(16)
- 
- /* see mach-s3c2410/dma.h for notes on dma channel numbers */
-@@ -128,4 +130,67 @@ struct s3c2410_dma_chan {
- 
- #include <plat/dma-core.h>
- 
-+#else
-+
-+#define S3C64XX_DMA_CHAN(name)		((unsigned long)(name))
-+
-+/* DMA0/SDMA0 */
-+#define DMACH_UART0		S3C64XX_DMA_CHAN("uart0_tx")
-+#define DMACH_UART0_SRC2	S3C64XX_DMA_CHAN("uart0_rx")
-+#define DMACH_UART1		S3C64XX_DMA_CHAN("uart1_tx")
-+#define DMACH_UART1_SRC2	S3C64XX_DMA_CHAN("uart1_rx")
-+#define DMACH_UART2		S3C64XX_DMA_CHAN("uart2_tx")
-+#define DMACH_UART2_SRC2	S3C64XX_DMA_CHAN("uart2_rx")
-+#define DMACH_UART3		S3C64XX_DMA_CHAN("uart3_tx")
-+#define DMACH_UART3_SRC2	S3C64XX_DMA_CHAN("uart3_rx")
-+#define DMACH_PCM0_TX		S3C64XX_DMA_CHAN("pcm0_tx")
-+#define DMACH_PCM0_RX		S3C64XX_DMA_CHAN("pcm0_rx")
-+#define DMACH_I2S0_OUT		S3C64XX_DMA_CHAN("i2s0_tx")
-+#define DMACH_I2S0_IN		S3C64XX_DMA_CHAN("i2s0_rx")
-+#define DMACH_SPI0_TX		S3C64XX_DMA_CHAN("spi0_tx")
-+#define DMACH_SPI0_RX		S3C64XX_DMA_CHAN("spi0_rx")
-+#define DMACH_HSI_I2SV40_TX	S3C64XX_DMA_CHAN("i2s2_tx")
-+#define DMACH_HSI_I2SV40_RX	S3C64XX_DMA_CHAN("i2s2_rx")
-+
-+/* DMA1/SDMA1 */
-+#define DMACH_PCM1_TX		S3C64XX_DMA_CHAN("pcm1_tx")
-+#define DMACH_PCM1_RX		S3C64XX_DMA_CHAN("pcm1_rx")
-+#define DMACH_I2S1_OUT		S3C64XX_DMA_CHAN("i2s1_tx")
-+#define DMACH_I2S1_IN		S3C64XX_DMA_CHAN("i2s1_rx")
-+#define DMACH_SPI1_TX		S3C64XX_DMA_CHAN("spi1_tx")
-+#define DMACH_SPI1_RX		S3C64XX_DMA_CHAN("spi1_rx")
-+#define DMACH_AC97_PCMOUT	S3C64XX_DMA_CHAN("ac97_out")
-+#define DMACH_AC97_PCMIN	S3C64XX_DMA_CHAN("ac97_in")
-+#define DMACH_AC97_MICIN	S3C64XX_DMA_CHAN("ac97_mic")
-+#define DMACH_PWM		S3C64XX_DMA_CHAN("pwm")
-+#define DMACH_IRDA		S3C64XX_DMA_CHAN("irda")
-+#define DMACH_EXTERNAL		S3C64XX_DMA_CHAN("external")
-+#define DMACH_SECURITY_RX	S3C64XX_DMA_CHAN("sec_rx")
-+#define DMACH_SECURITY_TX	S3C64XX_DMA_CHAN("sec_tx")
-+
-+enum dma_ch {
-+	DMACH_MAX = 32
-+};
-+
-+struct s3c2410_dma_client {
-+	char	*name;
-+};
-+
-+static inline bool samsung_dma_has_circular(void)
-+{
-+	return true;
-+}
-+
-+static inline bool samsung_dma_is_dmadev(void)
-+{
-+	return true;
-+}
-+
-+#define pl330_filter pl08x_filter_id
-+
-+#include <linux/amba/pl08x.h>
-+#include <plat/dma-ops.h>
-+
-+#endif
-+
- #endif /* __ASM_ARCH_IRQ_H */
-diff --git a/arch/arm/mach-s3c64xx/pl080.c b/arch/arm/mach-s3c64xx/pl080.c
-new file mode 100644
-index 0000000..734b79f
---- /dev/null
-+++ b/arch/arm/mach-s3c64xx/pl080.c
-@@ -0,0 +1,244 @@
-+/*
-+ * Samsung's S3C64XX generic DMA support using amba-pl08x driver.
-+ *
-+ * Copyright (c) 2013 Tomasz Figa <tomasz.figa@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/amba/bus.h>
-+#include <linux/amba/pl080.h>
-+#include <linux/amba/pl08x.h>
-+#include <linux/of.h>
-+
-+#include <mach/irqs.h>
-+#include <mach/map.h>
-+
-+#include "regs-sys.h"
-+
-+static int pl08x_get_signal(const struct pl08x_channel_data *cd)
-+{
-+	return cd->min_signal;
-+}
-+
-+static void pl08x_put_signal(const struct pl08x_channel_data *cd, int ch)
-+{
-+}
-+
-+/*
-+ * DMA0
-+ */
-+
-+static struct pl08x_channel_data s3c64xx_dma0_info[] = {
-+	{
-+		.bus_id = "uart0_tx",
-+		.min_signal = 0,
-+		.max_signal = 0,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart0_rx",
-+		.min_signal = 1,
-+		.max_signal = 1,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart1_tx",
-+		.min_signal = 2,
-+		.max_signal = 2,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart1_rx",
-+		.min_signal = 3,
-+		.max_signal = 3,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart2_tx",
-+		.min_signal = 4,
-+		.max_signal = 4,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart2_rx",
-+		.min_signal = 5,
-+		.max_signal = 5,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart3_tx",
-+		.min_signal = 6,
-+		.max_signal = 6,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "uart3_rx",
-+		.min_signal = 7,
-+		.max_signal = 7,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "pcm0_tx",
-+		.min_signal = 8,
-+		.max_signal = 8,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "pcm0_rx",
-+		.min_signal = 9,
-+		.max_signal = 9,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s0_tx",
-+		.min_signal = 10,
-+		.max_signal = 10,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s0_rx",
-+		.min_signal = 11,
-+		.max_signal = 11,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "spi0_tx",
-+		.min_signal = 12,
-+		.max_signal = 12,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "spi0_rx",
-+		.min_signal = 13,
-+		.max_signal = 13,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s2_tx",
-+		.min_signal = 14,
-+		.max_signal = 14,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s2_rx",
-+		.min_signal = 15,
-+		.max_signal = 15,
-+		.periph_buses = PL08X_AHB2,
-+	}
-+};
-+
-+struct pl08x_platform_data s3c64xx_dma0_plat_data = {
-+	.memcpy_channel = {
-+		.bus_id = "memcpy",
-+		.cctl_memcpy =
-+			(PL080_BSIZE_16 << PL080_CONTROL_SB_SIZE_SHIFT | \
-+			PL080_BSIZE_16 << PL080_CONTROL_DB_SIZE_SHIFT | \
-+			PL080_WIDTH_32BIT << PL080_CONTROL_SWIDTH_SHIFT | \
-+			PL080_WIDTH_32BIT << PL080_CONTROL_DWIDTH_SHIFT | \
-+			PL080_CONTROL_PROT_BUFF | PL080_CONTROL_PROT_CACHE | \
-+			PL080_CONTROL_PROT_SYS),
-+	},
-+	.lli_buses = PL08X_AHB1,
-+	.mem_buses = PL08X_AHB1,
-+	.get_signal = pl08x_get_signal,
-+	.put_signal = pl08x_put_signal,
-+	.slave_channels = s3c64xx_dma0_info,
-+	.num_slave_channels = ARRAY_SIZE(s3c64xx_dma0_info),
-+};
-+
-+static AMBA_AHB_DEVICE(s3c64xx_dma0, "dma-pl080s.0", 0x0a141080,
-+			0x75000000, {IRQ_DMA0}, &s3c64xx_dma0_plat_data);
-+
-+/*
-+ * DMA1
-+ */
-+
-+static struct pl08x_channel_data s3c64xx_dma1_info[] = {
-+	{
-+		.bus_id = "pcm1_tx",
-+		.min_signal = 0,
-+		.max_signal = 0,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "pcm1_rx",
-+		.min_signal = 1,
-+		.max_signal = 1,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s1_tx",
-+		.min_signal = 2,
-+		.max_signal = 2,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "i2s1_rx",
-+		.min_signal = 3,
-+		.max_signal = 3,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "spi1_tx",
-+		.min_signal = 4,
-+		.max_signal = 4,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "spi1_rx",
-+		.min_signal = 5,
-+		.max_signal = 5,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "ac97_out",
-+		.min_signal = 6,
-+		.max_signal = 6,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "ac97_in",
-+		.min_signal = 7,
-+		.max_signal = 7,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "ac97_mic",
-+		.min_signal = 8,
-+		.max_signal = 8,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "pwm",
-+		.min_signal = 9,
-+		.max_signal = 9,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "irda",
-+		.min_signal = 10,
-+		.max_signal = 10,
-+		.periph_buses = PL08X_AHB2,
-+	}, {
-+		.bus_id = "external",
-+		.min_signal = 11,
-+		.max_signal = 11,
-+		.periph_buses = PL08X_AHB2,
-+	},
-+};
-+
-+struct pl08x_platform_data s3c64xx_dma1_plat_data = {
-+	.memcpy_channel = {
-+		.bus_id = "memcpy",
-+		.cctl_memcpy =
-+			(PL080_BSIZE_16 << PL080_CONTROL_SB_SIZE_SHIFT | \
-+			PL080_BSIZE_16 << PL080_CONTROL_DB_SIZE_SHIFT | \
-+			PL080_WIDTH_32BIT << PL080_CONTROL_SWIDTH_SHIFT | \
-+			PL080_WIDTH_32BIT << PL080_CONTROL_DWIDTH_SHIFT | \
-+			PL080_CONTROL_PROT_BUFF | PL080_CONTROL_PROT_CACHE | \
-+			PL080_CONTROL_PROT_SYS),
-+	},
-+	.lli_buses = PL08X_AHB1,
-+	.mem_buses = PL08X_AHB1,
-+	.get_signal = pl08x_get_signal,
-+	.put_signal = pl08x_put_signal,
-+	.slave_channels = s3c64xx_dma1_info,
-+	.num_slave_channels = ARRAY_SIZE(s3c64xx_dma1_info),
-+};
-+
-+static AMBA_AHB_DEVICE(s3c64xx_dma1, "dma-pl080s.1", 0x0a141080,
-+			0x75100000, {IRQ_DMA1}, &s3c64xx_dma1_plat_data);
-+
-+static int __init s3c64xx_pl080_init(void)
-+{
-+	/* Set all DMA configuration to be DMA, not SDMA */
-+	writel(0xffffff, S3C64XX_SDMA_SEL);
-+
-+	if (of_have_populated_dt())
-+		return 0;
-+
-+	amba_device_register(&s3c64xx_dma0_device, &iomem_resource);
-+	amba_device_register(&s3c64xx_dma1_device, &iomem_resource);
-+
-+	return 0;
-+}
-+arch_initcall(s3c64xx_pl080_init);
+ 	  Say Y or M if you want to add support for codecs attached to
 -- 
 1.8.2.1
 
