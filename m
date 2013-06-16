@@ -1,119 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3FPHBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 03:01:14 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35647 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab3FPHBN (ORCPT
+	id S1755067Ab3FPHH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 03:07:56 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:36769 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab3FPHHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 03:01:13 -0400
-Message-ID: <51BD6288.5030901@oracle.com>
-Date: Sun, 16 Jun 2013 15:00:24 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Sun, 16 Jun 2013 03:07:54 -0400
+From: Oded Gabbay <ogabbay@advaoptical.com>
+To: <cjb@laptop.org>, <ogabbay@advaoptical.com>, <shawn.guo@linaro.org>,
+        <Chang-Ming.Huang@freescale.com>, <wfp5p@virginia.edu>,
+        <gregkh@linuxfoundation.org>, <cbouatmailru@gmail.com>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/2] MMC: P2020 SDHC: Add support for 8-bit bus width and non-removable card
+Date: Sun, 16 Jun 2013 10:07:20 +0300
+Message-ID: <1371366440-9926-1-git-send-email-ogabbay@advaoptical.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Richard Yao <ryao@gentoo.org>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@gentoo.org, Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH 1/2] ocfs2: Fix llseek() semantics and do some cleanup
-References: <1371237814-59365-1-git-send-email-ryao@gentoo.org> <1371237814-59365-2-git-send-email-ryao@gentoo.org> <51BBF6FE.6080502@oracle.com> <51BD0AFF.8010504@gentoo.org>
-In-Reply-To: <51BD0AFF.8010504@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-15_08:2013-06-14,2013-06-15,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2013 08:46 AM, Richard Yao wrote:
+This patch adds support of connecting an MMC media using an 8-bit
+bus width connection to Freescale's P2020 H/W SDHC controller. During
+the probe function, the generic function mmc_of_parse is called to detect
+whether the controller is configured with 8-bit bus width. Also, the generic
+function detecs if the non-removable property is set in the device tree.
+The function esdhc_pltfm_bus_width was added because the bus width configuration
+is platform specific.
 
-> On 06/15/2013 01:09 AM, Jeff Liu wrote:
->> [Add ocfs2-devel to CC-list]
->>
->> Hello Richard,
->>
->> Thanks for your patch.
->>
->> On 06/15/2013 03:23 AM, Richard Yao wrote:
->>
->>> There are multiple issues with the custom llseek implemented in ocfs2 for
->>> implementing SEEK_HOLE/SEEK_DATA.
->>>
->>> 1. It takes the inode->i_mutex lock before calling generic_file_llseek(), which
->>> is unnecessary.
->>
->> Agree, but please see my comments below.
->>
->>>
->>> 2. It fails to take the filp->f_lock spinlock before modifying filp->f_pos and
->>> filp->f_version, which differs from generic_file_llseek().
->>>
->>> 3. It does a offset > inode->i_sb->s_maxbytes check that permits seeking up to
->>> the maximum file size possible on the ocfs2 filesystem, even when it is past
->>> the end of the file. Seeking beyond that (if possible), would return EINVAL
->>> instead of ENXIO.
->>>
->>> 4. The switch statement tries to cover all whence values when in reality it
->>> should only care about SEEK_HOLE/SEEK_DATA. Any other cases should be passsed
->>> to generic_file_llseek().
->>
->> I have another patch set for refactoring ocfs2_file_llseek() but not yet found time
->> to run a comprehensive tests.  It can solve the existing issues but also improved the
->> SEEK_DATA/SEEK_HOLE for unwritten extents, i.e. OCFS2_EXT_UNWRITTEN.
->>
->> With this change, SEEK_DATA/SEEK_HOLE will go into separate function with a little code
->> duplication instead of the current mix-ups in ocfs2_seek_data_hole_offset(), i.e, 
->>
->> loff_t ocfs2_file_llseek()
->> {
->> 	switch (origin) {
->>         case SEEK_END:
->>         case SEEK_CUR:
->>         case SEEK_SET:
->>                 return generic_file_llseek(file, offset, origin);
->>         case SEEK_DATA:
->>                 return ocfs2_seek_data(file, offset);
->>         case SEEK_HOLE:
->>                 return ocfs2_seek_hole(file, offset);
->>         default:
->>                 return -EINVAL;
->>         }
->> }
->>
->> I personally like keeping SEEK_DATA/SEEK_HOLE in switch...case style rather
->> than dealing with them in a condition check block.
-> 
-> I would prefer to see the code structured like this:
-> 
-> loff_t ocfs2_file_llseek()
-> {
-> 	switch (origin) {
->         case SEEK_DATA:
->                 return ocfs2_seek_data(file, offset);
->         case SEEK_HOLE:
->                 return ocfs2_seek_hole(file, offset);
->         default:
->                 return generic_file_llseek(file, offset, origin);
->         }
-> }
-> 
-> Unfortunately, I just noticed that this code has a problem. In specific,
-> generic_file_llseek() calls generic_file_llseek_size(), which has a
-> switch statement for whence that fails to distinguish between SEEK_SET
-> and invalid whence values. Invalid whence values are mapped to SEEK_SET
-> instead of returning EINVAL, which is wrong. That issue affects all
-> filesystems that do not specify a custom llseek() function and it would
-> affect ocfs2 if my version of the function is used.
+Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
+Reviewed-by: Anton Vorontsov <anton@enomsg.org>
+---
+ drivers/mmc/host/sdhci-esdhc.h    |  7 +++++++
+ drivers/mmc/host/sdhci-of-esdhc.c | 44 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 50 insertions(+), 1 deletion(-)
 
-Hmm??  Did you mean to say that an invalid whence(i.e, whence > SEEK_MAX)
-can be passed into generic_file_llseek()?
-If so, I don't think that is a problem because any invalid whence should
-be rejected at the entrance of VFS lseek(2) with EINVAL.
-
-Thanks,
--Jeff
-
+diff --git a/drivers/mmc/host/sdhci-esdhc.h b/drivers/mmc/host/sdhci-esdhc.h
+index d25f9ab..6f9a018 100644
+--- a/drivers/mmc/host/sdhci-esdhc.h
++++ b/drivers/mmc/host/sdhci-esdhc.h
+@@ -36,6 +36,13 @@
+ /* pltfm-specific */
+ #define ESDHC_HOST_CONTROL_LE	0x20
  
-
++/*
++ * P2020 interpretation of the SDHCI_HOST_CONTROL register
++ */
++#define ESDHC_CTRL_4BITBUS          (0x1 << 1)
++#define ESDHC_CTRL_8BITBUS          (0x2 << 1)
++#define ESDHC_CTRL_BUSWIDTH_MASK    (0x3 << 1)
++
+ /* OF-specific */
+ #define ESDHC_DMA_SYSCTL	0x40c
+ #define ESDHC_DMA_SNOOP		0x00000040
+diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
+index 5e68adc..fd149a0 100644
+--- a/drivers/mmc/host/sdhci-of-esdhc.c
++++ b/drivers/mmc/host/sdhci-of-esdhc.c
+@@ -13,6 +13,7 @@
+  * your option) any later version.
+  */
+ 
++#include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/delay.h>
+@@ -230,6 +231,30 @@ static void esdhc_of_platform_init(struct sdhci_host *host)
+ 		host->quirks &= ~SDHCI_QUIRK_NO_BUSY_IRQ;
+ }
+ 
++static int esdhc_pltfm_bus_width(struct sdhci_host *host, int width)
++{
++	u32 ctrl;
++
++	switch (width) {
++	case MMC_BUS_WIDTH_8:
++		ctrl = ESDHC_CTRL_8BITBUS;
++		break;
++
++	case MMC_BUS_WIDTH_4:
++		ctrl = ESDHC_CTRL_4BITBUS;
++		break;
++
++	default:
++		ctrl = 0;
++		break;
++	}
++
++	clrsetbits_be32(host->ioaddr + SDHCI_HOST_CONTROL,
++			ESDHC_CTRL_BUSWIDTH_MASK, ctrl);
++
++	return 0;
++}
++
+ static const struct sdhci_ops sdhci_esdhc_ops = {
+ 	.read_l = esdhc_readl,
+ 	.read_w = esdhc_readw,
+@@ -247,6 +272,7 @@ static const struct sdhci_ops sdhci_esdhc_ops = {
+ 	.platform_resume = esdhc_of_resume,
+ #endif
+ 	.adma_workaround = esdhci_of_adma_workaround,
++	.platform_bus_width = esdhc_pltfm_bus_width,
+ };
+ 
+ static const struct sdhci_pltfm_data sdhci_esdhc_pdata = {
+@@ -262,7 +288,23 @@ static const struct sdhci_pltfm_data sdhci_esdhc_pdata = {
+ 
+ static int sdhci_esdhc_probe(struct platform_device *pdev)
+ {
+-	return sdhci_pltfm_register(pdev, &sdhci_esdhc_pdata);
++	struct sdhci_host *host;
++	int ret;
++
++	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_pdata);
++	if (IS_ERR(host))
++		return PTR_ERR(host);
++
++	sdhci_get_of_property(pdev);
++
++	/* call to generic mmc_of_parse to support additional capabilities */
++	mmc_of_parse(host->mmc);
++
++	ret = sdhci_add_host(host);
++	if (ret)
++		sdhci_pltfm_free(pdev);
++
++	return ret;
+ }
+ 
+ static int sdhci_esdhc_remove(struct platform_device *pdev)
+-- 
+1.8.3.1
 
