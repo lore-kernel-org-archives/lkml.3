@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab3FPDO1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 23:14:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:56033 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754784Ab3FPDOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 23:14:25 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Mathias Krause <minipli@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] module: don't modify argument of module_kallsyms_lookup_name()
-In-Reply-To: <1371258778-12655-1-git-send-email-minipli@googlemail.com>
-References: <1371258778-12655-1-git-send-email-minipli@googlemail.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Sun, 16 Jun 2013 12:05:16 +0930
-Message-ID: <87fvwirdej.fsf@rustcorp.com.au>
+	id S1753976Ab3FPEId (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 00:08:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61639 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab3FPEIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 00:08:31 -0400
+Date: Sun, 16 Jun 2013 12:07:58 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH kbuild-next] kconfig/lxdialog: Add definitions for
+ mininimum (re)size values
+Message-ID: <20130616040758.GA2022@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+	Benjamin Poirier <bpoirier@suse.de>,
+	"Yann E. MORIN" <yann.morin.1998@free.fr>,
+	Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1371287255-4172-1-git-send-email-sedat.dilek@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371287255-4172-1-git-send-email-sedat.dilek@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathias Krause <minipli@googlemail.com> writes:
-> If we pass a pointer to a const string in the form "module:symbol"
-> module_kallsyms_lookup_name() will try to split the string at the colon,
-> i.e., will try to modify r/o data. That will, in fact, fail on a kernel
-> with enabled CONFIG_DEBUG_RODATA.
->
-> Avoid modifying the passed string in module_kallsyms_lookup_name(),
-> modify find_module_all() instead to pass it the module name length.
->
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-
-Applied, thanks.
-
-Cheers,
-Rusty.
+On Sat, Jun 15, 2013 at 11:07:35AM +0200, Sedat Dilek wrote:
+> Commit c8dc68ad0fbd ("kconfig/lxdialog: support resize") added support
+> for resizing, but forgot to collect all hardcoded values at one single
+> place.
+> 
+> Also add a definition for the check for a minimum screen/window size
+> of 80x19.
+> 
+> [ ChangeLog v3:
+>   * Rename MENU_{HEIGTH,WIDTH}_MIN -> MENUBOX_{HEIGTH,WIDTH}_MIN
+>   ChangeLog v2:
+>   * Rename WIN_{HEIGTH,WIDTH}_MIN -> WINDOW_{HEIGTH,WIDTH}_MIN
+>   * Mention the check for a minimum screen/window size in the changelog
+>   * Add a comment above the block of new definitions ]
+> 
+> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+Acked-by: Wang YanQing <udknight@gmail.com>
