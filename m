@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3FPOj6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 10:39:58 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:60150 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab3FPOj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 10:39:57 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
-Date: Sun, 16 Jun 2013 16:39:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+	id S1755304Ab3FPPHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 11:07:38 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:35736 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197Ab3FPPHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 11:07:37 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306161639.51403.heiko@sntech.de>
+In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
+Date: Sun, 16 Jun 2013 23:07:36 +0800
+Message-ID: <CACVXFVPrb-6WXadXyYE923+1_MA+y-9p1RRO=ufXXJCkEJu+OQ@mail.gmail.com>
+Subject: Re: Questions about Runtime Power Management
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Morales, Alejandra" <alejandra.morales@tum.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 16. Juni 2013, 12:45:48 schrieb Linus Walleij:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> It is counter-intuitive to have "0" mean disable in a boolean
-> manner for electronic properties of pins such as pull-up and
-> pull-down. Therefore, define that a pull-up/pull-down argument
-> of 0 to such a generic option means that the pin is
-> short-circuited to VDD or GROUND. Pull disablement shall be
-> done using PIN_CONFIG_BIAS_DISABLE.
-> 
-> Cc: Heiko St�bner <heiko@sntech.de>
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Jun 10, 2013 at 12:28 AM, Morales, Alejandra
+<alejandra.morales@tum.de> wrote:
 
-very nice :-)
+> - Is runtime power management supported by net devices?
 
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+Currently, 'struct net_device' doesn't support runtime power management,
+and I submitted one patch to add the support for solving accessing
+suspended device by 'ethtool', but it was rejected.
 
-> ---
->  include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
->  1 file changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/pinctrl/pinconf-generic.h
-> b/include/linux/pinctrl/pinconf-generic.h index d414a77..67780f5 100644
-> --- a/include/linux/pinctrl/pinconf-generic.h
-> +++ b/include/linux/pinctrl/pinconf-generic.h
-> @@ -36,14 +36,15 @@
->   *	tristate. The argument is ignored.
->   * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
->   *	impedance to VDD). If the argument is != 0 pull-up is enabled,
-> - *	if it is 0, pull-up is disabled.
-> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
->   * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with
-> high *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
-> - *	if it is 0, pull-down is disabled.
-> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
->   * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down
-> based *	on embedded knowledge of the controller, like current mux
-> function. - *	If the argument is != 0 pull up/down is enabled, if it is 0,
-> - *	the pull is disabled.
-> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
-> + *	configuration is ignored. The proper way to disable it is to use
-> + *	@PIN_CONFIG_BIAS_DISABLE.
->   * @PIN_CONFIG_DRIVE_PUSH_PULL: the pin will be driven actively high and
->   *	low, this is the most typical case and is typically achieved with two
->   *	active transistors on the output. Setting this config will enable
-> @@ -72,8 +73,8 @@
->   *	supplies, the argument to this parameter (on a custom format) tells
->   *	the driver which alternative power source to use.
->   * @PIN_CONFIG_SLEW_RATE: if the pin can select slew rate, the argument to
-> - * 	this parameter (on a custom format) tells the driver which 
-alternative
-> - * 	slew rate to use.
-> + *	this parameter (on a custom format) tells the driver which 
-alternative
-> + *	slew rate to use.
->   * @PIN_CONFIG_LOW_POWER_MODE: this will configure the pin for low power
->   *	operation, if several modes of operation are supported these can be
->   *	passed in the argument on a custom form, else just use argument 1
+              http://marc.info/?t=135054860600003&r=1&w=2
 
+But the physical device of the net device can support runtime PM, for example,
+some PCIe network devices support runtime PM on link change, and usbnet
+devices support auto suspend.
+
+Generally, the physical device is the parent of the net device, which is
+a class device.
+
+Thanks,
+-- 
+Ming Lei
