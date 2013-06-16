@@ -1,150 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3FPArf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 20:47:35 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:44467 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab3FPArd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 20:47:33 -0400
-Message-ID: <51BD0AFF.8010504@gentoo.org>
-Date: Sat, 15 Jun 2013 20:46:55 -0400
-From: Richard Yao <ryao@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130522 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jeff Liu <jeff.liu@oracle.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@gentoo.org, Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH 1/2] ocfs2: Fix llseek() semantics and do some cleanup
-References: <1371237814-59365-1-git-send-email-ryao@gentoo.org> <1371237814-59365-2-git-send-email-ryao@gentoo.org> <51BBF6FE.6080502@oracle.com>
-In-Reply-To: <51BBF6FE.6080502@oracle.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2EAWNNIBNFJJKCKPLILXC"
+	id S1754827Ab3FPAtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 20:49:09 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:38685 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab3FPAtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 20:49:07 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Subject: [PATCH 1/2] f2fs: add remount_fs callback support
+Date: Sun, 16 Jun 2013 09:48:48 +0900
+Message-Id: <1371343728-2676-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2EAWNNIBNFJJKCKPLILXC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-On 06/15/2013 01:09 AM, Jeff Liu wrote:
-> [Add ocfs2-devel to CC-list]
->=20
-> Hello Richard,
->=20
-> Thanks for your patch.
->=20
-> On 06/15/2013 03:23 AM, Richard Yao wrote:
->=20
->> There are multiple issues with the custom llseek implemented in ocfs2 =
-for
->> implementing SEEK_HOLE/SEEK_DATA.
->>
->> 1. It takes the inode->i_mutex lock before calling generic_file_llseek=
-(), which
->> is unnecessary.
->=20
-> Agree, but please see my comments below.
->=20
->>
->> 2. It fails to take the filp->f_lock spinlock before modifying filp->f=
-_pos and
->> filp->f_version, which differs from generic_file_llseek().
->>
->> 3. It does a offset > inode->i_sb->s_maxbytes check that permits seeki=
-ng up to
->> the maximum file size possible on the ocfs2 filesystem, even when it i=
-s past
->> the end of the file. Seeking beyond that (if possible), would return E=
-INVAL
->> instead of ENXIO.
->>
->> 4. The switch statement tries to cover all whence values when in reali=
-ty it
->> should only care about SEEK_HOLE/SEEK_DATA. Any other cases should be =
-passsed
->> to generic_file_llseek().
->=20
-> I have another patch set for refactoring ocfs2_file_llseek() but not ye=
-t found time
-> to run a comprehensive tests.  It can solve the existing issues but als=
-o improved the
-> SEEK_DATA/SEEK_HOLE for unwritten extents, i.e. OCFS2_EXT_UNWRITTEN.
->=20
-> With this change, SEEK_DATA/SEEK_HOLE will go into separate function wi=
-th a little code
-> duplication instead of the current mix-ups in ocfs2_seek_data_hole_offs=
-et(), i.e,=20
->=20
-> loff_t ocfs2_file_llseek()
-> {
-> 	switch (origin) {
->         case SEEK_END:
->         case SEEK_CUR:
->         case SEEK_SET:
->                 return generic_file_llseek(file, offset, origin);
->         case SEEK_DATA:
->                 return ocfs2_seek_data(file, offset);
->         case SEEK_HOLE:
->                 return ocfs2_seek_hole(file, offset);
->         default:
->                 return -EINVAL;
->         }
-> }
->=20
-> I personally like keeping SEEK_DATA/SEEK_HOLE in switch...case style ra=
-ther
-> than dealing with them in a condition check block.
+Add the f2fs_remount function call which will be used
+during the filesystem remounting. This function
+will help us to change the mount options specific to
+f2fs.
 
-I would prefer to see the code structured like this:
+Also modify the f2fs background_gc mount option, which
+will allow the user to dynamically trun on/off the
+garbage collection in f2fs based on the background_gc
+value. If background_gc=on, Garbage collection will
+be turned off & if background_gc=off, Garbage collection
+will be truned on.
 
-loff_t ocfs2_file_llseek()
-{
-	switch (origin) {
-        case SEEK_DATA:
-                return ocfs2_seek_data(file, offset);
-        case SEEK_HOLE:
-                return ocfs2_seek_hole(file, offset);
-        default:
-                return generic_file_llseek(file, offset, origin);
-        }
-}
+By default the garbage collection is on in f2fs.
 
-Unfortunately, I just noticed that this code has a problem. In specific,
-generic_file_llseek() calls generic_file_llseek_size(), which has a
-switch statement for whence that fails to distinguish between SEEK_SET
-and invalid whence values. Invalid whence values are mapped to SEEK_SET
-instead of returning EINVAL, which is wrong. That issue affects all
-filesystems that do not specify a custom llseek() function and it would
-affect ocfs2 if my version of the function is used.
+Change Log:
+v2: Incorporated the review comments by Gu Zheng.
+    Removing the restore part for VFS flags
+    Updating comments with proper flag conditions
+    Display GC background option as ON/OFF
+    Revised conditions to stop GC in case of remount
 
+v1: Initial changes for adding remount_fs callback
+support.
 
-------enig2EAWNNIBNFJJKCKPLILXC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+---
+ Documentation/filesystems/f2fs.txt |    9 +-
+ fs/f2fs/super.c                    |  235 +++++++++++++++++++++++-------------
+ 2 files changed, 160 insertions(+), 84 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+index bd3c56c..b91e2f2 100644
+--- a/Documentation/filesystems/f2fs.txt
++++ b/Documentation/filesystems/f2fs.txt
+@@ -98,8 +98,13 @@ Cleaning Overhead
+ MOUNT OPTIONS
+ ================================================================================
+ 
+-background_gc_off      Turn off cleaning operations, namely garbage collection,
+-		       triggered in background when I/O subsystem is idle.
++background_gc=%s       Turn on/off cleaning operations, namely garbage
++                       collection, triggered in background when I/O subsystem is
++                       idle. If background_gc=on, it will turn on the garbage
++                       collection and if background_gc=off, garbage collection
++                       will be truned off.
++                       Default value for this option is on. So garbage
++                       collection is on by default.
+ disable_roll_forward   Disable the roll-forward recovery routine
+ discard                Issue discard/TRIM commands when a segment is cleaned.
+ no_heap                Disable heap-style segment allocation which finds free
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index ba56549..5a11484 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -34,7 +34,7 @@
+ static struct kmem_cache *f2fs_inode_cachep;
+ 
+ enum {
+-	Opt_gc_background_off,
++	Opt_gc_background,
+ 	Opt_disable_roll_forward,
+ 	Opt_discard,
+ 	Opt_noheap,
+@@ -46,7 +46,7 @@ enum {
+ };
+ 
+ static match_table_t f2fs_tokens = {
+-	{Opt_gc_background_off, "background_gc_off"},
++	{Opt_gc_background, "background_gc=%s"},
+ 	{Opt_disable_roll_forward, "disable_roll_forward"},
+ 	{Opt_discard, "discard"},
+ 	{Opt_noheap, "no_heap"},
+@@ -76,6 +76,91 @@ static void init_once(void *foo)
+ 	inode_init_once(&fi->vfs_inode);
+ }
+ 
++static int parse_options(struct super_block *sb, char *options)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	substring_t args[MAX_OPT_ARGS];
++	char *p, *name;
++	int arg = 0;
++
++	if (!options)
++		return 0;
++
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
++		/*
++		 * Initialize args struct so we know whether arg was
++		 * found; some options take optional arguments.
++		 */
++		args[0].to = args[0].from = NULL;
++		token = match_token(p, f2fs_tokens, args);
++
++		switch (token) {
++		case Opt_gc_background:
++			name = match_strdup(&args[0]);
++
++			if (!name)
++				return -ENOMEM;
++			if (!strncmp(name, "on", 2))
++				set_opt(sbi, BG_GC);
++			else if (!strncmp(name, "off", 3))
++				clear_opt(sbi, BG_GC);
++			else {
++				kfree(name);
++				return -EINVAL;
++			}
++			kfree(name);
++			break;
++		case Opt_disable_roll_forward:
++			set_opt(sbi, DISABLE_ROLL_FORWARD);
++			break;
++		case Opt_discard:
++			set_opt(sbi, DISCARD);
++			break;
++		case Opt_noheap:
++			set_opt(sbi, NOHEAP);
++			break;
++#ifdef CONFIG_F2FS_FS_XATTR
++		case Opt_nouser_xattr:
++			clear_opt(sbi, XATTR_USER);
++			break;
++#else
++		case Opt_nouser_xattr:
++			f2fs_msg(sb, KERN_INFO,
++				"nouser_xattr options not supported");
++			break;
++#endif
++#ifdef CONFIG_F2FS_FS_POSIX_ACL
++		case Opt_noacl:
++			clear_opt(sbi, POSIX_ACL);
++			break;
++#else
++		case Opt_noacl:
++			f2fs_msg(sb, KERN_INFO, "noacl options not supported");
++			break;
++#endif
++		case Opt_active_logs:
++			if (args->from && match_int(args, &arg))
++				return -EINVAL;
++			if (arg != 2 && arg != 4 && arg != NR_CURSEG_TYPE)
++				return -EINVAL;
++			sbi->active_logs = arg;
++			break;
++		case Opt_disable_ext_identify:
++			set_opt(sbi, DISABLE_EXT_IDENTIFY);
++			break;
++		default:
++			f2fs_msg(sb, KERN_ERR,
++				"Unrecognized mount option \"%s\" or missing value",
++				p);
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++
+ static struct inode *f2fs_alloc_inode(struct super_block *sb)
+ {
+ 	struct f2fs_inode_info *fi;
+@@ -225,10 +310,10 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(root->d_sb);
+ 
+-	if (test_opt(sbi, BG_GC))
+-		seq_puts(seq, ",background_gc_on");
++	if (!(root->d_sb->s_flags & MS_RDONLY) && test_opt(sbi, BG_GC))
++		seq_printf(seq, ",background_gc=%s", "on");
+ 	else
+-		seq_puts(seq, ",background_gc_off");
++		seq_printf(seq, ",background_gc=%s", "off");
+ 	if (test_opt(sbi, DISABLE_ROLL_FORWARD))
+ 		seq_puts(seq, ",disable_roll_forward");
+ 	if (test_opt(sbi, DISCARD))
+@@ -255,6 +340,58 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+ 	return 0;
+ }
+ 
++static int f2fs_remount(struct super_block *sb, int *flags, char *data)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct f2fs_mount_info org_mount_opt;
++	int err, active_logs;
++
++	/**
++	 * Save the old mount options in case we
++	 * need to restore them.
++	 */
++	org_mount_opt = sbi->mount_opt;
++	active_logs = sbi->active_logs;
++
++	/* parse mount options */
++	err = parse_options(sb, data);
++	if (err)
++		goto restore_opts;
++
++	/**
++	 * Previous and new state of filesystem is RO,
++	 * so no point in checking GC conditions.
++	 */
++	if ((sb->s_flags & MS_RDONLY) && (*flags & MS_RDONLY))
++		goto skip;
++
++	/**
++	 * We stop the GC thread if FS is mounted as RO
++	 * or if background_gc = off is passed in mount
++	 * option. Also sync the filesystem.
++	 */
++	if ((*flags & MS_RDONLY) || !test_opt(sbi, BG_GC)) {
++		if (sbi->gc_thread) {
++			stop_gc_thread(sbi);
++			f2fs_sync_fs(sb, 1);
++		}
++	} else if (test_opt(sbi, BG_GC) && !sbi->gc_thread) {
++		err = start_gc_thread(sbi);
++		if (err)
++			goto restore_opts;
++	}
++skip:
++	/* Update the POSIXACL Flag */
++	 sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
++		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
++	return 0;
++
++restore_opts:
++	sbi->mount_opt = org_mount_opt;
++	sbi->active_logs = active_logs;
++	return err;
++}
++
+ static struct super_operations f2fs_sops = {
+ 	.alloc_inode	= f2fs_alloc_inode,
+ 	.drop_inode	= f2fs_drop_inode,
+@@ -268,6 +405,7 @@ static struct super_operations f2fs_sops = {
+ 	.freeze_fs	= f2fs_freeze,
+ 	.unfreeze_fs	= f2fs_unfreeze,
+ 	.statfs		= f2fs_statfs,
++	.remount_fs	= f2fs_remount,
+ };
+ 
+ static struct inode *f2fs_nfs_get_inode(struct super_block *sb,
+@@ -315,79 +453,6 @@ static const struct export_operations f2fs_export_ops = {
+ 	.get_parent = f2fs_get_parent,
+ };
+ 
+-static int parse_options(struct super_block *sb, char *options)
+-{
+-	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+-	substring_t args[MAX_OPT_ARGS];
+-	char *p;
+-	int arg = 0;
+-
+-	if (!options)
+-		return 0;
+-
+-	while ((p = strsep(&options, ",")) != NULL) {
+-		int token;
+-		if (!*p)
+-			continue;
+-		/*
+-		 * Initialize args struct so we know whether arg was
+-		 * found; some options take optional arguments.
+-		 */
+-		args[0].to = args[0].from = NULL;
+-		token = match_token(p, f2fs_tokens, args);
+-
+-		switch (token) {
+-		case Opt_gc_background_off:
+-			clear_opt(sbi, BG_GC);
+-			break;
+-		case Opt_disable_roll_forward:
+-			set_opt(sbi, DISABLE_ROLL_FORWARD);
+-			break;
+-		case Opt_discard:
+-			set_opt(sbi, DISCARD);
+-			break;
+-		case Opt_noheap:
+-			set_opt(sbi, NOHEAP);
+-			break;
+-#ifdef CONFIG_F2FS_FS_XATTR
+-		case Opt_nouser_xattr:
+-			clear_opt(sbi, XATTR_USER);
+-			break;
+-#else
+-		case Opt_nouser_xattr:
+-			f2fs_msg(sb, KERN_INFO,
+-				"nouser_xattr options not supported");
+-			break;
+-#endif
+-#ifdef CONFIG_F2FS_FS_POSIX_ACL
+-		case Opt_noacl:
+-			clear_opt(sbi, POSIX_ACL);
+-			break;
+-#else
+-		case Opt_noacl:
+-			f2fs_msg(sb, KERN_INFO, "noacl options not supported");
+-			break;
+-#endif
+-		case Opt_active_logs:
+-			if (args->from && match_int(args, &arg))
+-				return -EINVAL;
+-			if (arg != 2 && arg != 4 && arg != NR_CURSEG_TYPE)
+-				return -EINVAL;
+-			sbi->active_logs = arg;
+-			break;
+-		case Opt_disable_ext_identify:
+-			set_opt(sbi, DISABLE_EXT_IDENTIFY);
+-			break;
+-		default:
+-			f2fs_msg(sb, KERN_ERR,
+-				"Unrecognized mount option \"%s\" or missing value",
+-				p);
+-			return -EINVAL;
+-		}
+-	}
+-	return 0;
+-}
+-
+ static loff_t max_file_size(unsigned bits)
+ {
+ 	loff_t result = ADDRS_PER_INODE;
+@@ -686,10 +751,16 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 				"Cannot recover all fsync data errno=%ld", err);
+ 	}
+ 
+-	/* After POR, we can run background GC thread */
+-	err = start_gc_thread(sbi);
+-	if (err)
+-		goto fail;
++	/**
++	 * If filesystem is not mounted as read-only then
++	 * do start the gc_thread.
++	 */
++	if (!(sb->s_flags & MS_RDONLY)) {
++		/* After POR, we can run background GC thread.*/
++		err = start_gc_thread(sbi);
++		if (err)
++			goto fail;
++	}
+ 
+ 	err = f2fs_build_stats(sbi);
+ 	if (err)
+-- 
+1.7.9.5
 
-iQIcBAEBAgAGBQJRvQsCAAoJECDuEZm+6ExksH0QAJsDfVZdQjSBDuC+hjV+ZGvZ
-iAmso36jHyb8m/EdgY2Bi4w4SAlQF1Z4FSMFuPTwbSuNlYFgicaKjTyvUzJfuY9w
-b9GW5efG0sDB24gqglHCxhUYTWLAjdwO2c0Xw/51rWROr+c4UaQ3cZlVK+/cUV7f
-34x92ml4IXGh9IT0rXZYD3MucirUSA5cKvAFVXJ9MhA7KghV59dlJfYMxbBrTgTt
-CU1jz5kdcEB1OahXfuRSwLMzp/O1xCOarXTI/EUN9Sm2CDVQn4P08msewpBSX+0j
-ro9/hhoIMw5m5sd24XTHJocCPK3RrM4UH3gwxJdQa9DEBqmPRJM49J5x52mltznB
-ht9oVD01pc+ojXazdWUSok4EFeQoBiNQGc5cakwpHRhUxmFmYi9t457UrKWY/GTb
-In89ZhEY9yF11V6joD1gz0hHa7pVpJyWUJGvk5KoaNwSjIOP+YVMZa2vXjHnBZqJ
-6Cvf1uQYVZ/7vISF8MTjG7a5W3TXAKxqnAEQUvuaxc5oJfqibWm6wcrpLijjvwk4
-eEFLAFmxvrYqqN52feQDvZrgY7YCc5Vw24/kMwbJh2fi9tvNPC2TIWhIJQOAudOU
-zRlS6sZi7f0L34O3xZsJRcCw7tD14Pdtbx/jusx4T94pW+7W8P5acQ7hn1aWxv4v
-UKhgmhqmrTJCHmy4CODS
-=v3r7
------END PGP SIGNATURE-----
-
-------enig2EAWNNIBNFJJKCKPLILXC--
