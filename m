@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab3FPWWb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:22:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46472 "EHLO
+	id S1755921Ab3FPWWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:22:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46349 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755763Ab3FPWI5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755634Ab3FPWI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Jingoo Han" <jg1.han@samsung.com>, "Tony Lindgren" <tony@atomide.com>,
-        "Kevin Hilman" <khilman@linaro.org>,
-        "Alessandro Zummo" <a.zummo@towertech.it>
+CC: akpm@linux-foundation.org, "Huacai Chen" <chenhc@lemote.com>,
+        "Paul Menzel" <paulepanter@users.sourceforge.net>,
+        "Dave Airlie" <airlied@gmail.com>,
+        "=?UTF-8?Q?Michel=20D=C3=A4nzer?=" <michel.daenzer@amd.com>,
+        "Binbin Zhou" <zhoubb@lemote.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.809800749@decadent.org.uk>
+Message-ID: <lsq.1371420098.328335314@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [75/83] drivers/rtc/rtc-twl.c: fix missing device_init_wakeup()
- when booted with device tree
+Subject: [49/83] drm: fix a use-after-free when GPU acceleration disabled
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,41 +34,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 24b8256a1fb28d357bc6fa09184ba29b4255ba5c upstream.
+commit b7ea85a4fed37835eec78a7be3039c8dc22b8178 upstream.
 
-When booted in legacy mode device_init_wakeup() gets called by
-drivers/mfd/twl-core.c when the children are initialized.  However, when
-booted using device tree, the children are created with
-of_platform_populate() instead add_children().
+When GPU acceleration is disabled, drm_vblank_cleanup() will free the
+vblank-related data, such as vblank_refcount, vblank_inmodeset, etc.
+But we found that drm_vblank_post_modeset() may be called after the
+cleanup, which use vblank_refcount and vblank_inmodeset. And this will
+cause a kernel panic.
 
-This means that the RTC driver will not have device_init_wakeup() set,
-and we need to call it from the driver probe like RTC drivers typically
-do.
+Fix this by return immediately if dev->num_crtcs is zero. This is the
+same thing that drm_vblank_pre_modeset() does.
 
-Without this we cannot test PM wake-up events on omaps for cases where
-there may not be any physical wake-up event.
+Call trace of a drm_vblank_post_modeset() after drm_vblank_cleanup():
+[   62.628906] [<ffffffff804868d0>] drm_vblank_post_modeset+0x34/0xb4
+[   62.628906] [<ffffffff804c7008>] atombios_crtc_dpms+0xb4/0x174
+[   62.628906] [<ffffffff804c70e0>] atombios_crtc_commit+0x18/0x38
+[   62.628906] [<ffffffff8047f038>] drm_crtc_helper_set_mode+0x304/0x3cc
+[   62.628906] [<ffffffff8047f92c>] drm_crtc_helper_set_config+0x6d8/0x988
+[   62.628906] [<ffffffff8047dd40>] drm_fb_helper_set_par+0x94/0x104
+[   62.628906] [<ffffffff80439d14>] fbcon_init+0x424/0x57c
+[   62.628906] [<ffffffff8046a638>] visual_init+0xb8/0x118
+[   62.628906] [<ffffffff8046b9f8>] take_over_console+0x238/0x384
+[   62.628906] [<ffffffff80436df8>] fbcon_takeover+0x7c/0xdc
+[   62.628906] [<ffffffff8024fa20>] notifier_call_chain+0x44/0x94
+[   62.628906] [<ffffffff8024fcbc>] __blocking_notifier_call_chain+0x48/0x68
+[   62.628906] [<ffffffff8042d990>] register_framebuffer+0x228/0x260
+[   62.628906] [<ffffffff8047e010>] drm_fb_helper_single_fb_probe+0x260/0x314
+[   62.628906] [<ffffffff8047e2c4>] drm_fb_helper_initial_config+0x200/0x234
+[   62.628906] [<ffffffff804e5560>] radeon_fbdev_init+0xd4/0xf4
+[   62.628906] [<ffffffff804e0e08>] radeon_modeset_init+0x9bc/0xa18
+[   62.628906] [<ffffffff804bfc14>] radeon_driver_load_kms+0xdc/0x12c
+[   62.628906] [<ffffffff8048b548>] drm_get_pci_dev+0x148/0x238
+[   62.628906] [<ffffffff80423564>] local_pci_probe+0x5c/0xd0
+[   62.628906] [<ffffffff80241ac4>] work_for_cpu_fn+0x1c/0x30
+[   62.628906] [<ffffffff802427c8>] process_one_work+0x274/0x3bc
+[   62.628906] [<ffffffff80242934>] process_scheduled_works+0x24/0x44
+[   62.628906] [<ffffffff8024515c>] worker_thread+0x31c/0x3f4
+[   62.628906] [<ffffffff802497a8>] kthread+0x88/0x90
+[   62.628906] [<ffffffff80206794>] kernel_thread_helper+0x10/0x18
 
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/rtc/rtc-twl.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/drm_irq.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -490,6 +490,7 @@ static int __devinit twl_rtc_probe(struc
- 	}
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -981,7 +981,7 @@ EXPORT_SYMBOL(drm_vblank_off);
+  */
+ void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
+ {
+-	/* vblank is not initialized (IRQ not installed ?) */
++	/* vblank is not initialized (IRQ not installed ?), or has been freed */
+ 	if (!dev->num_crtcs)
+ 		return;
+ 	/*
+@@ -1003,6 +1003,10 @@ void drm_vblank_post_modeset(struct drm_
+ {
+ 	unsigned long irqflags;
  
- 	platform_set_drvdata(pdev, rtc);
-+	device_init_wakeup(&pdev->dev, 1);
- 	return 0;
- 
- out2:
++	/* vblank is not initialized (IRQ not installed ?), or has been freed */
++	if (!dev->num_crtcs)
++		return;
++
+ 	if (dev->vblank_inmodeset[crtc]) {
+ 		spin_lock_irqsave(&dev->vbl_lock, irqflags);
+ 		dev->vblank_disable_allowed = 1;
 
