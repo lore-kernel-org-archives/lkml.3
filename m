@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab3FPWXl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:23:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46438 "EHLO
+	id S1756179Ab3FPWXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:23:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46350 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755741Ab3FPWIz (ORCPT
+	by vger.kernel.org with ESMTP id S1755628Ab3FPWIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Patrik Jakobsson" <patrik.r.jakobsson@gmail.com>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.807396678@decadent.org.uk>
+Message-ID: <lsq.1371420098.215221582@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [33/83] drm/gma500: Increase max resolution for mode setting
+Subject: [58/83] ALSA: usb-audio - Fix invalid volume resolution on
+ Logitech HD webcam c270
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,32 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
+commit 11e7064f35bb87da8f427d1aa4bbd8b7473a3993 upstream.
 
-By having a higher max resolution we can now set up a virtual
-framebuffer that spans several monitors. 4096 should be ok since we're
-gen 3 or higher and should be enough for most dual head setups.
+USB audio driver spews an error message when probing Logitech HD
+webcam c270:
+  ALSA mixer.c:1300 usb_audio: Warning! Unlikely big volume range (=6144), cval->res is probably wrong.
+  ALSA mixer.c:1304 usb_audio: [5] FU [Mic Capture Volume] ch = 1, val = 1536/7680/1
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-[bwh: Backported to 3.2: adjust filename]
+Obviously the device needs a fixed volume resolution (cval->res = 384)
+like other Logitech devices.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=821735
+
+Reported-and-tested-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/gma500/framebuffer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/gma500/framebuffer.c
-+++ b/drivers/staging/gma500/framebuffer.c
-@@ -831,8 +831,8 @@ void psb_modeset_init(struct drm_device
- 	for (i = 0; i < dev_priv->num_pipe; i++)
- 		psb_intel_crtc_init(dev, i, mode_dev);
- 
--	dev->mode_config.max_width = 2048;
--	dev->mode_config.max_height = 2048;
-+	dev->mode_config.max_width = 4096;
-+	dev->mode_config.max_height = 4096;
- 
- 	psb_setup_outputs(dev);
- }
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -822,6 +822,7 @@ static void volume_control_quirks(struct
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
++	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
+ 	/* Most audio usb devices lie about volume resolution.
+ 	 * Most Logitech webcams have res = 384.
 
