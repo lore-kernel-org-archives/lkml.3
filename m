@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab3FPNQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 09:16:28 -0400
-Received: from www84.your-server.de ([213.133.104.84]:48010 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab3FPNQ1 (ORCPT
+	id S1755264Ab3FPNpj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 09:45:39 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:53868 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab3FPNpi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 09:16:27 -0400
-X-Greylist: delayed 1175 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Jun 2013 09:16:27 EDT
-Message-ID: <1371387419.5055.6.camel@wall-e>
-Subject: Re: Insane kfifo_put API
-From: Stefani Seibold <stefani@seibold.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Jun 2013 14:56:59 +0200
-In-Reply-To: <20130616115921.GQ18614@n2100.arm.linux.org.uk>
-References: <20130616115921.GQ18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 16 Jun 2013 09:45:38 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.10-rc6
+Date: Sun, 16 Jun 2013 15:45:34 +0200
+Message-ID: <54860328.hz1dWsrE3x@merkaba>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc5-tp520; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CACRpkdaJUUEhBevGzJ2XzcFDtV1AK4odGDRbjo_h=QFYPNmfDQ@mail.gmail.com>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com> <2626868.kqkN4bgvmz@merkaba> <CACRpkdaJUUEhBevGzJ2XzcFDtV1AK4odGDRbjo_h=QFYPNmfDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have cross checked this use case. This was tested, but i doesn't work
-any more. So i need a little bit time to fix it. The macro for this are
-a little bit tricky, but i think there is a way to solve this issue.
+Am Sonntag, 16. Juni 2013, 14:52:13 schrieb Linus Walleij:
+> On Sun, Jun 16, 2013 at 2:37 PM, Martin Steigerwald <Martin@lichtvoll.de> 
+wrote:
+> > Am Samstag, 15. Juni 2013, 12:12:18 schrieb Linus Torvalds:
+> >> Another week, another rc.
+> >> 
+> >> And I didn't even need to curse all that much at people. Sure, I
+> >> talked smack about some of your hamsters, and I declined a couple of
+> >> pull requests, but let's face it, it was pretty halfhearted. Most of
+> >> the time things were good.
+> > 
+> > Do you really think your cursing controls how other people behave?
+> 
+> Consider spending some time reading
+> Documentation/ManagementStyle
+> 
+> And you will surely get the hang of this.
 
-For the next two weeks i am heavy busy in a final project stage, so
-please be patient.
- 
-BTW: Insane is a hard word for an API which was reviewed by a lot of
-people.
+I read it some years ago. And now read it again.
 
-Am Sonntag, den 16.06.2013, 12:59 +0100 schrieb Russell King - ARM
-Linux:
-> So, this kfifo API...  Here's an example:
-> 
-> Let's say that we want a kfifo of structure pointers:
-> 
-> 	DECLARE_KFIFO(my_ptr_kfifo, struct my_struct *, SIZE);
-> 
-> Now, to extract pointers from this, it's relatively straight forward:
-> 
-> 	struct my_struct *ptr;
-> 
-> 	success = kfifo_get(&my_ptr_kfifo, &ptr);
-> 
-> Nothing wrong with that - kfifo_get looks just like a normal C function
-> which is good.  However, what about adding pointers?  This is where things
-> become really quite horrid.  It took many attempts to find out what the
-> API requires - and that's a sign of a bad API IMHO.
-> 
-> So, this is what the kfifo API requires:
-> 
-> 	struct my_struct *ptr = something;
-> 	const struct my_struct *my_other_ptr = ptr;
-> 
-> 	success = kfifo_put(&my_ptr_kfifo, &my_other_ptr);
-> 
-> But... why?  This is wrong because:
-> 
-> 1. the const-ness of 'my_other_ptr' is not saying that the value of the
->    pointer is const, it's saying that the data pointed to by the pointer
->    is const.
-> 2. the kfifo API should have no regard for the const-ness of the data
->    pointed to by the object its storing (in this case, the value of
->    the pointer, not the data itself).
-> 3. it forces users to jump through unnecessary hoops to use this API.
-> 4. in any case, the data's const-ness is lost through the put to the
->    get operation!
-> 
-> I almost gave up with it and rolled my own over this, trying to get the
-> compiler not to warn (which it was obviously doing because something
-> was wrong with the code) - it was only through lots of experimentation
-> and reading other users that I found something which worked through this
-> obscure API (as above).
-> 
-> So, what should the API be?
-> 
-> 	success = kfifo_put(&my_ptr_kfifo, ptr);
-> 
-> To get there means every user needs to change, thankfully there are not
-> that many.  In doing so, we can also get rid of one unnecessary members
-> of the kfifo struct, namely ptr_const.
-> 
-> What's more is that those using it for integers also get a sane API:
-> 
-> 	unsigned my_uint;
-> 
-> 	kfifo_get(&my_uint_fifo, &my_uint)
-> 
-> 	kfifo_put(&my_uint_fifo, my_uint);
-> 
-> rather than also having to take the address in the _put API.  And it
-> could work that way for structures too:
-> 
-> 	struct my_struct my_str;
-> 
-> 	kfifo_get(&my_struct_fifo, &my_str);
-> 
-> 	kfifo_put(&my_struct_fifo, my_str);
-> 
-> The last is probably the only questionable one, as it looks like passing
-> a structure through a function argument, but as kfifo_put() is already a
-> (huge) macro, that's not really a problem.
-> 
-> Here's some of the examples of code in drivers which suffer with the
-> current API:
-> 
-> OMAP drm:
->         DECLARE_KFIFO_PTR(unpin_fifo, struct drm_gem_object *);
-> ...
->         if (kfifo_put(&omap_plane->unpin_fifo,
->                         (const struct drm_gem_object **)&bo)) {
-> ...
->         struct drm_gem_object *bo = NULL;
-> 
->         while (kfifo_get(&omap_plane->unpin_fifo, &bo)) {
->                 omap_gem_put_paddr(bo);
->                 drm_gem_object_unreference_unlocked(bo);
->         }
-> ...
->         ret = kfifo_alloc(&omap_plane->unpin_fifo, 16, GFP_KERNEL);
-> 
-> tildc:
-> 
->         struct drm_framebuffer *fb;
-> 
->         while (kfifo_get(&tilcdc_crtc->unref_fifo, &fb))
->                 drm_framebuffer_unreference(fb);
-> ...
->                 if (kfifo_put(&tilcdc_crtc->unref_fifo,
->                                 (const struct drm_framebuffer **)&tilcdc_crtc->scanout[n])) {
-> ...
->         ret = kfifo_alloc(&tilcdc_crtc->unref_fifo, 16, GFP_KERNEL);
-> 
-> This API is luckily only about six users of this macro in the mainline
-> kernel, so it shouldn't be that big a change to change this to be sane.
-> 
-> Comments?
+I wanted to say: "Frankly, no, I didn´t get the hang on how this document 
+gives threating to insult pets and hamsters of developers or the insulting 
+itself any approval."
+
+But now I ask:
+
+"Is this about the humor part in there?"
 
 
+Well as much as I believe that insulting someone tells at least as much about 
+the insulter as the insulted, I believe that my bothering about the threat to 
+curse people tells much about me, the botherer.
+
+
+So if it works for everybody else…
+-- 
+Martin
