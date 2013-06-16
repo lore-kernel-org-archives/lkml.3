@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab3FPSvl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 14:51:41 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37566 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3FPSvj convert rfc822-to-8bit (ORCPT
+	id S1755474Ab3FPSv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 14:51:56 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:42262 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab3FPSvz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 14:51:39 -0400
-Content-Type: text/plain; charset="utf-8"
+	Sun, 16 Jun 2013 14:51:55 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.10-rc6
+Date: Sun, 16 Jun 2013 20:51:50 +0200
+Message-ID: <2647146.cMTilapJ01@merkaba>
+User-Agent: KMail/4.10.4 (Linux/3.10.0-rc6-tp520; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <CA+55aFytYO=CAojt8Lp-pU_=EuSKsgYpkiW3tAPSwyB2vSgpWA@mail.gmail.com>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com> <2626868.kqkN4bgvmz@merkaba> <CA+55aFytYO=CAojt8Lp-pU_=EuSKsgYpkiW3tAPSwyB2vSgpWA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-To: Stephen Warren <swarren@wwwdotorg.org>, Jay Agarwal <jagarwal@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <51B8956B.8020704@wwwdotorg.org>
-Cc: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
-        bhelgaas@google.com, ldewangan@nvidia.com, olof@lixom.net,
-        hdoyu@nvidia.com, pgaikwad@nvidia.com, pdeschrijver@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        jtukkinen@nvidia.com, kthota@nvidia.com
-References: <1371021223-6709-1-git-send-email-jagarwal@nvidia.com>
- <51B8956B.8020704@wwwdotorg.org>
-Message-ID: <20130616185132.7541.680@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH V4 1/4] ARM: tegra30: clocks: Fix pciex clock registration
-Date: Sun, 16 Jun 2013 11:51:33 -0700
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Warren (2013-06-12 08:36:11)
-> On 06/12/2013 01:13 AM, Jay Agarwal wrote:
-> > Registering pciex as peripheral clock instead of fixed clock
-> > as tegra_perih_reset_assert(deassert) api of this clock api
-> > gives warning and ultimately does not succeed to assert(deassert)
-> > 
-> > Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
-> > ---
-> > Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this.
+Am Sonntag, 16. Juni 2013, 08:09:03 schrieb Linus Torvalds:
+> On Sun, Jun 16, 2013 at 2:37 AM, Martin Steigerwald <Martin@lichtvoll.de> 
+wrote:
+> > Do you really think your cursing controls how other people behave?
 > 
-> In this case, it would make more sense to apply this to the clock tree,
-> since it's a standalone bug-fix.
+> Yes. In three ways:
 > 
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+>  - I have magic mind-powers, and cursing releases them, and makes
+[…]
+>  - It turns off small-minded people who care more about tone than
+[…]
+>  - it is a signal for people who have some sense that I'm getting
+> irritated, […]
 
-Pulled into clk-fixes for -rc7.
+Thanks for sharing.
 
-Regards,
-Mike
+I especially love the part about your magic mind powers.
+
+So its more or even something different than attacking a person for you and as 
+I guessed also tells something about your beliefs. Good to know.
+
+> In addition, it turns out that it affects not just other people, but
+> the person cursing too: there has also been scientific studies that
+> cursing relieves stress and actually relieves pain, and is not the bad
+> thing that the PC crowd thinks it is. It turns out that all societies
+> have cursing, and it really has an impact.
+
+> Seriously, I'm not just making that sh*t up. Google it.
+
+I think I will have a look at this.
+
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
