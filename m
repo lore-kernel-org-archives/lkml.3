@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3FPKrK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 06:47:10 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:54290 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab3FPKrI (ORCPT
+	id S1755261Ab3FPKz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 06:55:27 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33794 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178Ab3FPKzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 06:47:08 -0400
+	Sun, 16 Jun 2013 06:55:25 -0400
 MIME-Version: 1.0
-Date: Sun, 16 Jun 2013 13:47:07 +0300
-Message-ID: <CA+ydwtoh-KDWn4S6RY-=AWX8xmM6+o2fTz6738_w6L6aYVKrMQ@mail.gmail.com>
-Subject: kernel BUG at net/core/skbuff.c:1065!
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
+In-Reply-To: <51BA4158.906@wwwdotorg.org>
+References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+	<51AF73E9.90506@wwwdotorg.org>
+	<CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
+	<51BA4158.906@wwwdotorg.org>
+Date: Sun, 16 Jun 2013 12:55:25 +0200
+Message-ID: <CACRpkda_tYONYU-N2M+j19A09iNP_dBWE8eBkOrL2LTrx42k_Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jun 14, 2013 at 12:02 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/11/2013 02:28 AM, Linus Walleij wrote:
+>> I tried to create a refactoring patch for this but couldn't come
+>> up with anything apropriate along the lines above. For example
+>> this function:
+> ...
+>
+> Don't you just want something very roughly like:
+>
+> int pinctrl_pm_select_xxx_state(struct device *dev,
+>                 unsigned long offset, char *name)
+> {
+>         struct dev_pin_info *pins = dev->pins;
+>         struct pinctrl_state **s = (void *)(((char *)pins) + offset)
+(...)
+>     return pinctrl_pm_select_xxx_state(dev,
+>                 offsetof(struct dev_pin_info, default_state),
+>                 "default");
+> }
 
-Hit this bug while fuzzing in a qemu virtual machine as the root user.
+Argh that seems a bit too esoteric to save these few
+lines, maybe it's me being too stupid to parse this
+but it makes the code less maintainable for the pinctrl
+maintainer atleast so will not happen right now.
 
-Kernel is v3.10-rc5-0-g317ddd2.
+But it is clever still. :-)
 
-Tommi
-
-[575180.874750] type=1401 audit(1371378748.322:7750): SELinux:
-unrecognized netlink message type=0 for sclass=36
-[575180.874750]
-[575191.358143] ------------[ cut here ]------------
-[575191.358498] kernel BUG at /build/linux/net/core/skbuff.c:1065!
-[575191.358498] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-[575191.358498] CPU: 0 PID: 28554 Comm: trinity-child33 Not tainted
-3.10.0-rc5 #1
-[575191.358498] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[575191.358498] task: ffff880005f0c7c0 ti: ffff88002cec6000 task.ti:
-ffff88002cec6000
-[575191.358498] RIP: 0010:[<ffffffff81eb602b>]  [<ffffffff81eb602b>]
-pskb_expand_head+0x3b/0x290
-[575191.358498] RSP: 0018:ffff88002cec79f0  EFLAGS: 00010202
-[575191.358498] RAX: 0000000000000002 RBX: ffff880010e7cd80 RCX:
-0000000000000020
-[575191.358498] RDX: 000000000000003c RSI: 0000000000000000 RDI:
-ffff880010e7cd80
-[575191.358498] RBP: ffff88002cec7a28 R08: 0000000000000001 R09:
-0000000000000000
-[575191.358498] R10: 0000000000000000 R11: 0000000000000000 R12:
-000000000000002b
-[575191.358498] R13: 0000000000000000 R14: 0000000000000011 R15:
-0000000040014b89
-[575191.358498] FS:  00007f3b21cd6700(0000) GS:ffff8800bf600000(0000)
-knlGS:0000000000000000
-[575191.358498] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[575191.358498] CR2: 00000000009fb000 CR3: 000000001a873000 CR4:
-00000000000006f0
-[575191.358498] DR0: 0000000002592d30 DR1: 0000000000000000 DR2:
-0000000000000000
-[575191.358498] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000600
-[575191.358498] Stack:
-[575191.358498]  ffff880090cbd668 0000000000000000 ffff880010e7cd80
-000000000000002b
-[575191.358498]  0000000000000000 0000000000000011 0000000040014b89
-ffff88002cec7a50
-[575191.358498]  ffffffff81eb6fc3 ffff88002cec7a70 0000000000000011
-ffff8800b952d498
-[575191.358498] Call Trace:
-[575191.358498]  [<ffffffff81eb6fc3>] skb_pad+0xa3/0x150
-[575191.358498]  [<ffffffff81884c48>] e1000_xmit_frame+0x78/0xfc0
-[575191.358498]  [<ffffffff81ec1830>] ? dev_queue_xmit_nit+0x360/0x390
-[575191.358498]  [<ffffffff81ec14d0>] ? get_rps_cpu+0x4a0/0x4a0
-[575191.358498]  [<ffffffff81ec581c>] dev_hard_start_xmit+0x2ec/0x720
-[575191.358498]  [<ffffffff81ef4d10>] sch_direct_xmit+0x80/0x290
-[575191.358498]  [<ffffffff81ec6104>] dev_queue_xmit+0x4b4/0x8e0
-[575191.358498]  [<ffffffff81ec5c50>] ? dev_hard_start_xmit+0x720/0x720
-[575191.358498]  [<ffffffff81eefc3f>] llc_sap_action_send_test_c+0x7f/0x90
-[575191.358498]  [<ffffffff81eef270>] llc_sap_state_process+0xd0/0x160
-[575191.358498]  [<ffffffff81eef424>] llc_build_and_send_test_pkt+0x44/0x50
-[575191.358498]  [<ffffffff81ef1b47>] llc_ui_sendmsg+0x1e7/0x490
-[575191.358498]  [<ffffffff81eac5d1>] sock_sendmsg+0xa1/0xd0
-[575191.358498]  [<ffffffff8109a838>] ? __do_page_fault+0x288/0x530
-[575191.358498]  [<ffffffff81eacaac>] SYSC_sendto+0x11c/0x160
-[575191.358498]  [<ffffffff822a2247>] ? _raw_spin_unlock_irq+0x27/0x50
-[575191.358498]  [<ffffffff8111870c>] ? do_setitimer+0x27c/0x330
-[575191.358498]  [<ffffffff81172e46>] ? trace_hardirqs_on_caller+0x16/0x220
-[575191.358498]  [<ffffffff814d791e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[575191.358498]  [<ffffffff81eada69>] SyS_sendto+0x9/0x10
-[575191.358498]  [<ffffffff822a38e9>] system_call_fastpath+0x16/0x1b
-[575191.358498] Code: 48 89 fb 48 83 ec 10 8b 87 d4 00 00 00 01 f0 01
-c2 85 f6 79 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 8b 87 ec 00 00 00 83
-f8 01 74 05 <0f> 0b 0f 1f 00 83 c2 3f 41 89 cf 83 e2 c0 f6 87 aa 00 00
-00 04
-[575191.358498] RIP  [<ffffffff81eb602b>] pskb_expand_head+0x3b/0x290
-[575191.358498]  RSP <ffff88002cec79f0>
-[575191.518696] ---[ end trace 866084dcc0c2aa3e ]---
-[575191.522588] Kernel panic - not syncing: Fatal exception in interrupt
-[575191.523574] drm_kms_helper: panic occurred, switching back to text console
+Yours,
+Linus Walleij
