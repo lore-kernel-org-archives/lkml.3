@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3FPUyk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 16:54:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38779 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab3FPUyg (ORCPT
+	id S1755570Ab3FPU5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 16:57:15 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:33351 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab3FPUyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 16:54:36 -0400
+	Sun, 16 Jun 2013 16:54:33 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,9 +27,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Alban Bedel <alban.bedel@avionic-design.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC PATCH 03/11] dma: amba-pl08x: Add support for different offset of CONFIG register
-Date: Sun, 16 Jun 2013 22:54:10 +0200
-Message-Id: <1371416058-22047-4-git-send-email-tomasz.figa@gmail.com>
+Subject: [RFC PATCH 02/11] dma: amba-pl08x: Refactor pl08x_getbytes_chan() to lower indentation
+Date: Sun, 16 Jun 2013 22:54:09 +0200
+Message-Id: <1371416058-22047-3-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
 References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
@@ -37,189 +37,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some variants of PL08x (namely PL080S, found in Samsung S3C64xx SoCs)
-have CONFIG register at different offset. This patch makes the driver
-use offset from vendor data struct.
+Further patch will introduce support for PL080S, which requires some
+things to be done conditionally, thus increasing indentation level of
+some functions even more.
+
+This patch reduces indentation level of pl08x_getbytes_chan() function
+by inverting several conditions and returning from function wherever
+possible.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- drivers/dma/amba-pl08x.c | 51 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 30 insertions(+), 21 deletions(-)
+ drivers/dma/amba-pl08x.c | 51 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 28 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 1e57ded..93913b4 100644
+index d443a68..1e57ded 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -107,6 +107,7 @@ struct pl08x_driver_data;
-  * @flags: Vendor-specific flags, see PL08X_IS_*
-  */
- struct vendor_data {
-+	u8 config_offset;
- 	u8 channels;
- 	u32 flags;
- };
-@@ -334,11 +335,12 @@ static void pl08x_release_mux(struct pl08x_dma_chan *plchan)
-  */
- 
- /* Whether a certain channel is busy or not */
--static int pl08x_phy_channel_busy(struct pl08x_phy_chan *ch)
-+static int pl08x_phy_channel_busy(struct pl08x_driver_data *pl08x,
-+						struct pl08x_phy_chan *ch)
+@@ -473,47 +473,52 @@ static inline u32 get_bytes_in_cctl(u32 cctl)
+ /* The channel should be paused when calling this */
+ static u32 pl08x_getbytes_chan(struct pl08x_dma_chan *plchan)
  {
- 	unsigned int val;
++	struct pl08x_lli *llis_va;
+ 	struct pl08x_phy_chan *ch;
++	dma_addr_t llis_bus;
+ 	struct pl08x_txd *txd;
+ 	size_t bytes = 0;
++	int index;
++	u32 clli;
  
--	val = readl(ch->base + PL080_CH_CONFIG);
-+	val = readl(ch->base + pl08x->vd->config_offset);
- 	return val & PL080_CONFIG_ACTIVE;
- }
+ 	ch = plchan->phychan;
+ 	txd = plchan->at;
  
-@@ -362,7 +364,7 @@ static void pl08x_start_next_txd(struct pl08x_dma_chan *plchan)
- 	plchan->at = txd;
- 
- 	/* Wait for channel inactive */
--	while (pl08x_phy_channel_busy(phychan))
-+	while (pl08x_phy_channel_busy(pl08x, phychan))
- 		cpu_relax();
- 
- 	lli = &txd->llis_va[0];
-@@ -377,7 +379,7 @@ static void pl08x_start_next_txd(struct pl08x_dma_chan *plchan)
- 	writel(lli->dst, phychan->base + PL080_CH_DST_ADDR);
- 	writel(lli->lli, phychan->base + PL080_CH_LLI);
- 	writel(lli->cctl, phychan->base + PL080_CH_CONTROL);
--	writel(txd->ccfg, phychan->base + PL080_CH_CONFIG);
-+	writel(txd->ccfg, phychan->base + pl08x->vd->config_offset);
- 
- 	/* Enable the DMA channel */
- 	/* Do not access config register until channel shows as disabled */
-@@ -385,11 +387,13 @@ static void pl08x_start_next_txd(struct pl08x_dma_chan *plchan)
- 		cpu_relax();
- 
- 	/* Do not access config register until channel shows as inactive */
--	val = readl(phychan->base + PL080_CH_CONFIG);
++	if (!ch || !txd)
++		return bytes;
 +
-+	val = readl(phychan->base + pl08x->vd->config_offset);
- 	while ((val & PL080_CONFIG_ACTIVE) || (val & PL080_CONFIG_ENABLE))
--		val = readl(phychan->base + PL080_CH_CONFIG);
-+		val = readl(phychan->base + pl08x->vd->config_offset);
+ 	/*
+ 	 * Follow the LLIs to get the number of remaining
+ 	 * bytes in the currently active transaction.
+ 	 */
+-	if (ch && txd) {
+-		u32 clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
++	clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
++
++	/* First get the remaining bytes in the active transfer */
++	bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
  
--	writel(val | PL080_CONFIG_ENABLE, phychan->base + PL080_CH_CONFIG);
-+	writel(val | PL080_CONFIG_ENABLE,
-+				phychan->base + pl08x->vd->config_offset);
- }
+-		/* First get the remaining bytes in the active transfer */
+-		bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
++	if (!clli)
++		return bytes;
  
- /*
-@@ -402,34 +406,36 @@ static void pl08x_start_next_txd(struct pl08x_dma_chan *plchan)
-  * For P->M transfers, disable the peripheral first to stop it filling
-  * the DMAC FIFO, and then pause the DMAC.
-  */
--static void pl08x_pause_phy_chan(struct pl08x_phy_chan *ch)
-+static void pl08x_pause_phy_chan(struct pl08x_driver_data *pl08x,
-+						struct pl08x_phy_chan *ch)
- {
- 	u32 val;
- 	int timeout;
+-		if (clli) {
+-			struct pl08x_lli *llis_va = txd->llis_va;
+-			dma_addr_t llis_bus = txd->llis_bus;
+-			int index;
++	llis_va = txd->llis_va;
++	llis_bus = txd->llis_bus;
  
- 	/* Set the HALT bit and wait for the FIFO to drain */
--	val = readl(ch->base + PL080_CH_CONFIG);
-+	val = readl(ch->base + pl08x->vd->config_offset);
- 	val |= PL080_CONFIG_HALT;
--	writel(val, ch->base + PL080_CH_CONFIG);
-+	writel(val, ch->base + pl08x->vd->config_offset);
+-			BUG_ON(clli < llis_bus || clli >= llis_bus +
++	BUG_ON(clli < llis_bus || clli >= llis_bus +
+ 				sizeof(struct pl08x_lli) * MAX_NUM_TSFR_LLIS);
  
- 	/* Wait for channel inactive */
- 	for (timeout = 1000; timeout; timeout--) {
--		if (!pl08x_phy_channel_busy(ch))
-+		if (!pl08x_phy_channel_busy(pl08x, ch))
- 			break;
- 		udelay(1);
- 	}
--	if (pl08x_phy_channel_busy(ch))
-+	if (pl08x_phy_channel_busy(pl08x, ch))
- 		pr_err("pl08x: channel%u timeout waiting for pause\n", ch->id);
- }
+-			/*
+-			 * Locate the next LLI - as this is an array,
+-			 * it's simple maths to find.
+-			 */
+-			index = (clli - llis_bus) / sizeof(struct pl08x_lli);
++	/*
++	 * Locate the next LLI - as this is an array,
++	 * it's simple maths to find.
++	 */
++	index = (clli - llis_bus) / sizeof(struct pl08x_lli);
  
--static void pl08x_resume_phy_chan(struct pl08x_phy_chan *ch)
-+static void pl08x_resume_phy_chan(struct pl08x_driver_data *pl08x,
-+						struct pl08x_phy_chan *ch)
- {
- 	u32 val;
+-			for (; index < MAX_NUM_TSFR_LLIS; index++) {
+-				bytes += get_bytes_in_cctl(llis_va[index].cctl);
++	for (; index < MAX_NUM_TSFR_LLIS; index++) {
++		bytes += get_bytes_in_cctl(llis_va[index].cctl);
  
- 	/* Clear the HALT bit */
--	val = readl(ch->base + PL080_CH_CONFIG);
-+	val = readl(ch->base + pl08x->vd->config_offset);
- 	val &= ~PL080_CONFIG_HALT;
--	writel(val, ch->base + PL080_CH_CONFIG);
-+	writel(val, ch->base + pl08x->vd->config_offset);
- }
- 
- /*
-@@ -441,12 +447,12 @@ static void pl08x_resume_phy_chan(struct pl08x_phy_chan *ch)
- static void pl08x_terminate_phy_chan(struct pl08x_driver_data *pl08x,
- 	struct pl08x_phy_chan *ch)
- {
--	u32 val = readl(ch->base + PL080_CH_CONFIG);
-+	u32 val = readl(ch->base + pl08x->vd->config_offset);
- 
- 	val &= ~(PL080_CONFIG_ENABLE | PL080_CONFIG_ERR_IRQ_MASK |
- 	         PL080_CONFIG_TC_IRQ_MASK);
- 
--	writel(val, ch->base + PL080_CH_CONFIG);
-+	writel(val, ch->base + pl08x->vd->config_offset);
- 
- 	writel(1 << ch->id, pl08x->base + PL080_ERR_CLEAR);
- 	writel(1 << ch->id, pl08x->base + PL080_TC_CLEAR);
-@@ -1576,11 +1582,11 @@ static int pl08x_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		pl08x_free_txd_list(pl08x, plchan);
- 		break;
- 	case DMA_PAUSE:
--		pl08x_pause_phy_chan(plchan->phychan);
-+		pl08x_pause_phy_chan(pl08x, plchan->phychan);
- 		plchan->state = PL08X_CHAN_PAUSED;
- 		break;
- 	case DMA_RESUME:
--		pl08x_resume_phy_chan(plchan->phychan);
-+		pl08x_resume_phy_chan(pl08x, plchan->phychan);
- 		plchan->state = PL08X_CHAN_RUNNING;
- 		break;
- 	default:
-@@ -1966,7 +1972,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
- 		if (vd->flags & PL08X_IS_NOMADIK) {
- 			u32 val;
- 
--			val = readl(ch->base + PL080_CH_CONFIG);
-+			val = readl(ch->base + vd->config_offset);
- 			if (val & (PL080N_CONFIG_ITPROT | PL080N_CONFIG_SECPROT)) {
- 				dev_info(&adev->dev, "physical channel %d reserved for secure access only\n", i);
- 				ch->locked = true;
-@@ -1974,7 +1980,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
- 		}
- 
- 		dev_dbg(&adev->dev, "physical channel %d is %s\n",
--			i, pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
-+			i, pl08x_phy_channel_busy(pl08x, ch) ? "BUSY" : "FREE");
+-				/*
+-				 * A LLI pointer of 0 terminates the LLI list
+-				 */
+-				if (!llis_va[index].lli)
+-					break;
+-			}
+-		}
++		/*
++		 * A LLI pointer of 0 terminates the LLI list
++		 */
++		if (!llis_va[index].lli)
++			break;
  	}
  
- 	/* Register as many memcpy channels as there are physical channels */
-@@ -2049,16 +2055,19 @@ out_no_pl08x:
- static struct vendor_data vendor_pl080 = {
- 	.channels = 8,
- 	.flags = PL08X_IS_DUALMASTER,
-+	.config_offset = PL080_CH_CONFIG,
- };
- 
- static struct vendor_data vendor_nomadik = {
- 	.channels = 8,
- 	.flags = PL08X_IS_DUALMASTER | PL08X_IS_NOMADIK,
-+	.config_offset = PL080_CH_CONFIG,
- };
- 
- static struct vendor_data vendor_pl081 = {
- 	.channels = 2,
- 	.flags = 0,
-+	.config_offset = PL080_CH_CONFIG,
- };
- 
- static struct amba_id pl08x_ids[] = {
+ 	return bytes;
 -- 
 1.8.2.1
 
