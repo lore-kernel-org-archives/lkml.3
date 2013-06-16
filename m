@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3FPGTL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 02:19:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9135 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab3FPGTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 02:19:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,874,1363158000"; 
-   d="scan'208";a="354268526"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: support HBM versioning
-Date: Sun, 16 Jun 2013 09:16:31 +0300
-Message-Id: <1371363391-18008-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755018Ab3FPGvd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 02:51:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50161 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933Ab3FPGva convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 02:51:30 -0400
+Date: Sun, 16 Jun 2013 01:51:26 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: Commit f9afbd45b0d0 broke mips r4k.
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, sanjayl@kymasys.com, kvm@vger.kernel.org,
+        linux-mips@linux-mips.org,
+        Markos Chandras <markos.chandras@imgtec.com>
+References: <1371090916.2776.104@driftwood>
+	<20130613090002.GD7422@linux-mips.org>
+In-Reply-To: <20130613090002.GD7422@linux-mips.org> (from
+	ralf@linux-mips.org on Thu Jun 13 04:00:02 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1371365486.2776.113@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver can work properly if device support driver HBM version
-or driver can downgrade its supported HBM version level
+On 06/13/2013 04:00:02 AM, Ralf Baechle wrote:
+> On Wed, Jun 12, 2013 at 09:35:16PM -0500, Rob Landley wrote:
+> 
+> > My aboriginal linux project builds tiny linux systems to run under
+> > qemu, producing as close to the same system as possible across a
+> > bunch of different architectures. The above change broke the mips
+> > r4k build I've been running under qemu.
+> >
+> > Here's a toolchain and reproduction sequence:
+> >
+> >   wget http://landley.net/aboriginal/bin/cross-compiler-mips.tar.bz2
+> >   tar xvjf cross-compiler-mips.tar.bz2
+> >   export PATH=$PWD/cross-compiler-mips/bin:$PATH
+> >   make ARCH=mips allnoconfig KCONFIG_ALLCONFIG=miniconfig.mips
+> >   make CROSS_COMPILE=mips- ARCH=mips
+> >
+> > (The file miniconfig.mips is attached.)
+> >
+> > It ends:
+> >
+> >   CC      init/version.o
+> >   LD      init/built-in.o
+> > arch/mips/built-in.o: In function `local_r4k_flush_cache_page':
+> > c-r4k.c:(.text+0xe278): undefined reference to  
+> `kvm_local_flush_tlb_all'
+> > c-r4k.c:(.text+0xe278): relocation truncated to fit: R_MIPS_26
+> > against `kvm_local_flush_tlb_all'
+> > arch/mips/built-in.o: In function `local_flush_tlb_range':
+> > (.text+0xe938): undefined reference to `kvm_local_flush_tlb_all'
+> > arch/mips/built-in.o: In function `local_flush_tlb_range':
+> > (.text+0xe938): relocation truncated to fit: R_MIPS_26 against
+> > `kvm_local_flush_tlb_all'
+> > arch/mips/built-in.o: In function `local_flush_tlb_mm':
+> > (.text+0xed38): undefined reference to `kvm_local_flush_tlb_all'
+> > arch/mips/built-in.o: In function `local_flush_tlb_mm':
+> > (.text+0xed38): relocation truncated to fit: R_MIPS_26 against
+> > `kvm_local_flush_tlb_all'
+> > kernel/built-in.o: In function `__schedule':
+> > core.c:(.sched.text+0x16a0): undefined reference to
+> > `kvm_local_flush_tlb_all'
+> > core.c:(.sched.text+0x16a0): relocation truncated to fit: R_MIPS_26
+> > against `kvm_local_flush_tlb_all'
+> > mm/built-in.o: In function `use_mm':
+> > (.text+0x182c8): undefined reference to `kvm_local_flush_tlb_all'
+> > mm/built-in.o: In function `use_mm':
+> > (.text+0x182c8): relocation truncated to fit: R_MIPS_26 against
+> > `kvm_local_flush_tlb_all'
+> > fs/built-in.o:(.text+0x7b50): more undefined references to
+> > `kvm_local_flush_tlb_all' follow
+> > fs/built-in.o: In function `flush_old_exec':
+> > (.text+0x7b50): relocation truncated to fit: R_MIPS_26 against
+> > `kvm_local_flush_tlb_all'
+> >
+> > Revert the above commit and it builds to the end.
+> 
+> Commit d414976d1ca721456f7b7c603a8699d117c2ec07 [MIPS: include:
+> mmu_context.h: Replace VIRTUALIZATION with KVM] fixes the issue and
+> was pulled by Linus only yesterday.  I cannot reproduce the error
+> following your receipe using the latest Linux/MIPS tree.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/hbm.c  | 37 ++++++++++++++++++++++++++++++++-----
- drivers/misc/mei/hbm.h  |  2 +-
- drivers/misc/mei/init.c |  3 +--
- 3 files changed, 34 insertions(+), 8 deletions(-)
+Confirmed, that fixed it.
 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 6916045..565027b 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -536,6 +536,20 @@ static void mei_hbm_fw_disconnect_req(struct mei_device *dev,
- 
- 
- /**
-+ * mei_hbm_version_is_supported - checks whether the driver can
-+ *     support the hbm version of the device
-+ *
-+ * @dev: the device structure
-+ * returns true if driver can support hbm version of the device
-+ */
-+bool mei_hbm_version_is_supported(struct mei_device *dev)
-+{
-+	return	(dev->version.major_version < HBM_MAJOR_VERSION) ||
-+		(dev->version.major_version == HBM_MAJOR_VERSION &&
-+		 dev->version.minor_version <= HBM_MINOR_VERSION);
-+}
-+
-+/**
-  * mei_hbm_dispatch - bottom half read routine after ISR to
-  * handle the read bus message cmd processing.
-  *
-@@ -562,9 +576,24 @@ void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
- 	switch (mei_msg->hbm_cmd) {
- 	case HOST_START_RES_CMD:
- 		version_res = (struct hbm_host_version_response *)mei_msg;
--		if (!version_res->host_version_supported) {
--			dev->version = version_res->me_max_version;
--			dev_dbg(&dev->pdev->dev, "version mismatch.\n");
-+
-+		dev_dbg(&dev->pdev->dev, "HBM VERSION: DRIVER=%02d:%02d DEVICE=%02d:%02d\n",
-+				HBM_MAJOR_VERSION, HBM_MINOR_VERSION,
-+				version_res->me_max_version.major_version,
-+				version_res->me_max_version.minor_version);
-+
-+		if (version_res->host_version_supported) {
-+			dev->version.major_version = HBM_MAJOR_VERSION;
-+			dev->version.minor_version = HBM_MINOR_VERSION;
-+		} else {
-+			dev->version.major_version =
-+				version_res->me_max_version.major_version;
-+			dev->version.minor_version =
-+				version_res->me_max_version.minor_version;
-+		}
-+
-+		if (!mei_hbm_version_is_supported(dev)) {
-+			dev_warn(&dev->pdev->dev, "hbm version mismatch: stopping the driver.\n");
- 
- 			dev->hbm_state = MEI_HBM_STOP;
- 			mei_hbm_stop_req_prepare(dev, &dev->wr_msg.hdr,
-@@ -575,8 +604,6 @@ void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
- 			return;
- 		}
- 
--		dev->version.major_version = HBM_MAJOR_VERSION;
--		dev->version.minor_version = HBM_MINOR_VERSION;
- 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
- 		    dev->hbm_state == MEI_HBM_START) {
- 			dev->init_clients_timer = 0;
-diff --git a/drivers/misc/mei/hbm.h b/drivers/misc/mei/hbm.h
-index e80dc24..4ae2e56 100644
---- a/drivers/misc/mei/hbm.h
-+++ b/drivers/misc/mei/hbm.h
-@@ -54,7 +54,7 @@ int mei_hbm_start_wait(struct mei_device *dev);
- int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl);
- int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl);
- int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl);
--
-+bool mei_hbm_version_is_supported(struct mei_device *dev);
- 
- #endif /* _MEI_HBM_H_ */
- 
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index f580d30..79e9e1c 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -106,8 +106,7 @@ int mei_start(struct mei_device *dev)
- 		goto err;
- 	}
- 
--	if (dev->version.major_version != HBM_MAJOR_VERSION ||
--	    dev->version.minor_version != HBM_MINOR_VERSION) {
-+	if (!mei_hbm_version_is_supported(dev)) {
- 		dev_dbg(&dev->pdev->dev, "MEI start failed.\n");
- 		goto err;
- 	}
--- 
-1.8.1.2
+Thanks,
 
+Rob
