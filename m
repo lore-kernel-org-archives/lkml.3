@@ -1,104 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3FPHIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 03:08:24 -0400
-Received: from mail.advaoptical.com ([91.217.199.15]:36782 "EHLO
-	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755124Ab3FPHIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 03:08:14 -0400
-From: Oded Gabbay <ogabbay@advaoptical.com>
-To: <cjb@laptop.org>, <ogabbay@advaoptical.com>,
-        <Chang-Ming.Huang@freescale.com>, <gregkh@linuxfoundation.org>,
-        <cbouatmailru@gmail.com>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] MMC: P2020 SDHC: Fix bug when writing to SDHCI_HOST_CONTROL register
-Date: Sun, 16 Jun 2013 10:07:47 +0300
-Message-ID: <1371366467-9997-1-git-send-email-ogabbay@advaoptical.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755101Ab3FPHR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 03:17:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:56081 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab3FPHRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 03:17:54 -0400
+Message-ID: <51BD6679.2090406@gentoo.org>
+Date: Sun, 16 Jun 2013 03:17:13 -0400
+From: Richard Yao <ryao@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130522 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.179.55]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-15_08:2013-06-14,2013-06-15,1970-01-01 signatures=0
+To: Jeff Liu <jeff.liu@oracle.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@gentoo.org, Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/2] ocfs2: Fix llseek() semantics and do some cleanup
+References: <1371237814-59365-1-git-send-email-ryao@gentoo.org> <1371237814-59365-2-git-send-email-ryao@gentoo.org> <51BBF6FE.6080502@oracle.com> <51BD0AFF.8010504@gentoo.org> <51BD6288.5030901@oracle.com>
+In-Reply-To: <51BD6288.5030901@oracle.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2RVNHMTWKAOONLALRGGND"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The P2020 has a non-standard implementation of the SDHCI_HOST_CONTROL
-register. This patch adds a QUIRK in the SDHCI header to signal that
-a host controller has a non-standard SDHCI_HOST_CONTROL register. The
-patch adds a check to the function esdhc_writeb in file
-sdhci-of-esdhc.c, where it checks if the write is done to the
-SDHCI_HOST_CONTROL register and th host has the above mentioned QUIRK,
-then the function simply returns instead of writing to the register.
-The patch also detects if the processor is P2020 (by looking in dev
-tree) and if so, adds the QUIRK to the host->quirk2
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2RVNHMTWKAOONLALRGGND
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This patch depends on the first patch of this set (total of 2 patches)
+On 06/16/2013 03:00 AM, Jeff Liu wrote:
+> On 06/16/2013 08:46 AM, Richard Yao wrote:
+>=20
+>> On 06/15/2013 01:09 AM, Jeff Liu wrote:
+>>> [Add ocfs2-devel to CC-list]
+>>>
+>>> Hello Richard,
+>>>
+>>> Thanks for your patch.
+>>>
+>>> On 06/15/2013 03:23 AM, Richard Yao wrote:
+>>>
+>>>> There are multiple issues with the custom llseek implemented in ocfs=
+2 for
+>>>> implementing SEEK_HOLE/SEEK_DATA.
+>>>>
+>>>> 1. It takes the inode->i_mutex lock before calling generic_file_llse=
+ek(), which
+>>>> is unnecessary.
+>>>
+>>> Agree, but please see my comments below.
+>>>
+>>>>
+>>>> 2. It fails to take the filp->f_lock spinlock before modifying filp-=
+>f_pos and
+>>>> filp->f_version, which differs from generic_file_llseek().
+>>>>
+>>>> 3. It does a offset > inode->i_sb->s_maxbytes check that permits see=
+king up to
+>>>> the maximum file size possible on the ocfs2 filesystem, even when it=
+ is past
+>>>> the end of the file. Seeking beyond that (if possible), would return=
+ EINVAL
+>>>> instead of ENXIO.
+>>>>
+>>>> 4. The switch statement tries to cover all whence values when in rea=
+lity it
+>>>> should only care about SEEK_HOLE/SEEK_DATA. Any other cases should b=
+e passsed
+>>>> to generic_file_llseek().
+>>>
+>>> I have another patch set for refactoring ocfs2_file_llseek() but not =
+yet found time
+>>> to run a comprehensive tests.  It can solve the existing issues but a=
+lso improved the
+>>> SEEK_DATA/SEEK_HOLE for unwritten extents, i.e. OCFS2_EXT_UNWRITTEN.
+>>>
+>>> With this change, SEEK_DATA/SEEK_HOLE will go into separate function =
+with a little code
+>>> duplication instead of the current mix-ups in ocfs2_seek_data_hole_of=
+fset(), i.e,=20
+>>>
+>>> loff_t ocfs2_file_llseek()
+>>> {
+>>> 	switch (origin) {
+>>>         case SEEK_END:
+>>>         case SEEK_CUR:
+>>>         case SEEK_SET:
+>>>                 return generic_file_llseek(file, offset, origin);
+>>>         case SEEK_DATA:
+>>>                 return ocfs2_seek_data(file, offset);
+>>>         case SEEK_HOLE:
+>>>                 return ocfs2_seek_hole(file, offset);
+>>>         default:
+>>>                 return -EINVAL;
+>>>         }
+>>> }
+>>>
+>>> I personally like keeping SEEK_DATA/SEEK_HOLE in switch...case style =
+rather
+>>> than dealing with them in a condition check block.
+>>
+>> I would prefer to see the code structured like this:
+>>
+>> loff_t ocfs2_file_llseek()
+>> {
+>> 	switch (origin) {
+>>         case SEEK_DATA:
+>>                 return ocfs2_seek_data(file, offset);
+>>         case SEEK_HOLE:
+>>                 return ocfs2_seek_hole(file, offset);
+>>         default:
+>>                 return generic_file_llseek(file, offset, origin);
+>>         }
+>> }
+>>
+>> Unfortunately, I just noticed that this code has a problem. In specifi=
+c,
+>> generic_file_llseek() calls generic_file_llseek_size(), which has a
+>> switch statement for whence that fails to distinguish between SEEK_SET=
 
-Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
-Reviewed-by: Anton Vorontsov <anton@enomsg.org>
----
- drivers/mmc/host/sdhci-of-esdhc.c | 14 ++++++++++++++
- include/linux/mmc/sdhci.h         |  2 ++
- 2 files changed, 16 insertions(+)
+>> and invalid whence values. Invalid whence values are mapped to SEEK_SE=
+T
+>> instead of returning EINVAL, which is wrong. That issue affects all
+>> filesystems that do not specify a custom llseek() function and it woul=
+d
+>> affect ocfs2 if my version of the function is used.
+>=20
+> Hmm??  Did you mean to say that an invalid whence(i.e, whence > SEEK_MA=
+X)
+> can be passed into generic_file_llseek()?
+> If so, I don't think that is a problem because any invalid whence shoul=
+d
+> be rejected at the entrance of VFS lseek(2) with EINVAL.
+>=20
+> Thanks,
+> -Jeff
+>=20
 
-diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
-index fd149a0..ca88529 100644
---- a/drivers/mmc/host/sdhci-of-esdhc.c
-+++ b/drivers/mmc/host/sdhci-of-esdhc.c
-@@ -121,6 +121,13 @@ static void esdhc_writeb(struct sdhci_host *host, u8 val, int reg)
- 	if (reg == SDHCI_HOST_CONTROL) {
- 		u32 dma_bits;
- 
-+		/*
-+		 * If host control register is not standard, exit
-+		 * this function
-+		 */
-+		if (host->quirks2 & SDHCI_QUIRK2_BROKEN_HOST_CONTROL)
-+			return;
-+
- 		/* DMA select is 22,23 bits in Protocol Control Register */
- 		dma_bits = (val & SDHCI_CTRL_DMA_MASK) << 5;
- 		clrsetbits_be32(host->ioaddr + reg , SDHCI_CTRL_DMA_MASK << 5,
-@@ -289,6 +296,7 @@ static const struct sdhci_pltfm_data sdhci_esdhc_pdata = {
- static int sdhci_esdhc_probe(struct platform_device *pdev)
- {
- 	struct sdhci_host *host;
-+	struct device_node *np;
- 	int ret;
- 
- 	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_pdata);
-@@ -297,6 +304,15 @@ static int sdhci_esdhc_probe(struct platform_device *pdev)
- 
- 	sdhci_get_of_property(pdev);
- 
-+	np = pdev->dev.of_node;
-+	if (of_device_is_compatible(np, "fsl,p2020-esdhc")) {
-+		/*
-+		 * Freescale messed up with P2020 as it has a non-standard
-+		 * host control register
-+		 */
-+		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HOST_CONTROL;
-+	}
-+
- 	/* call to generic mmc_of_parse to support additional capabilities */
- 	mmc_of_parse(host->mmc);
- 
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index b838ffc..b73dbdd 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -95,6 +95,8 @@ struct sdhci_host {
- /* The system physically doesn't support 1.8v, even if the host does */
- #define SDHCI_QUIRK2_NO_1_8_V				(1<<2)
- #define SDHCI_QUIRK2_PRESET_VALUE_BROKEN		(1<<3)
-+/* Controller has a non-standard host control register */
-+#define SDHCI_QUIRK2_BROKEN_HOST_CONTROL		(1<<4)
- 
- 	int irq;		/* Device IRQ */
- 	void __iomem *ioaddr;	/* Mapped address */
--- 
-1.8.3.1
+You are correct. I had not looked there.
 
+
+
+------enig2RVNHMTWKAOONLALRGGND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRvWZ/AAoJECDuEZm+6ExkWCgP/2HIkulPwUGcpXdquWGp8zRG
+d1iF8DU+Y4NhI6YVFl2XnZYJmFcudscHiCh1YVzr9ogl9sLyFmMgbYLzANdIp5dH
+98BevSgdjykCZMxdK2FP47MUG/I5UW0OnniDScFAm0jr3UsGW2sqy+I3WQflHJSN
+z4Ga/aoIkI/S5msJppeYwr4icDZFv7vxCwHWVuQXmduvfYvKuvF7kBuLaHefL+9U
+30uuKHzyae4UXULwDS0KFX3y01V7psVxlPpyu3D2wTxxz9Y9aNdvumFyar2gf1ue
+udS+TA2MSSzNj7L82yT2jzDaBJ58R359ltagpMyT1WkZd2EbeScgz3bv2PnCIaYA
+jhz35OTbqShDo3Y9pUqaVzHcf3+K3YGUuF5Mz6BiJ59FrH7SSfS6Yp/z49oQ2yb6
+myn9C45rSsgopEXA1B0cPpjlNGaT7rRpMs40iaI2Uyawd774EG9NnocbRw3I+1NM
+tLSozkRYoqaBCj9AdAG2XdlaqwxlMBM7/TDklYfj+h1Q2g3jAgcCMgEGZEjY8+8b
+C3brC0eEJeYwD8PKuQFz3GYOwlcZE2mpIL1WBMPXi0sqc9UL6ODk6maFy1gOrS0a
+nQ9GM/7k6HGL5GB/HCblr1crjbQVoTUXVQNcjio7usQ12a3xUtMJeIoOhgVVAxv2
+/DcV3VdFpV0Q+m+9Z0KR
+=135+
+-----END PGP SIGNATURE-----
+
+------enig2RVNHMTWKAOONLALRGGND--
