@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3FPXKW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 19:10:22 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36754 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3FPXKV (ORCPT
+	id S1755629Ab3FPXNK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 19:13:10 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:42670 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab3FPXNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 19:10:21 -0400
-Date: Sun, 16 Jun 2013 16:10:41 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
+	Sun, 16 Jun 2013 19:13:08 -0400
+Date: Sun, 16 Jun 2013 16:13:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
 Cc: Michal Hocko <mhocko@suse.cz>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH percpu/for-3.11] percpu-refcount: use RCU-sched insted of
  normal RCU
-Message-ID: <20130616231041.GF28664@moria.home.lan>
+Message-ID: <20130616231303.GE28587@htj.dyndns.org>
 References: <20130616215546.GB28587@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -55,4 +55,7 @@ On Sun, Jun 16, 2013 at 02:55:46PM -0700, Tejun Heo wrote:
 > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > Cc: Rusty Russell <rusty@rustcorp.com.au>
 
-Acked-by: Kent Overstreet <koverstreet@google.com>
+Applied to percpu/for-3.11 with acks added.  Thanks!
+
+-- 
+tejun
