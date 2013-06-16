@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3FPSBr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 14:01:47 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:58819 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3FPSBp (ORCPT
+	id S1755429Ab3FPSEy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 14:04:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62157 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab3FPSEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 14:01:45 -0400
+	Sun, 16 Jun 2013 14:04:53 -0400
+Date: Sun, 16 Jun 2013 11:04:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: Add unlikely for current_order test
+In-Reply-To: <51BC4A83.50302@gmail.com>
+Message-ID: <alpine.DEB.2.02.1306161103020.22688@chino.kir.corp.google.com>
+References: <51BC4A83.50302@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
-	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
-Date: Sun, 16 Jun 2013 08:01:44 -1000
-X-Google-Sender-Auth: 4V09zy1nWqAo2wAFXY_nrrLfkt4
-Message-ID: <CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
-Subject: Re: Linux 3.10-rc6
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Daney <david.daney@cavium.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 10:36 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
->
-> On Sun, Jun 16, 2013 at 12:12 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > David Daney (3):
-> >       smp.h: Use local_irq_{save,restore}() in !SMP version of on_each_cpu().
->
-> This change (commit f21afc25f9ed45b8ffe200d0f071b0caec3ed2ef, which hasn't
-> been in linux-next), broke at least mn10300 and ia64:
->
-> include/linux/smp.h:148:2: error: implicit declaration of function 'local_irq_save' [-Werror=implicit-function-declaration]
+On Sat, 15 Jun 2013, Zhang Yanfei wrote:
 
-Hmm. DavidD already added the include for <linux/irqflags.h>, I wonder
-why that doesn't end up working. Do we have some silly header file
-circular include that means that we're already half-way through that
-irqflags.h file and thus will skip it the second time we see it, or
-why does it end up being undeclared?
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> 
+> Since we have an unlikely for the "current_order >= pageblock_order / 2"
+> test above, adding an unlikely for this "current_order >= pageblock_order"
+> test seems more appropriate.
+> 
 
-Anyway, I see a few options:
+I don't understand the justification at all, current_order being unlikely 
+greater than or equal to pageblock_order / 2 doesn't imply at all that 
+it's unlikely that current_order is greater than or equal to 
+pageblock_order.
 
- - we could just make it a macro like it used to be (keeping the
-include and assuming that will sort out any circular include mess) and
-use a rare name for the internal "flags" variable (just prepending
-double underscores is the common one we tend to use in situations like
-this)
-
- - we could just make it a real function, the way the SMP one is, and
-take the extra call overhead (it's not like this should be all that
-critical in an UP environment).
-
- - somebody figures out why the <linux/irqflags.h> include ends up not
-working on nm10300 and ia64..
-
-Hmm?
-
-                 Linus
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  mm/page_alloc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index c3edb62..1b6d7de 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1071,7 +1071,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+>  			rmv_page_order(page);
+>  
+>  			/* Take ownership for orders >= pageblock_order */
+> -			if (current_order >= pageblock_order &&
+> +			if (unlikely(current_order >= pageblock_order) &&
+>  			    !is_migrate_cma(migratetype))
+>  				change_pageblock_range(page, current_order,
+>  							start_migratetype);
