@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3FPJpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 05:45:09 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:46151 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab3FPJpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 05:45:06 -0400
-Date: Sun, 16 Jun 2013 12:45:01 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 0/6] Make ARM's sched_clock generic + 64 bit friendly
-Message-ID: <20130616094501.GG10269@tarshish>
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
- <51AD32A4.5070609@linaro.org>
- <20130604160907.GW27516@mudshark.cambridge.arm.com>
- <51AE2980.6010005@linaro.org>
+	id S1755190Ab3FPJuz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 05:50:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51733 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754923Ab3FPJux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 05:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,874,1363158000"; 
+   d="scan'208";a="350566392"
+Message-ID: <51BD8A77.2080201@intel.com>
+Date: Sun, 16 Jun 2013 17:50:47 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AE2980.6010005@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Alex Shi <alex.shi@intel.com>
+Subject: Re: Performance regression from switching lock to rw-sem for anon-vma
+ tree
+References: <1371165333.27102.568.camel@schen9-DESK> <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On 06/14/2013 07:43 AM, Davidlohr Bueso wrote:
+> I was hoping that the lack of spin on owner was the main difference with
+> rwsems and am/was in the middle of implementing it. Could you send your
+> patch so I can give it a try on my workloads?
+> 
+> Note that there have been a few recent (3.10) changes to mutexes that
+> give a nice performance boost, specially on large systems, most
+> noticeably:
+> 
+> commit 2bd2c92c (mutex: Make more scalable by doing less atomic
+> operations)
+> 
+> commit 0dc8c730 (mutex: Queue mutex spinners with MCS lock to reduce
+> cacheline contention)
+> 
+> It might be worth looking into doing something similar to commit
+> 0dc8c730, in addition to the optimistic spinning.
 
-On Tue, Jun 04, 2013 at 10:53:04AM -0700, John Stultz wrote:
-> On 06/04/2013 09:09 AM, Will Deacon wrote:
-> >On Tue, Jun 04, 2013 at 01:19:48AM +0100, John Stultz wrote:
-> >>On 06/01/2013 11:39 PM, Stephen Boyd wrote:
-> >>>This is mostly a resend of a patch series I sent a little over a month
-> >>>ago. I've reordered the patches so that John can pick up the first three
-> >>>and get a generic sched_clock layer without having to take the 64 bit
-> >>>patches. The last three patches add 64 bit support and move the architected
-> >>>timers on ARM64 and ARM to use it.
-> >>
-> >>Yea, so from the initial look over it, I think I'm happy with queuing
-> >>the first three patches, although I'd like to get some acks from arm
-> >>folks on at least the first two, just so no one is surprised with it
-> >>going through the -tip tree.
-> >The first two patches are pretty simple so, FWIW, you can add my ack on those:
-> >
-> >   Acked-by: Will Deacon <will.deacon@arm.com>
-> Thanks! Added to the commits.
+It is a good tunning for large machine. I just following what the commit 
+0dc8c730 done, give a RFC patch here. I tried it on my NHM EP machine. seems no
+clear help on aim7. but maybe it is helpful on large machine.  :)
 
-What is the status of this series then? Is there a chance of seeing it in 
-3.11? I want to base some xtensa architecture work on this, so I'd like to 
-know whether there is a stable base to start from.
 
-baruch
+diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+index bb1e2cd..240729a 100644
+--- a/include/asm-generic/rwsem.h
++++ b/include/asm-generic/rwsem.h
+@@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+ 
+ static inline int __down_write_trylock(struct rw_semaphore *sem)
+ {
+-	long tmp;
++	if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
++		return 0;
+ 
+-	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+-		      RWSEM_ACTIVE_WRITE_BIAS);
+-	return tmp == RWSEM_UNLOCKED_VALUE;
++	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
++		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+ }
+ 
+ /*
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 19c5fa9..9e54e20 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -64,7 +64,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	struct rwsem_waiter *waiter;
+ 	struct task_struct *tsk;
+ 	struct list_head *next;
+-	long oldcount, woken, loop, adjustment;
++	long woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+@@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 			 * will block as they will notice the queued writer.
+ 			 */
+ 			wake_up_process(waiter->task);
+-		goto out;
++		return sem;
+ 	}
+ 
+ 	/* Writers might steal the lock before we grant it to the next reader.
+@@ -85,15 +85,28 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	adjustment = 0;
+ 	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+ 		adjustment = RWSEM_ACTIVE_READ_BIAS;
+- try_reader_grant:
+-		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+-		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+-			/* A writer stole the lock. Undo our reader grant. */
++		while (1) {
++			long oldcount;
++
++			/* A writer stole the lock. */
++			if (unlikely(sem->count & RWSEM_ACTIVE_MASK))
++				return sem;
++
++			if (unlikely(sem->count < RWSEM_WAITING_BIAS)) {
++				cpu_relax();
++				continue;
++			}
++
++			oldcount = rwsem_atomic_update(adjustment, sem)
++								- adjustment;
++			if (likely(oldcount >= RWSEM_WAITING_BIAS))
++				break;
++
++			 /* A writer stole the lock.  Undo our reader grant. */
+ 			if (rwsem_atomic_update(-adjustment, sem) &
+ 						RWSEM_ACTIVE_MASK)
+-				goto out;
++				return sem;
+ 			/* Last active locker left. Retry waking readers. */
+-			goto try_reader_grant;
+ 		}
+ 	}
+ 
+@@ -136,7 +149,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	sem->wait_list.next = next;
+ 	next->prev = &sem->wait_list;
+ 
+- out:
+ 	return sem;
+ }
+ 
+-- 
+Thanks
+    Alex
+
 
 -- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Thanks
+    Alex
