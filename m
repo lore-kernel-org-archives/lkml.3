@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3FPWVK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:21:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46474 "EHLO
+	id S1755973Ab3FPWVI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:21:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46443 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755767Ab3FPWI6 (ORCPT
+	by vger.kernel.org with ESMTP id S1755760Ab3FPWI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:58 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Joseph Salisbury" <joseph.salisbury@canonical.com>,
-        "Tim Richardson" <tim@tim-richardson.net>
+        "Gustavo Maciel Dias Vieira" <gustavo@sagui.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.466638801@decadent.org.uk>
+Message-ID: <lsq.1371420098.32845430@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [38/83] USB: revert periodic scheduling bugfix
+Subject: [45/83] ACPI video: ignore BIOS backlight value for HP dm4
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,45 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Gustavo Maciel Dias Vieira <gustavo@sagui.org>
 
-commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
+commit 771d09b3c4c45d4d534a83a68e6331b97fd82e15 upstream.
 
-This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
-(USB: EHCI: fix bug in scheduling periodic split transfers).  The
-commit was valid -- it fixed a real bug -- but the periodic scheduler
-in ehci-hcd is in such bad shape (especially the part that handles
-split transactions) that fixing one bug is very likely to cause
-another to surface.  That's what happened in this case; the result was
-choppy and noisy playback on certain 24-bit audio devices.
+On a HP Pavilion dm4 laptop the BIOS sets minimum backlight on boot,
+completely dimming the screen. Ignore this initial value for this
+machine.
 
-The only real fix will be to rewrite this entire section of code.  My
-next project...
-
-This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
-
-Thanks to Tim Richardson for extra testing and feedback, and to Joseph
-Salisbury and Tyson Tan for tracking down the original source of the
-problem.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: Tim Richardson <tim@tim-richardson.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Gustavo Maciel Dias Vieira <gustavo@sagui.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/ehci-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
- }
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -447,6 +447,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Pavilion dm4",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
++		},
++	},
+ 	{}
+ };
  
- static const unsigned char
--max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
-+max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
- 
- /* carryover low/fullspeed bandwidth that crosses uframe boundries */
- static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
