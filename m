@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3FPWQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46331 "EHLO
+	id S932153Ab3FPWQt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46411 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755559Ab3FPWJE (ORCPT
+	by vger.kernel.org with ESMTP id S1755663Ab3FPWJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:09:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nithin Sujir" <nsujir@broadcom.com>,
-        "Roland Dreier" <roland@purestorage.com>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.19172729@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Egbert Eich" <eich@suse.de>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Daniel Vetter" <daniel.vetter@ffwll.ch>
+Date: Sun, 16 Jun 2013 23:01:38 +0100
+Message-ID: <lsq.1371420098.400255893@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [12/83] tg3: Add read dma workaround for 5720
+Subject: [66/83] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,102 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
+commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
 
-Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
-DMA workaround" added a workaround for TX DMA stall on the 5719. This
-workaround needs to be applied to the 5720 as well.
+In
 
-Reported-by: Roland Dreier <roland@purestorage.com>
-Tested-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: use GET_ASIC_REV() instead of tg3_asic_rev()]
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c
+Author: Egbert Eich <eich@suse.de>
+Date:   Tue Jun 4 17:13:21 2013 +0200
+
+    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
+
+Egbert Eich fixed a long-standing bug where we simply used a
+non-working i2c controller to read the EDID for SDVO-LVDS panels.
+Unfortunately some machines seem to not be able to cope with the mode
+provided in the EDID. Specifically they seem to not be able to cope
+with a 4x pixel mutliplier instead of a 2x one, which seems to have
+been worked around by slightly changing the panels native mode in the
+VBT so that the dotclock is just barely above 50MHz.
+
+Since it took forever to notice the breakage it's fairly safe to
+assume that at least for SDVO-LVDS panels the VBT contains fairly sane
+data. So just switch around the order and use VBT modes first.
+
+v2: Also add EDID modes just in case, and spell Egbert correctly.
+
+v3: Elaborate a bit more about what's going on on Chris' machine.
+
+Cc: Egbert Eich <eich@suse.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
+Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/broadcom/tg3.c |   21 +++++++++++++++------
- drivers/net/ethernet/broadcom/tg3.h |    5 +++--
- 2 files changed, 18 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8282,6 +8282,14 @@ static void tg3_setup_rxbd_thresholds(st
- 		tw32(JMB_REPLENISH_LWM, bdcache_maxcnt);
- }
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1583,10 +1583,13 @@ static void intel_sdvo_get_lvds_modes(st
+ 	 * arranged in priority order.
+ 	 */
+ 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+-	if (list_empty(&connector->probed_modes) == false)
+-		goto end;
  
-+static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
-+{
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
-+	else
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
-+}
-+
- /* tp->lock is held. */
- static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
- {
-@@ -8920,16 +8928,17 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	tw32_f(RDMAC_MODE, rdmac_mode);
- 	udelay(40);
- 
--	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
-+	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
- 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
- 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
- 				break;
- 		}
- 		if (i < TG3_NUM_RDMA_CHANNELS) {
- 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+			val |= tg3_lso_rd_dma_workaround_bit(tp);
- 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--			tg3_flag_set(tp, 5719_RDMA_BUG);
-+			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
+-	/* Fetch modes from VBT */
++	/*
++	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
++	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
++	 * drm_mode_probed_add adds the mode at the head of the list we add it
++	 * last.
++	 */
+ 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
+ 		newmode = drm_mode_duplicate(connector->dev,
+ 					     dev_priv->sdvo_lvds_vbt_mode);
+@@ -1598,7 +1601,6 @@ static void intel_sdvo_get_lvds_modes(st
  		}
  	}
  
-@@ -9213,15 +9222,15 @@ static void tg3_periodic_fetch_stats(str
- 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
- 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
- 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
--	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
-+	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
- 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
- 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
- 		u32 val;
- 
- 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
- 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--		tg3_flag_clear(tp, 5719_RDMA_BUG);
-+		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
- 	}
- 
- 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -1368,7 +1368,8 @@
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
--#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
- /* 0x4914 --> 0x4be0 unused */
- 
- #define TG3_NUM_RDMA_CHANNELS		4
-@@ -2925,7 +2926,7 @@ enum TG3_FLAGS {
- 	TG3_FLAG_APE_HAS_NCSI,
- 	TG3_FLAG_5717_PLUS,
- 	TG3_FLAG_4K_FIFO_LIMIT,
--	TG3_FLAG_5719_RDMA_BUG,
-+	TG3_FLAG_5719_5720_RDMA_BUG,
- 	TG3_FLAG_RESET_TASK_PENDING,
- 
- 	/* Add new flags before this comment and TG3_FLAG_NUMBER_OF_FLAGS */
+-end:
+ 	list_for_each_entry(newmode, &connector->probed_modes, head) {
+ 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
+ 			intel_sdvo->sdvo_lvds_fixed_mode =
 
