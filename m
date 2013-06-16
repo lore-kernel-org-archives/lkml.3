@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3FPMiG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 08:38:06 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:47425 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab3FPMiF (ORCPT
+	id S1755229Ab3FPMrW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 08:47:22 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:36968 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab3FPMrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 08:38:05 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.10-rc6
-Date: Sun, 16 Jun 2013 14:37:57 +0200
-Message-ID: <2626868.kqkN4bgvmz@merkaba>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc5-tp520; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	Sun, 16 Jun 2013 08:47:20 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <2614957.8jBPZazWeB@flatron>
+References: <1371143144-31764-1-git-send-email-dianders@chromium.org>
+	<9948950.GZ51yJYkxQ@flatron>
+	<15dd01ce6887$f3d6d720$db848560$%kim@samsung.com>
+	<2614957.8jBPZazWeB@flatron>
+Date: Sun, 16 Jun 2013 14:47:20 +0200
+Message-ID: <CACRpkdaz2YXGvs3uoz0_8MXABWSWfswkhStNGX5Et4vmumnEzA@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Jun 14, 2013 at 1:03 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On Friday 14 of June 2013 07:47:15 Kukjin Kim wrote:
+>> Tomasz Figa wrote:
+>> > On Thursday 13 of June 2013 10:05:44 Doug Anderson wrote:
+>> > > It's convenient if get_maintainer suggests sending samsung/exynos
+>> > > pinctrl changes to linux-samsung-soc and to Kukjin.  Add an entry
+>> > > for
+>> > > that.
+>> >
+>> > Well, if we are already at it, we could list the actual maintainers of
+>> > the driver.
+>> >
+>> > The original maintainer was Thomas Abraham <thomas.abraham@linaro.org>
+>>
+>> Should be original author?! I think, original maintainer was/is Linus
+>> Walleij.
+>
+> Linus is the maintainer of the pin control subsystem. In addition drivers
+> can have their own maintainers, but of course they are lower in the
+> hierarchy than subsystem maintainers.
 
-Am Samstag, 15. Juni 2013, 12:12:18 schrieb Linus Torvalds:
-> Another week, another rc.
-> 
-> And I didn't even need to curse all that much at people. Sure, I
-> talked smack about some of your hamsters, and I declined a couple of
-> pull requests, but let's face it, it was pretty halfhearted. Most of
-> the time things were good.
+Well I don't really like hiearchies, as I'm basically anarchist :-P
 
-Do you really think your cursing controls how other people behave?
+Anyway, as long as the get-mainater script output both Thomas
+and my name I don't really care, the only practical intent with
+this file is to be able to mail the right people.
 
-Ciao,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Yours,
+Linus Walleij
