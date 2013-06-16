@@ -1,371 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3FPVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 17:39:26 -0400
-Received: from etezian.org ([198.101.225.253]:40803 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab3FPVjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 17:39:17 -0400
-From: Andi Shyti <andi@etezian.org>
-To: arnd@arndb.de, gregkh@linuxfoundation.org, rob@landley.net
-Cc: oatilla@gmail.com, szsolt@gmail.com, linux-kernel@vger.kernel.org,
-        andi@etezian.org, linux-doc@vger.kernel.org
-Subject: [PATCH 2/2] Documentation: added etzkx driver documentation
-Date: Sun, 16 Jun 2013 23:40:28 +0200
-Message-Id: <f387af3c5edcf9e00609abefb0f82c6b514266e2.1371418586.git.andi@etezian.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1371418586.git.andi@etezian.org>
-References: <cover.1371418586.git.andi@etezian.org>
-In-Reply-To: <cover.1371418586.git.andi@etezian.org>
-References: <cover.1371418586.git.andi@etezian.org>
+	id S1755520Ab3FPVkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 17:40:35 -0400
+Received: from mail-gh0-f177.google.com ([209.85.160.177]:55845 "EHLO
+	mail-gh0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab3FPVke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 17:40:34 -0400
+Date: Sun, 16 Jun 2013 14:40:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: A question on RCU vs. preempt-RCU
+Message-ID: <20130616214028.GA28587@htj.dyndns.org>
+References: <20130616023611.GA19863@htj.dyndns.org>
+ <20130616141335.GW5146@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130616141335.GW5146@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The etzkx driver's documentation contains some basic information about
+Hello, Paul.
 
- - accelerometer chip overview
- - driver interfaces
- - driver usage
+On Sun, Jun 16, 2013 at 07:13:35AM -0700, Paul E. McKenney wrote:
+> CONFIG_TREE_PREEMPT_RCU does have an increment, decrement (sort of),
+> and check in its rcu_read_lock() and rcu_read_unlock(), which will
+> add overhead that might well be noticeable compared to CONFIG_TREE_RCU's
+> zero-code implementation of rcu_read_lock() and rcu_read_unlock().
 
-Signed-off-by: Andi Shyti <andi@etezian.org>
-Reviewed-by: Onur Atilla <oatilla@gmail.com>
----
- Documentation/misc-devices/etzkx.txt |  325 ++++++++++++++++++++++++++++++++++
- 1 file changed, 325 insertions(+)
- create mode 100644 Documentation/misc-devices/etzkx.txt
+Yeah, I should have added one more data point.  I was testing atomic_t
+vs. percpu-ref and saw the overhead and worrying that it would show
+regression against preempt_disable/enable() implementation.
 
-diff --git a/Documentation/misc-devices/etzkx.txt b/Documentation/misc-devices/etzkx.txt
-new file mode 100644
-index 0000000..5d2017c
---- /dev/null
-+++ b/Documentation/misc-devices/etzkx.txt
-@@ -0,0 +1,325 @@
-+	ETZKX - State Machine Interrupt Driven Accelerometer
-+	====================================================
-+
-+Author: Andi Shyti <andi@etezian.com>
-+
-+The etzkx driver provides support for the programmable state machine interrupt
-+driven 3-axis accelerometer.
-+The chip is manifactured by:
-+
-+	ROHM Semiconductor: kxcnl-1010
-+
-+Device description
-+------------------
-+The kxcnl-1010 accelerometer is an ultra low-power device based on a
-+differential capacitance arising from acceleration-induced motion of the sensor
-+element. The device has a dynamically user selectable sensitivity scale of
-++-2/+-4/+-6/+-8g. Moreover the user has the possibility to select the sampling
-+frequency (odr) from 3.125Hz to 1.6kHz.
-+
-+The X, Y, Z coordinates are accessible by polling the device. Interrupt
-+generation on data ready is also possible if preferred.
-+
-+The device is capable of running two state machines for gesture recognition
-+such as orientation change, shake, tap, etc. Two sets of registers are used to
-+load the algorithms for the state machine.
-+
-+The communication with the CPU is done via I2C bus. Two interrupt lines allow
-+signalling the state machines behavior and possibly the presence of new
-+data.
-+
-+The device implements a hardware selftest functionality which allows testing of
-+the reliability of the device.
-+
-+The driver
-+----------
-+The driver is located under
-+
-+	driver/misc/etzkx.c
-+	include/linux/i2c/etzkx.h
-+
-+and is placed in between the i2c driver and the userspace interfaces
-+
-+	 __________________________
-+	|        |        |        |
-+	| input  | sysfs  |  char  |
-+	| device |        | device |
-+	|________|________|________|
-+	|                          |
-+	|          etzkx           |
-+	|__________________________|
-+	|                          |
-+	|         i2c smbus        |
-+	|__________________________|
-+	|                          |
-+	|         i2c  xfer        |
-+	|                          |
-+	+==========================+
-+	|                          |
-+	|        kxcnl-1010        |
-+	|__________________________|
-+
-+
-+In the menuconfig the driver is reachable
-+
-+	Device Drivers  --->
-+	   [*] Misc devices  --->
-+	      <*>   ETZKX kxcnl 3d digital accelerometer
-+
-+The interfaces
-+--------------
-+The driver generates three types of interfaces:
-+
-+ * sysfs: provides information related to the device and sets some basic
-+   parameters like output data rate (odr) and range.
-+
-+ * input event: provides the X, Y, Z coordinates.
-+
-+ * character device: provides state machine related information.
-+
-+Sysfs interfaces
-+----------------
-+Here is a list of all the sysfs interfaces generated by the driver
-+
-+hwid
-+	RO - shows the chip installed on the board
-+
-+enable
-+	RW - enables/disables the streaming of X, Y, Z coordinates which are
-+	     readable from the input event file
-+	     1 enables the the streaming
-+	     0 disables the streaming
-+
-+odr
-+	RW - sets the output data rate of the chip, i.e. sets the frequency of
-+	     working of the chip. The available data rates are (in Hz) 3.125,
-+	     6.25, 12.5, 25, 50, 100, 400, 1600. It is possible to write a
-+	     generic frequency and the driver will normalize it to the closest
-+	     available. When a state machine is running the user is prevented
-+	     form changing the odr.
-+
-+delay
-+	RW - sets the driver polling rate in ms. Usually is
-+
-+	                         1
-+	               delay = -----
-+	                        odr
-+
-+	      but depending of some state machine conditions, odr and delay
-+	      might not be synchronized.
-+
-+range
-+	RW - sets the sensitivity measured in g. The available g range are
-+	     +-2g, +-4g, +-6g, +-8g. When a state machine is running, the user
-+	     is prevented from changing the range.
-+
-+self_test
-+	RW - enables/disables the self-test functionality. When the self_test is
-+	     enabled the X, Y, Z axes are affected by an offset, that offset
-+	     allows to evaluate the liability of the device (refer to the
-+	     datasheets for the self test patterns)
-+	     1 enables self test
-+	     0 disables self test
-+
-+drv_version
-+	RO - shows the driver version
-+
-+Input event interface
-+---------------------
-+The input event is generated under /dev/input/eventX, where X is an incremental
-+number chosen by the input driver framework.
-+
-+To eventX file is associated the 'etzkx' name which is discoverable using an
-+ioctl function with EVIOCGNAME flag.
-+
-+    DIR *dir;
-+    struct dirent *de;
-+    char *fname;
-+    [...]
-+
-+    dir = opendir("/dev/input");
-+    while ( (de = readdir(dir)) )
-+    {
-+        fd = open(de->d_name, O_RDONLY))
-+        ioctl(fd, EVIOCGNAME(sizeof(fname) - 1), &fname)
-+
-+        if (!strcmp(fname, "etzkx"))
-+            /*** found it! ***/
-+
-+        close (fd);
-+    }
-+
-+The driver streams the coordinates every "delay" ms (or "odr" Hz) through this
-+interface. The input driver sends a struct input_event to the interface buffer,
-+which has the following structure:
-+
-+	#include <linux/input.h>
-+
-+	struct input_event {
-+		struct timeval time;
-+		__u16 type;
-+		__u16 code;
-+		__s32 value;
-+	};
-+
-+where the type event is EV_ABS, the code of the event is ABS_X, ABS_Y, ABS_Z
-+corresponding to the X, Y, Z coordiantes and in the end the value field is the
-+specific coordinate value. The driver sends three different events for each
-+coordinate followed by a synchronization event which has type=0, code=0 and
-+value=0.
-+
-+A possible reading algorithm can be
-+
-+    struct input_event ev;
-+
-+    while (1)
-+    {
-+        do
-+        {
-+            read(fd, &ev, sizeof(struct input_event));
-+
-+            if (ev.type == EV_ABS)
-+                switch (ev.code)
-+                {
-+                    case ABS_X:
-+                        X = ev.value;
-+                        break;
-+                    case ABS_Y:
-+                        Y = ev.value;
-+                        break;
-+                    case ABS_Z:
-+                        Z = ev.value;
-+                        break;
-+                }
-+        } while (ev.type != EV_SYN);
-+    }
-+
-+Character device
-+----------------
-+The character device is used to report to the userspace the running state
-+machine's outcome. The interface is capable of polling so that it is possible to
-+use select() or poll() on it. The character interface is generated as
-+
-+	/dev/etzkx_stm
-+
-+The driver communicates with userspace by writing 64 bit structure on the
-+interface
-+
-+	+-----+--------------------------+
-+	| 32  | algorithm id             |
-+	+-----+--------------------------+
-+	| 32  | specific algorithm data  |
-+	+-----+--------------------------+
-+
-+Currently, three algorithms are implemented:
-+
-+ - algorithm id
-+	ETZKX_STM_ID_TIMING: timing algorithm used for testing. It sends an interrupt
-+	every 16 odr.
-+
-+	ETZKX_STM_ID_ORIENTATION: sends an interrupt every orientation change
-+	(portrait or landscape)
-+
-+	ETZKX_STM_ID_DOUBLE_TAP: sends an interrupt every time that a double tap
-+	is detected
-+
-+ - specific algorithm data
-+	timing (bit order)
-+	32 bit: not relevant, uninitialized
-+
-+	orientation (bit order)
-+	16 bit: 1 if portrait, 0 otherwise
-+	16 bit: 1 if landscape, 0 otherwise
-+
-+	double tap (bit order)
-+	8 bit: 1 if +x, 2 if -x, 0 otherwise
-+	8 bit: 1 if +y, 2 if -y, 0 otherwise
-+	8 bit: 1 if +z, 2 if -z, 0 otherwise
-+	8 bit: double tap peak
-+
-+The /dev/etzkx_stm file is capable of ioctl with the following flags
-+
-+	ETZKXIO_ENABLE_TIMING: enables timing algorithm
-+	ETZKXIO_DISABLE_TIMING: disable timing algorithm
-+	ETZKXIO_ENABLE_ORIENTATION: enables orientation algorithm
-+	ETZKXIO_DISABLE_ORIENTATION: disables orientation algorithm
-+	ETZKXIO_ENABLE_DOUBLE_TAP: enables double tap algorithm
-+	ETZKXIO_DISABLE_DOUBLE_TAP: disables double tap algorithm
-+
-+	ETZKXIO_WHICH_ORIENTATION: asks to the driver the actual orientation
-+	status. The driver provides via ioctl an algorithm structure like
-+	this:
-+
-+	   32 bit: ETZKX_STM_ID_ORIENTATION
-+	   16 bit: 1 if portrait, 0 otherwise
-+	   16 bit: 1 if landscape, 0 otherwise
-+
-+	ETZKXIO_INSTANT_ORIENTATION: like ETZKXIO_WHICH_ORIENTATION, with the
-+	difference that the calculation of the orientation is calculated by
-+	comparing the X and Y coordinates.
-+
-+	ETZKXIO_RUNNING_ALGO: reports to the userspace the two running
-+	algorithms for each state machine slot:
-+
-+	   32 bit: running algorithm id on slot 1
-+	   32 bit: running algorithm id on slot 2
-+
-+	if no state machine is loaded, the id is equal to ETZKX_STM_ID_NO_STM
-+
-+Driver usage
-+------------
-+The driver follows a state machine way of working and at any time it tracks the
-+state which the driver is in.
-+
-+                     __STRM --- STRM + STM1
-+                    /       \/              \
-+                   /        /\               \
-+   STBY --- ACTIVE --- STM1     STRM + STM2 --- STRM + STM1 + STM2
-+                   \        \/               /
-+                    \__     /\              /
-+                       STM2 --- STM1 + STM2
-+
-+To reach each driver state, userspace applications have to enable/disable the
-+available features using the related interfaces.
-+
-+Enable/disable streaming (STRM state):
-+	echo 1 > /sys/.../enable
-+	echo 0 > /sys/.../enable
-+
-+Enable/disable state machine (STM1/STM2 state):
-+	ioctl (fd, ETZKXIO_ENABLE_ORIENTATION,  0);
-+	ioctl (fd, ETZKXIO_ENABLE_DOUBLE_TAP,   0);
-+	ioctl (fd, ETZKXIO_DISABLE_ORIENTATION, 0);
-+	ioctl (fd, ETZKXIO_DISABLE_DOUBLE_TAP,  0);
-+
-+Self test
-+---------
-+The self test checks the electromechanical functionality of the sensor. The
-+driver sets the self test state as a specific branch of the driver state
-+machine:
-+
-+                       _
-+                      /  ST
-+                     /    ^
-+   STDBY <---> ACTIVE     |
-+                     \    |
-+                      \_  v
-+                         STRM
-+
-+To enable/disable the self test
-+
-+	echo 1 > /sys/.../self_test
-+	echo 0 > /sys/.../self_test
-+
-+This applies an extra capacitance to every axes which adds an offset to the X,
-+Y, Z output, it can be different for each coordinate.
-+
-+The suppliers provides the minimum Dx, Dy, Dz offset in order to consider the
-+device reliable. The evaluation should be done like follows:
-+
-+	|Xst - X| > Dx
-+	|Yst - Y| > Dy
-+	|Zst - Z| > Dz
-+
-+where Xst, Yst and Zst are the coordinates measured after applying the self test
-+on the accelerometer.
+Just ran some tests and preempt_disable/enable() based implementation
+is about 18% faster than rcu_read_lock/unlock() based one.
+
+Compared to atomic_t, in a horribly contrived test case, normal RCU
+would be slower by around 20% while the preemption one would be slower
+by 7.5%.
+
+> The main source of longer latency from preempt_disable/enable()
+> (or rcu_read_{,un}lock_sched()) will be on the read side.
+> The callback-processing is very nearly identical.
+
+Ah, right.  I was completely confused there.  The goal of
+CONFIG_TREE_PREEMPT_RCU is to allow preemption inside RCU read
+critical sections.  I knew that at one point and completely forgot
+about it, so using preemption based one is fine as long as the length
+of critical section is short.
+
+> The big question is "how long are the RCU read-side critical sections?"
+
+Extremely short.  It's gonna be like five instructions.
+
+> My guess is that module references can have arbitrarily long lifetimes,
+
+Preemption is disabled only while the refcnt operations are actually
+going on.
+
+> which would argue strongly against use of RCU-sched.  But if the lifetimes
+> are always short (say, sub-microsecond), then RCU-sched should be fine.
+
+So, RCU-sched, it is.
+
+Thanks a lot for the help!
+
 -- 
-1.7.10.4
-
+tejun
