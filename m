@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3FPWbD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:31:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46339 "EHLO
+	id S932131Ab3FPWbb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:31:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46295 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755608Ab3FPWIp (ORCPT
+	by vger.kernel.org with ESMTP id S1755544Ab3FPWIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:08:45 -0400
+	Sun, 16 Jun 2013 18:08:44 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org,
+        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
+        "Hinnerk van Bruinehsen" <h.v.bruinehsen@fu-berlin.de>,
+        "Johannes Berg" <johannes.berg@intel.com>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.39065530@decadent.org.uk>
+Message-ID: <lsq.1371420097.96731477@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [16/83] netback: remove redundant assignment
+Subject: [07/83] iwlwifi: dvm: fix zero LQ CMD sending avoidance
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,40 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 16ecba2605a3bbd374cd993e532264e2d8de49e5 upstream.
+commit a87783699b23395c46bbeeb5d28f6db24897bf26 upstream.
 
-New value for netbk->mmap_pages[pending_idx] is assigned in
-xen_netbk_alloc_page(), no need for a second assignment which
-exposes internal to the outside world.
+In 63b77bf489881747c5118476918cc8c29378ee63
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+	iwlwifi: dvm: don't send zeroed LQ cmd
+
+I tried to avoid to send zeroed LQ cmd, but I made a (very)
+stupid mistake in the memcmp.
+Since this patch has been ported to stable, the fix should
+go to stable too.
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=58341
+
+Reported-by: Hinnerk van Bruinehsen <h.v.bruinehsen@fu-berlin.de>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netback/netback.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -951,8 +951,6 @@ static struct gnttab_copy *xen_netbk_get
- 		if (!page)
- 			goto err;
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
+@@ -604,7 +604,7 @@ void iwl_restore_stations(struct iwl_pri
+ 					memcpy(&lq, priv->stations[i].lq,
+ 					       sizeof(struct iwl_link_quality_cmd));
  
--		netbk->mmap_pages[pending_idx] = page;
--
- 		gop->source.u.ref = txp->gref;
- 		gop->source.domid = vif->domid;
- 		gop->source.offset = txp->offset;
-@@ -1361,8 +1359,6 @@ static unsigned xen_netbk_tx_build_gops(
- 			continue;
- 		}
- 
--		netbk->mmap_pages[pending_idx] = page;
--
- 		gop->source.u.ref = txreq.gref;
- 		gop->source.domid = vif->domid;
- 		gop->source.offset = txreq.offset;
+-				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
++				if (memcmp(&lq, &zero_lq, sizeof(lq)))
+ 					send_lq = true;
+ 			}
+ 			spin_unlock_irqrestore(&priv->shrd->sta_lock,
 
