@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab3FPWQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46329 "EHLO
+	id S1756158Ab3FPWQk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46341 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755717Ab3FPWJG (ORCPT
+	by vger.kernel.org with ESMTP id S1755584Ab3FPWJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:09:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -17,9 +17,10 @@ CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
         "Ian Campbell" <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.451561753@decadent.org.uk>
+Message-ID: <lsq.1371420097.834578872@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [15/83] xen-netback: remove skb in xen_netbk_alloc_page
+Subject: [24/83] xen-netfront: reduce gso_max_size to account for max TCP
+ header
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,44 +35,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Liu <wei.liu2@citrix.com>
 
-commit 27f852282ab9a028f57da96d05c26f38c424a315 upstream.
+commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
 
-This variable is never used.
+The maximum packet including header that can be handled by netfront / netback
+wire format is 65535. Reduce gso_max_size accordingly.
+
+Drop skb and print warning when skb->len > 65535. This can 1) save the effort
+to send malformed packet to netback, 2) help spotting misconfiguration of
+netfront in the future.
 
 Signed-off-by: Wei Liu <wei.liu2@citrix.com>
 Acked-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netback/netback.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/xen-netfront.c       |   17 +++++++++++++++--
+ include/xen/interface/io/netif.h |    1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -914,7 +914,6 @@ static int netbk_count_requests(struct x
- }
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -36,7 +36,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/ethtool.h>
+ #include <linux/if_ether.h>
+-#include <linux/tcp.h>
++#include <net/tcp.h>
+ #include <linux/udp.h>
+ #include <linux/moduleparam.h>
+ #include <linux/mm.h>
+@@ -490,6 +490,16 @@ static int xennet_start_xmit(struct sk_b
+ 	unsigned int offset = offset_in_page(data);
+ 	unsigned int len = skb_headlen(skb);
  
- static struct page *xen_netbk_alloc_page(struct xen_netbk *netbk,
--					 struct sk_buff *skb,
- 					 u16 pending_idx)
++	/* If skb->len is too big for wire format, drop skb and alert
++	 * user about misconfiguration.
++	 */
++	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
++		net_alert_ratelimited(
++			"xennet: skb->len = %u, too big for wire format\n",
++			skb->len);
++		goto drop;
++	}
++
+ 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
+ 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
+ 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
+@@ -1043,7 +1053,8 @@ err:
+ 
+ static int xennet_change_mtu(struct net_device *dev, int mtu)
  {
- 	struct page *page;
-@@ -948,7 +947,7 @@ static struct gnttab_copy *xen_netbk_get
+-	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
++	int max = xennet_can_sg(dev) ?
++		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
  
- 		index = pending_index(netbk->pending_cons++);
- 		pending_idx = netbk->pending_ring[index];
--		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
-+		page = xen_netbk_alloc_page(netbk, pending_idx);
- 		if (!page)
- 			goto err;
+ 	if (mtu > max)
+ 		return -EINVAL;
+@@ -1318,6 +1329,8 @@ static struct net_device * __devinit xen
+ 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
+ 	SET_NETDEV_DEV(netdev, &dev->dev);
  
-@@ -1355,7 +1354,7 @@ static unsigned xen_netbk_tx_build_gops(
- 		}
++	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
++
+ 	np->netdev = netdev;
  
- 		/* XXX could copy straight to head */
--		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
-+		page = xen_netbk_alloc_page(netbk, pending_idx);
- 		if (!page) {
- 			kfree_skb(skb);
- 			netbk_tx_err(vif, &txreq, idx);
+ 	netif_carrier_off(netdev);
+--- a/include/xen/interface/io/netif.h
++++ b/include/xen/interface/io/netif.h
+@@ -65,6 +65,7 @@
+ #define _XEN_NETTXF_extra_info		(3)
+ #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
+ 
++#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
+ struct xen_netif_tx_request {
+     grant_ref_t gref;      /* Reference to buffer page */
+     uint16_t offset;       /* Offset within buffer page */
 
