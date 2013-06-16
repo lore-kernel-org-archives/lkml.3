@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab3FPWXg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:23:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46386 "EHLO
+	id S1756210Ab3FPWXl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:23:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46438 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755669Ab3FPWIz (ORCPT
+	by vger.kernel.org with ESMTP id S1755741Ab3FPWIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,12 +14,11 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>
+        "Patrik Jakobsson" <patrik.r.jakobsson@gmail.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.482464233@decadent.org.uk>
+Message-ID: <lsq.1371420098.807396678@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [43/83] USB: iuu_phoenix: fix bulk-message timeout
+Subject: [33/83] drm/gma500: Increase max resolution for mode setting
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,38 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit 6c13ff68a7ce01da7a51b44241a7aad8eaaedde7 upstream.
+commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
 
-The bulk-message timeout is specified in milliseconds and should not
-depend on HZ.
+By having a higher max resolution we can now set up a virtual
+framebuffer that spans several monitors. 4096 should be ok since we're
+gen 3 or higher and should be enough for most dual head setups.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/iuu_phoenix.c |    4 ++--
+ drivers/staging/gma500/framebuffer.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/iuu_phoenix.c
-+++ b/drivers/usb/serial/iuu_phoenix.c
-@@ -327,7 +327,7 @@ static int bulk_immediate(struct usb_ser
- 	    usb_bulk_msg(serial->dev,
- 			 usb_sndbulkpipe(serial->dev,
- 					 port->bulk_out_endpointAddress), buf,
--			 count, &actual, HZ * 1);
-+			 count, &actual, 1000);
+--- a/drivers/staging/gma500/framebuffer.c
++++ b/drivers/staging/gma500/framebuffer.c
+@@ -831,8 +831,8 @@ void psb_modeset_init(struct drm_device
+ 	for (i = 0; i < dev_priv->num_pipe; i++)
+ 		psb_intel_crtc_init(dev, i, mode_dev);
  
- 	if (status != IUU_OPERATION_OK)
- 		dbg("%s - error = %2x", __func__, status);
-@@ -350,7 +350,7 @@ static int read_immediate(struct usb_ser
- 	    usb_bulk_msg(serial->dev,
- 			 usb_rcvbulkpipe(serial->dev,
- 					 port->bulk_in_endpointAddress), buf,
--			 count, &actual, HZ * 1);
-+			 count, &actual, 1000);
+-	dev->mode_config.max_width = 2048;
+-	dev->mode_config.max_height = 2048;
++	dev->mode_config.max_width = 4096;
++	dev->mode_config.max_height = 4096;
  
- 	if (status != IUU_OPERATION_OK)
- 		dbg("%s - error = %2x", __func__, status);
+ 	psb_setup_outputs(dev);
+ }
 
