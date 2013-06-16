@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3FPExu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 00:53:50 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:48957 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab3FPExt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 00:53:49 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
-Date: Sun, 16 Jun 2013 12:52:20 +0800
-Message-Id: <1371358340-30586-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1754948Ab3FPFkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 01:40:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:33020 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754111Ab3FPFkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 01:40:06 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Linda Walsh <lkml@tlinx.org>, Linux-Kernel <linux-kernel@vger.kernel.org>
+Cc: "ACPI Devel Maling List" <linux-acpi@vger.kernel.org>,
+        <kvm@vger.kernel.org>
+Subject: Re: mod filenames != modnames? (inconsistent name changing)
+In-Reply-To: <51B7BD57.7050406@tlinx.org>
+References: <51B7BD57.7050406@tlinx.org>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Sun, 16 Jun 2013 15:05:29 +0930
+Message-ID: <87bo76r526.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+Linda Walsh <lkml@tlinx.org> writes:
+> Should we have any expectation that a module name and it's filename
+> should be equivalent?
+>
+> I was writing an auto-complete script for modprobe so it wouldn't give
+> me the option to double load a module (I'd have to manually type it in if
+> I really wanted it).
+>
+> Trouble is some modules with names w/underscores ('_') change
+> register their names with a 'dash'.
 
-Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
-its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
-pointer to the _preceding_ byte to RSA_verify() in original code, but it has
-risk for the byte is not zero because it's not in EM buffer's scope, neither
-RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+But modprobe kvm_intel already works.  Just convert any - to _?
 
-To avoid the risk, that's better we explicitly add the leading zero byte to EM
-for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
-result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
-remaining bytes from _EM.
+> Would it be too much trouble to ask that the same names be used in
+> both places?
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
----
- crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Well, you could get kernel developers to rename their files with
+underscores.  I've CC'd them.
 
-diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index ca1a4f3..7bc99d2 100644
---- a/crypto/asymmetric_keys/rsa.c
-+++ b/crypto/asymmetric_keys/rsa.c
-@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* Variables as per RFC3447 sec 8.2.2 */
- 	const u8 *H = sig->digest;
- 	u8 *EM = NULL;
-+	u8 *_EM = NULL;
- 	MPI m = NULL;
- 	size_t k;
- 
-@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* (2c) Convert the message representative (m) to an encoded message
- 	 *      (EM) of length k octets.
- 	 *
--	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
--	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
-+	 *      back to EM before input to RSA_verify()!
- 	 */
--	ret = RSA_I2OSP(m, k, &EM);
-+	ret = RSA_I2OSP(m, k, &_EM);
- 	if (ret < 0)
- 		goto error;
- 
--	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+	EM = kmalloc(k, GFP_KERNEL);
-+	memset(EM, 0, 1);
-+	memcpy(EM + 1, _EM, k-1);
-+	kfree(_EM);
-+
-+	ret = RSA_verify(H, EM, k, sig->digest_size,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
- 
--- 
-1.6.4.2
+We use _ because we turn the module names into identifiers; it's also
+the most common choice, and having both is just confusing.
 
+> I have about 30 modules loaded now and out of that list,
+> 2 are name changes:
+>
+> acpi_cpufreq  (filename acip-cpufreq.ko)
+> kvm_intel     (filename kvm-intel.ko)
+>
+> If I load a bunch more... I find more that change names.
+>
+> Could the naming in the modules that do this be made consistent?
+>
+> Not doing so makes automatically tying a mod-name to it's file
+> tend toward being non-deterministic.
+>
+> Many modules use '-' or '_' without being confused.
+> It would be helpful if the few confused modules could
+> get their identity straight.  Is there a problem with
+> making these names consistent?
+
+It shouldn't break anything to rename them, if there's consensus I'm
+happy to create a patch.
+
+Cheers,
+Rusty.
