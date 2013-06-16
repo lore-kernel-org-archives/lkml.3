@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3FPUHF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 16:07:05 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:53418 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab3FPUGl (ORCPT
+	id S1755456Ab3FPUpn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 16:45:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54558 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab3FPUpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 16:06:41 -0400
-From: ddaney.cavm@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com
-Cc: david.s.daney@gmail.com, David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/2] mn10300: Fix include dependency in irqflags.h
-Date: Sun, 16 Jun 2013 13:06:29 -0700
-Message-Id: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1371413189-2568-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1371413189-2568-1-git-send-email-ddaney.cavm@gmail.com>
+	Sun, 16 Jun 2013 16:45:42 -0400
+Date: Sun, 16 Jun 2013 22:45:38 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: kernel-dev@fireacop.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [QUESTION] LVDS / MIPI
+In-Reply-To: <20130616151901.GA18705@fireacop.com>
+Message-ID: <Pine.LNX.4.64.1306162240010.20284@axis700.grange>
+References: <20130616151901.GA18705@fireacop.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:LiW/P0b/jz0WP/UN72L3LipLDIWp2AUSxH8uBhYmfsj
+ o4v53InF2ohfV0oP8Efj/MBYwKq9OmN8cN4dL5yvY04FbBEdBE
+ SNUSYq09sjoHKfdQlWpQre4s8s4dsGiU3pEd+GkL+79pfaXhGv
+ NIoaX+1guGQcL7T/01iex4SoOwJStehNpS4h7gIrJycT5iGdAe
+ 5hbjvKUg1Lr1bjEAhBsq7xW7BbtJ/SgdvAfJF9usZw/NlD0Oj4
+ Jk25jj+Oy/XuZBHu48nJoM4ZHMIfwQVbRndfNCYSs1q24VSwdx
+ CQMNm/YEXzqR0G/a5hg/oxzj/lUcG9QvzeCTz/N12ZifcGG3gb
+ T27DBWcVEO3ZNX7J2wQoHqTyz8MJ7iKEx3BLQqXf8OqbcsnjXK
+ WupRVMwoG1jCw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Sun, 16 Jun 2013, kernel-dev@fireacop.com wrote:
 
-We need to pick up the definition of raw_smp_processor_id() from
-asm/smp.h.  For the !SMP case, we need to supply a definition of
-raw_smp_processor_id().
+> I have checked the Kernel Source and the Internet.
+> 
+> Not much if any support for LVDS / MIPI.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
+What exactly do you need support for? MIPI CSI (2/3) capture?
+
+Thanks
+Guennadi
+
+> This would be for Device Drivers under
+> Multimedia and Video Capture.
+> 
+> Any Discussion?
+> 
+> Is the response to this question something to the effect
+> of "sure... Start writing a driver any time you want..."
+> 
+> Thanks.
+
 ---
- arch/mn10300/include/asm/irqflags.h | 3 ++-
- arch/mn10300/include/asm/smp.h      | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mn10300/include/asm/irqflags.h b/arch/mn10300/include/asm/irqflags.h
-index 678f68d..06e0a17 100644
---- a/arch/mn10300/include/asm/irqflags.h
-+++ b/arch/mn10300/include/asm/irqflags.h
-@@ -14,7 +14,8 @@
- 
- #include <asm/cpu-regs.h>
- #ifndef __ASSEMBLY__
--#include <linux/smp.h>
-+/* linux/smp.h <- linux/irqflags.h needs asm/smp.h first */
-+#include <asm/smp.h>
- #endif
- 
- /*
-diff --git a/arch/mn10300/include/asm/smp.h b/arch/mn10300/include/asm/smp.h
-index 6745dbe..498e5ab 100644
---- a/arch/mn10300/include/asm/smp.h
-+++ b/arch/mn10300/include/asm/smp.h
-@@ -100,6 +100,7 @@ extern void __cpu_die(unsigned int cpu);
- #ifndef __ASSEMBLY__
- 
- static inline void smp_init_cpus(void) {}
-+#define raw_smp_processor_id() 0
- 
- #endif /* __ASSEMBLY__ */
- #endif /* CONFIG_SMP */
--- 
-1.7.11.7
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
