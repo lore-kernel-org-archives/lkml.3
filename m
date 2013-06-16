@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3FPBPr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 21:15:47 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52150 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab3FPBPL (ORCPT
+	id S1754905Ab3FPBPm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 21:15:42 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39366 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab3FPBPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 21:15:11 -0400
+	Sat, 15 Jun 2013 21:15:09 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -16,50 +16,41 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 7/7] mm/pgtable: Don't accumulate addr during pgd prepopulate pmd
-Date: Sun, 16 Jun 2013 09:14:50 +0800
-Message-Id: <1371345290-19588-7-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 5/7] mm/page_alloc: fix doc for numa_zonelist_order
+Date: Sun, 16 Jun 2013 09:14:48 +0800
+Message-Id: <1371345290-19588-5-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061601-9264-0000-0000-000003F3A4A3
+x-cbid: 13061601-5564-0000-0000-00000860B7AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old codes accumulate addr to get right pmd, however,
-currently pmds are preallocated and transfered as a parameter,
-there is unnecessary to accumulate addr variable any more, this
-patch remove it.
+The default zonelist order selecter will select "node" order if any node's
+DMA zone comprises greater than 70% of its local memory instead of 60%,
+according to default_zonelist_order::low_kmem_size > total * 70/100.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- arch/x86/mm/pgtable.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ Documentation/sysctl/vm.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 17fda6a..cb787da 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -240,7 +240,6 @@ static void pgd_mop_up_pmds(struct mm_struct *mm, pgd_t *pgdp)
- static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
- {
- 	pud_t *pud;
--	unsigned long addr;
- 	int i;
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index a5717c3..15d341a 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -531,7 +531,7 @@ Specify "[Dd]efault" to request automatic configuration.  Autoconfiguration
+ will select "node" order in following case.
+ (1) if the DMA zone does not exist or
+ (2) if the DMA zone comprises greater than 50% of the available memory or
+-(3) if any node's DMA zone comprises greater than 60% of its local memory and
++(3) if any node's DMA zone comprises greater than 70% of its local memory and
+     the amount of local memory is big enough.
  
- 	if (PREALLOCATED_PMDS == 0) /* Work around gcc-3.4.x bug */
-@@ -248,8 +247,7 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
- 
- 	pud = pud_offset(pgd, 0);
- 
-- 	for (addr = i = 0; i < PREALLOCATED_PMDS;
--	     i++, pud++, addr += PUD_SIZE) {
-+	for (i = 0; i < PREALLOCATED_PMDS; i++, pud++) {
- 		pmd_t *pmd = pmds[i];
- 
- 		if (i >= KERNEL_PGD_BOUNDARY)
+ Otherwise, "zone" order will be selected. Default order is recommended unless
 -- 
 1.8.1.2
 
