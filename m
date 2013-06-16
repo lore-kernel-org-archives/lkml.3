@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3FPWQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46416 "EHLO
+	id S1756055Ab3FPWTs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:19:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46302 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755709Ab3FPWJG (ORCPT
+	by vger.kernel.org with ESMTP id S1755501Ab3FPWJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:06 -0400
+	Sun, 16 Jun 2013 18:09:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Jean Delvare" <khali@linux-fr.org>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.848835385@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Matthew Garrett" <mjg@redhat.com>,
+        "Manoj Iyer" <manoj.iyer@canonical.com>
+Date: Sun, 16 Jun 2013 23:01:37 +0100
+Message-ID: <lsq.1371420097.905036518@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [63/83] hwmon: (adm1021) Strengthen chip detection for ADM1021,
- LM84 and MAX1617
+Subject: [29/83] thinkpad-acpi: recognize latest V-Series using
+ DMI_BIOS_VENDOR
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,101 +32,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
+commit a4f46bb9fa84642e356898ee44b670989622f8bb upstream.
 
-On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
-as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
-Also improve detection for ADM1021.
+In the latest V-series bios DMI_PRODUCT_VERSION does not contain
+the string Lenovo or Thinkpad, but is set to the model number, this
+causes the thinkpad_acpi module to fail to load. Recognize laptop
+as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
 
-Modeled after chip detection code in sensors-detect command.
+Test on V490u
+=============
+== After the patch ==
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
+[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
+[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
+[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
+[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
+[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[ 1350.307082] Registered led device: tpacpi::thinklight
+[ 1350.307215] Registered led device: tpacpi::power
+[ 1350.307255] Registered led device: tpacpi::standby
+[ 1350.307294] Registered led device: tpacpi::thinkvantage
+[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
+
+== Before the patch ==
+sudo modprobe thinkpad_acpi
+FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
+
+Test on B485
+=============
+This patch was also test in a B485 where the thinkpad_acpi module does not
+have any issues loading. But, I tested it to make sure this patch does not
+break on already functioning models of Lenovo products.
+
+[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
+[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
+[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
+[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[13486.752883] Registered led device: tpacpi::thinklight
+[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
+
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/adm1021.c |   58 ++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 50 insertions(+), 8 deletions(-)
+ drivers/platform/x86/thinkpad_acpi.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -311,26 +311,68 @@ static int adm1021_detect(struct i2c_cli
- 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
- 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
- 
-+	if (man_id < 0 || dev_id < 0)
-+		return -ENODEV;
-+
- 	if (man_id == 0x4d && dev_id == 0x01)
- 		type_name = "max1617a";
- 	else if (man_id == 0x41) {
- 		if ((dev_id & 0xF0) == 0x30)
- 			type_name = "adm1023";
--		else
-+		else if ((dev_id & 0xF0) == 0x00)
- 			type_name = "adm1021";
-+		else
-+			return -ENODEV;
- 	} else if (man_id == 0x49)
- 		type_name = "thmc10";
- 	else if (man_id == 0x23)
- 		type_name = "gl523sm";
- 	else if (man_id == 0x54)
- 		type_name = "mc1066";
--	/* LM84 Mfr ID in a different place, and it has more unused bits */
--	else if (conv_rate == 0x00
--		 && (config & 0x7F) == 0x00
--		 && (status & 0xAB) == 0x00)
--		type_name = "lm84";
--	else
--		type_name = "max1617";
-+	else {
-+		int lte, rte, lhi, rhi, llo, rlo;
-+
-+		/* extra checks for LM84 and MAX1617 to avoid misdetections */
-+
-+		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
-+		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
-+
-+		/* fail if any of the additional register reads failed */
-+		if (llo < 0 || rlo < 0)
-+			return -ENODEV;
-+
-+		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
-+		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
-+		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
-+		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
-+
-+		/*
-+		 * Fail for negative temperatures and negative high limits.
-+		 * This check also catches read errors on the tested registers.
-+		 */
-+		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
-+			return -ENODEV;
-+
-+		/* fail if all registers hold the same value */
-+		if (lte == rte && lte == lhi && lte == rhi && lte == llo
-+		    && lte == rlo)
-+			return -ENODEV;
-+
-+		/*
-+		 * LM84 Mfr ID is in a different place,
-+		 * and it has more unused bits.
-+		 */
-+		if (conv_rate == 0x00
-+		    && (config & 0x7F) == 0x00
-+		    && (status & 0xAB) == 0x00) {
-+			type_name = "lm84";
-+		} else {
-+			/* fail if low limits are larger than high limits */
-+			if ((s8)llo > lhi || (s8)rlo > rhi)
-+				return -ENODEV;
-+			type_name = "max1617";
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -8665,6 +8665,13 @@ static int __must_check __init get_think
+ 		tp->model_str = kstrdup(s, GFP_KERNEL);
+ 		if (!tp->model_str)
+ 			return -ENOMEM;
++	} else {
++		s = dmi_get_system_info(DMI_BIOS_VENDOR);
++		if (s && !(strnicmp(s, "Lenovo", 6))) {
++			tp->model_str = kstrdup(s, GFP_KERNEL);
++			if (!tp->model_str)
++				return -ENOMEM;
 +		}
-+	}
+ 	}
  
- 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
- 		 type_name, i2c_adapter_id(adapter), client->addr);
+ 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
 
