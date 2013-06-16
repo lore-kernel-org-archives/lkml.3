@@ -1,485 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3FPWHW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:07:22 -0400
-Received: from nm22.access.bullet.mail.sp2.yahoo.com ([98.139.44.149]:35995
-	"EHLO nm22.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755557Ab3FPWHJ (ORCPT
+	id S1755552Ab3FPWHH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:07:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42498 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab3FPWHF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:07:09 -0400
-X-Yahoo-Newman-Id: 839064.5214.bm@smtp104.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: t3NflLkVM1mWoTEODmyMO0alOETPKtA4L7EmLo7tLZ8nLEQ
- FeQbIWDdR3OqqqG3CcXyPktBwg5YWANc59JsOlLnK5hrkvhd3HIHzE.vTd7W
- Yfbmey9zLrNAxnh3k1bTad5sbx9_TWx9t57zUAO.Hg0KRwJOAU2g8nMHlawU
- 9za5cQnOuRfjXXxmgqZaQ4KlYqbc.M6MfSW8UjtxJtFGeNuGvIL8obbl_xKo
- UY5a5gU_99BTGrS76bdRHRzEE0JgDTOvF9DLUdmeklzefh1SU7BZGYmdsUiO
- pEBB8IWm7lDDIPpd15NUs_1vCWmVB5UFnzqBwfFnZc2GZjeMlb4koU5nWYEv
- jGXb2DG09GYJiaQsGhxzCufcpvcKL4b45wjDMJeJB.izmnjjmuRRlE774B_T
- lx6LISl0SCJOrSVgz5_p7cqnPfbmaK8bJZNmXIfdHyvR4MrzPdguS.67OQ4M
- gEGwK.Vvlp1CImd8Tc9LAbbfa5FFxJFj2Alhu4ggUNSpKLaWgCChEI3THJmE
- .EuFPDLx.oJbuinI-
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp104.sbc.mail.gq1.yahoo.com with SMTP; 16 Jun 2013 15:07:08 -0700 PDT
-Date: Sun, 16 Jun 2013 15:07:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: wim@iguana.be, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, guenter@roeck-us.net
-Subject: Re: [PATCH v9] watchdog: New watchdog driver for MEN A21 watchdogs
-Message-ID: <20130616220715.GB32107@roeck-us.net>
-References: <20130603143453.GA14251@jtlinux>
- <20130614105831.GA9334@jtlinux>
-MIME-Version: 1.0
+	Sun, 16 Jun 2013 18:07:05 -0400
+Subject: Re: [PATCH 1/4] KVM: PPC: Add support for multiple-TCE hcalls
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130614105831.GA9334@jtlinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1370412673-1345-2-git-send-email-aik@ozlabs.ru>
+Date: Mon, 17 Jun 2013 00:06:59 +0200
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0A6C24DE-1422-4ABA-A516-2B864F4714F8@suse.de>
+References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru> <1370412673-1345-2-git-send-email-aik@ozlabs.ru>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 12:58:37PM +0200, Johannes Thumshirn wrote:
-> This patch adds the driver for the watchdog devices found on MEN Mikro
-> Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-> watchdog framework.
+
+On 05.06.2013, at 08:11, Alexey Kardashevskiy wrote:
+
+> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
+> H_STUFF_TCE hypercalls for QEMU emulated devices such as IBMVIO
+> devices or emulated PCI.  These calls allow adding multiple entries
+> (up to 512) into the TCE table in one call which saves time on
+> transition to/from real mode.
 > 
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> This adds a tce_tmp cache to kvm_vcpu_arch to save valid TCEs
+> (copied from user and verified) before writing the whole list into
+> the TCE table. This cache will be utilized more in the upcoming
+> VFIO/IOMMU support to continue TCE list processing in the virtual
+> mode in the case if the real mode handler failed for some reason.
+> 
+> This adds a guest physical to host real address converter
+> and calls the existing H_PUT_TCE handler. The converting function
+> is going to be fully utilized by upcoming VFIO supporting patches.
+> 
+> This also implements the KVM_CAP_PPC_MULTITCE capability,
+> so in order to support the functionality of this patch, QEMU
+> needs to query for this capability and set the "hcall-multi-tce"
+> hypertas property only if the capability is present, otherwise
+> there will be serious performance degradation.
+> 
+> Cc: David Gibson <david@gibson.dropbear.id.au>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
 
-Only nitpicks this time.
+Only a few minor nits. Ben already commented on implementation details.
 
+> 
 > ---
+> Changelog:
+> 2013/06/05:
+> * fixed mistype about IBMVIO in the commit message
+> * updated doc and moved it to another section
+> * changed capability number
 > 
->  Revision 2:
->  * Removed unneeded open flag in struct a21_wdt_drv
->  * Corrected 3bit reason code from gpio
->  * Additional sysfs files are now part of watchdog sysfs
->  * Changed OFF/ON delay in ping from 400ms to 10ns
->  * Reworked timeout setting
->  * Removed a21_wdt_ioctl(...)
+> 2013/05/21:
+> * added kvm_vcpu_arch::tce_tmp
+> * removed cleanup if put_indirect failed, instead we do not even start
+> writing to TCE table if we cannot get TCEs from the user and they are
+> invalid
+> * kvmppc_emulated_h_put_tce is split to kvmppc_emulated_put_tce
+> and kvmppc_emulated_validate_tce (for the previous item)
+> * fixed bug with failthrough for H_IPI
+> * removed all get_user() from real mode handlers
+> * kvmppc_lookup_pte() added (instead of making lookup_linux_pte public)
+> ---
+> Documentation/virtual/kvm/api.txt       |   17 ++
+> arch/powerpc/include/asm/kvm_host.h     |    2 +
+> arch/powerpc/include/asm/kvm_ppc.h      |   16 +-
+> arch/powerpc/kvm/book3s_64_vio.c        |  118 ++++++++++++++
+> arch/powerpc/kvm/book3s_64_vio_hv.c     |  266 +++++++++++++++++++++++++++----
+> arch/powerpc/kvm/book3s_hv.c            |   39 +++++
+> arch/powerpc/kvm/book3s_hv_rmhandlers.S |    6 +
+> arch/powerpc/kvm/book3s_pr_papr.c       |   37 ++++-
+> arch/powerpc/kvm/powerpc.c              |    3 +
+> include/uapi/linux/kvm.h                |    1 +
+> 10 files changed, 473 insertions(+), 32 deletions(-)
 > 
->  Revision 3:
->  * Changed pr_{err,info} to dev_{err,info}
->  * Removed out of memory error print
->  * Transition from "fast" to "slow" mode not allowed by chip
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index 5f91eda..6c082ff 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -2362,6 +2362,23 @@ calls by the guest for that service will be passed to userspace to be
+> handled.
 > 
->  Revision 4:
->  * Remove reboot_notifier and place disable code into platform_device's shutdown function
->  * Removed sysfs interface
 > 
->  Revision 5:
->  * Added setting of .bootstatus on driver init
->  * Added initial timeout on driver init
-> 
->  Revision 6:
->  * Use watchdog_init_timeout() to initialize timeout
-> 
->  Revision 7:
->  * Fix possible get_bootstatus race condition
-> 
->  Revision 8:
->  * a21_wdt_get_bootstatus() should return reset code
->  * GPIOs are supplied via DT instead of being hardcoded. Code derived from
->    (drivers/hwmon/gpio-fan.c)
->  * Added Devicetree binding document
->  * Driver now depends on GPIOLIB
-> 
->  Revision 9:
->  * We need 6 GPIOs not only 1 to work
->  * GPIO_WD_RST[0..2] are inputs
-> 
->  .../devicetree/bindings/gpio/men-a021-wdt.txt      |   25 ++
->  MAINTAINERS                                        |    6 +
->  drivers/watchdog/Kconfig                           |   12 +
->  drivers/watchdog/Makefile                          |    1 +
->  drivers/watchdog/mena21_wdt.c                      |  276 ++++++++++++++++++++
->  5 files changed, 320 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
->  create mode 100644 drivers/watchdog/mena21_wdt.c
-> 
-> diff --git a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
-> new file mode 100644
-> index 0000000..370dee3
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
-> @@ -0,0 +1,25 @@
-> +Bindings for MEN A21 Watchdog device connected to GPIO lines
+> +4.83 KVM_CAP_PPC_MULTITCE
 > +
-> +Required properties:
-> +- compatible: "men,a021-wdt"
-> +- gpios: Specifies the pins that control the Watchdog, order:
-> +  1: Watchdog enable
-> +  2: Watchdog fast-mode
-> +  3: Watchdog trigger
-> +  4: Watchdog reset cause bit 0
-> +  5: Watchdog reset cause bit 1
-> +  6: Watchdog reset cause bit 2
+> +Capability: KVM_CAP_PPC_MULTITCE
+> +Architectures: ppc
+> +Type: vm
 > +
-> +Optional properties:
-> +- None
+> +This capability tells the guest that multiple TCE entry add/remove hypercalls
+> +handling is supported by the kernel. This significanly accelerates DMA
+> +operations for PPC KVM guests.
 > +
-> +Example:
-> +	watchdog {
-> +		compatible ="men,a021-wdt";
-> +		gpios = <&gpio3 9  1	/* WD_EN */
-> +			 &gpio3 10 1	/* WD_FAST */
-> +			 &gpio3 11 1	/* WD_TRIG */
-> +			 &gpio3 6  1	/* RST_CAUSE[0] */
-> +			 &gpio3 7  1	/* RST_CAUSE[1] */
-> +			 &gpio3 8  1>;	/* RST_CAUSE[2] */
-> +	};
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 5be702c..824261e 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5317,6 +5317,12 @@ F:	drivers/mtd/
->  F:	include/linux/mtd/
->  F:	include/uapi/mtd/
-> 
-> +MEN A21 WATCHDOG DRIVER
-> +M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
-> +L:	linux-watchdog@vger.kernel.org
-> +S:	Supported
-> +F:	drivers/watchdog/mena21_wdt.c
-> +
->  METAG ARCHITECTURE
->  M:	James Hogan <james.hogan@imgtec.com>
->  S:	Supported
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index e89fc31..8b143ee 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1172,6 +1172,18 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
-> 
->  	  The value can be overridden by the wdt_period command-line parameter.
-> 
-> +config MEN_A21_WDT
-> +       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-> +       select WATCHDOG_CORE
-> +       depends on GPIOLIB
-> +       help
-> +        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-> +
-> +	The driver can also be built as a module. If so, the module will be
-> +	called mena21_wdt.
-> +
-> +	If unsure select N here.
-> +
->  # PPC64 Architecture
-> 
->  config WATCHDOG_RTAS
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index a300b94..bffdcb1 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
->  obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
->  obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
->  obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-> +obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
-> 
->  # PPC64 Architecture
->  obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-> diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-> new file mode 100644
-> index 0000000..0d3409a
-> --- /dev/null
-> +++ b/drivers/watchdog/mena21_wdt.c
-> @@ -0,0 +1,276 @@
-> +/*
-> + * Watchdog driver for the A21 VME CPU Boards
-> + *
-> + * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation
-> + */
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/delay.h>
-> +#include <linux/bitops.h>
-> +
-> +#define NUM_GPIOS 6
-> +
-> +enum a21_wdt_gpios {
-> +	GPIO_WD_ENAB,
-> +	GPIO_WD_FAST,
-> +	GPIO_WD_TRIG,
-> +	GPIO_WD_RST0,
-> +	GPIO_WD_RST1,
-> +	GPIO_WD_RST2,
-> +};
-> +
-> +struct a21_wdt_drv {
-> +	struct watchdog_device wdt;
-> +	struct mutex lock;
-> +	unsigned gpios[NUM_GPIOS];
-> +};
-> +
-> +static bool nowayout = WATCHDOG_NOWAYOUT;
-> +module_param(nowayout, bool, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> +			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> +
-> +static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
-> +{
-> +	int reset = 0;
-> +
-> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST0]) ? (1 << 0) : 0;
-> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST1]) ? (1 << 1) : 0;
-> +	reset |= gpio_get_value(drv->gpios[GPIO_WD_RST2]) ? (1 << 2) : 0;
-> +
-> +	return reset;
-> +}
-> +
-> +static int a21_wdt_start(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 1);
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_stop(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	/* We don't stop if WDOG_NO_WAY_OUT is set */
-> +	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-> +		return -EINVAL;
-> +
-Already handled by watchdog core; no need to check again here.
+> +Unlike other capabilities in this section, this one does not have an ioctl.
+> +Instead, when the capability is present, the H_PUT_TCE_INDIRECT and
+> +H_STUFF_TCE hypercalls are to be handled in the host kernel and not passed to
+> +the guest. Othwerwise it might be better for the guest to continue using H_PUT_TCE
+> +hypercall (if KVM_CAP_SPAPR_TCE or KVM_CAP_SPAPR_TCE_IOMMU are present).
 
-> +	mutex_lock(&drv->lock);
-> +
-> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_ping(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 0);
-> +	ndelay(10);
+While this describes perfectly well what the consequences are of the patches, it does not describe properly what the CAP actually expresses. The CAP only says "this kernel is able to handle H_PUT_TCE_INDIRECT and H_STUFF_TCE hypercalls directly". All other consequences are nice to document, but the semantics of the CAP are missing.
 
-Is the delay specified somewehere or just to be sure ?
+We also usually try to keep KVM behavior unchanged with regards to older versions until a CAP is enabled. In this case I don't think it matters all that much, so I'm fine with declaring it as enabled by default. Please document that this is a change in behavior versus older KVM versions though.
 
-> +	gpio_set_value(drv->gpios[GPIO_WD_TRIG], 1);
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-> +			       unsigned int timeout)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	if (timeout != 1 && timeout != 30) {
-> +		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (timeout == 30 && wdt->timeout == 1) {
-> +		dev_err(wdt->dev,
-> +			"Transition from fast to slow mode not allowed\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	if (timeout == 1)
-> +		gpio_set_value(drv->gpios[GPIO_WD_FAST], 1);
-> +	else
-> +		gpio_set_value(drv->gpios[GPIO_WD_FAST], 0);
-> +
-> +	wdt->timeout = timeout;
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct watchdog_info a21_wdt_info = {
-> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-> +	.identity = "MEN A21 Watchdog",
-> +};
-> +
-> +static const struct watchdog_ops a21_wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = a21_wdt_start,
-> +	.stop = a21_wdt_stop,
-> +	.ping = a21_wdt_ping,
-> +	.set_timeout = a21_wdt_set_timeout,
-> +};
-> +
-> +static struct watchdog_device a21_wdt = {
-> +	.info = &a21_wdt_info,
-> +	.ops = &a21_wdt_ops,
-> +	.min_timeout = 1,
-> +	.max_timeout = 30,
-> +};
-> +
-> +static int a21_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node;
-> +	struct a21_wdt_drv *drv;
-> +	unsigned int reset = 0;
-> +	int num_gpios;
-> +	int ret;
-> +	int i;
-> +
-> +	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-> +
-Move to the very end of this function; otherwise it is misleading if lading the
-driver fails.
-
-> +	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-> +	if (!drv)
-> +		return -ENOMEM;
-> +
-> +	/* Fill GPIO pin array */
-> +	node = pdev->dev.of_node;
-> +
-> +	num_gpios = of_gpio_count(node);
-> +	if (num_gpios != NUM_GPIOS) {
-> +		dev_err(&pdev->dev, "gpios DT property wrong, got %d want %d",
-> +			num_gpios, NUM_GPIOS);
-> +		return -ENODEV;
-> +	}
-> +
-> +	for (i = 0; i < num_gpios; i++) {
-> +		int val;
-> +
-> +		val = of_get_gpio(node, i);
-> +		if (val < 0)
-> +			return val;
-> +
-> +		drv->gpios[i] = val;
-> +	}
-> +
-> +	/* Request the used GPIOs */
-> +	for (i = 0; i < num_gpios; i++) {
-> +		ret = devm_gpio_request(&pdev->dev, drv->gpios[i],
-> +					"MEN A21 Watchdog");
-> +		if (ret)
-> +			return ret;
-> +
-> +		if (i < GPIO_WD_RST0)
-> +			ret = gpio_direction_output(drv->gpios[i],
-> +						gpio_get_value(drv->gpios[i]));
-> +		else		/* GPIO_WD_RST[0..2] are inputs */
-> +			ret = gpio_direction_input(drv->gpios[i]);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	mutex_init(&drv->lock);
-> +	watchdog_init_timeout(&a21_wdt, 30, &pdev->dev);
-> +	watchdog_set_nowayout(&a21_wdt, nowayout);
-> +	watchdog_set_drvdata(&a21_wdt, drv);
-> +
-> +	reset = a21_wdt_get_bootstatus(drv);
-> +	if (reset == 2)
-> +		a21_wdt.bootstatus |= WDIOF_EXTERN1;
-> +	else if (reset == 4)
-> +		a21_wdt.bootstatus |= WDIOF_CARDRESET;
-> +	else if (reset == 5)
-> +		a21_wdt.bootstatus |= WDIOF_POWERUNDER;
-> +	else if (reset == 7)
-> +		a21_wdt.bootstatus |= WDIOF_EXTERN2;
 > +
 > +
-One empty line is sufficient.
-
-> +	ret = watchdog_register_device(&a21_wdt);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Cannot register watchdog device\n");
-> +		goto err_register_wd;
-> +	}
-> +
-> +	dev_set_drvdata(&pdev->dev, drv);
-> +
-> +	return 0;
-> +
-> +err_register_wd:
-> +	mutex_destroy(&drv->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int a21_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-> +
-> +	dev_warn(&pdev->dev,
-> +		"Unregistering A21 watchdog driver, board may reboot\n");
-> +
-> +
-One empty line
-
-> +	watchdog_unregister_device(&drv->wdt);
-> +
-> +	mutex_destroy(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static void a21_wdt_shutdown(struct platform_device *pdev)
-> +{
-> +	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-> +
-> +	gpio_set_value(drv->gpios[GPIO_WD_ENAB], 0);
-> +}
-> +
-> +static const struct of_device_id a21_wdt_ids[] = {
-> +	{ .compatible = "men,a021-wdt" },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver a21_wdt_driver = {
-> +	.probe = a21_wdt_probe,
-> +	.remove = a21_wdt_remove,
-> +	.shutdown = a21_wdt_shutdown,
-> +	.driver = {
-> +		.name = "a21-watchdog",
-> +		.of_match_table = a21_wdt_ids,
-> +	},
-> +};
-> +
-> +module_platform_driver(a21_wdt_driver);
-> +
-> +MODULE_AUTHOR("MEN Mikro Elektronik");
-> +MODULE_DESCRIPTION("MEN A21 Watchdog");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:a21-watchdog");
-> --
-> 1.7.9.5
+> 5. The kvm_run structure
+> ------------------------
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+> index af326cd..85d8f26 100644
+> --- a/arch/powerpc/include/asm/kvm_host.h
+> +++ b/arch/powerpc/include/asm/kvm_host.h
+> @@ -609,6 +609,8 @@ struct kvm_vcpu_arch {
+> 	spinlock_t tbacct_lock;
+> 	u64 busy_stolen;
+> 	u64 busy_preempt;
+> +
+> +	unsigned long *tce_tmp;    /* TCE cache for TCE_PUT_INDIRECT hall */
+> #endif
+> };
+
+[...]
 > 
+> 
+
+[...]
+
+> diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
+> index 550f592..a39039a 100644
+> --- a/arch/powerpc/kvm/book3s_hv.c
+> +++ b/arch/powerpc/kvm/book3s_hv.c
+> @@ -568,6 +568,30 @@ int kvmppc_pseries_do_hcall(struct kvm_vcpu *vcpu)
+> 			ret = kvmppc_xics_hcall(vcpu, req);
+> 			break;
+> 		} /* fallthrough */
+
+The fallthrough comment isn't accurate anymore.
+
+> +		return RESUME_HOST;
+> +	case H_PUT_TCE:
+> +		ret = kvmppc_virtmode_h_put_tce(vcpu, kvmppc_get_gpr(vcpu, 4),
+> +						kvmppc_get_gpr(vcpu, 5),
+> +						kvmppc_get_gpr(vcpu, 6));
+> +		if (ret == H_TOO_HARD)
+> +			return RESUME_HOST;
+> +		break;
+> +	case H_PUT_TCE_INDIRECT:
+> +		ret = kvmppc_virtmode_h_put_tce_indirect(vcpu, kvmppc_get_gpr(vcpu, 4),
+> +						kvmppc_get_gpr(vcpu, 5),
+> +						kvmppc_get_gpr(vcpu, 6),
+> +						kvmppc_get_gpr(vcpu, 7));
+> +		if (ret == H_TOO_HARD)
+> +			return RESUME_HOST;
+> +		break;
+> +	case H_STUFF_TCE:
+> +		ret = kvmppc_virtmode_h_stuff_tce(vcpu, kvmppc_get_gpr(vcpu, 4),
+> +						kvmppc_get_gpr(vcpu, 5),
+> +						kvmppc_get_gpr(vcpu, 6),
+> +						kvmppc_get_gpr(vcpu, 7));
+> +		if (ret == H_TOO_HARD)
+> +			return RESUME_HOST;
+> +		break;
+> 	default:
+> 		return RESUME_HOST;
+> 	}
+> @@ -958,6 +982,20 @@ struct kvm_vcpu *kvmppc_core_vcpu_create(struct kvm *kvm, unsigned int id)
+> 	vcpu->arch.cpu_type = KVM_CPU_3S_64;
+> 	kvmppc_sanity_check(vcpu);
+> 
+> +	/*
+> +	 * As we want to minimize the chance of having H_PUT_TCE_INDIRECT
+> +	 * half executed, we first read TCEs from the user, check them and
+> +	 * return error if something went wrong and only then put TCEs into
+> +	 * the TCE table.
+> +	 *
+> +	 * tce_tmp is a cache for TCEs to avoid stack allocation or
+> +	 * kmalloc as the whole TCE list can take up to 512 items 8 bytes
+> +	 * each (4096 bytes).
+> +	 */
+> +	vcpu->arch.tce_tmp = kmalloc(4096, GFP_KERNEL);
+> +	if (!vcpu->arch.tce_tmp)
+> +		goto free_vcpu;
+> +
+> 	return vcpu;
+> 
+> free_vcpu:
+> @@ -980,6 +1018,7 @@ void kvmppc_core_vcpu_free(struct kvm_vcpu *vcpu)
+> 	unpin_vpa(vcpu->kvm, &vcpu->arch.slb_shadow);
+> 	unpin_vpa(vcpu->kvm, &vcpu->arch.vpa);
+> 	spin_unlock(&vcpu->arch.vpa_update_lock);
+> +	kfree(vcpu->arch.tce_tmp);
+> 	kvm_vcpu_uninit(vcpu);
+> 	kmem_cache_free(kvm_vcpu_cache, vcpu);
+> }
+> diff --git a/arch/powerpc/kvm/book3s_hv_rmhandlers.S b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+> index b02f91e..d35554e 100644
+> --- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+> +++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+> @@ -1490,6 +1490,12 @@ hcall_real_table:
+> 	.long	0		/* 0x11c */
+> 	.long	0		/* 0x120 */
+> 	.long	.kvmppc_h_bulk_remove - hcall_real_table
+> +	.long	0		/* 0x128 */
+> +	.long	0		/* 0x12c */
+> +	.long	0		/* 0x130 */
+> +	.long	0		/* 0x134 */
+> +	.long	.kvmppc_h_stuff_tce - hcall_real_table
+> +	.long	.kvmppc_h_put_tce_indirect - hcall_real_table
+> hcall_real_table_end:
+> 
+> ignore_hdec:
+> diff --git a/arch/powerpc/kvm/book3s_pr_papr.c b/arch/powerpc/kvm/book3s_pr_papr.c
+> index da0e0bc..91d4b45 100644
+> --- a/arch/powerpc/kvm/book3s_pr_papr.c
+> +++ b/arch/powerpc/kvm/book3s_pr_papr.c
+> @@ -220,7 +220,38 @@ static int kvmppc_h_pr_put_tce(struct kvm_vcpu *vcpu)
+> 	unsigned long tce = kvmppc_get_gpr(vcpu, 6);
+> 	long rc;
+> 
+> -	rc = kvmppc_h_put_tce(vcpu, liobn, ioba, tce);
+> +	rc = kvmppc_virtmode_h_put_tce(vcpu, liobn, ioba, tce);
+> +	if (rc == H_TOO_HARD)
+> +		return EMULATE_FAIL;
+> +	kvmppc_set_gpr(vcpu, 3, rc);
+> +	return EMULATE_DONE;
+> +}
+> +
+> +static int kvmppc_h_pr_put_tce_indirect(struct kvm_vcpu *vcpu)
+> +{
+> +	unsigned long liobn = kvmppc_get_gpr(vcpu, 4);
+> +	unsigned long ioba = kvmppc_get_gpr(vcpu, 5);
+> +	unsigned long tce = kvmppc_get_gpr(vcpu, 6);
+> +	unsigned long npages = kvmppc_get_gpr(vcpu, 7);
+> +	long rc;
+> +
+> +	rc = kvmppc_virtmode_h_put_tce_indirect(vcpu, liobn, ioba,
+> +			tce, npages);
+> +	if (rc == H_TOO_HARD)
+> +		return EMULATE_FAIL;
+> +	kvmppc_set_gpr(vcpu, 3, rc);
+> +	return EMULATE_DONE;
+> +}
+> +
+> +static int kvmppc_h_pr_stuff_tce(struct kvm_vcpu *vcpu)
+> +{
+> +	unsigned long liobn = kvmppc_get_gpr(vcpu, 4);
+> +	unsigned long ioba = kvmppc_get_gpr(vcpu, 5);
+> +	unsigned long tce_value = kvmppc_get_gpr(vcpu, 6);
+> +	unsigned long npages = kvmppc_get_gpr(vcpu, 7);
+> +	long rc;
+> +
+> +	rc = kvmppc_virtmode_h_stuff_tce(vcpu, liobn, ioba, tce_value, npages);
+> 	if (rc == H_TOO_HARD)
+> 		return EMULATE_FAIL;
+> 	kvmppc_set_gpr(vcpu, 3, rc);
+> @@ -247,6 +278,10 @@ int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
+> 		return kvmppc_h_pr_bulk_remove(vcpu);
+> 	case H_PUT_TCE:
+> 		return kvmppc_h_pr_put_tce(vcpu);
+> +	case H_PUT_TCE_INDIRECT:
+> +		return kvmppc_h_pr_put_tce_indirect(vcpu);
+> +	case H_STUFF_TCE:
+> +		return kvmppc_h_pr_stuff_tce(vcpu);
+> 	case H_CEDE:
+> 		vcpu->arch.shared->msr |= MSR_EE;
+> 		kvm_vcpu_block(vcpu);
+> diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
+> index 6316ee3..8465c2a 100644
+> --- a/arch/powerpc/kvm/powerpc.c
+> +++ b/arch/powerpc/kvm/powerpc.c
+> @@ -395,6 +395,9 @@ int kvm_dev_ioctl_check_extension(long ext)
+> 		r = 1;
+> 		break;
+> #endif
+> +	case KVM_CAP_SPAPR_MULTITCE:
+> +		r = 1;
+
+This should only be true for book3s.
+
+
+
+Alex
+
