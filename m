@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3FPS2W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 14:28:22 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:49005 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab3FPS2V (ORCPT
+	id S1755455Ab3FPSvl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 14:51:41 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:37566 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab3FPSvj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 14:28:21 -0400
+	Sun, 16 Jun 2013 14:51:39 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFytYO=CAojt8Lp-pU_=EuSKsgYpkiW3tAPSwyB2vSgpWA@mail.gmail.com>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
-	<2626868.kqkN4bgvmz@merkaba>
-	<CA+55aFytYO=CAojt8Lp-pU_=EuSKsgYpkiW3tAPSwyB2vSgpWA@mail.gmail.com>
-Date: Sun, 16 Jun 2013 08:28:20 -1000
-X-Google-Sender-Auth: lx_oXPjBEhpKALmgC2eSDwVI5ps
-Message-ID: <CA+55aFxq-tJZP0PaPdgf4NaCNdzv4-cjQMNcVs-JUd1DDJ=PRQ@mail.gmail.com>
-Subject: Re: Linux 3.10-rc6
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>, Jay Agarwal <jagarwal@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <51B8956B.8020704@wwwdotorg.org>
+Cc: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
+        bhelgaas@google.com, ldewangan@nvidia.com, olof@lixom.net,
+        hdoyu@nvidia.com, pgaikwad@nvidia.com, pdeschrijver@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        jtukkinen@nvidia.com, kthota@nvidia.com
+References: <1371021223-6709-1-git-send-email-jagarwal@nvidia.com>
+ <51B8956B.8020704@wwwdotorg.org>
+Message-ID: <20130616185132.7541.680@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH V4 1/4] ARM: tegra30: clocks: Fix pciex clock registration
+Date: Sun, 16 Jun 2013 11:51:33 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 16, 2013 at 8:09 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Jun 16, 2013 at 2:37 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
->>
->> Do you really think your cursing controls how other people behave?
->
-> Yes. In three ways:
+Quoting Stephen Warren (2013-06-12 08:36:11)
+> On 06/12/2013 01:13 AM, Jay Agarwal wrote:
+> > Registering pciex as peripheral clock instead of fixed clock
+> > as tegra_perih_reset_assert(deassert) api of this clock api
+> > gives warning and ultimately does not succeed to assert(deassert)
+> > 
+> > Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+> > ---
+> > Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this.
+> 
+> In this case, it would make more sense to apply this to the clock tree,
+> since it's a standalone bug-fix.
+> 
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Besides, hamsters really are evil creatures.
+Pulled into clk-fixes for -rc7.
 
-Sure, you may love your fluffy little Flopsy the dwarf hamster, but
-behind that cute and unassuming exterior lies a calculating and black
-little heart.
-
-So hamster-cursing pretty much doesn't need any excuses. They have it
-coming to them.
-
-              Linus
+Regards,
+Mike
