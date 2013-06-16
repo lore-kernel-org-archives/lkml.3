@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab3FPWW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:22:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46380 "EHLO
+	id S1756041Ab3FPWW7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:22:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46346 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755726Ab3FPWI4 (ORCPT
+	by vger.kernel.org with ESMTP id S1755586Ab3FPWI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Eric Paris" <eparis@redhat.com>, "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Guy Streeter" <streeter@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.561131741@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
+        "Ian Campbell" <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 16 Jun 2013 23:01:37 +0100
+Message-ID: <lsq.1371420097.537314158@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [73/83] audit: wait_for_auditd() should use TASK_UNINTERRUPTIBLE
+Subject: [22/83] xen-netback: better names for thresholds
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,45 +32,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit f000cfdde5de4fc15dead5ccf524359c07eadf2b upstream.
+commit 376414945d15aa636e65f7e773c1e398b7a21cb9 upstream.
 
-audit_log_start() does wait_for_auditd() in a loop until
-audit_backlog_wait_time passes or audit_skb_queue has a room.
+This patch only changes some names to avoid confusion.
 
-If signal_pending() is true this becomes a busy-wait loop, schedule() in
-TASK_INTERRUPTIBLE won't block.
+In this patch we have:
 
-Thanks to Guy for fully investigating and explaining the problem.
+  MAX_SKB_SLOTS_DEFAULT -> FATAL_SKB_SLOTS_DEFAULT
+  max_skb_slots -> fatal_skb_slots
+  #define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
 
-(akpm: that'll cause the system to lock up on a non-preemptible
-uniprocessor kernel)
+The fatal_skb_slots is the threshold to determine whether a packet is
+malicious.
 
-(Guy: "Our customer was in fact running a uniprocessor machine, and they
-reported a system hang.")
+XEN_NETBK_LEGACY_SLOTS_MAX is the maximum slots a valid packet can have at
+this point. It is defined to be XEN_NETIF_NR_SLOTS_MIN because that's
+guaranteed to be supported by all backends.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Guy Streeter <streeter@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Suggested-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/audit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c |   49 ++++++++++++++++++++++---------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1167,7 +1167,7 @@ struct audit_buffer *audit_log_start(str
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -50,9 +50,17 @@
+  * This is the maximum slots a skb can have. If a guest sends a skb
+  * which exceeds this limit it is considered malicious.
+  */
+-#define MAX_SKB_SLOTS_DEFAULT 20
+-static unsigned int max_skb_slots = MAX_SKB_SLOTS_DEFAULT;
+-module_param(max_skb_slots, uint, 0444);
++#define FATAL_SKB_SLOTS_DEFAULT 20
++static unsigned int fatal_skb_slots = FATAL_SKB_SLOTS_DEFAULT;
++module_param(fatal_skb_slots, uint, 0444);
++
++/*
++ * To avoid confusion, we define XEN_NETBK_LEGACY_SLOTS_MAX indicating
++ * the maximum slots a valid packet can use. Now this value is defined
++ * to be XEN_NETIF_NR_SLOTS_MIN, which is supposed to be supported by
++ * all backend.
++ */
++#define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
  
- 			/* Wait for auditd to drain the queue a little */
- 			DECLARE_WAITQUEUE(wait, current);
--			set_current_state(TASK_INTERRUPTIBLE);
-+			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&audit_backlog_wait, &wait);
+ typedef unsigned int pending_ring_idx_t;
+ #define INVALID_PENDING_RING_IDX (~0U)
+@@ -925,25 +933,26 @@ static int netbk_count_requests(struct x
+ 		/* This guest is really using too many slots and
+ 		 * considered malicious.
+ 		 */
+-		if (unlikely(slots >= max_skb_slots)) {
++		if (unlikely(slots >= fatal_skb_slots)) {
+ 			netdev_err(vif->dev,
+ 				   "Malicious frontend using %d slots, threshold %u\n",
+-				   slots, max_skb_slots);
++				   slots, fatal_skb_slots);
+ 			netbk_fatal_tx_err(vif);
+ 			return -E2BIG;
+ 		}
  
- 			if (audit_backlog_limit &&
+ 		/* Xen network protocol had implicit dependency on
+-		 * MAX_SKB_FRAGS. XEN_NETIF_NR_SLOTS_MIN is set to the
+-		 * historical MAX_SKB_FRAGS value 18 to honor the same
+-		 * behavior as before. Any packet using more than 18
+-		 * slots but less than max_skb_slots slots is dropped
++		 * MAX_SKB_FRAGS. XEN_NETBK_LEGACY_SLOTS_MAX is set to
++		 * the historical MAX_SKB_FRAGS value 18 to honor the
++		 * same behavior as before. Any packet using more than
++		 * 18 slots but less than fatal_skb_slots slots is
++		 * dropped
+ 		 */
+-		if (!drop_err && slots >= XEN_NETIF_NR_SLOTS_MIN) {
++		if (!drop_err && slots >= XEN_NETBK_LEGACY_SLOTS_MAX) {
+ 			if (net_ratelimit())
+ 				netdev_dbg(vif->dev,
+ 					   "Too many slots (%d) exceeding limit (%d), dropping packet\n",
+-					   slots, XEN_NETIF_NR_SLOTS_MIN);
++					   slots, XEN_NETBK_LEGACY_SLOTS_MAX);
+ 			drop_err = -E2BIG;
+ 		}
+ 
+@@ -1025,7 +1034,7 @@ static struct gnttab_copy *xen_netbk_get
+ 	struct pending_tx_info *first = NULL;
+ 
+ 	/* At this point shinfo->nr_frags is in fact the number of
+-	 * slots, which can be as large as XEN_NETIF_NR_SLOTS_MIN.
++	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+ 	 */
+ 	nr_slots = shinfo->nr_frags;
+ 
+@@ -1392,12 +1401,12 @@ static unsigned xen_netbk_tx_build_gops(
+ 	struct sk_buff *skb;
+ 	int ret;
+ 
+-	while ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
++	while ((nr_pending_reqs(netbk) + XEN_NETBK_LEGACY_SLOTS_MAX
+ 		< MAX_PENDING_REQS) &&
+ 		!list_empty(&netbk->net_schedule_list)) {
+ 		struct xenvif *vif;
+ 		struct xen_netif_tx_request txreq;
+-		struct xen_netif_tx_request txfrags[XEN_NETIF_NR_SLOTS_MIN];
++		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
+ 		struct page *page;
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+ 		u16 pending_idx;
+@@ -1485,7 +1494,7 @@ static unsigned xen_netbk_tx_build_gops(
+ 		pending_idx = netbk->pending_ring[index];
+ 
+ 		data_len = (txreq.size > PKT_PROT_LEN &&
+-			    ret < XEN_NETIF_NR_SLOTS_MIN) ?
++			    ret < XEN_NETBK_LEGACY_SLOTS_MAX) ?
+ 			PKT_PROT_LEN : txreq.size;
+ 
+ 		skb = alloc_skb(data_len + NET_SKB_PAD + NET_IP_ALIGN,
+@@ -1764,7 +1773,7 @@ static inline int rx_work_todo(struct xe
+ static inline int tx_work_todo(struct xen_netbk *netbk)
+ {
+ 
+-	if ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
++	if ((nr_pending_reqs(netbk) + XEN_NETBK_LEGACY_SLOTS_MAX
+ 	     < MAX_PENDING_REQS) &&
+ 	     !list_empty(&netbk->net_schedule_list))
+ 		return 1;
+@@ -1849,11 +1858,11 @@ static int __init netback_init(void)
+ 	if (!xen_pv_domain())
+ 		return -ENODEV;
+ 
+-	if (max_skb_slots < XEN_NETIF_NR_SLOTS_MIN) {
++	if (fatal_skb_slots < XEN_NETBK_LEGACY_SLOTS_MAX) {
+ 		printk(KERN_INFO
+-		       "xen-netback: max_skb_slots too small (%d), bump it to XEN_NETIF_NR_SLOTS_MIN (%d)\n",
+-		       max_skb_slots, XEN_NETIF_NR_SLOTS_MIN);
+-		max_skb_slots = XEN_NETIF_NR_SLOTS_MIN;
++		       "xen-netback: fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
++		       fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
++		fatal_skb_slots = XEN_NETBK_LEGACY_SLOTS_MAX;
+ 	}
+ 
+ 	xen_netbk_group_nr = num_online_cpus();
 
