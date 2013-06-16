@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab3FPWQq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46428 "EHLO
+	id S1756197Ab3FPWQv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46331 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755771Ab3FPWJF (ORCPT
+	by vger.kernel.org with ESMTP id S1755559Ab3FPWJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:05 -0400
+	Sun, 16 Jun 2013 18:09:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paul Mackerras" <paulus@samba.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.696794213@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Nithin Sujir" <nsujir@broadcom.com>,
+        "Roland Dreier" <roland@purestorage.com>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 16 Jun 2013 23:01:37 +0100
+Message-ID: <lsq.1371420097.19172729@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [83/83] powerpc: Fix emulation of illegal instructions on PowerNV
- platform
+Subject: [12/83] tg3: Add read dma workaround for 5720
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,60 +33,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit bf593907f7236e95698a76b7c7a2bbf8b1165327 upstream.
+commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
 
-Normally, the kernel emulates a few instructions that are unimplemented
-on some processors (e.g. the old dcba instruction), or privileged (e.g.
-mfpvr).  The emulation of unimplemented instructions is currently not
-working on the PowerNV platform.  The reason is that on these machines,
-unimplemented and illegal instructions cause a hypervisor emulation
-assist interrupt, rather than a program interrupt as on older CPUs.
-Our vector for the emulation assist interrupt just calls
-program_check_exception() directly, without setting the bit in SRR1
-that indicates an illegal instruction interrupt.  This fixes it by
-making the emulation assist interrupt set that bit before calling
-program_check_interrupt().  With this, old programs that use no-longer
-implemented instructions such as dcba now work again.
+Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
+DMA workaround" added a workaround for TX DMA stall on the 5719. This
+workaround needs to be applied to the 5720 as well.
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Roland Dreier <roland@purestorage.com>
+Tested-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: use GET_ASIC_REV() instead of tg3_asic_rev()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/exceptions-64s.S |    2 +-
- arch/powerpc/kernel/traps.c          |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |   21 +++++++++++++++------
+ drivers/net/ethernet/broadcom/tg3.h |    5 +++--
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -463,7 +463,7 @@ machine_check_common:
- 	STD_EXCEPTION_COMMON(0xb00, trap_0b, .unknown_exception)
- 	STD_EXCEPTION_COMMON(0xd00, single_step, .single_step_exception)
- 	STD_EXCEPTION_COMMON(0xe00, trap_0e, .unknown_exception)
--        STD_EXCEPTION_COMMON(0xe40, emulation_assist, .program_check_exception)
-+	STD_EXCEPTION_COMMON(0xe40, emulation_assist, .emulation_assist_interrupt)
-         STD_EXCEPTION_COMMON(0xe60, hmi_exception, .unknown_exception)
- 	STD_EXCEPTION_COMMON_IDLE(0xf00, performance_monitor, .performance_monitor_exception)
- 	STD_EXCEPTION_COMMON(0x1300, instruction_breakpoint, .instruction_breakpoint_exception)
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1036,6 +1036,16 @@ void __kprobes program_check_exception(s
- 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8282,6 +8282,14 @@ static void tg3_setup_rxbd_thresholds(st
+ 		tw32(JMB_REPLENISH_LWM, bdcache_maxcnt);
  }
  
-+/*
-+ * This occurs when running in hypervisor mode on POWER6 or later
-+ * and an illegal instruction is encountered.
-+ */
-+void __kprobes emulation_assist_interrupt(struct pt_regs *regs)
++static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
 +{
-+	regs->msr |= REASON_ILLEGAL;
-+	program_check_exception(regs);
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
++	else
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
 +}
 +
- void alignment_exception(struct pt_regs *regs)
+ /* tp->lock is held. */
+ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
  {
- 	int sig, code, fixed = 0;
+@@ -8920,16 +8928,17 @@ static int tg3_reset_hw(struct tg3 *tp,
+ 	tw32_f(RDMAC_MODE, rdmac_mode);
+ 	udelay(40);
+ 
+-	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
++	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
+ 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
+ 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
+ 				break;
+ 		}
+ 		if (i < TG3_NUM_RDMA_CHANNELS) {
+ 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
++			val |= tg3_lso_rd_dma_workaround_bit(tp);
+ 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-			tg3_flag_set(tp, 5719_RDMA_BUG);
++			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
+ 		}
+ 	}
+ 
+@@ -9213,15 +9222,15 @@ static void tg3_periodic_fetch_stats(str
+ 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
+ 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
+ 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
+-	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
++	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
+ 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
+ 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
+ 		u32 val;
+ 
+ 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
++		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
+ 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-		tg3_flag_clear(tp, 5719_RDMA_BUG);
++		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
+ 	}
+ 
+ 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -1368,7 +1368,8 @@
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
+-#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
+ /* 0x4914 --> 0x4be0 unused */
+ 
+ #define TG3_NUM_RDMA_CHANNELS		4
+@@ -2925,7 +2926,7 @@ enum TG3_FLAGS {
+ 	TG3_FLAG_APE_HAS_NCSI,
+ 	TG3_FLAG_5717_PLUS,
+ 	TG3_FLAG_4K_FIFO_LIMIT,
+-	TG3_FLAG_5719_RDMA_BUG,
++	TG3_FLAG_5719_5720_RDMA_BUG,
+ 	TG3_FLAG_RESET_TASK_PENDING,
+ 
+ 	/* Add new flags before this comment and TG3_FLAG_NUMBER_OF_FLAGS */
 
