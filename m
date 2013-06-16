@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3FPU5P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 16:57:15 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:33351 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab3FPUyd (ORCPT
+	id S1755473Ab3FPUya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 16:54:30 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:58300 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab3FPUy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 16:54:33 -0400
+	Sun, 16 Jun 2013 16:54:28 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,109 +27,83 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Alban Bedel <alban.bedel@avionic-design.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC PATCH 02/11] dma: amba-pl08x: Refactor pl08x_getbytes_chan() to lower indentation
-Date: Sun, 16 Jun 2013 22:54:09 +0200
-Message-Id: <1371416058-22047-3-git-send-email-tomasz.figa@gmail.com>
+Subject: [RFC PATCH 00/11] ARM: s3c64xx: Let amba-pl08x driver handle DMA
+Date: Sun, 16 Jun 2013 22:54:07 +0200
+Message-Id: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
-References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further patch will introduce support for PL080S, which requires some
-things to be done conditionally, thus increasing indentation level of
-some functions even more.
+One of the biggest roadblocks on the way of S3C64xx to DeviceTree support
+is its DMA driver, which is completely platform-specific and provides
+private API (s3c-dma), not even saying that its design is completely
+against multiplatform-awareness.
 
-This patch reduces indentation level of pl08x_getbytes_chan() function
-by inverting several conditions and returning from function wherever
-possible.
+The DMA controller present on this SoC series is a custom variant
+of ARM PrimeCell PL080 modified by Samsung to add some extra features.
+It is mostly compatible with original PL080, except:
+ - CH_CONTROL2 register is added between CH_CONTROL and CH_CONFIG,
+ - offset of CH_CONFIG register is different,
+ - transfer size field is moved from CH_CONTROL to CH_CONTROL2,
+ - transfer size field is extended to 24 bits, allowing much bigger
+     single transfer,
+ - LLI consists of one more word, to account for CH_CONTROL2 register.
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
----
- drivers/dma/amba-pl08x.c | 51 ++++++++++++++++++++++++++----------------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
+Since all the rest is fully compatible with standard PL080 there is no
+point in having separate driver just for this single variant, so I decided
+to look into adding support for it to the amba-pl08x driver.
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index d443a68..1e57ded 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -473,47 +473,52 @@ static inline u32 get_bytes_in_cctl(u32 cctl)
- /* The channel should be paused when calling this */
- static u32 pl08x_getbytes_chan(struct pl08x_dma_chan *plchan)
- {
-+	struct pl08x_lli *llis_va;
- 	struct pl08x_phy_chan *ch;
-+	dma_addr_t llis_bus;
- 	struct pl08x_txd *txd;
- 	size_t bytes = 0;
-+	int index;
-+	u32 clli;
- 
- 	ch = plchan->phychan;
- 	txd = plchan->at;
- 
-+	if (!ch || !txd)
-+		return bytes;
-+
- 	/*
- 	 * Follow the LLIs to get the number of remaining
- 	 * bytes in the currently active transaction.
- 	 */
--	if (ch && txd) {
--		u32 clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
-+	clli = readl(ch->base + PL080_CH_LLI) & ~PL080_LLI_LM_AHB2;
-+
-+	/* First get the remaining bytes in the active transfer */
-+	bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
- 
--		/* First get the remaining bytes in the active transfer */
--		bytes = get_bytes_in_cctl(readl(ch->base + PL080_CH_CONTROL));
-+	if (!clli)
-+		return bytes;
- 
--		if (clli) {
--			struct pl08x_lli *llis_va = txd->llis_va;
--			dma_addr_t llis_bus = txd->llis_bus;
--			int index;
-+	llis_va = txd->llis_va;
-+	llis_bus = txd->llis_bus;
- 
--			BUG_ON(clli < llis_bus || clli >= llis_bus +
-+	BUG_ON(clli < llis_bus || clli >= llis_bus +
- 				sizeof(struct pl08x_lli) * MAX_NUM_TSFR_LLIS);
- 
--			/*
--			 * Locate the next LLI - as this is an array,
--			 * it's simple maths to find.
--			 */
--			index = (clli - llis_bus) / sizeof(struct pl08x_lli);
-+	/*
-+	 * Locate the next LLI - as this is an array,
-+	 * it's simple maths to find.
-+	 */
-+	index = (clli - llis_bus) / sizeof(struct pl08x_lli);
- 
--			for (; index < MAX_NUM_TSFR_LLIS; index++) {
--				bytes += get_bytes_in_cctl(llis_va[index].cctl);
-+	for (; index < MAX_NUM_TSFR_LLIS; index++) {
-+		bytes += get_bytes_in_cctl(llis_va[index].cctl);
- 
--				/*
--				 * A LLI pointer of 0 terminates the LLI list
--				 */
--				if (!llis_va[index].lli)
--					break;
--			}
--		}
-+		/*
-+		 * A LLI pointer of 0 terminates the LLI list
-+		 */
-+		if (!llis_va[index].lli)
-+			break;
- 	}
- 
- 	return bytes;
+There was already some attempt to achieve this before, but this was before
+Russel's big rework of the driver to use virtual channels, making the old
+patches being not much of use.
+
+This RFC series is a proof of concept that I managed to make during last
+days of hacking. Except one patch adding clkdev lookup to clock driver
+(which is being replaced with a CCF-compliant driver ATM), this is enough
+to get memcpy and slave transfers to work on S3C64xx.
+
+I have tested this on Mini6410 and SMDK6410 boards using dmatest for
+memcpy and Samsung I2S with madplay/aplay for slave transfers.
+Unfortunately I do not have access to other platforms with PL08x so
+I could not test for any regressions introduced on them.
+
+Credits for two patches go to Alban Bedel, who made a series fixing this
+driver to make it usable with audio drivers. I rebased his patches on top
+of mine and corrected coding style a bit.
+
+OK, that's all. Any comments are welcome. Feel free to start throwing eggs
+and tomatoes if you find this awful, but I won't be upset if I get some
+Tested-by or Acked-by as well. ;)
+
+Alban Bedel (2):
+  dmaengine: PL08x: Fix reading the byte count in cctl
+  dmaengine: PL08x: Add cyclic transfer support
+
+Tomasz Figa (9):
+  dma: amba-pl08x: Use bitmap to pass variant specific quirks
+  dma: amba-pl08x: Refactor pl08x_getbytes_chan() to lower indentation
+  dma: amba-pl08x: Add support for different offset of CONFIG register
+  dma: amba-pl08x: Add support for PL080S variant
+  dma: amba-pl08x: Add support for different maximum transfer size
+  dma: amba-pl08x: Keep LLIs aligned to 4-word boundary
+  spi: s3c64xx: Do not require legacy DMA API in case of S3C64XX
+  ASoC: samsung: Do not require legacy DMA API in case of S3C64XX
+  ARM: s3c64xx: Add support for DMA using generic amba-pl08x driver
+
+ arch/arm/Kconfig                         |   1 +
+ arch/arm/mach-s3c64xx/Kconfig            |   8 +-
+ arch/arm/mach-s3c64xx/Makefile           |   1 +
+ arch/arm/mach-s3c64xx/common.h           |   5 +
+ arch/arm/mach-s3c64xx/include/mach/dma.h |  65 +++++
+ arch/arm/mach-s3c64xx/pl080.c            | 244 +++++++++++++++++++
+ drivers/dma/amba-pl08x.c                 | 399 ++++++++++++++++++++++---------
+ drivers/spi/Kconfig                      |   2 +-
+ include/linux/amba/pl080.h               |   1 +
+ sound/soc/samsung/Kconfig                |   2 +-
+ 10 files changed, 613 insertions(+), 115 deletions(-)
+ create mode 100644 arch/arm/mach-s3c64xx/pl080.c
+
 -- 
 1.8.2.1
 
