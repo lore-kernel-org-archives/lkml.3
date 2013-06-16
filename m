@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab3FPWO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:14:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46494 "EHLO
+	id S1755859Ab3FPWO5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:14:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46430 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755781Ab3FPWJI (ORCPT
+	by vger.kernel.org with ESMTP id S1755688Ab3FPWJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:09:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andi Kleen" <andi@firstfloor.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Rik van Riel" <riel@redhat.com>, "Mel Gorman" <mgorman@suse.de>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Michal Hocko" <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, "Sujith Manoharan" <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.281665047@decadent.org.uk>
+Message-ID: <lsq.1371420098.113375664@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [77/83] mm: migration: add migrate_entry_wait_huge()
+Subject: [68/83] ath9k: Disable PowerSave by default
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,107 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
+commit 73c79617596b89a3693ff0d89d42bcd5ddedcf15 upstream.
 
-When we have a page fault for the address which is backed by a hugepage
-under migration, the kernel can't wait correctly and do busy looping on
-hugepage fault until the migration finishes.  As a result, users who try
-to kick hugepage migration (via soft offlining, for example) occasionally
-experience long delay or soft lockup.
+Almost all the DMA issues which have plagued ath9k (in station mode)
+for years are related to PS. Disabling PS usually "fixes" the user's
+connection stablility. Reports of DMA problems are still trickling in
+and are sitting in the kernel bugzilla. Until the PS code in ath9k is
+given a thorough review, disbale it by default. The slight increase
+in chip power consumption is a small price to pay for improved link
+stability.
 
-This is because pte_offset_map_lock() can't get a correct migration entry
-or a correct page table lock for hugepage.  This patch introduces
-migration_entry_wait_huge() to solve this.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 ---
- include/linux/swapops.h |    3 +++
- mm/hugetlb.c            |    2 +-
- mm/migrate.c            |   23 ++++++++++++++++++-----
- 3 files changed, 22 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/init.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -136,6 +136,7 @@ static inline void make_migration_entry_
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -691,8 +691,7 @@ void ath9k_set_hw_capab(struct ath_softc
+ 		BIT(NL80211_IFTYPE_ADHOC) |
+ 		BIT(NL80211_IFTYPE_MESH_POINT);
  
- extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					unsigned long address);
-+extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
- #else
+-	if (AR_SREV_5416(sc->sc_ah))
+-		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
++	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
  
- #define make_migration_entry(page, write) swp_entry(0, 0)
-@@ -147,6 +148,8 @@ static inline int is_migration_entry(swp
- static inline void make_migration_entry_read(swp_entry_t *entryp) { }
- static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					 unsigned long address) { }
-+static inline void migration_entry_wait_huge(struct mm_struct *mm,
-+					pte_t *pte) { }
- static inline int is_write_migration_entry(swp_entry_t entry)
- {
- 	return 0;
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2751,7 +2751,7 @@ int hugetlb_fault(struct mm_struct *mm,
- 	if (ptep) {
- 		entry = huge_ptep_get(ptep);
- 		if (unlikely(is_hugetlb_entry_migration(entry))) {
--			migration_entry_wait(mm, (pmd_t *)ptep, address);
-+			migration_entry_wait_huge(mm, ptep);
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -184,15 +184,14 @@ static void remove_migration_ptes(struct
-  *
-  * This function is called from do_swap_page().
-  */
--void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
--				unsigned long address)
-+static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
-+				spinlock_t *ptl)
- {
--	pte_t *ptep, pte;
--	spinlock_t *ptl;
-+	pte_t pte;
- 	swp_entry_t entry;
- 	struct page *page;
+ 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
  
--	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	spin_lock(ptl);
- 	pte = *ptep;
- 	if (!is_swap_pte(pte))
- 		goto out;
-@@ -220,6 +219,20 @@ out:
- 	pte_unmap_unlock(ptep, ptl);
- }
- 
-+void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
-+				unsigned long address)
-+{
-+	spinlock_t *ptl = pte_lockptr(mm, pmd);
-+	pte_t *ptep = pte_offset_map(pmd, address);
-+	__migration_entry_wait(mm, ptep, ptl);
-+}
-+
-+void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
-+{
-+	spinlock_t *ptl = &(mm)->page_table_lock;
-+	__migration_entry_wait(mm, pte, ptl);
-+}
-+
- #ifdef CONFIG_BLOCK
- /* Returns true if all buffers are successfully locked */
- static bool buffer_migrate_lock_buffers(struct buffer_head *head,
 
