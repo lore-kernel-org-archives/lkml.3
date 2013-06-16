@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab3FPWPB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:15:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46488 "EHLO
+	id S1756105Ab3FPWO7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:14:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46494 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755787Ab3FPWJI (ORCPT
+	by vger.kernel.org with ESMTP id S1755781Ab3FPWJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:09:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,18 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@zytor.com>,
+CC: akpm@linux-foundation.org, "Andi Kleen" <andi@firstfloor.org>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Robin Holt" <holt@sgi.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Shawn Guo" <shawn.guo@linaro.org>, "Russ Anderson" <rja@sgi.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
-        "Thomas Gleixner" <tglx@linutronix.de>, "Ingo Molnar" <mingo@elte.hu>
+        "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Rik van Riel" <riel@redhat.com>, "Mel Gorman" <mgorman@suse.de>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.328157380@decadent.org.uk>
+Message-ID: <lsq.1371420098.281665047@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [72/83] reboot: rigrate shutdown/reboot to boot cpu
+Subject: [77/83] mm: migration: add migrate_entry_wait_huge()
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -37,98 +36,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit cf7df378aa4ff7da3a44769b7ff6e9eef1a9f3db upstream.
+commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f2dc63 ("kernel/sys.c: call disable_nonboot_cpus() in
-kernel_restart()").
+When we have a page fault for the address which is backed by a hugepage
+under migration, the kernel can't wait correctly and do busy looping on
+hugepage fault until the migration finishes.  As a result, users who try
+to kick hugepage migration (via soft offlining, for example) occasionally
+experience long delay or soft lockup.
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-boot cpu and then continuing with shutdown/reboot.
+This is because pte_offset_map_lock() can't get a correct migration entry
+or a correct page table lock for hugepage.  This patch introduces
+migration_entry_wait_huge() to solve this.
 
-This also has the effect of not breaking x86's command line parameter
-for specifying the reboot cpu.  Note, this code was shamelessly copied
-from arch/x86/kernel/reboot.c with bits removed pertaining to the
-reboot_cpu command line parameter.
-
-Signed-off-by: Robin Holt <holt@sgi.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sys.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ include/linux/swapops.h |    3 +++
+ mm/hugetlb.c            |    2 +-
+ mm/migrate.c            |   23 ++++++++++++++++++-----
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -353,6 +353,29 @@ int unregister_reboot_notifier(struct no
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -136,6 +136,7 @@ static inline void make_migration_entry_
  
-+/* Add backwards compatibility for stable trees. */
-+#ifndef PF_NO_SETAFFINITY
-+#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
-+#endif
-+
-+static void migrate_to_reboot_cpu(void)
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
++extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
+ #else
+ 
+ #define make_migration_entry(page, write) swp_entry(0, 0)
+@@ -147,6 +148,8 @@ static inline int is_migration_entry(swp
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
++static inline void migration_entry_wait_huge(struct mm_struct *mm,
++					pte_t *pte) { }
+ static inline int is_write_migration_entry(swp_entry_t entry)
+ {
+ 	return 0;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2751,7 +2751,7 @@ int hugetlb_fault(struct mm_struct *mm,
+ 	if (ptep) {
+ 		entry = huge_ptep_get(ptep);
+ 		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait(mm, (pmd_t *)ptep, address);
++			migration_entry_wait_huge(mm, ptep);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -184,15 +184,14 @@ static void remove_migration_ptes(struct
+  *
+  * This function is called from do_swap_page().
+  */
+-void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+-				unsigned long address)
++static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++				spinlock_t *ptl)
+ {
+-	pte_t *ptep, pte;
+-	spinlock_t *ptl;
++	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
+ 
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	spin_lock(ptl);
+ 	pte = *ptep;
+ 	if (!is_swap_pte(pte))
+ 		goto out;
+@@ -220,6 +219,20 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
++				unsigned long address)
 +{
-+	/* The boot cpu is always logical cpu 0 */
-+	int cpu = 0;
-+
-+	cpu_hotplug_disable();
-+
-+	/* Make certain the cpu I'm about to reboot on is online */
-+	if (!cpu_online(cpu))
-+		cpu = cpumask_first(cpu_online_mask);
-+
-+	/* Prevent races with other tasks migrating this task */
-+	current->flags |= PF_NO_SETAFFINITY;
-+
-+	/* Make certain I only run on the appropriate processor */
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
++	spinlock_t *ptl = pte_lockptr(mm, pmd);
++	pte_t *ptep = pte_offset_map(pmd, address);
++	__migration_entry_wait(mm, ptep, ptl);
 +}
 +
- /**
-  *	kernel_restart - reboot the system
-  *	@cmd: pointer to buffer containing command to execute for restart
-@@ -364,7 +387,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
- void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
-@@ -391,7 +414,7 @@ static void kernel_shutdown_prepare(enum
- void kernel_halt(void)
- {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
-@@ -410,7 +433,7 @@ void kernel_power_off(void)
- 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
- 	if (pm_power_off_prepare)
- 		pm_power_off_prepare();
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "Power down.\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
++void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
++{
++	spinlock_t *ptl = &(mm)->page_table_lock;
++	__migration_entry_wait(mm, pte, ptl);
++}
++
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
 
