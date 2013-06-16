@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3FPWQk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46341 "EHLO
+	id S1756117Ab3FPWQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46416 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755584Ab3FPWJG (ORCPT
+	by vger.kernel.org with ESMTP id S1755709Ab3FPWJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:09:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.834578872@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
+        "Jean Delvare" <khali@linux-fr.org>
+Date: Sun, 16 Jun 2013 23:01:38 +0100
+Message-ID: <lsq.1371420098.848835385@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [24/83] xen-netfront: reduce gso_max_size to account for max TCP
- header
+Subject: [63/83] hwmon: (adm1021) Strengthen chip detection for ADM1021,
+ LM84 and MAX1617
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,82 +32,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
+commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
 
-The maximum packet including header that can be handled by netfront / netback
-wire format is 65535. Reduce gso_max_size accordingly.
+On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
+as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
+Also improve detection for ADM1021.
 
-Drop skb and print warning when skb->len > 65535. This can 1) save the effort
-to send malformed packet to netback, 2) help spotting misconfiguration of
-netfront in the future.
+Modeled after chip detection code in sensors-detect command.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netfront.c       |   17 +++++++++++++++--
- include/xen/interface/io/netif.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/hwmon/adm1021.c |   58 ++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 50 insertions(+), 8 deletions(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -36,7 +36,7 @@
- #include <linux/skbuff.h>
- #include <linux/ethtool.h>
- #include <linux/if_ether.h>
--#include <linux/tcp.h>
-+#include <net/tcp.h>
- #include <linux/udp.h>
- #include <linux/moduleparam.h>
- #include <linux/mm.h>
-@@ -490,6 +490,16 @@ static int xennet_start_xmit(struct sk_b
- 	unsigned int offset = offset_in_page(data);
- 	unsigned int len = skb_headlen(skb);
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -311,26 +311,68 @@ static int adm1021_detect(struct i2c_cli
+ 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
+ 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
  
-+	/* If skb->len is too big for wire format, drop skb and alert
-+	 * user about misconfiguration.
-+	 */
-+	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
-+		net_alert_ratelimited(
-+			"xennet: skb->len = %u, too big for wire format\n",
-+			skb->len);
-+		goto drop;
++	if (man_id < 0 || dev_id < 0)
++		return -ENODEV;
++
+ 	if (man_id == 0x4d && dev_id == 0x01)
+ 		type_name = "max1617a";
+ 	else if (man_id == 0x41) {
+ 		if ((dev_id & 0xF0) == 0x30)
+ 			type_name = "adm1023";
+-		else
++		else if ((dev_id & 0xF0) == 0x00)
+ 			type_name = "adm1021";
++		else
++			return -ENODEV;
+ 	} else if (man_id == 0x49)
+ 		type_name = "thmc10";
+ 	else if (man_id == 0x23)
+ 		type_name = "gl523sm";
+ 	else if (man_id == 0x54)
+ 		type_name = "mc1066";
+-	/* LM84 Mfr ID in a different place, and it has more unused bits */
+-	else if (conv_rate == 0x00
+-		 && (config & 0x7F) == 0x00
+-		 && (status & 0xAB) == 0x00)
+-		type_name = "lm84";
+-	else
+-		type_name = "max1617";
++	else {
++		int lte, rte, lhi, rhi, llo, rlo;
++
++		/* extra checks for LM84 and MAX1617 to avoid misdetections */
++
++		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
++		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
++
++		/* fail if any of the additional register reads failed */
++		if (llo < 0 || rlo < 0)
++			return -ENODEV;
++
++		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
++		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
++		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
++		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
++
++		/*
++		 * Fail for negative temperatures and negative high limits.
++		 * This check also catches read errors on the tested registers.
++		 */
++		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
++			return -ENODEV;
++
++		/* fail if all registers hold the same value */
++		if (lte == rte && lte == lhi && lte == rhi && lte == llo
++		    && lte == rlo)
++			return -ENODEV;
++
++		/*
++		 * LM84 Mfr ID is in a different place,
++		 * and it has more unused bits.
++		 */
++		if (conv_rate == 0x00
++		    && (config & 0x7F) == 0x00
++		    && (status & 0xAB) == 0x00) {
++			type_name = "lm84";
++		} else {
++			/* fail if low limits are larger than high limits */
++			if ((s8)llo > lhi || (s8)rlo > rhi)
++				return -ENODEV;
++			type_name = "max1617";
++		}
 +	}
-+
- 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
- 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
- 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
-@@ -1043,7 +1053,8 @@ err:
  
- static int xennet_change_mtu(struct net_device *dev, int mtu)
- {
--	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
-+	int max = xennet_can_sg(dev) ?
-+		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
- 
- 	if (mtu > max)
- 		return -EINVAL;
-@@ -1318,6 +1329,8 @@ static struct net_device * __devinit xen
- 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
- 	SET_NETDEV_DEV(netdev, &dev->dev);
- 
-+	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
-+
- 	np->netdev = netdev;
- 
- 	netif_carrier_off(netdev);
---- a/include/xen/interface/io/netif.h
-+++ b/include/xen/interface/io/netif.h
-@@ -65,6 +65,7 @@
- #define _XEN_NETTXF_extra_info		(3)
- #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
- 
-+#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
- struct xen_netif_tx_request {
-     grant_ref_t gref;      /* Reference to buffer page */
-     uint16_t offset;       /* Offset within buffer page */
+ 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
+ 		 type_name, i2c_adapter_id(adapter), client->addr);
 
