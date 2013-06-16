@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3FPW2J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:28:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46426 "EHLO
+	id S1755797Ab3FPW3P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:29:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46303 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755711Ab3FPWIu (ORCPT
+	by vger.kernel.org with ESMTP id S1755532Ab3FPWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:08:50 -0400
+	Sun, 16 Jun 2013 18:08:49 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "George Cherian" <george.cherian@ti.com>,
-        "Felipe Balbi" <balbi@ti.com>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.808396678@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Joe Perches" <joe@perches.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 16 Jun 2013 23:01:37 +0100
+Message-ID: <lsq.1371420097.304418802@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [37/83] usb: dwc3: gadget: free trb pool only from epnum 2
+Subject: [23/83] net: Add net_ratelimited_function and net_<level>_ratelimited
+ macros
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,46 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Cherian <george.cherian@ti.com>
+From: Joe Perches <joe@perches.com>
 
-commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
+commit 3a3bfb61e64476ff1e4ac3122cb6dec9c79b795c upstream.
 
-we never allocate a TRB pool for physical endpoints
-0 and 1 so trying to free it (a invalid TRB pool pointer)
-will lead us in a warning while removing dwc3.ko module.
+__ratelimit() can be considered an inverted bool test because
+it returns true when not ratelimited.  Several tests in the
+kernel tree use this __ratelimit() function incorrectly.
 
-In order to fix the situation, all we have to do is skip
-dwc3_free_trb_pool() for physical endpoints 0 and 1 just
-as we while deleting endpoints from the endpoints list.
+No net_ratelimit uses are incorrect currently though.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[bwh: Backported to 3.2: adjust context]
+Most uses of net_ratelimit are to log something via printk or
+pr_<level>.
+
+In order to minimize the uses of net_ratelimit, and to start
+standardizing the code style used for __ratelimit() and net_ratelimit(),
+add a net_ratelimited_function() macro and net_<level>_ratelimited()
+logging macros similar to pr_<level>_ratelimited that use the global
+net_ratelimit instead of a static per call site "struct ratelimit_state".
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1310,10 +1310,19 @@ static void dwc3_gadget_free_endpoints(s
+ include/linux/net.h |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -249,6 +249,29 @@ extern struct socket *sockfd_lookup(int
+ #define		     sockfd_put(sock) fput(sock->file)
+ extern int	     net_ratelimit(void);
  
- 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
- 		dep = dwc->eps[epnum];
--		dwc3_free_trb_pool(dep);
--
--		if (epnum != 0 && epnum != 1)
-+		/*
-+		 * Physical endpoints 0 and 1 are special; they form the
-+		 * bi-directional USB endpoint 0.
-+		 *
-+		 * For those two physical endpoints, we don't allocate a TRB
-+		 * pool nor do we add them the endpoints list. Due to that, we
-+		 * shouldn't do these two operations otherwise we would end up
-+		 * with all sorts of bugs when removing dwc3.ko.
-+		 */
-+		if (epnum != 0 && epnum != 1) {
-+			dwc3_free_trb_pool(dep);
- 			list_del(&dep->endpoint.ep_list);
-+		}
++#define net_ratelimited_function(function, ...)			\
++do {								\
++	if (net_ratelimit())					\
++		function(__VA_ARGS__);				\
++} while (0)
++
++#define net_emerg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
++#define net_alert_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
++#define net_crit_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
++#define net_err_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
++#define net_notice_ratelimited(fmt, ...)			\
++	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
++#define net_warn_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
++#define net_info_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
++#define net_dbg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
++
+ #define net_random()		random32()
+ #define net_srandom(seed)	srandom32((__force u32)seed)
  
- 		kfree(dep);
- 	}
 
