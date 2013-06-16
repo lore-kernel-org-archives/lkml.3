@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3FPLvP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 07:51:15 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50194 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab3FPLvO (ORCPT
+	id S1755167Ab3FPL7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 07:59:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42951 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754958Ab3FPL7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 07:51:14 -0400
-Date: Sun, 16 Jun 2013 13:51:08 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Brian Lilly <brian@crystalfontz.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: mxs: dt: Add the Crystalfontz CFA-10055 device
- tree
-Message-ID: <20130616135108.229d216e@skate>
-In-Reply-To: <1371131025-12200-4-git-send-email-maxime.ripard@free-electrons.com>
-References: <1371131025-12200-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1371131025-12200-4-git-send-email-maxime.ripard@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Jun 2013 07:59:31 -0400
+Date: Sun, 16 Jun 2013 12:59:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: linux-kernel@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Insane kfifo_put API
+Message-ID: <20130616115921.GQ18614@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Maxime Ripard,
+So, this kfifo API...  Here's an example:
 
-Some nitpicking below.
+Let's say that we want a kfifo of structure pointers:
 
-On Thu, 13 Jun 2013 15:43:44 +0200, Maxime Ripard wrote:
+	DECLARE_KFIFO(my_ptr_kfifo, struct my_struct *, SIZE);
 
-> -static void __init cfa10049_init(void)
-> -{
-> -	update_fec_mac_prop(OUI_CRYSTALFONTZ);
-> -}
-> -
-> -static void __init cfa10037_init(void)
-> +static void __init crystalfontz_init(void)
->  {
->  	update_fec_mac_prop(OUI_CRYSTALFONTZ);
->  }
-> @@ -368,10 +363,10 @@ static void __init mxs_machine_init(void)
->  		imx28_evk_init();
->  	else if (of_machine_is_compatible("bluegiga,apx4devkit"))
->  		apx4devkit_init();
-> -	else if (of_machine_is_compatible("crystalfontz,cfa10037"))
-> -		cfa10037_init();
-> -	else if (of_machine_is_compatible("crystalfontz,cfa10049"))
-> -		cfa10049_init();
-> +	else if (of_machine_is_compatible("crystalfontz,cfa10037") ||
-> +		 of_machine_is_compatible("crystalfontz,cfa10049") ||
-> +		 of_machine_is_compatible("crystalfontz,cfa10055"))
-> +		crystalfontz_init();
+Now, to extract pointers from this, it's relatively straight forward:
 
-Maybe this could be something like:
+	struct my_struct *ptr;
 
-	else if (of_machine_is_compatible("crystalfontz,cfa10036"))
-		crystalfontz_init();
+	success = kfifo_get(&my_ptr_kfifo, &ptr);
 
-with crystalfontz_init() something like:
+Nothing wrong with that - kfifo_get looks just like a normal C function
+which is good.  However, what about adding pointers?  This is where things
+become really quite horrid.  It took many attempts to find out what the
+API requires - and that's a sign of a bad API IMHO.
 
-	if (mac0 has status = "okay")
-		update_fec_mac_prop(OUI_CRYSTALFONTZ);
+So, this is what the kfifo API requires:
 
-This way, for all Crystalfontz boards that have an Ethernet interface,
-it would call update_fec_mac_prop() without having to update mach-mxs.c
-every time.
+	struct my_struct *ptr = something;
+	const struct my_struct *my_other_ptr = ptr;
 
-(Of course, this is based on the assumption that all Crystalfontz .dts
-files have "crystalfontz,cfa10036" in their compatible string list)
+	success = kfifo_put(&my_ptr_kfifo, &my_other_ptr);
 
-Best regards,
+But... why?  This is wrong because:
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1. the const-ness of 'my_other_ptr' is not saying that the value of the
+   pointer is const, it's saying that the data pointed to by the pointer
+   is const.
+2. the kfifo API should have no regard for the const-ness of the data
+   pointed to by the object its storing (in this case, the value of
+   the pointer, not the data itself).
+3. it forces users to jump through unnecessary hoops to use this API.
+4. in any case, the data's const-ness is lost through the put to the
+   get operation!
+
+I almost gave up with it and rolled my own over this, trying to get the
+compiler not to warn (which it was obviously doing because something
+was wrong with the code) - it was only through lots of experimentation
+and reading other users that I found something which worked through this
+obscure API (as above).
+
+So, what should the API be?
+
+	success = kfifo_put(&my_ptr_kfifo, ptr);
+
+To get there means every user needs to change, thankfully there are not
+that many.  In doing so, we can also get rid of one unnecessary members
+of the kfifo struct, namely ptr_const.
+
+What's more is that those using it for integers also get a sane API:
+
+	unsigned my_uint;
+
+	kfifo_get(&my_uint_fifo, &my_uint)
+
+	kfifo_put(&my_uint_fifo, my_uint);
+
+rather than also having to take the address in the _put API.  And it
+could work that way for structures too:
+
+	struct my_struct my_str;
+
+	kfifo_get(&my_struct_fifo, &my_str);
+
+	kfifo_put(&my_struct_fifo, my_str);
+
+The last is probably the only questionable one, as it looks like passing
+a structure through a function argument, but as kfifo_put() is already a
+(huge) macro, that's not really a problem.
+
+Here's some of the examples of code in drivers which suffer with the
+current API:
+
+OMAP drm:
+        DECLARE_KFIFO_PTR(unpin_fifo, struct drm_gem_object *);
+...
+        if (kfifo_put(&omap_plane->unpin_fifo,
+                        (const struct drm_gem_object **)&bo)) {
+...
+        struct drm_gem_object *bo = NULL;
+
+        while (kfifo_get(&omap_plane->unpin_fifo, &bo)) {
+                omap_gem_put_paddr(bo);
+                drm_gem_object_unreference_unlocked(bo);
+        }
+...
+        ret = kfifo_alloc(&omap_plane->unpin_fifo, 16, GFP_KERNEL);
+
+tildc:
+
+        struct drm_framebuffer *fb;
+
+        while (kfifo_get(&tilcdc_crtc->unref_fifo, &fb))
+                drm_framebuffer_unreference(fb);
+...
+                if (kfifo_put(&tilcdc_crtc->unref_fifo,
+                                (const struct drm_framebuffer **)&tilcdc_crtc->scanout[n])) {
+...
+        ret = kfifo_alloc(&tilcdc_crtc->unref_fifo, 16, GFP_KERNEL);
+
+This API is luckily only about six users of this macro in the mainline
+kernel, so it shouldn't be that big a change to change this to be sane.
+
+Comments?
