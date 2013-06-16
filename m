@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab3FPWQi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:16:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46374 "EHLO
+	id S932122Ab3FPWQq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46428 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755656Ab3FPWJG (ORCPT
+	by vger.kernel.org with ESMTP id S1755771Ab3FPWJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:06 -0400
+	Sun, 16 Jun 2013 18:09:05 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Paul Mackerras" <paulus@samba.org>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.720442006@decadent.org.uk>
+Message-ID: <lsq.1371420098.696794213@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [54/83] ALSA: usb-audio - Apply Logitech QuickCam Pro 9000 quirk
- only to audio iface
+Subject: [83/83] powerpc: Fix emulation of illegal instructions on PowerNV
+ platform
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,35 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 8eafc0a161123d90617c9ca2eddfe87b382b1b89 upstream.
+commit bf593907f7236e95698a76b7c7a2bbf8b1165327 upstream.
 
-... instead of applying to all interfaces.
+Normally, the kernel emulates a few instructions that are unimplemented
+on some processors (e.g. the old dcba instruction), or privileged (e.g.
+mfpvr).  The emulation of unimplemented instructions is currently not
+working on the PowerNV platform.  The reason is that on these machines,
+unimplemented and illegal instructions cause a hypervisor emulation
+assist interrupt, rather than a program interrupt as on older CPUs.
+Our vector for the emulation assist interrupt just calls
+program_check_exception() directly, without setting the bit in SRR1
+that indicates an illegal instruction interrupt.  This fixes it by
+making the emulation assist interrupt set that bit before calling
+program_check_interrupt().  With this, old programs that use no-longer
+implemented instructions such as dcba now work again.
 
-Reference: http://forums.gentoo.org/viewtopic-p-6886404.html
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/quirks-table.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/exceptions-64s.S |    2 +-
+ arch/powerpc/kernel/traps.c          |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -157,7 +157,13 @@
- 	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL
- },
+--- a/arch/powerpc/kernel/exceptions-64s.S
++++ b/arch/powerpc/kernel/exceptions-64s.S
+@@ -463,7 +463,7 @@ machine_check_common:
+ 	STD_EXCEPTION_COMMON(0xb00, trap_0b, .unknown_exception)
+ 	STD_EXCEPTION_COMMON(0xd00, single_step, .single_step_exception)
+ 	STD_EXCEPTION_COMMON(0xe00, trap_0e, .unknown_exception)
+-        STD_EXCEPTION_COMMON(0xe40, emulation_assist, .program_check_exception)
++	STD_EXCEPTION_COMMON(0xe40, emulation_assist, .emulation_assist_interrupt)
+         STD_EXCEPTION_COMMON(0xe60, hmi_exception, .unknown_exception)
+ 	STD_EXCEPTION_COMMON_IDLE(0xf00, performance_monitor, .performance_monitor_exception)
+ 	STD_EXCEPTION_COMMON(0x1300, instruction_breakpoint, .instruction_breakpoint_exception)
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -1036,6 +1036,16 @@ void __kprobes program_check_exception(s
+ 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+ }
+ 
++/*
++ * This occurs when running in hypervisor mode on POWER6 or later
++ * and an illegal instruction is encountered.
++ */
++void __kprobes emulation_assist_interrupt(struct pt_regs *regs)
++{
++	regs->msr |= REASON_ILLEGAL;
++	program_check_exception(regs);
++}
++
+ void alignment_exception(struct pt_regs *regs)
  {
--	USB_DEVICE(0x046d, 0x0990),
-+	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
-+		       USB_DEVICE_ID_MATCH_INT_CLASS |
-+		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
-+	.idVendor = 0x046d,
-+	.idProduct = 0x0990,
-+	.bInterfaceClass = USB_CLASS_AUDIO,
-+	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		.vendor_name = "Logitech, Inc.",
- 		.product_name = "QuickCam Pro 9000",
+ 	int sig, code, fixed = 0;
 
