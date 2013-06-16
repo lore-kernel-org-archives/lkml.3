@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3FPRZu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 13:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14335 "EHLO mx1.redhat.com"
+	id S1755435Ab3FPR0I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 13:26:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24124 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755324Ab3FPRZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 13:25:49 -0400
-Date: Sun, 16 Jun 2013 19:21:28 +0200
+	id S1755382Ab3FPR0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 13:26:05 -0400
+Date: Sun, 16 Jun 2013 19:21:49 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>
@@ -14,29 +14,138 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] tracing/kprobes: trace_probe->files cleanups
-Message-ID: <20130616172128.GA8515@redhat.com>
+Subject: [PATCH 2/3] tracing/kprobes: Kill probe_enable_lock
+Message-ID: <20130616172149.GA8540@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130616172128.GA8515@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+enable_trace_probe() and disable_trace_probe() should not worry about
+serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
+holds event_mutex.
 
-I simply can't understand why trace_kprobe.c uses
-"struct ftrace_event_file **", the simple list_head looks much
-more natural and simple.
+They are also called by kprobe_trace_self_tests_init(), but this __init
+function can't race with itself or trace_events.c
 
-And we do not want to copy-and-paste this code to trace_uprobe.c.
-If there is a reason for array-of-pointers we should create the
-helpers in the common trace_probe.c so that uprobes can use them
-too.
+And note that this code depended on event_mutex even before 41a7dd420c
+which introduced probe_enable_lock. In fact it assumes that the caller
+kprobe_register() can never race with itself. Otherwise, say, tp->flags
+manipulations are racy.
 
-Oleg.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_kprobe.c |   33 ++++++++++-----------------------
+ 1 files changed, 10 insertions(+), 23 deletions(-)
 
- kernel/trace/trace_kprobe.c |  171 ++++++++++++------------------------------
- 1 files changed, 49 insertions(+), 122 deletions(-)
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index c0af476..5a73de0 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -183,16 +183,15 @@ static struct trace_probe *find_trace_probe(const char *event,
+ 	return NULL;
+ }
+ 
++/*
++ * This and enable_trace_probe/disable_trace_probe rely on event_mutex
++ * held by the caller, __ftrace_set_clr_event().
++ */
+ static int trace_probe_nr_files(struct trace_probe *tp)
+ {
+-	struct ftrace_event_file **file;
++	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+ 	int ret = 0;
+ 
+-	/*
+-	 * Since all tp->files updater is protected by probe_enable_lock,
+-	 * we don't need to lock an rcu_read_lock.
+-	 */
+-	file = rcu_dereference_raw(tp->files);
+ 	if (file)
+ 		while (*(file++))
+ 			ret++;
+@@ -200,8 +199,6 @@ static int trace_probe_nr_files(struct trace_probe *tp)
+ 	return ret;
+ }
+ 
+-static DEFINE_MUTEX(probe_enable_lock);
+-
+ /*
+  * Enable trace_probe
+  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+@@ -211,8 +208,6 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ {
+ 	int ret = 0;
+ 
+-	mutex_lock(&probe_enable_lock);
+-
+ 	if (file) {
+ 		struct ftrace_event_file **new, **old;
+ 		int n = trace_probe_nr_files(tp);
+@@ -223,7 +218,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 			      GFP_KERNEL);
+ 		if (!new) {
+ 			ret = -ENOMEM;
+-			goto out_unlock;
++			goto out;
+ 		}
+ 		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+ 		new[n] = file;
+@@ -247,10 +242,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		else
+ 			ret = enable_kprobe(&tp->rp.kp);
+ 	}
+-
+- out_unlock:
+-	mutex_unlock(&probe_enable_lock);
+-
++ out:
+ 	return ret;
+ }
+ 
+@@ -283,8 +275,6 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ {
+ 	int ret = 0;
+ 
+-	mutex_lock(&probe_enable_lock);
+-
+ 	if (file) {
+ 		struct ftrace_event_file **new, **old;
+ 		int n = trace_probe_nr_files(tp);
+@@ -293,7 +283,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		old = rcu_dereference_raw(tp->files);
+ 		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
+ 			ret = -EINVAL;
+-			goto out_unlock;
++			goto out;
+ 		}
+ 
+ 		if (n == 1) {	/* Remove the last file */
+@@ -304,7 +294,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 				      GFP_KERNEL);
+ 			if (!new) {
+ 				ret = -ENOMEM;
+-				goto out_unlock;
++				goto out;
+ 			}
+ 
+ 			/* This copy & check loop copies the NULL stopper too */
+@@ -327,10 +317,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		else
+ 			disable_kprobe(&tp->rp.kp);
+ 	}
+-
+- out_unlock:
+-	mutex_unlock(&probe_enable_lock);
+-
++ out:
+ 	return ret;
+ }
+ 
+-- 
+1.5.5.1
 
