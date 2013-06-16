@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab3FPUzA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 16:55:00 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:55677 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650Ab3FPUy4 (ORCPT
+	id S1755728Ab3FPUzx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 16:55:53 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:33039 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab3FPUyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 16:54:56 -0400
+	Sun, 16 Jun 2013 16:54:53 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,9 +27,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Alban Bedel <alban.bedel@avionic-design.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC PATCH 10/11] ASoC: samsung: Do not require legacy DMA API in case of S3C64XX
-Date: Sun, 16 Jun 2013 22:54:17 +0200
-Message-Id: <1371416058-22047-11-git-send-email-tomasz.figa@gmail.com>
+Subject: [RFC PATCH 09/11] spi: s3c64xx: Do not require legacy DMA API in case of S3C64XX
+Date: Sun, 16 Jun 2013 22:54:16 +0200
+Message-Id: <1371416058-22047-10-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
 References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
@@ -42,22 +42,22 @@ can be used instead of the private s3c-dma interface.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- sound/soc/samsung/Kconfig | 2 +-
+ drivers/spi/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index ae0ea87..dbced1e 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -1,7 +1,7 @@
- config SND_SOC_SAMSUNG
- 	tristate "ASoC support for Samsung"
- 	depends on PLAT_SAMSUNG
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 2015897..8da1c22 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -366,7 +366,7 @@ config SPI_S3C24XX_FIQ
+ config SPI_S3C64XX
+ 	tristate "Samsung S3C64XX series type SPI"
+ 	depends on (ARCH_S3C24XX || ARCH_S3C64XX || ARCH_S5P64X0 || ARCH_EXYNOS)
 -	select S3C64XX_DMA if ARCH_S3C64XX
 +	select S3C64XX_DMA if ARCH_S3C64XX && !S3C64XX_PL080
- 	select S3C2410_DMA if ARCH_S3C24XX
  	help
- 	  Say Y or M if you want to add support for codecs attached to
+ 	  SPI driver for Samsung S3C64XX and newer SoCs.
+ 
 -- 
 1.8.2.1
 
