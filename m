@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3FPWI6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:08:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46313 "EHLO
+	id S1755952Ab3FPWWb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:22:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46472 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755557Ab3FPWIs (ORCPT
+	by vger.kernel.org with ESMTP id S1755763Ab3FPWI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:08:48 -0400
+	Sun, 16 Jun 2013 18:08:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ash Willis" <ashwillis.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Ash Willis" <ashwillis@programmer.net>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Jingoo Han" <jg1.han@samsung.com>, "Tony Lindgren" <tony@atomide.com>,
+        "Kevin Hilman" <khilman@linaro.org>,
+        "Alessandro Zummo" <a.zummo@towertech.it>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.982096375@decadent.org.uk>
+Message-ID: <lsq.1371420098.809800749@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [48/83] ACPI / video: ignore BIOS initial backlight value for HP
- Pavilion g6
+Subject: [75/83] drivers/rtc/rtc-twl.c: fix missing device_init_wakeup()
+ when booted with device tree
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +35,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit 24b8256a1fb28d357bc6fa09184ba29b4255ba5c upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+When booted in legacy mode device_init_wakeup() gets called by
+drivers/mfd/twl-core.c when the children are initialized.  However, when
+booted using device tree, the children are created with
+of_platform_populate() instead add_children().
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This means that the RTC driver will not have device_init_wakeup() set,
+and we need to call it from the driver probe like RTC drivers typically
+do.
+
+Without this we cannot test PM wake-up events on omaps for cases where
+there may not be any physical wake-up event.
+
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Kevin Hilman <khilman@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/rtc/rtc-twl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -457,6 +457,14 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP 1000 Notebook PC",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -490,6 +490,7 @@ static int __devinit twl_rtc_probe(struc
+ 	}
+ 
+ 	platform_set_drvdata(pdev, rtc);
++	device_init_wakeup(&pdev->dev, 1);
+ 	return 0;
+ 
+ out2:
 
