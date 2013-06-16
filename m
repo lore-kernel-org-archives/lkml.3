@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3FPSEy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 14:04:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62157 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3FPSEx (ORCPT
+	id S1755440Ab3FPSJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 14:09:06 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:47383 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab3FPSJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 14:04:53 -0400
-Date: Sun, 16 Jun 2013 11:04:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: Add unlikely for current_order test
-In-Reply-To: <51BC4A83.50302@gmail.com>
-Message-ID: <alpine.DEB.2.02.1306161103020.22688@chino.kir.corp.google.com>
-References: <51BC4A83.50302@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 16 Jun 2013 14:09:05 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <2626868.kqkN4bgvmz@merkaba>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	<2626868.kqkN4bgvmz@merkaba>
+Date: Sun, 16 Jun 2013 08:09:03 -1000
+X-Google-Sender-Auth: 38hXfDwFv3KQGQMNHRCyDf-_QEU
+Message-ID: <CA+55aFytYO=CAojt8Lp-pU_=EuSKsgYpkiW3tAPSwyB2vSgpWA@mail.gmail.com>
+Subject: Re: Linux 3.10-rc6
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Jun 2013, Zhang Yanfei wrote:
+On Sun, Jun 16, 2013 at 2:37 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
+>
+> Do you really think your cursing controls how other people behave?
 
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> 
-> Since we have an unlikely for the "current_order >= pageblock_order / 2"
-> test above, adding an unlikely for this "current_order >= pageblock_order"
-> test seems more appropriate.
-> 
+Yes. In three ways:
 
-I don't understand the justification at all, current_order being unlikely 
-greater than or equal to pageblock_order / 2 doesn't imply at all that 
-it's unlikely that current_order is greater than or equal to 
-pageblock_order.
+ - I have magic mind-powers, and cursing releases them, and makes
+kernel developers behave better. I'm not very strong in my
+mind-powers, so only weak-willed individuals are noticeably affected -
+and we really don't have a lot of those - but hey, every little bit
+helps.
 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  mm/page_alloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index c3edb62..1b6d7de 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1071,7 +1071,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->  			rmv_page_order(page);
->  
->  			/* Take ownership for orders >= pageblock_order */
-> -			if (current_order >= pageblock_order &&
-> +			if (unlikely(current_order >= pageblock_order) &&
->  			    !is_migrate_cma(migratetype))
->  				change_pageblock_range(page, current_order,
->  							start_migratetype);
+ - It turns off small-minded people who care more about tone than
+substance, and means that I can get rid of the whiners.
+
+ - it is a signal for people who have some sense that I'm getting
+irritated, and reminds them about how I pay them the big bucks and
+makes them behave.
+
+In addition, it turns out that it affects not just other people, but
+the person cursing too: there has also been scientific studies that
+cursing relieves stress and actually relieves pain, and is not the bad
+thing that the PC crowd thinks it is. It turns out that all societies
+have cursing, and it really has an impact.
+
+Seriously, I'm not just making that sh*t up. Google it.
+
+                Linus
