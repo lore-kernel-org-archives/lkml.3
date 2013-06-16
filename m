@@ -1,80 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3FPBQp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 21:16:45 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52142 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab3FPBPG (ORCPT
+	id S1754892Ab3FPBzv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 21:55:51 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41245 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab3FPBzu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 21:15:06 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/7] mm/writeback: Don't check force_wait to handle bdi->work_list
-Date: Sun, 16 Jun 2013 09:14:45 +0800
-Message-Id: <1371345290-19588-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061601-9264-0000-0000-000003F3A497
+	Sat, 15 Jun 2013 21:55:50 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCHv2] irqchip: Add support for TI-NSPIRE irqchip
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
+Date: Sun, 16 Jun 2013 11:55:42 +1000
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <42FE487C-14B3-4806-A152-5BF284172503@gmail.com>
+References: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 839a8e86("writeback: replace custom worker pool implementation
-with unbound workqueue"), bdi_writeback_workfn runs off bdi_writeback->dwork,
-on each execution, it processes bdi->work_list and reschedules if there are
-more things to do instead of flush any work that race with us existing. It is
-unecessary to check force_wait in wb_do_writeback since it is always 0 after
-the mentioned commit. This patch remove the force_wait in wb_do_writeback.
+Hi,
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- fs/fs-writeback.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+On 08/06/2013, at 11:58 AM, Daniel Tang <dt.tangr@gmail.com> wrote:
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index f892dec..e15aa97 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -959,7 +959,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
- /*
-  * Retrieve work items and do the writeback they describe
-  */
--static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
-+static long wb_do_writeback(struct bdi_writeback *wb)
- {
- 	struct backing_dev_info *bdi = wb->bdi;
- 	struct wb_writeback_work *work;
-@@ -967,12 +967,6 @@ static long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 
- 	set_bit(BDI_writeback_running, &wb->bdi->state);
- 	while ((work = get_next_work_item(bdi)) != NULL) {
--		/*
--		 * Override sync mode, in case we must wait for completion
--		 * because this thread is exiting now.
--		 */
--		if (force_wait)
--			work->sync_mode = WB_SYNC_ALL;
- 
- 		trace_writeback_exec(bdi, work);
- 
-@@ -1021,7 +1015,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		 * rescuer as work_list needs to be drained.
- 		 */
- 		do {
--			pages_written = wb_do_writeback(wb, 0);
-+			pages_written = wb_do_writeback(wb);
- 			trace_writeback_pages_written(pages_written);
- 		} while (!list_empty(&bdi->work_list));
- 	} else {
--- 
-1.8.1.2
+> This patch adds support for the interrupt controllers found in some
+> TI-Nspire models.
+> 
 
+
+I was wondering if this patch had gone through yet. Was there something else I forgot to fix or needed to add?
+
+Cheers,
+Daniel Tang
