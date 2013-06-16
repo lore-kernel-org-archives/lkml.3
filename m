@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab3FPLLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 07:11:25 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:63266 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab3FPLLY (ORCPT
+	id S1755319Ab3FPLLt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 07:11:49 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:50727 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755149Ab3FPLLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 07:11:24 -0400
+	Sun, 16 Jun 2013 07:11:48 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?q?Heiko=20St=FCbner?= <heiko@sntech.de>,
+        James Hogan <james.hogan@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH] pinctrl: establish pull-up/pull-down terminology
+Date: Sun, 16 Jun 2013 12:45:48 +0200
+Message-ID: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-In-Reply-To: <20130611072743.GA14802@ab42.lan>
-References: <20130522142824.GC4789@ab42.lan>
-	<CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
-	<20130524115053.GB5203@ab42.lan>
-	<CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
-	<20130603123001.GD31808@ab42.lan>
-	<CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com>
-	<20130606141115.GA10345@ab42.lan>
-	<CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
-	<20130606153030.GA19876@ab42.lan>
-	<51B2320B.6060101@wwwdotorg.org>
-	<20130611072743.GA14802@ab42.lan>
-Date: Sun, 16 Jun 2013 13:11:23 +0200
-Message-ID: <CACRpkdZ=WarECW3xhMv2woWJW7JxgoMH73Yufep6VyLkzBGiXQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 9:27 AM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
-> On Fri, Jun 07, 2013 at 01:18:35PM -0600, Stephen Warren wrote:
+From: Linus Walleij <linus.walleij@linaro.org>
 
->> However, then the correlation between these pretend pins (i.e. really
->> the groups) and GPIOs won't work, because each "pin" is really 4 pins,
->> and hence 4 GPIOs, and hence you won't be able to gpio_get() more than 1
->> GPIO per pin group, I think.
->
-> I agree: Unluckily, pinctrl-single doesn't seem to be what we are looking
-> for.
+It is counter-intuitive to have "0" mean disable in a boolean
+manner for electronic properties of pins such as pull-up and
+pull-down. Therefore, define that a pull-up/pull-down argument
+of 0 to such a generic option means that the pin is
+short-circuited to VDD or GROUND. Pull disablement shall be
+done using PIN_CONFIG_BIAS_DISABLE.
 
-I agree on this conclusion.
+Cc: Heiko Stübner <heiko@sntech.de>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-> We already have a draft for a native pinctrl driver (see original post)
-> but there was some disagreement about exposing kernel internal pin
-> numbering to device tree users.
+diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+index d414a77..67780f5 100644
+--- a/include/linux/pinctrl/pinconf-generic.h
++++ b/include/linux/pinctrl/pinconf-generic.h
+@@ -36,14 +36,15 @@
+  *	tristate. The argument is ignored.
+  * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
+  *	impedance to VDD). If the argument is != 0 pull-up is enabled,
+- *	if it is 0, pull-up is disabled.
++ *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
+  * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
+  *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
+- *	if it is 0, pull-down is disabled.
++ *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
+  * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+  *	on embedded knowledge of the controller, like current mux function.
+- *	If the argument is != 0 pull up/down is enabled, if it is 0,
+- *	the pull is disabled.
++ *	If the argument is != 0 pull up/down is enabled, if it is 0, the
++ *	configuration is ignored. The proper way to disable it is to use
++ *	@PIN_CONFIG_BIAS_DISABLE.
+  * @PIN_CONFIG_DRIVE_PUSH_PULL: the pin will be driven actively high and
+  *	low, this is the most typical case and is typically achieved with two
+  *	active transistors on the output. Setting this config will enable
+@@ -72,8 +73,8 @@
+  *	supplies, the argument to this parameter (on a custom format) tells
+  *	the driver which alternative power source to use.
+  * @PIN_CONFIG_SLEW_RATE: if the pin can select slew rate, the argument to
+- * 	this parameter (on a custom format) tells the driver which alternative
+- * 	slew rate to use.
++ *	this parameter (on a custom format) tells the driver which alternative
++ *	slew rate to use.
+  * @PIN_CONFIG_LOW_POWER_MODE: this will configure the pin for low power
+  *	operation, if several modes of operation are supported these can be
+  *	passed in the argument on a custom form, else just use argument 1
+-- 
+1.7.11.3
 
-But that is an orthogonal issue I believe.
-
-Yours,
-Linus Walleij
