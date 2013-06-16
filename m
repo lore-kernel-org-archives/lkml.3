@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab3FPRCC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 13:02:02 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:64258 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab3FPRB7 (ORCPT
+	id S1755361Ab3FPRGL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 13:06:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42725 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323Ab3FPRGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 13:01:59 -0400
-Message-ID: <51BDEF7F.1070107@gmail.com>
-Date: Mon, 17 Jun 2013 01:01:51 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sun, 16 Jun 2013 13:06:10 -0400
+Date: Sun, 16 Jun 2013 18:06:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Krishna Gudipati <kgudipat@brocade.com>,
+        Jing Huang <huangj@brocade.com>, Hiral Patel <hiralpat@cisco.com>,
+        James Smart <James.Smart@Emulex.Com>
+Subject: [pile of bugs] lseek(fd, n, SEEK_END) does *not* go to eof - n
+Message-ID: <20130616170605.GQ4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <51BBC6FC.2020002@gmail.com> <8974656.5GmDyxHW7F@vostro.rjw.lan> <18797091.iPZsNWFGi1@vostro.rjw.lan>
-In-Reply-To: <18797091.iPZsNWFGi1@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2013 05:20 AM, Rafael J. Wysocki wrote:
-> On Saturday, June 15, 2013 10:17:42 PM Rafael J. Wysocki wrote:
->> On Saturday, June 15, 2013 09:44:28 AM Jiang Liu wrote:
-[...]
->> When it returns from unregister_hotplug_dock_device(), nothing prevents it
->> from accessing whatever it wants, because ds->hp_lock is not used outside
->> of the add/del and hotplug_dock_devices().  So, the actual role of
->> ds->hp_lock (not the one that it is supposed to play, but the real one)
->> is to prevent addition/deletion from happening when hotplug_dock_devices()
->> is running.  [Yes, it does protect the list, but since the list is in fact
->> unnecessary, that doesn't matter.]
->>
->>> If we simply use a flag to mark presence of registered callback, we 
->>> can't achieve the second goal.
->>
->> I don't mean using the flag *alone*.
->>
->>> Take the sony laptop as an example. It has several PCI 
->>> hotplug
->>> slot associated with the dock station:
->>> [   28.829316] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB
->>> [   30.174964] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM0
->>> [   30.174973] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM1
->>> [   30.174979] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2
->>> [   30.174985] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GFXA
->>> [   30.175020] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GHDA
->>> [   30.175040] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC0.DLAN
->>> [   30.175050] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC1.DODD
->>> [   30.175060] acpiphp_glue: _handle_hotplug_event_func: Bus check 
->>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC2.DUSB
->>>
->>> So it still has some race windows if we undock the station while 
->>> repeatedly rescanning/removing
->>> the PCI bus for \_SB_.PCI0.RP07.LPMB.LPM0 through sysfs interfaces.
-> 
-> Which sysfs interfaces do you mean, by the way?
-> 
-> If you mean "eject", then it takes acpi_scan_lock and hotplug_dock_devices()
-> should always be run under acpi_scan_lock too.  It isn't at the moment,
-> because write_undock() doesn't take acpi_scan_lock(), but this is an obvious
-> bug (so I'm going to send a patch to fix it in a while).
-> 
-> With that bug fixed, the possible race between acpi_eject_store() and
-> hotplug_dock_devices() should be prevented from happening, so perhaps we're
-> worrying about something that cannot happen?
-Hi Rafael,
-	I mean the "remove" method of each PCI device, and the "power" method
-of PCI hotplug slot here.
-	These methods may be used to remove P2P bridges with associated ACPIPHP
-hotplug slots, which in turn will cause invoking of
-unregister_hotplug_dock_device().
-	So theoretical we may trigger the bug by undocking while repeatedly
-adding/removing P2P bridges with ACPIPHP hotplug slot through PCI
-"rescan" and "remove" sysfs interface,
-Regards!
-Gerry
-> 
-> Rafael
-> 
-> 
+When you copy some code, you are supposed to read it.  If nothing else,
+there's a chance to spot and fix an obvious bug instead of sharing it...
 
+X-Song: "I Got It From Agnes", by Tom Lehrer
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/drivers/net/ethernet/brocade/bna/bnad_debugfs.c b/drivers/net/ethernet/brocade/bna/bnad_debugfs.c
+index 6e8bc9d..94d957d 100644
+--- a/drivers/net/ethernet/brocade/bna/bnad_debugfs.c
++++ b/drivers/net/ethernet/brocade/bna/bnad_debugfs.c
+@@ -244,7 +244,7 @@ bnad_debugfs_lseek(struct file *file, loff_t offset, int orig)
+ 		file->f_pos += offset;
+ 		break;
+ 	case 2:
+-		file->f_pos = debug->buffer_len - offset;
++		file->f_pos = debug->buffer_len + offset;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 439c012..b63d534 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -186,7 +186,7 @@ bfad_debugfs_lseek(struct file *file, loff_t offset, int orig)
+ 		file->f_pos += offset;
+ 		break;
+ 	case 2:
+-		file->f_pos = debug->buffer_len - offset;
++		file->f_pos = debug->buffer_len + offset;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+diff --git a/drivers/scsi/fnic/fnic_debugfs.c b/drivers/scsi/fnic/fnic_debugfs.c
+index adc1f7f..85e1ffd 100644
+--- a/drivers/scsi/fnic/fnic_debugfs.c
++++ b/drivers/scsi/fnic/fnic_debugfs.c
+@@ -174,7 +174,7 @@ static loff_t fnic_trace_debugfs_lseek(struct file *file,
+ 		pos = file->f_pos + offset;
+ 		break;
+ 	case 2:
+-		pos = fnic_dbg_prt->buffer_len - offset;
++		pos = fnic_dbg_prt->buffer_len + offset;
+ 	}
+ 	return (pos < 0 || pos > fnic_dbg_prt->buffer_len) ?
+ 			  -EINVAL : (file->f_pos = pos);
+diff --git a/drivers/scsi/lpfc/lpfc_debugfs.c b/drivers/scsi/lpfc/lpfc_debugfs.c
+index f63f5ff..f525ecb 100644
+--- a/drivers/scsi/lpfc/lpfc_debugfs.c
++++ b/drivers/scsi/lpfc/lpfc_debugfs.c
+@@ -1178,7 +1178,7 @@ lpfc_debugfs_lseek(struct file *file, loff_t off, int whence)
+ 		pos = file->f_pos + off;
+ 		break;
+ 	case 2:
+-		pos = debug->len - off;
++		pos = debug->len + off;
+ 	}
+ 	return (pos < 0 || pos > debug->len) ? -EINVAL : (file->f_pos = pos);
+ }
