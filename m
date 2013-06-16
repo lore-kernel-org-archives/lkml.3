@@ -1,299 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab3FPWHH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:07:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42498 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab3FPWHF convert rfc822-to-8bit (ORCPT
+	id S1755888Ab3FPWJA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:09:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46391 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755671Ab3FPWIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:07:05 -0400
-Subject: Re: [PATCH 1/4] KVM: PPC: Add support for multiple-TCE hcalls
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1370412673-1345-2-git-send-email-aik@ozlabs.ru>
-Date: Mon, 17 Jun 2013 00:06:59 +0200
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0A6C24DE-1422-4ABA-A516-2B864F4714F8@suse.de>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru> <1370412673-1345-2-git-send-email-aik@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-X-Mailer: Apple Mail (2.1278)
+	Sun, 16 Jun 2013 18:08:52 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <jhovold@gmail.com>
+Date: Sun, 16 Jun 2013 23:01:38 +0100
+Message-ID: <lsq.1371420098.75775116@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [41/83] USB: mos7720: fix DMA to stack
+In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.47-rc1 review patch.  If anyone has any objections, please let me know.
 
-On 05.06.2013, at 08:11, Alexey Kardashevskiy wrote:
+------------------
 
-> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
-> H_STUFF_TCE hypercalls for QEMU emulated devices such as IBMVIO
-> devices or emulated PCI.  These calls allow adding multiple entries
-> (up to 512) into the TCE table in one call which saves time on
-> transition to/from real mode.
-> 
-> This adds a tce_tmp cache to kvm_vcpu_arch to save valid TCEs
-> (copied from user and verified) before writing the whole list into
-> the TCE table. This cache will be utilized more in the upcoming
-> VFIO/IOMMU support to continue TCE list processing in the virtual
-> mode in the case if the real mode handler failed for some reason.
-> 
-> This adds a guest physical to host real address converter
-> and calls the existing H_PUT_TCE handler. The converting function
-> is going to be fully utilized by upcoming VFIO supporting patches.
-> 
-> This also implements the KVM_CAP_PPC_MULTITCE capability,
-> so in order to support the functionality of this patch, QEMU
-> needs to query for this capability and set the "hcall-multi-tce"
-> hypertas property only if the capability is present, otherwise
-> there will be serious performance degradation.
-> 
-> Cc: David Gibson <david@gibson.dropbear.id.au>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> Signed-off-by: Paul Mackerras <paulus@samba.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-Only a few minor nits. Ben already commented on implementation details.
+commit 72ea18a558ed7a63a50bb121ba60d73b5b38ae30 upstream.
 
-> 
-> ---
-> Changelog:
-> 2013/06/05:
-> * fixed mistype about IBMVIO in the commit message
-> * updated doc and moved it to another section
-> * changed capability number
-> 
-> 2013/05/21:
-> * added kvm_vcpu_arch::tce_tmp
-> * removed cleanup if put_indirect failed, instead we do not even start
-> writing to TCE table if we cannot get TCEs from the user and they are
-> invalid
-> * kvmppc_emulated_h_put_tce is split to kvmppc_emulated_put_tce
-> and kvmppc_emulated_validate_tce (for the previous item)
-> * fixed bug with failthrough for H_IPI
-> * removed all get_user() from real mode handlers
-> * kvmppc_lookup_pte() added (instead of making lookup_linux_pte public)
-> ---
-> Documentation/virtual/kvm/api.txt       |   17 ++
-> arch/powerpc/include/asm/kvm_host.h     |    2 +
-> arch/powerpc/include/asm/kvm_ppc.h      |   16 +-
-> arch/powerpc/kvm/book3s_64_vio.c        |  118 ++++++++++++++
-> arch/powerpc/kvm/book3s_64_vio_hv.c     |  266 +++++++++++++++++++++++++++----
-> arch/powerpc/kvm/book3s_hv.c            |   39 +++++
-> arch/powerpc/kvm/book3s_hv_rmhandlers.S |    6 +
-> arch/powerpc/kvm/book3s_pr_papr.c       |   37 ++++-
-> arch/powerpc/kvm/powerpc.c              |    3 +
-> include/uapi/linux/kvm.h                |    1 +
-> 10 files changed, 473 insertions(+), 32 deletions(-)
-> 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index 5f91eda..6c082ff 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -2362,6 +2362,23 @@ calls by the guest for that service will be passed to userspace to be
-> handled.
-> 
-> 
-> +4.83 KVM_CAP_PPC_MULTITCE
-> +
-> +Capability: KVM_CAP_PPC_MULTITCE
-> +Architectures: ppc
-> +Type: vm
-> +
-> +This capability tells the guest that multiple TCE entry add/remove hypercalls
-> +handling is supported by the kernel. This significanly accelerates DMA
-> +operations for PPC KVM guests.
-> +
-> +Unlike other capabilities in this section, this one does not have an ioctl.
-> +Instead, when the capability is present, the H_PUT_TCE_INDIRECT and
-> +H_STUFF_TCE hypercalls are to be handled in the host kernel and not passed to
-> +the guest. Othwerwise it might be better for the guest to continue using H_PUT_TCE
-> +hypercall (if KVM_CAP_SPAPR_TCE or KVM_CAP_SPAPR_TCE_IOMMU are present).
+The read_mos_reg function is called with stack-allocated buffers, which
+must not be used for control messages.
 
-While this describes perfectly well what the consequences are of the patches, it does not describe properly what the CAP actually expresses. The CAP only says "this kernel is able to handle H_PUT_TCE_INDIRECT and H_STUFF_TCE hypercalls directly". All other consequences are nice to document, but the semantics of the CAP are missing.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/serial/mos7720.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-We also usually try to keep KVM behavior unchanged with regards to older versions until a CAP is enabled. In this case I don't think it matters all that much, so I'm fine with declaring it as enabled by default. Please document that this is a change in behavior versus older KVM versions though.
-
-> +
-> +
-> 5. The kvm_run structure
-> ------------------------
-> 
-> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-> index af326cd..85d8f26 100644
-> --- a/arch/powerpc/include/asm/kvm_host.h
-> +++ b/arch/powerpc/include/asm/kvm_host.h
-> @@ -609,6 +609,8 @@ struct kvm_vcpu_arch {
-> 	spinlock_t tbacct_lock;
-> 	u64 busy_stolen;
-> 	u64 busy_preempt;
-> +
-> +	unsigned long *tce_tmp;    /* TCE cache for TCE_PUT_INDIRECT hall */
-> #endif
-> };
-
-[...]
-> 
-> 
-
-[...]
-
-> diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
-> index 550f592..a39039a 100644
-> --- a/arch/powerpc/kvm/book3s_hv.c
-> +++ b/arch/powerpc/kvm/book3s_hv.c
-> @@ -568,6 +568,30 @@ int kvmppc_pseries_do_hcall(struct kvm_vcpu *vcpu)
-> 			ret = kvmppc_xics_hcall(vcpu, req);
-> 			break;
-> 		} /* fallthrough */
-
-The fallthrough comment isn't accurate anymore.
-
-> +		return RESUME_HOST;
-> +	case H_PUT_TCE:
-> +		ret = kvmppc_virtmode_h_put_tce(vcpu, kvmppc_get_gpr(vcpu, 4),
-> +						kvmppc_get_gpr(vcpu, 5),
-> +						kvmppc_get_gpr(vcpu, 6));
-> +		if (ret == H_TOO_HARD)
-> +			return RESUME_HOST;
-> +		break;
-> +	case H_PUT_TCE_INDIRECT:
-> +		ret = kvmppc_virtmode_h_put_tce_indirect(vcpu, kvmppc_get_gpr(vcpu, 4),
-> +						kvmppc_get_gpr(vcpu, 5),
-> +						kvmppc_get_gpr(vcpu, 6),
-> +						kvmppc_get_gpr(vcpu, 7));
-> +		if (ret == H_TOO_HARD)
-> +			return RESUME_HOST;
-> +		break;
-> +	case H_STUFF_TCE:
-> +		ret = kvmppc_virtmode_h_stuff_tce(vcpu, kvmppc_get_gpr(vcpu, 4),
-> +						kvmppc_get_gpr(vcpu, 5),
-> +						kvmppc_get_gpr(vcpu, 6),
-> +						kvmppc_get_gpr(vcpu, 7));
-> +		if (ret == H_TOO_HARD)
-> +			return RESUME_HOST;
-> +		break;
-> 	default:
-> 		return RESUME_HOST;
-> 	}
-> @@ -958,6 +982,20 @@ struct kvm_vcpu *kvmppc_core_vcpu_create(struct kvm *kvm, unsigned int id)
-> 	vcpu->arch.cpu_type = KVM_CPU_3S_64;
-> 	kvmppc_sanity_check(vcpu);
-> 
-> +	/*
-> +	 * As we want to minimize the chance of having H_PUT_TCE_INDIRECT
-> +	 * half executed, we first read TCEs from the user, check them and
-> +	 * return error if something went wrong and only then put TCEs into
-> +	 * the TCE table.
-> +	 *
-> +	 * tce_tmp is a cache for TCEs to avoid stack allocation or
-> +	 * kmalloc as the whole TCE list can take up to 512 items 8 bytes
-> +	 * each (4096 bytes).
-> +	 */
-> +	vcpu->arch.tce_tmp = kmalloc(4096, GFP_KERNEL);
-> +	if (!vcpu->arch.tce_tmp)
-> +		goto free_vcpu;
-> +
-> 	return vcpu;
-> 
-> free_vcpu:
-> @@ -980,6 +1018,7 @@ void kvmppc_core_vcpu_free(struct kvm_vcpu *vcpu)
-> 	unpin_vpa(vcpu->kvm, &vcpu->arch.slb_shadow);
-> 	unpin_vpa(vcpu->kvm, &vcpu->arch.vpa);
-> 	spin_unlock(&vcpu->arch.vpa_update_lock);
-> +	kfree(vcpu->arch.tce_tmp);
-> 	kvm_vcpu_uninit(vcpu);
-> 	kmem_cache_free(kvm_vcpu_cache, vcpu);
-> }
-> diff --git a/arch/powerpc/kvm/book3s_hv_rmhandlers.S b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-> index b02f91e..d35554e 100644
-> --- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-> +++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-> @@ -1490,6 +1490,12 @@ hcall_real_table:
-> 	.long	0		/* 0x11c */
-> 	.long	0		/* 0x120 */
-> 	.long	.kvmppc_h_bulk_remove - hcall_real_table
-> +	.long	0		/* 0x128 */
-> +	.long	0		/* 0x12c */
-> +	.long	0		/* 0x130 */
-> +	.long	0		/* 0x134 */
-> +	.long	.kvmppc_h_stuff_tce - hcall_real_table
-> +	.long	.kvmppc_h_put_tce_indirect - hcall_real_table
-> hcall_real_table_end:
-> 
-> ignore_hdec:
-> diff --git a/arch/powerpc/kvm/book3s_pr_papr.c b/arch/powerpc/kvm/book3s_pr_papr.c
-> index da0e0bc..91d4b45 100644
-> --- a/arch/powerpc/kvm/book3s_pr_papr.c
-> +++ b/arch/powerpc/kvm/book3s_pr_papr.c
-> @@ -220,7 +220,38 @@ static int kvmppc_h_pr_put_tce(struct kvm_vcpu *vcpu)
-> 	unsigned long tce = kvmppc_get_gpr(vcpu, 6);
-> 	long rc;
-> 
-> -	rc = kvmppc_h_put_tce(vcpu, liobn, ioba, tce);
-> +	rc = kvmppc_virtmode_h_put_tce(vcpu, liobn, ioba, tce);
-> +	if (rc == H_TOO_HARD)
-> +		return EMULATE_FAIL;
-> +	kvmppc_set_gpr(vcpu, 3, rc);
-> +	return EMULATE_DONE;
-> +}
-> +
-> +static int kvmppc_h_pr_put_tce_indirect(struct kvm_vcpu *vcpu)
-> +{
-> +	unsigned long liobn = kvmppc_get_gpr(vcpu, 4);
-> +	unsigned long ioba = kvmppc_get_gpr(vcpu, 5);
-> +	unsigned long tce = kvmppc_get_gpr(vcpu, 6);
-> +	unsigned long npages = kvmppc_get_gpr(vcpu, 7);
-> +	long rc;
-> +
-> +	rc = kvmppc_virtmode_h_put_tce_indirect(vcpu, liobn, ioba,
-> +			tce, npages);
-> +	if (rc == H_TOO_HARD)
-> +		return EMULATE_FAIL;
-> +	kvmppc_set_gpr(vcpu, 3, rc);
-> +	return EMULATE_DONE;
-> +}
-> +
-> +static int kvmppc_h_pr_stuff_tce(struct kvm_vcpu *vcpu)
-> +{
-> +	unsigned long liobn = kvmppc_get_gpr(vcpu, 4);
-> +	unsigned long ioba = kvmppc_get_gpr(vcpu, 5);
-> +	unsigned long tce_value = kvmppc_get_gpr(vcpu, 6);
-> +	unsigned long npages = kvmppc_get_gpr(vcpu, 7);
-> +	long rc;
-> +
-> +	rc = kvmppc_virtmode_h_stuff_tce(vcpu, liobn, ioba, tce_value, npages);
-> 	if (rc == H_TOO_HARD)
-> 		return EMULATE_FAIL;
-> 	kvmppc_set_gpr(vcpu, 3, rc);
-> @@ -247,6 +278,10 @@ int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
-> 		return kvmppc_h_pr_bulk_remove(vcpu);
-> 	case H_PUT_TCE:
-> 		return kvmppc_h_pr_put_tce(vcpu);
-> +	case H_PUT_TCE_INDIRECT:
-> +		return kvmppc_h_pr_put_tce_indirect(vcpu);
-> +	case H_STUFF_TCE:
-> +		return kvmppc_h_pr_stuff_tce(vcpu);
-> 	case H_CEDE:
-> 		vcpu->arch.shared->msr |= MSR_EE;
-> 		kvm_vcpu_block(vcpu);
-> diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-> index 6316ee3..8465c2a 100644
-> --- a/arch/powerpc/kvm/powerpc.c
-> +++ b/arch/powerpc/kvm/powerpc.c
-> @@ -395,6 +395,9 @@ int kvm_dev_ioctl_check_extension(long ext)
-> 		r = 1;
-> 		break;
-> #endif
-> +	case KVM_CAP_SPAPR_MULTITCE:
-> +		r = 1;
-
-This should only be true for book3s.
-
-
-
-Alex
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -234,11 +234,22 @@ static int read_mos_reg(struct usb_seria
+ 	__u8 requesttype = (__u8)0xc0;
+ 	__u16 index = get_reg_index(reg);
+ 	__u16 value = get_reg_value(reg, serial_portnum);
+-	int status = usb_control_msg(usbdev, pipe, request, requesttype, value,
+-				     index, data, 1, MOS_WDR_TIMEOUT);
+-	if (status < 0)
++	u8 *buf;
++	int status;
++
++	buf = kmalloc(1, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	status = usb_control_msg(usbdev, pipe, request, requesttype, value,
++				     index, buf, 1, MOS_WDR_TIMEOUT);
++	if (status == 1)
++		*data = *buf;
++	else if (status < 0)
+ 		dev_err(&usbdev->dev,
+ 			"mos7720: usb_control_msg() failed: %d", status);
++	kfree(buf);
++
+ 	return status;
+ }
+ 
 
