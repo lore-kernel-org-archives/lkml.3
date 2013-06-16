@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3FPLp5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 07:45:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39246 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754924Ab3FPLp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 07:45:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: Re: [PATCH 4/9] acpi: Replace weird use of PTR_RET.
-Date: Sun, 16 Jun 2013 13:55:09 +0200
-Message-ID: <21786607.z88XI8SeQN@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371357768-4968-4-git-send-email-rusty@rustcorp.com.au>
-References: <87ehc2rczo.fsf@rustcorp.com.au> <1371357768-4968-1-git-send-email-rusty@rustcorp.com.au> <1371357768-4968-4-git-send-email-rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755356Ab3FPLqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 07:46:51 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:56256 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab3FPLqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 07:46:49 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] USB: EHCI: Remove double assignment of .start in ehci_msp_hc_driver
+Date: Sun, 16 Jun 2013 13:46:38 +0200
+Message-Id: <1371383198-11383-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 16, 2013 02:12:43 PM Rusty Russell wrote:
-> This functions is really weird.  It sets rc to -ENOMEM, then overrides
-> it.  It was converted to PTR_RET in a1458187 when it should have
-> simply been rewritten.
-> 
-> This version makes it more explicit, with a single IS_ERR() test.
-> 
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+This patch removes a double assignment of .start in struct hc_driver
+ehci_msp_hc_driver and also makes the code look more tidy.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/usb/host/ehci-pmcmsp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> ---
->  drivers/acpi/acpi_pad.c | 13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-> index 27bb6a9..46e0b3c 100644
-> --- a/drivers/acpi/acpi_pad.c
-> +++ b/drivers/acpi/acpi_pad.c
-> @@ -231,16 +231,19 @@ static struct task_struct *ps_tsks[NR_CPUS];
->  static unsigned int ps_tsk_num;
->  static int create_power_saving_task(void)
->  {
-> -	int rc = -ENOMEM;
-> +	int rc;
->  
->  	ps_tsks[ps_tsk_num] = kthread_run(power_saving_thread,
->  		(void *)(unsigned long)ps_tsk_num,
->  		"acpi_pad/%d", ps_tsk_num);
-> -	rc = PTR_RET(ps_tsks[ps_tsk_num]);
-> -	if (!rc)
-> -		ps_tsk_num++;
-> -	else
-> +
-> +	if (IS_ERR(ps_tsks[ps_tsk_num])) {
-> +		rc = PTR_ERR(ps_tsks[ps_tsk_num]);
->  		ps_tsks[ps_tsk_num] = NULL;
-> +	} else {
-> +		rc = 0;
-> +		ps_tsk_num++;
-> +	}
->  
->  	return rc;
->  }
-> 
+diff --git a/drivers/usb/host/ehci-pmcmsp.c b/drivers/usb/host/ehci-pmcmsp.c
+index 363890e..601e208 100644
+--- a/drivers/usb/host/ehci-pmcmsp.c
++++ b/drivers/usb/host/ehci-pmcmsp.c
+@@ -291,8 +291,7 @@ static const struct hc_driver ehci_msp_hc_driver = {
+ 	/*
+ 	 * basic lifecycle operations
+ 	 */
+-	.reset =		ehci_msp_setup,
+-	.start =		ehci_run,
++	.reset			= ehci_msp_setup,
+ 	.shutdown		= ehci_shutdown,
+ 	.start			= ehci_run,
+ 	.stop			= ehci_stop,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
