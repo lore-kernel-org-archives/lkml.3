@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab3FPW2N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:28:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46410 "EHLO
+	id S1756038Ab3FPW2L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:28:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46385 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755664Ab3FPWIu (ORCPT
+	by vger.kernel.org with ESMTP id S1755646Ab3FPWIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:50 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Egbert Eich" <eich@suse.de>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>
+CC: akpm@linux-foundation.org, "Alex Hung" <alex.hung@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.870093511@decadent.org.uk>
+Message-ID: <lsq.1371420098.13376513@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [55/83] drm/i915/sdvo: Use &intel_sdvo->ddc instead of
- intel_sdvo->i2c for DDC.
+Subject: [46/83] ACPI video: ignore BIOS initial backlight value for HP 1000
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,42 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c upstream.
+commit 4ef366c583d6180b1c951147869ee5a3038834f2 upstream.
 
-In intel_sdvo_get_lvds_modes() the wrong i2c adapter record is used
-for DDC. Thus the code will always have to rely on a LVDS panel
-mode supplied by VBT.
-In most cases this succeeds, so this didn't get detected for quite
-a while.
+On HP 1000 lapops, BIOS reports minimum backlight on boot and
+causes backlight to dim completely. This ignores the initial backlight
+values and set to max brightness.
 
-This regression seems to have been introduced in
-
-commit f899fc64cda8569d0529452aafc0da31c042df2e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Jul 20 15:44:45 2010 -0700
-
-    drm/i915: use GMBUS to manage i2c links
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Add note about which commit likely introduced this issue.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+References:: https://bugs.launchpad.net/bugs/1167760
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1582,7 +1582,7 @@ static void intel_sdvo_get_lvds_modes(st
- 	 * Assume that the preferred modes are
- 	 * arranged in priority order.
- 	 */
--	intel_ddc_get_modes(connector, intel_sdvo->i2c);
-+	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
- 	if (list_empty(&connector->probed_modes) == false)
- 		goto end;
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -455,6 +455,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP 1000 Notebook PC",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP 1000 Notebook PC"),
++		},
++	},
+ 	{}
+ };
  
 
