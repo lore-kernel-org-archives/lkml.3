@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab3FPWTs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:19:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46302 "EHLO
+	id S1756172Ab3FPWUM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:20:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46338 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755501Ab3FPWJE (ORCPT
+	by vger.kernel.org with ESMTP id S1755597Ab3FPWI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:04 -0400
+	Sun, 16 Jun 2013 18:08:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Matthew Garrett" <mjg@redhat.com>,
-        "Manoj Iyer" <manoj.iyer@canonical.com>
+CC: akpm@linux-foundation.org,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Keir Fraser" <keir.fraser@citrix.com>,
+        "David Vrabel" <david.vrabel@citrix.com>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.905036518@decadent.org.uk>
+Message-ID: <lsq.1371420097.667019483@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [29/83] thinkpad-acpi: recognize latest V-Series using
- DMI_BIOS_VENDOR
+Subject: [26/83] xen/events: Handle VIRQ_TIMER before any other hardirq in
+ event loop.
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,77 +34,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Keir Fraser <keir.fraser@citrix.com>
 
-commit a4f46bb9fa84642e356898ee44b670989622f8bb upstream.
+This avoids any other hardirq handler seeing a very stale jiffies
+value immediately after wakeup from a long idle period. The one
+observable symptom of this was a USB keyboard, with software keyboard
+repeat, which would always repeat a key immediately that it was
+pressed. This is due to the key press waking the guest, the key
+handler immediately runs, sees an old jiffies value, and then that
+jiffies value significantly updated, before the key is unpressed.
 
-In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-the string Lenovo or Thinkpad, but is set to the model number, this
-causes the thinkpad_acpi module to fail to load. Recognize laptop
-as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
-
-Test on V490u
-=============
-== After the patch ==
-
-[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
-[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
-[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
-[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
-[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
-[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[ 1350.307082] Registered led device: tpacpi::thinklight
-[ 1350.307215] Registered led device: tpacpi::power
-[ 1350.307255] Registered led device: tpacpi::standby
-[ 1350.307294] Registered led device: tpacpi::thinkvantage
-[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
-
-== Before the patch ==
-sudo modprobe thinkpad_acpi
-FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
-
-Test on B485
-=============
-This patch was also test in a B485 where the thinkpad_acpi module does not
-have any issues loading. But, I tested it to make sure this patch does not
-break on already functioning models of Lenovo products.
-
-[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
-[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
-[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
-[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[13486.752883] Registered led device: tpacpi::thinklight
-[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Keir Fraser <keir.fraser@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+(cherry picked from commit bee980d9e9642e96351fa3ca9077b853ecf62f57)
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/platform/x86/thinkpad_acpi.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/xen/events.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8665,6 +8665,13 @@ static int __must_check __init get_think
- 		tp->model_str = kstrdup(s, GFP_KERNEL);
- 		if (!tp->model_str)
- 			return -ENOMEM;
-+	} else {
-+		s = dmi_get_system_info(DMI_BIOS_VENDOR);
-+		if (s && !(strnicmp(s, "Lenovo", 6))) {
-+			tp->model_str = kstrdup(s, GFP_KERNEL);
-+			if (!tp->model_str)
-+				return -ENOMEM;
-+		}
- 	}
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1176,7 +1176,7 @@ static void __xen_evtchn_do_upcall(void)
+ {
+ 	int start_word_idx, start_bit_idx;
+ 	int word_idx, bit_idx;
+-	int i;
++	int i, irq;
+ 	int cpu = get_cpu();
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
+@@ -1184,6 +1184,8 @@ static void __xen_evtchn_do_upcall(void)
  
- 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	do {
+ 		unsigned long pending_words;
++		unsigned long pending_bits;
++		struct irq_desc *desc;
+ 
+ 		vcpu_info->evtchn_upcall_pending = 0;
+ 
+@@ -1194,6 +1196,17 @@ static void __xen_evtchn_do_upcall(void)
+ 		/* Clear master flag /before/ clearing selector flag. */
+ 		wmb();
+ #endif
++		if ((irq = per_cpu(virq_to_irq, cpu)[VIRQ_TIMER]) != -1) {
++			int evtchn = evtchn_from_irq(irq);
++			word_idx = evtchn / BITS_PER_LONG;
++			pending_bits = evtchn % BITS_PER_LONG;
++			if (active_evtchns(cpu, s, word_idx) & (1ULL << pending_bits)) {
++				desc = irq_to_desc(irq);
++				if (desc)
++					generic_handle_irq_desc(irq, desc);
++			}
++		}
++
+ 		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
+ 
+ 		start_word_idx = __this_cpu_read(current_word_idx);
+@@ -1202,7 +1215,6 @@ static void __xen_evtchn_do_upcall(void)
+ 		word_idx = start_word_idx;
+ 
+ 		for (i = 0; pending_words != 0; i++) {
+-			unsigned long pending_bits;
+ 			unsigned long words;
+ 
+ 			words = MASK_LSBS(pending_words, word_idx);
+@@ -1231,8 +1243,7 @@ static void __xen_evtchn_do_upcall(void)
+ 
+ 			do {
+ 				unsigned long bits;
+-				int port, irq;
+-				struct irq_desc *desc;
++				int port;
+ 
+ 				bits = MASK_LSBS(pending_bits, bit_idx);
+ 
 
