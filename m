@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3FPW3P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:29:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46303 "EHLO
+	id S1755794Ab3FPW3N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:29:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46318 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755532Ab3FPWIt (ORCPT
+	by vger.kernel.org with ESMTP id S1755569Ab3FPWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:49 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Joe Perches" <joe@perches.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org,
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
+        "Tejun Heo" <tj@kernel.org>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.304418802@decadent.org.uk>
+Message-ID: <lsq.1371420097.970975284@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [23/83] net: Add net_ratelimited_function and net_<level>_ratelimited
- macros
+Subject: [02/83] ata_piix: add PCI IDs for Intel BayTail
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,62 +33,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Perches <joe@perches.com>
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
 
-commit 3a3bfb61e64476ff1e4ac3122cb6dec9c79b795c upstream.
+commit fca8c90d519dedd4f4b19901d005c243f7f0bf2e upstream.
 
-__ratelimit() can be considered an inverted bool test because
-it returns true when not ratelimited.  Several tests in the
-kernel tree use this __ratelimit() function incorrectly.
+Adds IDE-mode SATA Device IDs for the Intel BayTrail platform.
 
-No net_ratelimit uses are incorrect currently though.
-
-Most uses of net_ratelimit are to log something via printk or
-pr_<level>.
-
-In order to minimize the uses of net_ratelimit, and to start
-standardizing the code style used for __ratelimit() and net_ratelimit(),
-add a net_ratelimited_function() macro and net_<level>_ratelimited()
-logging macros similar to pr_<level>_ratelimited that use the global
-net_ratelimit instead of a static per call site "struct ratelimit_state".
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/net.h |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/ata/ata_piix.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -249,6 +249,29 @@ extern struct socket *sockfd_lookup(int
- #define		     sockfd_put(sock) fput(sock->file)
- extern int	     net_ratelimit(void);
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -151,6 +151,7 @@ enum piix_controller_ids {
+ 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
+ 	ich8_sata_snb,
+ 	ich8_2port_sata_snb,
++	ich8_2port_sata_byt,
+ };
  
-+#define net_ratelimited_function(function, ...)			\
-+do {								\
-+	if (net_ratelimit())					\
-+		function(__VA_ARGS__);				\
-+} while (0)
-+
-+#define net_emerg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
-+#define net_alert_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
-+#define net_crit_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
-+#define net_err_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
-+#define net_notice_ratelimited(fmt, ...)			\
-+	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
-+#define net_warn_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
-+#define net_info_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
-+#define net_dbg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
-+
- #define net_random()		random32()
- #define net_srandom(seed)	srandom32((__force u32)seed)
+ struct piix_map_db {
+@@ -356,6 +357,9 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Wellsburg) */
+ 	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (BayTrail) */
++	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
  
+ 	{ }	/* terminate list */
+ };
+@@ -521,6 +525,7 @@ static const struct piix_map_db *piix_ma
+ 	[tolapai_sata]		= &tolapai_map_db,
+ 	[ich8_sata_snb]		= &ich8_map_db,
+ 	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
++	[ich8_2port_sata_byt]	= &ich8_2port_map_db,
+ };
+ 
+ static struct ata_port_info piix_port_info[] = {
+@@ -672,6 +677,15 @@ static struct ata_port_info piix_port_in
+ 		.port_ops	= &piix_sata_ops,
+ 	},
+ 
++	[ich8_2port_sata_byt] =
++	{
++		.flags          = PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
++		.pio_mask       = ATA_PIO4,
++		.mwdma_mask     = ATA_MWDMA2,
++		.udma_mask      = ATA_UDMA6,
++		.port_ops       = &piix_sata_ops,
++	},
++
+ };
+ 
+ static struct pci_bits piix_enable_bits[] = {
 
