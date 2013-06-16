@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3FPWOD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:14:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46361 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755727Ab3FPWJK (ORCPT
+	id S1756080Ab3FPWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:14:09 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:55650 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab3FPWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:10 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Sun, 16 Jun 2013 18:14:07 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: "Morales, Alejandra" <alejandra.morales@tum.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Questions about Runtime Power Management
+Date: Mon, 17 Jun 2013 00:15:30 +0200
+Message-ID: <3436418.fmSDhCQZH6@linux-5eaq.site>
+User-Agent: KMail/4.10.3 (Linux/3.7.10-1.11-desktop; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <CACVXFVPrb-6WXadXyYE923+1_MA+y-9p1RRO=ufXXJCkEJu+OQ@mail.gmail.com>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de> <CACVXFVPrb-6WXadXyYE923+1_MA+y-9p1RRO=ufXXJCkEJu+OQ@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.60066400@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [78/83] USB: spcp8x5: fix device initialisation at open
-In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.47-rc1 review patch.  If anyone has any objections, please let me know.
+On Sunday 16 June 2013 23:07:36 Ming Lei wrote:
+> On Mon, Jun 10, 2013 at 12:28 AM, Morales, Alejandra
+> <alejandra.morales@tum.de> wrote:
+> 
+> > - Is runtime power management supported by net devices?
+> 
+> Currently, 'struct net_device' doesn't support runtime power management,
+> and I submitted one patch to add the support for solving accessing
+> suspended device by 'ethtool', but it was rejected.
+> 
+>               http://marc.info/?t=135054860600003&r=1&w=2
 
-------------------
+And the discussion is still useful and true.
 
-From: Johan Hovold <jhovold@gmail.com>
+> But the physical device of the net device can support runtime PM, for example,
+> some PCIe network devices support runtime PM on link change, and usbnet
+> devices support auto suspend.
 
-commit 5e4211f1c47560c36a8b3d4544dfd866dcf7ccd0 upstream.
+There is a design behind runtime PM. Runtime PM is involved if a device looses
+capabilities in a power saving state. Or if it is a dependency among runtime PM
+of devices. Therefore it is not used for things like Energy Efficient Ethernet.
 
-Do not use uninitialised termios data to determine when to configure the
-device at open.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: tty_struct::termios is a pointer, not a struct]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/serial/spcp8x5.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -338,7 +338,6 @@ static void spcp8x5_set_termios(struct t
- 	struct spcp8x5_private *priv = usb_get_serial_port_data(port);
- 	unsigned long flags;
- 	unsigned int cflag = tty->termios->c_cflag;
--	unsigned int old_cflag = old_termios->c_cflag;
- 	unsigned short uartdata;
- 	unsigned char buf[2] = {0, 0};
- 	int baud;
-@@ -347,15 +346,15 @@ static void spcp8x5_set_termios(struct t
- 
- 
- 	/* check that they really want us to change something */
--	if (!tty_termios_hw_change(tty->termios, old_termios))
-+	if (old_termios && !tty_termios_hw_change(tty->termios, old_termios))
- 		return;
- 
- 	/* set DTR/RTS active */
- 	spin_lock_irqsave(&priv->lock, flags);
- 	control = priv->line_control;
--	if ((old_cflag & CBAUD) == B0) {
-+	if (old_termios && (old_termios->c_cflag & CBAUD) == B0) {
- 		priv->line_control |= MCR_DTR;
--		if (!(old_cflag & CRTSCTS))
-+		if (!(old_termios->c_cflag & CRTSCTS))
- 			priv->line_control |= MCR_RTS;
- 	}
- 	if (control != priv->line_control) {
-@@ -445,7 +444,6 @@ static void spcp8x5_set_termios(struct t
-  * status of the device. */
- static int spcp8x5_open(struct tty_struct *tty, struct usb_serial_port *port)
- {
--	struct ktermios tmp_termios;
- 	struct usb_serial *serial = port->serial;
- 	struct spcp8x5_private *priv = usb_get_serial_port_data(port);
- 	int ret;
-@@ -468,7 +466,7 @@ static int spcp8x5_open(struct tty_struc
- 
- 	/* Setup termios */
- 	if (tty)
--		spcp8x5_set_termios(tty, port, &tmp_termios);
-+		spcp8x5_set_termios(tty, port, NULL);
- 
- 	spcp8x5_get_msr(serial->dev, &status, priv->type);
- 
+	Regards
+		Oliver
 
