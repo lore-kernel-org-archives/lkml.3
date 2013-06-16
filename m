@@ -1,95 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3FPGvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 02:51:33 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50161 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933Ab3FPGva convert rfc822-to-8bit (ORCPT
+	id S1755068Ab3FPHBO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 03:01:14 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:35647 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab3FPHBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 02:51:30 -0400
-Date: Sun, 16 Jun 2013 01:51:26 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: Commit f9afbd45b0d0 broke mips r4k.
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-kernel@vger.kernel.org, sanjayl@kymasys.com, kvm@vger.kernel.org,
-        linux-mips@linux-mips.org,
-        Markos Chandras <markos.chandras@imgtec.com>
-References: <1371090916.2776.104@driftwood>
-	<20130613090002.GD7422@linux-mips.org>
-In-Reply-To: <20130613090002.GD7422@linux-mips.org> (from
-	ralf@linux-mips.org on Thu Jun 13 04:00:02 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1371365486.2776.113@driftwood>
+	Sun, 16 Jun 2013 03:01:13 -0400
+Message-ID: <51BD6288.5030901@oracle.com>
+Date: Sun, 16 Jun 2013 15:00:24 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Richard Yao <ryao@gentoo.org>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@gentoo.org, Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/2] ocfs2: Fix llseek() semantics and do some cleanup
+References: <1371237814-59365-1-git-send-email-ryao@gentoo.org> <1371237814-59365-2-git-send-email-ryao@gentoo.org> <51BBF6FE.6080502@oracle.com> <51BD0AFF.8010504@gentoo.org>
+In-Reply-To: <51BD0AFF.8010504@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 04:00:02 AM, Ralf Baechle wrote:
-> On Wed, Jun 12, 2013 at 09:35:16PM -0500, Rob Landley wrote:
-> 
-> > My aboriginal linux project builds tiny linux systems to run under
-> > qemu, producing as close to the same system as possible across a
-> > bunch of different architectures. The above change broke the mips
-> > r4k build I've been running under qemu.
-> >
-> > Here's a toolchain and reproduction sequence:
-> >
-> >   wget http://landley.net/aboriginal/bin/cross-compiler-mips.tar.bz2
-> >   tar xvjf cross-compiler-mips.tar.bz2
-> >   export PATH=$PWD/cross-compiler-mips/bin:$PATH
-> >   make ARCH=mips allnoconfig KCONFIG_ALLCONFIG=miniconfig.mips
-> >   make CROSS_COMPILE=mips- ARCH=mips
-> >
-> > (The file miniconfig.mips is attached.)
-> >
-> > It ends:
-> >
-> >   CC      init/version.o
-> >   LD      init/built-in.o
-> > arch/mips/built-in.o: In function `local_r4k_flush_cache_page':
-> > c-r4k.c:(.text+0xe278): undefined reference to  
-> `kvm_local_flush_tlb_all'
-> > c-r4k.c:(.text+0xe278): relocation truncated to fit: R_MIPS_26
-> > against `kvm_local_flush_tlb_all'
-> > arch/mips/built-in.o: In function `local_flush_tlb_range':
-> > (.text+0xe938): undefined reference to `kvm_local_flush_tlb_all'
-> > arch/mips/built-in.o: In function `local_flush_tlb_range':
-> > (.text+0xe938): relocation truncated to fit: R_MIPS_26 against
-> > `kvm_local_flush_tlb_all'
-> > arch/mips/built-in.o: In function `local_flush_tlb_mm':
-> > (.text+0xed38): undefined reference to `kvm_local_flush_tlb_all'
-> > arch/mips/built-in.o: In function `local_flush_tlb_mm':
-> > (.text+0xed38): relocation truncated to fit: R_MIPS_26 against
-> > `kvm_local_flush_tlb_all'
-> > kernel/built-in.o: In function `__schedule':
-> > core.c:(.sched.text+0x16a0): undefined reference to
-> > `kvm_local_flush_tlb_all'
-> > core.c:(.sched.text+0x16a0): relocation truncated to fit: R_MIPS_26
-> > against `kvm_local_flush_tlb_all'
-> > mm/built-in.o: In function `use_mm':
-> > (.text+0x182c8): undefined reference to `kvm_local_flush_tlb_all'
-> > mm/built-in.o: In function `use_mm':
-> > (.text+0x182c8): relocation truncated to fit: R_MIPS_26 against
-> > `kvm_local_flush_tlb_all'
-> > fs/built-in.o:(.text+0x7b50): more undefined references to
-> > `kvm_local_flush_tlb_all' follow
-> > fs/built-in.o: In function `flush_old_exec':
-> > (.text+0x7b50): relocation truncated to fit: R_MIPS_26 against
-> > `kvm_local_flush_tlb_all'
-> >
-> > Revert the above commit and it builds to the end.
-> 
-> Commit d414976d1ca721456f7b7c603a8699d117c2ec07 [MIPS: include:
-> mmu_context.h: Replace VIRTUALIZATION with KVM] fixes the issue and
-> was pulled by Linus only yesterday.  I cannot reproduce the error
-> following your receipe using the latest Linux/MIPS tree.
+On 06/16/2013 08:46 AM, Richard Yao wrote:
 
-Confirmed, that fixed it.
+> On 06/15/2013 01:09 AM, Jeff Liu wrote:
+>> [Add ocfs2-devel to CC-list]
+>>
+>> Hello Richard,
+>>
+>> Thanks for your patch.
+>>
+>> On 06/15/2013 03:23 AM, Richard Yao wrote:
+>>
+>>> There are multiple issues with the custom llseek implemented in ocfs2 for
+>>> implementing SEEK_HOLE/SEEK_DATA.
+>>>
+>>> 1. It takes the inode->i_mutex lock before calling generic_file_llseek(), which
+>>> is unnecessary.
+>>
+>> Agree, but please see my comments below.
+>>
+>>>
+>>> 2. It fails to take the filp->f_lock spinlock before modifying filp->f_pos and
+>>> filp->f_version, which differs from generic_file_llseek().
+>>>
+>>> 3. It does a offset > inode->i_sb->s_maxbytes check that permits seeking up to
+>>> the maximum file size possible on the ocfs2 filesystem, even when it is past
+>>> the end of the file. Seeking beyond that (if possible), would return EINVAL
+>>> instead of ENXIO.
+>>>
+>>> 4. The switch statement tries to cover all whence values when in reality it
+>>> should only care about SEEK_HOLE/SEEK_DATA. Any other cases should be passsed
+>>> to generic_file_llseek().
+>>
+>> I have another patch set for refactoring ocfs2_file_llseek() but not yet found time
+>> to run a comprehensive tests.  It can solve the existing issues but also improved the
+>> SEEK_DATA/SEEK_HOLE for unwritten extents, i.e. OCFS2_EXT_UNWRITTEN.
+>>
+>> With this change, SEEK_DATA/SEEK_HOLE will go into separate function with a little code
+>> duplication instead of the current mix-ups in ocfs2_seek_data_hole_offset(), i.e, 
+>>
+>> loff_t ocfs2_file_llseek()
+>> {
+>> 	switch (origin) {
+>>         case SEEK_END:
+>>         case SEEK_CUR:
+>>         case SEEK_SET:
+>>                 return generic_file_llseek(file, offset, origin);
+>>         case SEEK_DATA:
+>>                 return ocfs2_seek_data(file, offset);
+>>         case SEEK_HOLE:
+>>                 return ocfs2_seek_hole(file, offset);
+>>         default:
+>>                 return -EINVAL;
+>>         }
+>> }
+>>
+>> I personally like keeping SEEK_DATA/SEEK_HOLE in switch...case style rather
+>> than dealing with them in a condition check block.
+> 
+> I would prefer to see the code structured like this:
+> 
+> loff_t ocfs2_file_llseek()
+> {
+> 	switch (origin) {
+>         case SEEK_DATA:
+>                 return ocfs2_seek_data(file, offset);
+>         case SEEK_HOLE:
+>                 return ocfs2_seek_hole(file, offset);
+>         default:
+>                 return generic_file_llseek(file, offset, origin);
+>         }
+> }
+> 
+> Unfortunately, I just noticed that this code has a problem. In specific,
+> generic_file_llseek() calls generic_file_llseek_size(), which has a
+> switch statement for whence that fails to distinguish between SEEK_SET
+> and invalid whence values. Invalid whence values are mapped to SEEK_SET
+> instead of returning EINVAL, which is wrong. That issue affects all
+> filesystems that do not specify a custom llseek() function and it would
+> affect ocfs2 if my version of the function is used.
+
+Hmm??  Did you mean to say that an invalid whence(i.e, whence > SEEK_MAX)
+can be passed into generic_file_llseek()?
+If so, I don't think that is a problem because any invalid whence should
+be rejected at the entrance of VFS lseek(2) with EINVAL.
 
 Thanks,
+-Jeff
 
-Rob
+ 
+
+
