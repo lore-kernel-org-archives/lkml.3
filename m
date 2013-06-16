@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3FPW3N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:29:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46318 "EHLO
+	id S1756166Ab3FPW3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:29:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46290 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755569Ab3FPWIt (ORCPT
+	by vger.kernel.org with ESMTP id S1755477Ab3FPWIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:08:49 -0400
+	Sun, 16 Jun 2013 18:08:48 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
-        "Tejun Heo" <tj@kernel.org>,
-        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+CC: akpm@linux-foundation.org, "Xi Wang" <xi.wang@gmail.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.970975284@decadent.org.uk>
+Message-ID: <lsq.1371420097.17180767@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [02/83] ata_piix: add PCI IDs for Intel BayTail
+Subject: [14/83] ALSA: usb-audio: avoid integer overflow in
+ create_fixed_stream_quirk()
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,62 +32,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit fca8c90d519dedd4f4b19901d005c243f7f0bf2e upstream.
+commit 8866f405efd4171f9d9c91901d2dd02f01bacb60 upstream.
 
-Adds IDE-mode SATA Device IDs for the Intel BayTrail platform.
+A malicious USB device could feed in a large nr_rates value.  This would
+cause the subsequent call to kmemdup() to allocate a smaller buffer than
+expected, leading to out-of-bounds access.
 
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This patch validates the nr_rates value and reuses the limit introduced
+in commit 4fa0e81b ("ALSA: usb-audio: fix possible hang and overflow
+in parse_uac2_sample_rate_range()").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ata_piix.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ sound/usb/card.h   |    1 +
+ sound/usb/format.c |    4 +---
+ sound/usb/quirks.c |    6 +++++-
+ 3 files changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -151,6 +151,7 @@ enum piix_controller_ids {
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
- 	ich8_2port_sata_snb,
-+	ich8_2port_sata_byt,
- };
+diff --git a/sound/usb/card.h b/sound/usb/card.h
+index a39edcc..da5fa1a 100644
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -1,6 +1,7 @@
+ #ifndef __USBAUDIO_CARD_H
+ #define __USBAUDIO_CARD_H
  
- struct piix_map_db {
-@@ -356,6 +357,9 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (BayTrail) */
-+	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
-+	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++#define MAX_NR_RATES	1024
+ #define MAX_PACKS	20
+ #define MAX_PACKS_HS	(MAX_PACKS * 8)	/* in high speed mode */
+ #define MAX_URBS	8
+diff --git a/sound/usb/format.c b/sound/usb/format.c
+index e09aba1..ddfef57 100644
+--- a/sound/usb/format.c
++++ b/sound/usb/format.c
+@@ -209,8 +209,6 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
+ 	return 0;
+ }
  
- 	{ }	/* terminate list */
- };
-@@ -521,6 +525,7 @@ static const struct piix_map_db *piix_ma
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
- 	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
-+	[ich8_2port_sata_byt]	= &ich8_2port_map_db,
- };
+-#define MAX_UAC2_NR_RATES 1024
+-
+ /*
+  * Helper function to walk the array of sample rate triplets reported by
+  * the device. The problem is that we need to parse whole array first to
+@@ -255,7 +253,7 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
+ 			fp->rates |= snd_pcm_rate_to_rate_bit(rate);
  
- static struct ata_port_info piix_port_info[] = {
-@@ -672,6 +677,15 @@ static struct ata_port_info piix_port_in
- 		.port_ops	= &piix_sata_ops,
- 	},
+ 			nr_rates++;
+-			if (nr_rates >= MAX_UAC2_NR_RATES) {
++			if (nr_rates >= MAX_NR_RATES) {
+ 				snd_printk(KERN_ERR "invalid uac2 rates\n");
+ 				break;
+ 			}
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index a3ddac0..2781726 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -132,10 +132,14 @@ static int create_fixed_stream_quirk(struct snd_usb_audio *chip,
+ 	unsigned *rate_table = NULL;
  
-+	[ich8_2port_sata_byt] =
-+	{
-+		.flags          = PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-+		.pio_mask       = ATA_PIO4,
-+		.mwdma_mask     = ATA_MWDMA2,
-+		.udma_mask      = ATA_UDMA6,
-+		.port_ops       = &piix_sata_ops,
-+	},
-+
- };
- 
- static struct pci_bits piix_enable_bits[] = {
+ 	fp = kmemdup(quirk->data, sizeof(*fp), GFP_KERNEL);
+-	if (! fp) {
++	if (!fp) {
+ 		snd_printk(KERN_ERR "cannot memdup\n");
+ 		return -ENOMEM;
+ 	}
++	if (fp->nr_rates > MAX_NR_RATES) {
++		kfree(fp);
++		return -EINVAL;
++	}
+ 	if (fp->nr_rates > 0) {
+ 		rate_table = kmemdup(fp->rate_table,
+ 				     sizeof(int) * fp->nr_rates, GFP_KERNEL);
 
