@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab3FPQji (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 12:39:38 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:53738 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab3FPQjh (ORCPT
+	id S1755365Ab3FPRCC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 13:02:02 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:64258 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328Ab3FPRB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 12:39:37 -0400
-Date: Sun, 16 Jun 2013 18:39:21 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: "opensource@tigusoft.pl" <opensource@tigusoft.pl>
-Cc: linux-kernel@vger.kernel.org, security@debian.org
-Subject: Re: hanging, and possible exploit/ddos from LAN for RTL and other
- cards (watchdog netdev)
-Message-ID: <20130616163921.GA28368@electric-eye.fr.zoreil.com>
-References: <201306160933.45961.opensource@tigusoft.pl>
+	Sun, 16 Jun 2013 13:01:59 -0400
+Message-ID: <51BDEF7F.1070107@gmail.com>
+Date: Mon, 17 Jun 2013 01:01:51 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201306160933.45961.opensource@tigusoft.pl>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, stable@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <51BBC6FC.2020002@gmail.com> <8974656.5GmDyxHW7F@vostro.rjw.lan> <18797091.iPZsNWFGi1@vostro.rjw.lan>
+In-Reply-To: <18797091.iPZsNWFGi1@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-opensource@tigusoft.pl <opensource@tigusoft.pl> :
+On 06/16/2013 05:20 AM, Rafael J. Wysocki wrote:
+> On Saturday, June 15, 2013 10:17:42 PM Rafael J. Wysocki wrote:
+>> On Saturday, June 15, 2013 09:44:28 AM Jiang Liu wrote:
 [...]
-> Thanks for helping to debug and find this problem: tigusoft.pl , #grsecurity , 
-> Arach , Admin2501 , R.Freeman 
+>> When it returns from unregister_hotplug_dock_device(), nothing prevents it
+>> from accessing whatever it wants, because ds->hp_lock is not used outside
+>> of the add/del and hotplug_dock_devices().  So, the actual role of
+>> ds->hp_lock (not the one that it is supposed to play, but the real one)
+>> is to prevent addition/deletion from happening when hotplug_dock_devices()
+>> is running.  [Yes, it does protect the list, but since the list is in fact
+>> unnecessary, that doesn't matter.]
+>>
+>>> If we simply use a flag to mark presence of registered callback, we 
+>>> can't achieve the second goal.
+>>
+>> I don't mean using the flag *alone*.
+>>
+>>> Take the sony laptop as an example. It has several PCI 
+>>> hotplug
+>>> slot associated with the dock station:
+>>> [   28.829316] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB
+>>> [   30.174964] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM0
+>>> [   30.174973] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM1
+>>> [   30.174979] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2
+>>> [   30.174985] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GFXA
+>>> [   30.175020] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GHDA
+>>> [   30.175040] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC0.DLAN
+>>> [   30.175050] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC1.DODD
+>>> [   30.175060] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+>>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC2.DUSB
+>>>
+>>> So it still has some race windows if we undock the station while 
+>>> repeatedly rescanning/removing
+>>> the PCI bus for \_SB_.PCI0.RP07.LPMB.LPM0 through sysfs interfaces.
+> 
+> Which sysfs interfaces do you mean, by the way?
+> 
+> If you mean "eject", then it takes acpi_scan_lock and hotplug_dock_devices()
+> should always be run under acpi_scan_lock too.  It isn't at the moment,
+> because write_undock() doesn't take acpi_scan_lock(), but this is an obvious
+> bug (so I'm going to send a patch to fix it in a while).
+> 
+> With that bug fixed, the possible race between acpi_eject_store() and
+> hotplug_dock_devices() should be prevented from happening, so perhaps we're
+> worrying about something that cannot happen?
+Hi Rafael,
+	I mean the "remove" method of each PCI device, and the "power" method
+of PCI hotplug slot here.
+	These methods may be used to remove P2P bridges with associated ACPIPHP
+hotplug slots, which in turn will cause invoking of
+unregister_hotplug_dock_device().
+	So theoretical we may trigger the bug by undocking while repeatedly
+adding/removing P2P bridges with ACPIPHP hotplug slot through PCI
+"rescan" and "remove" sysfs interface,
+Regards!
+Gerry
+> 
+> Rafael
 > 
 > 
-> We await any instructions how to debug this further.
 
-Please send the XID of Realtek devices you own ('dmesg | grep XID').
-r8169 support level is not the same for all chipsets and kernel.
-
-Also please identify the motherboards and see if the r8169 irq is
-shared on some of those.
-
-Besides the r8169 patch you added, you may test if clocksource=acpi_pm
-makes a difference (courtesy of Lance Lassetter on netdev).
-
-[...]
-> We plan to re-test this on newest kernels as well,
-
-You will be welcome.
-
-> but it was decided the report should be sent without delaying more since
-> at least for us it explained many of "strange" cases of linux computers
-> hanging, so it might help other people out there too.
-
-Despite what the subject of the mail suggests, there is no "exploit" though.
-Right ?
-
--- 
-Ueimor
