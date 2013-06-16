@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab3FPWMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:12:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46325 "EHLO
+	id S1756093Ab3FPWNO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:13:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46490 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755558Ab3FPWJM (ORCPT
+	by vger.kernel.org with ESMTP id S1755841Ab3FPWJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:12 -0400
+	Sun, 16 Jun 2013 18:09:11 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>,
-        "=?UTF-8?q?Adis=20Hamzi=C4=87?=" <adis@hamzadis.com>
+CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Robin Holt" <holt@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Shawn Guo" <shawn.guo@linaro.org>, "Russ Anderson" <rja@sgi.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, "Ingo Molnar" <mingo@elte.hu>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.110987206@decadent.org.uk>
+Message-ID: <lsq.1371420098.575140190@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [51/83] radeon: Fix system hang issue when using KMS with older cards
+Subject: [71/83] CPU hotplug: provide a generic helper to disable/enable
+ CPU hotplug
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,356 +38,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adis Hamzić <adis@hamzadis.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit e49f3959a96dc279860af7e86e6dbcfda50580a5 upstream.
+commit 16e53dbf10a2d7e228709a7286310e629ede5e45 upstream.
 
-The current radeon driver initialization routines, when using KMS, are written
-so that the IRQ installation routine is called before initializing the WB buffer
-and the CP rings. With some ASICs, though, the IRQ routine tries to access the
-GFX_INDEX ring causing a call to RREG32 with the value of -1 in
-radeon_fence_read. This, in turn causes the system to completely hang with some
-cards, requiring a hard reset.
+There are instances in the kernel where we would like to disable CPU
+hotplug (from sysfs) during some important operation.  Today the freezer
+code depends on this and the code to do it was kinda tailor-made for
+that.
 
-A call stack that can cause such a hang looks like this (using rv515 ASIC for the
-example here):
- * rv515_init (rv515.c)
- * radeon_irq_kms_init (radeon_irq_kms.c)
- * drm_irq_install (drm_irq.c)
- * radeon_driver_irq_preinstall_kms (radeon_irq_kms.c)
- * rs600_irq_process (rs600.c)
- * radeon_fence_process - due to SW interrupt (radeon_fence.c)
- * radeon_fence_read (radeon_fence.c)
- * hang due to RREG32(-1)
+Restructure the code and make it generic enough to be useful for other
+usecases too.
 
-The patch moves the IRQ installation to the card startup routine, after the ring
-has been initialized, but before the IRQ has been set. This fixes the issue, but
-requires a check to see if the IRQ is already installed, as is the case in the
-system resume codepath.
-I have tested the patch on three machines using the rv515, the rv770 and the
-evergreen ASIC. They worked without issues.
-
-This seems to be a known issue and has been reported on several bug tracking
-sites by various distributions (see links below). Most of reports recommend
-booting the system with KMS disabled and then enabling KMS by reloading the
-radeon module. For some reason, this was indeed a usable workaround, however,
-UMS is now deprecated and disabled by default.
-
-Bug reports:
-https://bugzilla.redhat.com/show_bug.cgi?id=845745
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/561789
-https://bbs.archlinux.org/viewtopic.php?id=156964
-
-Signed-off-by: Adis Hamzić <adis@hamzadis.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop changes for Southern Islands]
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3086,6 +3086,12 @@ static int evergreen_startup(struct rade
- 		return r;
+ include/linux/cpu.h |    4 ++++
+ kernel/cpu.c        |   55 +++++++++++++++++++++------------------------------
+ 2 files changed, 27 insertions(+), 32 deletions(-)
+
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -168,6 +168,8 @@ extern struct sysdev_class cpu_sysdev_cl
  
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
+ extern void get_online_cpus(void);
+ extern void put_online_cpus(void);
++extern void cpu_hotplug_disable(void);
++extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+ #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
+ #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+@@ -190,6 +192,8 @@ static inline void cpu_hotplug_driver_un
+ 
+ #define get_online_cpus()	do { } while (0)
+ #define put_online_cpus()	do { } while (0)
++#define cpu_hotplug_disable()	do { } while (0)
++#define cpu_hotplug_enable()	do { } while (0)
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -124,6 +124,27 @@ static void cpu_hotplug_done(void)
+ 	mutex_unlock(&cpu_hotplug.lock);
+ }
+ 
++/*
++ * Wait for currently running CPU hotplug operations to complete (if any) and
++ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
++ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
++ * hotplug path before performing hotplug operations. So acquiring that lock
++ * guarantees mutual exclusion from any currently running hotplug operations.
++ */
++void cpu_hotplug_disable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
 +
- 	r = r600_irq_init(rdev);
- 	if (r) {
- 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
-@@ -3218,10 +3224,6 @@ int evergreen_init(struct radeon_device
- 	if (r)
- 		return r;
++void cpu_hotplug_enable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
+ #else /* #if CONFIG_HOTPLUG_CPU */
+ static void cpu_hotplug_begin(void) {}
+ static void cpu_hotplug_done(void) {}
+@@ -479,36 +500,6 @@ static int alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
  
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
+ /*
+- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+- * to continue until any currently running CPU hotplug operation gets
+- * completed.
+- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+- * CPU hotplug path and released only after it is complete. Thus, we
+- * (and hence the freezer) will block here until any currently running CPU
+- * hotplug operation gets completed.
+- */
+-void cpu_hotplug_disable_before_freeze(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 1;
+-	cpu_maps_update_done();
+-}
 -
- 	rdev->cp.ring_obj = NULL;
- 	r600_ring_init(rdev, 1024 * 1024);
- 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1389,6 +1389,12 @@ static int cayman_startup(struct radeon_
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r = r600_irq_init(rdev);
- 	if (r) {
- 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
-@@ -1506,10 +1512,6 @@ int cayman_init(struct radeon_device *rd
- 	if (r)
- 		return r;
- 
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
 -
- 	rdev->cp.ring_obj = NULL;
- 	r600_ring_init(rdev, 1024 * 1024);
- 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -3905,6 +3905,12 @@ static int r100_startup(struct radeon_de
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r100_irq_set(rdev);
- 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -4050,9 +4056,6 @@ int r100_init(struct radeon_device *rdev
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/r300.c
-+++ b/drivers/gpu/drm/radeon/r300.c
-@@ -1397,6 +1397,12 @@ static int r300_startup(struct radeon_de
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r100_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -1521,9 +1527,6 @@ int r300_init(struct radeon_device *rdev
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/r420.c
-+++ b/drivers/gpu/drm/radeon/r420.c
-@@ -255,6 +255,12 @@ static int r420_startup(struct radeon_de
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r100_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -391,10 +397,6 @@ int r420_init(struct radeon_device *rdev
- 	if (r) {
- 		return r;
- 	}
--	r = radeon_irq_kms_init(rdev);
--	if (r) {
--		return r;
--	}
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r) {
---- a/drivers/gpu/drm/radeon/r520.c
-+++ b/drivers/gpu/drm/radeon/r520.c
-@@ -188,6 +188,12 @@ static int r520_startup(struct radeon_de
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	rs600_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -281,9 +287,6 @@ int r520_init(struct radeon_device *rdev
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2449,6 +2449,12 @@ int r600_startup(struct radeon_device *r
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r = r600_irq_init(rdev);
- 	if (r) {
- 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
-@@ -2592,10 +2598,6 @@ int r600_init(struct radeon_device *rdev
- 	if (r)
- 		return r;
- 
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
+-/*
+- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+- * disabled while beginning to freeze tasks).
+- */
+-void cpu_hotplug_enable_after_thaw(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 0;
+-	cpu_maps_update_done();
+-}
 -
- 	rdev->cp.ring_obj = NULL;
- 	r600_ring_init(rdev, 1024 * 1024);
+-/*
+  * When callbacks for CPU hotplug notifications are being executed, we must
+  * ensure that the state of the system with respect to the tasks being frozen
+  * or not, as reported by the notification, remains unchanged *throughout the
+@@ -527,12 +518,12 @@ cpu_hotplug_pm_callback(struct notifier_
  
---- a/drivers/gpu/drm/radeon/rs400.c
-+++ b/drivers/gpu/drm/radeon/rs400.c
-@@ -411,6 +411,12 @@ static int rs400_startup(struct radeon_d
- 		return r;
+ 	case PM_SUSPEND_PREPARE:
+ 	case PM_HIBERNATION_PREPARE:
+-		cpu_hotplug_disable_before_freeze();
++		cpu_hotplug_disable();
+ 		break;
  
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r100_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -519,9 +525,6 @@ int rs400_init(struct radeon_device *rde
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -848,6 +848,12 @@ static int rs600_startup(struct radeon_d
- 		return r;
+ 	case PM_POST_SUSPEND:
+ 	case PM_POST_HIBERNATION:
+-		cpu_hotplug_enable_after_thaw();
++		cpu_hotplug_enable();
+ 		break;
  
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	rs600_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -963,9 +969,6 @@ int rs600_init(struct radeon_device *rde
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -622,6 +622,12 @@ static int rs690_startup(struct radeon_d
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	rs600_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -738,9 +744,6 @@ int rs690_init(struct radeon_device *rde
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -380,6 +380,12 @@ static int rv515_startup(struct radeon_d
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	rs600_irq_set(rdev);
- 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
- 	/* 1M ring buffer */
-@@ -500,9 +506,6 @@ int rv515_init(struct radeon_device *rde
- 	r = radeon_fence_driver_init(rdev);
- 	if (r)
- 		return r;
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
- 	/* Memory manager */
- 	r = radeon_bo_init(rdev);
- 	if (r)
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -1092,6 +1092,12 @@ static int rv770_startup(struct radeon_d
- 		return r;
- 
- 	/* Enable IRQ */
-+	if (!rdev->irq.installed) {
-+		r = radeon_irq_kms_init(rdev);
-+		if (r)
-+			return r;
-+	}
-+
- 	r = r600_irq_init(rdev);
- 	if (r) {
- 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
-@@ -1220,10 +1226,6 @@ int rv770_init(struct radeon_device *rde
- 	if (r)
- 		return r;
- 
--	r = radeon_irq_kms_init(rdev);
--	if (r)
--		return r;
--
- 	rdev->cp.ring_obj = NULL;
- 	r600_ring_init(rdev, 1024 * 1024);
- 
+ 	default:
 
