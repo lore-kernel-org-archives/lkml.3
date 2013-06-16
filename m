@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab3FPR0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 13:26:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53261 "EHLO mx1.redhat.com"
+	id S1755413Ab3FPR0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 13:26:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41678 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755347Ab3FPR0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 13:26:12 -0400
-Date: Sun, 16 Jun 2013 19:21:52 +0200
+	id S1755324Ab3FPR0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 13:26:03 -0400
+Date: Sun, 16 Jun 2013 19:21:46 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>
@@ -14,8 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] tracing/kprobes: Turn trace_probe->files into list_head
-Message-ID: <20130616172152.GA8543@redhat.com>
+Subject: [PATCH 1/3] tracing/kprobes: Avoid perf_trace_buf_*() if
+	->perf_events is empty
+Message-ID: <20130616172146.GA8533@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,238 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that "ftrace_event_file *trace_probe[]" complicates the
-code for no reason, turn it into list_head to simplify the code.
-enable_trace_probe() no longer needs synchronize_sched().
+perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
+if this task/CPU has no active counters. Change kprobe_perf_func()
+and kretprobe_perf_func() to check call->perf_events beforehand
+and return if this list is empty.
 
-This needs the extra sizeof(list_head) memory for every attached
-ftrace_event_file, hopefully not a problem in this case.
+For example, "perf record -e some_probe -p1". Only /sbin/init will
+report, all other threads which hit the same probe will do
+perf_trace_buf_prepare/perf_trace_buf_submit just to realize that
+nobody wants perf_swevent_event().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_kprobe.c |  138 ++++++++++++-------------------------------
- 1 files changed, 37 insertions(+), 101 deletions(-)
+ kernel/trace/trace_kprobe.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5a73de0..b95f683 100644
+index 9f46e98..c0af476 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -35,12 +35,17 @@ struct trace_probe {
- 	const char		*symbol;	/* symbol name */
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
--	struct ftrace_event_file * __rcu *files;
-+	struct list_head	files;
- 	ssize_t			size;		/* trace entry size */
- 	unsigned int		nr_args;
- 	struct probe_arg	args[];
- };
+@@ -1157,6 +1157,10 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+ 	int size, __size, dsize;
+ 	int rctx;
  
-+struct event_file_link {
-+	struct ftrace_event_file	*file;
-+	struct list_head		list;
-+};
++	head = this_cpu_ptr(call->perf_events);
++	if (hlist_empty(head))
++		return;
 +
- #define SIZEOF_TRACE_PROBE(n)			\
- 	(offsetof(struct trace_probe, args) +	\
- 	(sizeof(struct probe_arg) * (n)))
-@@ -150,6 +155,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
- 
- 	INIT_LIST_HEAD(&tp->list);
-+	INIT_LIST_HEAD(&tp->files);
- 	return tp;
- error:
- 	kfree(tp->call.name);
-@@ -184,22 +190,6 @@ static struct trace_probe *find_trace_probe(const char *event,
+ 	dsize = __get_data_size(tp, regs);
+ 	__size = sizeof(*entry) + tp->size + dsize;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+@@ -1172,8 +1176,6 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+ 	entry->ip = (unsigned long)tp->rp.kp.addr;
+ 	memset(&entry[1], 0, dsize);
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+-
+-	head = this_cpu_ptr(call->perf_events);
+ 	perf_trace_buf_submit(entry, size, rctx,
+ 					entry->ip, 1, regs, head, NULL);
  }
+@@ -1189,6 +1191,10 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	int size, __size, dsize;
+ 	int rctx;
  
- /*
-- * This and enable_trace_probe/disable_trace_probe rely on event_mutex
-- * held by the caller, __ftrace_set_clr_event().
-- */
--static int trace_probe_nr_files(struct trace_probe *tp)
--{
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--	int ret = 0;
--
--	if (file)
--		while (*(file++))
--			ret++;
--
--	return ret;
--}
--
--/*
-  * Enable trace_probe
-  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
-  */
-@@ -209,29 +199,18 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	int ret = 0;
- 
- 	if (file) {
--		struct ftrace_event_file **new, **old;
--		int n = trace_probe_nr_files(tp);
--
--		old = rcu_dereference_raw(tp->files);
--		/* 1 is for new one and 1 is for stopper */
--		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
--			      GFP_KERNEL);
--		if (!new) {
-+		struct event_file_link *link;
++	head = this_cpu_ptr(call->perf_events);
++	if (hlist_empty(head))
++		return;
 +
-+		link = kmalloc(sizeof(*link), GFP_KERNEL);
-+		if (!link) {
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
--		new[n] = file;
--		/* The last one keeps a NULL */
- 
--		rcu_assign_pointer(tp->files, new);
--		tp->flags |= TP_FLAG_TRACE;
-+		link->file = file;
-+		list_add_rcu(&link->list, &tp->files);
- 
--		if (old) {
--			/* Make sure the probe is done with old files */
--			synchronize_sched();
--			kfree(old);
--		}
-+		tp->flags |= TP_FLAG_TRACE;
- 	} else
- 		tp->flags |= TP_FLAG_PROFILE;
- 
-@@ -246,24 +225,16 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	return ret;
- }
- 
--static int
--trace_probe_file_index(struct trace_probe *tp, struct ftrace_event_file *file)
-+static struct event_file_link *
-+find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
- {
--	struct ftrace_event_file **files;
--	int i;
-+	struct event_file_link *link;
- 
--	/*
--	 * Since all tp->files updater is protected by probe_enable_lock,
--	 * we don't need to lock an rcu_read_lock.
--	 */
--	files = rcu_dereference_raw(tp->files);
--	if (files) {
--		for (i = 0; files[i]; i++)
--			if (files[i] == file)
--				return i;
--	}
-+	list_for_each_entry(link, &tp->files, list)
-+		if (link->file == file)
-+			return link;
- 
--	return -1;
-+	return NULL;
- }
- 
- /*
-@@ -276,38 +247,23 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	int ret = 0;
- 
- 	if (file) {
--		struct ftrace_event_file **new, **old;
--		int n = trace_probe_nr_files(tp);
--		int i, j;
-+		struct event_file_link *link;
- 
--		old = rcu_dereference_raw(tp->files);
--		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
-+		link = find_event_file_link(tp, file);
-+		if (!link) {
- 			ret = -EINVAL;
- 			goto out;
- 		}
- 
--		if (n == 1) {	/* Remove the last file */
--			tp->flags &= ~TP_FLAG_TRACE;
--			new = NULL;
--		} else {
--			new = kzalloc(n * sizeof(struct ftrace_event_file *),
--				      GFP_KERNEL);
--			if (!new) {
--				ret = -ENOMEM;
--				goto out;
--			}
+ 	dsize = __get_data_size(tp, regs);
+ 	__size = sizeof(*entry) + tp->size + dsize;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+@@ -1204,8 +1210,6 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	entry->func = (unsigned long)tp->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
 -
--			/* This copy & check loop copies the NULL stopper too */
--			for (i = 0, j = 0; j < n && i < n + 1; i++)
--				if (old[i] != file)
--					new[j++] = old[i];
--		}
-+		list_del_rcu(&link->list);
-+		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
-+		synchronize_sched();
-+		kfree(link);
- 
--		rcu_assign_pointer(tp->files, new);
-+		if (!list_empty(&tp->files))
-+			goto out;
- 
--		/* Make sure the probe is done with old files */
--		synchronize_sched();
--		kfree(old);
-+		tp->flags &= ~TP_FLAG_TRACE;
- 	} else
- 		tp->flags &= ~TP_FLAG_PROFILE;
- 
-@@ -872,20 +828,10 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- static __kprobes void
- kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
- {
--	/*
--	 * Note: preempt is already disabled around the kprobe handler.
--	 * However, we still need an smp_read_barrier_depends() corresponding
--	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
--	 */
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--
--	if (unlikely(!file))
--		return;
-+	struct event_file_link *link;
- 
--	while (*file) {
--		__kprobe_trace_func(tp, regs, *file);
--		file++;
--	}
-+	list_for_each_entry_rcu(link, &tp->files, list)
-+		__kprobe_trace_func(tp, regs, link->file);
+-	head = this_cpu_ptr(call->perf_events);
+ 	perf_trace_buf_submit(entry, size, rctx,
+ 					entry->ret_ip, 1, regs, head, NULL);
  }
- 
- /* Kretprobe handler */
-@@ -932,20 +878,10 @@ static __kprobes void
- kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 		     struct pt_regs *regs)
- {
--	/*
--	 * Note: preempt is already disabled around the kprobe handler.
--	 * However, we still need an smp_read_barrier_depends() corresponding
--	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
--	 */
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--
--	if (unlikely(!file))
--		return;
-+	struct event_file_link *link;
- 
--	while (*file) {
--		__kretprobe_trace_func(tp, ri, regs, *file);
--		file++;
--	}
-+	list_for_each_entry_rcu(link, &tp->files, list)
-+		__kretprobe_trace_func(tp, ri, regs, link->file);
- }
- 
- /* Event entry printers */
 -- 
 1.5.5.1
 
