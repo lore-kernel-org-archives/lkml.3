@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3FPWJO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:09:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46352 "EHLO
+	id S1756009Ab3FPWMc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:12:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46369 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755625Ab3FPWJC (ORCPT
+	by vger.kernel.org with ESMTP id S1755744Ab3FPWJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:02 -0400
+	Sun, 16 Jun 2013 18:09:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,12 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Patrik Jakobsson" <patrik.r.jakobsson@gmail.com>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Robert Butora" <robert.butora.fi@gmail.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.905769996@decadent.org.uk>
+Message-ID: <lsq.1371420098.105109896@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [64/83] drm/gma500/psb: Unpin framebuffer on crtc disable
+Subject: [52/83] USB: Serial: cypress_M8: Enable FRWD Dongle hidcom device
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,53 +32,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Robert Butora <robert.butora.fi@gmail.com>
 
-commit 820de86a90089ee607d7864538c98a23b503c846 upstream.
+commit 6529591e3eef65f0f528a81ac169f6e294b947a7 upstream.
 
-The framebuffer needs to be unpinned in the crtc->disable callback
-because of previous pinning in psb_intel_pipe_set_base(). This will fix
-a memory leak where the framebuffer was released but not unpinned
-properly. This patch only affects Poulsbo.
+The patch adds a new HIDCOM device and does not affect other devices
+driven by the cypress_M8 module. Changes are:
+- add VendorID ProductID to device tables
+- skip unstable speed check because FRWD uses 115200bps
+- skip reset at probe which is an issue workaround for this
+particular device.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=889511
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=812113
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Robert Butora <robert.butora.fi@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/gma500/psb_intel_display.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/usb/serial/cypress_m8.c |   18 +++++++++++++++++-
+ drivers/usb/serial/cypress_m8.h |    4 ++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -1255,6 +1255,19 @@ void psb_intel_crtc_destroy(struct drm_c
- 	kfree(psb_intel_crtc);
- }
- 
-+static void psb_intel_crtc_disable(struct drm_crtc *crtc)
-+{
-+	struct gtt_range *gt;
-+	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
-+
-+	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
-+
-+	if (crtc->fb) {
-+		gt = to_psb_fb(crtc->fb)->gtt;
-+		psb_gtt_unpin(gt);
-+	}
-+}
-+
- const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
- 	.dpms = psb_intel_crtc_dpms,
- 	.mode_fixup = psb_intel_crtc_mode_fixup,
-@@ -1262,6 +1275,7 @@ const struct drm_crtc_helper_funcs psb_i
- 	.mode_set_base = psb_intel_pipe_set_base,
- 	.prepare = psb_intel_crtc_prepare,
- 	.commit = psb_intel_crtc_commit,
-+	.disable = psb_intel_crtc_disable,
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -96,6 +96,7 @@ static const struct usb_device_id id_tab
+ static const struct usb_device_id id_table_cyphidcomrs232[] = {
+ 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
+ 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
++	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
+ 	{ }						/* Terminating entry */
  };
  
- const struct drm_crtc_funcs psb_intel_crtc_funcs = {
+@@ -109,6 +110,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(VENDOR_ID_DELORME, PRODUCT_ID_EARTHMATEUSB_LT20) },
+ 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
+ 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
++	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
+ 	{ USB_DEVICE(VENDOR_ID_DAZZLE, PRODUCT_ID_CA42) },
+ 	{ }						/* Terminating entry */
+ };
+@@ -267,6 +269,12 @@ static struct usb_serial_driver cypress_
+  * Cypress serial helper functions
+  *****************************************************************************/
+ 
++/* FRWD Dongle hidcom needs to skip reset and speed checks */
++static inline bool is_frwd(struct usb_device *dev)
++{
++	return ((le16_to_cpu(dev->descriptor.idVendor) == VENDOR_ID_FRWD) &&
++		(le16_to_cpu(dev->descriptor.idProduct) == PRODUCT_ID_CYPHIDCOM_FRWD));
++}
+ 
+ static int analyze_baud_rate(struct usb_serial_port *port, speed_t new_rate)
+ {
+@@ -276,6 +284,10 @@ static int analyze_baud_rate(struct usb_
+ 	if (unstable_bauds)
+ 		return new_rate;
+ 
++	/* FRWD Dongle uses 115200 bps */
++	if (is_frwd(port->serial->dev))
++		return new_rate;
++
+ 	/*
+ 	 * The general purpose firmware for the Cypress M8 allows for
+ 	 * a maximum speed of 57600bps (I have no idea whether DeLorme
+@@ -488,7 +500,11 @@ static int generic_startup(struct usb_se
+ 		return -ENOMEM;
+ 	}
+ 
+-	usb_reset_configuration(serial->dev);
++	/* Skip reset for FRWD device. It is a workaound:
++	   device hangs if it receives SET_CONFIGURE in Configured
++	   state. */
++	if (!is_frwd(serial->dev))
++		usb_reset_configuration(serial->dev);
+ 
+ 	priv->cmd_ctrl = 0;
+ 	priv->line_control = 0;
+--- a/drivers/usb/serial/cypress_m8.h
++++ b/drivers/usb/serial/cypress_m8.h
+@@ -24,6 +24,10 @@
+ #define VENDOR_ID_CYPRESS		0x04b4
+ #define PRODUCT_ID_CYPHIDCOM		0x5500
+ 
++/* FRWD Dongle - a GPS sports watch */
++#define VENDOR_ID_FRWD			0x6737
++#define PRODUCT_ID_CYPHIDCOM_FRWD	0x0001
++
+ /* Powercom UPS, chip CY7C63723 */
+ #define VENDOR_ID_POWERCOM		0x0d9f
+ #define PRODUCT_ID_UPS			0x0002
 
