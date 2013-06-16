@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3FPWJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:09:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46371 "EHLO
+	id S1756045Ab3FPWOD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:14:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46361 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755847Ab3FPWJD (ORCPT
+	by vger.kernel.org with ESMTP id S1755727Ab3FPWJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:03 -0400
+	Sun, 16 Jun 2013 18:09:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.450007235@decadent.org.uk>
+Message-ID: <lsq.1371420098.60066400@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [56/83] USB: keyspan: fix bogus array index
+Subject: [78/83] USB: spcp8x5: fix device initialisation at open
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,28 +33,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit a07088098a650267b2eda689538133a324b9523f upstream.
+commit 5e4211f1c47560c36a8b3d4544dfd866dcf7ccd0 upstream.
 
-The outcont_endpoints array was indexed using the port minor number
-(which can be greater than the array size) rather than the device port
-number.
+Do not use uninitialised termios data to determine when to configure the
+device at open.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: tty_struct::termios is a pointer, not a struct]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/keyspan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/spcp8x5.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -1833,7 +1833,7 @@ static int keyspan_usa26_send_setup(stru
- 	d_details = s_priv->device_details;
- 	device_port = port->number - port->serial->minor;
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -338,7 +338,6 @@ static void spcp8x5_set_termios(struct t
+ 	struct spcp8x5_private *priv = usb_get_serial_port_data(port);
+ 	unsigned long flags;
+ 	unsigned int cflag = tty->termios->c_cflag;
+-	unsigned int old_cflag = old_termios->c_cflag;
+ 	unsigned short uartdata;
+ 	unsigned char buf[2] = {0, 0};
+ 	int baud;
+@@ -347,15 +346,15 @@ static void spcp8x5_set_termios(struct t
  
--	outcont_urb = d_details->outcont_endpoints[port->number];
-+	outcont_urb = d_details->outcont_endpoints[device_port];
- 	this_urb = p_priv->outcont_urb;
  
- 	dbg("%s - endpoint %d", __func__, usb_pipeendpoint(this_urb->pipe));
+ 	/* check that they really want us to change something */
+-	if (!tty_termios_hw_change(tty->termios, old_termios))
++	if (old_termios && !tty_termios_hw_change(tty->termios, old_termios))
+ 		return;
+ 
+ 	/* set DTR/RTS active */
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	control = priv->line_control;
+-	if ((old_cflag & CBAUD) == B0) {
++	if (old_termios && (old_termios->c_cflag & CBAUD) == B0) {
+ 		priv->line_control |= MCR_DTR;
+-		if (!(old_cflag & CRTSCTS))
++		if (!(old_termios->c_cflag & CRTSCTS))
+ 			priv->line_control |= MCR_RTS;
+ 	}
+ 	if (control != priv->line_control) {
+@@ -445,7 +444,6 @@ static void spcp8x5_set_termios(struct t
+  * status of the device. */
+ static int spcp8x5_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	struct ktermios tmp_termios;
+ 	struct usb_serial *serial = port->serial;
+ 	struct spcp8x5_private *priv = usb_get_serial_port_data(port);
+ 	int ret;
+@@ -468,7 +466,7 @@ static int spcp8x5_open(struct tty_struc
+ 
+ 	/* Setup termios */
+ 	if (tty)
+-		spcp8x5_set_termios(tty, port, &tmp_termios);
++		spcp8x5_set_termios(tty, port, NULL);
+ 
+ 	spcp8x5_get_msr(serial->dev, &status, priv->type);
+ 
 
