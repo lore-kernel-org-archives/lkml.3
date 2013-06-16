@@ -1,44 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab3FPPHi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 11:07:38 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:35736 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3FPPHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 11:07:37 -0400
+	id S1755314Ab3FPPTE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 11:19:04 -0400
+Received: from fireacop.com ([50.97.39.154]:45486 "HELO fireacop.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755219Ab3FPPTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 11:19:03 -0400
+Date: Sun, 16 Jun 2013 10:19:01 -0500
+From: kernel-dev@fireacop.com
+To: linux-kernel@vger.kernel.org
+Subject: [QUESTION] LVDS / MIPI
+Message-ID: <20130616151901.GA18705@fireacop.com>
 MIME-Version: 1.0
-In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
-References: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
-Date: Sun, 16 Jun 2013 23:07:36 +0800
-Message-ID: <CACVXFVPrb-6WXadXyYE923+1_MA+y-9p1RRO=ufXXJCkEJu+OQ@mail.gmail.com>
-Subject: Re: Questions about Runtime Power Management
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Morales, Alejandra" <alejandra.morales@tum.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 12:28 AM, Morales, Alejandra
-<alejandra.morales@tum.de> wrote:
+I have checked the Kernel Source and the Internet.
 
-> - Is runtime power management supported by net devices?
+Not much if any support for LVDS / MIPI.
 
-Currently, 'struct net_device' doesn't support runtime power management,
-and I submitted one patch to add the support for solving accessing
-suspended device by 'ethtool', but it was rejected.
+This would be for Device Drivers under
+Multimedia and Video Capture.
 
-              http://marc.info/?t=135054860600003&r=1&w=2
+Any Discussion?
 
-But the physical device of the net device can support runtime PM, for example,
-some PCIe network devices support runtime PM on link change, and usbnet
-devices support auto suspend.
+Is the response to this question something to the effect
+of "sure... Start writing a driver any time you want..."
 
-Generally, the physical device is the parent of the net device, which is
-a class device.
-
-Thanks,
--- 
-Ming Lei
+Thanks.
