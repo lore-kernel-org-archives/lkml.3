@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3FPWJZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:09:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46396 "EHLO
+	id S1756069Ab3FPWJY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:09:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46376 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755700Ab3FPWJA (ORCPT
+	by vger.kernel.org with ESMTP id S1755636Ab3FPWJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:00 -0400
+	Sun, 16 Jun 2013 18:09:02 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>
+CC: akpm@linux-foundation.org, "Alex Lyakas" <alex@zadarastorage.com>,
+        "NeilBrown" <neilb@suse.de>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.873229715@decadent.org.uk>
+Message-ID: <lsq.1371420098.622931823@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [39/83] USB: serial: fix Treo/Kyocera interrrupt-in urb context
+Subject: [81/83] md/raid1: consider WRITE as successful only if at least
+ one non-Faulty and non-rebuilding drive completed it.
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,28 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alex Lyakas <alex@zadarastorage.com>
 
-commit 5f8e2c07d75967ee49a5da1d21ddf5f50d48cda0 upstream.
+commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 upstream.
 
-The first and second interrupt-in urbs are swapped for some Treo/Kyocera
-devices, but the urb context was never updated with the new port.
+Without that fix, the following scenario could happen:
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
+- Drive A fails
+- WRITE request arrives to the array. It is failed by drive A, so
+r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
+succeeds in writing it, so the same r1_bio is marked as
+R1BIO_Uptodate.
+- r1_bio arrives to handle_write_finished, badblocks are disabled,
+md_error()->error() does nothing because we don't fail the last drive
+of raid1
+- raid_end_bio_io()  calls call_bio_endio()
+- As a result, in call_bio_endio():
+        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
+                clear_bit(BIO_UPTODATE, &bio->bi_flags);
+this code doesn't clear the BIO_UPTODATE flag, and the whole master
+WRITE succeeds, back to the upper layer.
+
+So we returned success to the upper layer, even though we had written
+the data onto the rebuilding drive only. But when we want to read the
+data back, we would not read from the rebuilding drive, so this data
+is lost.
+
+[neilb - applied identical change to raid10 as well]
+
+This bug can result in lost data, so it is suitable for any
+-stable kernel.
+
+Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bwh: Backported to 3.2: for raid10, s/rdev/conf->mirrors[dev].rdev/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/visor.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/raid1.c  |   12 +++++++++++-
+ drivers/md/raid10.c |   12 +++++++++++-
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -600,6 +600,7 @@ static int treo_attach(struct usb_serial
- 		dest->bulk_in_endpointAddress = src->bulk_in_endpointAddress;\
- 		dest->bulk_in_buffer = src->bulk_in_buffer;		\
- 		dest->interrupt_in_urb = src->interrupt_in_urb;		\
-+		dest->interrupt_in_urb->context = dest;			\
- 		dest->interrupt_in_endpointAddress = \
- 					src->interrupt_in_endpointAddress;\
- 		dest->interrupt_in_buffer = src->interrupt_in_buffer;	\
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -407,7 +407,17 @@ static void raid1_end_write_request(stru
+ 
+ 		r1_bio->bios[mirror] = NULL;
+ 		to_put = bio;
+-		set_bit(R1BIO_Uptodate, &r1_bio->state);
++		/*
++		 * Do not set R1BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
++		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
++			set_bit(R1BIO_Uptodate, &r1_bio->state);
+ 
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(conf->mirrors[mirror].rdev,
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -390,7 +390,17 @@ static void raid10_end_write_request(str
+ 		sector_t first_bad;
+ 		int bad_sectors;
+ 
+-		set_bit(R10BIO_Uptodate, &r10_bio->state);
++		/*
++		 * Do not set R10BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &conf->mirrors[dev].rdev->flags) &&
++		    !test_bit(Faulty, &conf->mirrors[dev].rdev->flags))
++			set_bit(R10BIO_Uptodate, &r10_bio->state);
+ 
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(conf->mirrors[dev].rdev,
 
