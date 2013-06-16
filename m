@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab3FPWO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:14:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46430 "EHLO
+	id S1756014Ab3FPWQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:16:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46389 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755688Ab3FPWJI (ORCPT
+	by vger.kernel.org with ESMTP id S1755670Ab3FPWJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:08 -0400
+	Sun, 16 Jun 2013 18:09:07 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sujith Manoharan" <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <jhovold@gmail.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.113375664@decadent.org.uk>
+Message-ID: <lsq.1371420098.96050969@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [68/83] ath9k: Disable PowerSave by default
+Subject: [42/83] USB: ark3116: fix control-message timeout
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +32,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 73c79617596b89a3693ff0d89d42bcd5ddedcf15 upstream.
+commit 634371911730a462626071065b64cd6e1fe213e0 upstream.
 
-Almost all the DMA issues which have plagued ath9k (in station mode)
-for years are related to PS. Disabling PS usually "fixes" the user's
-connection stablility. Reports of DMA problems are still trickling in
-and are sitting in the kernel bugzilla. Until the PS code in ath9k is
-given a thorough review, disbale it by default. The slight increase
-in chip power consumption is a small price to pay for improved link
-stability.
+The control-message timeout is specified in milliseconds and should not
+depend on HZ.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/init.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/ark3116.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -691,8 +691,7 @@ void ath9k_set_hw_capab(struct ath_softc
- 		BIT(NL80211_IFTYPE_ADHOC) |
- 		BIT(NL80211_IFTYPE_MESH_POINT);
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -49,7 +49,7 @@ static int debug;
+ #define DRIVER_NAME "ark3116"
  
--	if (AR_SREV_5416(sc->sc_ah))
--		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
-+	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
+ /* usb timeout of 1 second */
+-#define ARK_TIMEOUT (1*HZ)
++#define ARK_TIMEOUT 1000
  
- 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
- 
+ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x6547, 0x0232) },
 
