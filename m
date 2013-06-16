@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3FPALz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jun 2013 20:11:55 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:42318 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab3FPALx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jun 2013 20:11:53 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Cliff Wickman <cpw@sgi.com>,
-        Alex Shi <alex.shi@intel.com>, Sasha Levin <levinsasha928@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v15 0/4] trace,x86: irq vector tracepoint support
-Thread-Topic: [PATCH v15 0/4] trace,x86: irq vector tracepoint support
-Thread-Index: AQHOY8CekDHD2kZxTEi/xfe/vZV94pk1ZXaggAJDQYD//9tN8A==
-Date: Sun, 16 Jun 2013 00:10:54 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B03C330@USINDEM103.corp.hds.com>
-References: <51B2472B.9040909@hds.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D41B03B6CC@USINDEM103.corp.hds.com>
- <51BCE8BF.5080008@zytor.com>
-In-Reply-To: <51BCE8BF.5080008@zytor.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="utf-8"
+	id S1754810Ab3FPApG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jun 2013 20:45:06 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:44397 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab3FPApE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jun 2013 20:45:04 -0400
+Message-ID: <51BD0A66.4070003@gentoo.org>
+Date: Sat, 15 Jun 2013 20:44:22 -0400
+From: Richard Yao <ryao@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130522 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-15_08:2013-06-14,2013-06-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1306150305
+To: shencanquan <shencanquan@huawei.com>
+CC: Jeff Liu <jeff.liu@oracle.com>, Mark Fasheh <mfasheh@suse.com>,
+        linux-kernel@vger.kernel.org, kernel@gentoo.org,
+        linux-fsdevel@vger.kernel.org,
+        Ocfs2-Devel <ocfs2-devel@oss.oracle.com>
+Subject: Re: [Ocfs2-devel] [PATCH 1/2] ocfs2: Fix llseek() semantics and do
+ some cleanup
+References: <1371237814-59365-1-git-send-email-ryao@gentoo.org> <1371237814-59365-2-git-send-email-ryao@gentoo.org> <51BBF6FE.6080502@oracle.com> <51BC080D.1090405@huawei.com>
+In-Reply-To: <51BC080D.1090405@huawei.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2FLXEQILIHNTRTMUXPQIE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5G0COGX013034
 
-> 
-> This patchset breaks building with SGI UV support enabled:
-> 
-> /home/hpa/kernel/distwork/arch/x86/platform/uv/tlb_uv.c: In function
-> ‚Äòuv_bau_init‚Äô:
-> /home/hpa/kernel/distwork/arch/x86/platform/uv/tlb_uv.c:2130:1: error:
-> ‚Äòtrace_uv_bau_message_intr1‚Äô undeclared (first
-> use in this function)
-> /home/hpa/kernel/distwork/arch/x86/platform/uv/tlb_uv.c:2130:1: note:
-> each undeclared identifier is reported only once
->  for each function it appears in
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2FLXEQILIHNTRTMUXPQIE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I will fix it.
+On 06/15/2013 02:22 AM, shencanquan wrote:
+> Hello, Richard and Jeff,
+>    we found that llseek has another bug when in SEEK_END.  it should be=
 
-Thanks.
+> add the inode lock and unlock.
+>    this bug can be reproduce the following scenario:
+>    on one nodeA, open the file and then write some data to file and
+> close the file .
+>    on  another nodeB , open the file and llseek the end of file . the
+> position of file is old.
 
-Seiji
+Did these operations occur sequentially or did they occur concurrently?
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+If you meant the former, the inode cache is not being invalidated. That
+should be a bug because Oracle claims OCFS2 is cache-coherent. However,
+it is possible that this case was left out of the cache-coherence
+protocol for performance purposes. If that is the case, then this would
+be by design. someone who works for Oracle would need to comment on that
+though.
+
+If you meant the latter, you should ask yourself what would happen when
+you run two separate programs on the same file in a local filesystem.
+There should be no way to avoid a race without some kind of a locking
+mechanism.
+
+
+------enig2FLXEQILIHNTRTMUXPQIE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRvQpsAAoJECDuEZm+6ExkMR0QAIVIM/GQSjPWLBdmhnQ8L9Jw
+BVwMjAzbchP65uoDoXvvdNECoPHfDirwNzojecO6b2MKI9T7c1hMoA10bfysPV1W
+YtqpuCdxx5kLHFlcdcVGyK/a9cndOrjIBGlLQeVVJmDrowHmxk26ReQ39GNX1pDx
+AZ2GOZuRtSmBTdbohTWQ6GAkelpkbLLOIdPQypOMhjUpokyInsnoR/4pwpz0NrNk
+47NtXsglc5thTIVoAqvdbHS1d/2prj+fcUqfRXsrkMGHK83cpeDfMQv2XOA510i9
+qyPu2xjivKeL+uRcvlC90mT8GZupIakWfyshz1vMwsmPRw1XwmOZn/1dTLdA4fKH
+lUHq1YSWidwb5m8zdQgDAiagtVFuYDtlAFALnx+NiHjc5N7h+DwVQnTuXt4R/+tp
+tsJn39Ldne7QNDZxj25UEBKvBm6RhLVeHj4W1Io19m1226Qvwslc7rGdP61tbTS2
+DZoaXIHkDVVHG+CT1nQojTl8YNQ1nVCRqhBCKBqEvWnrbzyoNNPJgj+uONzfum/O
+4TDkKAB1KMaL7qvKteUh2OA1ZdnahciWUpfltm3o2bX2Zjj2wgofV58C8Owdo5SD
+aIdP6q872M6QBPeaGryVdvGDEuT0dyu9V0DXEskpYFA5HqdvyTzskGgHPAXbHKmX
+VI04dztHzltQ1fUQzZqL
+=o84J
+-----END PGP SIGNATURE-----
+
+------enig2FLXEQILIHNTRTMUXPQIE--
