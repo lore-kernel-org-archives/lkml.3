@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3FPWba (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:31:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46297 "EHLO
+	id S932147Ab3FPWb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:31:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46288 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755499Ab3FPWIo (ORCPT
+	by vger.kernel.org with ESMTP id S1755463Ab3FPWIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:08:44 -0400
+	Sun, 16 Jun 2013 18:08:43 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org, "Xi Wang" <xi.wang@gmail.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 16 Jun 2013 23:01:37 +0100
-Message-ID: <lsq.1371420097.20924251@decadent.org.uk>
+Message-ID: <lsq.1371420097.12456539@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [06/83] mac80211: close AP_VLAN interfaces before unregistering all
+Subject: [13/83] ALSA: usb-audio: fix possible hang and overflow in
+ parse_uac2_sample_rate_range()
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit c8aa22db0112f640ac6631347f850879c621840b upstream.
+commit 4fa0e81b83503900be277e6273a79651b375e288 upstream.
 
-Since Eric's commit efe117ab8 ("Speedup ieee80211_remove_interfaces")
-there's a bug in mac80211 when it unregisters with AP_VLAN interfaces
-up. If the AP_VLAN interface was registered after the AP it belongs
-to (which is the typical case) and then we get into this code path,
-unregister_netdevice_many() will crash because it isn't prepared to
-deal with interfaces being closed in the middle of it. Exactly this
-happens though, because we iterate the list, find the AP master this
-AP_VLAN belongs to and dev_close() the dependent VLANs. After this,
-unregister_netdevice_many() won't pick up the fact that the AP_VLAN
-is already down and will do it again, causing a crash.
+A malicious USB device may feed in carefully crafted min/max/res values,
+so that the inner loop in parse_uac2_sample_rate_range() could run for
+a long time or even never terminate, e.g., given max = INT_MAX.
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Also nr_rates could be a large integer, which causes an integer overflow
+in the subsequent call to kmalloc() in parse_audio_format_rates_v2().
+Thus, kmalloc() would allocate a smaller buffer than expected, leading
+to a memory corruption.
+
+To exploit the two vulnerabilities, an attacker needs physical access
+to the machine to plug in a malicious USB device.
+
+This patch makes two changes.
+
+1) The type of "rate" is changed to unsigned int, so that the loop could
+   stop once "rate" is larger than INT_MAX.
+
+2) Limit nr_rates to 1024.
+
+Suggested-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/iface.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/usb/format.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1242,6 +1242,15 @@ void ieee80211_remove_interfaces(struct
+diff --git a/sound/usb/format.c b/sound/usb/format.c
+index 89421d1..e09aba1 100644
+--- a/sound/usb/format.c
++++ b/sound/usb/format.c
+@@ -209,6 +209,8 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
+ 	return 0;
+ }
  
- 	ASSERT_RTNL();
- 
-+	/*
-+	 * Close all AP_VLAN interfaces first, as otherwise they
-+	 * might be closed while the AP interface they belong to
-+	 * is closed, causing unregister_netdevice_many() to crash.
-+	 */
-+	list_for_each_entry(sdata, &local->interfaces, list)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+			dev_close(sdata->dev);
++#define MAX_UAC2_NR_RATES 1024
 +
- 	mutex_lock(&local->iflist_mtx);
- 	list_for_each_entry_safe(sdata, tmp, &local->interfaces, list) {
- 		list_del(&sdata->list);
+ /*
+  * Helper function to walk the array of sample rate triplets reported by
+  * the device. The problem is that we need to parse whole array first to
+@@ -226,7 +228,7 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
+ 		int min = combine_quad(&data[2 + 12 * i]);
+ 		int max = combine_quad(&data[6 + 12 * i]);
+ 		int res = combine_quad(&data[10 + 12 * i]);
+-		int rate;
++		unsigned int rate;
+ 
+ 		if ((max < 0) || (min < 0) || (res < 0) || (max < min))
+ 			continue;
+@@ -253,6 +255,10 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
+ 			fp->rates |= snd_pcm_rate_to_rate_bit(rate);
+ 
+ 			nr_rates++;
++			if (nr_rates >= MAX_UAC2_NR_RATES) {
++				snd_printk(KERN_ERR "invalid uac2 rates\n");
++				break;
++			}
+ 
+ 			/* avoid endless loop */
+ 			if (res == 0)
 
