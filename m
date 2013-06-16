@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3FPNpj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 09:45:39 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:53868 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab3FPNpi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 09:45:38 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.10-rc6
-Date: Sun, 16 Jun 2013 15:45:34 +0200
-Message-ID: <54860328.hz1dWsrE3x@merkaba>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc5-tp520; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CACRpkdaJUUEhBevGzJ2XzcFDtV1AK4odGDRbjo_h=QFYPNmfDQ@mail.gmail.com>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com> <2626868.kqkN4bgvmz@merkaba> <CACRpkdaJUUEhBevGzJ2XzcFDtV1AK4odGDRbjo_h=QFYPNmfDQ@mail.gmail.com>
+	id S1755245Ab3FPONn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 10:13:43 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55752 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755172Ab3FPONl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 10:13:41 -0400
+Date: Sun, 16 Jun 2013 07:13:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: A question on RCU vs. preempt-RCU
+Message-ID: <20130616141335.GW5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130616023611.GA19863@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130616023611.GA19863@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061614-7182-0000-0000-00000759EE2B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 16. Juni 2013, 14:52:13 schrieb Linus Walleij:
-> On Sun, Jun 16, 2013 at 2:37 PM, Martin Steigerwald <Martin@lichtvoll.de> 
-wrote:
-> > Am Samstag, 15. Juni 2013, 12:12:18 schrieb Linus Torvalds:
-> >> Another week, another rc.
-> >> 
-> >> And I didn't even need to curse all that much at people. Sure, I
-> >> talked smack about some of your hamsters, and I declined a couple of
-> >> pull requests, but let's face it, it was pretty halfhearted. Most of
-> >> the time things were good.
-> > 
-> > Do you really think your cursing controls how other people behave?
+On Sat, Jun 15, 2013 at 07:36:11PM -0700, Tejun Heo wrote:
+> Hello, guys.
 > 
-> Consider spending some time reading
-> Documentation/ManagementStyle
+> Kent recently implemented a generic percpu reference counter.  It's
+> scheduled to be merged in the coming merge window and some part of
+> cgroup refcnting is already converted to it.
 > 
-> And you will surely get the hang of this.
+>  https://git.kernel.org/cgit/linux/kernel/git/tj/percpu.git/tree/include/linux/percpu-refcount.h?h=for-3.11
+> 
+>  https://git.kernel.org/cgit/linux/kernel/git/tj/percpu.git/tree/lib/percpu-refcount.c?h=for-3.11
+> 
+> It's essentially a generalized form of module refcnting but uses
+> regular RCU instead of toggling preemption for local atomicity.
+> 
+> I've been running some performance tests with different preemption
+> levels and, with CONFIG_PREEMPT, the percpu ref could be slower by
+> around 10% or at the worst contrived case maybe even close to 20% when
+> compared to simple atomic_t on a single CPU (when hit by multiple CPUs
+> concurrently, it of course destroys atomic_t).  Most of the slow down
+> seems to come from the preempt tree RCU calls and there no longer
+> seems to be a way to opt out of that RCU implementation when
+> CONFIG_PREEMPT.
 
-I read it some years ago. And now read it again.
+CONFIG_TREE_PREEMPT_RCU does have an increment, decrement (sort of),
+and check in its rcu_read_lock() and rcu_read_unlock(), which will
+add overhead that might well be noticeable compared to CONFIG_TREE_RCU's
+zero-code implementation of rcu_read_lock() and rcu_read_unlock().
 
-I wanted to say: "Frankly, no, I didn´t get the hang on how this document 
-gives threating to insult pets and hamsters of developers or the insulting 
-itself any approval."
+> For most use cases, the trade-off should be fine.  With any kind of
+> cross-cpu traffic, which there usually will be, it should be an easy
+> win for the percpu-refcount even when CONFIG_PREEMPT; however, I've
+> been looking to replace the module ref with the generic one and the
+> performance degradation there has low but existing possibility of
+> being noticeable in some edge use cases.
+> 
+> We can convert the percpu-refcount to use preempt_disable/enable()
+> paired with call_rcu_sched() but IIUC that would have latency
+> implications from the callback processing side, right?  Given that
+> module ref killing would be very low-frequency, it shouldn't
+> contribute significant amount of callbacks but I'd like to avoid
+> providing two separate implementations if at all possible.
 
-But now I ask:
+The main source of longer latency from preempt_disable/enable()
+(or rcu_read_{,un}lock_sched()) will be on the read side.
+The callback-processing is very nearly identical.
 
-"Is this about the humor part in there?"
+> So, what would be the right thing to do here?  How bad would
+> converting percpu-refcount to sched-RCU by default be?  Would the
+> extra overhead on module ref be acceptable when CONFIG_PREEMPT?
+> What do you guys think?
 
+The big question is "how long are the RCU read-side critical sections?"
+My guess is that module references can have arbitrarily long lifetimes,
+which would argue strongly against use of RCU-sched.  But if the lifetimes
+are always short (say, sub-microsecond), then RCU-sched should be fine.
 
-Well as much as I believe that insulting someone tells at least as much about 
-the insulter as the insulted, I believe that my bothering about the threat to 
-curse people tells much about me, the botherer.
+							Thanx, Paul
 
-
-So if it works for everybody else…
--- 
-Martin
