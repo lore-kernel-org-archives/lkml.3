@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab3FPWXj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:23:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46350 "EHLO
+	id S1756141Ab3FPWXh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:23:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46401 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755628Ab3FPWIz (ORCPT
+	by vger.kernel.org with ESMTP id S1755777Ab3FPWIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
-Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.215221582@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
+        "Jan Beulich" <jbeulich@suse.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 16 Jun 2013 23:01:37 +0100
+Message-ID: <lsq.1371420097.682991000@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [58/83] ALSA: usb-audio - Fix invalid volume resolution on
- Logitech HD webcam c270
+Subject: [21/83] xen-netback: avoid allocating variable size array on stack
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,35 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit 11e7064f35bb87da8f427d1aa4bbd8b7473a3993 upstream.
+commit 59ccb4ebbc35e36a3c143f2d1355deb75c2e628f upstream.
 
-USB audio driver spews an error message when probing Logitech HD
-webcam c270:
-  ALSA mixer.c:1300 usb_audio: Warning! Unlikely big volume range (=6144), cval->res is probably wrong.
-  ALSA mixer.c:1304 usb_audio: [5] FU [Mic Capture Volume] ch = 1, val = 1536/7680/1
+Tune xen_netbk_count_requests to not touch working array beyond limit, so that
+we can make working array size constant.
 
-Obviously the device needs a fixed volume resolution (cval->res = 384)
-like other Logitech devices.
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=821735
-
-Reported-and-tested-by: Cristian Rodríguez <crrodriguez@opensuse.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/xen-netback/netback.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -822,6 +822,7 @@ static void volume_control_quirks(struct
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
- 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
-+	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
- 	case USB_ID(0x046d, 0x0991):
- 	/* Most audio usb devices lie about volume resolution.
- 	 * Most Logitech webcams have res = 384.
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -906,11 +906,14 @@ static int netbk_count_requests(struct x
+ 	RING_IDX cons = vif->tx.req_cons;
+ 	int slots = 0;
+ 	int drop_err = 0;
++	int more_data;
+ 
+ 	if (!(first->flags & XEN_NETTXF_more_data))
+ 		return 0;
+ 
+ 	do {
++		struct xen_netif_tx_request dropped_tx = { 0 };
++
+ 		if (slots >= work_to_do) {
+ 			netdev_err(vif->dev,
+ 				   "Asked for %d slots but exceeds this limit\n",
+@@ -944,6 +947,9 @@ static int netbk_count_requests(struct x
+ 			drop_err = -E2BIG;
+ 		}
+ 
++		if (drop_err)
++			txp = &dropped_tx;
++
+ 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + slots),
+ 		       sizeof(*txp));
+ 
+@@ -973,7 +979,13 @@ static int netbk_count_requests(struct x
+ 			netbk_fatal_tx_err(vif);
+ 			return -EINVAL;
+ 		}
+-	} while ((txp++)->flags & XEN_NETTXF_more_data);
++
++		more_data = txp->flags & XEN_NETTXF_more_data;
++
++		if (!drop_err)
++			txp++;
++
++	} while (more_data);
+ 
+ 	if (drop_err) {
+ 		netbk_tx_err(vif, first, cons + slots);
+@@ -1385,7 +1397,7 @@ static unsigned xen_netbk_tx_build_gops(
+ 		!list_empty(&netbk->net_schedule_list)) {
+ 		struct xenvif *vif;
+ 		struct xen_netif_tx_request txreq;
+-		struct xen_netif_tx_request txfrags[max_skb_slots];
++		struct xen_netif_tx_request txfrags[XEN_NETIF_NR_SLOTS_MIN];
+ 		struct page *page;
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+ 		u16 pending_idx;
 
