@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3FPWMc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:12:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46369 "EHLO
+	id S1756028Ab3FPWMz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:12:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46325 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755744Ab3FPWJN (ORCPT
+	by vger.kernel.org with ESMTP id S1755558Ab3FPWJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 18:09:13 -0400
+	Sun, 16 Jun 2013 18:09:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Robert Butora" <robert.butora.fi@gmail.com>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>,
+        "=?UTF-8?q?Adis=20Hamzi=C4=87?=" <adis@hamzadis.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.105109896@decadent.org.uk>
+Message-ID: <lsq.1371420098.110987206@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [52/83] USB: Serial: cypress_M8: Enable FRWD Dongle hidcom device
+Subject: [51/83] radeon: Fix system hang issue when using KMS with older cards
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,91 +31,356 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Butora <robert.butora.fi@gmail.com>
+From: Adis Hamzić <adis@hamzadis.com>
 
-commit 6529591e3eef65f0f528a81ac169f6e294b947a7 upstream.
+commit e49f3959a96dc279860af7e86e6dbcfda50580a5 upstream.
 
-The patch adds a new HIDCOM device and does not affect other devices
-driven by the cypress_M8 module. Changes are:
-- add VendorID ProductID to device tables
-- skip unstable speed check because FRWD uses 115200bps
-- skip reset at probe which is an issue workaround for this
-particular device.
+The current radeon driver initialization routines, when using KMS, are written
+so that the IRQ installation routine is called before initializing the WB buffer
+and the CP rings. With some ASICs, though, the IRQ routine tries to access the
+GFX_INDEX ring causing a call to RREG32 with the value of -1 in
+radeon_fence_read. This, in turn causes the system to completely hang with some
+cards, requiring a hard reset.
 
-Signed-off-by: Robert Butora <robert.butora.fi@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+A call stack that can cause such a hang looks like this (using rv515 ASIC for the
+example here):
+ * rv515_init (rv515.c)
+ * radeon_irq_kms_init (radeon_irq_kms.c)
+ * drm_irq_install (drm_irq.c)
+ * radeon_driver_irq_preinstall_kms (radeon_irq_kms.c)
+ * rs600_irq_process (rs600.c)
+ * radeon_fence_process - due to SW interrupt (radeon_fence.c)
+ * radeon_fence_read (radeon_fence.c)
+ * hang due to RREG32(-1)
+
+The patch moves the IRQ installation to the card startup routine, after the ring
+has been initialized, but before the IRQ has been set. This fixes the issue, but
+requires a check to see if the IRQ is already installed, as is the case in the
+system resume codepath.
+I have tested the patch on three machines using the rv515, the rv770 and the
+evergreen ASIC. They worked without issues.
+
+This seems to be a known issue and has been reported on several bug tracking
+sites by various distributions (see links below). Most of reports recommend
+booting the system with KMS disabled and then enabling KMS by reloading the
+radeon module. For some reason, this was indeed a usable workaround, however,
+UMS is now deprecated and disabled by default.
+
+Bug reports:
+https://bugzilla.redhat.com/show_bug.cgi?id=845745
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/561789
+https://bbs.archlinux.org/viewtopic.php?id=156964
+
+Signed-off-by: Adis Hamzić <adis@hamzadis.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop changes for Southern Islands]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cypress_m8.c |   18 +++++++++++++++++-
- drivers/usb/serial/cypress_m8.h |    4 ++++
- 2 files changed, 21 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/serial/cypress_m8.c
-+++ b/drivers/usb/serial/cypress_m8.c
-@@ -96,6 +96,7 @@ static const struct usb_device_id id_tab
- static const struct usb_device_id id_table_cyphidcomrs232[] = {
- 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
- 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
-+	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
- 	{ }						/* Terminating entry */
- };
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3086,6 +3086,12 @@ static int evergreen_startup(struct rade
+ 		return r;
  
-@@ -109,6 +110,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(VENDOR_ID_DELORME, PRODUCT_ID_EARTHMATEUSB_LT20) },
- 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
- 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
-+	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
- 	{ USB_DEVICE(VENDOR_ID_DAZZLE, PRODUCT_ID_CA42) },
- 	{ }						/* Terminating entry */
- };
-@@ -267,6 +269,12 @@ static struct usb_serial_driver cypress_
-  * Cypress serial helper functions
-  *****************************************************************************/
- 
-+/* FRWD Dongle hidcom needs to skip reset and speed checks */
-+static inline bool is_frwd(struct usb_device *dev)
-+{
-+	return ((le16_to_cpu(dev->descriptor.idVendor) == VENDOR_ID_FRWD) &&
-+		(le16_to_cpu(dev->descriptor.idProduct) == PRODUCT_ID_CYPHIDCOM_FRWD));
-+}
- 
- static int analyze_baud_rate(struct usb_serial_port *port, speed_t new_rate)
- {
-@@ -276,6 +284,10 @@ static int analyze_baud_rate(struct usb_
- 	if (unstable_bauds)
- 		return new_rate;
- 
-+	/* FRWD Dongle uses 115200 bps */
-+	if (is_frwd(port->serial->dev))
-+		return new_rate;
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
 +
- 	/*
- 	 * The general purpose firmware for the Cypress M8 allows for
- 	 * a maximum speed of 57600bps (I have no idea whether DeLorme
-@@ -488,7 +500,11 @@ static int generic_startup(struct usb_se
- 		return -ENOMEM;
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -3218,10 +3224,6 @@ int evergreen_init(struct radeon_device
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->cp.ring_obj = NULL;
+ 	r600_ring_init(rdev, 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1389,6 +1389,12 @@ static int cayman_startup(struct radeon_
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -1506,10 +1512,6 @@ int cayman_init(struct radeon_device *rd
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->cp.ring_obj = NULL;
+ 	r600_ring_init(rdev, 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3905,6 +3905,12 @@ static int r100_startup(struct radeon_de
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -4050,9 +4056,6 @@ int r100_init(struct radeon_device *rdev
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/r300.c
++++ b/drivers/gpu/drm/radeon/r300.c
+@@ -1397,6 +1397,12 @@ static int r300_startup(struct radeon_de
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -1521,9 +1527,6 @@ int r300_init(struct radeon_device *rdev
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/r420.c
++++ b/drivers/gpu/drm/radeon/r420.c
+@@ -255,6 +255,12 @@ static int r420_startup(struct radeon_de
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -391,10 +397,6 @@ int r420_init(struct radeon_device *rdev
+ 	if (r) {
+ 		return r;
  	}
+-	r = radeon_irq_kms_init(rdev);
+-	if (r) {
+-		return r;
+-	}
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r) {
+--- a/drivers/gpu/drm/radeon/r520.c
++++ b/drivers/gpu/drm/radeon/r520.c
+@@ -188,6 +188,12 @@ static int r520_startup(struct radeon_de
+ 		return r;
  
--	usb_reset_configuration(serial->dev);
-+	/* Skip reset for FRWD device. It is a workaound:
-+	   device hangs if it receives SET_CONFIGURE in Configured
-+	   state. */
-+	if (!is_frwd(serial->dev))
-+		usb_reset_configuration(serial->dev);
- 
- 	priv->cmd_ctrl = 0;
- 	priv->line_control = 0;
---- a/drivers/usb/serial/cypress_m8.h
-+++ b/drivers/usb/serial/cypress_m8.h
-@@ -24,6 +24,10 @@
- #define VENDOR_ID_CYPRESS		0x04b4
- #define PRODUCT_ID_CYPHIDCOM		0x5500
- 
-+/* FRWD Dongle - a GPS sports watch */
-+#define VENDOR_ID_FRWD			0x6737
-+#define PRODUCT_ID_CYPHIDCOM_FRWD	0x0001
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
 +
- /* Powercom UPS, chip CY7C63723 */
- #define VENDOR_ID_POWERCOM		0x0d9f
- #define PRODUCT_ID_UPS			0x0002
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -281,9 +287,6 @@ int r520_init(struct radeon_device *rdev
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2449,6 +2449,12 @@ int r600_startup(struct radeon_device *r
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -2592,10 +2598,6 @@ int r600_init(struct radeon_device *rdev
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->cp.ring_obj = NULL;
+ 	r600_ring_init(rdev, 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/rs400.c
++++ b/drivers/gpu/drm/radeon/rs400.c
+@@ -411,6 +411,12 @@ static int rs400_startup(struct radeon_d
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -519,9 +525,6 @@ int rs400_init(struct radeon_device *rde
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -848,6 +848,12 @@ static int rs600_startup(struct radeon_d
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -963,9 +969,6 @@ int rs600_init(struct radeon_device *rde
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -622,6 +622,12 @@ static int rs690_startup(struct radeon_d
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -738,9 +744,6 @@ int rs690_init(struct radeon_device *rde
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -380,6 +380,12 @@ static int rv515_startup(struct radeon_d
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -500,9 +506,6 @@ int rv515_init(struct radeon_device *rde
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1092,6 +1092,12 @@ static int rv770_startup(struct radeon_d
+ 		return r;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -1220,10 +1226,6 @@ int rv770_init(struct radeon_device *rde
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->cp.ring_obj = NULL;
+ 	r600_ring_init(rdev, 1024 * 1024);
+ 
 
