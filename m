@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3FPW2L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 18:28:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46385 "EHLO
+	id S1755829Ab3FPW2J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 18:28:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46426 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755646Ab3FPWIu (ORCPT
+	by vger.kernel.org with ESMTP id S1755711Ab3FPWIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Jun 2013 18:08:50 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Hung" <alex.hung@canonical.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "George Cherian" <george.cherian@ti.com>,
+        "Felipe Balbi" <balbi@ti.com>
 Date: Sun, 16 Jun 2013 23:01:38 +0100
-Message-ID: <lsq.1371420098.13376513@decadent.org.uk>
+Message-ID: <lsq.1371420098.808396678@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [46/83] ACPI video: ignore BIOS initial backlight value for HP 1000
+Subject: [37/83] usb: dwc3: gadget: free trb pool only from epnum 2
 In-Reply-To: <lsq.1371420097.958132574@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,37 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Hung <alex.hung@canonical.com>
+From: George Cherian <george.cherian@ti.com>
 
-commit 4ef366c583d6180b1c951147869ee5a3038834f2 upstream.
+commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
 
-On HP 1000 lapops, BIOS reports minimum backlight on boot and
-causes backlight to dim completely. This ignores the initial backlight
-values and set to max brightness.
+we never allocate a TRB pool for physical endpoints
+0 and 1 so trying to free it (a invalid TRB pool pointer)
+will lead us in a warning while removing dwc3.ko module.
 
-References:: https://bugs.launchpad.net/bugs/1167760
-Signed-off-by: Alex Hung <alex.hung@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+In order to fix the situation, all we have to do is skip
+dwc3_free_trb_pool() for physical endpoints 0 and 1 just
+as we while deleting endpoints from the endpoints list.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -455,6 +455,14 @@ static struct dmi_system_id video_dmi_ta
- 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
- 		},
- 	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP 1000 Notebook PC",
-+	 .matches = {
-+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "HP 1000 Notebook PC"),
-+		},
-+	},
- 	{}
- };
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1310,10 +1310,19 @@ static void dwc3_gadget_free_endpoints(s
  
+ 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
+ 		dep = dwc->eps[epnum];
+-		dwc3_free_trb_pool(dep);
+-
+-		if (epnum != 0 && epnum != 1)
++		/*
++		 * Physical endpoints 0 and 1 are special; they form the
++		 * bi-directional USB endpoint 0.
++		 *
++		 * For those two physical endpoints, we don't allocate a TRB
++		 * pool nor do we add them the endpoints list. Due to that, we
++		 * shouldn't do these two operations otherwise we would end up
++		 * with all sorts of bugs when removing dwc3.ko.
++		 */
++		if (epnum != 0 && epnum != 1) {
++			dwc3_free_trb_pool(dep);
+ 			list_del(&dep->endpoint.ep_list);
++		}
+ 
+ 		kfree(dep);
+ 	}
 
