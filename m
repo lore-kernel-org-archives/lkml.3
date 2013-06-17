@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3FQL2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:28:05 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43049 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3FQL2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 07:28:03 -0400
-Date: Mon, 17 Jun 2013 12:25:00 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, gregkh@linuxfoundation.org,
-        Oliver Schinagl <oliver@schinagl.nl>, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
-        maxime.ripard@free-electrons.com
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Message-ID: <20130617112459.GD2718@n2100.arm.linux.org.uk>
-References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl> <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl> <2828921.i3T9JhMInt@flatron> <51BEE6BF.30401@schinagl.nl>
+	id S932722Ab3FQL3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:29:50 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40162 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932273Ab3FQL3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 07:29:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, stable@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
+Date: Mon, 17 Jun 2013 13:39:04 +0200
+Message-ID: <27452260.5ySAzSUIS7@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51BDEF7F.1070107@gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <18797091.iPZsNWFGi1@vostro.rjw.lan> <51BDEF7F.1070107@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BEE6BF.30401@schinagl.nl>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 12:36:47PM +0200, Oliver Schinagl wrote:
-> On 15-06-13 12:28, Tomasz Figa wrote:
->> What is this version thingy?
->>
->> Is there a versioning scheme defined for this driver? Do you expect it to
->> be changed every modification of this driver?
->>
->> I don't see any point of having such thing in a project with a version
->> control system, where you have all change history.
-> Well we export something to userspace, while trivial there is the  
-> possibility it changes over time. Say A40 which outputs 256 bits instead  
-> of the current 128 bits. That would validate a bump in version number.  
-> It's purely so the user can be aware of differences in the driver. So  
-> maybe DRV_A[BP]I_VERSION would be better?
+On Monday, June 17, 2013 01:01:51 AM Jiang Liu wrote:
+> On 06/16/2013 05:20 AM, Rafael J. Wysocki wrote:
+> > On Saturday, June 15, 2013 10:17:42 PM Rafael J. Wysocki wrote:
+> >> On Saturday, June 15, 2013 09:44:28 AM Jiang Liu wrote:
+> [...]
+> >> When it returns from unregister_hotplug_dock_device(), nothing prevents it
+> >> from accessing whatever it wants, because ds->hp_lock is not used outside
+> >> of the add/del and hotplug_dock_devices().  So, the actual role of
+> >> ds->hp_lock (not the one that it is supposed to play, but the real one)
+> >> is to prevent addition/deletion from happening when hotplug_dock_devices()
+> >> is running.  [Yes, it does protect the list, but since the list is in fact
+> >> unnecessary, that doesn't matter.]
+> >>
+> >>> If we simply use a flag to mark presence of registered callback, we 
+> >>> can't achieve the second goal.
+> >>
+> >> I don't mean using the flag *alone*.
+> >>
+> >>> Take the sony laptop as an example. It has several PCI 
+> >>> hotplug
+> >>> slot associated with the dock station:
+> >>> [   28.829316] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB
+> >>> [   30.174964] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM0
+> >>> [   30.174973] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM1
+> >>> [   30.174979] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2
+> >>> [   30.174985] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GFXA
+> >>> [   30.175020] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR0.GHDA
+> >>> [   30.175040] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC0.DLAN
+> >>> [   30.175050] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC1.DODD
+> >>> [   30.175060] acpiphp_glue: _handle_hotplug_event_func: Bus check 
+> >>> notify on \_SB_.PCI0.RP07.LPMB.LPM2.LPRI.LPR1.LPCI.LPC2.DUSB
+> >>>
+> >>> So it still has some race windows if we undock the station while 
+> >>> repeatedly rescanning/removing
+> >>> the PCI bus for \_SB_.PCI0.RP07.LPMB.LPM0 through sysfs interfaces.
+> > 
+> > Which sysfs interfaces do you mean, by the way?
+> > 
+> > If you mean "eject", then it takes acpi_scan_lock and hotplug_dock_devices()
+> > should always be run under acpi_scan_lock too.  It isn't at the moment,
+> > because write_undock() doesn't take acpi_scan_lock(), but this is an obvious
+> > bug (so I'm going to send a patch to fix it in a while).
+> > 
+> > With that bug fixed, the possible race between acpi_eject_store() and
+> > hotplug_dock_devices() should be prevented from happening, so perhaps we're
+> > worrying about something that cannot happen?
+> Hi Rafael,
+> 	I mean the "remove" method of each PCI device, and the "power" method
+> of PCI hotplug slot here.
+> 	These methods may be used to remove P2P bridges with associated ACPIPHP
+> hotplug slots, which in turn will cause invoking of
+> unregister_hotplug_dock_device().
+> 	So theoretical we may trigger the bug by undocking while repeatedly
+> adding/removing P2P bridges with ACPIPHP hotplug slot through PCI
+> "rescan" and "remove" sysfs interface,
 
-What is better to do is to export such things as properties, or
-design the API in such a way that the length of the ID is reportable.
+Why don't we make these things take acpi_scan_lock upfront, then?
 
-However, it's actually quite easy to do if you only care about the
-number of bytes - you just arrange for the read() function to return
-the number of bytes read.  So in the case of 128 bits available, that's
-16 bytes, so a read() of the sysfs attribute with a buffer of (say)
-256 bytes should report only 16 bytes read.
+Rafael
 
-If it were to become 256 bytes later, then the read() would return
-32 bytes read.  So there's no need for any new APIs to do this.
 
-Also, this is over-complicated:
-
-+       for (i = 0; i < size; i++) {
-+               if ((pos + i) >= SID_SIZE || (pos < 0))
-+                       break;
-+               buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
-+       }
-
-Maybe:
-	if (pos < 0 || pos >= SID_SIZE)
-		return 0;
-	if (size > SID_SIZE - pos)
-		size = SID_SIZE - pos;
-
-	for (i = 0; i < size; i++)
-		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
-
-	return size;
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
