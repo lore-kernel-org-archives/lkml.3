@@ -1,64 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab3FQSmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:42:52 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:40942 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3FQSma convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 14:42:30 -0400
-X-ASG-Debug-ID: 1371494549-03d6a577cb69050001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Dave Jones <davej@redhat.com>
-From: Chris Mason <chris.mason@fusionio.com>
-In-Reply-To: <20130617182005.GA9839@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
-References: <20130617134955.GB15861@redhat.com>
- <20130617173942.15057.63201@localhost.localdomain>
- <20130617182005.GA9839@redhat.com>
-Message-ID: <20130617184227.15057.75499@localhost.localdomain>
-User-Agent: alot/0.3.4
-Subject: Re: [3.10-rc6] WARNING: at fs/btrfs/inode.c:7961
- btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
-Date: Mon, 17 Jun 2013 14:42:27 -0400
-X-ASG-Orig-Subj: Re: [3.10-rc6] WARNING: at fs/btrfs/inode.c:7961
- btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
-X-Barracuda-Start-Time: 1371494549
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.134193
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1752123Ab3FQSp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:45:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43306 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320Ab3FQSp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 14:45:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,882,1363158000"; 
+   d="scan'208";a="331040643"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
+References: <1371165333.27102.568.camel@schen9-DESK>
+	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+	 <51BD8A77.2080201@intel.com>
+	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jun 2013 11:45:46 -0700
+Message-ID: <1371494746.27102.633.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dave Jones (2013-06-17 14:20:06)
-> On Mon, Jun 17, 2013 at 01:39:42PM -0400, Chris Mason wrote:
->  > Quoting Dave Jones (2013-06-17 09:49:55)
->  > > Hit this while running this script in a loop..
->  > > https://github.com/kernelslacker/io-tests/blob/master/setup.sh
->  > > [34385.251507] ------------[ cut here ]------------
->  > > [34385.254068] WARNING: at fs/btrfs/inode.c:7961 btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
->  > 
->  > Thanks Dave, how long did you have to run the script to trigger it?
->  > 
->  > -chris
+On Mon, 2013-06-17 at 09:22 -0700, Davidlohr Bueso wrote:
+> On Sun, 2013-06-16 at 17:50 +0800, Alex Shi wrote:
+> > On 06/14/2013 07:43 AM, Davidlohr Bueso wrote:
+> > > I was hoping that the lack of spin on owner was the main difference with
+> > > rwsems and am/was in the middle of implementing it. Could you send your
+> > > patch so I can give it a try on my workloads?
+> > > 
+> > > Note that there have been a few recent (3.10) changes to mutexes that
+> > > give a nice performance boost, specially on large systems, most
+> > > noticeably:
+> > > 
+> > > commit 2bd2c92c (mutex: Make more scalable by doing less atomic
+> > > operations)
+> > > 
+> > > commit 0dc8c730 (mutex: Queue mutex spinners with MCS lock to reduce
+> > > cacheline contention)
+> > > 
+> > > It might be worth looking into doing something similar to commit
+> > > 0dc8c730, in addition to the optimistic spinning.
+> > 
+> > It is a good tunning for large machine. I just following what the commit 
+> > 0dc8c730 done, give a RFC patch here. I tried it on my NHM EP machine. seems no
+> > clear help on aim7. but maybe it is helpful on large machine.  :)
 > 
-> Judging by the timestamp, about 9 hours.  This is on a 3 disk (sata)
-> (oldish) quad opteron. Might repro faster on a more modern machine.
+> After a lot of benchmarking, I finally got the ideal results for aim7,
+> so far: this patch + optimistic spinning with preemption disabled. Just
+> like optimistic spinning, this patch by itself makes little to no
+> difference, yet combined is where we actually outperform 3.10-rc5. In
+> addition, I noticed extra throughput when disabling preemption in
+> try_optimistic_spin().
+> 
+> With i_mmap as a rwsem and these changes I could see performance
+> benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+> (+5%), shared (+15%) and short (+4%), most of them after around 500
+> users, for fewer users, it made little to no difference.
+> 
 
-Exactly how did you run it?  I want to make sure I'm matching your
-config.
+Thanks.  Those are encouraging numbers.  On my exim workload I didn't
+get a boost when I added in the preempt disable in optimistic spin and
+put Alex's changes in. Can you send me your combined patch to see if
+there may be something you did that I've missed.  I have a tweak to
+Alex's patch below to simplify things a bit.  
 
--chris
+Tim
+
+> Thanks,
+> Davidlohr
+> 
+> > 
+> > 
+> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> > index bb1e2cd..240729a 100644
+> > --- a/include/asm-generic/rwsem.h
+> > +++ b/include/asm-generic/rwsem.h
+> > @@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+> >  
+> >  static inline int __down_write_trylock(struct rw_semaphore *sem)
+> >  {
+> > -	long tmp;
+> > +	if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+> > +		return 0;
+> >  
+> > -	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> > -		      RWSEM_ACTIVE_WRITE_BIAS);
+> > -	return tmp == RWSEM_UNLOCKED_VALUE;
+> > +	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> > +		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+> >  }
+> >  
+> >  /*
+> > diff --git a/lib/rwsem.c b/lib/rwsem.c
+> > index 19c5fa9..9e54e20 100644
+> > --- a/lib/rwsem.c
+> > +++ b/lib/rwsem.c
+> > @@ -64,7 +64,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+> >  	struct rwsem_waiter *waiter;
+> >  	struct task_struct *tsk;
+> >  	struct list_head *next;
+> > -	long oldcount, woken, loop, adjustment;
+> > +	long woken, loop, adjustment;
+> >  
+> >  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+> >  	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+> > @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+> >  			 * will block as they will notice the queued writer.
+> >  			 */
+> >  			wake_up_process(waiter->task);
+> > -		goto out;
+> > +		return sem;
+> >  	}
+> >  
+> >  	/* Writers might steal the lock before we grant it to the next reader.
+> > @@ -85,15 +85,28 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+> >  	adjustment = 0;
+> >  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+> >  		adjustment = RWSEM_ACTIVE_READ_BIAS;
+> > - try_reader_grant:
+> > -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+> > -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+> > -			/* A writer stole the lock. Undo our reader grant. */
+> > +		while (1) {
+> > +			long oldcount;
+> > +
+> > +			/* A writer stole the lock. */
+> > +			if (unlikely(sem->count & RWSEM_ACTIVE_MASK))
+> > +				return sem;
+> > +
+> > +			if (unlikely(sem->count < RWSEM_WAITING_BIAS)) {
+> > +				cpu_relax();
+> > +				continue;
+> > +			}
+
+The above two if statements could be cleaned up as a single check:
+		
+			if (unlikely(sem->count < RWSEM_WAITING_BIAS))
+				return sem;
+	 
+This one statement is sufficient to check that we don't have a writer
+stolen the lock before we attempt to acquire the read lock by modifying
+sem->count.  
+
+
+
+
 
