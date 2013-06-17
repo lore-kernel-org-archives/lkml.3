@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3FQFQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:16:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15659 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488Ab3FQFQw convert rfc822-to-8bit (ORCPT
+	id S1751328Ab3FQFUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:20:40 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:52076 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab3FQFUi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:16:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 16 Jun 2013 22:16:27 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "yj44.cho@samsung.com" <yj44.cho@samsung.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>
-Date: Mon, 17 Jun 2013 07:16:22 +0200
-Subject: Re: [PATCH] ARM: dma-mapping: Get pages if the cpu_addr is out of
- atomic_pool
-Thread-Topic: [PATCH] ARM: dma-mapping: Get pages if the cpu_addr is out of
- atomic_pool
-Thread-Index: Ac5rGc+fshFlJY/aQcSVSP/s/9/fGg==
-Message-ID: <20130617.081622.332935718957738769.hdoyu@nvidia.com>
-References: <1371442732-15088-1-git-send-email-yj44.cho@samsung.com>
-In-Reply-To: <1371442732-15088-1-git-send-email-yj44.cho@samsung.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 17 Jun 2013 01:20:38 -0400
+Date: Mon, 17 Jun 2013 00:20:35 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] pinctrl: update GPIO range doc
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+References: <1371377909-5921-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1371377909-5921-1-git-send-email-linus.walleij@stericsson.com>
+	(from linus.walleij@stericsson.com on Sun Jun 16 05:18:29 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1371446435.2776.122@driftwood>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-YoungJun Cho <yj44.cho@samsung.com> wrote @ Mon, 17 Jun 2013 06:18:52 +0200:
-
-> In __iommu_get_pages(), the cpu_addr is checked wheather in
-> atomic_pool range or not. So if the cpu_addr is in atomic_pool
-> range, it does not need to check twice.
+On 06/16/2013 05:18:29 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> This updates the GPIO range documentation with the API changes
+> for sparse/random/arbitrary pin-to-GPIO mappings.
 
-Looks ok to me, at least.
+Acked-by: Rob Landley <rob@landley.net>
+
+Why isn't this part of the pinctrl series you posted right afterwards?  
+(It should go in through that maintainer...)
+
+>  For all functionalities dealing with pin biasing, pin muxing etc,  
+> the pin
+> -controller subsystem will subtract the range's .base offset from the  
+> passed
+> -in gpio number, and add the ranges's .pin_base offset to retrive a  
+> pin number.
+> -After that, the subsystem passes it on to the pin control driver, so  
+> the driver
+> +controller subsystem will look up the corresponding pin number from  
+> the passed
+> +in gpio number, and use the ranges internals to retrive a pin  
+> number. After
+
+Range's perhaps?
+
+Rob
