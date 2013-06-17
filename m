@@ -1,91 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3FQHmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:42:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:50903 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465Ab3FQHmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:42:16 -0400
-Date: Mon, 17 Jun 2013 17:42:13 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        paulmck@linux.vnet.ibm.com, Rojhalat Ibrahim <imr@rtschenk.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-Message-ID: <20130617074213.GA3589@concordia>
-References: <1626500.7WAVXjfS9F@pcimr>
- <20130614122800.GL5146@linux.vnet.ibm.com>
- <1645938.As0LR1yeVd@pcimr>
- <1371243967.9844.338.camel@gandalf.local.home>
- <1371261741.21896.20.camel@pasglop>
+	id S932240Ab3FQHna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:43:30 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:60975 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932113Ab3FQHn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 03:43:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371261741.21896.20.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130617091549.398b865f@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpokQAsuAqWi7rNx9RaFz8KVRNXVkBD22KC5_Qh05k66qqA@mail.gmail.com>
+	<20130617091549.398b865f@amdc308.digital.local>
+Date: Mon, 17 Jun 2013 13:13:27 +0530
+Message-ID: <CAKohpo=nfuqwCoQJRczmNRNXCOTL5FSJQEzjKpVdXU+wu-KJ1g@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 12:02:21PM +1000, Benjamin Herrenschmidt wrote:
-> On Fri, 2013-06-14 at 17:06 -0400, Steven Rostedt wrote:
-> > I was pretty much able to reproduce this on my PA Semi PPC box. Funny
-> > thing is, when I type on the console, it makes progress. Anyway, it
-> > seems that powerpc has an issue with irq_work(). I'll try to get some
-> > time either tonight or next week to figure it out.
-> 
-> Does this help ?
-> 
-> diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-> index 5cbcf4d..ea185e0 100644
-> --- a/arch/powerpc/kernel/irq.c
-> +++ b/arch/powerpc/kernel/irq.c
-> @@ -162,7 +162,7 @@ notrace unsigned int __check_irq_replay(void)
->  	 * in case we also had a rollover while hard disabled
->  	 */
->  	local_paca->irq_happened &= ~PACA_IRQ_DEC;
-> -	if (decrementer_check_overflow())
-> +	if ((happened & PACA_IRQ_DEC) || decrementer_check_overflow())
->  		return 0x900;
->  
->  	/* Finally check if an external interrupt happened */
-> 
+On 17 June 2013 12:45, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Mon, 17 Jun 2013 11:13:18 +0530, Viresh Kumar wrote:
+>> On 14 June 2013 13:08, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-This seems to help, but doesn't elminate the RCU stall warnings I am
-seeing. I now see them less often, but not never.
+>> > +int cpufreq_boost_trigger_state(int state) +{
 
-Stack trace is something like:
+>> > +       if (!cpufreq_driver->boost_supported)
+>> > +               return -ENODEV;
+>>
+>> This can't happen. sysfs directory is present only when we
+>> have boost supported.
+>
+> I know, that we shall not look into the future. But this method will be
+> used when somebody would like to enable boost from kernel. Let's say
+> new governor or such :-).
 
-  INFO: rcu_sched detected stalls on CPUs/tasks: { 32} (detected by 12, t=21372 jiffies, g=18446744073709551503, c=18446744073709551502, q=1018)
-  Task dump for CPU 32:
-  power8-events   R  running task     4960  2009   1988 0x00000004
-  Call Trace:
-  [c000000fb0e3f910] [c000000fb0e3f9d0] 0xc000000fb0e3f9d0 (unreliable)
-  
-  [c000000fb0e3edc0] [c0000000000b2894] .__run_hrtimer+0xa4/0x2a0
-  [c000000fb0e3ee70] [c0000000000b36d8] .hrtimer_interrupt+0x148/0x320
-  [c000000fb0e3ef80] [c00000000001c754] .timer_interrupt+0x134/0x320
-  [c000000fb0e3f040] [c00000000000a4f4] restore_check_irq_replay+0x68/0xa8
-  --- Exception: 901 at .arch_local_irq_restore+0x24/0x90
-      LR = .__do_softirq+0x100/0x3a0
-  [c000000fb0e3f330] [c0000000000c4784] .vtime_account_irq_enter+0x34/0x70 (unreliable)
-  [c000000fb0e3f3a0] [c000000000089680] .__do_softirq+0x100/0x3a0
-  [c000000fb0e3f4c0] [c000000000089b38] .irq_exit+0xc8/0x110
-  [c000000fb0e3f540] [c00000000001c788] .timer_interrupt+0x168/0x320
-  [c000000fb0e3f600] [c0000000000025cc] decrementer_common+0x14c/0x180
-  --- Exception: 901 at .arch_local_irq_restore+0x74/0x90
-      LR = .arch_local_irq_restore+0x74/0x90
-  [c000000fb0e3f8f0] [c000000fb0e3f970] 0xc000000fb0e3f970 (unreliable)
-  [c000000fb0e3f960] [c0000000000e4ae0] .smp_call_function_single+0x1d0/0x1e0
-  [c000000fb0e3fa10] [c000000000147aa4] .task_function_call+0x54/0x70
-  [c000000fb0e3fab0] [c000000000147bc4] .perf_event_enable+0x104/0x1c0
-  [c000000fb0e3fb60] [c000000000146800] .perf_event_for_each_child+0x60/0x110
-  [c000000fb0e3fbf0] [c00000000014a528] .perf_ioctl+0x108/0x3f0
-  [c000000fb0e3fca0] [c0000000001d7138] .do_vfs_ioctl+0xb8/0x730
-  [c000000fb0e3fd80] [c0000000001d780c] .SyS_ioctl+0x5c/0xb0
-  [c000000fb0e3fe30] [c000000000009d54] syscall_exit+0x0/0x98
+We don't know if that would be acceptable or not as of now.
 
+> I can remove this and add it later, but I think, that it is safer to
+> add it straightaway.
 
-cheers
+Remove it for now.
+
+>>
+>> > +       if (cpufreq_boost_enabled != state) {
+>> > +               if (cpufreq_driver->set_boost_freq) {
+>> > +                       ret = cpufreq_driver->set_boost_freq(state);
+>>
+>> I thought this routine was for setting boost frequency and not
+>> for enabling boost feature. If boost has to be enabled separately
+>> then this routine must take care of it while setting freq.
+>>
+>> So, in other words, this must not be called here.
+>
+> This function explicitly follows current logic of acpi-cpufreq.c.
+>
+> I would like to avoid modifying legacy/working code as much as
+> possible (especially when I hadn't yet received any feedback about
+> acpi-cpufreq.c file changes).
+
+Hmm.. I saw that code now. You are talking about: boost_set_msrs ??
+
+So, this function has nothing to do with set_boost_freq() but
+enable_boost(). Rename your function similarly and keep this code.
+
+>> > +                       if (ret) {
+>> > +                               pr_err("%s: BOOST cannot enable
+>> > (%d)\n",
+>> > +                                      __func__, ret);
+>> > +                               return ret;
+>> > +                       }
+>> > +               }
+>> > +
+>> > +               for_each_possible_cpu(cpu) {
+>> > +                       policy = cpufreq_cpu_get(cpu);
+>>
+>> In case this code is required, it would make more sense to keep list
+>> of all available policies, which we can iterate through.
+>
+> Maybe I don't get the big picture, but why we cannot iterate
+> through possible CPUs? At least one shall have valid policy and
+> freq_table combination.
+
+Many cpus share same policy structure and so iterating over all of them
+isn't a very good idea. Either keep a mask of cpus already iterated,
+copy policy->cpus to it on each iteration. If a cpu is already done
+skip loop for it.
+
+OR keep a list of policies. I would prefer the later (do it in a separate
+patch), as this can be used later too.
+
+> I've already proposed list of all policies (at v1), but we decided to
+> abandon this idea.
+
+I don't remember why it was there but reason wasn't good enough to
+keep it.
+
+>> I am not sure if this is required at all. Or what complications can be
+>> there when we update max/min on the fly here.
+>
+> Correct me if I'm wrong, but I'm using scripts for tests which run
+> simultaneously and enables/disables boost feature. I don't recall if
+> there is a lock at sysfs, which would prevent from simultaneous write
+> to the "boost" sysfs attribute.
+>
+> I will doubble check that.
+
+It isn't about a crash but how cpufreq subsystem works. I will think over
+it later too, for now you can keep it.
+
+>> > +{
+>> > +       return cpufreq_boost_enabled;
+>>
+>> s/cpufreq_boost_enabled/boost_enabled
+
+??
+
+>> > @@ -318,6 +322,10 @@ __ATTR(_name, _perm, show_##_name, NULL)
+>> >  static struct freq_attr _name =                        \
+>> >  __ATTR(_name, 0644, show_##_name, store_##_name)
+>> >
+>> > +#define cpufreq_attr_available_freq(_name)       \
+>> > +struct freq_attr cpufreq_freq_attr_##_name##_freqs =     \
+>> > +__ATTR_RO(_name##_frequencies)
+>>
+>> What is this doing in cpufreq.h? It will only be used by freq_table.c
+>> file.
+>
+> I wanted to add those #defines to the place where other similar ones
+> are placed.
+
+That's not how these or any other declaration should be placed. By adding
+these to cpufreq.h, you are inviting other parts of kernel to use them.
+Which we don't want.
+
+> I can put it to freq_table.c.
+
+Thanks.
+
+>> Again, I couldn't see how boost freqs are getting used? You have
+>> probably made them part of normal freq range here and so they
+>> might be used during normal operations. But we wanted it to be
+>> used only when we have few cpus on... etc.. Where is that logic?
+>
+> The logic is as follow:
+> - cpufreq_driver exports .attr field. When driver supports boost then
+>   two attributes are exported (even when boost is not enabled, but
+>   supported):
+>         - scaling_available_frequencies (only normal frequencies - this
+>           attribute is unchanged)
+>         - scaling_boost_frequencies - list possible boost frequencies.
+>
+> When boost is not supported - then only scaling_available_frequencies
+> is exported (as it is done now).
+
+You are missing the whole point behind keeping this patchset. Its not
+about how to expose boost freqs to sysfs (that's what you are talking
+about) but to use these frequencies on the fly. Some part of kernel
+code would be setting these frequencies in real hardware. Who will
+set these frequencies? On what basis? How do we ensure we don't
+burn your chip?
