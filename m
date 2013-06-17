@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3FQC7h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 22:59:37 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61870 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661Ab3FQC7e (ORCPT
+	id S1755803Ab3FQC7t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 22:59:49 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:47819 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3FQC7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 22:59:34 -0400
+	Sun, 16 Jun 2013 22:59:41 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
         Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v2 1/5] clk: divider: replace bitfield width with mask
-Date: Sun, 16 Jun 2013 19:58:21 -0700
-Message-Id: <1371437905-15567-2-git-send-email-mturquette@linaro.org>
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v2 4/5] clk: dt: binding for basic divider clock
+Date: Sun, 16 Jun 2013 19:58:24 -0700
+Message-Id: <1371437905-15567-5-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371437905-15567-1-git-send-email-mturquette@linaro.org>
 References: <1371437905-15567-1-git-send-email-mturquette@linaro.org>
@@ -24,190 +23,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The forthcoming Device Tree binding for the divider clock type will use
-a bitfield mask instead of bitfield width, which is what the current
-basic divider implementation uses.
+Devicetree binding for the basic clock divider, plus the setup function
+to register the clock.  Based on the existing fixed-clock binding.
 
-This patch replaces the u8 width in struct clk_divider with a u32 mask.
-The divider code is updated to use the bit mask internally but the two
-registration functions still accept the width to maintain compatibility
-with existing users.
-
-Also updated in this patch is the clk-private.h divider macro and two
-Freescale clock divider implementations that are based on struct
-clk_divider.
-
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
-No change since v1, new patch
+Changes since v1:
+* mask is u32, shift is u8
+* use bit mask instead of bitfield width
+* DT property names use dashes instead of underscores
+* DT property names are more verbose
+* added minimum/maximum divider values to binding
+* shift property is optional in binding and can be auto-generated from a
+  full 32-bit mask
 
- arch/arm/mach-imx/clk-busy.c |  2 +-
- drivers/clk/clk-divider.c    | 31 +++++++++++++++----------------
- drivers/clk/mxs/clk-div.c    |  2 +-
- include/linux/clk-private.h  |  2 +-
- include/linux/clk-provider.h |  2 +-
- 5 files changed, 19 insertions(+), 20 deletions(-)
+ .../devicetree/bindings/clock/divider-clock.txt    | 87 +++++++++++++++++++++
+ drivers/clk/clk-divider.c                          | 90 +++++++++++++++++++++-
+ include/linux/clk-provider.h                       |  2 +
+ 3 files changed, 178 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/divider-clock.txt
 
-diff --git a/arch/arm/mach-imx/clk-busy.c b/arch/arm/mach-imx/clk-busy.c
-index 4bb1bc4..bc88e38 100644
---- a/arch/arm/mach-imx/clk-busy.c
-+++ b/arch/arm/mach-imx/clk-busy.c
-@@ -95,7 +95,7 @@ struct clk *imx_clk_busy_divider(const char *name, const char *parent_name,
- 
- 	busy->div.reg = reg;
- 	busy->div.shift = shift;
--	busy->div.width = width;
-+	busy->div.mask = BIT(width) - 1;
- 	busy->div.lock = &imx_ccm_lock;
- 	busy->div_ops = &clk_divider_ops;
- 
+diff --git a/Documentation/devicetree/bindings/clock/divider-clock.txt b/Documentation/devicetree/bindings/clock/divider-clock.txt
+new file mode 100644
+index 0000000..96bea07
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/divider-clock.txt
+@@ -0,0 +1,87 @@
++Binding for simple divider clock.
++
++This binding uses the common clock binding[1].  It assumes a
++register-mapped adjustable clock rate divider that does not gate and has
++only one input clock or parent.  By default the value programmed into
++the register is one less than the actual divisor value.  E.g:
++
++register value		actual divisor value
++0			1
++1			2
++2			3
++
++This assumption may be modified by the following optional properties:
++
++index-starts-at-one - valid divisor values start at 1, not the default
++of 0.  E.g:
++register value		actual divisor value
++1			1
++2			2
++3			3
++
++index-power-of-two - valid divisor values are powers of two.  E.g:
++register value		actual divisor value
++0			1
++1			2
++2			4
++
++index-allow-zero - same as index_one, but zero is divide-by-1.  E.g:
++register value		actual divisor value
++0			1
++1			1
++2			2
++
++Additionally a table of valid dividers may be supplied like so:
++
++	table = <4 0>, <8, 1>;
++
++where the first value in the pair is the divider and the second value is
++the programmed register bitfield.
++
++The binding must also provide the register to control the divider and
++the mask for the corresponding control bits.  Optionally the number of
++bits to shift that mask, if necessary.  If the shift value is missing it
++is the same as supplying a zero shift.
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be "divider-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : link to phandle of parent clock
++- reg : base address for register controlling adjustable divider
++- bit-mask : arbitrary bitmask for programming the adjustable divider
++
++Optional properties:
++- clock-output-names : from common clock binding.
++- table : array of integer pairs defining divisors & bitfield values
++- bit-shift : number of bits to shift the bit-mask, defaults to
++  (ffs(mask) - 1) if not present
++- minimum-divider : min divisor for dividing the input clock rate, only
++  needed if the first divisor is offset from the default value
++- maximum-divider : max divisor for dividing the input clock rate, only
++  needed if the max divisor is less than (mask + 1).
++- index-starts-at-one : valid divisor programming starts at 1, not zero
++- index-power-of-two : valid divisor programming must be a power of two
++- index-allow-zero : implies index-one, and programming zero results in
++  divide-by-one
++
++Examples:
++	clock_foo: clock_foo@4a008100 {
++		compatible = "divider-clock";
++		#clock-cells = <0>;
++		clocks = <&clock_baz>;
++		reg = <0x4a008100 0x4>
++		mask = <0x3>
++		maximum-divider = <3>
++	};
++
++	clock_bar: clock_bar@4a008108 {
++		#clock-cells = <0>;
++		compatible = "divider-clock";
++		clocks = <&clock_foo>;
++		reg = <0x4a008108 0x4>;
++		mask = <0x1>;
++		shift = <0>;
++		table = < 4 0 >, < 8 1 >;
++	};
 diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 6d55eb2..ac9cb7f 100644
+index ac9cb7f..8c42c7f 100644
 --- a/drivers/clk/clk-divider.c
 +++ b/drivers/clk/clk-divider.c
-@@ -30,8 +30,6 @@
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
+  * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
+- * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
++ * Copyright (C) 2011-2013 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -17,6 +17,8 @@
+ #include <linux/err.h>
+ #include <linux/string.h>
+ #include <linux/log2.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
  
- #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
- 
--#define div_mask(d)	((1 << ((d)->width)) - 1)
--
- static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
- {
- 	unsigned int maxdiv = 0;
-@@ -46,12 +44,12 @@ static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
- static unsigned int _get_maxdiv(struct clk_divider *divider)
- {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
--		return div_mask(divider);
-+		return divider->mask;
- 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
--		return 1 << div_mask(divider);
-+		return 1 << divider->mask;
- 	if (divider->table)
- 		return _get_table_maxdiv(divider->table);
--	return div_mask(divider) + 1;
-+	return divider->mask + 1;
- }
- 
- static unsigned int _get_table_div(const struct clk_div_table *table,
-@@ -105,7 +103,7 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
- 	unsigned int div, val;
- 
- 	val = readl(divider->reg) >> divider->shift;
--	val &= div_mask(divider);
-+	val &= divider->mask;
- 
- 	div = _get_div(divider, val);
- 	if (!div) {
-@@ -221,17 +219,17 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
- 	div = parent_rate / rate;
- 	value = _get_val(divider, div);
- 
--	if (value > div_mask(divider))
--		value = div_mask(divider);
-+	if (value > divider->mask)
-+		value = divider->mask;
- 
- 	if (divider->lock)
- 		spin_lock_irqsave(divider->lock, flags);
- 
- 	if (divider->flags & CLK_DIVIDER_HIWORD_MASK) {
--		val = div_mask(divider) << (divider->shift + 16);
-+		val = divider->mask << (divider->shift + 16);
- 	} else {
- 		val = readl(divider->reg);
--		val &= ~(div_mask(divider) << divider->shift);
-+		val &= ~(divider->mask << divider->shift);
- 	}
- 	val |= value << divider->shift;
- 	writel(val, divider->reg);
-@@ -251,7 +249,7 @@ EXPORT_SYMBOL_GPL(clk_divider_ops);
- 
- static struct clk *_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
--		void __iomem *reg, u8 shift, u8 width,
-+		void __iomem *reg, u8 shift, u32 mask,
- 		u8 clk_divider_flags, const struct clk_div_table *table,
- 		spinlock_t *lock)
- {
-@@ -260,8 +258,9 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- 	struct clk_init_data init;
- 
- 	if (clk_divider_flags & CLK_DIVIDER_HIWORD_MASK) {
--		if (width + shift > 16) {
--			pr_warn("divider value exceeds LOWORD field\n");
-+		if ((mask << shift) & 0xffff0000) {
-+			pr_warn("%s: divider value exceeds LOWORD field\n",
-+					__func__);
- 			return ERR_PTR(-EINVAL);
- 		}
- 	}
-@@ -282,7 +281,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- 	/* struct clk_divider assignments */
- 	div->reg = reg;
- 	div->shift = shift;
--	div->width = width;
-+	div->mask = mask;
- 	div->flags = clk_divider_flags;
- 	div->lock = lock;
- 	div->hw.init = &init;
-@@ -315,7 +314,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
- 		u8 clk_divider_flags, spinlock_t *lock)
- {
+ /*
+  * DOC: basic adjustable divider clock that cannot gate
+@@ -340,3 +342,89 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
  	return _register_divider(dev, name, parent_name, flags, reg, shift,
--			width, clk_divider_flags, NULL, lock);
-+			((1 << width) - 1), clk_divider_flags, NULL, lock);
+ 			((1 << width) - 1), clk_divider_flags, table, lock);
  }
- 
- /**
-@@ -339,5 +338,5 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
- 		spinlock_t *lock)
- {
- 	return _register_divider(dev, name, parent_name, flags, reg, shift,
--			width, clk_divider_flags, table, lock);
-+			((1 << width) - 1), clk_divider_flags, table, lock);
- }
-diff --git a/drivers/clk/mxs/clk-div.c b/drivers/clk/mxs/clk-div.c
-index 90e1da9..af2428e 100644
---- a/drivers/clk/mxs/clk-div.c
-+++ b/drivers/clk/mxs/clk-div.c
-@@ -96,7 +96,7 @@ struct clk *mxs_clk_div(const char *name, const char *parent_name,
- 
- 	div->divider.reg = reg;
- 	div->divider.shift = shift;
--	div->divider.width = width;
-+	div->divider.mask = BIT(width) - 1;
- 	div->divider.flags = CLK_DIVIDER_ONE_BASED;
- 	div->divider.lock = &mxs_lock;
- 	div->divider.hw.init = &init;
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index dd7adff..67a3069 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -119,7 +119,7 @@ struct clk {
- 		},						\
- 		.reg = _reg,					\
- 		.shift = _shift,				\
--		.width = _width,				\
-+		.mask = ((1 << _width) - 1),			\
- 		.flags = _divider_flags,			\
- 		.table = _table,				\
- 		.lock = _lock,					\
++
++#ifdef CONFIG_OF
++struct clk_div_table *of_clk_get_div_table(struct device_node *node)
++{
++	int i;
++	int table_size = 0;
++	struct clk_div_table *table;
++	u32 pair[2];
++
++	table_size = of_count_phandle_with_args(node, "table", "#clock-cells");
++
++	if (table_size < 1)
++		return NULL;
++
++	table = kzalloc(sizeof(struct clk_div_table) * table_size, GFP_KERNEL);
++	if (!table) {
++		pr_err("%s: unable to allocate memory for %s table\n", __func__, node->name);
++		return NULL;
++	}
++
++	for (i = 0; i < table_size; i++) {
++		if (!of_property_read_u32_array(node, "table", pair, ARRAY_SIZE(pair))) {
++			table[i].val = pair[0];
++			table[i].div = pair[1];
++		}
++	}
++
++	return table;
++}
++
++/**
++ * of_divider_clk_setup() - Setup function for simple div rate clock
++ */
++void of_divider_clk_setup(struct device_node *node)
++{
++	struct clk *clk;
++	const char *clk_name = node->name;
++	void __iomem *reg;
++	const char *parent_name;
++	u8 clk_divider_flags = 0;
++	u32 mask = 0;
++	u8 shift = 0;
++	struct clk_div_table *table;
++
++	of_property_read_string(node, "clock-output-names", &clk_name);
++
++	parent_name = of_clk_get_parent_name(node, 0);
++
++	reg = of_iomap(node, 0);
++
++	if (of_property_read_u32(node, "bit-mask", &mask)) {
++		pr_err("%s: missing bit-mask property for %s\n", __func__, node->name);
++		return;
++	}
++
++	if (of_property_read_u8(node, "bit-shift", &shift)) {
++		shift = __ffs(mask);
++		pr_debug("%s: bit-shift property defaults to 0x%x for %s\n",
++				__func__, shift, node->name);
++	}
++
++	if (of_property_read_bool(node, "index-starts-at-one"))
++		clk_divider_flags |= CLK_DIVIDER_ONE_BASED;
++
++	if (of_property_read_bool(node, "index-power-of-two"))
++		clk_divider_flags |= CLK_DIVIDER_POWER_OF_TWO;
++
++	if (of_property_read_bool(node, "index-allow-zero"))
++		clk_divider_flags |= CLK_DIVIDER_ALLOW_ZERO;
++
++	table = of_clk_get_div_table(node);
++	if (IS_ERR(table))
++		return;
++
++	clk = _register_divider(NULL, clk_name,
++			parent_name, 0,
++			reg, shift, mask,
++			clk_divider_flags, table,
++			NULL);
++
++	if (!IS_ERR(clk))
++		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++EXPORT_SYMBOL_GPL(of_divider_clk_setup);
++CLK_OF_DECLARE(divider_clk, "divider-clock", of_divider_clk_setup);
++#endif
 diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 1ec14a7..4920fd1 100644
+index 24a04b8..723ce69 100644
 --- a/include/linux/clk-provider.h
 +++ b/include/linux/clk-provider.h
-@@ -271,7 +271,7 @@ struct clk_divider {
- 	struct clk_hw	hw;
- 	void __iomem	*reg;
- 	u8		shift;
--	u8		width;
-+	u32		mask;
- 	u8		flags;
- 	const struct clk_div_table	*table;
- 	spinlock_t	*lock;
+@@ -293,6 +293,8 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 		u8 clk_divider_flags, const struct clk_div_table *table,
+ 		spinlock_t *lock);
+ 
++void of_divider_clk_setup(struct device_node *node);
++
+ /**
+  * struct clk_mux - multiplexer clock
+  *
 -- 
 1.8.1.2
 
