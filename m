@@ -1,82 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab3FQMRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:17:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59768 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727Ab3FQMRd (ORCPT
+	id S932960Ab3FQMRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:17:51 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:51795 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932727Ab3FQMRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:17:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joel A Fernandes <joelagnel@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
-Date: Mon, 17 Jun 2013 13:12:32 +0200
-Message-ID: <3940138.jZFEtfGGLz@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1371263570-9323-5-git-send-email-joelagnel@ti.com>
-References: <1371263570-9323-1-git-send-email-joelagnel@ti.com> <1371263570-9323-5-git-send-email-joelagnel@ti.com>
+	Mon, 17 Jun 2013 08:17:49 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aaz6rM/U9Oo+5xUmLJr5eDFi8h7gcRkAWpr0ng4dyGA
- rdl6a8w42c6diy1yu/l8PH6wWeXMp79UVBzpiEgGzL+ISUAUPY
- CX6e/awH4VQxUvttaJv00y+SMhO2pGVQeGaFgbp9duTrQ1VZho
- gqZP3C/h06O9QPLtrmxfZ+kBEMEUWJO8rFYjudb329GBlPf11T
- cruwsa/2sEolJU3pGN44AuUYpzD5hYH5X1hEAAeMVO+D7RGIph
- VHabJmYTdlNnqfN1q4Hrbp1f7mnS87zf98sNd9HmaBkKssKK6J
- qewiIXvKFkk8VDlomDT6Coh0fJYpznTql3IVv1MvM6MrYWBQvQ
- vb/3v7CJcbabWcOgmp44=
+In-Reply-To: <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+ <1370589652-24549-7-git-send-email-alex.shi@intel.com> <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 05:17:17 -0700
+Message-ID: <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com>
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 June 2013 21:32:47 Joel A Fernandes wrote:
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
-> new file mode 100644
-> index 0000000..ada0018
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-> @@ -0,0 +1,26 @@
-> +TI EDMA
-> +
-> +Required properties:
-> +- compatible : "ti,edma3"
-> +- ti,hwmods: Name of the hwmods associated to the EDMA
-> +- ti,edma-regions: Number of regions
-> +- ti,edma-slots: Number of slots
-> +
-> +Optional properties:
-> +- ti,edma-xbar-event-map: Crossbar event to channel map
+On Mon, Jun 17, 2013 at 3:51 AM, Paul Turner <pjt@google.com> wrote:
+> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+>> They are the base values in load balance, update them with rq runnable
+>> load average, then the load balance will consider runnable load avg
+>> naturally.
+>>
+>> We also try to include the blocked_load_avg as cpu load in balancing,
+>> but that cause kbuild performance drop 6% on every Intel machine, and
+>> aim7/oltp drop on some of 4 CPU sockets machines.
+>>
+>
+> This looks fine.
+>
+> Did you try including blocked_load_avg in only get_rq_runnable_load()
+> [ and not weighted_cpuload() which is called by new-idle ]?
 
-You need to list #dma-cells as required here, and which values are accepted by
-the driver (I suppose only <1>). You should also explain the format of the
-dma-specifier for a slave here for each possible value of #dma-cells.
+Looking at this more this feels less correct since you're taking
+averages of averages.
 
-For each of the standard properties (reg, interrupts, dma-channels), list
-whether they are optional or required. Since the example has three interrupts,
-you should probably list how many interrupts need to be specified (minimum
-and maximum if the number is variable) and in what order to expect them.
+This was previously discussed at:
+  https://lkml.org/lkml/2013/5/6/109
 
-	Arnd
+And  you later replied suggesting this didn't seem to hurt; what's the
+current status there?
+
+
+>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/fair.c |  5 +++--
+>>  kernel/sched/proc.c | 17 +++++++++++++++--
+>>  2 files changed, 18 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 42c7be0..eadd2e7 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>>  /* Used instead of source_load when we know the type == 0 */
+>>  static unsigned long weighted_cpuload(const int cpu)
+>>  {
+>> -       return cpu_rq(cpu)->load.weight;
+>> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
+>>  }
+>>
+>>  /*
+>> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>>  {
+>>         struct rq *rq = cpu_rq(cpu);
+>>         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+>> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
+>>
+>>         if (nr_running)
+>> -               return rq->load.weight / nr_running;
+>> +               return load_avg / nr_running;
+>>
+>>         return 0;
+>>  }
+>> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+>> index bb3a6a0..ce5cd48 100644
+>> --- a/kernel/sched/proc.c
+>> +++ b/kernel/sched/proc.c
+>> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>         sched_avg_update(this_rq);
+>>  }
+>>
+>> +#ifdef CONFIG_SMP
+>> +unsigned long get_rq_runnable_load(struct rq *rq)
+>> +{
+>> +       return rq->cfs.runnable_load_avg;
+>> +}
+>> +#else
+>> +unsigned long get_rq_runnable_load(struct rq *rq)
+>> +{
+>> +       return rq->load.weight;
+>> +}
+>> +#endif
+>> +
+>>  #ifdef CONFIG_NO_HZ_COMMON
+>>  /*
+>>   * There is no sane way to deal with nohz on smp when using jiffies because the
+>> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>  void update_idle_cpu_load(struct rq *this_rq)
+>>  {
+>>         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>> -       unsigned long load = this_rq->load.weight;
+>> +       unsigned long load = get_rq_runnable_load(this_rq);
+>>         unsigned long pending_updates;
+>>
+>>         /*
+>> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
+>>   */
+>>  void update_cpu_load_active(struct rq *this_rq)
+>>  {
+>> +       unsigned long load = get_rq_runnable_load(this_rq);
+>>         /*
+>>          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>>          */
+>>         this_rq->last_load_update_tick = jiffies;
+>> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
+>> +       __update_cpu_load(this_rq, load, 1);
+>>
+>>         calc_load_account_active(this_rq);
+>>  }
+>> --
+>> 1.7.12
+>>
