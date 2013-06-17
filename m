@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3FQPcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:32:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42096 "EHLO mga01.intel.com"
+	id S1752642Ab3FQPdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:33:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48689 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab3FQPcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:32:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="354787507"
-Message-ID: <51BF2BFD.1090704@intel.com>
-Date: Mon, 17 Jun 2013 23:32:13 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751331Ab3FQPdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:33:04 -0400
+Date: Mon, 17 Jun 2013 17:33:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130617153302.GI5018@dhcp22.suse.cz>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 2/9] sched: move few runnable tg variables into CONFIG_SMP
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-3-git-send-email-alex.shi@intel.com> <CAPM31RLzTyi5vsW-3Fx-CA4i6oneoh588VRBBhvzkKSeDJjP0g@mail.gmail.com>
-In-Reply-To: <CAPM31RLzTyi5vsW-3Fx-CA4i6oneoh588VRBBhvzkKSeDJjP0g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617151403.GA25172@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 08:26 PM, Paul Turner wrote:
-> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
->> The following 2 variables only used under CONFIG_SMP, so better to move
->> their definiation into CONFIG_SMP too.
->>
->>         atomic64_t load_avg;
->>         atomic_t runnable_avg;
->>
->> Signed-off-by: Alex Shi <alex.shi@intel.com>
+On Mon 17-06-13 19:14:12, Glauber Costa wrote:
+> On Mon, Jun 17, 2013 at 04:18:22PM +0200, Michal Hocko wrote:
+> > Hi,
 > 
-> Looks fine; the manipulations to the structs could perhaps be
-> collapsed to one patch.
+> Hi,
 > 
+> > I managed to trigger:
+> > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> > [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> > on top. 
+> > 
+> > This is obviously BUG_ON(nlru->nr_items < 0) and 
+> > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> > [...]
+> > ffffffff81122d9c:       0f 0b                   ud2
+> > 
+> > RAX is -1UL.
+>
+> Yes, fearing those kind of imbalances, we decided to leave the counter
+> as a signed quantity and BUG, instead of an unsigned quantity.
+> 
+> > I assume that the current backtrace is of no use and it would most
+> > probably be some shrinker which doesn't behave.
+> > 
+> There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+> Assuming you are not using xfs, we are left with dentries and inodes.
+> 
+> The first thing to do is to find which one of them is misbehaving. You
+> can try finding this out by the address of the list_lru, and where it
+> lays in the superblock.
 
-thanks for review!
+I am not sure I understand. Care to prepare a debugging patch for me?
+ 
+> Once we know each of them is misbehaving, then we'll have to figure
+> out why.
+> 
+> Any special filesystem workload ?
 
+This is two parallel kernel builds with separate kernel trees running
+under 2 hard unlimitted groups (with 0 soft limit) followed by rm -rf
+source trees + drop caches. Sometimes I have to repeat this multiple
+times. I can also see some timer specific crashes which are most
+probably not related so I am getting back to my mm tree and will hope
+the tree is healthy.
+
+I have seen some other traces as well (mentioning ext3 dput paths) but I
+cannot reproduce them anymore.
+
+Thanks!
 -- 
-Thanks
-    Alex
+Michal Hocko
+SUSE Labs
