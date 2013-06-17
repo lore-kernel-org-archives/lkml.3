@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3FQXix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:38:53 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:36341 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab3FQXiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:38:51 -0400
-Date: Tue, 18 Jun 2013 01:38:02 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, juan.david.gonzalez.cobas@cern.ch,
-        cota@braap.org, siglesias@igalia.com, rob@landley.net,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 3/8] FMC: add core bus driver
-Message-ID: <20130617233802.GA17517@mail.gnudd.com>
+	id S1752664Ab3FQXkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:40:36 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:56933 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3FQXkf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 19:40:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20130617231606.GB12984@kroah.com>
-References: <20130617231606.GB12984@kroah.com>
-  <cover.1371018406.git.rubini@gnudd.com>
-  <3e9f6b2fb7cd202da9bbb6371b27ff302ca8b860.1371018406.git.rubini@gnudd.com>
+In-Reply-To: <20130617233827.GP32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1371128589-8953-8-git-send-email-tangchen@cn.fujitsu.com>
+	<20130617233827.GP32663@mtj.dyndns.org>
+Date: Mon, 17 Jun 2013 16:40:34 -0700
+X-Google-Sender-Auth: 83wO8tfxY7DDP1z3tzjVczrmhis
+Message-ID: <CAE9FiQX9OtxdOLrsMB4zcYL7=B=MnKPNu5+fwfYhf_T2L24XOw@mail.gmail.com>
+Subject: Re: [Part1 PATCH v5 07/22] x86, ACPI: Store override acpi tables phys
+ addr in cpio files info array
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
+        Prarit Bhargava <prarit@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> + * Released according to the GNU GPL, version 2 or any later version.
-> 
-> I have to ask, do you really mean "or any later version"?
+On Mon, Jun 17, 2013 at 4:38 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Jun 13, 2013 at 09:02:54PM +0800, Tang Chen wrote:
+>> -static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+>> +struct file_pos {
+>> +     phys_addr_t data;
+>> +     phys_addr_t size;
+>> +};
+>
+> Isn't file_pos too generic as name?  Would acpi_initrd_file_pos too
+> long?  Maybe just struct acpi_initrd_file?
 
-Yes, it was intended. I don't think it's an issue for merging, but
-I understand you've seen so many such undesired copy-paste errors.
+ok, will change to acpi_initrd_file.
 
->> +EXPORT_SYMBOL(fmc_driver_unregister);
-> 
-> Any specific reason these aren't EXPORT_SYMBOL_GPL()?
-> 
-> Again, just have to ask.
+Thanks
 
-I think we want to allow for proprietary FMC drivers. I personally
-don't feel this is a core kernel technology.  But I'll let David Cobas
-expand on CERN policies, as I'm only a consultant.
-
-thanks
-/alessandro
+Yinghai
