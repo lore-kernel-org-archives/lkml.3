@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3FQWVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:21:09 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:44099 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3FQWVH (ORCPT
+	id S1752801Ab3FQWV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:21:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59867 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3FQWV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:21:07 -0400
-Date: Mon, 17 Jun 2013 15:21:11 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org
-Subject: Re: [PATCH 1/3] ARM: mach-moxart: add MOXA ART SoC files
-Message-ID: <20130617222111.GA13266@quad.lixom.net>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
- <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
- <20130612224235.GA8146@quad.lixom.net>
- <CACmBeS1xNgc=TN3ZdhhHS0K+SMU+Zc1cvH7VXQHiTye=Ufoj8Q@mail.gmail.com>
+	Mon, 17 Jun 2013 18:21:27 -0400
+Message-ID: <51BF8BE6.5080704@codeaurora.org>
+Date: Mon, 17 Jun 2013 15:21:26 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACmBeS1xNgc=TN3ZdhhHS0K+SMU+Zc1cvH7VXQHiTye=Ufoj8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: sched_clock: Load cycle count after epoch stabilizes
+References: <1371082214-1119-1-git-send-email-sboyd@codeaurora.org> <51BF68DC.5030804@codeaurora.org> <51BF848B.2030501@linaro.org>
+In-Reply-To: <51BF848B.2030501@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/17/13 14:50, John Stultz wrote:
+> On 06/17/2013 12:51 PM, Stephen Boyd wrote:
+>> John,
+>>
+>> I just saw your pull request for making this code generic. I believe
+>> this patch fixes a bug that nobody has seen in practice so it's probably
+>> fine to delay this until 3.11.
+>>
+>> Also, I've just noticed that "ARM: sched_clock: Return suspended count
+>> earlier" that I sent in that series is going to break the arm
+>> architected timer path because they're circumventing all this epoch_ns
+>> code. It would be better if you could replace that patch with this patch
+>> because this optimizes it in the same way and also fixes a bug at the
+>> same time.
+>
+> Sorry, could you clarify a bit more? The above sounds like there are
+> two issues, but you only sent one patch.
 
-On Fri, Jun 14, 2013 at 04:33:29PM +0200, Jonas Jensen wrote:
-> Hi,
-> 
-> Thanks for the replies.
-> 
-> What isn't commented below should already be fixed. I'll resubmit the
-> entire set when it looks like there's nothing left to amend.
-> 
-> On 13 June 2013 00:42, Olof Johansson <olof@lixom.net> wrote:
-> > You should provide a commit message, ideally with a short introduction of the
-> > platform.
-> 
-> Will do. I was thinking I should do that, this is the first time I
-> used git format-patch / git send-email.
-> 
-> >> +++ b/arch/arm/configs/moxart_uc7112lx_defconfig
-> >
-> > It'd be nice to keep the defconfig generic, and make sure to enable all boards
-> > in it -- we're generally OK with adding one defconfig per platform upstream but
-> > not more.
-> 
-> Since MACH_UC7112LX is the only board right now, how can it "enable all boards"?
+I'm saying that the "return the suspended count earlier" patch is bad.
+But this patch does what that patch is doing plus it fixes a race at the
+same time. So it would be better to just take this patch and drop the other.
 
-Yeah, that was more with respect to future use of the defconfig. So keeping it
-generic in name for now (moxart_defconfig) is really all I am asking for.
+The problem is that when the cd.suspended flag is true we're going to
+return the jiffies based sched_clock value for the ARM architected timer
+driver (the only driver that replaces the sched_clock_func function
+pointer with its own function). Jiffies should be pretty close to the
+actual time anyway, but since the ARM architected timer driver is
+already broken with respect to suspend (because it doesn't stop the
+sched_clock value from incrementing during suspend) it doesn't really
+matter. Every other driver using the sched_clock code will not be
+affected either way.
 
-> One way I can think of is to remove CONFIG_MACH_UC7112LX=y from
-> defconfig and have it (and all future boards) "default y" in
-> arch/arm/mach-moxart/Kconfig.
+>
+> I'm also not sure how to proceed with the patch you sent, since it
+> collides with the patch that moves sched_clock to be generic.
 
-Enabling it in the defconfig is just fine, no need to change anything there at
-this time.
+Ah I thought that the git rename detection would just make it work.
 
-> I focus on a single hardware, UC-7112-LX. There's at least one more
-> board with only minor differences (RAM / flash size). But for now,
-> MACH_UC7112LX is the one I have access to and can test. I think
-> UC-7110 is already supported, that it would boot, just copy
-> arch/arm/boot/dts/moxart-uc7112lx.dts and modify ranges for RAM and
-> MTD. I want to leave this in a state where remaining hardware can
-> easily be added, albeit by someone that isn't me :)
+>
+> Could you refactor the change on-top of git branch I sent to Thomas?
+> Otherwise I'll have to withdraw the pull request, and we'll probably
+> miss 3.11 for the generic sched_clock change.
 
-Sure, that's a fair stance.
+Sure. I'll send it right now.
 
-> > If you multiplatform enable this, then you need to have a check in
-> > moxart_idle_init() to make sure you're running on a moxart soc. Otherwise this
-> > will still be called and override the arm_pm_idle setting on other platforms as
-> > well.
-> 
-> I can't find a good example of how other platforms do this, is a DT
-> lookup an accepted solution? :
-> 
-> static const struct of_device_id moxart_match[] = {
->        { .compatible = "moxa,moxart" },
->        { }
-> };
-> 
-> static int __init moxart_idle_init(void)
-> {
->     struct device_node *node;
-> 
->     node = of_find_matching_node(NULL, moxart_match);
->     if (!node)
->         return -ENODEV;
-> 
->     arm_pm_idle = moxart_idle;
->     return 0;
-> }
-> 
-> arch_initcall(moxart_idle_init);
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Easiest of all is if you have a "moxa,moxart" compatible field as the
-most-specific one for your machine, then you can just do:
-
-...
-{
-	if (!of_machine_is_compatible("moxa,moxart"))
-		return -ENODEV;
-
-	arm_pm_idle = moxart_idle;
-	return 0;
-}
-
--Olof
