@@ -1,55 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3FQPip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:38:45 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:57824 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3FQPio (ORCPT
+	id S1752561Ab3FQPlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:41:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59837 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751168Ab3FQPlU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:38:44 -0400
+	Mon, 17 Jun 2013 11:41:20 -0400
+From: "Fernandes, Joel A" <joelagnel@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Matt Porter" <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: RE: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
+Thread-Topic: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
+ binding
+Thread-Index: AQHOaXCq5Ahsa0wut0SvcD1WJ4Ax1pk6GA8A///1IaA=
+Date: Mon, 17 Jun 2013 15:40:29 +0000
+Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
+References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
+ <1371263570-9323-5-git-send-email-joelagnel@ti.com>
+ <3940138.jZFEtfGGLz@wuerfel>
+In-Reply-To: <3940138.jZFEtfGGLz@wuerfel>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130617135028.GE10671@intel.com>
-References: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
-	<CACRpkdYBfvr0kA7bd-6Ns78UH7JtBCFDzFxyHLgtReB32O4D+w@mail.gmail.com>
-	<20130530173326.GD3767@intel.com>
-	<CACRpkdZhK6TUAC132vzcaLKqdMTwPma+ZhKG5Y+AUvekNpz6EQ@mail.gmail.com>
-	<20130612095443.GU4107@intel.com>
-	<CACRpkdYS8MYEBs_kcGyOPvcenBALxAXtksRA=+TmkeyOZW=Xzg@mail.gmail.com>
-	<20130617135028.GE10671@intel.com>
-Date: Mon, 17 Jun 2013 17:38:43 +0200
-Message-ID: <CACRpkdYf3cx=-+nZJGCxGJs5TbBAkLwtfaYXWErzn-wnxeFLuQ@mail.gmail.com>
-Subject: Re: [PATCH -next v2] dmaengine: ste_dma40: fix error return code in d40_probe()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>, "arm@kernel.org" <arm@kernel.org>
-Cc: Wei Yongjun <weiyj.lk@gmail.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Dan Williams <djbw@fb.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 3:50 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Thu, Jun 13, 2013 at 09:49:04AM +0200, Linus Walleij wrote:
+Hi Arnd,
 
->> I haven't sent this patch to ARM SoC so it will not appear from any other source
->> in the merge window or cause any conflicts.
->
-> Doesnt apply on my next or -rc6. I think it has some ste dependecies. So either
-> we wait and I send this for next -rc2 or you apply with my Ack
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Monday, June 17, 2013 6:13 AM
+> To: Fernandes, Joel A
+> Cc: Tony Lindgren; Nori, Sekhar; Matt Porter; Grant Likely; Rob Herring; Vinod
+> Koul; Mark Brown; Cousson, Benoit; Russell King; Rob Landley; Andrew
+> Morton; Jason Kridner; Koen Kooi; Devicetree Discuss; Linux OMAP List; Linux
+> ARM Kernel List; Linux DaVinci Kernel List; Linux Kernel Mailing List; Linux
+> Documentation List; Linux MMC List; Linux SPI Devel List
+> Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
+> binding
+> 
+> On Friday 14 June 2013 21:32:47 Joel A Fernandes wrote:
+> >
+> > diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt
+> > b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> > new file mode 100644
+> > index 0000000..ada0018
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> > @@ -0,0 +1,26 @@
+> > +TI EDMA
+> > +
+> > +Required properties:
+> > +- compatible : "ti,edma3"
+> > +- ti,hwmods: Name of the hwmods associated to the EDMA
+> > +- ti,edma-regions: Number of regions
+> > +- ti,edma-slots: Number of slots
+> > +
+> > +Optional properties:
+> > +- ti,edma-xbar-event-map: Crossbar event to channel map
+> 
+> You need to list #dma-cells as required here, and which values are accepted
+> by the driver (I suppose only <1>). You should also explain the format of the
+> dma-specifier for a slave here for each possible value of #dma-cells.
+> 
+> For each of the standard properties (reg, interrupts, dma-channels), list
+> whether they are optional or required. Since the example has three
+> interrupts, you should probably list how many interrupts need to be specified
+> (minimum and maximum if the number is variable) and in what order to
+> expect them.
+ 
+[Joel] Thanks for the suggestion, I updated it and it looks like this now:
+                                                                                                             
+Required properties:                                                                                                                   
+- compatible : "ti,edma3"                                                                                                              
+- ti,hwmods: Name of the hwmods associated to the EDMA                                                                                 
+- ti,edma-regions: Number of regions                                                                                                   
+- ti,edma-slots: Number of slots
+- #dma-cells: Should be set to <1> 
+              Clients should use a single number per DMA channel request.
+- dma-channels: Specify total DMA channels per CC                                                                                      
+- reg: Memory map for accessing module                                                                                                 
+- interrupt-parent: Interrupt controller the interrupt is routed through                                                               
+- interrupts: Exactly 3 interrupts need to be specified in the order:                                                                  
+              1. Transfer completion interrupt.                                                                                        
+              2. Memory protection interrupt.                                                                                          
+              3. Error interrupt.                                                                                                      
+Optional properties: 
+- ti,edma-xbar-event-map: Crossbar event to channel map
 
-I have it queued in my tree so it won't be forgotten.
 
-That said: ARM SoC folks: can you apply this fix directly
-to wherever in the ARM SoC tree the DMA40 patches have
-ended up? (Looks like next/drivers)
+Hope this looks ok. I will respin this patch and repost it in the next series spin.
 
-Yours,
-Linus Walleij
+Thanks,
+Joel
+
