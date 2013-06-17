@@ -1,274 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab3FQRxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:53:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50590 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab3FQRfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:35:22 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Kay Sievers <kay@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 75/84] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
-Date: Mon, 17 Jun 2013 10:31:19 -0700
-Message-Id: <1371490288-23167-76-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1754191Ab3FQReb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:34:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28497 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753715Ab3FQReZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 13:34:25 -0400
+Date: Mon, 17 Jun 2013 09:49:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: [3.10-rc6] WARNING: at fs/btrfs/inode.c:7961
+ btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
+Message-ID: <20130617134955.GB15861@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.3 -stable review patch.  If anyone has any objections, please let me know.
+Hit this while running this script in a loop..
+https://github.com/kernelslacker/io-tests/blob/master/setup.sh
 
-------------------
-
-From: Kees Cook <keescook@chromium.org>
-
-commit 637241a900cbd982f744d44646b48a273d609b34 upstream.
-
-The dmesg_restrict sysctl currently covers the syslog method for access
-dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-people haven't noticed because util-linux dmesg(1) defaults to using the
-syslog method for access in older versions.  With util-linux dmesg(1)
-defaults to reading directly from /dev/kmsg.
-
-To fix /dev/kmsg, let's compare the existing interfaces and what they
-allow:
-
- - /proc/kmsg allows:
-  - open (SYSLOG_ACTION_OPEN) if CAP_SYSLOG since it uses a destructive
-    single-reader interface (SYSLOG_ACTION_READ).
-  - everything, after an open.
-
- - syslog syscall allows:
-  - anything, if CAP_SYSLOG.
-  - SYSLOG_ACTION_READ_ALL and SYSLOG_ACTION_SIZE_BUFFER, if
-    dmesg_restrict==0.
-  - nothing else (EPERM).
-
-The use-cases were:
- - dmesg(1) needs to do non-destructive SYSLOG_ACTION_READ_ALLs.
- - sysklog(1) needs to open /proc/kmsg, drop privs, and still issue the
-   destructive SYSLOG_ACTION_READs.
-
-AIUI, dmesg(1) is moving to /dev/kmsg, and systemd-journald doesn't
-clear the ring buffer.
-
-Based on the comments in devkmsg_llseek, it sounds like actions besides
-reading aren't going to be supported by /dev/kmsg (i.e.
-SYSLOG_ACTION_CLEAR), so we have a strict subset of the non-destructive
-syslog syscall actions.
-
-To this end, move the check as Josh had done, but also rename the
-constants to reflect their new uses (SYSLOG_FROM_CALL becomes
-SYSLOG_FROM_READER, and SYSLOG_FROM_FILE becomes SYSLOG_FROM_PROC).
-SYSLOG_FROM_READER allows non-destructive actions, and SYSLOG_FROM_PROC
-allows destructive actions after a capabilities-constrained
-SYSLOG_ACTION_OPEN check.
-
- - /dev/kmsg allows:
-  - open if CAP_SYSLOG or dmesg_restrict==0
-  - reading/polling, after open
-
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=903192
-
-[akpm@linux-foundation.org: use pr_warn_once()]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Christian Kujau <lists@nerdbynature.de>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/proc/kmsg.c         | 10 +++---
- include/linux/syslog.h |  4 +--
- kernel/printk.c        | 91 +++++++++++++++++++++++++++-----------------------
- 3 files changed, 57 insertions(+), 48 deletions(-)
-
-diff --git a/fs/proc/kmsg.c b/fs/proc/kmsg.c
-index bd4b5a7..bdfabda 100644
---- a/fs/proc/kmsg.c
-+++ b/fs/proc/kmsg.c
-@@ -21,12 +21,12 @@ extern wait_queue_head_t log_wait;
- 
- static int kmsg_open(struct inode * inode, struct file * file)
- {
--	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_PROC);
- }
- 
- static int kmsg_release(struct inode * inode, struct file * file)
- {
--	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_FILE);
-+	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_PROC);
- 	return 0;
- }
- 
-@@ -34,15 +34,15 @@ static ssize_t kmsg_read(struct file *file, char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
- 	if ((file->f_flags & O_NONBLOCK) &&
--	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return -EAGAIN;
--	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_PROC);
- }
- 
- static unsigned int kmsg_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &log_wait, wait);
--	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return POLLIN | POLLRDNORM;
- 	return 0;
- }
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 3891139..98a3153 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -44,8 +44,8 @@
- /* Return size of the log buffer */
- #define SYSLOG_ACTION_SIZE_BUFFER   10
- 
--#define SYSLOG_FROM_CALL 0
--#define SYSLOG_FROM_FILE 1
-+#define SYSLOG_FROM_READER           0
-+#define SYSLOG_FROM_PROC             1
- 
- int do_syslog(int type, char __user *buf, int count, bool from_file);
- 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 267ce78..0f0ac58 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -362,6 +362,53 @@ static void log_store(int facility, int level,
- 	log_next_seq++;
- }
- 
-+#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-+int dmesg_restrict = 1;
-+#else
-+int dmesg_restrict;
-+#endif
-+
-+static int syslog_action_restricted(int type)
-+{
-+	if (dmesg_restrict)
-+		return 1;
-+	/*
-+	 * Unless restricted, we allow "read all" and "get buffer size"
-+	 * for everybody.
-+	 */
-+	return type != SYSLOG_ACTION_READ_ALL &&
-+	       type != SYSLOG_ACTION_SIZE_BUFFER;
-+}
-+
-+static int check_syslog_permissions(int type, bool from_file)
-+{
-+	/*
-+	 * If this is from /proc/kmsg and we've already opened it, then we've
-+	 * already done the capabilities checks at open time.
-+	 */
-+	if (from_file && type != SYSLOG_ACTION_OPEN)
-+		return 0;
-+
-+	if (syslog_action_restricted(type)) {
-+		if (capable(CAP_SYSLOG))
-+			return 0;
-+		/*
-+		 * For historical reasons, accept CAP_SYS_ADMIN too, with
-+		 * a warning.
-+		 */
-+		if (capable(CAP_SYS_ADMIN)) {
-+			pr_warn_once("%s (%d): Attempt to access syslog with "
-+				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
-+				     "(deprecated).\n",
-+				 current->comm, task_pid_nr(current));
-+			return 0;
-+		}
-+		return -EPERM;
-+	}
-+	return security_syslog(type);
-+}
-+
-+
- /* /dev/kmsg - userspace message inject/listen interface */
- struct devkmsg_user {
- 	u64 seq;
-@@ -618,7 +665,8 @@ static int devkmsg_open(struct inode *inode, struct file *file)
- 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
- 		return 0;
- 
--	err = security_syslog(SYSLOG_ACTION_READ_ALL);
-+	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+				       SYSLOG_FROM_READER);
- 	if (err)
- 		return err;
- 
-@@ -811,45 +859,6 @@ static inline void boot_delay_msec(int level)
- }
- #endif
- 
--#ifdef CONFIG_SECURITY_DMESG_RESTRICT
--int dmesg_restrict = 1;
--#else
--int dmesg_restrict;
--#endif
--
--static int syslog_action_restricted(int type)
--{
--	if (dmesg_restrict)
--		return 1;
--	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
--	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
--}
--
--static int check_syslog_permissions(int type, bool from_file)
--{
--	/*
--	 * If this is from /proc/kmsg and we've already opened it, then we've
--	 * already done the capabilities checks at open time.
--	 */
--	if (from_file && type != SYSLOG_ACTION_OPEN)
--		return 0;
--
--	if (syslog_action_restricted(type)) {
--		if (capable(CAP_SYSLOG))
--			return 0;
--		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
--		if (capable(CAP_SYS_ADMIN)) {
--			printk_once(KERN_WARNING "%s (%d): "
--				 "Attempt to access syslog with CAP_SYS_ADMIN "
--				 "but no CAP_SYSLOG (deprecated).\n",
--				 current->comm, task_pid_nr(current));
--			return 0;
--		}
--		return -EPERM;
--	}
--	return 0;
--}
--
- #if defined(CONFIG_PRINTK_TIME)
- static bool printk_time = 1;
- #else
-@@ -1247,7 +1256,7 @@ out:
- 
- SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
- {
--	return do_syslog(type, buf, len, SYSLOG_FROM_CALL);
-+	return do_syslog(type, buf, len, SYSLOG_FROM_READER);
- }
- 
- /*
--- 
-1.8.1.2
+[34385.251507] ------------[ cut here ]------------
+[34385.254068] WARNING: at fs/btrfs/inode.c:7961 btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
+[34385.257275] Modules linked in: vmw_vsock_vmci_transport vmw_vmci vsock bridge 8021q garp stp mrp raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx raid1 xfs btrfs xor raid6_pq libcrc32c zlib_deflate tun hidp fuse cmtp kernelcapi rfcomm bnep l2tp_ppp l2tp_netlink l2tp_core nfnetlink ipt_ULOG can_raw phonet scsi_transport_iscsi ipx p8023 p8022 irda af_802154 caif_socket caif crc_ccitt rds af_key appletalk psnap pppoe pppox af_rxrpc ppp_generic slhc nfc rose netrom atm llc2 ax25 llc can_bcm x25 can raid0 kvm_amd snd_hda_codec_realtek kvm snd_hda_intel snd_hda_codec microcode snd_pcm pcspkr serio_raw btusb edac_core snd_page_alloc snd_timer bluetooth snd soundcore rfkill r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+[34385.287768] CPU: 3 PID: 1677385 Comm: umount Not tainted 3.10.0-rc6+ #6 [loadavg: 21.16 26.58 27.93 2/170 1677389]
+[34385.290479] Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+[34385.292974]  ffffffffa05eaffa ffff88011fed3cd8 ffffffff816aee0f ffff88011fed3d10
+[34385.295432]  ffffffff810432b0 ffff8801101172b8 ffff8801101172b8 ffff8800a3cb1148
+[34385.297745]  ffffffffa05e47a0 ffff8800bbe1c020 ffff88011fed3d20 ffffffff8104339a
+[34385.300664] Call Trace:
+[34385.302368]  [<ffffffff816aee0f>] dump_stack+0x19/0x1b
+[34385.305202]  [<ffffffff810432b0>] warn_slowpath_common+0x70/0xa0
+[34385.308010]  [<ffffffff8104339a>] warn_slowpath_null+0x1a/0x20
+[34385.310529]  [<ffffffffa057f7d5>] btrfs_destroy_inode+0x265/0x2e0 [btrfs]
+[34385.313020]  [<ffffffff811ccd78>] destroy_inode+0x38/0x60
+[34385.315214]  [<ffffffff811cceae>] evict+0x10e/0x1a0
+[34385.317198]  [<ffffffff811cd7f5>] iput+0x105/0x190
+[34385.319169]  [<ffffffffa055c77f>] btrfs_put_block_group_cache+0x8f/0xc0 [btrfs]
+[34385.321464]  [<ffffffffa0569794>] close_ctree+0xe4/0x290 [btrfs]
+[34385.323603]  [<ffffffff811cdc8c>] ? evict_inodes+0xfc/0x110
+[34385.326237]  [<ffffffffa053eb69>] btrfs_put_super+0x19/0x20 [btrfs]
+[34385.328880]  [<ffffffff811b2f71>] generic_shutdown_super+0x61/0xf0
+[34385.331527]  [<ffffffff811b31c2>] kill_anon_super+0x12/0x20
+[34385.334146]  [<ffffffffa0540dc6>] btrfs_kill_super+0x16/0x90 [btrfs]
+[34385.336457]  [<ffffffff811b371d>] deactivate_locked_super+0x4d/0x80
+[34385.338666]  [<ffffffff811b3796>] deactivate_super+0x46/0x60
+[34385.340782]  [<ffffffff811d3b27>] mntput_no_expire+0xd7/0x130
+[34385.342899]  [<ffffffff811d49ec>] SyS_umount+0x9c/0x3b0
+[34385.345778]  [<ffffffff816bf3d4>] tracesys+0xdd/0xe2
+[34385.348560] ---[ end trace 0d6b7f873e402e88 ]---
 
