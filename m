@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3FQRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:41:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50708 "EHLO
+	id S1754722Ab3FQRgD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:36:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50676 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab3FQRgF (ORCPT
+	with ESMTP id S1754654Ab3FQRf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:36:05 -0400
+	Mon, 17 Jun 2013 13:35:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 22/84] USB: mos7720: fix message timeouts
-Date: Mon, 17 Jun 2013 10:30:26 -0700
-Message-Id: <1371490288-23167-23-git-send-email-kamal@canonical.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 54/84] hwmon: (adm1021) Strengthen chip detection for ADM1021, LM84 and MAX1617
+Date: Mon, 17 Jun 2013 10:30:58 -0700
+Message-Id: <1371490288-23167-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,51 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 849513a7809175420d353625b6f651d961e99d49 upstream.
+commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
 
-The control and bulk-message timeouts are specified in milliseconds and
-should not depend on HZ.
+On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
+as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
+Also improve detection for ADM1021.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Modeled after chip detection code in sensors-detect command.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/mos7720.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hwmon/adm1021.c | 58 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 50 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index 1b2bcdc..d9da2d4 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -40,7 +40,7 @@
- #define DRIVER_DESC "Moschip USB Serial Driver"
+diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
+index fd1d1b1..f9df316 100644
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -332,26 +332,68 @@ static int adm1021_detect(struct i2c_client *client,
+ 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
+ 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
  
- /* default urb timeout */
--#define MOS_WDR_TIMEOUT	(HZ * 5)
-+#define MOS_WDR_TIMEOUT	5000
++	if (man_id < 0 || dev_id < 0)
++		return -ENODEV;
++
+ 	if (man_id == 0x4d && dev_id == 0x01)
+ 		type_name = "max1617a";
+ 	else if (man_id == 0x41) {
+ 		if ((dev_id & 0xF0) == 0x30)
+ 			type_name = "adm1023";
+-		else
++		else if ((dev_id & 0xF0) == 0x00)
+ 			type_name = "adm1021";
++		else
++			return -ENODEV;
+ 	} else if (man_id == 0x49)
+ 		type_name = "thmc10";
+ 	else if (man_id == 0x23)
+ 		type_name = "gl523sm";
+ 	else if (man_id == 0x54)
+ 		type_name = "mc1066";
+-	/* LM84 Mfr ID in a different place, and it has more unused bits */
+-	else if (conv_rate == 0x00
+-		 && (config & 0x7F) == 0x00
+-		 && (status & 0xAB) == 0x00)
+-		type_name = "lm84";
+-	else
+-		type_name = "max1617";
++	else {
++		int lte, rte, lhi, rhi, llo, rlo;
++
++		/* extra checks for LM84 and MAX1617 to avoid misdetections */
++
++		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
++		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
++
++		/* fail if any of the additional register reads failed */
++		if (llo < 0 || rlo < 0)
++			return -ENODEV;
++
++		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
++		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
++		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
++		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
++
++		/*
++		 * Fail for negative temperatures and negative high limits.
++		 * This check also catches read errors on the tested registers.
++		 */
++		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
++			return -ENODEV;
++
++		/* fail if all registers hold the same value */
++		if (lte == rte && lte == lhi && lte == rhi && lte == llo
++		    && lte == rlo)
++			return -ENODEV;
++
++		/*
++		 * LM84 Mfr ID is in a different place,
++		 * and it has more unused bits.
++		 */
++		if (conv_rate == 0x00
++		    && (config & 0x7F) == 0x00
++		    && (status & 0xAB) == 0x00) {
++			type_name = "lm84";
++		} else {
++			/* fail if low limits are larger than high limits */
++			if ((s8)llo > lhi || (s8)rlo > rhi)
++				return -ENODEV;
++			type_name = "max1617";
++		}
++	}
  
- #define MOS_MAX_PORT	0x02
- #define MOS_WRITE	0x0E
-@@ -2006,7 +2006,7 @@ static int mos7720_startup(struct usb_serial *serial)
- 
- 	/* setting configuration feature to one */
- 	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5*HZ);
-+			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5000);
- 
- 	/* start the interrupt urb */
- 	ret_val = usb_submit_urb(serial->port[0]->interrupt_in_urb, GFP_KERNEL);
-@@ -2049,7 +2049,7 @@ static void mos7720_release(struct usb_serial *serial)
- 		/* wait for synchronous usb calls to return */
- 		if (mos_parport->msg_pending)
- 			wait_for_completion_timeout(&mos_parport->syncmsg_compl,
--						    MOS_WDR_TIMEOUT);
-+					    msecs_to_jiffies(MOS_WDR_TIMEOUT));
- 
- 		parport_remove_port(mos_parport->pp);
- 		usb_set_serial_data(serial, NULL);
+ 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
+ 		 type_name, i2c_adapter_id(adapter), client->addr);
 -- 
 1.8.1.2
 
