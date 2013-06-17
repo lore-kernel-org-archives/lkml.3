@@ -1,103 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab3FQGnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:43:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41155 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3FQGnR (ORCPT
+	id S932160Ab3FQGo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:44:58 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34400 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab3FQGo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:43:17 -0400
-Date: Mon, 17 Jun 2013 16:43:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: linux-next: manual merge of the arm-soc tree with the net-next tree
-Message-Id: <20130617164314.16ac062ac1d9f9a880aa1e07@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_16_43_14_+1000_1uTom2tmFfVdO9eu"
+	Mon, 17 Jun 2013 02:44:56 -0400
+Message-ID: <51BEB05C.7040802@linux.vnet.ibm.com>
+Date: Mon, 17 Jun 2013 14:44:44 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Lei Wen <adrian.wenl@gmail.com>
+CC: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
+References: <1371435692-18831-1-git-send-email-leiwen@marvell.com> <51BE8213.4000701@linux.vnet.ibm.com> <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
+In-Reply-To: <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061706-9264-0000-0000-000003F51A0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_16_43_14_+1000_1uTom2tmFfVdO9eu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/17/2013 01:08 PM, Lei Wen wrote:
+> Hi Michael,
+> 
+> On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
+> <wangyun@linux.vnet.ibm.com> wrote:
+>> Hi, Lei
+>>
+>> On 06/17/2013 10:21 AM, Lei Wen wrote:
+>>> nr_busy_cpus in sched_group_power structure cannot present the purpose
+>>> for judging below statement:
+>>> "this cpu's scheduler group has multiple busy cpu's exceeding
+>>>  the group's power."
+>>>
+>>> But only could tell how many cpus is doing their jobs for currently.
+>>
+>> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
+>> idle, the logical here in nohz_kick_needed() is:
+>>
+>>         if domain cpus share resources and at least 2 cpus in
+>>         local group are not idle, prefer to do balance.
+>>
+> 
+> Seems reasonable for me. But this comment is conflicted with current documented
+> one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
+> "scheduler group has multiple busy cpu;s exceeding the group's power"?
 
-Hi all,
+I agree it doesn't make sense (to me), the logical here only make sure
+there are at least 2 non-idle cpus in local group, we may need some more
+powerful folks to confirm that point.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-shmobile/clock-r8a7778.c between commit 589ebdef7e31
-("sh_eth: get R8A777x support out of #ifdef") from the net-next tree and
-commits 1189b1cb50a0 ("ARM: shmobile: r8a7778: add SDHI clock support")
-and 02474a41e618 ("ARM: shmobile: r8a7778: add USB support") from the
-arm-soc tree.
+> 
+>> And the idea behind is, we catch the timing when there are idle-cpu and
+>> busy-group and task-moving may cost low.
+> 
+> Since there is only one task over runqueue now, then why we could need the
+> load balance any way?...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+IMHO, this is just shot in the darkness... like 'I think in such cases
+the chances of requiring a balance will be high', but the problem is,
+the logical is already in mainline for some reasons, if we want to say
+that is wrong, then we need to collect enough proof...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>>
+>> Your change will remove this timing for balance, I think you may need
+>> some test to prove that this patch will make things better.
+> 
+> I see. Yes, test data is always good. :)
+> Do you have any suggestion like using what kind of test program to
+> collect this data?
 
-diff --cc arch/arm/mach-shmobile/clock-r8a7778.c
-index 9614b07,53798e5..0000000
---- a/arch/arm/mach-shmobile/clock-r8a7778.c
-+++ b/arch/arm/mach-shmobile/clock-r8a7778.c
-@@@ -76,8 -136,22 +136,22 @@@ static struct clk mstp_clks[MSTP_NR] =3D=20
-  };
- =20
-  static struct clk_lookup lookups[] =3D {
-+ 	/* main */
-+ 	CLKDEV_CON_ID("shyway_clk",	&s_clk),
-+ 	CLKDEV_CON_ID("peripheral_clk",	&p_clk),
-+=20
-  	/* MSTP32 clocks */
-+ 	CLKDEV_DEV_ID("sh_mmcif", &mstp_clks[MSTP331]), /* MMC */
-+ 	CLKDEV_DEV_ID("sh_mobile_sdhi.0", &mstp_clks[MSTP323]), /* SDHI0 */
-+ 	CLKDEV_DEV_ID("sh_mobile_sdhi.1", &mstp_clks[MSTP322]), /* SDHI1 */
-+ 	CLKDEV_DEV_ID("sh_mobile_sdhi.2", &mstp_clks[MSTP321]), /* SDHI2 */
- -	CLKDEV_DEV_ID("sh-eth",	&mstp_clks[MSTP114]), /* Ether */
- +	CLKDEV_DEV_ID("r8a777x-ether", &mstp_clks[MSTP114]), /* Ether */
-+ 	CLKDEV_DEV_ID("ehci-platform", &mstp_clks[MSTP100]), /* USB EHCI port0/1=
- */
-+ 	CLKDEV_DEV_ID("ohci-platform", &mstp_clks[MSTP100]), /* USB OHCI port0/1=
- */
-+ 	CLKDEV_DEV_ID("i2c-rcar.0", &mstp_clks[MSTP030]), /* I2C0 */
-+ 	CLKDEV_DEV_ID("i2c-rcar.1", &mstp_clks[MSTP029]), /* I2C1 */
-+ 	CLKDEV_DEV_ID("i2c-rcar.2", &mstp_clks[MSTP028]), /* I2C2 */
-+ 	CLKDEV_DEV_ID("i2c-rcar.3", &mstp_clks[MSTP027]), /* I2C3 */
-  	CLKDEV_DEV_ID("sh-sci.0", &mstp_clks[MSTP026]), /* SCIF0 */
-  	CLKDEV_DEV_ID("sh-sci.1", &mstp_clks[MSTP025]), /* SCIF1 */
-  	CLKDEV_DEV_ID("sh-sci.2", &mstp_clks[MSTP024]), /* SCIF2 */
+Any workload which require a good balance to check whether the patch
+cause damage, any workload which is latency-sensitive to check whether
+the patch bring benefit, what about kernbench with enough threads firstly?
 
---Signature=_Mon__17_Jun_2013_16_43_14_+1000_1uTom2tmFfVdO9eu
-Content-Type: application/pgp-signature
+Actually all the popular benchmark worth a try, until some improvement
+was found, if after all the test, still no benefit located, then the
+idea may have to be dropped...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Regards,
+Michael Wang
 
-iQIcBAEBCAAGBQJRvrACAAoJEECxmPOUX5FEeQoP/0AXm7ldR9plgi5xkGjJI6lR
-i9E2zhF+Fvb/uEZWWSZAlvsTNlzUeCw15AKLEfISzv5PEmgG3BAoK/rYjFGWUQsj
-PyofwCZkmLOUcE775+d8Qqfzd/+tP2zWPqN42ftMqum9HznNccStgBDai0N8dqWJ
-OWxKIiXj+/eTAxtYWq52u5no5jamlUASKeqbljpBcLSO4zfzRmuJSQeEg+OFfeth
-yj9vc9HMrQ3/v7V4WX0+uiGXI7qwZP3sPJFAB5qCqndcvpg7vKb78IGod/Tv1HPA
-apywmd+rLSqS7osCGgQa9Y0iiXdC3KJSHnunwywS5pwDAjv13m9Z/5cdxMnRFvCn
-PmN7T+QhXZJDiuQlweBVgZVJ1tzF7yxHikxISSGYz8JPjV4VZ2Vs8CS93YSglvfA
-jhROW+7LFR7IX0tenzMgXx1qS+GMD+MdvqxjepizX7CYLBNY9yULJLbJk/4tJGp3
-VpEZFZMbaO2xxrqVuceJsX/tPf3LlJKHvsWlzSefFB5SUiIplZ/uBqpsyo12MUL7
-0rzdJ72vedvdcv5uiZ/3yJZsIdSy+J4U6UftJyKFz196cxZi+ha3vcjlbrjIFXOs
-vka5r54MF9tK6yTPfq/QGd+iQ3ujS1cvVJ02HoZ1+tfZIF1vrpJwCoVrQJd1FI9m
-5iHJMHOx7IzrZhKRij8E
-=BKJP
------END PGP SIGNATURE-----
+> 
+> Thanks,
+> Lei
+> 
+>>
+>> Regards,
+>> Michael Wang
+>>
+>>>
+>>> However, the original purpose to add this logic still looks good.
+>>> So we move this kind of logic to find_new_ilb, so that we could pick
+>>> out peer from our sharing resource domain whenever possible.
+>>>
+>>> Signed-off-by: Lei Wen <leiwen@marvell.com>
+>>> ---
+>>>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
+>>>  1 file changed, 22 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index c61a614..64f9120 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -5368,10 +5368,31 @@ static struct {
+>>>       unsigned long next_balance;     /* in jiffy units */
+>>>  } nohz ____cacheline_aligned;
+>>>
+>>> +/*
+>>> + * Add the heuristic logic to try waking up idle cpu from
+>>> + * those peers who share resources with us, so that the
+>>> + * cost would be brought to minimum.
+>>> + */
+>>>  static inline int find_new_ilb(int call_cpu)
+>>>  {
+>>> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
+>>> +     int ilb = nr_cpu_ids;
+>>> +     struct sched_domain *sd;
+>>> +
+>>> +     rcu_read_lock();
+>>> +     for_each_domain(call_cpu, sd) {
+>>> +             /* We loop till sched_domain no longer share resource */
+>>> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+>>> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
+>>> +                     break;
+>>> +             }
+>>>
+>>> +             /* else, we would try to pick the idle cpu from peers first */
+>>> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
+>>> +                             sched_domain_span(sd));
+>>> +             if (ilb < nr_cpu_ids)
+>>> +                     break;
+>>> +     }
+>>> +     rcu_read_unlock();
+>>>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>>>               return ilb;
+>>>
+>>> @@ -5620,8 +5641,6 @@ end:
+>>>   * Current heuristic for kicking the idle load balancer in the presence
+>>>   * of an idle cpu is the system.
+>>>   *   - This rq has more than one task.
+>>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
+>>> - *     busy cpu's exceeding the group's power.
+>>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>>>   *     domain span are idle.
+>>>   */
+>>> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>>               struct sched_group_power *sgp = sg->sgp;
+>>>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
+>>>
+>>> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+>>> -                     goto need_kick_unlock;
+>>> -
+>>>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+>>>                   && (cpumask_first_and(nohz.idle_cpus_mask,
+>>>                                         sched_domain_span(sd)) < cpu))
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
---Signature=_Mon__17_Jun_2013_16_43_14_+1000_1uTom2tmFfVdO9eu--
