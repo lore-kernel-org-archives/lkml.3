@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3FQXwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:52:22 -0400
-Received: from mail-ye0-f177.google.com ([209.85.213.177]:62797 "EHLO
-	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab3FQXwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:52:21 -0400
-Date: Mon, 17 Jun 2013 16:52:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Part1 PATCH v5 07/22] x86, ACPI: Store override acpi tables
- phys addr in cpio files info array
-Message-ID: <20130617235212.GQ32663@mtj.dyndns.org>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
- <1371128589-8953-8-git-send-email-tangchen@cn.fujitsu.com>
+	id S1753202Ab3FQXxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:53:04 -0400
+Received: from etezian.org ([198.101.225.253]:46092 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357Ab3FQXxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 19:53:03 -0400
+Date: Tue, 18 Jun 2013 01:54:26 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andi Shyti <andi@etezian.org>, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        pc@asdf.org, oatilla@gmail.com
+Subject: Re: [PATCH 01/19] bh1770glc: added input device interface
+Message-ID: <20130617235426.GE4454@jack.whiskey>
+References: <cover.1371145891.git.andi@etezian.org>
+ <90a9ed312d038eda11648a6ed49bb968824bf875.1371145891.git.andi@etezian.org>
+ <20130617225241.GB21613@kroah.com>
+ <20130617232739.GA4454@jack.whiskey>
+ <20130617233607.GC14084@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371128589-8953-8-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <20130617233607.GC14084@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 09:02:54PM +0800, Tang Chen wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
+> > > > The driver generates an event in /dev/input/ under the name
+> > > > 'bh1770'. It's a switch event where is reported '0' or '1'
+> > > > whenever the sensor detects something crossing the threshold.
+> > > > 
+> > > Doesn't this mean that this driver is now an "input" driver, so it
+> > > shouldn't be using the odd sysfs api, and should move to the
+> > > drivers/input/ directory tree?
+> > 
+> > The driver has also lots of interfaces in
+> > sysfs that are used from userspace, like proximity value and
+> > ambient light value.
+> > 
+> > What the input interface provides is just one of the features
+> > from the driver. Shall I move it anyway?
 > 
-> This patch introduces a file_pos struct to store physaddr. And then changes
-> acpi_initrd_files[] to file_pos type. Then store physaddr of ACPI tables
-> in acpi_initrd_files[].
-> 
-> For finding, we will find ACPI tables with physaddr during 32bit flat mode
-> in head_32.S, because at that time we don't need to setup page table to
-> access initrd.
-> 
-> For copying, we could use early_ioremap() with physaddr directly before
-> memory mapping is set.
-> 
-> To keep 32bit and 64bit platforms consistent, use phys_addr for all.
+> Hm, why not make it an iio driver instead?  That way you get input and
+> sysfs all together.
 
-Also, how about something like the following?
+I'll do my best to get the hardware I need, then, so that once I
+do it I'll do it fully correct :)
 
-Subject: x86, ACPI: introduce a new struct to store phys_addr of acpi override tables
+Then, just ignore this patches and I'll come later with a new
+patchset.
 
-ACPI initrd override table handling has been recently broken into two
-functions - acpi_initrd_override_find() and
-acpi_initrd_override_copy().  The former function currently stores the
-virtual addresses and sizes of the found override tables in an array
-of struct cpio_data for the latter function.
+But I still wonder: this is a combined proximity/ambient light
+sensor, where exactly should I move it? Is it correct to create a
+new directory for combined sensors?
 
-To make NUMA information available earlier during boot,
-acpi_initrd_override_find() will be used much earlier - on 32bit, from
-head_32.S before linear address translation is set up, which will make
-it impossible to use the virtual addresses of the tables.
-
-This patch introduces a new struct - file_pos - which records
-phys_addr and size of a memory area, and replaces the cpio_data array
-with it so that acpi_initrd_override_find() can record the phys_addrs
-of the override tables instead of virtual addresses.  This will allow
-using the function before the linear address is set up.
-
-acpi_initrd_override_copy() now accesses the override tables using
-early_ioremap() on the stored phys_addrs.
-
--- 
-tejun
+Andi
