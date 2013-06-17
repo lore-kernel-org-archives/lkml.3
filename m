@@ -1,361 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3FQUGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:06:45 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:55511 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3FQUGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:06:43 -0400
-Date: Mon, 17 Jun 2013 14:06:39 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3, part2 01/20] PCI: introduce hotplug-safe PCI bus
- iterators
-Message-ID: <20130617200639.GA7877@google.com>
-References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
- <1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
+	id S1752915Ab3FQUJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:09:45 -0400
+Received: from mail.us.es ([193.147.175.20]:55405 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab3FQUJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 16:09:43 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.8/17369. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.8/7.5):. 
+ Processed in 1.757334 secs); 17 Jun 2013 20:09:41 -0000
+X-Envelope-From: pneira@us.es
+Date: Mon, 17 Jun 2013 22:09:38 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [netlink] WARNING: at mm/vmalloc.c:1487 __vunmap()
+Message-ID: <20130617200938.GA14567@localhost>
+References: <20130614220119.GA12954@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <20130614220119.GA12954@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 11:52:58PM +0800, Jiang Liu wrote:
-> Introduce hotplug-safe PCI bus iterators as below, which hold a
-> reference on the returned PCI bus object.
-> bool pci_bus_exists(int domain, int busnr);
-> struct pci_bus *pci_get_bus(int domain, int busnr);
-> struct pci_bus *pci_get_next_bus(struct pci_bus *from);
-> struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
-> #define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
-> #define for_each_pci_root_bus(b)  \
-> 		for (b = NULL; (b = pci_get_next_root_bus(b)); )
-> 
-> The long-term goal is to remove hotplug-unsafe pci_find_bus(),
-> pci_find_next_bus() and the global pci_root_buses list.
+On Sat, Jun 15, 2013 at 06:01:19AM +0800, Fengguang Wu wrote:
+>     netlink: allow large data transfers from user-space
+[...]
+> [   65.085802] init: plymouth-upstart-bridge main process (345) terminated with status 1
+> [   65.138243] ------------[ cut here ]------------
+> [   65.140281] WARNING: at /c/kernel-tests/src/tip/mm/vmalloc.c:1487 __vunmap+0x10b/0x110()
+> [   65.143247] Trying to vfree() nonexistent vm area (ffffc90000810000)
+> [   65.145697] CPU: 0 PID: 145 Comm: trinity Not tainted 3.10.0-rc5-00652-ge8a36a6 #9
+> [   65.148822] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> [   65.151073]  0000000000000009 ffff88000f3b7bc8 ffffffff81d3e5b3 ffff88000f3b7c08
+> [   65.154718]  ffffffff810cf7a6 ffff88000f3b7c28 ffffc90000810000 0000000000000000
+> [   65.158343]  0000000000000001 ffff88000dc36620 ffff8800091c87b0 ffff88000f3b7c68
+> [   65.161574] Call Trace:
+> [   65.162609]  [<ffffffff81d3e5b3>] dump_stack+0x19/0x1b
+> [   65.164349]  [<ffffffff810cf7a6>] warn_slowpath_common+0x66/0x90
+> [   65.166294]  [<ffffffff810cf841>] warn_slowpath_fmt+0x41/0x50
+> [   65.168286]  [<ffffffff81166f7b>] __vunmap+0x10b/0x110
+> [   65.170351]  [<ffffffff81166e2f>] vfree+0x2f/0x70
+> [   65.172272]  [<ffffffff81afd478>] netlink_skb_destructor+0xb8/0x100
+> [   65.174645]  [<ffffffff81aac8a1>] skb_release_head_state+0x51/0xb0
+> [   65.177009]  [<ffffffff81aadb61>] skb_release_all+0x11/0x30
+> [   65.179175]  [<ffffffff81aadb91>] __kfree_skb+0x11/0x90
+> [   65.181293]  [<ffffffff81aad9d9>] kfree_skb+0x19/0x40
+> [   65.183308]  [<ffffffff81ab00a8>] skb_queue_purge+0x18/0x30
+> [   65.185482]  [<ffffffff81afd858>] netlink_sock_destruct+0x38/0x110
+> [   65.187873]  [<ffffffff81aa8c3a>] __sk_free+0x1a/0x120
+> [   65.189911]  [<ffffffff81aa9989>] sk_free+0x19/0x20
+> [   65.191875]  [<ffffffff81afec77>] netlink_release+0x177/0x2d0
+> [   65.194086]  [<ffffffff81aa6208>] sock_release+0x18/0x70
+> [   65.196172]  [<ffffffff81aa645d>] sock_close+0xd/0x20
+> [   65.198190]  [<ffffffff8118ae55>] __fput+0xf5/0x240
+> [   65.200189]  [<ffffffff8118b069>] ____fput+0x9/0x10
+> [   65.202139]  [<ffffffff810eb955>] task_work_run+0x85/0xc0
+> [   65.204257]  [<ffffffff810d4942>] do_exit+0x232/0x920
+> [   65.206262]  [<ffffffff810d50ab>] do_group_exit+0x3b/0x90
+> [   65.208353]  [<ffffffff810d5112>] SyS_exit_group+0x12/0x20
+> [   65.210517]  [<ffffffff81d46827>] system_call_fastpath+0x16/0x1b
+> [   65.212811] ---[ end trace 9a70fd0f1776886b ]---
 
-I think you should mark the unsafe interfaces as __deprecated so
-users will get compile-time warnings.
+I've been trying to trigger this bug here with no success using
+different communication configurations (userspace <-> userspace,
+userspace <-> kernelspace).
 
-I don't think pci_bus_exists() is a safe interface, because the value
-it returns may be incorrect before the caller can look at it.  The
-only safe thing would be to make it so we try to create the bus
-and return failure if it already exists.  Then the mutex can be in
-the code that creates the bus.
+The address that vfree shows seems good to me and we always set
+skb->head to NULL after releasing the network buffer.
 
-I don't see any uses of for_each_pci_bus(), so please remove that.
-
-It sounds like we don't have a consensus on how to iterate over
-PCI root buses.  If you separate that from the pci_get_bus()
-changes, maybe we can at least move forward on the pci_get_bus()
-stuff.
-
-Bjorn
-
-> These new interfaces may be a littler slower than existing interfaces,
-> but it should be acceptable because they are not used on hot paths.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/pci/pci.h    |   1 +
->  drivers/pci/probe.c  |   2 +-
->  drivers/pci/search.c | 159 +++++++++++++++++++++++++++++++++++++++++----------
->  include/linux/pci.h  |  23 +++++++-
->  4 files changed, 153 insertions(+), 32 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index 68678ed..8fe15f6 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -126,6 +126,7 @@ static inline void pci_remove_legacy_files(struct pci_bus *bus) { return; }
->  
->  /* Lock for read/write access to pci device and bus lists */
->  extern struct rw_semaphore pci_bus_sem;
-> +extern struct class pcibus_class;
->  
->  extern raw_spinlock_t pci_lock;
->  
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 2830070..1004a05 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -93,7 +93,7 @@ static void release_pcibus_dev(struct device *dev)
->  	kfree(pci_bus);
->  }
->  
-> -static struct class pcibus_class = {
-> +struct class pcibus_class = {
->  	.name		= "pci_bus",
->  	.dev_release	= &release_pcibus_dev,
->  	.dev_attrs	= pcibus_dev_attrs,
-> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-> index d0627fa..16ccaf8 100644
-> --- a/drivers/pci/search.c
-> +++ b/drivers/pci/search.c
-> @@ -52,20 +52,27 @@ pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
->  	return tmp;
->  }
->  
-> -static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
-> +struct pci_bus_match_arg {
-> +	int domain;
-> +	int bus;
-> +};
-> +
-> +static int pci_match_bus(struct device *dev, const void *data)
->  {
-> -	struct pci_bus* child;
-> -	struct list_head *tmp;
-> +	struct pci_bus *bus = to_pci_bus(dev);
-> +	const struct pci_bus_match_arg *arg = data;
->  
-> -	if(bus->number == busnr)
-> -		return bus;
-> +	return (pci_domain_nr(bus) == arg->domain && bus->number == arg->bus);
-> +}
->  
-> -	list_for_each(tmp, &bus->children) {
-> -		child = pci_do_find_bus(pci_bus_b(tmp), busnr);
-> -		if(child)
-> -			return child;
-> -	}
-> -	return NULL;
-> +static int pci_match_next_bus(struct device *dev, const void *data)
-> +{
-> +	return 1;
-> +}
-> +
-> +static int pci_match_next_root_bus(struct device *dev, const void *data)
-> +{
-> +	return pci_is_root_bus(to_pci_bus(dev));
->  }
->  
->  /**
-> @@ -76,20 +83,19 @@ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
->   * Given a PCI bus number and domain number, the desired PCI bus is located
->   * in the global list of PCI buses.  If the bus is found, a pointer to its
->   * data structure is returned.  If no bus is found, %NULL is returned.
-> + *
-> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
-> + * Please use pci_get_bus() instead which holds a reference on the returned
-> + * PCI bus.
->   */
-> -struct pci_bus * pci_find_bus(int domain, int busnr)
-> +struct pci_bus *pci_find_bus(int domain, int busnr)
->  {
-> -	struct pci_bus *bus = NULL;
-> -	struct pci_bus *tmp_bus;
-> +	struct pci_bus *bus;
->  
-> -	while ((bus = pci_find_next_bus(bus)) != NULL)  {
-> -		if (pci_domain_nr(bus) != domain)
-> -			continue;
-> -		tmp_bus = pci_do_find_bus(bus, busnr);
-> -		if (tmp_bus)
-> -			return tmp_bus;
-> -	}
-> -	return NULL;
-> +	bus = pci_get_bus(domain, busnr);
-> +	pci_bus_put(bus);
-> +
-> +	return bus;
->  }
->  
->  /**
-> @@ -100,21 +106,114 @@ struct pci_bus * pci_find_bus(int domain, int busnr)
->   * initiated by passing %NULL as the @from argument.  Otherwise if
->   * @from is not %NULL, searches continue from next device on the
->   * global list.
-> + *
-> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
-> + * Please use pci_get_next_root_bus() instead which holds a reference
-> + * on the returned PCI root bus.
->   */
->  struct pci_bus * 
->  pci_find_next_bus(const struct pci_bus *from)
->  {
-> -	struct list_head *n;
-> -	struct pci_bus *b = NULL;
-> +	struct device *dev = from ? (struct device *)&from->dev : NULL;
-> +
-> +	dev = class_find_device(&pcibus_class, dev, NULL,
-> +				&pci_match_next_root_bus);
-> +	if (dev) {
-> +		put_device(dev);
-> +		return to_pci_bus(dev);
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +bool pci_bus_exists(int domain, int busnr)
-> +{
-> +	struct device *dev;
-> +	struct pci_bus_match_arg arg = { domain, busnr };
->  
->  	WARN_ON(in_interrupt());
-> -	down_read(&pci_bus_sem);
-> -	n = from ? from->node.next : pci_root_buses.next;
-> -	if (n != &pci_root_buses)
-> -		b = pci_bus_b(n);
-> -	up_read(&pci_bus_sem);
-> -	return b;
-> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
-> +	if (dev)
-> +		put_device(dev);
-> +
-> +	return dev != NULL;
-> +}
-> +EXPORT_SYMBOL(pci_bus_exists);
-> +
-> +/**
-> + * pci_get_bus - locate PCI bus from a given domain and bus number
-> + * @domain: number of PCI domain to search
-> + * @busnr: number of desired PCI bus
-> + *
-> + * Given a PCI bus number and domain number, the desired PCI bus is located.
-> + * If the bus is found, a pointer to its data structure is returned.
-> + * If no bus is found, %NULL is returned.
-> + * Caller needs to release the returned bus by calling pci_bus_put().
-> + */
-> +struct pci_bus *pci_get_bus(int domain, int busnr)
-> +{
-> +	struct device *dev;
-> +	struct pci_bus_match_arg arg = { domain, busnr };
-> +
-> +	WARN_ON(in_interrupt());
-> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
-> +	if (dev)
-> +		return to_pci_bus(dev);
-> +
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(pci_get_bus);
-> +
-> +/**
-> + * pci_get_next_bus - begin or continue searching for a PCI bus
-> + * @from: Previous PCI bus found, or %NULL for new search.
-> + *
-> + * Iterates through the list of known PCI busses. If a PCI bus is found,
-> + * the reference count to the bus is incremented and a pointer to it is
-> + * returned. Otherwise, %NULL is returned. A new search is initiated by
-> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
-> + * searches continue from next bus on the global list. The reference count
-> + * for @from is always decremented if it is not %NULL.
-> + */
-> +struct pci_bus *pci_get_next_bus(struct pci_bus *from)
-> +{
-> +	struct device *dev = from ? &from->dev : NULL;
-> +
-> +	WARN_ON(in_interrupt());
-> +	dev = class_find_device(&pcibus_class, dev, NULL, &pci_match_next_bus);
-> +	pci_bus_put(from);
-> +	if (dev)
-> +		return to_pci_bus(dev);
-> +
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(pci_get_next_bus);
-> +
-> +/**
-> + * pci_find_next_root_bus - begin or continue searching for a PCI root bus
-> + * @from: Previous PCI bus found, or %NULL for new search.
-> + *
-> + * Iterates through the list of known PCI root busses. If a PCI bus is found,
-> + * the reference count to the root bus is incremented and a pointer to it is
-> + * returned. Otherwise, %NULL is returned. A new search is initiated by
-> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
-> + * searches continue from next root bus on the global list. The reference
-> + * count for @from is always decremented if it is not %NULL.
-> + */
-> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
-> +{
-> +	struct device *dev = from ? &from->dev : NULL;
-> +
-> +	WARN_ON(in_interrupt());
-> +	dev = class_find_device(&pcibus_class, dev, NULL,
-> +				&pci_match_next_root_bus);
-> +	pci_bus_put(from);
-> +	if (dev)
-> +		return to_pci_bus(dev);
-> +
-> +	return NULL;
->  }
-> +EXPORT_SYMBOL(pci_get_next_root_bus);
->  
->  /**
->   * pci_get_slot - locate PCI device for a given PCI slot
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 7b23fa0..1e43423 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -454,6 +454,9 @@ struct pci_bus {
->  
->  #define pci_bus_b(n)	list_entry(n, struct pci_bus, node)
->  #define to_pci_bus(n)	container_of(n, struct pci_bus, dev)
-> +#define for_each_pci_bus(b)	for (b = NULL; (b = pci_get_next_bus(b)); )
-> +#define for_each_pci_root_bus(b) \
-> +			for (b = NULL; (b = pci_get_next_root_bus(b)); )
->  
->  /*
->   * Returns true if the pci bus is root (behind host-pci bridge),
-> @@ -718,7 +721,6 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
->  void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
->  			     struct pci_bus_region *region);
->  void pcibios_scan_specific_bus(int busn);
-> -struct pci_bus *pci_find_bus(int domain, int busnr);
->  void pci_bus_add_devices(const struct pci_bus *bus);
->  struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
->  			int bus, struct pci_ops *ops, void *sysdata);
-> @@ -778,8 +780,15 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap);
->  int pci_find_next_ext_capability(struct pci_dev *dev, int pos, int cap);
->  int pci_find_ht_capability(struct pci_dev *dev, int ht_cap);
->  int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
-> +
-> +struct pci_bus *pci_find_bus(int domain, int busnr);
->  struct pci_bus *pci_find_next_bus(const struct pci_bus *from);
->  
-> +bool pci_bus_exists(int domain, int busnr);
-> +struct pci_bus *pci_get_bus(int domain, int busnr);
-> +struct pci_bus *pci_get_next_bus(struct pci_bus *from);
-> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
-> +
->  struct pci_dev *pci_get_device(unsigned int vendor, unsigned int device,
->  				struct pci_dev *from);
->  struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
-> @@ -1430,6 +1439,18 @@ static inline void pci_unblock_cfg_access(struct pci_dev *dev)
->  static inline struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
->  { return NULL; }
->  
-> +static inline bool pci_bus_exists(int domain, int busnr)
-> +{ return false; }
-> +
-> +static inline struct pci_bus *pci_get_bus(int domain, int busnr)
-> +{ return NULL; }
-> +
-> +static inline struct pci_bus *pci_get_next_bus(struct pci_bus *from)
-> +{ return NULL; }
-> +
-> +static inline struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
-> +{ return NULL; }
-> +
->  static inline struct pci_dev *pci_get_slot(struct pci_bus *bus,
->  						unsigned int devfn)
->  { return NULL; }
-> -- 
-> 1.8.1.2
-> 
+This patch also exposes the vmalloc infrastructure to user-space,
+which is something that didn't happen so far. Not sure if Trinity is
+uncovering a bug there.
