@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab3FQMEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:04:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45348 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab3FQMD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:03:58 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 81.197.64.154
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/F37wAji+mLvaZWVxuG7sX
-Date: Mon, 17 Jun 2013 05:03:41 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>, sudhakar.raj@ti.com
-Subject: Re: [PATCH 01/11] pinctrl: single: adopt pinctrl sleep mode
- management
-Message-ID: <20130617120340.GE10305@atomide.com>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
- <1369995191-20855-2-git-send-email-gururaja.hebbar@ti.com>
- <CACRpkdZjvW6M1Q+K3OD1x_Jkz91AofdOdBThyJLGJ+Wx-BDTNw@mail.gmail.com>
+	id S932854Ab3FQMJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:09:17 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:52157 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932696Ab3FQMJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 08:09:16 -0400
+Message-ID: <51BEFB32.1000301@schinagl.nl>
+Date: Mon, 17 Jun 2013 14:04:02 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZjvW6M1Q+K3OD1x_Jkz91AofdOdBThyJLGJ+Wx-BDTNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, gregkh@linuxfoundation.org, linux@arm.linux.org.uk,
+        Oliver Schinagl <oliver@schinagl.nl>, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl> <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl> <2828921.i3T9JhMInt@flatron> <51BEE6BF.30401@schinagl.nl> <20130617115129.GF16699@lukather>
+In-Reply-To: <20130617115129.GF16699@lukather>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [130617 04:38]:
-> On Fri, May 31, 2013 at 12:13 PM, Hebbar Gururaja
-> <gururaja.hebbar@ti.com> wrote:
-> 
-> > Make pinctrl-single able to handle suspend/resume events and change
-> > hogged pins states accordingly.
-> >
-> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Noone said anything about this patch, but it looks very straight-forward
-> to me and seems sound so I have applied it.
-> 
-> If Tony or Haojian has strong feelings about it I will dequeue it.
+On 17-06-13 13:51, Maxime Ripard wrote:
+> On Mon, Jun 17, 2013 at 12:36:47PM +0200, Oliver Schinagl wrote:
+>> On 15-06-13 12:28, Tomasz Figa wrote:
+>>>> +#define DRV_VERSION "1.0"
+>>>
+>>> What is this version thingy?
+>>>
+>>> Is there a versioning scheme defined for this driver? Do you expect it to
+>>> be changed every modification of this driver?
+>>>
+>>> I don't see any point of having such thing in a project with a version
+>>> control system, where you have all change history.
+>> Well we export something to userspace, while trivial there is the
+>> possibility it changes over time. Say A40 which outputs 256 bits
+>> instead of the current 128 bits. That would validate a bump in
+>> version number. It's purely so the user can be aware of differences
+>> in the driver. So maybe DRV_A[BP]I_VERSION would be better?
+>
+> Except that in that case, the userspace API won't change. You'll still
+> call read on the same file in sysfs. The only thing that will change
+> will be the number of bytes returned by your read function, which is
+> (or should be) totally fine.
+Aye, russel pointed this out as well, and I agree.
+>
+>>>> +/* We read the entire key, but only return the requested byte. This is
+>>>> of + * course slower then it could be and uses 4 times more reads as
+>>>> needed but + * keeps code simpler.
+>>>
+>>> I have no idea how often this is going to be read, but since the whole sid
+>>> is really small (16 bytes), maybe it would be better to simply read the ID
+>>> in probe to a buffer and then just memcpy from it in read().
+>> The sid will be read once (well all 16 bytes) during probe and after
+>> that only on user request. Right now we don't have a user (yet)
+>> other then the sysfs entry.
+>>
+>> In future, this key can be used to read the MAC (low reads) or AES
+>> keys for example (also low reads).
+>>
+>> Initially I had such an approach, but Maxime recommended against
+>> having the value cached.
+>>
+>> As I wrote to andy, the only 'more efficient' way would be to store
+>> the previously read key and see on the next read if its the same, So
+>> best case, we could save 4 reads. I think it makes the code
+>> unnecessarily complex for something that is read so little.
+>
+> I asked Oliver that because I felt like it could still be updated by the
+> user, and sysfs should report that.
+>
+> And since it's not like it would be used extensively and very often,
+> it's not a big deal anyway.
+Actually it might still be possible to change the sid. We have figured 
+out how we possible can program it (the 2.5 EFUSE_VDD pin, which olimex 
+actually mapped out on the board) but requires someone to actually take 
+the plunge and test it. So in theory, it can be changed still.
+>
+>>>> +
+>>>> +	if (offset >= SID_SIZE)
+>>>> +		goto exit;
+>>>
+>>> 		return 0; ...
+>> I did say in the changelog I opted for goto over return. But since
+>> everybody keeps preferring returns (I personally like 'one single
+>> exit point much more' I have already changed it all over to many
+>> returns, who am I to argue :)
+>
+> Yet, you don't have a single exit point neither, you have several of
+> them. You can say that you have a single return statement in your code,
+> which is true, yet you have several times a jump to this location, so we
+> can definitely say that you actually have several exit points. Please
+> also refer to the chapter 7 of the Documentation/CodingStyle file.
+>
+You are right of course :)
+>>>> +	return (u8)sid_key;
+>>>
+>>> Unnecessary casting.
+>> Unnecessary because of the &= 0xff above, or because you can put a
+>> 32bit int in an 8bit int without worries? (we only want the last
+>> byte).
+>
+> The latter. The & 0xff only filter out non-relevant informations from
+> your 32-bits integer in that case, that's all, it doesn't do any
+> casting.
+So for clarity not leave the cast? Will it hurt? Will the compiler not 
+do the cast anyway?
+>
+>>>> +	for (i = 0; i < size; i++) {
+>>>> +		if ((pos + i) >= SID_SIZE || (pos < 0))
+>>>> +			break;
+>>>> +		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
+>>>> +	}
+>>>
+>>> This could be greatly simplified if you just read the whole sid to memory
+>>> in probe and memcpy from it here.
+>> But can't because we don't want to cache it.
+>
+> And we can't simply use memcpy, since we will need to do some endianness
+> conversions. The data stored in the SID are big-endian, while we're
+> running most likely in little endian mode.
+>
+>>>> +	if (!pdev->dev.of_node) {
+>>>> +		dev_err(&pdev->dev, "No devicetree data available\n");
+>>>> +		ret = -ENXIO;
+>>>> +		goto exit;
+>>>> +	}
+>>>
+>>> What is this check for? You don't seem to need anything from dev.of_node
+>>> in this driver.
+>> My understanding was, that when using the device tree, we check if
+>> the device tree is atleast available. And we use
+>> platform_get_resource, doesn't that get the data from the device
+>> tree?
+>
+> If there's no device tree, you won't be probed in the first place. And
+> resources get filled by the kernel from the device tree automatically at
+> boot, so you're safe to assume that the resources are there when you get
+> probed.
+Ahh, assumption, the mother.
+But I put my trust in you ;)
 
-I don't like the hogged pins at all as they prevent me from unloading
-pinctrl-single.. But the patch seems fine to me:
+I'll remove it
+>
+> You need this check when you actually need some more informations from
+> the DT, the value of an additional property for example.
+I'll learn about that soon enough ;)
+>
+> Maxime
+Thanks again maxime :)
+>
 
-Acked-by: Tony Lindgren <tony@atomide.com>
