@@ -1,149 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab3FQKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:48:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264Ab3FQKsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:48:06 -0400
-Message-ID: <51BEE965.5040509@suse.de>
-Date: Mon, 17 Jun 2013 12:48:05 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
+	id S932649Ab3FQKsl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:48:41 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:27065
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932264Ab3FQKsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:48:39 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI936eI1dbaI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1de2h1dfeh1dffh1155h)
+Date: Mon, 17 Jun 2013 18:48:32 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>, <leoli@freescale.com>, <scottwood@freescale.com>,
+        <Priyanka.Jain@freescale.com>
+Subject: Re: [PATCH][RFC] kernel/cpu: do not change the cpus_allowed of the
+ current task when unplugging cpus
+Message-ID: <20130617104832.GA20410@localhost.localdomain>
+References: <1368699439-13034-1-git-send-email-chenhui.zhao@freescale.com>
+ <20130607090543.GD10280@linutronix.de>
+ <20130609095942.GA8548@localhost.localdomain>
+ <20130614152917.GA8597@linutronix.de>
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 1/4] KVM: PPC: Add support for multiple-TCE hcalls
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru> <1370412673-1345-2-git-send-email-aik@ozlabs.ru> <0A6C24DE-1422-4ABA-A516-2B864F4714F8@suse.de> <51BEC0FE.4020805@ozlabs.ru> <F3AAE42F-F325-462B-AD22-F3E568C39A8C@suse.de> <51BECA2B.60401@ozlabs.ru> <5BDDB985-B0A2-476C-B6E5-76E88E3FB182@suse.de> <51BECDF9.2020701@ozlabs.ru> <51BEE906.5010306@suse.de>
-In-Reply-To: <51BEE906.5010306@suse.de>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130614152917.GA8597@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 12:46 PM, Alexander Graf wrote:
-> On 06/17/2013 10:51 AM, Alexey Kardashevskiy wrote:
->> On 06/17/2013 06:40 PM, Alexander Graf wrote:
->>> On 17.06.2013, at 10:34, Alexey Kardashevskiy wrote:
->>>
->>>> On 06/17/2013 06:02 PM, Alexander Graf wrote:
->>>>> On 17.06.2013, at 09:55, Alexey Kardashevskiy wrote:
->>>>>
->>>>>> On 06/17/2013 08:06 AM, Alexander Graf wrote:
->>>>>>> On 05.06.2013, at 08:11, Alexey Kardashevskiy wrote:
->>>>>>>
->>>>>>>> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
->>>>>>>> H_STUFF_TCE hypercalls for QEMU emulated devices such as
->>>>>>>> IBMVIO devices or emulated PCI.  These calls allow adding
->>>>>>>> multiple entries (up to 512) into the TCE table in one call
->>>>>>>> which saves time on transition to/from real mode.
->>>>>>>>
->>>>>>>> This adds a tce_tmp cache to kvm_vcpu_arch to save valid TCEs
->>>>>>>> (copied from user and verified) before writing the whole list
->>>>>>>> into the TCE table. This cache will be utilized more in the
->>>>>>>> upcoming VFIO/IOMMU support to continue TCE list processing in
->>>>>>>> the virtual mode in the case if the real mode handler failed
->>>>>>>> for some reason.
->>>>>>>>
->>>>>>>> This adds a guest physical to host real address converter and
->>>>>>>> calls the existing H_PUT_TCE handler. The converting function
->>>>>>>> is going to be fully utilized by upcoming VFIO supporting
->>>>>>>> patches.
->>>>>>>>
->>>>>>>> This also implements the KVM_CAP_PPC_MULTITCE capability, so
->>>>>>>> in order to support the functionality of this patch, QEMU
->>>>>>>> needs to query for this capability and set the
->>>>>>>> "hcall-multi-tce" hypertas property only if the capability is
->>>>>>>> present, otherwise there will be serious performance
->>>>>>>> degradation.
->>>>>>>>
->>>>>>>> Cc: David Gibson<david@gibson.dropbear.id.au>  Signed-off-by:
->>>>>>>> Alexey Kardashevskiy<aik@ozlabs.ru>  Signed-off-by: Paul
->>>>>>>> Mackerras<paulus@samba.org>
->>>>>>> Only a few minor nits. Ben already commented on implementation
->>>>>>> details.
->>>>>>>
->>>>>>>> --- Changelog: 2013/06/05: * fixed mistype about IBMVIO in the
->>>>>>>> commit message * updated doc and moved it to another section *
->>>>>>>> changed capability number
->>>>>>>>
->>>>>>>> 2013/05/21: * added kvm_vcpu_arch::tce_tmp * removed cleanup
->>>>>>>> if put_indirect failed, instead we do not even start writing
->>>>>>>> to TCE table if we cannot get TCEs from the user and they are
->>>>>>>> invalid * kvmppc_emulated_h_put_tce is split to
->>>>>>>> kvmppc_emulated_put_tce and kvmppc_emulated_validate_tce (for
->>>>>>>> the previous item) * fixed bug with failthrough for H_IPI *
->>>>>>>> removed all get_user() from real mode handlers *
->>>>>>>> kvmppc_lookup_pte() added (instead of making lookup_linux_pte
->>>>>>>> public) --- Documentation/virtual/kvm/api.txt       |   17 ++
->>>>>>>> arch/powerpc/include/asm/kvm_host.h     |    2 +
->>>>>>>> arch/powerpc/include/asm/kvm_ppc.h      |   16 +-
->>>>>>>> arch/powerpc/kvm/book3s_64_vio.c        |  118 ++++++++++++++
->>>>>>>> arch/powerpc/kvm/book3s_64_vio_hv.c     |  266
->>>>>>>> +++++++++++++++++++++++++++---- arch/powerpc/kvm/book3s_hv.c
->>>>>>>> |   39 +++++ arch/powerpc/kvm/book3s_hv_rmhandlers.S |    6 +
->>>>>>>> arch/powerpc/kvm/book3s_pr_papr.c       |   37 ++++-
->>>>>>>> arch/powerpc/kvm/powerpc.c              |    3 +
->>>>>>>> include/uapi/linux/kvm.h                |    1 + 10 files
->>>>>>>> changed, 473 insertions(+), 32 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/Documentation/virtual/kvm/api.txt
->>>>>>>> b/Documentation/virtual/kvm/api.txt index 5f91eda..6c082ff
->>>>>>>> 100644 --- a/Documentation/virtual/kvm/api.txt +++
->>>>>>>> b/Documentation/virtual/kvm/api.txt @@ -2362,6 +2362,23 @@
->>>>>>>> calls by the guest for that service will be passed to
->>>>>>>> userspace to be handled.
->>>>>>>>
->>>>>>>>
->>>>>>>> +4.83 KVM_CAP_PPC_MULTITCE + +Capability:
->>>>>>>> KVM_CAP_PPC_MULTITCE +Architectures: ppc +Type: vm + +This
->>>>>>>> capability tells the guest that multiple TCE entry add/remove
->>>>>>>> hypercalls +handling is supported by the kernel. This
->>>>>>>> significanly accelerates DMA +operations for PPC KVM guests.
->>>>>>>> + +Unlike other capabilities in this section, this one does
->>>>>>>> not have an ioctl. +Instead, when the capability is present,
->>>>>>>> the H_PUT_TCE_INDIRECT and +H_STUFF_TCE hypercalls are to be
->>>>>>>> handled in the host kernel and not passed to +the guest.
->>>>>>>> Othwerwise it might be better for the guest to continue using
->>>>>>>> H_PUT_TCE +hypercall (if KVM_CAP_SPAPR_TCE or
->>>>>>>> KVM_CAP_SPAPR_TCE_IOMMU are present).
->>>>>>> While this describes perfectly well what the consequences are of
->>>>>>> the patches, it does not describe properly what the CAP actually
->>>>>>> expresses. The CAP only says "this kernel is able to handle
->>>>>>> H_PUT_TCE_INDIRECT and H_STUFF_TCE hypercalls directly". All
->>>>>>> other consequences are nice to document, but the semantics of
->>>>>>> the CAP are missing.
->>>>>>
->>>>>> ? It expresses ability to handle 2 hcalls. What is missing?
->>>>> You don't describe the kvm<->  qemu interface. You describe some
->>>>> decisions qemu can take from this cap.
->>>>
->>>> This file does not mention qemu at all. And the interface is - qemu
->>>> (or kvmtool could do that) just adds "hcall-multi-tce" to
->>>> "ibm,hypertas-functions" but this is for pseries linux and AIX could
->>>> always do it (no idea about it). Does it really have to be in this
->>>> file?
->>> Ok, let's go back a step. What does this CAP describe? Don't look at 
->>> the
->>> description you wrote above. Just write a new one.
->> The CAP means the kernel is capable of handling hcalls A and B without
->> passing those into the user space. That accelerates DMA.
->>
->>
->>> What exactly can user space expect when it finds this CAP?
->> The user space can expect that its handlers for A and B are not going 
->> to be
->> called if it configures the guest appropriately.
+On Fri, Jun 14, 2013 at 05:29:17PM +0200, Sebastian Andrzej Siewior wrote:
+> * Zhao Chenhui | 2013-06-09 17:59:42 [+0800]:
+> 
+> >No. _cpu_down() on mainline do not change the cpus_allowed.
+> My bad.
+> 
+> >The problem is that the task which turned off cpu2 (for instance)
+> >can not run on cpu2 again after cpu2 is turned on, because cpu2 has been
+> >removed from the cpus_allowed of the task.
+> >
+> >The task can put himself back on cpu2 throuhg the system call,
+> >but I think applications should not do this work and do not care which cpu
+> >it is running on in most time.
+> 
+> The mask needs to be changed because you may not be on the CPU while it
+> is going down. What do you think about:
+> 
 
-Actually a nitpick here too. User space can expect that its handlers for 
-A and B are going to already be processed by KVM. Regardless of how user 
-space configures the guest.
+I don't think it is necessary to change the mask. migration_call() invoked by
+the cpu notify "CPU_DYING" will remove all running tasks from the dying cpu.
+Even if the current task is running on the dying cpu, it will be transfered
+to another online cpu. 
 
+I guess that changing the mask benefits the latency of the system.
+Please correct me.
 
-Alex
+-Chenhui
+
+> Subject: [PATCH] kernel/hotplug: restore original cpu mask oncpu/down
+> 
+> If a task which is allowed to run only on CPU X puts CPU Y down then it
+> will be allowed on all CPUs but the on CPU Y after it comes back from
+> kernel. This patch ensures that we don't lose the initial setting unless
+> the CPU the task is running is going down.
+> 
+> Cc: stable-rt@vger.kernel.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  kernel/cpu.c |   13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 3acf17d..f5ad8e1 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -545,6 +545,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+>  		.hcpu = hcpu,
+>  	};
+>  	cpumask_var_t cpumask;
+> +	cpumask_var_t cpumask_org;
+>  
+>  	if (num_online_cpus() == 1)
+>  		return -EBUSY;
+> @@ -555,6 +556,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+>  	/* Move the downtaker off the unplug cpu */
+>  	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+>  		return -ENOMEM;
+> +	if (!alloc_cpumask_var(&cpumask_org, GFP_KERNEL))  {
+> +		free_cpumask_var(cpumask);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	cpumask_copy(cpumask_org, tsk_cpus_allowed(current));
+>  	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
+>  	set_cpus_allowed_ptr(current, cpumask);
+>  	free_cpumask_var(cpumask);
+> @@ -563,7 +570,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+>  	if (mycpu == cpu) {
+>  		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
+>  		migrate_enable();
+> -		return -EBUSY;
+> +		err = -EBUSY;
+> +		goto restore_cpus;
+>  	}
+>  
+>  	cpu_hotplug_begin();
+> @@ -622,6 +630,9 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+>  	cpu_hotplug_done();
+>  	if (!err)
+>  		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
+> +restore_cpus:
+> +	set_cpus_allowed_ptr(current, cpumask_org);
+> +	free_cpumask_var(cpumask_org);
+>  	return err;
+>  }
+>  
 
