@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3FQRcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:32:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50438 "EHLO
+	id S1753686Ab3FQRcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:32:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50451 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab3FQRbw (ORCPT
+	with ESMTP id S1751444Ab3FQRcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:52 -0400
+	Mon, 17 Jun 2013 13:32:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Matt Fleming <matt.fleming@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 08/84] xhci-mem: init list heads at the beginning of init
-Date: Mon, 17 Jun 2013 10:30:12 -0700
-Message-Id: <1371490288-23167-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 29/84] x86/PCI: Map PCI setup data with ioremap() so it can be in highmem
+Date: Mon, 17 Jun 2013 10:30:33 -0700
+Message-Id: <1371490288-23167-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,62 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 331de00a64e5027365145bdf51da27b9ce15dfd5 upstream.
+commit 65694c5aaddfedd9da082e4e150cafc6b3fc8a6a upstream.
 
-It is possible that we fail on xhci_mem_init, just before doing
-the INIT_LIST_HEAD, and calling xhci_mem_cleanup.
+f9a37be0f0 ("x86: Use PCI setup data") added support for using PCI ROM
+images from setup_data.  This used phys_to_virt(), which is not valid for
+highmem addresses, and can cause a crash when booting a 32-bit kernel via
+the EFI boot stub.
 
-Problem is that, the list_for_each_entry_safe macro, assumes
-list heads are initialized (not NULL), and dereferences their 'next'
-pointer, causing a kernel panic if this is not yet initialized.
+pcibios_add_device() assumes that the physical addresses stored in
+setup_data are accessible via the direct kernel mapping, and that calling
+phys_to_virt() is valid.  This isn't guaranteed to be true on x86 where the
+direct mapping range is much smaller than on x86-64.
 
-Let's protect from that by moving inits to the beginning.
+Calling phys_to_virt() on a highmem address results in the following:
 
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 9574323c39d1f8359a04843075d89c9f32d8b7e6 "xHCI: test
-USB2 software LPM".
+ BUG: unable to handle kernel paging request at 39a3c198
+ IP: [<c262be0f>] pcibios_add_device+0x2f/0x90
+ ...
+ Call Trace:
+  [<c2370c73>] pci_device_add+0xe3/0x130
+  [<c274640b>] pci_scan_single_device+0x8b/0xb0
+  [<c2370d08>] pci_scan_slot+0x48/0x100
+  [<c2371904>] pci_scan_child_bus+0x24/0xc0
+  [<c262a7b0>] pci_acpi_scan_root+0x2c0/0x490
+  [<c23b7203>] acpi_pci_root_add+0x312/0x42f
+  ...
 
-Signed-off-by: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
-Acked-by: David Cohen <david.a.cohen@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+The solution is to use ioremap() instead of phys_to_virt() to map the
+setup data into the kernel address space.
+
+[bhelgaas: changelog]
+Tested-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Seth Forshee <seth.forshee@canonical.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-mem.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/pci/common.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 90ce33b..59c08b2 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -2276,6 +2276,9 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
- 	u32 page_size, temp;
- 	int i;
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index ccd0ab3..f24ba14 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -618,7 +618,9 @@ int pcibios_add_device(struct pci_dev *dev)
  
-+	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
-+	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
-+
- 	page_size = xhci_readl(xhci, &xhci->op_regs->page_size);
- 	xhci_dbg(xhci, "Supported page size register = 0x%x\n", page_size);
- 	for (i = 0; i < 16; i++) {
-@@ -2354,7 +2357,6 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
- 	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, 1, TYPE_COMMAND, flags);
- 	if (!xhci->cmd_ring)
- 		goto fail;
--	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
- 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
- 	xhci_dbg(xhci, "First segment DMA is 0x%llx\n",
- 			(unsigned long long)xhci->cmd_ring->first_seg->dma);
-@@ -2465,8 +2467,6 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
- 	if (xhci_setup_port_arrays(xhci, flags))
- 		goto fail;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		data = phys_to_virt(pa_data);
++		data = ioremap(pa_data, sizeof(*rom));
++		if (!data)
++			return -ENOMEM;
  
--	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
--
- 	/* Enable USB 3.0 device notifications for function remote wake, which
- 	 * is necessary for allowing USB 3.0 devices to do remote wakeup from
- 	 * U3 (device suspend).
+ 		if (data->type == SETUP_PCI) {
+ 			rom = (struct pci_setup_rom *)data;
+@@ -635,6 +637,7 @@ int pcibios_add_device(struct pci_dev *dev)
+ 			}
+ 		}
+ 		pa_data = data->next;
++		iounmap(data);
+ 	}
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
