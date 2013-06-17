@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab3FQRiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:38:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50772 "EHLO
+	id S1755257Ab3FQRjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:39:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50740 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab3FQRhI (ORCPT
+	with ESMTP id S1754861Ab3FQRgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:37:08 -0400
+	Mon, 17 Jun 2013 13:36:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Lyakas <alex@zadarastorage.com>, NeilBrown <neilb@suse.de>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 82/84] md/raid1: consider WRITE as successful only if at least one non-Faulty and non-rebuilding drive completed it.
-Date: Mon, 17 Jun 2013 10:31:26 -0700
-Message-Id: <1371490288-23167-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 76/84] audit: wait_for_auditd() should use TASK_UNINTERRUPTIBLE
+Date: Mon, 17 Jun 2013 10:31:20 -0700
+Message-Id: <1371490288-23167-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -27,92 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Lyakas <alex@zadarastorage.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 upstream.
+commit f000cfdde5de4fc15dead5ccf524359c07eadf2b upstream.
 
-Without that fix, the following scenario could happen:
+audit_log_start() does wait_for_auditd() in a loop until
+audit_backlog_wait_time passes or audit_skb_queue has a room.
 
-- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
-- Drive A fails
-- WRITE request arrives to the array. It is failed by drive A, so
-r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
-succeeds in writing it, so the same r1_bio is marked as
-R1BIO_Uptodate.
-- r1_bio arrives to handle_write_finished, badblocks are disabled,
-md_error()->error() does nothing because we don't fail the last drive
-of raid1
-- raid_end_bio_io()  calls call_bio_endio()
-- As a result, in call_bio_endio():
-        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
-                clear_bit(BIO_UPTODATE, &bio->bi_flags);
-this code doesn't clear the BIO_UPTODATE flag, and the whole master
-WRITE succeeds, back to the upper layer.
+If signal_pending() is true this becomes a busy-wait loop, schedule() in
+TASK_INTERRUPTIBLE won't block.
 
-So we returned success to the upper layer, even though we had written
-the data onto the rebuilding drive only. But when we want to read the
-data back, we would not read from the rebuilding drive, so this data
-is lost.
+Thanks to Guy for fully investigating and explaining the problem.
 
-[neilb - applied identical change to raid10 as well]
+(akpm: that'll cause the system to lock up on a non-preemptible
+uniprocessor kernel)
 
-This bug can result in lost data, so it is suitable for any
--stable kernel.
+(Guy: "Our customer was in fact running a uniprocessor machine, and they
+reported a system hang.")
 
-Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Guy Streeter <streeter@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid1.c  | 12 +++++++++++-
- drivers/md/raid10.c | 12 +++++++++++-
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ kernel/audit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 6af167f..8430c0d 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -427,7 +427,17 @@ static void raid1_end_write_request(struct bio *bio, int error)
+diff --git a/kernel/audit.c b/kernel/audit.c
+index d596e53..8a667f10 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1107,7 +1107,7 @@ static inline void audit_get_stamp(struct audit_context *ctx,
+ static void wait_for_auditd(unsigned long sleep_time)
+ {
+ 	DECLARE_WAITQUEUE(wait, current);
+-	set_current_state(TASK_INTERRUPTIBLE);
++	set_current_state(TASK_UNINTERRUPTIBLE);
+ 	add_wait_queue(&audit_backlog_wait, &wait);
  
- 		r1_bio->bios[mirror] = NULL;
- 		to_put = bio;
--		set_bit(R1BIO_Uptodate, &r1_bio->state);
-+		/*
-+		 * Do not set R1BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
-+		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
-+			set_bit(R1BIO_Uptodate, &r1_bio->state);
- 
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(conf->mirrors[mirror].rdev,
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 61ab219..0d01e03 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -475,7 +475,17 @@ static void raid10_end_write_request(struct bio *bio, int error)
- 		sector_t first_bad;
- 		int bad_sectors;
- 
--		set_bit(R10BIO_Uptodate, &r10_bio->state);
-+		/*
-+		 * Do not set R10BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &rdev->flags) &&
-+		    !test_bit(Faulty, &rdev->flags))
-+			set_bit(R10BIO_Uptodate, &r10_bio->state);
- 
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(rdev,
+ 	if (audit_backlog_limit &&
 -- 
 1.8.1.2
 
