@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3FQPQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:16:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab3FQPOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752312Ab3FQPOg (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 17 Jun 2013 11:14:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784Ab3FQPO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:14:29 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,103 +15,43 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v3 12/13] seq_file: add seq_list_*_percpu helpers
-Date: Mon, 17 Jun 2013 11:13:55 -0400
-Message-Id: <1371482036-15958-13-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 02/13] locks: make generic_add_lease and generic_delete_lease static
+Date: Mon, 17 Jun 2013 11:13:45 -0400
+Message-Id: <1371482036-15958-3-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we convert the file_lock_list to a set of percpu lists, we'll need
-a way to iterate over them in order to output /proc/locks info. Add
-some seq_list_*_percpu helpers to handle that.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- fs/seq_file.c            |   54 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/seq_file.h |    6 +++++
- 2 files changed, 60 insertions(+), 0 deletions(-)
+ fs/locks.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 774c1eb..3135c25 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -921,3 +921,57 @@ struct hlist_node *seq_hlist_next_rcu(void *v,
- 		return rcu_dereference(node->next);
+diff --git a/fs/locks.c b/fs/locks.c
+index 7a02064..e3140b8 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1337,7 +1337,7 @@ int fcntl_getlease(struct file *filp)
+ 	return type;
  }
- EXPORT_SYMBOL(seq_hlist_next_rcu);
-+
-+/**
-+ * seq_hlist_start_precpu - start an iteration of a percpu hlist array
-+ * @head: pointer to percpu array of struct hlist_heads
-+ * @cpu:  pointer to cpu "cursor"
-+ * @pos:  start position of sequence
-+ *
-+ * Called at seq_file->op->start().
-+ */
-+struct hlist_node *
-+seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos)
-+{
-+	struct hlist_node *node;
-+
-+	for_each_possible_cpu(*cpu) {
-+		hlist_for_each(node, per_cpu_ptr(head, *cpu)) {
-+			if (pos-- == 0)
-+				return node;
-+		}
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL(seq_hlist_start_percpu);
-+
-+/**
-+ * seq_hlist_next_percpu - move to the next position of the percpu hlist array
-+ * @v:    pointer to current hlist_node
-+ * @head: pointer to percpu array of struct hlist_heads
-+ * @cpu:  pointer to cpu "cursor"
-+ * @pos:  start position of sequence
-+ *
-+ * Called at seq_file->op->next().
-+ */
-+struct hlist_node *
-+seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head,
-+			int *cpu, loff_t *pos)
-+{
-+	struct hlist_node *node = v;
-+
-+	++*pos;
-+
-+	if (node->next)
-+		return node->next;
-+
-+	for (*cpu = cpumask_next(*cpu, cpu_possible_mask); *cpu < nr_cpu_ids;
-+	     *cpu = cpumask_next(*cpu, cpu_possible_mask)) {
-+		struct hlist_head *bucket = per_cpu_ptr(head, *cpu);
-+
-+		if (!hlist_empty(bucket))
-+			return bucket->first;
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL(seq_hlist_next_percpu);
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 2da29ac..4e32edc 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -173,4 +173,10 @@ extern struct hlist_node *seq_hlist_start_head_rcu(struct hlist_head *head,
- extern struct hlist_node *seq_hlist_next_rcu(void *v,
- 						   struct hlist_head *head,
- 						   loff_t *ppos);
-+
-+/* Helpers for iterating over per-cpu hlist_head-s in seq_files */
-+extern struct hlist_node *seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos);
-+
-+extern struct hlist_node *seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head, int *cpu, loff_t *pos);
-+
- #endif
+ 
+-int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
++static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+ {
+ 	struct file_lock *fl, **before, **my_before = NULL, *lease;
+ 	struct dentry *dentry = filp->f_path.dentry;
+@@ -1402,7 +1402,7 @@ out:
+ 	return error;
+ }
+ 
+-int generic_delete_lease(struct file *filp, struct file_lock **flp)
++static int generic_delete_lease(struct file *filp, struct file_lock **flp)
+ {
+ 	struct file_lock *fl, **before;
+ 	struct dentry *dentry = filp->f_path.dentry;
 -- 
 1.7.1
 
