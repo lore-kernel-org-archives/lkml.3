@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3FQPlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:41:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59837 "EHLO arroyo.ext.ti.com"
+	id S1752768Ab3FQPmE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:42:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1708 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab3FQPlU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:41:20 -0400
-From: "Fernandes, Joel A" <joelagnel@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Matt Porter" <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: RE: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
-Thread-Topic: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
- binding
-Thread-Index: AQHOaXCq5Ahsa0wut0SvcD1WJ4Ax1pk6GA8A///1IaA=
-Date: Mon, 17 Jun 2013 15:40:29 +0000
-Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
-References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
- <1371263570-9323-5-git-send-email-joelagnel@ti.com>
- <3940138.jZFEtfGGLz@wuerfel>
-In-Reply-To: <3940138.jZFEtfGGLz@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750903Ab3FQPmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:42:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="351127240"
+Message-ID: <51BF2E37.5040400@intel.com>
+Date: Mon, 17 Jun 2013 23:41:43 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue
+ entity
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-5-git-send-email-alex.shi@intel.com> <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+In-Reply-To: <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 06/17/2013 07:51 PM, Paul Turner wrote:
+> Can you add something like:
+> 
+> +               /*
+> +                * Task re-woke on same cpu (or else
+> migrate_task_rq_fair()
+> +                * would have made count negative); we must be careful
+> to avoid
+> +                * double-accounting blocked time after synchronizing
+> decays.
+> +                */
+> 
+> 
+> Reviewed-by: Paul Turner <pjt@google.com>
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Monday, June 17, 2013 6:13 AM
-> To: Fernandes, Joel A
-> Cc: Tony Lindgren; Nori, Sekhar; Matt Porter; Grant Likely; Rob Herring; Vinod
-> Koul; Mark Brown; Cousson, Benoit; Russell King; Rob Landley; Andrew
-> Morton; Jason Kridner; Koen Kooi; Devicetree Discuss; Linux OMAP List; Linux
-> ARM Kernel List; Linux DaVinci Kernel List; Linux Kernel Mailing List; Linux
-> Documentation List; Linux MMC List; Linux SPI Devel List
-> Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
-> binding
-> 
-> On Friday 14 June 2013 21:32:47 Joel A Fernandes wrote:
-> >
-> > diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt
-> > b/Documentation/devicetree/bindings/dma/ti-edma.txt
-> > new file mode 100644
-> > index 0000000..ada0018
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-> > @@ -0,0 +1,26 @@
-> > +TI EDMA
-> > +
-> > +Required properties:
-> > +- compatible : "ti,edma3"
-> > +- ti,hwmods: Name of the hwmods associated to the EDMA
-> > +- ti,edma-regions: Number of regions
-> > +- ti,edma-slots: Number of slots
-> > +
-> > +Optional properties:
-> > +- ti,edma-xbar-event-map: Crossbar event to channel map
-> 
-> You need to list #dma-cells as required here, and which values are accepted
-> by the driver (I suppose only <1>). You should also explain the format of the
-> dma-specifier for a slave here for each possible value of #dma-cells.
-> 
-> For each of the standard properties (reg, interrupts, dma-channels), list
-> whether they are optional or required. Since the example has three
-> interrupts, you should probably list how many interrupts need to be specified
-> (minimum and maximum if the number is variable) and in what order to
-> expect them.
+thanks for review!
+---
+
+>From 24d9b43e7a269e6ffee5b874d39812b83812a809 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 9 May 2013 10:54:13 +0800
+Subject: [PATCH] sched: fix slept time double counting in enqueue entity
+
+The wakeuped migrated task will __synchronize_entity_decay(se); in
+migrate_task_fair, then it needs to set
+`se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
+before update_entity_load_avg, in order to avoid slept time is updated
+twice for se.avg.load_avg_contrib in both __syncchronize and
+update_entity_load_avg.
+
+but if the slept task is waked up from self cpu, it miss the
+last_runnable_update before update_entity_load_avg(se, 0, 1), then the
+slept time was used twice in both functions.
+So we need to remove the double slept time counting.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+---
+ kernel/sched/fair.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df5b8a9..1e5a5e6 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1571,7 +1571,13 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 		}
+ 		wakeup = 0;
+ 	} else {
+-		__synchronize_entity_decay(se);
++		/*
++		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
++		 * would have made count negative); we must be careful to avoid
++		 * double-accounting blocked time after synchronizing decays.
++		 */
++		se->avg.last_runnable_update += __synchronize_entity_decay(se)
++							<< 20;
+ 	}
  
-[Joel] Thanks for the suggestion, I updated it and it looks like this now:
-                                                                                                             
-Required properties:                                                                                                                   
-- compatible : "ti,edma3"                                                                                                              
-- ti,hwmods: Name of the hwmods associated to the EDMA                                                                                 
-- ti,edma-regions: Number of regions                                                                                                   
-- ti,edma-slots: Number of slots
-- #dma-cells: Should be set to <1> 
-              Clients should use a single number per DMA channel request.
-- dma-channels: Specify total DMA channels per CC                                                                                      
-- reg: Memory map for accessing module                                                                                                 
-- interrupt-parent: Interrupt controller the interrupt is routed through                                                               
-- interrupts: Exactly 3 interrupts need to be specified in the order:                                                                  
-              1. Transfer completion interrupt.                                                                                        
-              2. Memory protection interrupt.                                                                                          
-              3. Error interrupt.                                                                                                      
-Optional properties: 
-- ti,edma-xbar-event-map: Crossbar event to channel map
+ 	/* migrated tasks did not contribute to our blocked load */
+-- 
+1.7.5.4
 
-
-Hope this looks ok. I will respin this patch and repost it in the next series spin.
-
-Thanks,
-Joel
 
