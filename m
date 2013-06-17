@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab3FQOBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:01:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8624 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229Ab3FQOBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:01:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="351081013"
-Message-ID: <51BF16C6.7070009@intel.com>
-Date: Mon, 17 Jun 2013 22:01:42 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1756356Ab3FQOCo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:02:44 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:52496 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab3FQOCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 10:02:43 -0400
+From: Rojhalat Ibrahim <imr@rtschenk.de>
+To: Scott Wood <scottwood@freescale.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Michael Guntsche <michael.guntsche@it-loops.com>
+Subject: [PATCH v3] powerpc/pci: Fix setup of Freescale PCI / PCIe controllers
+Date: Mon, 17 Jun 2013 16:02:41 +0200
+Message-ID: <7498229.szaOTnNpbV@pcimr>
+User-Agent: KMail/4.10.3 (Linux/3.4.26; KDE/4.10.3; x86_64; ; )
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 8/9] sched: consider runnable load average in move_tasks
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-9-git-send-email-alex.shi@intel.com> <CAPM31RJs=A+j5NtSr4TXzQ8sAHMSkz+cNoZjOhsmc2p2HksZNg@mail.gmail.com>
-In-Reply-To: <CAPM31RJs=A+j5NtSr4TXzQ8sAHMSkz+cNoZjOhsmc2p2HksZNg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 06:58 PM, Paul Turner wrote:
->> > +               unsigned long tmp_rla;
->> > +               tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
->> > +
->> >                 load = tg->parent->cfs_rq[cpu]->h_load;
->> > -               load *= tg->se[cpu]->load.weight;
->> > -               load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
->> > +               load *= tg->se[cpu]->avg.load_avg_contrib;
->> > +               load /= tmp_rla;
-> Why do we need the temporary here?
-> 
+Commit 50d8f87d2b3 (powerpc/fsl-pci Make PCIe hotplug work with Freescale
+PCIe controllers) does not handle non-PCIe controllers properly, which causes
+a panic during boot for certain configurations.
+This patch fixes the issue by calling setup_indirect_pci for all device types.
+fsl_indirect_read_config is now only used for booke/86xx PCIe controllers.
 
-you'r right. tmp_rla is not necessary here.
+Reported-by: Michael Guntsche <mike@it-loops.com>
+Cc: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Rojhalat Ibrahim <imr@rtschenk.de>
+---
+v3: Fix compile error
 
--- 
-Thanks
-    Alex
+ arch/powerpc/sysdev/fsl_pci.c |   24 +++++++++---------------
+ 1 file changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 028ac1f..46ac1dd 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -97,22 +97,14 @@ static int fsl_indirect_read_config(struct pci_bus *bus, unsigned int devfn,
+ 	return indirect_read_config(bus, devfn, offset, len, val);
+ }
+ 
+-static struct pci_ops fsl_indirect_pci_ops =
++#if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
++
++static struct pci_ops fsl_indirect_pcie_ops =
+ {
+ 	.read = fsl_indirect_read_config,
+ 	.write = indirect_write_config,
+ };
+ 
+-static void __init fsl_setup_indirect_pci(struct pci_controller* hose,
+-					  resource_size_t cfg_addr,
+-					  resource_size_t cfg_data, u32 flags)
+-{
+-	setup_indirect_pci(hose, cfg_addr, cfg_data, flags);
+-	hose->ops = &fsl_indirect_pci_ops;
+-}
+-
+-#if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
+-
+ #define MAX_PHYS_ADDR_BITS	40
+ static u64 pci64_dma_offset = 1ull << MAX_PHYS_ADDR_BITS;
+ 
+@@ -504,13 +496,15 @@ int __init fsl_add_bridge(struct platform_device *pdev, int is_primary)
+ 	if (!hose->private_data)
+ 		goto no_bridge;
+ 
+-	fsl_setup_indirect_pci(hose, rsrc.start, rsrc.start + 0x4,
+-			       PPC_INDIRECT_TYPE_BIG_ENDIAN);
++	setup_indirect_pci(hose, rsrc.start, rsrc.start + 0x4,
++			   PPC_INDIRECT_TYPE_BIG_ENDIAN);
+ 
+ 	if (in_be32(&pci->block_rev1) < PCIE_IP_REV_3_0)
+ 		hose->indirect_type |= PPC_INDIRECT_TYPE_FSL_CFG_REG_LINK;
+ 
+ 	if (early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP)) {
++		/* use fsl_indirect_read_config for PCIe */
++		hose->ops = &fsl_indirect_pcie_ops;
+ 		/* For PCIE read HEADER_TYPE to identify controler mode */
+ 		early_read_config_byte(hose, 0, 0, PCI_HEADER_TYPE, &hdr_type);
+ 		if ((hdr_type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
+@@ -814,8 +808,8 @@ int __init mpc83xx_add_bridge(struct device_node *dev)
+ 		if (ret)
+ 			goto err0;
+ 	} else {
+-		fsl_setup_indirect_pci(hose, rsrc_cfg.start,
+-				       rsrc_cfg.start + 4, 0);
++		setup_indirect_pci(hose, rsrc_cfg.start,
++				   rsrc_cfg.start + 4, 0);
+ 	}
+ 
+ 	printk(KERN_INFO "Found FSL PCI host bridge at 0x%016llx. "
+
+--
+1.8.1.5
+
