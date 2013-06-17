@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3FQRft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:35:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50654 "EHLO
+	id S1754625Ab3FQRfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:35:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50663 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab3FQRfr (ORCPT
+	with ESMTP id S1754250Ab3FQRfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:35:47 -0400
+	Mon, 17 Jun 2013 13:35:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@gmail.com>,
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 42/84] drm/mgag200: Add missing write to index before accessing data register
-Date: Mon, 17 Jun 2013 10:30:46 -0700
-Message-Id: <1371490288-23167-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 63/84] drm/gma500/psb: Unpin framebuffer on crtc disable
+Date: Mon, 17 Jun 2013 10:31:07 -0700
+Message-Id: <1371490288-23167-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -27,45 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit 91f8f105f2b82b4a38dee2d74760bc39d40ec42c upstream.
+commit 820de86a90089ee607d7864538c98a23b503c846 upstream.
 
-This is a bug fix for some versions of g200se cards while doing
-mode-setting.
+The framebuffer needs to be unpinned in the crtc->disable callback
+because of previous pinning in psb_intel_pipe_set_base(). This will fix
+a memory leak where the framebuffer was released but not unpinned
+properly. This patch only affects Poulsbo.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Tested-by: Julia Lemire <jlemire@matrox.com>
-Acked-by: Julia Lemire <jlemire@matrox.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=889511
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=812113
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/gma500/psb_intel_display.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 7e2c361..1c087db 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -1041,13 +1041,14 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 			else
- 				hi_pri_lvl = 5;
+diff --git a/drivers/gpu/drm/gma500/psb_intel_display.c b/drivers/gpu/drm/gma500/psb_intel_display.c
+index 8033526..8714d6a 100644
+--- a/drivers/gpu/drm/gma500/psb_intel_display.c
++++ b/drivers/gpu/drm/gma500/psb_intel_display.c
+@@ -1246,6 +1246,19 @@ void psb_intel_crtc_destroy(struct drm_crtc *crtc)
+ 	kfree(psb_intel_crtc);
+ }
  
--			WREG8(0x1fde, 0x06);
--			WREG8(0x1fdf, hi_pri_lvl);
-+			WREG8(MGAREG_CRTCEXT_INDEX, 0x06);
-+			WREG8(MGAREG_CRTCEXT_DATA, hi_pri_lvl);
- 		} else {
-+			WREG8(MGAREG_CRTCEXT_INDEX, 0x06);
- 			if (mdev->reg_1e24 >= 0x01)
--				WREG8(0x1fdf, 0x03);
-+				WREG8(MGAREG_CRTCEXT_DATA, 0x03);
- 			else
--				WREG8(0x1fdf, 0x04);
-+				WREG8(MGAREG_CRTCEXT_DATA, 0x04);
- 		}
- 	}
- 	return 0;
++static void psb_intel_crtc_disable(struct drm_crtc *crtc)
++{
++	struct gtt_range *gt;
++	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
++
++	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
++
++	if (crtc->fb) {
++		gt = to_psb_fb(crtc->fb)->gtt;
++		psb_gtt_unpin(gt);
++	}
++}
++
+ const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
+ 	.dpms = psb_intel_crtc_dpms,
+ 	.mode_fixup = psb_intel_crtc_mode_fixup,
+@@ -1253,6 +1266,7 @@ const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
+ 	.mode_set_base = psb_intel_pipe_set_base,
+ 	.prepare = psb_intel_crtc_prepare,
+ 	.commit = psb_intel_crtc_commit,
++	.disable = psb_intel_crtc_disable,
+ };
+ 
+ const struct drm_crtc_funcs psb_intel_crtc_funcs = {
 -- 
 1.8.1.2
 
