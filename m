@@ -1,174 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab3FQGo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:44:58 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34400 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3FQGo4 (ORCPT
+	id S1756011Ab3FQGq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:46:56 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:45022 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab3FQGqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:44:56 -0400
-Message-ID: <51BEB05C.7040802@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 14:44:44 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Lei Wen <adrian.wenl@gmail.com>
-CC: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
-References: <1371435692-18831-1-git-send-email-leiwen@marvell.com> <51BE8213.4000701@linux.vnet.ibm.com> <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
-In-Reply-To: <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061706-9264-0000-0000-000003F51A0B
+	Mon, 17 Jun 2013 02:46:55 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
+        jonghwa3.lee@samsung.com
+Subject: [PATCH V6 00/30] thermal: exynos: Re-structure driver and add support for exynos5440
+Date: Mon, 17 Jun 2013 12:16:09 +0530
+Message-Id: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 01:08 PM, Lei Wen wrote:
-> Hi Michael,
-> 
-> On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
-> <wangyun@linux.vnet.ibm.com> wrote:
->> Hi, Lei
->>
->> On 06/17/2013 10:21 AM, Lei Wen wrote:
->>> nr_busy_cpus in sched_group_power structure cannot present the purpose
->>> for judging below statement:
->>> "this cpu's scheduler group has multiple busy cpu's exceeding
->>>  the group's power."
->>>
->>> But only could tell how many cpus is doing their jobs for currently.
->>
->> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
->> idle, the logical here in nohz_kick_needed() is:
->>
->>         if domain cpus share resources and at least 2 cpus in
->>         local group are not idle, prefer to do balance.
->>
-> 
-> Seems reasonable for me. But this comment is conflicted with current documented
-> one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
-> "scheduler group has multiple busy cpu;s exceeding the group's power"?
+Hi Rui/Eduardo,
 
-I agree it doesn't make sense (to me), the logical here only make sure
-there are at least 2 non-idle cpus in local group, we may need some more
-powerful folks to confirm that point.
+Submitting V6 version with all comments fixed. It is good if these patches gets
+merged in this merge window. If any comments please let me know.
 
-> 
->> And the idea behind is, we catch the timing when there are idle-cpu and
->> busy-group and task-moving may cost low.
-> 
-> Since there is only one task over runqueue now, then why we could need the
-> load balance any way?...
+Thanks,
+Amit Daniel
 
-IMHO, this is just shot in the darkness... like 'I think in such cases
-the chances of requiring a balance will be high', but the problem is,
-the logical is already in mainline for some reasons, if we want to say
-that is wrong, then we need to collect enough proof...
+Changes in V6:
+* Uses ARCH_HAS_BANDGAP config flag which is merged now in arm tree.
+(http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7758/1).
+* In this version patches 1, 2, 3, 4 and 30 are modified. Others are same as V5.
+* Added acked by from Jonghwa Lee.
+* Rebased against Thermal Maintainer next tree.
 
-> 
->>
->> Your change will remove this timing for balance, I think you may need
->> some test to prove that this patch will make things better.
-> 
-> I see. Yes, test data is always good. :)
-> Do you have any suggestion like using what kind of test program to
-> collect this data?
+Changes in V5:
+* Most of the changes in this version is as per suggestion from Jonghwa Lee. I
+ have retained one to one mapping of platform data with TMU instances as the
+ TMU's are different devices. In exynos5440 soc there is some register
+ sharing across multiple TMU's but in exynos5420 there is no register between
+ multiple TMU's, so the current implementation is useful to support both of the
+ above.
+ This patch uses localized ARCH_HAS_TMU Kconfig option and is a temporary solution
+ until a more generic macro ARCH_HAS_BANDGAP is introduced as per discussion in
+ the link https://patchwork.kernel.org/patch/2659001/.
+* trip type is passed as platform data.
+* HW trip is allowed only for maximum level.
+* Platform data structure is now abstracted inside 1 more structure to support
+  multiple sensor TMU data. 
 
-Any workload which require a good balance to check whether the patch
-cause damage, any workload which is latency-sensitive to check whether
-the patch bring benefit, what about kernbench with enough threads firstly?
+Changes in V4:
+ Almost all the changes in this version is as per suggestion from Eduardo.The
+ major ones are listed below,
+* Added kconfig symbol ARCH_HAS_TMU which needs to be enabled by platform. With
+  this change existing symbol EXYNOS_TMU_DATA is not needed.
+* Movement of freq_clip_table from exynos_tmu.h to exynos_thermal_common.h is
+  explained in the commit logs.
+* Wrote all register description documentation.
+* Split 5440 TMU support patch into controller change, configuration data and
+  feature addition patches.
+* Remove all *LINUX_* in the header files.
+* Still regulator enable is kept optional but a TODO: comment is added to fix
+  it later.
 
-Actually all the popular benchmark worth a try, until some improvement
-was found, if after all the test, still no benefit located, then the
-idea may have to be dropped...
+Changes in V3:
+* Added proper dependency of different exynos thermal Kconfig symbols. Basically 3
+ Kconfig can be enabled now and corresponds to tmu driver. exynos common part
+ and exynos configuration data. This issue was raised by Rui Zhang.
 
-Regards,
-Michael Wang
+Changes in V2:
+* Separated SOC data from TMU driver. This is as per suggestion from Eduardo.
+* Merged the new file created for exynos5440 TMU controller with the existing
+ TMU controller code.
+* Removed the DT parsing code as now the SOC specific data are cleanly put
+ inside the data specific file.
+* Even the register definations/bitfields are treated as data as there is
+ some variation across SOC's.
 
-> 
-> Thanks,
-> Lei
-> 
->>
->> Regards,
->> Michael Wang
->>
->>>
->>> However, the original purpose to add this logic still looks good.
->>> So we move this kind of logic to find_new_ilb, so that we could pick
->>> out peer from our sharing resource domain whenever possible.
->>>
->>> Signed-off-by: Lei Wen <leiwen@marvell.com>
->>> ---
->>>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
->>>  1 file changed, 22 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index c61a614..64f9120 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -5368,10 +5368,31 @@ static struct {
->>>       unsigned long next_balance;     /* in jiffy units */
->>>  } nohz ____cacheline_aligned;
->>>
->>> +/*
->>> + * Add the heuristic logic to try waking up idle cpu from
->>> + * those peers who share resources with us, so that the
->>> + * cost would be brought to minimum.
->>> + */
->>>  static inline int find_new_ilb(int call_cpu)
->>>  {
->>> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
->>> +     int ilb = nr_cpu_ids;
->>> +     struct sched_domain *sd;
->>> +
->>> +     rcu_read_lock();
->>> +     for_each_domain(call_cpu, sd) {
->>> +             /* We loop till sched_domain no longer share resource */
->>> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
->>> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
->>> +                     break;
->>> +             }
->>>
->>> +             /* else, we would try to pick the idle cpu from peers first */
->>> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
->>> +                             sched_domain_span(sd));
->>> +             if (ilb < nr_cpu_ids)
->>> +                     break;
->>> +     }
->>> +     rcu_read_unlock();
->>>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
->>>               return ilb;
->>>
->>> @@ -5620,8 +5641,6 @@ end:
->>>   * Current heuristic for kicking the idle load balancer in the presence
->>>   * of an idle cpu is the system.
->>>   *   - This rq has more than one task.
->>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
->>> - *     busy cpu's exceeding the group's power.
->>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>>   *     domain span are idle.
->>>   */
->>> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->>>               struct sched_group_power *sgp = sg->sgp;
->>>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
->>>
->>> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
->>> -                     goto need_kick_unlock;
->>> -
->>>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->>>                   && (cpumask_first_and(nohz.idle_cpus_mask,
->>>                                         sched_domain_span(sd)) < cpu))
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+This patchset adds TMU(Thermal management Unit) driver support for
+exynos5440 platform. There are 3 instances of the TMU controllers so
+necessary cleanup/re-structure is done to handle multiple thermal zone.
+
+Patch (exynos4: Add documentation for Exynos SoC thermal bindings) from
+Lukasz Majewski is already posted to mainline. Adding it here for completeness.
+(http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg17817.html)
+
+Patch (thermal: exynos: Support thermal tripping ) from Jonghwan Choi is
+added here with some changes.
+(https://patchwork.kernel.org/patch/1668371/)
+
+Patch (thermal: exynos: Support for TMU regulator defined at device tree)
+is a repost of my earlier patch(https://patchwork-mail1.kernel.org/patch/2510771/) 
+and adds regulator support.
+
+Patch (ARM: dts: Add device tree node for exynos5440 TMU controller) and
+patch (arm: exynos: enable ARCH_HAS_TMU) can be merged through exynos platform
+maintainer as this can cause merge conflict.
+
+All these patches are based on thermal maintainers git tree,
+git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next.
+
+Amit Daniel Kachhap (29):
+  thermal: exynos: Moving exynos thermal files into samsung directory
+  thermal: exynos: Use ARCH_HAS_BANDGAP config to know the supported
+    soc's
+  thermal: exynos: Remove un-necessary CPU_THERMAL dependency
+  thermal: exynos: Bifurcate exynos thermal common and tmu controller
+    code
+  thermal: exynos: Rename exynos_thermal.c to exynos_tmu.c
+  thermal: exynos: Move exynos_thermal.h from include/* to driver/*
+    folder
+  thermal: exynos: Bifurcate exynos tmu driver and configuration data
+  thermal: exynos: Add missing definations and code cleanup
+  thermal: exynos: Add extra entries in the tmu platform data
+  thermal: exynos: Move register definitions from driver to data file
+  thermal: exynos: Support thermal tripping
+  thermal: exynos: Fix to clear only the generated interrupts
+  thermal: exynos: Add support for instance based register/unregister
+  thermal: exynos: Modify private_data to appropriate name driver_data
+  thermal: exynos: Return success even if no cooling data supplied
+  thermal: exynos: Make the zone handling use trip information
+  thermal: exynos: Remove non DT based support
+  thermal: exynos: Add support to handle many instances of TMU
+  thermal: exynos: Add TMU features to check instead of using SOC type
+  thermal: exynos: use device resource management infrastructure
+  thermal: exynos: Add support to access common register for
+    multistance
+  thermal: exynos: Add driver support for exynos5440 TMU sensor
+  thermal: exynos: Add thermal configuration data for exynos5440 TMU
+    sensor
+  thermal: exynos: Fix to set the second point correction value
+  thermal: exynos: Add hardware mode thermal calibration support
+  Documentation: thermal: Explain the exynos thermal driver model
+  thermal: exynos: Support for TMU regulator defined at device tree
+  ARM: dts: Add device tree node for exynos5440 TMU controller
+  arm: exynos: enable ARCH_HAS_BANDGAP
+
+Lukasz Majewski (1):
+  ARM: dts: thermal: exynos4: Add documentation for Exynos SoC thermal
+    bindings
+
+ .../devicetree/bindings/thermal/exynos-thermal.txt |   55 +
+ Documentation/thermal/exynos_thermal               |   43 +-
+ arch/arm/boot/dts/exynos5440.dtsi                  |   30 +
+ arch/arm/mach-exynos/Kconfig                       |    5 +
+ drivers/thermal/Kconfig                            |   14 +-
+ drivers/thermal/Makefile                           |    2 +-
+ drivers/thermal/exynos_thermal.c                   | 1058 --------------------
+ drivers/thermal/samsung/Kconfig                    |   18 +
+ drivers/thermal/samsung/Makefile                   |    7 +
+ drivers/thermal/samsung/exynos_thermal_common.c    |  413 ++++++++
+ drivers/thermal/samsung/exynos_thermal_common.h    |  106 ++
+ drivers/thermal/samsung/exynos_tmu.c               |  750 ++++++++++++++
+ drivers/thermal/samsung/exynos_tmu.h               |  307 ++++++
+ drivers/thermal/samsung/exynos_tmu_data.c          |  250 +++++
+ drivers/thermal/samsung/exynos_tmu_data.h          |  155 +++
+ include/linux/platform_data/exynos_thermal.h       |  119 ---
+ 16 files changed, 2137 insertions(+), 1195 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+ delete mode 100644 drivers/thermal/exynos_thermal.c
+ create mode 100644 drivers/thermal/samsung/Kconfig
+ create mode 100644 drivers/thermal/samsung/Makefile
+ create mode 100644 drivers/thermal/samsung/exynos_thermal_common.c
+ create mode 100644 drivers/thermal/samsung/exynos_thermal_common.h
+ create mode 100644 drivers/thermal/samsung/exynos_tmu.c
+ create mode 100644 drivers/thermal/samsung/exynos_tmu.h
+ create mode 100644 drivers/thermal/samsung/exynos_tmu_data.c
+ create mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+ delete mode 100644 include/linux/platform_data/exynos_thermal.h
 
