@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab3FQWGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:06:16 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50086
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab3FQWGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:06:15 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jun 2013 18:06:15 EDT
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net] Fix the VLAN_TAG_PRESENT in netvsc_recv_callback()
-Date: Mon, 17 Jun 2013 15:36:49 -0700
-Message-Id: <1371508609-22780-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752269Ab3FQWGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:06:34 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:33076 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3FQWGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:06:32 -0400
+Message-ID: <51BF8860.7010909@gmail.com>
+Date: Tue, 18 Jun 2013 06:06:24 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: Remove unlikely from the current_order test
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should call __vlan_hwaccel_put_tag() only if the packet
-comes from vlan, otherwise VLAN_TAG_PRESENT will always be
-added.
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+In __rmqueue_fallback(), current_order loops down from MAX_ORDER - 1
+to the order passed. MAX_ORDER is typically 11 and pageblock_order
+is typically 9 on x86. Integer division truncates, so pageblock_order / 2
+is 4.  For the first eight iterations, it's guaranteed that
+current_order >= pageblock_order / 2 if it even gets that far!
 
+So just remove the unlikely(), it's completely bogus.
+
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/net/hyperv/netvsc_drv.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ mm/page_alloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index ab2307b..4dccead 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -285,7 +285,9 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 
- 	skb->protocol = eth_type_trans(skb, net);
- 	skb->ip_summed = CHECKSUM_NONE;
--	__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), packet->vlan_tci);
-+	if (packet->vlan_tci & VLAN_TAG_PRESENT)
-+		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
-+				       packet->vlan_tci);
- 
- 	net->stats.rx_packets++;
- 	net->stats.rx_bytes += packet->total_data_buflen;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c3edb62..7b4f367 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1050,7 +1050,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 			 * MIGRATE_CMA areas.
+ 			 */
+ 			if (!is_migrate_cma(migratetype) &&
+-			    (unlikely(current_order >= pageblock_order / 2) ||
++			    (current_order >= pageblock_order / 2 ||
+ 			     start_migratetype == MIGRATE_RECLAIMABLE ||
+ 			     page_group_by_mobility_disabled)) {
+ 				int pages;
 -- 
-1.7.4.1
-
+1.7.1
