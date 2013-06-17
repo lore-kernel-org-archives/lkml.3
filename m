@@ -1,61 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab3FQFDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:03:16 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45690 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab3FQFDP (ORCPT
+	id S932103Ab3FQFIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:08:16 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:64603 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab3FQFIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:03:15 -0400
-Date: Mon, 17 Jun 2013 07:03:10 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 3/9] s390: Replace weird use of PTR_RET.
-Message-ID: <20130617050310.GA4560@osiris>
-References: <87ehc2rczo.fsf@rustcorp.com.au>
- <1371357768-4968-1-git-send-email-rusty@rustcorp.com.au>
- <1371357768-4968-3-git-send-email-rusty@rustcorp.com.au>
+	Mon, 17 Jun 2013 01:08:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371357768-4968-3-git-send-email-rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061704-3548-0000-0000-000005B02DB6
+In-Reply-To: <51BE8213.4000701@linux.vnet.ibm.com>
+References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
+	<51BE8213.4000701@linux.vnet.ibm.com>
+Date: Mon, 17 Jun 2013 13:08:12 +0800
+Message-ID: <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
+Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 16, 2013 at 02:12:42PM +0930, Rusty Russell wrote:
-> Saves repeating "(void __force *)__uptr" but it's less clear.  Using
-> the output of PTR_RET() to determine the error rather than just
-> testing IS_ERR() is odd.
+Hi Michael,
 
-Ok, if it's confusing I won't mind if it gets changed. I intended to
-keep the code as short as possible, but.. ;)
+On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> Hi, Lei
+>
+> On 06/17/2013 10:21 AM, Lei Wen wrote:
+>> nr_busy_cpus in sched_group_power structure cannot present the purpose
+>> for judging below statement:
+>> "this cpu's scheduler group has multiple busy cpu's exceeding
+>>  the group's power."
+>>
+>> But only could tell how many cpus is doing their jobs for currently.
+>
+> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
+> idle, the logical here in nohz_kick_needed() is:
+>
+>         if domain cpus share resources and at least 2 cpus in
+>         local group are not idle, prefer to do balance.
+>
 
-> For example, I *assume* __gptr_to_uptr() never returns NULL?  Because
-> the __ret would be 0 for the old code.  The new version is clearer, IMHO:
-> it would try to get_user() on that address.
+Seems reasonable for me. But this comment is conflicted with current documented
+one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
+"scheduler group has multiple busy cpu;s exceeding the group's power"?
 
-__gptr_to_uptr() could return 0 and it's not an error case. In that case
-it should indeed try a to get_user() on that address.
+> And the idea behind is, we catch the timing when there are idle-cpu and
+> busy-group and task-moving may cost low.
 
-> If you hate this variant, I can just s/PTR_RET/PTR_ERR_OR_ZERO/ instead.
+Since there is only one task over runqueue now, then why we could need the
+load balance any way?...
 
-Your patch is fine.
+>
+> Your change will remove this timing for balance, I think you may need
+> some test to prove that this patch will make things better.
 
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  arch/s390/kvm/gaccess.h | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+I see. Yes, test data is always good. :)
+Do you have any suggestion like using what kind of test program to
+collect this data?
 
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Thanks,
+Lei
 
+>
+> Regards,
+> Michael Wang
+>
+>>
+>> However, the original purpose to add this logic still looks good.
+>> So we move this kind of logic to find_new_ilb, so that we could pick
+>> out peer from our sharing resource domain whenever possible.
+>>
+>> Signed-off-by: Lei Wen <leiwen@marvell.com>
+>> ---
+>>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
+>>  1 file changed, 22 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index c61a614..64f9120 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5368,10 +5368,31 @@ static struct {
+>>       unsigned long next_balance;     /* in jiffy units */
+>>  } nohz ____cacheline_aligned;
+>>
+>> +/*
+>> + * Add the heuristic logic to try waking up idle cpu from
+>> + * those peers who share resources with us, so that the
+>> + * cost would be brought to minimum.
+>> + */
+>>  static inline int find_new_ilb(int call_cpu)
+>>  {
+>> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
+>> +     int ilb = nr_cpu_ids;
+>> +     struct sched_domain *sd;
+>> +
+>> +     rcu_read_lock();
+>> +     for_each_domain(call_cpu, sd) {
+>> +             /* We loop till sched_domain no longer share resource */
+>> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+>> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
+>> +                     break;
+>> +             }
+>>
+>> +             /* else, we would try to pick the idle cpu from peers first */
+>> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
+>> +                             sched_domain_span(sd));
+>> +             if (ilb < nr_cpu_ids)
+>> +                     break;
+>> +     }
+>> +     rcu_read_unlock();
+>>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>>               return ilb;
+>>
+>> @@ -5620,8 +5641,6 @@ end:
+>>   * Current heuristic for kicking the idle load balancer in the presence
+>>   * of an idle cpu is the system.
+>>   *   - This rq has more than one task.
+>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
+>> - *     busy cpu's exceeding the group's power.
+>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>>   *     domain span are idle.
+>>   */
+>> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>               struct sched_group_power *sgp = sg->sgp;
+>>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
+>>
+>> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+>> -                     goto need_kick_unlock;
+>> -
+>>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+>>                   && (cpumask_first_and(nohz.idle_cpus_mask,
+>>                                         sched_domain_span(sd)) < cpu))
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
