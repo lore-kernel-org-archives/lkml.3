@@ -1,130 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab3FQRgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:36:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50676 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3FQRf6 (ORCPT
+	id S1755404Ab3FQRln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:41:43 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:53782 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab3FQRgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:35:58 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 54/84] hwmon: (adm1021) Strengthen chip detection for ADM1021, LM84 and MAX1617
-Date: Mon, 17 Jun 2013 10:30:58 -0700
-Message-Id: <1371490288-23167-55-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 17 Jun 2013 13:36:00 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <51BF44F8.1030400@codeaurora.org>
+References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
+	<20130614195238.GA2381@codeaurora.org>
+	<20130615013546.GV18124@quad.lixom.net>
+	<51BF44F8.1030400@codeaurora.org>
+Date: Mon, 17 Jun 2013 10:35:59 -0700
+Message-ID: <CAOesGMhmZkqJZ8e-j-DXfw9UHfM5vVOFs2eH0r90aY8MRgdrAQ@mail.gmail.com>
+Subject: Re: [GIT PULL 3/3] msm clock for 3.11
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, "arm@kernel.org" <arm@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.3 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 17, 2013 at 10:18 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 06/14/13 18:35, Olof Johansson wrote:
+>> On Fri, Jun 14, 2013 at 12:52:55PM -0700, David Brown wrote:
+>>> The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+>>>
+>>>  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-clock-for-3.11
+>>>
+>>> for you to fetch changes up to f54c1c11053d8aaf318a096b8b332fd41a394a66:
+>>>
+>>>  ARM: msm: Migrate to common clock framework (2013-06-12 14:43:31 -0700)
+>>>
+>>> ----------------------------------------------------------------
+>>> MSM clock updates for 3.11.
+>>>
+>>> Per Stephen Boyd's coverletter:
+>>>
+>>> This patchset moves the existing MSM clock code and affected drivers
+>>> to the common clock framework. A prerequisite of moving to the common
+>>> clock framework is to use clk_prepare() and clk_enable() so the first
+>>> few patches migrate drivers to that call (clk_prepare() is a no-op on
+>>> MSM right now). It also removes some custom clock APIs that MSM
+>>> provides and finally moves the proc_comm clock code to the common
+>>> struct clk.
+>>>
+>>> This patch series will be used as the foundation of the MSM 8660/8960
+>>> clock code that I plan to send out after this series.
+>>>
+>>> ----------------------------------------------------------------
+>>> Stephen Boyd (12):
+>>>      msm_serial: Convert to clk_prepare/unprepare
+>>>      msm_serial: Use devm_clk_get() and properly return errors
+>>>      usb: otg: msm: Convert to clk_prepare/unprepare
+>>>      msm_sdcc: Convert to clk_prepare/unprepare
+>>>      msm: iommu: Convert to clk_prepare/unprepare
+>>>      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
+>>>      ARM: msm: Remove custom clk_set_flags() API
+>>>      ARM: msm: Remove custom clk_set_{max,min}_rate() API
+>>>      ARM: msm: Remove clock-7x30.h include file
+>>>      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
+>>>      ARM: msm: Make proc_comm clock control into a platform driver
+>>>      ARM: msm: Migrate to common clock framework
+>> I don't see a single ack from any of the driver subsystem maintainers for
+>> serial, usb or iommu. Some of them have been acked though, for example Felipe
+>> acked the USB one on the mailing list.
+>>
+>> I also didn't see Greg cc:d on the serial patches, which would explain why
+>> there was no ack for them.
+>>
+>> Care to repost/collect/rebuild this branch, please? It's a great cleanup and
+>> I'd be happy to take it even if it ends up coming in after -rc6.
+>
+> MAINTAINERS shows the MSM maintainers for the serial and mmc drivers so
+> I sent them to David. The iommu driver didn't seem to have any
+> maintainers entry so I just sent it off to David as well.
+>
+> It wasn't clear to me that we needed to Cc higher level maintainers at
+> all. Perhaps we should clarify this in SubmittingPatches?
 
-------------------
+get_maintainer is pretty clear on it, pointing out all maintainers up the chain.
 
-From: Guenter Roeck <linux@roeck-us.net>
+This is normally not a problem when the maintainer sends code on up
+the subsystem tree (i.e. to Greg in the case of serial patches). What
+made me want an ack in this case is because the serial patches came in
+for the arm-soc tree.
 
-commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
 
-On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
-as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
-Also improve detection for ADM1021.
-
-Modeled after chip detection code in sensors-detect command.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/hwmon/adm1021.c | 58 ++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 50 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
-index fd1d1b1..f9df316 100644
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -332,26 +332,68 @@ static int adm1021_detect(struct i2c_client *client,
- 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
- 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
- 
-+	if (man_id < 0 || dev_id < 0)
-+		return -ENODEV;
-+
- 	if (man_id == 0x4d && dev_id == 0x01)
- 		type_name = "max1617a";
- 	else if (man_id == 0x41) {
- 		if ((dev_id & 0xF0) == 0x30)
- 			type_name = "adm1023";
--		else
-+		else if ((dev_id & 0xF0) == 0x00)
- 			type_name = "adm1021";
-+		else
-+			return -ENODEV;
- 	} else if (man_id == 0x49)
- 		type_name = "thmc10";
- 	else if (man_id == 0x23)
- 		type_name = "gl523sm";
- 	else if (man_id == 0x54)
- 		type_name = "mc1066";
--	/* LM84 Mfr ID in a different place, and it has more unused bits */
--	else if (conv_rate == 0x00
--		 && (config & 0x7F) == 0x00
--		 && (status & 0xAB) == 0x00)
--		type_name = "lm84";
--	else
--		type_name = "max1617";
-+	else {
-+		int lte, rte, lhi, rhi, llo, rlo;
-+
-+		/* extra checks for LM84 and MAX1617 to avoid misdetections */
-+
-+		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
-+		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
-+
-+		/* fail if any of the additional register reads failed */
-+		if (llo < 0 || rlo < 0)
-+			return -ENODEV;
-+
-+		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
-+		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
-+		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
-+		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
-+
-+		/*
-+		 * Fail for negative temperatures and negative high limits.
-+		 * This check also catches read errors on the tested registers.
-+		 */
-+		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
-+			return -ENODEV;
-+
-+		/* fail if all registers hold the same value */
-+		if (lte == rte && lte == lhi && lte == rhi && lte == llo
-+		    && lte == rlo)
-+			return -ENODEV;
-+
-+		/*
-+		 * LM84 Mfr ID is in a different place,
-+		 * and it has more unused bits.
-+		 */
-+		if (conv_rate == 0x00
-+		    && (config & 0x7F) == 0x00
-+		    && (status & 0xAB) == 0x00) {
-+			type_name = "lm84";
-+		} else {
-+			/* fail if low limits are larger than high limits */
-+			if ((s8)llo > lhi || (s8)rlo > rhi)
-+				return -ENODEV;
-+			type_name = "max1617";
-+		}
-+	}
- 
- 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
- 		 type_name, i2c_adapter_id(adapter), client->addr);
--- 
-1.8.1.2
-
+-Olof
