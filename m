@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3FQEdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 00:33:44 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:48403 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab3FQEdn (ORCPT
+	id S1755705Ab3FQEiu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 00:38:50 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:49445 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab3FQEit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 00:33:43 -0400
-Message-ID: <51BE91A4.6020003@hitachi.com>
-Date: Mon, 17 Jun 2013 13:33:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 17 Jun 2013 00:38:49 -0400
+Message-ID: <51BE92DA.30408@prisktech.co.nz>
+Date: Mon, 17 Jun 2013 16:38:50 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tracing/kprobes: Avoid perf_trace_buf_*() if ->perf_events
- is empty
-References: <20130616172146.GA8533@redhat.com>
-In-Reply-To: <20130616172146.GA8533@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        =?UTF-8?B?77+9?= <heiko@sntech.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/17 2:21), Oleg Nesterov wrote:
-> perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
-> if this task/CPU has no active counters. Change kprobe_perf_func()
-> and kretprobe_perf_func() to check call->perf_events beforehand
-> and return if this list is empty.
-> 
-> For example, "perf record -e some_probe -p1". Only /sbin/init will
-> report, all other threads which hit the same probe will do
-> perf_trace_buf_prepare/perf_trace_buf_submit just to realize that
-> nobody wants perf_swevent_event().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Looks good :) Thank you!
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
+On 16/06/13 22:45, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> It is counter-intuitive to have "0" mean disable in a boolean
+> manner for electronic properties of pins such as pull-up and
+> pull-down. Therefore, define that a pull-up/pull-down argument
+> of 0 to such a generic option means that the pin is
+> short-circuited to VDD or GROUND. Pull disablement shall be
+> done using PIN_CONFIG_BIAS_DISABLE.
+>
+> Cc: Heiko St�bner <heiko@sntech.de>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  kernel/trace/trace_kprobe.c |   12 ++++++++----
->  1 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 9f46e98..c0af476 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -1157,6 +1157,10 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
->  	int size, __size, dsize;
->  	int rctx;
->  
-> +	head = this_cpu_ptr(call->perf_events);
-> +	if (hlist_empty(head))
-> +		return;
-> +
->  	dsize = __get_data_size(tp, regs);
->  	__size = sizeof(*entry) + tp->size + dsize;
->  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
-> @@ -1172,8 +1176,6 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
->  	entry->ip = (unsigned long)tp->rp.kp.addr;
->  	memset(&entry[1], 0, dsize);
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> -
-> -	head = this_cpu_ptr(call->perf_events);
->  	perf_trace_buf_submit(entry, size, rctx,
->  					entry->ip, 1, regs, head, NULL);
->  }
-> @@ -1189,6 +1191,10 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  	int size, __size, dsize;
->  	int rctx;
->  
-> +	head = this_cpu_ptr(call->perf_events);
-> +	if (hlist_empty(head))
-> +		return;
-> +
->  	dsize = __get_data_size(tp, regs);
->  	__size = sizeof(*entry) + tp->size + dsize;
->  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
-> @@ -1204,8 +1210,6 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  	entry->func = (unsigned long)tp->rp.kp.addr;
->  	entry->ret_ip = (unsigned long)ri->ret_addr;
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> -
-> -	head = this_cpu_ptr(call->perf_events);
->  	perf_trace_buf_submit(entry, size, rctx,
->  					entry->ret_ip, 1, regs, head, NULL);
->  }
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+>   include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
+>   1 file changed, 7 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+> index d414a77..67780f5 100644
+> --- a/include/linux/pinctrl/pinconf-generic.h
+> +++ b/include/linux/pinctrl/pinconf-generic.h
+> @@ -36,14 +36,15 @@
+>    *	tristate. The argument is ignored.
+>    * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
+>    *	impedance to VDD). If the argument is != 0 pull-up is enabled,
+> - *	if it is 0, pull-up is disabled.
+> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
+s/it/is
+>    * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
+>    *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
+> - *	if it is 0, pull-down is disabled.
+> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
+>    * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+>    *	on embedded knowledge of the controller, like current mux function.
+> - *	If the argument is != 0 pull up/down is enabled, if it is 0,
+> - *	the pull is disabled.
+> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
+> + *	configuration is ignored. The proper way to disable it is to use
+> + *	@PIN_CONFIG_BIAS_DISABLE.
+>    * @PIN_CONFIG_DRIVE_PUSH_PULL: the pin will be driven actively high and
+>    *	low, this is the most typical case and is typically achieved with two
+>    *	active transistors on the output. Setting this config will enable
+> @@ -72,8 +73,8 @@
+>    *	supplies, the argument to this parameter (on a custom format) tells
+>    *	the driver which alternative power source to use.
+>    * @PIN_CONFIG_SLEW_RATE: if the pin can select slew rate, the argument to
+> - * 	this parameter (on a custom format) tells the driver which alternative
+> - * 	slew rate to use.
+> + *	this parameter (on a custom format) tells the driver which alternative
+> + *	slew rate to use.
+>    * @PIN_CONFIG_LOW_POWER_MODE: this will configure the pin for low power
+>    *	operation, if several modes of operation are supported these can be
+>    *	passed in the argument on a custom form, else just use argument 1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
