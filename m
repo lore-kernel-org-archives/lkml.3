@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab3FQI7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 04:59:02 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:46322 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab3FQI7A (ORCPT
+	id S1755791Ab3FQJBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:01:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34575 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3FQJBI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 04:59:00 -0400
+	Mon, 17 Jun 2013 05:01:08 -0400
+Message-ID: <51BED04E.6030007@arm.com>
+Date: Mon, 17 Jun 2013 10:01:02 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130613172408.GA5561@intel.com>
-References: <20130613172408.GA5561@intel.com>
-Date: Mon, 17 Jun 2013 11:59:00 +0300
-Message-ID: <CAHp75Ved4kJ6vZPvCcNcZxJgCJKUb-ZCrCNXFJ84DzK095iDPA@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: masking tests for channel capabilities
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Jubin Mehta <jubin.mehta@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
+To: Steve Capper <steve.capper@linaro.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Williams <djbw@fb.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
-Content-Type: text/plain; charset=UTF-8
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: linux-next: manual merge of the arm64-hugepages tree with the
+ arm64 tree
+References: <20130617174528.fc0381c10f8c5296b4efe776@canb.auug.org.au> <20130617084224.GB28225@linaro.org>
+In-Reply-To: <20130617084224.GB28225@linaro.org>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 17 Jun 2013 09:01:02.0958 (UTC) FILETIME=[319688E0:01CE6B39]
+X-MC-Unique: 113061710010512401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 8:24 PM, Jubin Mehta <jubin.mehta@intel.com> wrote:
-> The current dmatest module tests all the hardware capabilities (MEMCPY, XOR
-> and PQ) supported by a particular DMA channel and these tests are performed
-> concurrently by default. This patch allows the user to enable or disable the
-> test performed for any particular capability. The mask bits for enabling the
-> tests are set using the debugfs.
+On 17/06/13 09:42, Steve Capper wrote:
+> On Mon, Jun 17, 2013 at 05:45:28PM +1000, Stephen Rothwell wrote:
+>> Hi Steve,
+> 
+> Hi Stephen,
+> 
+>>
+>> Today's linux-next merge of the arm64-hugepages tree got conflicts in
+>> arch/arm64/include/asm/pgtable-hwdef.h and
+>> arch/arm64/include/asm/pgtable.h between commit 363116073a26 ("arm64:
+>> KVM: define HYP and Stage-2 translation page flags") from the arm64 tree
+>> and commits 072b1b62a643 ("ARM64: mm: Make PAGE_NONE pages read only and
+>> no-execute") and af07484863e0 ("ARM64: mm: THP support") from the
+>> arm64-hugepages tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>>
+> 
+> Thanks, the fixup looks good to me.
+> 
+>> Note that the arm64 tree version of PMD_SECT_USER used a pteval_t where I
+>> would have expected a pmdval_t like the arm64-hugepages tree version.
+> 
+> Yes I think it should be a pmdval_t too, I will follow this up.
 
-This approach I like better.
-Dan, Vinod, what is your opinion?
+Indeed, my bad. I'll fix this ASAP.
 
-I have couple of comments below.
+Thanks,
 
-> +++ b/Documentation/dmatest.txt
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-> +Method to enable the capabilities:
-> +
-> +PATH = /sys/kernel/debug/dmatest/cap_mask
-> +(DEFAULT) echo 0x07 > $PATH     // Set Bits 0,1,2 for MEMCPY, XOR and PQ
-> +          echo 0x01 > $PATH     // Set bit 0 to enable MEMCPY
-> +          echo 0x02 > $PATH     // Set bit 1 to enable XOR
-> +          echo 0x04 > $PATH     // Set bit 2 to enable PQ
-
-What if we make examples  followed by # and comments?
-And move (DEFAULT) to the commentary.
-
-> +++ b/drivers/dma/dmatest.c
-
-> +/*
-> + * Capability Mask Bits.The bits in the cap_mask denote the masking of
-> + * the hardware capabilities of the dma channel.
-> + *
-> + * DMA_CAP_MEMCPY:  Bit 0 for enabling DMA_MEMCPY capability
-> + * DMA_CAP_XOR:     Bit 1 for enabling DMA_XOR capabilit
-> + * DMA_CAP_PQ:      Bit 2 for enabling DMA_PQ capability
-> + * DMA_CAP_ALL:     Enable all the capabilities of the channel
-> + */
-> +#define DMA_CAP_MEMCPY         (1 << 0)
-> +#define DMA_CAP_XOR            (1 << 1)
-> +#define DMA_CAP_PQ             (1 << 2)
-
-Can we reuse DMA_MEMCPY and so on from enum dma_transaction_type?
-
---
-With Best Regards,
-Andy Shevchenko
