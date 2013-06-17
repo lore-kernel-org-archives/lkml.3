@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab3FQVNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:13:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41153 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3FQVNL (ORCPT
+	id S1754375Ab3FQVOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:14:01 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:39966 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab3FQVN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:13:11 -0400
-Date: Mon, 17 Jun 2013 14:13:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Daney <david.daney@cavium.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: Linux 3.10-rc6
-Message-Id: <20130617141310.3d62ea2b05041ec5974f9525@linux-foundation.org>
-In-Reply-To: <51BF7ABD.3080508@caviumnetworks.com>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
-	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
-	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
-	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
-	<51BF7610.10803@caviumnetworks.com>
-	<20130617135920.587959a34da85d7940a6936f@linux-foundation.org>
-	<51BF7ABD.3080508@caviumnetworks.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 17:13:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130617210422.GN32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1371128589-8953-4-git-send-email-tangchen@cn.fujitsu.com>
+	<20130617210422.GN32663@mtj.dyndns.org>
+Date: Mon, 17 Jun 2013 14:13:58 -0700
+X-Google-Sender-Auth: aLPUjR1APx5s9IzZMEsHcxhCxac
+Message-ID: <CAE9FiQXTAT69WKvzXe7FuuSqiA9epuSGPFP2ihhpDZkqYtn9_g@mail.gmail.com>
+Subject: Re: [Part1 PATCH v5 03/22] x86, ACPI, mm: Kill max_low_pfn_mapped
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
+        Prarit Bhargava <prarit@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 14:08:13 -0700 David Daney <ddaney@caviumnetworks.com> wrote:
+On Mon, Jun 17, 2013 at 2:04 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Thu, Jun 13, 2013 at 09:02:50PM +0800, Tang Chen wrote:
+>> From: Yinghai Lu <yinghai@kernel.org>
+>>
+>> Now we have pfn_mapped[] array, and max_low_pfn_mapped should not
+>> be used anymore. Users should use pfn_mapped[] or just
+>> 1UL<<(32-PAGE_SHIFT) instead.
+>>
+>> The only user of max_low_pfn_mapped is ACPI_INITRD_TABLE_OVERRIDE.
+>> We could change to use 1U<<(32_PAGE_SHIFT) with it, aka under 4G.
+>
+>                                 ^ typo
 
-> >
-> > I think switch-back-to-a-macro is simplest and safest for now.  Perhaps
-> > you can queue a 3.11 patch which restores the C function and fixes up
-> > mn10300 and ia64?
-> >
-> 
-> If the patch is reverted, I will do that.
+ok.
 
-I'm not proposing that we revert f21afc25f9ed4.  Retain its
-functionality, but do it via a macro for 3.10.
+>
+> ...
+>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+>> index e721863..93e3194 100644
+>> --- a/drivers/acpi/osl.c
+>> +++ b/drivers/acpi/osl.c
+>> @@ -624,9 +624,9 @@ void __init acpi_initrd_override(void *data, size_t size)
+>>       if (table_nr == 0)
+>>               return;
+>>
+>> -     acpi_tables_addr =
+>> -             memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
+>> -                                    all_tables_size, PAGE_SIZE);
+>> +     /* under 4G at first, then above 4G */
+>> +     acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
+>> +                                     all_tables_size, PAGE_SIZE);
+>
+> No bigge, but why (1ULL << 32) - 1?  Shouldn't it be just 1ULL << 32?
+> memblock deals with [@start, @end) areas, right?
 
+that is for 32bit, when phys_addr_t is 32bit, in that case
+(1ULL<<32) cast to 32bit would be 0.
+
+>
+> Other than that,
+>
+>  Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks
+
+Yinghai
