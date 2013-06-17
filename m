@@ -1,145 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3FQW2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:28:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34361 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab3FQW2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:28:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
-   d="scan'208";a="331138674"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <1371495933.1778.29.camel@buesod1.americas.hpqcorp.net>
-References: <1371165333.27102.568.camel@schen9-DESK>
-	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BD8A77.2080201@intel.com>
-	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-	 <1371494746.27102.633.camel@schen9-DESK>
-	 <1371495933.1778.29.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jun 2013 15:28:41 -0700
-Message-ID: <1371508121.27102.640.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752838Ab3FQW3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:29:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:49645 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab3FQW3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:29:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 17 Jun 2013 23:29:15 +0100
+X-Google-Sender-Auth: kC5DEtUaS2Z6Q5Zdvh0_VBYpayU
+Message-ID: <CACxGe6smNZofiGdO=nBM88MiWyoDvCTiPGFG5enEUwP_zCn17A@mail.gmail.com>
+Subject: Re: [PATCH 0/7] genirq: add irq_get_trigger_type() to get IRQ flags
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 12:05 -0700, Davidlohr Bueso wrote:
+On Fri, Jun 14, 2013 at 5:40 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Drivers that want to get the trigger edge/level type flags for a
+> given interrupt have to first call irq_get_irq_data(irq) to get
+> the struct irq_data and then irqd_get_trigger_type(irq_data) to
+> obtain the IRQ flags.
+>
+> This is not only error prone but also unnecessary exposes the
+> struct irq_data to callers. This patch-set adds a new function
+> irq_get_trigger_type() to obtain the edge/level flags for an IRQ
+> and updates the places where irq_get_irq_data(irq) was called
+> just to obtain the flags from the struct irq_data.
+>
+> The patch-set is composed of the following patches:
+>
+> [PATCH 1/7] genirq: add irq_get_trigger_type() to get IRQ flags
+> [PATCH 2/7] gpio: mvebu: use irq_get_trigger_type() to get IRQ flags
+> [PATCH 3/7] mfd: twl4030-irq: use irq_get_trigger_type() to get IRQ flags
+> [PATCH 4/7] mfd: stmpe: use irq_get_trigger_type() to get IRQ flags
+> [PATCH 5/7] arm: orion: use irq_get_trigger_type() to get IRQ flags
+> [PATCH 6/7] MIPS: octeon: use irq_get_trigger_type() to get IRQ flags
+> [PATCH 7/7] irqdomain: use irq_get_trigger_type() to get IRQ flags
 
-> > 
-> > Thanks.  Those are encouraging numbers.  On my exim workload I didn't
-> > get a boost when I added in the preempt disable in optimistic spin and
-> > put Alex's changes in. Can you send me your combined patch to see if
-> > there may be something you did that I've missed.  I have a tweak to
-> > Alex's patch below to simplify things a bit.  
-> > 
-> 
-> I'm using:
-> 
-> int rwsem_optimistic_spin(struct rw_semaphore *sem)
-> {
->         struct  task_struct     *owner;
-> 
->         /* sem->wait_lock should not be held when attempting optimistic spinning */
->         if (!rwsem_can_spin_on_owner(sem))
->                 return 0;
-> 
->         preempt_disable();
->         for (;;) {
->                 owner = ACCESS_ONCE(sem->owner);
->                 if (owner && !rwsem_spin_on_owner(sem, owner))
->                         break;
-> 
->                 /* wait_lock will be acquired if write_lock is obtained */
->                 if (rwsem_try_write_lock(sem->count, true, sem)) {
->                         preempt_enable();
->                         return 1;
->                 }
-> 
->                 /*                                                                                                                                                                   
->                  * When there's no owner, we might have preempted between the                                                                                                        
->                  * owner acquiring the lock and setting the owner field. If                                                                                                          
->                  * we're an RT task that will live-lock because we won't let                                                                                                         
->                  * the owner complete.                                                                                                                                               
->                  */
->                 if (!owner && (need_resched() || rt_task(current)))
->                         break;
-> 
->                 /*                                                                                                                                                                   
->                  * The cpu_relax() call is a compiler barrier which forces                                                                                                           
->                  * everything in this loop to be re-loaded. We don't need                                                                                                            
->                  * memory barriers as we'll eventually observe the right                                                                                                             
->                  * values at the cost of a few extra spins.                                                                                                                          
->                  */
->                 arch_mutex_cpu_relax();
-> 
->         }
-> 
->         preempt_enable();
->         return 0;
-> }
+For the whole series:
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-This is identical to the changes that I've tested.  Thanks for sharing.
-
-Tim
-
-> > > > @@ -85,15 +85,28 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
-> > > >  	adjustment = 0;
-> > > >  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
-> > > >  		adjustment = RWSEM_ACTIVE_READ_BIAS;
-> > > > - try_reader_grant:
-> > > > -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
-> > > > -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
-> > > > -			/* A writer stole the lock. Undo our reader grant. */
-> > > > +		while (1) {
-> > > > +			long oldcount;
-> > > > +
-> > > > +			/* A writer stole the lock. */
-> > > > +			if (unlikely(sem->count & RWSEM_ACTIVE_MASK))
-> > > > +				return sem;
-> > > > +
-> > > > +			if (unlikely(sem->count < RWSEM_WAITING_BIAS)) {
-> > > > +				cpu_relax();
-> > > > +				continue;
-> > > > +			}
-> > 
-> > The above two if statements could be cleaned up as a single check:
-> > 		
-> > 			if (unlikely(sem->count < RWSEM_WAITING_BIAS))
-> > 				return sem;
-> > 	 
-> > This one statement is sufficient to check that we don't have a writer
-> > stolen the lock before we attempt to acquire the read lock by modifying
-> > sem->count.  
-> 
-> We probably still want to keep the cpu relaxation if the statement
-> doesn't comply.
-> 
-> Thanks,
-> Davidlohr
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+>
+>  arch/arm/plat-orion/gpio.c           |    2 +-
+>  arch/mips/cavium-octeon/octeon-irq.c |    2 +-
+>  drivers/gpio/gpio-mvebu.c            |    2 +-
+>  drivers/mfd/stmpe.c                  |    3 +--
+>  drivers/mfd/twl4030-irq.c            |    5 +----
+>  include/linux/irq.h                  |    6 ++++++
+>  kernel/irq/irqdomain.c               |    2 +-
+>  7 files changed, 12 insertions(+), 10 deletions(-)
+>
+> Best regards,
+> Javier
