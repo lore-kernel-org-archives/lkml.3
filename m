@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3FQQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:26:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34699 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab3FQQ0Y convert rfc822-to-8bit (ORCPT
+	id S1753181Ab3FQQ0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:26:44 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40801 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752874Ab3FQQ0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:26:24 -0400
-From: "Fernandes, Joel A" <joelagnel@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Matt Porter" <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: RE: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
-Thread-Topic: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
- binding
-Thread-Index: AQHOaXCq5Ahsa0wut0SvcD1WJ4Ax1pk6GA8A///1IaCAAGDEgP//rZWQ
-Date: Mon, 17 Jun 2013 16:25:31 +0000
-Message-ID: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9479@DLEE08.ent.ti.com>
-References: <1371263570-9323-1-git-send-email-joelagnel@ti.com>
- <3940138.jZFEtfGGLz@wuerfel>
- <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
- <201306171819.57900.arnd@arndb.de>
-In-Reply-To: <201306171819.57900.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 17 Jun 2013 12:26:41 -0400
+From: Lorenz Haspel <lorenz@badgers.com>
+To: devel@linuxdriverproject.org
+Cc: gregkh@linuxfoundation.org, puff65537@bansheeslibrary.com,
+        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de,
+        Lorenz Haspel <lorenz@badgers.com>
+Subject: [PATCH 3/4] silicom: checkpatch: trailing statements
+Date: Mon, 17 Jun 2013 18:26:25 +0200
+Message-Id: <1371486386-8043-3-git-send-email-lorenz@badgers.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371486386-8043-1-git-send-email-lorenz@badgers.com>
+References: <1371486386-8043-1-git-send-email-lorenz@badgers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fixed checkpatch error:
+trailing statements that should be on next line
 
+Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
+---
+ drivers/staging/silicom/bpctl_mod.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Monday, June 17, 2013 11:20 AM
-> To: Fernandes, Joel A
-> Cc: Tony Lindgren; Nori, Sekhar; Matt Porter; Grant Likely; Rob Herring; Vinod
-> Koul; Mark Brown; Cousson, Benoit; Russell King; Rob Landley; Andrew Morton;
-> Jason Kridner; Koen Kooi; Devicetree Discuss; Linux OMAP List; Linux ARM
-> Kernel List; Linux DaVinci Kernel List; Linux Kernel Mailing List; Linux
-> Documentation List; Linux MMC List; Linux SPI Devel List
-> Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree
-> binding
-> 
-> On Monday 17 June 2013, Fernandes, Joel A wrote:
-> > [Joel] Thanks for the suggestion, I updated it and it looks like this now:
-> >
-> > Required properties:
-> > - compatible : "ti,edma3"
-> > - ti,hwmods: Name of the hwmods associated to the EDMA
-> > - ti,edma-regions: Number of regions
-> > - ti,edma-slots: Number of slots
-> > - #dma-cells: Should be set to <1>
-> >               Clients should use a single number per DMA channel request.
-> 
-> That still does not say what that number refers to.
-> Is it a channel number, or a request line number, or something completely
-> different?
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 1461130..b1d6041 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -165,7 +165,8 @@ static int bp_device_event(struct notifier_block *unused,
+ 			memcpy(&cbuf, drvinfo.bus_info, 32);
+ 			buf = &cbuf[0];
  
-[Joel] 
-Ah! Will fix, it's a channel number.
+-			while (*buf++ != ':');
++			while (*buf++ != ':')
++				;
+ 			for (i = 0; i < 10; i++, buf++) {
+ 				if (*buf == ':')
+ 					break;
+@@ -2158,12 +2159,14 @@ static void bp75_release_phy(bpctl_dev_t *pbpctl_dev)
+ {
+ 	u16 mask = BPCTLI_SWFW_PHY0_SM;
+ 	u32 swfw_sync;
++	s32 ret_val;
+ 
+ 	if ((pbpctl_dev->func == 1) || (pbpctl_dev->func == 3))
+ 		mask = BPCTLI_SWFW_PHY1_SM;
+ 
+-	while (bp75_get_hw_semaphore_generic(pbpctl_dev) != 0);
+-	/* Empty */
++	do
++		ret_val = bp75_get_hw_semaphore_generic(pbpctl_dev);
++	while (ret_val != 0);
+ 
+ 	swfw_sync = BPCTL_READ_REG(pbpctl_dev, SW_FW_SYNC);
+ 	swfw_sync &= ~mask;
+@@ -5368,7 +5371,8 @@ static void if_scan_init(void)
+ 		memcpy(&cbuf, drvinfo.bus_info, 32);
+ 		buf = &cbuf[0];
+ 
+-		while (*buf++ != ':');
++		while (*buf++ != ':')
++			;
+ 		for (i = 0; i < 10; i++, buf++) {
+ 			if (*buf == ':')
+ 				break;
+-- 
+1.7.10.4
 
-Thanks,
-Joel
