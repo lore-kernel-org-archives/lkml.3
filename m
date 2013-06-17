@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3FQSDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:03:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38414 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab3FQSDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 14:03:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,882,1363158000"; 
-   d="scan'208";a="355020380"
-Message-ID: <51BF50E3.9000806@linux.intel.com>
-Date: Mon, 17 Jun 2013 11:09:39 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1753951Ab3FQSGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:06:50 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30663 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752127Ab3FQSGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 14:06:49 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19a6D7KiTk6pYpwdTFjQTdj
+Date: Mon, 17 Jun 2013 11:06:40 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
+Message-ID: <20130617180640.GV20992@atomide.com>
+References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
+ <51BA1FE7.4000900@wwwdotorg.org>
+ <CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
+ <51BB3A2C.608@wwwdotorg.org>
+ <20130617072021.GB4465@atomide.com>
+ <CACRpkdbZ6QCU1N_3no+rahjVFSUgYMrDqtXW=4AjaY4RhaF9Zw@mail.gmail.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH -next] thermal:  fix x86_pkg_temp_thermal.c build and
- Kconfig
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au> <51BF4159.1000004@infradead.org> <51BF46C3.3090900@linux.intel.com> <51BF4DA2.40601@infradead.org>
-In-Reply-To: <51BF4DA2.40601@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbZ6QCU1N_3no+rahjVFSUgYMrDqtXW=4AjaY4RhaF9Zw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for this issue. I was about to submit a patch for this,
+* Linus Walleij <linus.walleij@linaro.org> [130617 09:02]:
+> On Mon, Jun 17, 2013 at 9:20 AM, Tony Lindgren <tony@atomide.com> wrote:
+> 
+> > Maybe let's again try to first list all the known cases where we need to
+> > do remuxing, and the pins we need to remux?
+> 
+> In the pinctrl documentation this is known as "runtime pinmuxing".
+> This is not common, it is much more common to change
+> pin config, i.e. all other electrical properties of the pins,
+> at runtime. Especially when going to sleep or idle.
+> 
+> > Below are the pin remuxing cases I'm aware of:
+> >
+> > 1. Remux UART RX pin of a device for a wake-up event
+> >
+> > 2. Remux whatever device interrupt line to a GPIO input for wake-up
+> >
+> > 3. Remux audio jack between UART RX and TX to provide a debug console
+> >
+> > 4. Remux MMC CMD and DAT lines for sleep with pulls to avoid device
+> >    from resetting with lines floating or to save power
+> >
+> > Please list any further use cases that I'm not familiar with. I'd like
+> > to hear how messed up this remuxing business can get :)
+> 
+> We have a debug port that can be muxed out on the keypad(!)
+> or the SD card, and some other variants...
+> 
+> Stephen added the I2C block switch thing that switch one
+> and the same IP core between different sets of pins (IIRC).
 
-You should change to
+Oh those are pretty messed up.. Probably the worst case I've
+seen is the remuxing of two MMC slots for a singel MMC controller
+on omap2420 over I2C bus..
+ 
+> For runtime pin config I have many more examples, we
+> change a lot of those to so-called "GPIO mode" (basically
+> just turned into an input with wakeup,  or pulled to ground)
+> at sleep.
 
-depends on X86 && X86_MCE && X86_THERMAL_VECTOR
+Hmm to me "GPIO mode" sounds like routing the signal to a
+completely different device, how is that not remuxing?
 
+Regards,
 
-Thanks,
-Srinivas
-
-
-
-
-On 06/17/2013 10:55 AM, Randy Dunlap wrote:
-> On 06/17/13 10:26, Srinivas Pandruvada wrote:
->> On 06/17/2013 10:03 AM, Randy Dunlap wrote:
->>> On 06/17/13 01:51, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20130607:
->>>>
->>> on i386 and x86_64:
->>>
->>> when built as loadable module:
->>>
->>> ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
->>> ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
->>>
->>> or when built-in:
->>>
->>> drivers/built-in.o: In function `pkg_temp_thermal_init':
->>> x86_pkg_temp_thermal.c:(.init.text+0x1492b): undefined reference to `platform_thermal_package_notify'
->>> x86_pkg_temp_thermal.c:(.init.text+0x14936): undefined reference to `platform_thermal_package_rate_control'
->>> x86_pkg_temp_thermal.c:(.init.text+0x150fe): undefined reference to `platform_thermal_package_notify'
->>> x86_pkg_temp_thermal.c:(.init.text+0x15109): undefined reference to `platform_thermal_package_rate_control'
->>> drivers/built-in.o: In function `pkg_temp_thermal_exit':
->>> x86_pkg_temp_thermal.c:(.exit.text+0x3a9b): undefined reference to `platform_thermal_package_notify'
->>> x86_pkg_temp_thermal.c:(.exit.text+0x3aa6): undefined reference to `platform_thermal_package_rate_control'
->>>
->>>
->>> Full randconfig file is attached (for loadable module build).
->>>
->>>
->>>
->> This requires CONFIG_X86_MCE, which is by default is set to "y".
-> But you can't rely on that symbol being enabled -- there needs to be some
-> enforcement of it, like the patch below.
->
->
-> ---
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Fix build error in x86_pkg_temp_thermal.c.  It requires that
-> X86_MCE be enabled, so depend on that symbol.
-> Also, X86_PKG_TEMP_THERMAL is already inside an "if THERMAL" block,
-> so remove that duplicated dependency.
->
-> ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
-> ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->   drivers/thermal/Kconfig |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> --- linux-next-20130617.orig/drivers/thermal/Kconfig
-> +++ linux-next-20130617/drivers/thermal/Kconfig
-> @@ -171,8 +171,7 @@ config INTEL_POWERCLAMP
->   
->   config X86_PKG_TEMP_THERMAL
->   	tristate "X86 package temperature thermal driver"
-> -	depends on THERMAL
-> -	depends on X86
-> +	depends on X86 && X86_MCE
-
-depends on X86 && X86_MCE && X86_THERMAL_VECTOR
-
-
->   	select THERMAL_GOV_USER_SPACE
->   	default m
->   	help
->
-
+Tony
