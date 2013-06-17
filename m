@@ -1,124 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3FQTv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 15:51:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52281 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab3FQTv6 (ORCPT
+	id S1753299Ab3FQT6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 15:58:21 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38400 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320Ab3FQT6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 15:51:58 -0400
-Message-ID: <51BF68DC.5030804@codeaurora.org>
-Date: Mon, 17 Jun 2013 12:51:56 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 15:58:19 -0400
+X-Sasl-enc: Hi5Wiu2+IfZvLqvgxi9KHzGQZz+z4chYkmOBn920tCQm 1371499097
+Date: Mon, 17 Jun 2013 12:58:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Libo Chen <clbchenlibo.chen@huawei.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ devicetree tree
+Message-ID: <20130617195816.GA28980@kroah.com>
+References: <20130617153302.abd2024c094b8899904acb12@canb.auug.org.au>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: sched_clock: Load cycle count after epoch stabilizes
-References: <1371082214-1119-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1371082214-1119-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617153302.abd2024c094b8899904acb12@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
+On Mon, Jun 17, 2013 at 03:33:02PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the driver-core tree got a conflict in
+> include/linux/platform_device.h between commit 10dbc5e39a60 ("driver
+> core: move to_platform_driver to platform_device.h") from the devicetree
+> tree and commit 9447057eaff8 ("platform_device: use a macro instead of
+> platform_driver_register") from the driver-core tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-I just saw your pull request for making this code generic. I believe
-this patch fixes a bug that nobody has seen in practice so it's probably
-fine to delay this until 3.11.
+Fix looks good to me, thanks.
 
-Also, I've just noticed that "ARM: sched_clock: Return suspended count
-earlier" that I sent in that series is going to break the arm
-architected timer path because they're circumventing all this epoch_ns
-code. It would be better if you could replace that patch with this patch
-because this optimizes it in the same way and also fixes a bug at the
-same time.
-
-Thanks,
-Stephen
-
-On 06/12/13 17:10, Stephen Boyd wrote:
-> There is a small race between when the cycle count is read from
-> the hardware and when the epoch stabilizes. Consider this
-> scenario:
->
->  CPU0                           CPU1
->  ----                           ----
->  cyc = read_sched_clock()
->  cyc_to_sched_clock()
->                                  update_sched_clock()
->                                   ...
->                                   cd.epoch_cyc = cyc;
->   epoch_cyc = cd.epoch_cyc;
->   ...
->   epoch_ns + cyc_to_ns((cyc - epoch_cyc)
->
-> The cyc on cpu0 was read before the epoch changed. But we
-> calculate the nanoseconds based on the new epoch by subtracting
-> the new epoch from the old cycle count. Since epoch is most likely
-> larger than the old cycle count we calculate a large number that
-> will be converted to nanoseconds and added to epoch_ns, causing
-> time to jump forward too much.
->
-> Fix this problem by reading the hardware after the epoch has
-> stabilized.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> Found this while reading through the code. I haven't actually
-> seen it in practice but I think it's real.
->
->  arch/arm/kernel/sched_clock.c | 13 +++++--------
->  1 file changed, 5 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-> index e8edcaa..a57cc5d 100644
-> --- a/arch/arm/kernel/sched_clock.c
-> +++ b/arch/arm/kernel/sched_clock.c
-> @@ -51,10 +51,11 @@ static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
->  	return (cyc * mult) >> shift;
->  }
->  
-> -static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
-> +static unsigned long long notrace sched_clock_32(void)
->  {
->  	u64 epoch_ns;
->  	u32 epoch_cyc;
-> +	u32 cyc;
->  
->  	if (cd.suspended)
->  		return cd.epoch_ns;
-> @@ -73,7 +74,9 @@ static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
->  		smp_rmb();
->  	} while (epoch_cyc != cd.epoch_cyc_copy);
->  
-> -	return epoch_ns + cyc_to_ns((cyc - epoch_cyc) & mask, cd.mult, cd.shift);
-> +	cyc = read_sched_clock();
-> +	cyc = (cyc - epoch_cyc) & sched_clock_mask;
-> +	return epoch_ns + cyc_to_ns(cyc, cd.mult, cd.shift);
->  }
->  
->  /*
-> @@ -165,12 +168,6 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
->  	pr_debug("Registered %pF as sched_clock source\n", read);
->  }
->  
-> -static unsigned long long notrace sched_clock_32(void)
-> -{
-> -	u32 cyc = read_sched_clock();
-> -	return cyc_to_sched_clock(cyc, sched_clock_mask);
-> -}
-> -
->  unsigned long long __read_mostly (*sched_clock_func)(void) = sched_clock_32;
->  
->  unsigned long long notrace sched_clock(void)
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+greg k-h
