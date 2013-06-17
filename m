@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3FQWWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:22:30 -0400
-Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:47780 "EHLO
-	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784Ab3FQWW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:22:29 -0400
-X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jun 2013 18:22:29 EDT
-Message-ID: <51BF8A15.5090506@mthode.org>
-Date: Mon, 17 Jun 2013 17:13:41 -0500
-From: Matthew Thode <mthode@mthode.org>
-Reply-To: mthode@mthode.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130520 Thunderbird/17.0.6
+	id S1752569Ab3FQWXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:23:50 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39995 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3FQWXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:23:49 -0400
+Date: Mon, 17 Jun 2013 15:23:53 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        arm@kernel.org
+Subject: Re: [PATCH 2/3] ARM: mach-moxart: add MOXA ART device tree files
+Message-ID: <20130617222353.GB13266@quad.lixom.net>
+References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
+ <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
+ <20130612224952.GB8146@quad.lixom.net>
+ <CACmBeS0T1n92CcGN6kR+eBcFPuwsWc+PsUx7Cms+4vbeVFhQKg@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: setting the kernel log console at runtime
-X-Enigmail-Version: 1.6a1pre
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2LUQSKAXVUMKAPKRHKCPA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACmBeS0T1n92CcGN6kR+eBcFPuwsWc+PsUx7Cms+4vbeVFhQKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2LUQSKAXVUMKAPKRHKCPA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 14, 2013 at 04:34:24PM +0200, Jonas Jensen wrote:
+> Hi,
+> 
+> Thanks for the replies.
+> 
+> What isn't commented below should already be fixed.
+> 
+> On 13 June 2013 00:49, Olof Johansson <olof@lixom.net> wrote:
+> > Hi,
+> >
+> > You should add a bindings description for the MOXA SoC platforms, similar to
+> > how others do it, under Documentation/devicetree/bindings/arm/.
+> 
+> The following is now added under Documentation:
+> 
+>  Documentation/devicetree/bindings/arm/moxart.txt   |    8 +++
+>  .../arm/moxart/moxart-interrupt-controller.txt     |   29 ++++++++++++
+>  .../bindings/arm/moxart/moxart-timer.txt           |   17 +++++++
+> 
+> > Same goes for other device bindings below -- they all need to be added to the
+> > bindings documentation. You might be better off removing some of them until you
+> > post and merge the corresponding drivers.
+> 
+> I'll remove them for now with the intent of adding them later. Maybe
+> when (and if) all drivers are posted and merged.
+> 
+> >> +/dts-v1/;
+> >> +/include/ "moxart.dtsi"
+> >> +
+> >> +/ {
+> >> +     model = "MOXA UC-7112-LX";
+> >> +     compatible = "moxa,moxart-uc-7112-lx";
+> >
+> > Is there a generic board design / eval board that you can have as a fallback
+> > compatible value? That way you won't have to add every board to the table in
+> > the c file.
+> 
+> There isn't really a generic board but the same can be accomplished by
+> adding "moxa,moxart" to compatible? New boards can then be added
+> without patching arch/arm/mach-moxart/moxart.c.
 
-I have a server I wish to debug, but wish to set the console at runtime
-(I boot with it set, but it gets reset somehow).
+Sounds good. See comment on the other email about checking for machine
+compatible in the init setup function too, that'll work well.
 
-I boot with the following on the cmdline
-console=3DttyS1 console=3DttyS0 console=3DttyS2 console=3Dtty0
+> 
+> >> +     mxser@98200040 {
+> >> +             compatible = "moxa,moxart-mxser";
+> >> +             reg =   <0x98200040 0x00000080>,        /* UART "3" base */
+> >> +                             <0x982000e4 0x00000080>,        /* UART mode base */
+> >> +                             <0x982000c0 0x00000020>;        /* UART interrupt vector */
+> >
+> > Are there other registers for other devices inbetween, or could you just do one
+> > large memory area here?
+> 
+> No, reg could simply be 0x98200040 to 0x982000e0. I split them out as
+> documentation but those could be defined in the driver instead, also
+> because it's sort of easier to assign values with of_iomap.
 
-But end up with the following in /proc/consoles (I need to log to ttyS0
-in particular).
-tty0                 -WU (EC p  )    4:1
-netcon0              -W- (E     )
-ttyS1                -W- (E  p a)    4:65
+I'd say just go with one register area, it's how most other drivers do it so
+it's most familiar to someone else coming in and reading your code to fix bugs
+or whatnot.
 
-Here's my printk just in case you ask as well :D
-8	4	1	7
+> >> +             interrupts = <31 1>;
+> >> +     };
+> >> +
+> >> +     mac0: mac@90900000 {
+> >> +             compatible = "moxa,moxart-mac0";
+> >> +             reg =   <0x90900000 0x1000>,
+> >> +                             <0x80000050 0x5>;                       /* MAC address stored on flash */
+> >
+> > This is a pretty unusal way to indicate mac address location. While I suppose
+> > it works, I'd like to get the device tree maintainers in the loop. ADding them
+> > to cc.
+> >
+> > Also, there should be a bindings doc for this device (and a driver)
+> 
+> I'm removing ethernet until the driver is submitted. This allows me to
+> submit bindings doc later?
 
-How would I go about setting the kernel log console without a reboot?
+Yep.
 
---=20
--- Matthew Thode
+> 
+> > I'm also surprised that you have a 5-byte mac address. 6 bytes is much more
+> > common. :)
+> 
+> That _is_ surprising :) Corrected to 6 bytes.
+
+:)
+
+> > Finally, are the two MACs using the same driver? if so, using the same
+> > compatible value makes more sense.
+> 
+> Yes, using the same driver is the point. I see now they can use the
+> same value, they'll still be probed from the DT entries.
+
+Yeah. Let's discuss that further when the driver is ready if needed.
 
 
-------enig2LUQSKAXVUMKAPKRHKCPA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRv4obAAoJECRx6z5ArFrDPj4QAK6mWYTufu0LnoIwY5PM46Jg
-/pdC/4W37lppiY7mV9JJK1sYiq0oBmj/3jYsJopop1+Bf4/BASnL0SGK7ARa653x
-WyzHInqjhRzRNcbPLBugQD8eMbGliamdK14MqJIcp4gK3/VUMcoVGktrFHqnkKHj
-TOGUEvT5ZBaf8mzsGND4S1dlYCy6TYqn+y8J1kpX39esPedlCaRNzOmhlhs5Kt5o
-LgUXq1rSX3HrR9kZr0wOZW++r6Y+a5z7+Yl5LrbPNpfAquzL4dwdueU5SyFELR8K
-N9jGdgW61w5DNf9WVVf9jcXC+HpQM5Ggsup2yibyFhVKXlzTUo46Yg7DinVgSD57
-xEGfM3Ex53aHMY5224tDKlLynXk2rJ+cu7rSkXOPD44HmR03ZDySzFMWxBg1fOcZ
-jhIPF7bS3ztTbYjiWcIK8h2NN3rJtlGGrSRECbIjHqb+/J+ViVma3trEipxtpSKL
-Gd7+cTxiHR8Ulbe3if8GQ9WoXNaHerIi8dbb9AujKaVkngKOAX9Z7YIJCAcATEy2
-EdRBnAfNjS8jhsDjvRoUPCqxu5GUMLZa9tGiYoZM301O0Bg12Utba97zzJ560DOr
-+HR+AO19LSl9F2hjbhlCmdVPyGcI9JBMxAhp5ISBjhOgAQJytdYRAjphindmJ/hL
-ySQxavwPW6iw9bE9rnSs
-=eFyG
------END PGP SIGNATURE-----
-
-------enig2LUQSKAXVUMKAPKRHKCPA--
+-Olof
