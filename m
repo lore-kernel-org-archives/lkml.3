@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3FQUcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:32:18 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34442 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751486Ab3FQUcR (ORCPT
+	id S1753360Ab3FQUeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:34:00 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:43094 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab3FQUd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:32:17 -0400
-Message-ID: <51BF724A.505@hurleysoftware.com>
-Date: Mon, 17 Jun 2013 16:32:10 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 16:33:58 -0400
+Date: Mon, 17 Jun 2013 22:33:54 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/tegra: Include linux/types.h
+Message-ID: <20130617203353.GC5265@mithrandir>
+References: <1371470294.26299.21.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v4 00/24] lockless n_tty receive path
-References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com> <1371302076-4688-1-git-send-email-peter@hurleysoftware.com> <20130617200138.GA8199@kroah.com>
-In-Reply-To: <20130617200138.GA8199@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
+Content-Disposition: inline
+In-Reply-To: <1371470294.26299.21.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 04:01 PM, Greg Kroah-Hartman wrote:
-> On Sat, Jun 15, 2013 at 09:14:12AM -0400, Peter Hurley wrote:
->> Greg,
->>
->> As before, this patchset is dependent on the 'ldsem patchset'.
->> The reason is that this series abandons tty->receive_room as
->> a flow control mechanism (because that requires locking),
->> and the TIOCSETD ioctl _without ldsem_ uses tty->receive_room
->> to shutoff i/o.
->>
->> It is also dependent on 'n_tty fixes' which I recently resent
->> to you.
->
-> Thanks for rebasing all of this, and resending it.  It's late in the
-> 3.11 development cycle, so I'm going to wait unto 3.11-rc1 is out to
-> queue it up for 3.12, to get it lots of testing in linux-next.
 
-Thanks Greg. I actually meant to suggest these be held until after
-the merge window but I got distracted by the VT1 deallocation bug
-report.
+--O3RTKUHj+75w1tg5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Peter Hurley
+On Mon, Jun 17, 2013 at 01:58:14PM +0200, Paul Bolle wrote:
+> "make headers_check" complains about include/uapi/drm/tegra_drm.h:
+>     [...]/usr/include/drm/tegra_drm.h:21: found __[us]{8,16,32,64} type w=
+ithout #include <linux/types.h>
+>=20
+> So let's include linux/types.h in this header.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested only with "make headers_check". I don't actually build or run
+> code that uses tegra_drm.h.
+>=20
+>  include/uapi/drm/tegra_drm.h | 2 ++
+>  1 file changed, 2 insertions(+)
+
+That has already been fixed in linux-next.
+
+Thierry
+
+--O3RTKUHj+75w1tg5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRv3KxAAoJEN0jrNd/PrOhyV8P/AqOcKEtzd0mvftiBLi2PhcB
+TJUXu/DQNFkyGLTpxNTPxJtOvWv/QpY3czSeCkNj/eJ13gYW+ILIVP6X9lXw70+5
+pa9Ij4OtSVX+DTcNZ7st+2J1nWBW9odIsxxdigwgmlNEH+g4vPpmapuls+fYsuzL
+LnwsfbXw3m9K4Udfr9O4U3M03lz0Ta0Hv31+sW5qCBrn7XDQTugqUC/l1z6Ugj9K
++UPeY8heVLrOcSrn/EsFtrk3JWpiRb5wwNAR1+K/GbmJjdZJNsP/aZhXGk1Ot0xv
+54ZuAlFydlwzu9kLnN0GJUsqqRD4XRYMjnOb/UjNNciUaFnmVeMDS6PuPYlu24yF
+2pYjV4SmErHv2tNwB+NcQeTXhahVmv3UY/05w6DzK6rt4uWdRY0Ia4NJTM+kiFif
+F+KR9hIxEnCGftJ8K9v2jJ2BAdlLa19+P3qs5Sau28K1EBNeQQ0ZYzSIXSL89M+f
+zq49PUcIjHyZy+tkoIZErzLdTbBjW6BoViyubk0Nhhd+hICaaXxm8XIFTXZNdTHj
+e/iekSEyMTpg+cJKNFXJeLhHvop+Gcf8UfGDFPPFuPCmVD1TcUUuLIyDrcaY0z4a
+4meFaQF+vmdZHAArVT0DnfA5jzuhuk30yAEWhou6HyqKdh7jQrPXIfVLZUrR/zcV
+O4E+dpi+AuNN6I3W3pxn
+=VzP9
+-----END PGP SIGNATURE-----
+
+--O3RTKUHj+75w1tg5--
