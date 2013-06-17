@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab3FQDFr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:05:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33619 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab3FQDFq (ORCPT
+	id S1755646Ab3FQDJc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:09:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51325 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab3FQDJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:05:46 -0400
-Message-ID: <51BE7CFB.6020008@ti.com>
-Date: Sun, 16 Jun 2013 23:05:31 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        <jonghwa3.lee@samsung.com>
-Subject: Re: [PATCH V5 02/30] thermal: exynos: Add ARCH_HAS_TMU config to
- know the supported soc's
-References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com> <1370955220-2949-3-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1370955220-2949-3-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2WXGDDBRSFUMEOPULOTXF"
+	Sun, 16 Jun 2013 23:09:30 -0400
+Date: Mon, 17 Jun 2013 13:09:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20130617130918.a8a361ff284b1ac2186598ea@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2WXGDDBRSFUMEOPULOTXF
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hey Amit,
+Hi Dave,
 
-On 11-06-2013 08:53, Amit Daniel Kachhap wrote:
-> This patch adds config sybmol ARCH_HAS_TMU to enable the TMU driver.
-> This will allow adding support for new soc easily as now it is the
-> platform responsibility to enable this config symbol.
->=20
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  drivers/thermal/samsung/Kconfig |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/=
-Kconfig
-> index 2d3d9dc..145a55d 100644
-> --- a/drivers/thermal/samsung/Kconfig
-> +++ b/drivers/thermal/samsung/Kconfig
-> @@ -1,6 +1,9 @@
-> +config ARCH_HAS_TMU
-> +	bool
-> +
->  config EXYNOS_THERMAL
->  	tristate "Temperature sensor on Samsung EXYNOS"
-> -	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
-> +	depends on ARCH_HAS_TMU
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/intel_sdvo.c between commit c3456fb3e471 ("drm/i915:
+prefer VBT modes for SVDO-LVDS over EDID") from Linus' tree and commit
+41aa344866e3 ("drm/i915: Organize VBT stuff inside drm_i915_private")
+from the drm tree.
 
-I would rather use ARCH_HAS_BANDGAP as discussed and agreed during your
-v4 review. I managed push this patch through RMK's system:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=3D7758/1
-
->  	depends on CPU_THERMAL
->  	help
->  	  If you say yes here you get support for TMU (Thermal Management
->=20
-
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
-You have got to be excited about what you are doing. (L. Lamport)
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Eduardo Valentin
+diff --cc drivers/gpu/drm/i915/intel_sdvo.c
+index d4ea6c2,7068195..0000000
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@@ -1776,17 -1848,14 +1848,17 @@@ static void intel_sdvo_get_lvds_modes(s
+  	 * Assume that the preferred modes are
+  	 * arranged in priority order.
+  	 */
+ -	intel_ddc_get_modes(connector, intel_sdvo->i2c);
+ -	if (list_empty(&connector->probed_modes) =3D=3D false)
+ -		goto end;
+ +	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+ =20
+ -	/* Fetch modes from VBT */
+ +	/*
+ +	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
+ +	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
+ +	 * drm_mode_probed_add adds the mode at the head of the list we add it
+ +	 * last.
+ +	 */
+- 	if (dev_priv->sdvo_lvds_vbt_mode !=3D NULL) {
++ 	if (dev_priv->vbt.sdvo_lvds_vbt_mode !=3D NULL) {
+  		newmode =3D drm_mode_duplicate(connector->dev,
+- 					     dev_priv->sdvo_lvds_vbt_mode);
++ 					     dev_priv->vbt.sdvo_lvds_vbt_mode);
+  		if (newmode !=3D NULL) {
+  			/* Guarantee the mode is preferred */
+  			newmode->type =3D (DRM_MODE_TYPE_PREFERRED |
 
-
-------enig2WXGDDBRSFUMEOPULOTXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iF4EAREIAAYFAlG+fPsACgkQCXcVR3XQvP1WzwEAmtlAswHrz46LPK6MIo/e9vs8
-chXTAUh0g5SQwQLFWDgA/1NpiPYjyzJEchEyIN2zJcYAKdjdNx1V80kIk3kN2cO4
-=+DOd
+iQIcBAEBCAAGBQJRvn3iAAoJEECxmPOUX5FEinAP/3r1F4jn4E3O56GEdOtBEXtK
+Lffn7hViM2oCYaz3D/YTDHvbWJqlvw9Sy48WiIfZakAi4JSX4o0MOGAu0aOzHpYx
+uHtSIErrB34ZBavsrQghvuGRPikjE9iwh771ezlRwlgLzb+f2WnqiOftt7NRyew7
+9uDjJGfTIy/TR6qxG7rIgCDVIalTqHsGmrhnphOqLeP7kfXMomv5noLTrzXNP9km
+NrcSfiU8yCqNttCeneXbZ2Yn1QDVbOlRM8QQKoFUAuI5tFQhg1hC38vjlMj+tfWS
+5nhwmz1cTeLjd0ehT8EeTSqcE+eGm9Z4qhsZSA6xnVmWOZLBo1f0tUiyDYjr4RPi
+73W+qDBPkL8uFWddJBjyzElJcxL2Tp+L+ET9l+46vAg8ETsV+FJ1OTlgZytVtHh6
+fIC+cR2KHPrddiGUIgGsiBbOpu4ol8TOWUMQOoh/w6w1wV4bAKUMTppj2r+ajvvN
+QcnMrqg9shZduPG14vnRKE1yWxqjQUZTIHHym5qUXv/9ha/YtKtDaiNLGu0s37Y7
+iME0AVxBd4Dq2DRmBw8tPpBopa8k9u2/GNqaSgRa0KIxKcpPCRQzOnwPDshijqNS
+KgUDpChicfrDXc6ZRdfX26PYDQkmN2bsDSfeKWBsXPg45mo6nnNElQgwW19wCZBr
+Fiw+v61N6qMAnlRgPLxJ
+=t22J
 -----END PGP SIGNATURE-----
 
-------enig2WXGDDBRSFUMEOPULOTXF--
+--Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R--
