@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3FQRy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:54:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50540 "EHLO
+	id S1754045Ab3FQReO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:34:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50535 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab3FQReQ (ORCPT
+	with ESMTP id S1753998Ab3FQReL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:34:16 -0400
+	Mon, 17 Jun 2013 13:34:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 71/84] b43: stop format string leaking into error msgs
-Date: Mon, 17 Jun 2013 10:31:15 -0700
-Message-Id: <1371490288-23167-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 35/84] cifs: fix off-by-one bug in build_unc_path_to_root
+Date: Mon, 17 Jun 2013 10:30:39 -0700
+Message-Id: <1371490288-23167-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit e0e29b683d6784ef59bbc914eac85a04b650e63c upstream.
+commit 1fc29bacedeabb278080e31bb9c1ecb49f143c3b upstream.
 
-The module parameter "fwpostfix" is userspace controllable, unfiltered,
-and is used to define the firmware filename. b43_do_request_fw() populates
-ctx->errors[] on error, containing the firmware filename. b43err()
-parses its arguments as a format string. For systems with b43 hardware,
-this could lead to a uid-0 to ring-0 escalation.
+commit 839db3d10a (cifs: fix up handling of prefixpath= option) changed
+the code such that the vol->prepath no longer contained a leading
+delimiter and then fixed up the places that accessed that field to
+account for that change.
 
-CVE-2013-2852
+One spot in build_unc_path_to_root was missed however. When doing the
+pointer addition on pos, that patch failed to account for the fact that
+we had already incremented "pos" by one when adding the length of the
+prepath. This caused a buffer overrun by one byte.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes the problem by correcting the handling of "pos".
+
+Reported-by: Marcus Moeller <marcus.moeller@gmx.ch>
+Reported-by: Ken Fallon <ken.fallon@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/b43/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/connect.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index 64b637a..911c4c0 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2451,7 +2451,7 @@ static void b43_request_firmware(struct work_struct *work)
- 	for (i = 0; i < B43_NR_FWTYPES; i++) {
- 		errmsg = ctx->errors[i];
- 		if (strlen(errmsg))
--			b43err(dev->wl, errmsg);
-+			b43err(dev->wl, "%s", errmsg);
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index f7199b9..c70d31a 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3316,8 +3316,8 @@ build_unc_path_to_root(const struct smb_vol *vol,
+ 	pos = full_path + unc_len;
+ 
+ 	if (pplen) {
+-		*pos++ = CIFS_DIR_SEP(cifs_sb);
+-		strncpy(pos, vol->prepath, pplen);
++		*pos = CIFS_DIR_SEP(cifs_sb);
++		strncpy(pos + 1, vol->prepath, pplen);
+ 		pos += pplen;
  	}
- 	b43_print_fw_helptext(dev->wl, 1);
- 	goto out;
+ 
 -- 
 1.8.1.2
 
