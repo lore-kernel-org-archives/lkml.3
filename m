@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab3FQHHT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:07:19 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45264 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3FQHHR (ORCPT
+	id S1756110Ab3FQHJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:09:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33500 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3FQHJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:07:17 -0400
+	Mon, 17 Jun 2013 03:09:21 -0400
+Message-ID: <51BEB61C.3040904@linutronix.de>
+Date: Mon, 17 Jun 2013 09:09:16 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
-References: <1371413189-2568-1-git-send-email-ddaney.cavm@gmail.com>
-	<1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
-Date: Mon, 17 Jun 2013 09:07:16 +0200
-X-Google-Sender-Auth: 8Vjn5H22U9KteGzhx-_0wWPwMpo
-Message-ID: <CAMuHMdXb5ydj-y_=3oPRLVZ4DmmrXrFQi_xxpbkg5DtzORN1gA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mn10300: Fix include dependency in irqflags.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com, david.s.daney@gmail.com,
-        David Daney <david.daney@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the pinctrl tree with Linus' tree
+References: <20130617161127.f202c6abe603c9ff8b30fc7c@canb.auug.org.au>
+In-Reply-To: <20130617161127.f202c6abe603c9ff8b30fc7c@canb.auug.org.au>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 16, 2013 at 10:06 PM,  <ddaney.cavm@gmail.com> wrote:
-> From: David Daney <david.daney@cavium.com>
->
-> We need to pick up the definition of raw_smp_processor_id() from
-> asm/smp.h.  For the !SMP case, we need to supply a definition of
-> raw_smp_processor_id().
+On 06/17/2013 08:11 AM, Stephen Rothwell wrote:
+> Hi Linus,
 
-Thanks, this fixes the build!
+Hi Stephen,
 
-> Signed-off-by: David Daney <david.daney@cavium.com>
+> I fixed it up (see below) and can carry the fix as necessary (no
+> action is required).
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+The fix looks good.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Sebastian
