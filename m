@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab3FQIpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 04:45:11 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:34762 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756074Ab3FQIpJ (ORCPT
+	id S932375Ab3FQIqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 04:46:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:53150 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab3FQIqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 04:45:09 -0400
-Message-ID: <51BECC91.90809@suse.cz>
-Date: Mon, 17 Jun 2013 10:45:05 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Mon, 17 Jun 2013 04:46:01 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Emilio Lopez <emilio@elopez.com.ar>,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2] ARM: sunxi: Add Olimex A10s-Olinuxino-micro device tree
+Date: Mon, 17 Jun 2013 10:45:57 +0200
+Message-Id: <1371458757-6343-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Marcin Slusarz <marcin.slusarz@gmail.com>, bskeggs@redhat.com
-CC: Jiri Slaby <jirislaby@gmail.com>, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: WARNING: at drivers/gpu/drm/nouveau/core/core/mm.c:242
-References: <5122021F.1060207@suse.cz> <20130218232335.GA9730@joi.lan> <5122BC8A.6040503@suse.cz> <20130219070744.GA3032@joi.lan> <20130219223255.GA13522@joi.lan> <514056C8.3040702@suse.cz>
-In-Reply-To: <514056C8.3040702@suse.cz>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2013 11:36 AM, Jiri Slaby wrote:
-> On 02/19/2013 11:32 PM, Marcin Slusarz wrote:
->> On Tue, Feb 19, 2013 at 08:07:44AM +0100, Marcin Slusarz wrote:
->>> On Tue, Feb 19, 2013 at 12:43:06AM +0100, Jiri Slaby wrote:
->>>> On 02/19/2013 12:23 AM, Marcin Slusarz wrote:
->>>>> Tomorrow I'll post a patch for page allocation failure.
->>>>
->>>> What do you mean -- what kind of patch?
->>>
->>> A patch which will change pgt allocation to use vmalloc.
-> 
-> It's still not in -next. Any plans on this?
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Tested-by: Emilio López <emilio@elopez.com.ar>
+---
+ arch/arm/boot/dts/Makefile                       |  1 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts | 76 ++++++++++++++++++++++++
+ 2 files changed, 77 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
 
-Ping...
-
->> ---
->> From: Marcin Slusarz <marcin.slusarz@gmail.com>
->> Subject: [PATCH] drm/nouveau: use vmalloc for pgt allocation
->>
->> Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
->> Let's use vmalloc.
->>
->> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
->> Cc: stable@vger.kernel.org
->> ---
->>  drivers/gpu/drm/nouveau/core/subdev/vm/base.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
->> index 77c67fc..e66fb77 100644
->> --- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
->> +++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
->> @@ -362,7 +362,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
->>  	vm->fpde = offset >> (vmm->pgt_bits + 12);
->>  	vm->lpde = (offset + length - 1) >> (vmm->pgt_bits + 12);
->>  
->> -	vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
->> +	vm->pgt  = vzalloc((vm->lpde - vm->fpde + 1) * sizeof(*vm->pgt));
->>  	if (!vm->pgt) {
->>  		kfree(vm);
->>  		return -ENOMEM;
->> @@ -371,7 +371,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
->>  	ret = nouveau_mm_init(&vm->mm, mm_offset >> 12, mm_length >> 12,
->>  			      block >> 12);
->>  	if (ret) {
->> -		kfree(vm->pgt);
->> +		vfree(vm->pgt);
->>  		kfree(vm);
->>  		return ret;
->>  	}
->> @@ -446,7 +446,7 @@ nouveau_vm_del(struct nouveau_vm *vm)
->>  	}
->>  
->>  	nouveau_mm_fini(&vm->mm);
->> -	kfree(vm->pgt);
->> +	vfree(vm->pgt);
->>  	kfree(vm);
->>  }
->>  
->>
-> 
-> 
-
-
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index f0895c5..bae46c3 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -181,6 +181,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun4i-a10-cubieboard.dtb \
+ 	sun4i-a10-mini-xplus.dtb \
+ 	sun4i-a10-hackberry.dtb \
++	sun5i-a10s-olinuxino-micro.dtb \
+ 	sun5i-a13-olinuxino.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-iris-512.dtb \
+diff --git a/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
+new file mode 100644
+index 0000000..64dc0c4
+--- /dev/null
++++ b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
+@@ -0,0 +1,76 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/dts-v1/;
++/include/ "sun5i-a10s.dtsi"
++
++/ {
++	model = "Olimex A10s-Olinuxino Micro";
++	compatible = "olimex,a10s-olinuxino-micro", "allwinner,sun5i-a10s";
++
++	soc@01c20000 {
++		emac: ethernet@01c0b000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&emac_pins_a>;
++			phy = <&phy1>;
++			status = "okay";
++		};
++
++		mdio@01c0b080 {
++			status = "okay";
++
++			phy1: ethernet-phy@1 {
++				reg = <1>;
++			};
++		};
++
++		pinctrl@01c20800 {
++			led_pins_olinuxino: led_pins@0 {
++				allwinner,pins = "PE3";
++				allwinner,function = "gpio_out";
++				allwinner,drive = <1>;
++				allwinner,pull = <0>;
++			};
++		};
++
++		uart0: serial@01c28000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins_a>;
++			status = "okay";
++		};
++
++		uart2: serial@01c28800 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart2_pins_a>;
++			status = "okay";
++		};
++
++		uart3: serial@01c28c00 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart3_pins_a>;
++			status = "okay";
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&led_pins_olinuxino>;
++
++		green {
++			label = "a10s-olinuxino-micro:green:usr";
++			gpios = <&pio 4 3 0>;
++			default-state = "on";
++		};
++	};
++};
 -- 
-js
-suse labs
+1.8.3.1
+
