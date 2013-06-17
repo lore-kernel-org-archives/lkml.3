@@ -1,145 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3FQFIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:08:16 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:64603 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab3FQFIP (ORCPT
+	id S1755838Ab3FQFQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:16:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15659 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488Ab3FQFQw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:08:15 -0400
+	Mon, 17 Jun 2013 01:16:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 16 Jun 2013 22:16:27 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "yj44.cho@samsung.com" <yj44.cho@samsung.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>
+Date: Mon, 17 Jun 2013 07:16:22 +0200
+Subject: Re: [PATCH] ARM: dma-mapping: Get pages if the cpu_addr is out of
+ atomic_pool
+Thread-Topic: [PATCH] ARM: dma-mapping: Get pages if the cpu_addr is out of
+ atomic_pool
+Thread-Index: Ac5rGc+fshFlJY/aQcSVSP/s/9/fGg==
+Message-ID: <20130617.081622.332935718957738769.hdoyu@nvidia.com>
+References: <1371442732-15088-1-git-send-email-yj44.cho@samsung.com>
+In-Reply-To: <1371442732-15088-1-git-send-email-yj44.cho@samsung.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <51BE8213.4000701@linux.vnet.ibm.com>
-References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
-	<51BE8213.4000701@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 13:08:12 +0800
-Message-ID: <CALZhoSR7pB8qJjT_9_naxp2cgtuz=UR0DzLk_J-_CVNaO55jyA@mail.gmail.com>
-Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+YoungJun Cho <yj44.cho@samsung.com> wrote @ Mon, 17 Jun 2013 06:18:52 +0200:
 
-On Mon, Jun 17, 2013 at 11:27 AM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> Hi, Lei
->
-> On 06/17/2013 10:21 AM, Lei Wen wrote:
->> nr_busy_cpus in sched_group_power structure cannot present the purpose
->> for judging below statement:
->> "this cpu's scheduler group has multiple busy cpu's exceeding
->>  the group's power."
->>
->> But only could tell how many cpus is doing their jobs for currently.
->
-> AFAIK, this nr_busy_cpus presents how many cpus in local group are not
-> idle, the logical here in nohz_kick_needed() is:
->
->         if domain cpus share resources and at least 2 cpus in
->         local group are not idle, prefer to do balance.
->
+> In __iommu_get_pages(), the cpu_addr is checked wheather in
+> atomic_pool range or not. So if the cpu_addr is in atomic_pool
+> range, it does not need to check twice.
+> 
+> Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Seems reasonable for me. But this comment is conflicted with current documented
-one. Do we need to modify the comment anyway, as previous says nr_busy>1 is
-"scheduler group has multiple busy cpu;s exceeding the group's power"?
-
-> And the idea behind is, we catch the timing when there are idle-cpu and
-> busy-group and task-moving may cost low.
-
-Since there is only one task over runqueue now, then why we could need the
-load balance any way?...
-
->
-> Your change will remove this timing for balance, I think you may need
-> some test to prove that this patch will make things better.
-
-I see. Yes, test data is always good. :)
-Do you have any suggestion like using what kind of test program to
-collect this data?
-
-Thanks,
-Lei
-
->
-> Regards,
-> Michael Wang
->
->>
->> However, the original purpose to add this logic still looks good.
->> So we move this kind of logic to find_new_ilb, so that we could pick
->> out peer from our sharing resource domain whenever possible.
->>
->> Signed-off-by: Lei Wen <leiwen@marvell.com>
->> ---
->>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
->>  1 file changed, 22 insertions(+), 6 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index c61a614..64f9120 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5368,10 +5368,31 @@ static struct {
->>       unsigned long next_balance;     /* in jiffy units */
->>  } nohz ____cacheline_aligned;
->>
->> +/*
->> + * Add the heuristic logic to try waking up idle cpu from
->> + * those peers who share resources with us, so that the
->> + * cost would be brought to minimum.
->> + */
->>  static inline int find_new_ilb(int call_cpu)
->>  {
->> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
->> +     int ilb = nr_cpu_ids;
->> +     struct sched_domain *sd;
->> +
->> +     rcu_read_lock();
->> +     for_each_domain(call_cpu, sd) {
->> +             /* We loop till sched_domain no longer share resource */
->> +             if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
->> +                     ilb = cpumask_first(nohz.idle_cpus_mask);
->> +                     break;
->> +             }
->>
->> +             /* else, we would try to pick the idle cpu from peers first */
->> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
->> +                             sched_domain_span(sd));
->> +             if (ilb < nr_cpu_ids)
->> +                     break;
->> +     }
->> +     rcu_read_unlock();
->>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
->>               return ilb;
->>
->> @@ -5620,8 +5641,6 @@ end:
->>   * Current heuristic for kicking the idle load balancer in the presence
->>   * of an idle cpu is the system.
->>   *   - This rq has more than one task.
->> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
->> - *     busy cpu's exceeding the group's power.
->>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>   *     domain span are idle.
->>   */
->> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->>               struct sched_group_power *sgp = sg->sgp;
->>               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
->>
->> -             if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
->> -                     goto need_kick_unlock;
->> -
->>               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->>                   && (cpumask_first_and(nohz.idle_cpus_mask,
->>                                         sched_domain_span(sd)) < cpu))
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Looks ok to me, at least.
