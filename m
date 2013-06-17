@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab3FQMYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:24:07 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39294 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836Ab3FQMYE (ORCPT
+	id S932938Ab3FQMZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:25:53 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:47823 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932831Ab3FQMZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:24:04 -0400
-Message-ID: <51BEFFD4.6090904@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 20:23:48 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 08:25:52 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Glauber Costa <glommer@openvz.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the kvm tree
-References: <20130617180735.c10c058469ce0633c65225a4@canb.auug.org.au>
-In-Reply-To: <20130617180735.c10c058469ce0633c65225a4@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061712-2000-0000-0000-00000C86E81A
+In-Reply-To: <1370590169-24804-3-git-send-email-alex.shi@intel.com>
+References: <1370590169-24804-1-git-send-email-alex.shi@intel.com> <1370590169-24804-3-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 05:25:19 -0700
+Message-ID: <CAPM31R+Rmmn471ZE97q3DhAgZiu3s2fEoqf7unO6sB6=H8w37A@mail.gmail.com>
+Subject: Re: [RFC patch 2/4] sched/tg: use 'unsigned long' for load variable
+ in task group
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Fri, Jun 7, 2013 at 12:29 AM, Alex Shi <alex.shi@intel.com> wrote:
+> Since tg->load_avg is smaller than tg->load_weight, we don't need a
+> atomic64_t variable for load_avg in 32 bit machine.
+> The same reason for cfs_rq->tg_load_contrib.
 
-Thanks for your work!
+This description is incorrect, another patch removes tg->load_weight
+for being unused.
 
-On 06/17/2013 04:07 PM, Stephen Rothwell wrote:
-
-> - 		prepare_zap_oldest_mmu_page(kvm, &invalid_list);
-> + 		freed += prepare_zap_oldest_mmu_page(kvm, &invalid_list);
-
-It seems this change is not needed? and "freed" is not defined in mmu_shrink().
-Right?
-
+Rest seems fine.
