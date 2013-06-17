@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3FQALu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 20:11:50 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:64383 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab3FQALs (ORCPT
+	id S1755714Ab3FQALy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 20:11:54 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:57043 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3FQALw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 20:11:48 -0400
+	Sun, 16 Jun 2013 20:11:52 -0400
 From: Chad Williamson <chad@dahc.us>
 To: gregkh@linuxfoundation.org
 Cc: puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
         tulinizer@gmail.com, dan.carpenter@oracle.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Chad Williamson <chad@dahc.us>
-Subject: [PATCH 1/3] Staging: silicom: move symbol exports beneath definitions in bpctl_mod.c
-Date: Sun, 16 Jun 2013 19:05:23 -0500
-Message-Id: <1371427525-6007-2-git-send-email-chad@dahc.us>
+Subject: [PATCH 2/3] Staging: silicom: move symbol exports beneath definitions in bypass.c
+Date: Sun, 16 Jun 2013 19:05:24 -0500
+Message-Id: <1371427525-6007-3-git-send-email-chad@dahc.us>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371427525-6007-1-git-send-email-chad@dahc.us>
 References: <1371427525-6007-1-git-send-email-chad@dahc.us>
@@ -23,379 +23,349 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the EXPORT_SYMBOL macros in bpctl_mod.c beneath the definitions
+Move the EXPORT_SYMBOL macros in bypass.c beneath the definitions
 they refer to, resolving checkpatch.pl warnings. While we're at it, use
 EXPORT_SYMBOL rather than EXPORT_SYMBOL_NOVERS.
 
 Signed-off-by: Chad Williamson <chad@dahc.us>
 ---
- drivers/staging/silicom/bpctl_mod.c | 91 ++++++++++++++++++-------------------
- 1 file changed, 45 insertions(+), 46 deletions(-)
+ drivers/staging/silicom/bypasslib/bypass.c | 89 +++++++++++++++---------------
+ 1 file changed, 44 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-index a3b974b..4c8fb86 100644
---- a/drivers/staging/silicom/bpctl_mod.c
-+++ b/drivers/staging/silicom/bpctl_mod.c
-@@ -6878,59 +6878,69 @@ int is_bypass_sd(int ifindex)
- {
- 	return is_bypass(get_dev_idx_p(ifindex));
+diff --git a/drivers/staging/silicom/bypasslib/bypass.c b/drivers/staging/silicom/bypasslib/bypass.c
+index 9ed2508..ba0d23a 100644
+--- a/drivers/staging/silicom/bypasslib/bypass.c
++++ b/drivers/staging/silicom/bypasslib/bypass.c
+@@ -188,69 +188,82 @@ static int is_bypass(int if_index)
+ 		return is_bypass_dev(if_index);
+ 	return ret;
  }
-+EXPORT_SYMBOL(is_bypass_sd);
++EXPORT_SYMBOL(is_bypass);
  
- int set_bypass_sd(int ifindex, int bypass_mode)
+ static int get_bypass_slave(int if_index)
  {
- 
- 	return set_bypass_fn(get_dev_idx_p(ifindex), bypass_mode);
+ 	DO_BPLIB_GET_ARG_FN(get_bypass_slave, GET_BYPASS_SLAVE, if_index);
  }
-+EXPORT_SYMBOL(set_bypass_sd);
++EXPORT_SYMBOL(get_bypass_slave);
  
- int get_bypass_sd(int ifindex)
+ static int get_bypass_caps(int if_index)
  {
- 
- 	return get_bypass_fn(get_dev_idx_p(ifindex));
+ 	DO_BPLIB_GET_ARG_FN(get_bypass_caps, GET_BYPASS_CAPS, if_index);
  }
-+EXPORT_SYMBOL(get_bypass_sd);
++EXPORT_SYMBOL(get_bypass_caps);
  
- int get_bypass_change_sd(int ifindex)
+ static int get_wd_set_caps(int if_index)
  {
- 
- 	return get_bypass_change_fn(get_dev_idx_p(ifindex));
+ 	DO_BPLIB_GET_ARG_FN(get_wd_set_caps, GET_WD_SET_CAPS, if_index);
  }
-+EXPORT_SYMBOL(get_bypass_change_sd);
++EXPORT_SYMBOL(get_wd_set_caps);
  
- int set_dis_bypass_sd(int ifindex, int dis_param)
+ static int set_bypass(int if_index, int bypass_mode)
  {
- 	return set_dis_bypass_fn(get_dev_idx_p(ifindex), dis_param);
+ 	DO_BPLIB_SET_ARG_FN(set_bypass, SET_BYPASS, if_index, bypass_mode);
  }
-+EXPORT_SYMBOL(set_dis_bypass_sd);
++EXPORT_SYMBOL(set_bypass);
  
- int get_dis_bypass_sd(int ifindex)
+ static int get_bypass(int if_index)
  {
- 
- 	return get_dis_bypass_fn(get_dev_idx_p(ifindex));
+ 	DO_BPLIB_GET_ARG_FN(get_bypass, GET_BYPASS, if_index);
  }
-+EXPORT_SYMBOL(get_dis_bypass_sd);
++EXPORT_SYMBOL(get_bypass);
  
- int set_bypass_pwoff_sd(int ifindex, int bypass_mode)
+ static int get_bypass_change(int if_index)
  {
- 	return set_bypass_pwoff_fn(get_dev_idx_p(ifindex), bypass_mode);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_bypass_change, GET_BYPASS_CHANGE, if_index);
  }
-+EXPORT_SYMBOL(set_bypass_pwoff_sd);
++EXPORT_SYMBOL(get_bypass_change);
  
- int get_bypass_pwoff_sd(int ifindex)
+ static int set_dis_bypass(int if_index, int dis_bypass)
  {
- 	return get_bypass_pwoff_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_dis_bypass, SET_DIS_BYPASS, if_index,
+ 			    dis_bypass);
  }
-+EXPORT_SYMBOL(get_bypass_pwoff_sd);
++EXPORT_SYMBOL(set_dis_bypass);
  
- int set_bypass_pwup_sd(int ifindex, int bypass_mode)
+ static int get_dis_bypass(int if_index)
  {
- 	return set_bypass_pwup_fn(get_dev_idx_p(ifindex), bypass_mode);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_dis_bypass, GET_DIS_BYPASS, if_index);
  }
-+EXPORT_SYMBOL(set_bypass_pwup_sd);
++EXPORT_SYMBOL(get_dis_bypass);
  
- int get_bypass_pwup_sd(int ifindex)
+ static int set_bypass_pwoff(int if_index, int bypass_mode)
  {
- 	return get_bypass_pwup_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_bypass_pwoff, SET_BYPASS_PWOFF, if_index,
+ 			    bypass_mode);
  }
-+EXPORT_SYMBOL(get_bypass_pwup_sd);
++EXPORT_SYMBOL(set_bypass_pwoff);
  
- int set_bypass_wd_sd(int if_index, int ms_timeout, int *ms_timeout_set)
+ static int get_bypass_pwoff(int if_index)
  {
-@@ -6939,136 +6949,159 @@ int set_bypass_wd_sd(int if_index, int ms_timeout, int *ms_timeout_set)
- 	*ms_timeout_set = set_bypass_wd_fn(get_dev_idx_p(if_index), ms_timeout);
- 	return 0;
+ 	DO_BPLIB_GET_ARG_FN(get_bypass_pwoff, GET_BYPASS_PWOFF, if_index);
  }
-+EXPORT_SYMBOL(set_bypass_wd_sd);
++EXPORT_SYMBOL(get_bypass_pwoff);
  
- int get_bypass_wd_sd(int ifindex, int *timeout)
+ static int set_bypass_pwup(int if_index, int bypass_mode)
  {
- 	return get_bypass_wd_fn(get_dev_idx_p(ifindex), timeout);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_bypass_pwup, SET_BYPASS_PWUP, if_index,
+ 			    bypass_mode);
  }
-+EXPORT_SYMBOL(get_bypass_wd_sd);
++EXPORT_SYMBOL(set_bypass_pwup);
  
- int get_wd_expire_time_sd(int ifindex, int *time_left)
+ static int get_bypass_pwup(int if_index)
  {
- 	return get_wd_expire_time_fn(get_dev_idx_p(ifindex), time_left);
+ 	DO_BPLIB_GET_ARG_FN(get_bypass_pwup, GET_BYPASS_PWUP, if_index);
  }
-+EXPORT_SYMBOL(get_wd_expire_time_sd);
++EXPORT_SYMBOL(get_bypass_pwup);
  
- int reset_bypass_wd_timer_sd(int ifindex)
+ static int set_bypass_wd(int if_index, int ms_timeout, int *ms_timeout_set)
  {
- 	return reset_bypass_wd_timer_fn(get_dev_idx_p(ifindex));
- 
+@@ -267,6 +280,7 @@ static int set_bypass_wd(int if_index, int ms_timeout, int *ms_timeout_set)
+ 	}
+ 	return ret;
  }
-+EXPORT_SYMBOL(reset_bypass_wd_timer_sd);
++EXPORT_SYMBOL(set_bypass_wd);
  
- int get_wd_set_caps_sd(int ifindex)
+ static int get_bypass_wd(int if_index, int *ms_timeout_set)
  {
- 	return get_wd_set_caps_fn(get_dev_idx_p(ifindex));
- 
+@@ -278,6 +292,7 @@ static int get_bypass_wd(int if_index, int *ms_timeout_set)
+ 		ret = doit(GET_BYPASS_WD, if_index, data);
+ 	return ret;
  }
-+EXPORT_SYMBOL(get_wd_set_caps_sd);
++EXPORT_SYMBOL(get_bypass_wd);
  
- int set_std_nic_sd(int ifindex, int nic_mode)
+ static int get_wd_expire_time(int if_index, int *ms_time_left)
  {
- 	return set_std_nic_fn(get_dev_idx_p(ifindex), nic_mode);
- 
+@@ -292,143 +307,171 @@ static int get_wd_expire_time(int if_index, int *ms_time_left)
+ 	}
+ 	return ret;
  }
-+EXPORT_SYMBOL(set_std_nic_sd);
++EXPORT_SYMBOL(get_wd_expire_time);
  
- int get_std_nic_sd(int ifindex)
+ static int reset_bypass_wd_timer(int if_index)
  {
- 	return get_std_nic_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(reset_bypass_wd_timer, RESET_BYPASS_WD_TIMER,
+ 			    if_index);
  }
-+EXPORT_SYMBOL(get_std_nic_sd);
++EXPORT_SYMBOL(reset_bypass_wd_timer);
  
- int set_tap_sd(int ifindex, int tap_mode)
+ static int set_std_nic(int if_index, int bypass_mode)
  {
- 	return set_tap_fn(get_dev_idx_p(ifindex), tap_mode);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_std_nic, SET_STD_NIC, if_index, bypass_mode);
  }
-+EXPORT_SYMBOL(set_tap_sd);
++EXPORT_SYMBOL(set_std_nic);
  
- int get_tap_sd(int ifindex)
+ static int get_std_nic(int if_index)
  {
- 	return get_tap_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_std_nic, GET_STD_NIC, if_index);
  }
-+EXPORT_SYMBOL(get_tap_sd);
++EXPORT_SYMBOL(get_std_nic);
  
- int set_tap_pwup_sd(int ifindex, int tap_mode)
+ static int set_tx(int if_index, int tx_state)
  {
- 	return set_tap_pwup_fn(get_dev_idx_p(ifindex), tap_mode);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_tx, SET_TX, if_index, tx_state);
  }
-+EXPORT_SYMBOL(set_tap_pwup_sd);
++EXPORT_SYMBOL(set_tx);
  
- int get_tap_pwup_sd(int ifindex)
+ static int get_tx(int if_index)
  {
- 	return get_tap_pwup_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tx, GET_TX, if_index);
  }
-+EXPORT_SYMBOL(get_tap_pwup_sd);
++EXPORT_SYMBOL(get_tx);
  
- int get_tap_change_sd(int ifindex)
+ static int set_tap(int if_index, int tap_mode)
  {
- 	return get_tap_change_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_tap, SET_TAP, if_index, tap_mode);
  }
-+EXPORT_SYMBOL(get_tap_change_sd);
++EXPORT_SYMBOL(set_tap);
  
- int set_dis_tap_sd(int ifindex, int dis_param)
+ static int get_tap(int if_index)
  {
- 	return set_dis_tap_fn(get_dev_idx_p(ifindex), dis_param);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tap, GET_TAP, if_index);
  }
-+EXPORT_SYMBOL(set_dis_tap_sd);
++EXPORT_SYMBOL(get_tap);
  
- int get_dis_tap_sd(int ifindex)
+ static int get_tap_change(int if_index)
  {
- 	return get_dis_tap_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tap_change, GET_TAP_CHANGE, if_index);
  }
-+EXPORT_SYMBOL(get_dis_tap_sd);
++EXPORT_SYMBOL(get_tap_change);
  
- int set_bp_disc_sd(int ifindex, int disc_mode)
+ static int set_dis_tap(int if_index, int dis_tap)
  {
- 	return set_disc_fn(get_dev_idx_p(ifindex), disc_mode);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_dis_tap, SET_DIS_TAP, if_index, dis_tap);
  }
-+EXPORT_SYMBOL(set_bp_disc_sd);
++EXPORT_SYMBOL(set_dis_tap);
  
- int get_bp_disc_sd(int ifindex)
+ static int get_dis_tap(int if_index)
  {
- 	return get_disc_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_dis_tap, GET_DIS_TAP, if_index);
  }
-+EXPORT_SYMBOL(get_bp_disc_sd);
++EXPORT_SYMBOL(get_dis_tap);
  
- int set_bp_disc_pwup_sd(int ifindex, int disc_mode)
+ static int set_tap_pwup(int if_index, int tap_mode)
  {
- 	return set_disc_pwup_fn(get_dev_idx_p(ifindex), disc_mode);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_tap_pwup, SET_TAP_PWUP, if_index, tap_mode);
  }
-+EXPORT_SYMBOL(set_bp_disc_pwup_sd);
++EXPORT_SYMBOL(set_tap_pwup);
  
- int get_bp_disc_pwup_sd(int ifindex)
+ static int get_tap_pwup(int if_index)
  {
- 	return get_disc_pwup_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tap_pwup, GET_TAP_PWUP, if_index);
  }
-+EXPORT_SYMBOL(get_bp_disc_pwup_sd);
++EXPORT_SYMBOL(get_tap_pwup);
  
- int get_bp_disc_change_sd(int ifindex)
+ static int set_bp_disc(int if_index, int disc_mode)
  {
- 	return get_disc_change_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_bp_disc, SET_DISC, if_index, disc_mode);
  }
-+EXPORT_SYMBOL(get_bp_disc_change_sd);
++EXPORT_SYMBOL(set_bp_disc);
  
- int set_bp_dis_disc_sd(int ifindex, int dis_param)
+ static int get_bp_disc(int if_index)
  {
- 	return set_dis_disc_fn(get_dev_idx_p(ifindex), dis_param);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_bp_disc, GET_DISC, if_index);
  }
-+EXPORT_SYMBOL(set_bp_dis_disc_sd);
++EXPORT_SYMBOL(get_bp_disc);
  
- int get_bp_dis_disc_sd(int ifindex)
+ static int get_bp_disc_change(int if_index)
  {
- 	return get_dis_disc_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_bp_disc_change, GET_DISC_CHANGE, if_index);
  }
-+EXPORT_SYMBOL(get_bp_dis_disc_sd);
++EXPORT_SYMBOL(get_bp_disc_change);
  
- int get_wd_exp_mode_sd(int ifindex)
+ static int set_bp_dis_disc(int if_index, int dis_disc)
  {
- 	return get_wd_exp_mode_fn(get_dev_idx_p(ifindex));
+ 	DO_BPLIB_SET_ARG_FN(set_bp_dis_disc, SET_DIS_DISC, if_index, dis_disc);
  }
-+EXPORT_SYMBOL(get_wd_exp_mode_sd);
++EXPORT_SYMBOL(set_bp_dis_disc);
  
- int set_wd_exp_mode_sd(int ifindex, int param)
+ static int get_bp_dis_disc(int if_index)
  {
- 	return set_wd_exp_mode_fn(get_dev_idx_p(ifindex), param);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_bp_dis_disc, GET_DIS_DISC, if_index);
  }
-+EXPORT_SYMBOL(set_wd_exp_mode_sd);
++EXPORT_SYMBOL(get_bp_dis_disc);
  
- int reset_cont_sd(int ifindex)
+ static int set_bp_disc_pwup(int if_index, int disc_mode)
  {
-@@ -7081,35 +7114,41 @@ int set_tx_sd(int ifindex, int tx_state)
- 	return set_tx_fn(get_dev_idx_p(ifindex), tx_state);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_bp_disc_pwup, SET_DISC_PWUP, if_index,
+ 			    disc_mode);
  }
-+EXPORT_SYMBOL(set_tx_sd);
++EXPORT_SYMBOL(set_bp_disc_pwup);
  
- int set_tpl_sd(int ifindex, int tpl_state)
+ static int get_bp_disc_pwup(int if_index)
  {
- 	return set_tpl_fn(get_dev_idx_p(ifindex), tpl_state);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_bp_disc_pwup, GET_DISC_PWUP, if_index);
  }
-+EXPORT_SYMBOL(set_tpl_sd);
++EXPORT_SYMBOL(get_bp_disc_pwup);
  
- int set_bp_hw_reset_sd(int ifindex, int status)
+ static int set_wd_exp_mode(int if_index, int mode)
  {
- 	return set_bp_hw_reset_fn(get_dev_idx_p(ifindex), status);
- 
+ 	DO_BPLIB_SET_ARG_FN(set_wd_exp_mode, SET_WD_EXP_MODE, if_index, mode);
  }
-+EXPORT_SYMBOL(set_bp_hw_reset_sd);
++EXPORT_SYMBOL(set_wd_exp_mode);
  
- int set_wd_autoreset_sd(int ifindex, int param)
+ static int get_wd_exp_mode(int if_index)
  {
- 	return set_wd_autoreset_fn(get_dev_idx_p(ifindex), param);
- 
+ 	DO_BPLIB_GET_ARG_FN(get_wd_exp_mode, GET_WD_EXP_MODE, if_index);
  }
-+EXPORT_SYMBOL(set_wd_autoreset_sd);
++EXPORT_SYMBOL(get_wd_exp_mode);
  
- int get_wd_autoreset_sd(int ifindex)
+ static int set_wd_autoreset(int if_index, int time)
  {
- 	return get_wd_autoreset_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_wd_autoreset, SET_WD_AUTORESET, if_index, time);
  }
-+EXPORT_SYMBOL(get_wd_autoreset_sd);
++EXPORT_SYMBOL(set_wd_autoreset);
  
- int get_bypass_caps_sd(int ifindex)
+ static int get_wd_autoreset(int if_index)
  {
- 	return get_bypass_caps_fn(get_dev_idx_p(ifindex));
+ 	DO_BPLIB_GET_ARG_FN(get_wd_autoreset, GET_WD_AUTORESET, if_index);
  }
-+EXPORT_SYMBOL(get_bypass_caps_sd);
++EXPORT_SYMBOL(get_wd_autoreset);
  
- int get_bypass_slave_sd(int ifindex)
+ static int set_tpl(int if_index, int tpl_mode)
  {
-@@ -7120,81 +7159,41 @@ int get_bypass_slave_sd(int ifindex)
- 	return -1;
- 
+ 	DO_BPLIB_SET_ARG_FN(set_tpl, SET_TPL, if_index, tpl_mode);
  }
-+EXPORT_SYMBOL(get_bypass_slave_sd);
++EXPORT_SYMBOL(set_tpl);
  
- int get_tx_sd(int ifindex)
+ static int get_tpl(int if_index)
  {
- 	return get_tx_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tpl, GET_TPL, if_index);
  }
-+EXPORT_SYMBOL(get_tx_sd);
++EXPORT_SYMBOL(get_tpl);
  
- int get_tpl_sd(int ifindex)
+ static int set_bp_hw_reset(int if_index, int mode)
  {
- 	return get_tpl_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_SET_ARG_FN(set_tpl, SET_BP_HW_RESET, if_index, mode);
  }
-+EXPORT_SYMBOL(get_tpl_sd);
++EXPORT_SYMBOL(set_bp_hw_reset);
  
- int get_bp_hw_reset_sd(int ifindex)
+ static int get_bp_hw_reset(int if_index)
  {
- 	return get_bp_hw_reset_fn(get_dev_idx_p(ifindex));
- 
+ 	DO_BPLIB_GET_ARG_FN(get_tpl, GET_BP_HW_RESET, if_index);
  }
-+EXPORT_SYMBOL(get_bp_hw_reset_sd);
++EXPORT_SYMBOL(get_bp_hw_reset);
  
- int get_bypass_info_sd(int ifindex, struct bp_info *bp_info)
+ static int get_bypass_info(int if_index, struct bp_info *bp_info)
  {
- 	return get_bypass_info_fn(get_dev_idx_p(ifindex), bp_info->prod_name, &bp_info->fw_ver);
+@@ -467,6 +510,7 @@ static int get_bypass_info(int if_index, struct bp_info *bp_info)
+ 	}
+ 	return ret;
  }
-+EXPORT_SYMBOL(get_bypass_info_sd);
++EXPORT_SYMBOL(get_bypass_info);
  
- int bp_if_scan_sd(void)
+ int init_lib_module(void)
  {
- 	if_scan_init();
- 	return 0;
+@@ -479,50 +523,5 @@ void cleanup_lib_module(void)
+ {
  }
+ 
+-EXPORT_SYMBOL_NOVERS(is_bypass);
+-EXPORT_SYMBOL_NOVERS(get_bypass_slave);
+-EXPORT_SYMBOL_NOVERS(get_bypass_caps);
+-EXPORT_SYMBOL_NOVERS(get_wd_set_caps);
+-EXPORT_SYMBOL_NOVERS(set_bypass);
+-EXPORT_SYMBOL_NOVERS(get_bypass);
+-EXPORT_SYMBOL_NOVERS(get_bypass_change);
+-EXPORT_SYMBOL_NOVERS(set_dis_bypass);
+-EXPORT_SYMBOL_NOVERS(get_dis_bypass);
+-EXPORT_SYMBOL_NOVERS(set_bypass_pwoff);
+-EXPORT_SYMBOL_NOVERS(get_bypass_pwoff);
+-EXPORT_SYMBOL_NOVERS(set_bypass_pwup);
+-EXPORT_SYMBOL_NOVERS(get_bypass_pwup);
+-EXPORT_SYMBOL_NOVERS(set_bypass_wd);
+-EXPORT_SYMBOL_NOVERS(get_bypass_wd);
+-EXPORT_SYMBOL_NOVERS(get_wd_expire_time);
+-EXPORT_SYMBOL_NOVERS(reset_bypass_wd_timer);
+-EXPORT_SYMBOL_NOVERS(set_std_nic);
+-EXPORT_SYMBOL_NOVERS(get_std_nic);
+-EXPORT_SYMBOL_NOVERS(set_tx);
+-EXPORT_SYMBOL_NOVERS(get_tx);
+-EXPORT_SYMBOL_NOVERS(set_tap);
+-EXPORT_SYMBOL_NOVERS(get_tap);
+-EXPORT_SYMBOL_NOVERS(get_tap_change);
+-EXPORT_SYMBOL_NOVERS(set_dis_tap);
+-EXPORT_SYMBOL_NOVERS(get_dis_tap);
+-EXPORT_SYMBOL_NOVERS(set_tap_pwup);
+-EXPORT_SYMBOL_NOVERS(get_tap_pwup);
+-EXPORT_SYMBOL_NOVERS(set_bp_disc);
+-EXPORT_SYMBOL_NOVERS(get_bp_disc);
+-EXPORT_SYMBOL_NOVERS(get_bp_disc_change);
+-EXPORT_SYMBOL_NOVERS(set_bp_dis_disc);
+-EXPORT_SYMBOL_NOVERS(get_bp_dis_disc);
+-EXPORT_SYMBOL_NOVERS(set_bp_disc_pwup);
+-EXPORT_SYMBOL_NOVERS(get_bp_disc_pwup);
+-EXPORT_SYMBOL_NOVERS(set_wd_exp_mode);
+-EXPORT_SYMBOL_NOVERS(get_wd_exp_mode);
+-EXPORT_SYMBOL_NOVERS(set_wd_autoreset);
+-EXPORT_SYMBOL_NOVERS(get_wd_autoreset);
+-EXPORT_SYMBOL_NOVERS(set_tpl);
+-EXPORT_SYMBOL_NOVERS(get_tpl);
+-EXPORT_SYMBOL_NOVERS(set_bp_hw_reset);
+-EXPORT_SYMBOL_NOVERS(get_bp_hw_reset);
+-EXPORT_SYMBOL_NOVERS(get_bypass_info);
 -
--EXPORT_SYMBOL_NOVERS(is_bypass_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_slave_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_caps_sd);
--EXPORT_SYMBOL_NOVERS(get_wd_set_caps_sd);
--EXPORT_SYMBOL_NOVERS(set_bypass_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_change_sd);
--EXPORT_SYMBOL_NOVERS(set_dis_bypass_sd);
--EXPORT_SYMBOL_NOVERS(get_dis_bypass_sd);
--EXPORT_SYMBOL_NOVERS(set_bypass_pwoff_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_pwoff_sd);
--EXPORT_SYMBOL_NOVERS(set_bypass_pwup_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_pwup_sd);
--EXPORT_SYMBOL_NOVERS(set_bypass_wd_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_wd_sd);
--EXPORT_SYMBOL_NOVERS(get_wd_expire_time_sd);
--EXPORT_SYMBOL_NOVERS(reset_bypass_wd_timer_sd);
--EXPORT_SYMBOL_NOVERS(set_std_nic_sd);
--EXPORT_SYMBOL_NOVERS(get_std_nic_sd);
--EXPORT_SYMBOL_NOVERS(set_tx_sd);
--EXPORT_SYMBOL_NOVERS(get_tx_sd);
--EXPORT_SYMBOL_NOVERS(set_tpl_sd);
--EXPORT_SYMBOL_NOVERS(get_tpl_sd);
--EXPORT_SYMBOL_NOVERS(set_bp_hw_reset_sd);
--EXPORT_SYMBOL_NOVERS(get_bp_hw_reset_sd);
--EXPORT_SYMBOL_NOVERS(set_tap_sd);
--EXPORT_SYMBOL_NOVERS(get_tap_sd);
--EXPORT_SYMBOL_NOVERS(get_tap_change_sd);
--EXPORT_SYMBOL_NOVERS(set_dis_tap_sd);
--EXPORT_SYMBOL_NOVERS(get_dis_tap_sd);
--EXPORT_SYMBOL_NOVERS(set_tap_pwup_sd);
--EXPORT_SYMBOL_NOVERS(get_tap_pwup_sd);
--EXPORT_SYMBOL_NOVERS(set_wd_exp_mode_sd);
--EXPORT_SYMBOL_NOVERS(get_wd_exp_mode_sd);
--EXPORT_SYMBOL_NOVERS(set_wd_autoreset_sd);
--EXPORT_SYMBOL_NOVERS(get_wd_autoreset_sd);
--EXPORT_SYMBOL_NOVERS(set_bp_disc_sd);
--EXPORT_SYMBOL_NOVERS(get_bp_disc_sd);
--EXPORT_SYMBOL_NOVERS(get_bp_disc_change_sd);
--EXPORT_SYMBOL_NOVERS(set_bp_dis_disc_sd);
--EXPORT_SYMBOL_NOVERS(get_bp_dis_disc_sd);
--EXPORT_SYMBOL_NOVERS(set_bp_disc_pwup_sd);
--EXPORT_SYMBOL_NOVERS(get_bp_disc_pwup_sd);
--EXPORT_SYMBOL_NOVERS(get_bypass_info_sd);
--EXPORT_SYMBOL_NOVERS(bp_if_scan_sd);
-+EXPORT_SYMBOL(bp_if_scan_sd);
- 
- #define BP_PROC_DIR "bypass"
- 
+ module_init(init_lib_module);
+ module_exit(cleanup_lib_module);
 -- 
 1.8.1.4
 
