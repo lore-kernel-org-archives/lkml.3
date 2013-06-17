@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab3FQPQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:16:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58048 "EHLO mx1.redhat.com"
+	id S1752685Ab3FQPQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:16:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab3FQPOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752318Ab3FQPOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Jun 2013 11:14:36 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
@@ -15,67 +15,103 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v3 07/13] locks: avoid taking global lock if possible when waking up blocked waiters
-Date: Mon, 17 Jun 2013 11:13:50 -0400
-Message-Id: <1371482036-15958-8-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 12/13] seq_file: add seq_list_*_percpu helpers
+Date: Mon, 17 Jun 2013 11:13:55 -0400
+Message-Id: <1371482036-15958-13-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we always hold the i_lock when inserting a new waiter onto the
-fl_block list, we can avoid taking the global lock at all if we find
-that it's empty when we go to wake up blocked waiters.
+When we convert the file_lock_list to a set of percpu lists, we'll need
+a way to iterate over them in order to output /proc/locks info. Add
+some seq_list_*_percpu helpers to handle that.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- fs/locks.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ fs/seq_file.c            |   54 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/seq_file.h |    6 +++++
+ 2 files changed, 60 insertions(+), 0 deletions(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 8f56651..a8f3b33 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -532,7 +532,10 @@ static void locks_delete_block(struct file_lock *waiter)
-  * the order they blocked. The documentation doesn't require this but
-  * it seems like the reasonable thing to do.
-  *
-- * Must be called with file_lock_lock held!
-+ * Must be called with both the i_lock and file_lock_lock held. The fl_block
-+ * list itself is protected by the file_lock_list, but by ensuring that the
-+ * i_lock is also held on insertions we can avoid taking the file_lock_lock
-+ * in some cases when we see that the fl_block list is empty.
-  */
- static void __locks_insert_block(struct file_lock *blocker,
- 					struct file_lock *waiter)
-@@ -560,8 +563,16 @@ static void locks_insert_block(struct file_lock *blocker,
-  */
- static void locks_wake_up_blocks(struct file_lock *blocker)
- {
-+	/*
-+	 * Avoid taking global lock if list is empty. This is safe since new
-+	 * blocked requests are only added to the list under the i_lock, and
-+	 * the i_lock is always held here.
-+	 */
-+	if (list_empty(&blocker->fl_block))
-+		return;
-+
- 	spin_lock(&file_lock_lock);
--	while (!list_empty(&blocker->fl_block)) {
-+	do {
- 		struct file_lock *waiter;
- 
- 		waiter = list_first_entry(&blocker->fl_block,
-@@ -571,7 +582,7 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
- 			waiter->fl_lmops->lm_notify(waiter);
- 		else
- 			wake_up(&waiter->fl_wait);
--	}
-+	} while (!list_empty(&blocker->fl_block));
- 	spin_unlock(&file_lock_lock);
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 774c1eb..3135c25 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -921,3 +921,57 @@ struct hlist_node *seq_hlist_next_rcu(void *v,
+ 		return rcu_dereference(node->next);
  }
- 
+ EXPORT_SYMBOL(seq_hlist_next_rcu);
++
++/**
++ * seq_hlist_start_precpu - start an iteration of a percpu hlist array
++ * @head: pointer to percpu array of struct hlist_heads
++ * @cpu:  pointer to cpu "cursor"
++ * @pos:  start position of sequence
++ *
++ * Called at seq_file->op->start().
++ */
++struct hlist_node *
++seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos)
++{
++	struct hlist_node *node;
++
++	for_each_possible_cpu(*cpu) {
++		hlist_for_each(node, per_cpu_ptr(head, *cpu)) {
++			if (pos-- == 0)
++				return node;
++		}
++	}
++	return NULL;
++}
++EXPORT_SYMBOL(seq_hlist_start_percpu);
++
++/**
++ * seq_hlist_next_percpu - move to the next position of the percpu hlist array
++ * @v:    pointer to current hlist_node
++ * @head: pointer to percpu array of struct hlist_heads
++ * @cpu:  pointer to cpu "cursor"
++ * @pos:  start position of sequence
++ *
++ * Called at seq_file->op->next().
++ */
++struct hlist_node *
++seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head,
++			int *cpu, loff_t *pos)
++{
++	struct hlist_node *node = v;
++
++	++*pos;
++
++	if (node->next)
++		return node->next;
++
++	for (*cpu = cpumask_next(*cpu, cpu_possible_mask); *cpu < nr_cpu_ids;
++	     *cpu = cpumask_next(*cpu, cpu_possible_mask)) {
++		struct hlist_head *bucket = per_cpu_ptr(head, *cpu);
++
++		if (!hlist_empty(bucket))
++			return bucket->first;
++	}
++	return NULL;
++}
++EXPORT_SYMBOL(seq_hlist_next_percpu);
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 2da29ac..4e32edc 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -173,4 +173,10 @@ extern struct hlist_node *seq_hlist_start_head_rcu(struct hlist_head *head,
+ extern struct hlist_node *seq_hlist_next_rcu(void *v,
+ 						   struct hlist_head *head,
+ 						   loff_t *ppos);
++
++/* Helpers for iterating over per-cpu hlist_head-s in seq_files */
++extern struct hlist_node *seq_hlist_start_percpu(struct hlist_head __percpu *head, int *cpu, loff_t pos);
++
++extern struct hlist_node *seq_hlist_next_percpu(void *v, struct hlist_head __percpu *head, int *cpu, loff_t *pos);
++
+ #endif
 -- 
 1.7.1
 
