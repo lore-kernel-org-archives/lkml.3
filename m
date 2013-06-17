@@ -1,286 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab3FQGUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:20:24 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35675 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3FQGUV (ORCPT
+	id S932157Ab3FQGVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:21:06 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10401 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755915Ab3FQGVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:20:21 -0400
-Message-ID: <51BEAAA1.20806@hitachi.com>
-Date: Mon, 17 Jun 2013 15:20:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 17 Jun 2013 02:21:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18fYojwrG+MFTcQ8+S6BeoV
+Date: Sun, 16 Jun 2013 23:20:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Joel A Fernandes <agnel.joel@gmail.com>, Chris Ball <cjb@laptop.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+Message-ID: <20130617062052.GG20992@atomide.com>
+References: <20130307144656.GR6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
+ <20130307150408.GU6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20D27@DBDE01.ent.ti.com>
+ <20130307160236.GV6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC213C8@DBDE01.ent.ti.com>
+ <CAD=GYpb3+nvoz863+VKO7iJijRHnM5RzsVj-5VJfQ-OHoUy19Q@mail.gmail.com>
+ <20130614222537.GA25428@arwen.pp.htv.fi>
+ <CAD=GYpYfMAZeV1RUC=DqhYGZaKiiukpTZg7bhO582eKwimS9aA@mail.gmail.com>
+ <20130615150500.GA27629@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] tracing/kprobes: Turn trace_probe->files into
- list_head
-References: <20130616172152.GA8543@redhat.com>
-In-Reply-To: <20130616172152.GA8543@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130615150500.GA27629@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/17 2:21), Oleg Nesterov wrote:
-> I think that "ftrace_event_file *trace_probe[]" complicates the
-> code for no reason, turn it into list_head to simplify the code.
-> enable_trace_probe() no longer needs synchronize_sched().
-
-Looks cleaner :)
-
+* Felipe Balbi <balbi@ti.com> [130615 08:12]:
 > 
-> This needs the extra sizeof(list_head) memory for every attached
-> ftrace_event_file, hopefully not a problem in this case.
+> fair enough, then let's just add those interrupts to hwmod which will,
+> eventually, let us drop all of that data from hwmod.
 
-I think it's no problem, because the number depends on the instances
-and it could not be so much. :)
+Nope, we're already dropping the duplicate data from hwmod for
+am33xx and omap4. See omap-for-v3.11/cleanup branch.
 
-Thanks!
+Regards,
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_kprobe.c |  138 ++++++++++++-------------------------------
->  1 files changed, 37 insertions(+), 101 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 5a73de0..b95f683 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -35,12 +35,17 @@ struct trace_probe {
->  	const char		*symbol;	/* symbol name */
->  	struct ftrace_event_class	class;
->  	struct ftrace_event_call	call;
-> -	struct ftrace_event_file * __rcu *files;
-> +	struct list_head	files;
->  	ssize_t			size;		/* trace entry size */
->  	unsigned int		nr_args;
->  	struct probe_arg	args[];
->  };
->  
-> +struct event_file_link {
-> +	struct ftrace_event_file	*file;
-> +	struct list_head		list;
-> +};
-> +
->  #define SIZEOF_TRACE_PROBE(n)			\
->  	(offsetof(struct trace_probe, args) +	\
->  	(sizeof(struct probe_arg) * (n)))
-> @@ -150,6 +155,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
->  		goto error;
->  
->  	INIT_LIST_HEAD(&tp->list);
-> +	INIT_LIST_HEAD(&tp->files);
->  	return tp;
->  error:
->  	kfree(tp->call.name);
-> @@ -184,22 +190,6 @@ static struct trace_probe *find_trace_probe(const char *event,
->  }
->  
->  /*
-> - * This and enable_trace_probe/disable_trace_probe rely on event_mutex
-> - * held by the caller, __ftrace_set_clr_event().
-> - */
-> -static int trace_probe_nr_files(struct trace_probe *tp)
-> -{
-> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
-> -	int ret = 0;
-> -
-> -	if (file)
-> -		while (*(file++))
-> -			ret++;
-> -
-> -	return ret;
-> -}
-> -
-> -/*
->   * Enable trace_probe
->   * if the file is NULL, enable "perf" handler, or enable "trace" handler.
->   */
-> @@ -209,29 +199,18 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
->  	int ret = 0;
->  
->  	if (file) {
-> -		struct ftrace_event_file **new, **old;
-> -		int n = trace_probe_nr_files(tp);
-> -
-> -		old = rcu_dereference_raw(tp->files);
-> -		/* 1 is for new one and 1 is for stopper */
-> -		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
-> -			      GFP_KERNEL);
-> -		if (!new) {
-> +		struct event_file_link *link;
-> +
-> +		link = kmalloc(sizeof(*link), GFP_KERNEL);
-> +		if (!link) {
->  			ret = -ENOMEM;
->  			goto out;
->  		}
-> -		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
-> -		new[n] = file;
-> -		/* The last one keeps a NULL */
->  
-> -		rcu_assign_pointer(tp->files, new);
-> -		tp->flags |= TP_FLAG_TRACE;
-> +		link->file = file;
-> +		list_add_rcu(&link->list, &tp->files);
->  
-> -		if (old) {
-> -			/* Make sure the probe is done with old files */
-> -			synchronize_sched();
-> -			kfree(old);
-> -		}
-> +		tp->flags |= TP_FLAG_TRACE;
->  	} else
->  		tp->flags |= TP_FLAG_PROFILE;
->  
-> @@ -246,24 +225,16 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
->  	return ret;
->  }
->  
-> -static int
-> -trace_probe_file_index(struct trace_probe *tp, struct ftrace_event_file *file)
-> +static struct event_file_link *
-> +find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
->  {
-> -	struct ftrace_event_file **files;
-> -	int i;
-> +	struct event_file_link *link;
->  
-> -	/*
-> -	 * Since all tp->files updater is protected by probe_enable_lock,
-> -	 * we don't need to lock an rcu_read_lock.
-> -	 */
-> -	files = rcu_dereference_raw(tp->files);
-> -	if (files) {
-> -		for (i = 0; files[i]; i++)
-> -			if (files[i] == file)
-> -				return i;
-> -	}
-> +	list_for_each_entry(link, &tp->files, list)
-> +		if (link->file == file)
-> +			return link;
->  
-> -	return -1;
-> +	return NULL;
->  }
->  
->  /*
-> @@ -276,38 +247,23 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
->  	int ret = 0;
->  
->  	if (file) {
-> -		struct ftrace_event_file **new, **old;
-> -		int n = trace_probe_nr_files(tp);
-> -		int i, j;
-> +		struct event_file_link *link;
->  
-> -		old = rcu_dereference_raw(tp->files);
-> -		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
-> +		link = find_event_file_link(tp, file);
-> +		if (!link) {
->  			ret = -EINVAL;
->  			goto out;
->  		}
->  
-> -		if (n == 1) {	/* Remove the last file */
-> -			tp->flags &= ~TP_FLAG_TRACE;
-> -			new = NULL;
-> -		} else {
-> -			new = kzalloc(n * sizeof(struct ftrace_event_file *),
-> -				      GFP_KERNEL);
-> -			if (!new) {
-> -				ret = -ENOMEM;
-> -				goto out;
-> -			}
-> -
-> -			/* This copy & check loop copies the NULL stopper too */
-> -			for (i = 0, j = 0; j < n && i < n + 1; i++)
-> -				if (old[i] != file)
-> -					new[j++] = old[i];
-> -		}
-> +		list_del_rcu(&link->list);
-> +		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
-> +		synchronize_sched();
-> +		kfree(link);
->  
-> -		rcu_assign_pointer(tp->files, new);
-> +		if (!list_empty(&tp->files))
-> +			goto out;
->  
-> -		/* Make sure the probe is done with old files */
-> -		synchronize_sched();
-> -		kfree(old);
-> +		tp->flags &= ~TP_FLAG_TRACE;
->  	} else
->  		tp->flags &= ~TP_FLAG_PROFILE;
->  
-> @@ -872,20 +828,10 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
->  static __kprobes void
->  kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
->  {
-> -	/*
-> -	 * Note: preempt is already disabled around the kprobe handler.
-> -	 * However, we still need an smp_read_barrier_depends() corresponding
-> -	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
-> -	 */
-> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
-> -
-> -	if (unlikely(!file))
-> -		return;
-> +	struct event_file_link *link;
->  
-> -	while (*file) {
-> -		__kprobe_trace_func(tp, regs, *file);
-> -		file++;
-> -	}
-> +	list_for_each_entry_rcu(link, &tp->files, list)
-> +		__kprobe_trace_func(tp, regs, link->file);
->  }
->  
->  /* Kretprobe handler */
-> @@ -932,20 +878,10 @@ static __kprobes void
->  kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  		     struct pt_regs *regs)
->  {
-> -	/*
-> -	 * Note: preempt is already disabled around the kprobe handler.
-> -	 * However, we still need an smp_read_barrier_depends() corresponding
-> -	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
-> -	 */
-> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
-> -
-> -	if (unlikely(!file))
-> -		return;
-> +	struct event_file_link *link;
->  
-> -	while (*file) {
-> -		__kretprobe_trace_func(tp, ri, regs, *file);
-> -		file++;
-> -	}
-> +	list_for_each_entry_rcu(link, &tp->files, list)
-> +		__kretprobe_trace_func(tp, ri, regs, link->file);
->  }
->  
->  /* Event entry printers */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Tony
