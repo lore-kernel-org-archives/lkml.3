@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3FQPmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:42:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1708 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab3FQPmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:42:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="351127240"
-Message-ID: <51BF2E37.5040400@intel.com>
-Date: Mon, 17 Jun 2013 23:41:43 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752893Ab3FQPmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:42:50 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:45793 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab3FQPmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:42:49 -0400
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue
- entity
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-5-git-send-email-alex.shi@intel.com> <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
-In-Reply-To: <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+In-Reply-To: <1371131763-6288-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1371131763-6288-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Mon, 17 Jun 2013 17:42:48 +0200
+Message-ID: <CACRpkdYOP0xTJo3sLbRz5D=b4Vb1484a1qfE3aVAKRTM4+Y7QQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: ux500: set coherent_dma_mask for dma40
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 07:51 PM, Paul Turner wrote:
-> Can you add something like:
-> 
-> +               /*
-> +                * Task re-woke on same cpu (or else
-> migrate_task_rq_fair()
-> +                * would have made count negative); we must be careful
-> to avoid
-> +                * double-accounting blocked time after synchronizing
-> decays.
-> +                */
-> 
-> 
-> Reviewed-by: Paul Turner <pjt@google.com>
+On Thu, Jun 13, 2013 at 3:56 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-thanks for review!
----
+> Set coherent_dma_mask to DMA_BIT_MASK(32) for dma40 platform_device, as
+> without this DMA allocations were failing with the error:
+>
+> dma40 dma40.0: coherent DMA mask is unset
+>
+> when booting without device-tree.
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+>
+> Hi Linus, Lee,
+>
+> I found this while removing the last hack I was keeping in my ASoC tree.
+> I originally thought that I had to set this on the driver's pdata, but
+> it turns out it's needed on the DMA controller one instead.
+>
+> When booting with device-tree enabled the mask seems to be set
+> automatically.
+>
+> Would you consider applying this with the other dma40 patches?
 
->From 24d9b43e7a269e6ffee5b874d39812b83812a809 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Thu, 9 May 2013 10:54:13 +0800
-Subject: [PATCH] sched: fix slept time double counting in enqueue entity
+Those are now upstream in the ARM SoC tree, you'd have to send it
+to arm@kernel.org and ask Olof/Arnd to apply it directly to
+the next/drivers branch (I think).
 
-The wakeuped migrated task will __synchronize_entity_decay(se); in
-migrate_task_fair, then it needs to set
-`se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
-before update_entity_load_avg, in order to avoid slept time is updated
-twice for se.avg.load_avg_contrib in both __syncchronize and
-update_entity_load_avg.
+I have also queued it on ux500-fixes so it won't be lost.
 
-but if the slept task is waked up from self cpu, it miss the
-last_runnable_update before update_entity_load_avg(se, 0, 1), then the
-slept time was used twice in both functions.
-So we need to remove the double slept time counting.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Reviewed-by: Paul Turner <pjt@google.com>
----
- kernel/sched/fair.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index df5b8a9..1e5a5e6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1571,7 +1571,13 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 		}
- 		wakeup = 0;
- 	} else {
--		__synchronize_entity_decay(se);
-+		/*
-+		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
-+		 * would have made count negative); we must be careful to avoid
-+		 * double-accounting blocked time after synchronizing decays.
-+		 */
-+		se->avg.last_runnable_update += __synchronize_entity_decay(se)
-+							<< 20;
- 	}
- 
- 	/* migrated tasks did not contribute to our blocked load */
--- 
-1.7.5.4
-
-
+Yours,
+Linus Walleij
