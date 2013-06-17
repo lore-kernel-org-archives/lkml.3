@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab3FQRjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:39:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50740 "EHLO
+	id S1754944Ab3FQRgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:36:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50728 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab3FQRgQ (ORCPT
+	with ESMTP id S1754861Ab3FQRgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:36:16 -0400
+	Mon, 17 Jun 2013 13:36:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 76/84] audit: wait_for_auditd() should use TASK_UNINTERRUPTIBLE
-Date: Mon, 17 Jun 2013 10:31:20 -0700
-Message-Id: <1371490288-23167-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 21/84] USB: iuu_phoenix: fix bulk-message timeout
+Date: Mon, 17 Jun 2013 10:30:25 -0700
+Message-Id: <1371490288-23167-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -30,48 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit f000cfdde5de4fc15dead5ccf524359c07eadf2b upstream.
+commit 6c13ff68a7ce01da7a51b44241a7aad8eaaedde7 upstream.
 
-audit_log_start() does wait_for_auditd() in a loop until
-audit_backlog_wait_time passes or audit_skb_queue has a room.
+The bulk-message timeout is specified in milliseconds and should not
+depend on HZ.
 
-If signal_pending() is true this becomes a busy-wait loop, schedule() in
-TASK_INTERRUPTIBLE won't block.
-
-Thanks to Guy for fully investigating and explaining the problem.
-
-(akpm: that'll cause the system to lock up on a non-preemptible
-uniprocessor kernel)
-
-(Guy: "Our customer was in fact running a uniprocessor machine, and they
-reported a system hang.")
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Guy Streeter <streeter@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/audit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/iuu_phoenix.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index d596e53..8a667f10 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1107,7 +1107,7 @@ static inline void audit_get_stamp(struct audit_context *ctx,
- static void wait_for_auditd(unsigned long sleep_time)
- {
- 	DECLARE_WAITQUEUE(wait, current);
--	set_current_state(TASK_INTERRUPTIBLE);
-+	set_current_state(TASK_UNINTERRUPTIBLE);
- 	add_wait_queue(&audit_backlog_wait, &wait);
+diff --git a/drivers/usb/serial/iuu_phoenix.c b/drivers/usb/serial/iuu_phoenix.c
+index 1e1fbed..56b3488 100644
+--- a/drivers/usb/serial/iuu_phoenix.c
++++ b/drivers/usb/serial/iuu_phoenix.c
+@@ -289,7 +289,7 @@ static int bulk_immediate(struct usb_serial_port *port, u8 *buf, u8 count)
+ 	    usb_bulk_msg(serial->dev,
+ 			 usb_sndbulkpipe(serial->dev,
+ 					 port->bulk_out_endpointAddress), buf,
+-			 count, &actual, HZ * 1);
++			 count, &actual, 1000);
  
- 	if (audit_backlog_limit &&
+ 	if (status != IUU_OPERATION_OK)
+ 		dev_dbg(&port->dev, "%s - error = %2x\n", __func__, status);
+@@ -309,7 +309,7 @@ static int read_immediate(struct usb_serial_port *port, u8 *buf, u8 count)
+ 	    usb_bulk_msg(serial->dev,
+ 			 usb_rcvbulkpipe(serial->dev,
+ 					 port->bulk_in_endpointAddress), buf,
+-			 count, &actual, HZ * 1);
++			 count, &actual, 1000);
+ 
+ 	if (status != IUU_OPERATION_OK)
+ 		dev_dbg(&port->dev, "%s - error = %2x\n", __func__, status);
 -- 
 1.8.1.2
 
