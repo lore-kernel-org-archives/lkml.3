@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab3FQRkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:40:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50713 "EHLO
+	id S1754788Ab3FQRgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:36:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab3FQRgH (ORCPT
+	with ESMTP id S1754726Ab3FQRgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:36:07 -0400
+	Mon, 17 Jun 2013 13:36:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 26/84] USB: zte_ev: fix broken open
-Date: Mon, 17 Jun 2013 10:30:30 -0700
-Message-Id: <1371490288-23167-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 55/84] hpfs: fix warnings when the filesystem fills up
+Date: Mon, 17 Jun 2013 10:30:59 -0700
+Message-Id: <1371490288-23167-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit d8a1d0d54d5fdac0347b75e9afd554b3dfaa465f upstream.
+commit bbd465df73f0d8ba41b8a0732766a243d0f5b356 upstream.
 
-Remove bogus port-number check in open and close, which prevented this
-driver from being used with a minor number different from zero.
+This patch fixes warnings due to missing lock on write error path.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  WARNING: at fs/hpfs/hpfs_fn.h:353 hpfs_truncate+0x75/0x80 [hpfs]()
+  Hardware name: empty
+  Pid: 26563, comm: dd Tainted: P           O 3.9.4 #12
+  Call Trace:
+    hpfs_truncate+0x75/0x80 [hpfs]
+    hpfs_write_begin+0x84/0x90 [hpfs]
+    _hpfs_bmap+0x10/0x10 [hpfs]
+    generic_file_buffered_write+0x121/0x2c0
+    __generic_file_aio_write+0x1c7/0x3f0
+    generic_file_aio_write+0x7c/0x100
+    do_sync_write+0x98/0xd0
+    hpfs_file_write+0xd/0x50 [hpfs]
+    vfs_write+0xa2/0x160
+    sys_write+0x51/0xa0
+    page_fault+0x22/0x30
+    system_call_fastpath+0x1a/0x1f
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/zte_ev.c | 6 ------
- 1 file changed, 6 deletions(-)
+ fs/hpfs/file.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/serial/zte_ev.c b/drivers/usb/serial/zte_ev.c
-index b9a88f2..870e01e 100644
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -41,9 +41,6 @@ static int zte_ev_usb_serial_open(struct tty_struct *tty,
- 	int len;
- 	unsigned char *buf;
+diff --git a/fs/hpfs/file.c b/fs/hpfs/file.c
+index fbfe2df..4816908 100644
+--- a/fs/hpfs/file.c
++++ b/fs/hpfs/file.c
+@@ -109,10 +109,14 @@ static void hpfs_write_failed(struct address_space *mapping, loff_t to)
+ {
+ 	struct inode *inode = mapping->host;
  
--	if (port->number != 0)
--		return -ENODEV;
--
- 	buf = kmalloc(MAX_SETUP_DATA_SIZE, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
-@@ -166,9 +163,6 @@ static void zte_ev_usb_serial_close(struct usb_serial_port *port)
- 	int len;
- 	unsigned char *buf;
++	hpfs_lock(inode->i_sb);
++
+ 	if (to > inode->i_size) {
+ 		truncate_pagecache(inode, to, inode->i_size);
+ 		hpfs_truncate(inode);
+ 	}
++
++	hpfs_unlock(inode->i_sb);
+ }
  
--	if (port->number != 0)
--		return;
--
- 	buf = kmalloc(MAX_SETUP_DATA_SIZE, GFP_KERNEL);
- 	if (!buf)
- 		return;
+ static int hpfs_write_begin(struct file *file, struct address_space *mapping,
 -- 
 1.8.1.2
 
