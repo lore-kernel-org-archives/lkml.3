@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab3FQScS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:32:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52418 "EHLO
+	id S1751710Ab3FQSdq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:33:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52463 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3FQScR (ORCPT
+	with ESMTP id S1750903Ab3FQSdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 14:32:17 -0400
-Date: Mon, 17 Jun 2013 20:32:06 +0200
+	Mon, 17 Jun 2013 14:33:45 -0400
+Date: Mon, 17 Jun 2013 20:33:34 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] tracing: Disable tracing on warning
-Message-ID: <20130617183206.GB3204@twins.programming.kicks-ass.net>
-References: <1371487375.18733.18.camel@gandalf.local.home>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        sibyte-users@bitmover.com, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 3/7] MIPS: sibyte: Add missing sched.h header
+Message-ID: <20130617183334.GC3204@twins.programming.kicks-ass.net>
+References: <1371477641-7989-1-git-send-email-markos.chandras@imgtec.com>
+ <1371477641-7989-4-git-send-email-markos.chandras@imgtec.com>
+ <20130617164427.GE10408@linux-mips.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371487375.18733.18.camel@gandalf.local.home>
+In-Reply-To: <20130617164427.GE10408@linux-mips.org>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 12:42:55PM -0400, Steven Rostedt wrote:
-> Add a traceoff_on_warning option in both the kernel command line as well
-> as a sysctl option. When set, any WARN*() function that is hit will cause
-> the tracing_on variable to be cleared, which disables writing to the
-> ring buffer.
+On Mon, Jun 17, 2013 at 06:44:27PM +0200, Ralf Baechle wrote:
+> On Mon, Jun 17, 2013 at 03:00:37PM +0100, Markos Chandras wrote:
 > 
-> This is useful especially when tracing a bug with function tracing. When
-> a warning is hit, the print caused by the warning can flood the trace with
-> the functions that producing the output for the warning. This can make the
-> resulting trace useless by either hiding where the bug happened, or worse,
-> by overflowing the buffer and losing the trace of the bug totally.
+> > It's needed for the TASK_INTERRUPTIBLE definition.
+> > 
+> > Fixes the following build problem:
+> > arch/mips/sibyte/common/sb_tbprof.c:235:4: error: 'TASK_INTERRUPTIBLE'
+> > undeclared (first use in this function)
 > 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Ideally sched.h should be included into the actual user of
+> TASK_INTERRUPTIBLE, the wake_up_interruptible macro in <linux/wait.h> but
+> that seems way too risky that close to a release.
 
-Neat;
-
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Oh man, there's include recursion hell waiting for you ;-)
