@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab3FQVMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:12:54 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:45605 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab3FQVMx (ORCPT
+	id S1754299Ab3FQVNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:13:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab3FQVNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:12:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAA9_cmf5y_z_XeX7N2Jno9uvUkrFK83RN1XrxTwVqZJnbdfEWA@mail.gmail.com>
-References: <20130613172408.GA5561@intel.com>
-	<CAA9_cmf5y_z_XeX7N2Jno9uvUkrFK83RN1XrxTwVqZJnbdfEWA@mail.gmail.com>
-Date: Mon, 17 Jun 2013 14:12:51 -0700
-X-Google-Sender-Auth: JtQ1LdbuenQxhs8qy2Pjs5DBuvY
-Message-ID: <CAA9_cmdr7gjrbBN8tV9LAH2JXzFiegLzLPOAHVg-9sP8p9HRqg@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: masking tests for channel capabilities
-From: Dan Williams <djbw@fb.com>
-To: Jubin Mehta <jubin.mehta@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Jun 2013 17:13:11 -0400
+Date: Mon, 17 Jun 2013 14:13:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Daney <david.daney@cavium.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: Linux 3.10-rc6
+Message-Id: <20130617141310.3d62ea2b05041ec5974f9525@linux-foundation.org>
+In-Reply-To: <51BF7ABD.3080508@caviumnetworks.com>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
+	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
+	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
+	<51BF7610.10803@caviumnetworks.com>
+	<20130617135920.587959a34da85d7940a6936f@linux-foundation.org>
+	<51BF7ABD.3080508@caviumnetworks.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ apologies for the resend, gmail defaulted to html ]
+On Mon, 17 Jun 2013 14:08:13 -0700 David Daney <ddaney@caviumnetworks.com> wrote:
 
-On Mon, Jun 17, 2013 at 2:10 PM, Dan Williams <djbw@fb.com> wrote:
->> +Example to perform only MEMCPY and PQ mode tests (0x01 | 0x04 = 0x05):
->> +
->> +        % modprobe dmatest
->> +        % echo dma0chan0 > /sys/kernel/debug/dmatest/channel
->> +        % echo 5  > /sys/kernel/debug/dmatest/cap_mask
->> +        % echo 1 > /sys/kernel/debug/dmatest/iterations
->> +        % echo 1 > /sys/kernel/debug/dmatest/run
->
->
-> Hmmm, I should have paid more attention when the debugfs support was
-> initially proposed for dmatest.  As it is I see duplication and
-> configuration parameters getting out of sync with their module parameter
-> equivalents versus just having all configuration go through module
-> parameters.  module_param_call() can be used for the more complex options.
-> Debugfs at this point looks like overkill for what amounts to some simple
-> configuration variables and a result line.
->
-> --
-> Dan
->
+> >
+> > I think switch-back-to-a-macro is simplest and safest for now.  Perhaps
+> > you can queue a 3.11 patch which restores the C function and fixes up
+> > mn10300 and ia64?
+> >
+> 
+> If the patch is reverted, I will do that.
+
+I'm not proposing that we revert f21afc25f9ed4.  Retain its
+functionality, but do it via a macro for 3.10.
+
