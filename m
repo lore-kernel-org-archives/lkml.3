@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab3FQNCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:02:53 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:41282 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932696Ab3FQNCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:02:51 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] sched: scale cpu load for judgment of group imbalance
-Date: Mon, 17 Jun 2013 21:00:24 +0800
-Message-ID: <1371474024-19787-4-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371474024-19787-1-git-send-email-leiwen@marvell.com>
-References: <1371474024-19787-1-git-send-email-leiwen@marvell.com>
+	id S932987Ab3FQNHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:07:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58643 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932888Ab3FQNHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:07:15 -0400
+Date: Mon, 17 Jun 2013 09:07:03 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jan Kara <jack@suse.cz>
+Cc: Maarten ter Huurne <maarten@treewalker.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: Fixed corruption when online resizing a fs with 1K
+ block size
+Message-ID: <20130617130703.GD24972@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	Maarten ter Huurne <maarten@treewalker.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1367856367-15924-1-git-send-email-maarten@treewalker.org>
+ <20130508135825.GA3810@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508135825.GA3810@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cannot compare two load directly from two cpus, since the cpu power
-over two cpu may vary largely.
+On Wed, May 08, 2013 at 03:58:25PM +0200, Jan Kara wrote:
+> On Mon 06-05-13 18:06:07, Maarten ter Huurne wrote:
+> > Subtracting the number of the first data block places the superblock
+> > backups one block too early, corrupting the file system. When the block
+> > size is larger than 1K, the first data block is 0, so the subtraction
+> > has no effect and no corruption occurs.
+>   Looking where mke2fs places backup super blocks you are right. You can
+> add:
+> Reviewed-by: Jan Kara <jack@suse.cz>
 
-Suppose we meet such two kind of cpus.
-CPU A:
-	No real time work, and there are 3 task, with rq->load.weight
-being 512.
-CPU B:
-	Has real time work, and it take 3/4 of the cpu power, which
-makes CFS only take 1/4, that is 1024/4=256 cpu power. And over its CFS
-runqueue, there is only one task with weight as 128.
+Applied, thanks.
 
-Since both cpu's CFS task take for half of the CFS's cpu power, it
-should be considered as balanced in such case.
-
-But original judgment like:
-        if ((max_cpu_load - min_cpu_load) >= avg_load_per_task &&
-            (max_nr_running - min_nr_running) > 1)
-It makes (512-128)>=((512+128)/4), and lead to imbalance conclusion...
-
-Make the load as scaled, to avoid such case.
-
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 77a149c..18625dd 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4434,7 +4434,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			int local_group, int *balance, struct sg_lb_stats *sgs)
- {
- 	unsigned long nr_running, max_nr_running, min_nr_running;
--	unsigned long load, max_cpu_load, min_cpu_load;
-+	unsigned long scaled_load, load, max_cpu_load, min_cpu_load;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
- 	int i;
-@@ -4464,10 +4464,12 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			load = target_load(i, load_idx);
- 		} else {
- 			load = source_load(i, load_idx);
--			if (load > max_cpu_load)
--				max_cpu_load = load;
--			if (min_cpu_load > load)
--				min_cpu_load = load;
-+			scaled_load = load * SCHED_POWER_SCALE
-+					/ cpu_rq(i)->cpu_power;
-+			if (scaled_load	> max_cpu_load)
-+				max_cpu_load = scaled_load;
-+			if (min_cpu_load > scaled_load)
-+				min_cpu_load = scaled_load;
- 
- 			if (nr_running > max_nr_running)
- 				max_nr_running = nr_running;
-@@ -4511,8 +4513,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	 *      normalized nr_running number somewhere that negates
- 	 *      the hierarchy?
- 	 */
--	if (sgs->sum_nr_running)
--		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
-+	if (sgs->sum_nr_running) {
-+		avg_load_per_task = sgs->sum_weighted_load * SCHED_POWER_SCALE
-+					/ group->sgp->power;
-+		avg_load_per_task /= sgs->sum_nr_running;
-+	}
- 
- 	if ((max_cpu_load - min_cpu_load) >= avg_load_per_task &&
- 	    (max_nr_running - min_nr_running) > 1)
--- 
-1.7.10.4
-
+					- Ted
