@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3FQPVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:21:22 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:61258 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab3FQPVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:21:20 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v4 01/11] media: davinci: vpif: remove unwanted header mach/hardware.h and sort the includes alphabetically
-Date: Mon, 17 Jun 2013 20:50:41 +0530
-Message-Id: <1371482451-18314-2-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371482451-18314-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1371482451-18314-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1753060Ab3FQPVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:21:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8702 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab3FQPVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:21:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="330934321"
+Message-ID: <51BF297B.7090409@intel.com>
+Date: Mon, 17 Jun 2013 23:21:31 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com> <51BF23E9.5090906@intel.com>
+In-Reply-To: <51BF23E9.5090906@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 06/17/2013 10:57 PM, Alex Shi wrote:
+>> > 
+>> > Did you try including blocked_load_avg in only get_rq_runnable_load()
+>> > [ and not weighted_cpuload() which is called by new-idle ]?
+>> > 
+> No, but blocked_load_avg also impact periodic balance much. The ideal
+> scenario is a sleeping task will be waken up on same cpu. But like
+> kbuild benchmark, the quick cc/ld task are forked, and then finished and
 
-This patch removes unwanted header include of mach/hardware.h
-and along side sorts the header inclusion alphabetically.
+a bit more explain, cc/ld finished cpu task then wait IO to write object
+files into disk.
+> disappeared quickly. blocked_load_avg cause trouble in kbuild.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/media/platform/davinci/vpif.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-index ea82a8b..761c825 100644
---- a/drivers/media/platform/davinci/vpif.c
-+++ b/drivers/media/platform/davinci/vpif.c
-@@ -17,18 +17,16 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/err.h>
- #include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
--#include <linux/spinlock.h>
--#include <linux/kernel.h>
--#include <linux/io.h>
--#include <linux/err.h>
- #include <linux/pm_runtime.h>
-+#include <linux/spinlock.h>
- #include <linux/v4l2-dv-timings.h>
- 
--#include <mach/hardware.h>
--
- #include "vpif.h"
- 
- MODULE_DESCRIPTION("TI DaVinci Video Port Interface driver");
 -- 
-1.7.9.5
-
+Thanks
+    Alex
