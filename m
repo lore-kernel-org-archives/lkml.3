@@ -1,70 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab3FQQV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:21:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65235 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab3FQQV1 (ORCPT
+	id S1752406Ab3FQQWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:22:10 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:11509 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab3FQQWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:21:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Fernandes, Joel A" <joelagnel@ti.com>
-Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
-Date: Mon, 17 Jun 2013 18:19:57 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Matt Porter" <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+	Mon, 17 Jun 2013 12:22:08 -0400
+Message-ID: <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-References: <1371263570-9323-1-git-send-email-joelagnel@ti.com> <3940138.jZFEtfGGLz@wuerfel> <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
-In-Reply-To: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Mon, 17 Jun 2013 09:22:02 -0700
+In-Reply-To: <51BD8A77.2080201@intel.com>
+References: <1371165333.27102.568.camel@schen9-DESK>
+	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+	 <51BD8A77.2080201@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306171819.57900.arnd@arndb.de>
-X-Provags-ID: V02:K0:y4UP0GPseVJyEAk+/foXF0KH3XxOGA3dcSdtvLLQTrX
- CIMrgzsUQUGF6ucfUR3BIfNplJGgP+bW/+VNhOnj/bS8T/Qdbu
- sWkTjvk0Ya8lC5wobgeaseKItoNGOjIIgTaa+jXsPC370dyg/C
- hFTVUe9S8L0QK8oGK5qYxxrIkPuwT1VJv4v61oTqug9Rs4PhfT
- UHVHsCw58AAM3zSCV2SJ37Sge0MXlhkUS7qIEO9AUyycfhmbqK
- mn/6eBAtz7TrZUvzOmsszbdjVeJtO53QjQOSEWmmS/ZsXLuU9p
- 7igMGnyXArWhNonrE0gt2453qtY7HNu4c+gq7UciiHv568Vv36
- er9W0r5C60PjITvxGXog=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 June 2013, Fernandes, Joel A wrote:
-> [Joel] Thanks for the suggestion, I updated it and it looks like this now:
->                                                                                                              
-> Required properties:                                                                                                                   
-> - compatible : "ti,edma3"                                                                                                              
-> - ti,hwmods: Name of the hwmods associated to the EDMA                                                                                 
-> - ti,edma-regions: Number of regions                                                                                                   
-> - ti,edma-slots: Number of slots
-> - #dma-cells: Should be set to <1> 
->               Clients should use a single number per DMA channel request.
+On Sun, 2013-06-16 at 17:50 +0800, Alex Shi wrote:
+> On 06/14/2013 07:43 AM, Davidlohr Bueso wrote:
+> > I was hoping that the lack of spin on owner was the main difference with
+> > rwsems and am/was in the middle of implementing it. Could you send your
+> > patch so I can give it a try on my workloads?
+> > 
+> > Note that there have been a few recent (3.10) changes to mutexes that
+> > give a nice performance boost, specially on large systems, most
+> > noticeably:
+> > 
+> > commit 2bd2c92c (mutex: Make more scalable by doing less atomic
+> > operations)
+> > 
+> > commit 0dc8c730 (mutex: Queue mutex spinners with MCS lock to reduce
+> > cacheline contention)
+> > 
+> > It might be worth looking into doing something similar to commit
+> > 0dc8c730, in addition to the optimistic spinning.
+> 
+> It is a good tunning for large machine. I just following what the commit 
+> 0dc8c730 done, give a RFC patch here. I tried it on my NHM EP machine. seems no
+> clear help on aim7. but maybe it is helpful on large machine.  :)
 
-That still does not say what that number refers to.
-Is it a channel number, or a request line number, or something completely
-different?
+After a lot of benchmarking, I finally got the ideal results for aim7,
+so far: this patch + optimistic spinning with preemption disabled. Just
+like optimistic spinning, this patch by itself makes little to no
+difference, yet combined is where we actually outperform 3.10-rc5. In
+addition, I noticed extra throughput when disabling preemption in
+try_optimistic_spin().
 
-	Arnd
+With i_mmap as a rwsem and these changes I could see performance
+benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+(+5%), shared (+15%) and short (+4%), most of them after around 500
+users, for fewer users, it made little to no difference.
+
+Thanks,
+Davidlohr
+
+> 
+> 
+> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> index bb1e2cd..240729a 100644
+> --- a/include/asm-generic/rwsem.h
+> +++ b/include/asm-generic/rwsem.h
+> @@ -70,11 +70,11 @@ static inline void __down_write(struct rw_semaphore *sem)
+>  
+>  static inline int __down_write_trylock(struct rw_semaphore *sem)
+>  {
+> -	long tmp;
+> +	if (unlikely(&sem->count != RWSEM_UNLOCKED_VALUE))
+> +		return 0;
+>  
+> -	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> -		      RWSEM_ACTIVE_WRITE_BIAS);
+> -	return tmp == RWSEM_UNLOCKED_VALUE;
+> +	return cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+> +		      RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_UNLOCKED_VALUE;
+>  }
+>  
+>  /*
+> diff --git a/lib/rwsem.c b/lib/rwsem.c
+> index 19c5fa9..9e54e20 100644
+> --- a/lib/rwsem.c
+> +++ b/lib/rwsem.c
+> @@ -64,7 +64,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  	struct rwsem_waiter *waiter;
+>  	struct task_struct *tsk;
+>  	struct list_head *next;
+> -	long oldcount, woken, loop, adjustment;
+> +	long woken, loop, adjustment;
+>  
+>  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+>  	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+> @@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  			 * will block as they will notice the queued writer.
+>  			 */
+>  			wake_up_process(waiter->task);
+> -		goto out;
+> +		return sem;
+>  	}
+>  
+>  	/* Writers might steal the lock before we grant it to the next reader.
+> @@ -85,15 +85,28 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  	adjustment = 0;
+>  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+>  		adjustment = RWSEM_ACTIVE_READ_BIAS;
+> - try_reader_grant:
+> -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+> -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+> -			/* A writer stole the lock. Undo our reader grant. */
+> +		while (1) {
+> +			long oldcount;
+> +
+> +			/* A writer stole the lock. */
+> +			if (unlikely(sem->count & RWSEM_ACTIVE_MASK))
+> +				return sem;
+> +
+> +			if (unlikely(sem->count < RWSEM_WAITING_BIAS)) {
+> +				cpu_relax();
+> +				continue;
+> +			}
+> +
+> +			oldcount = rwsem_atomic_update(adjustment, sem)
+> +								- adjustment;
+> +			if (likely(oldcount >= RWSEM_WAITING_BIAS))
+> +				break;
+> +
+> +			 /* A writer stole the lock.  Undo our reader grant. */
+>  			if (rwsem_atomic_update(-adjustment, sem) &
+>  						RWSEM_ACTIVE_MASK)
+> -				goto out;
+> +				return sem;
+>  			/* Last active locker left. Retry waking readers. */
+> -			goto try_reader_grant;
+>  		}
+>  	}
+>  
+> @@ -136,7 +149,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+>  	sem->wait_list.next = next;
+>  	next->prev = &sem->wait_list;
+>  
+> - out:
+>  	return sem;
+>  }
+>  
+> -- 
+> Thanks
+>     Alex
+> 
+> 
+
+
