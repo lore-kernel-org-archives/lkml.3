@@ -1,158 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab3FQMJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:09:17 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:52157 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932696Ab3FQMJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:09:16 -0400
-Message-ID: <51BEFB32.1000301@schinagl.nl>
-Date: Mon, 17 Jun 2013 14:04:02 +0200
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, gregkh@linuxfoundation.org, linux@arm.linux.org.uk,
-        Oliver Schinagl <oliver@schinagl.nl>, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl> <1371251781-17167-2-git-send-email-oliver+list@schinagl.nl> <2828921.i3T9JhMInt@flatron> <51BEE6BF.30401@schinagl.nl> <20130617115129.GF16699@lukather>
-In-Reply-To: <20130617115129.GF16699@lukather>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932870Ab3FQMJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:09:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31070 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab3FQMJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 08:09:18 -0400
+X-AuditID: cbfee68e-b7f276d000002279-1c-51befc5a6494
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: recover wrong pino after checkpoint during fsync
+Date: Mon, 17 Jun 2013 21:09:04 +0900
+Message-id: <1371470944-15012-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t8zY92oP/sCDd4+0bK4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+NG82fGgqsaFXd2
+	uzUw7lHsYuTgkBAwkdjaKNXFyAlkiklcuLeerYuRi0NIYBmjxPHLc9ghEiYSq6btZASxhQSm
+	M0o0/hSEKGpjkri35g4byCA2AW2JzfsNQGpEBJglFkw9zwhSwywwgVHi/6L3LCAJYQF3iedd
+	b1lB6lkEVCV+3WUCCfMChWfM2Ay1S1di0YmDrCC9EgK32SQmTnrCBpJgERCQ+Db5EAvE0bIS
+	mw4wQ9RLShxccYNlAqPgAkaGVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxghwde3g/HmAetD
+	jMlA4yYyS4km5wODN68k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc
+	1OJDjEwcnFINjAtETmcuXqbwv2Ryxcl3OzZuffho62c7Zssre6QV728S5lTZOOFKBAu3xWRn
+	M88JrP7yJatmn5cRvfh7Q4n423UuHs7X2Q40n3po+zPjteZzKbGym7vYXPiOvv+tN3vq54dv
+	sxNymS8p7pvG3dJ+eebqp5s/K122uMd9WUzypqpHeuB+/tkLtx5QYinOSDTUYi4qTgQAkWH6
+	L1QCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jQd2oP/sCDeZ3qFlc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5hxo/kzY8FVjYo7u90aGPcodjFyckgImEismraTEcIWk7hwbz0biC0kMJ1R
+	ovGnYBcjF5DdxiRxb80doAQHB5uAtsTm/QYgNSICzBILpp5nBKlhFpjAKPF/0XsWkISwgLvE
+	8663rCD1LAKqEr/uMoGEeYHCM2ZsZofYpSux6MRB1gmM3AsYGVYxiqYWJBcUJ6XnGukVJ+YW
+	l+al6yXn525iBAf3M+kdjKsaLA4xCnAwKvHwctTtCxRiTSwrrsw9xCjBwawkwhs7ESjEm5JY
+	WZValB9fVJqTWnyIMRlo+URmKdHkfGDk5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2x
+	JDU7NbUgtQhmCxMHp1QDY2ZeSN/cGZ2FnzLUlxyaL1x+Q/+C6ZWzKcnH5JbJ2Rw1OTxlslTz
+	/NVeuSf2NFqt6C+Ye+1x4oLlEZw3L55xkT0od2XPRLGU+LZynvqiTSfvVK0VSe342DLxj4D4
+	70NqKkuF/ovuYjpkJWajkBrwesPjieZHT51eX81lJuH1ZbG4uPtz7ddzbJVYijMSDbWYi4oT
+	AXGFKZ+yAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17-06-13 13:51, Maxime Ripard wrote:
-> On Mon, Jun 17, 2013 at 12:36:47PM +0200, Oliver Schinagl wrote:
->> On 15-06-13 12:28, Tomasz Figa wrote:
->>>> +#define DRV_VERSION "1.0"
->>>
->>> What is this version thingy?
->>>
->>> Is there a versioning scheme defined for this driver? Do you expect it to
->>> be changed every modification of this driver?
->>>
->>> I don't see any point of having such thing in a project with a version
->>> control system, where you have all change history.
->> Well we export something to userspace, while trivial there is the
->> possibility it changes over time. Say A40 which outputs 256 bits
->> instead of the current 128 bits. That would validate a bump in
->> version number. It's purely so the user can be aware of differences
->> in the driver. So maybe DRV_A[BP]I_VERSION would be better?
->
-> Except that in that case, the userspace API won't change. You'll still
-> call read on the same file in sysfs. The only thing that will change
-> will be the number of bytes returned by your read function, which is
-> (or should be) totally fine.
-Aye, russel pointed this out as well, and I agree.
->
->>>> +/* We read the entire key, but only return the requested byte. This is
->>>> of + * course slower then it could be and uses 4 times more reads as
->>>> needed but + * keeps code simpler.
->>>
->>> I have no idea how often this is going to be read, but since the whole sid
->>> is really small (16 bytes), maybe it would be better to simply read the ID
->>> in probe to a buffer and then just memcpy from it in read().
->> The sid will be read once (well all 16 bytes) during probe and after
->> that only on user request. Right now we don't have a user (yet)
->> other then the sysfs entry.
->>
->> In future, this key can be used to read the MAC (low reads) or AES
->> keys for example (also low reads).
->>
->> Initially I had such an approach, but Maxime recommended against
->> having the value cached.
->>
->> As I wrote to andy, the only 'more efficient' way would be to store
->> the previously read key and see on the next read if its the same, So
->> best case, we could save 4 reads. I think it makes the code
->> unnecessarily complex for something that is read so little.
->
-> I asked Oliver that because I felt like it could still be updated by the
-> user, and sysfs should report that.
->
-> And since it's not like it would be used extensively and very often,
-> it's not a big deal anyway.
-Actually it might still be possible to change the sid. We have figured 
-out how we possible can program it (the 2.5 EFUSE_VDD pin, which olimex 
-actually mapped out on the board) but requires someone to actually take 
-the plunge and test it. So in theory, it can be changed still.
->
->>>> +
->>>> +	if (offset >= SID_SIZE)
->>>> +		goto exit;
->>>
->>> 		return 0; ...
->> I did say in the changelog I opted for goto over return. But since
->> everybody keeps preferring returns (I personally like 'one single
->> exit point much more' I have already changed it all over to many
->> returns, who am I to argue :)
->
-> Yet, you don't have a single exit point neither, you have several of
-> them. You can say that you have a single return statement in your code,
-> which is true, yet you have several times a jump to this location, so we
-> can definitely say that you actually have several exit points. Please
-> also refer to the chapter 7 of the Documentation/CodingStyle file.
->
-You are right of course :)
->>>> +	return (u8)sid_key;
->>>
->>> Unnecessary casting.
->> Unnecessary because of the &= 0xff above, or because you can put a
->> 32bit int in an 8bit int without worries? (we only want the last
->> byte).
->
-> The latter. The & 0xff only filter out non-relevant informations from
-> your 32-bits integer in that case, that's all, it doesn't do any
-> casting.
-So for clarity not leave the cast? Will it hurt? Will the compiler not 
-do the cast anyway?
->
->>>> +	for (i = 0; i < size; i++) {
->>>> +		if ((pos + i) >= SID_SIZE || (pos < 0))
->>>> +			break;
->>>> +		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
->>>> +	}
->>>
->>> This could be greatly simplified if you just read the whole sid to memory
->>> in probe and memcpy from it here.
->> But can't because we don't want to cache it.
->
-> And we can't simply use memcpy, since we will need to do some endianness
-> conversions. The data stored in the SID are big-endian, while we're
-> running most likely in little endian mode.
->
->>>> +	if (!pdev->dev.of_node) {
->>>> +		dev_err(&pdev->dev, "No devicetree data available\n");
->>>> +		ret = -ENXIO;
->>>> +		goto exit;
->>>> +	}
->>>
->>> What is this check for? You don't seem to need anything from dev.of_node
->>> in this driver.
->> My understanding was, that when using the device tree, we check if
->> the device tree is atleast available. And we use
->> platform_get_resource, doesn't that get the data from the device
->> tree?
->
-> If there's no device tree, you won't be probed in the first place. And
-> resources get filled by the kernel from the device tree automatically at
-> boot, so you're safe to assume that the resources are there when you get
-> probed.
-Ahh, assumption, the mother.
-But I put my trust in you ;)
+If a file is linked, f2fs loose its parent inode number so that fsync calls
+for the linked file should do checkpoint all the time.
+But, if we can recover its parent inode number after the checkpoint, we can
+adjust roll-forward mechanism for the further fsync calls, which is able to
+improve the fsync performance significatly.
 
-I'll remove it
->
-> You need this check when you actually need some more informations from
-> the DT, the value of an additional property for example.
-I'll learn about that soon enough ;)
->
-> Maxime
-Thanks again maxime :)
->
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/dir.c     |  2 +-
+ fs/f2fs/f2fs.h    |  2 +-
+ fs/f2fs/file.c    | 31 ++++++++++++++++++++++++++++++-
+ fs/f2fs/namei.c   |  2 +-
+ fs/f2fs/node.h    | 15 +++++++++++----
+ fs/f2fs/segment.c |  2 +-
+ 6 files changed, 45 insertions(+), 9 deletions(-)
+
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 69ca049..4f21452 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -356,7 +356,7 @@ static struct page *init_inode_metadata(struct inode *inode,
+ 	 * We lost i_pino from now on.
+ 	 */
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
+-		set_cp_file(inode);
++		file_lost_pino(inode);
+ 		inc_nlink(inode);
+ 	}
+ 	return page;
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 3e7cb33..863a5e91 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -151,7 +151,7 @@ struct extent_info {
+  * i_advise uses FADVISE_XXX_BIT. We can add additional hints later.
+  */
+ #define FADVISE_COLD_BIT	0x01
+-#define FADVISE_CP_BIT		0x02
++#define FADVISE_LOST_PINO_BIT	0x02
+ 
+ struct f2fs_inode_info {
+ 	struct inode vfs_inode;		/* serve a vfs inode */
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index fda226f..d2d2b7d 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -102,6 +102,24 @@ static const struct vm_operations_struct f2fs_file_vm_ops = {
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+ 
++static int get_parent_ino(struct inode *inode, nid_t *pino)
++{
++	struct dentry *dentry;
++
++	inode = igrab(inode);
++	dentry = d_find_any_alias(inode);
++	iput(inode);
++	if (!dentry)
++		return 0;
++
++	inode = igrab(dentry->d_parent->d_inode);
++	dput(dentry);
++
++	*pino = inode->i_ino;
++	iput(inode);
++	return 1;
++}
++
+ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+@@ -134,7 +152,7 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 
+ 	if (!S_ISREG(inode->i_mode) || inode->i_nlink != 1)
+ 		need_cp = true;
+-	else if (is_cp_file(inode))
++	else if (file_wrong_pino(inode))
+ 		need_cp = true;
+ 	else if (!space_for_roll_forward(sbi))
+ 		need_cp = true;
+@@ -142,8 +160,19 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 		need_cp = true;
+ 
+ 	if (need_cp) {
++		nid_t pino;
++
+ 		/* all the dirty node pages should be flushed for POR */
+ 		ret = f2fs_sync_fs(inode->i_sb, 1);
++		if (file_wrong_pino(inode) && inode->i_nlink == 1 &&
++					get_parent_ino(inode, &pino)) {
++			F2FS_I(inode)->i_pino = pino;
++			file_got_pino(inode);
++			mark_inode_dirty_sync(inode);
++			ret = f2fs_write_inode(inode, NULL);
++			if (ret)
++				goto out;
++		}
+ 	} else {
+ 		/* if there is no written node page, write its inode page */
+ 		while (!sync_node_pages(sbi, inode->i_ino, &wbc)) {
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 810444e..64c0716 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -112,7 +112,7 @@ static inline void set_cold_files(struct f2fs_sb_info *sbi, struct inode *inode,
+ 	int count = le32_to_cpu(sbi->raw_super->extension_count);
+ 	for (i = 0; i < count; i++) {
+ 		if (is_multimedia_file(name, extlist[i])) {
+-			set_cold_file(inode);
++			file_set_cold(inode);
+ 			break;
+ 		}
+ 	}
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index a503661..c65fb4f 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -285,10 +285,17 @@ static inline void set_file(struct inode *inode, int type)
+ 	F2FS_I(inode)->i_advise |= type;
+ }
+ 
+-#define is_cold_file(inode)	is_file(inode, FADVISE_COLD_BIT)
+-#define is_cp_file(inode)	is_file(inode, FADVISE_CP_BIT)
+-#define set_cold_file(inode)	set_file(inode, FADVISE_COLD_BIT)
+-#define set_cp_file(inode)	set_file(inode, FADVISE_CP_BIT)
++static inline void clear_file(struct inode *inode, int type)
++{
++	F2FS_I(inode)->i_advise &= ~type;
++}
++
++#define file_is_cold(inode)	is_file(inode, FADVISE_COLD_BIT)
++#define file_wrong_pino(inode)	is_file(inode, FADVISE_LOST_PINO_BIT)
++#define file_set_cold(inode)	set_file(inode, FADVISE_COLD_BIT)
++#define file_lost_pino(inode)	set_file(inode, FADVISE_LOST_PINO_BIT)
++#define file_clear_cold(inode)	clear_file(inode, FADVISE_COLD_BIT)
++#define file_got_pino(inode)	clear_file(inode, FADVISE_LOST_PINO_BIT)
+ 
+ static inline int is_cold_data(struct page *page)
+ {
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index b15debc..0e1a60a 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -796,7 +796,7 @@ static int __get_segment_type_6(struct page *page, enum page_type p_type)
+ 
+ 		if (S_ISDIR(inode->i_mode))
+ 			return CURSEG_HOT_DATA;
+-		else if (is_cold_data(page) || is_cold_file(inode))
++		else if (is_cold_data(page) || file_is_cold(inode))
+ 			return CURSEG_COLD_DATA;
+ 		else
+ 			return CURSEG_WARM_DATA;
+-- 
+1.8.3.1.437.g0dbd812
 
