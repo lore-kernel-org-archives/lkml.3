@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab3FQKbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:31:53 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39407 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab3FQKbv (ORCPT
+	id S932617Ab3FQKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:34:58 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61103 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab3FQKe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:31:51 -0400
-Message-ID: <51BEE58F.5050204@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 16:01:43 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 06:34:57 -0400
+Message-ID: <51BEE64C.80608@linaro.org>
+Date: Mon, 17 Jun 2013 16:04:52 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "ananth@in.ibm.com" <ananth@in.ibm.com>, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH] Re: [Patch] MCE, APEI: Don't enable CMCI when Firmware
- First mode is set in
-References: <3908561D78D1C84285E8C5FCA982C28F2DA47F03@ORSMSX101.amr.corp.intel.com> <20130614181721.11206.95341.stgit@localhost.localdomain> <20130615144830.GA13310@pd.tnic> <51BEB3F5.8070002@gmail.com> <20130617070650.GA7203@pd.tnic> <20130617081103.GA4197@naverao1-tp.in.ibm.com> <20130617082135.GB7203@pd.tnic>
-In-Reply-To: <20130617082135.GB7203@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mark Brown <broonie@kernel.org>
+CC: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH 11/15] regulator: ti-abb: Convert to use devm_ioremap_resource
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org> <1370864113-17895-12-git-send-email-tushar.behera@linaro.org> <51BED2F9.1020307@linaro.org> <20130617100525.GA1403@sirena.org.uk>
+In-Reply-To: <20130617100525.GA1403@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061710-7014-0000-0000-0000033074CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 01:51 PM, Borislav Petkov wrote:
-> On Mon, Jun 17, 2013 at 01:41:03PM +0530, Naveen N. Rao wrote:
->> Yes, we used to poll since we do not get notified via MCE/CMCI.
->> However, with firmware first set in CMC structure, the firmware is
->> now controlling all corrected error reporting for these banks. So, we
->> should not be looking at these MCA banks at all.
->
-> Ok,
->
-> then the bank polling disabling part should be generic code (i.e., not
-> in mce_intel) since it is part of the APEI crap. The CMCI disabling
-> should be Intel-specific only as AMD has a similar mechanism which we'll
-> need to disable at some point too.
+On 06/17/2013 03:35 PM, Mark Brown wrote:
+> On Mon, Jun 17, 2013 at 02:42:25PM +0530, Tushar Behera wrote:
+>> On 06/10/2013 05:05 PM, Tushar Behera wrote:
+>>> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+>>> introduced devm_ioremap_resource() and deprecated the use of
+>>> devm_request_and_ioremap().
+> 
+>> Ping.
+> 
+> Don't send contentless pings.  I seem to recall you already got some
+> review on this.
+> 
 
-Ok, I'll move mce_disable_bank() to mce.c and re-structure the patch 
-around that.
+The comment was on removal of the error message during
+devm_ioremap_resource() error check . Since there are a few other error
+messages in the driver (related to devm_ioremap_nocache) in the same
+format, I prefer to leave this error message right now.
 
-Thanks,
-Naveen
+There were no other comments.
 
+-- 
+Tushar Behera
