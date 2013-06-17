@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3FQOWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:22:31 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:38652 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab3FQOW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:22:29 -0400
+	id S1751242Ab3FQO1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:27:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45304 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3FQO1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 10:27:19 -0400
+Date: Mon, 17 Jun 2013 16:27:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@gentwo.org>,
+        penberg@kernel.org, mpm@selenic.com, akpm@linux-foundation.org,
+        mgorman@suse.de, glommer@parallels.com, hannes@cmpxchg.org,
+        minchan@kernel.org, jiang.liu@huawei.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: Avoid direct compaction if possible
+Message-ID: <20130617142715.GB8853@dhcp22.suse.cz>
+References: <51BB1802.8050108@yandex-team.ru>
+ <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com>
+ <alpine.DEB.2.02.1306141322490.17237@chino.kir.corp.google.com>
+ <51BF024F.2080609@yandex-team.ru>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
-References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
-	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
-	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
-Date: Mon, 17 Jun 2013 16:22:28 +0200
-Message-ID: <CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BF024F.2080609@yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 June 2013 22:52, Colin Cross <ccross@android.com> wrote:
-> On Fri, Jun 14, 2013 at 11:42 AM, Zoran Markovic
-> <zoran.markovic@linaro.org> wrote:
->>> I am not sure I understand why this patch is needed. When a new card
->>> is inserted/removed and the upper levels gets notification about the
->>> new card, triggering the mounting/un-mounting of the file system, why
->>> should it be the lowest layer (mmc) that prevents the platform from
->>> enter suspend/sleep? Why do we need to prevent it at all?
->>>
->>> Note that notifier handling in mmc_pm_notify, was if I remember
->>> correctly, not completely developed when the original version of this
->>> patch was being discussed. mmc_pm_notify prevents cards from being
->>> inserted/removed in the middle of suspend->resume sequence, is that
->>> not enough?
->>
->> I will try to speak on behalf of the original implementers in a hope
->> they would provide the original motivation for the patch.
->>
->> My understanding is that any preemption in the procedure could be an
->> opportunity to suspend, as there may be a suspend request racing with
->> this code. This is why the calls to __pm_stay_awake() and
->> queue_delayed_work() are so tightly coupled. It would be up to the
->> delayed work procedure (mmc_rescan()) to decide whether or not it is
->> safe to suspend. If there are no changes in the MMC state or all
->> changes can be handled by mmc_rescan(), it is safe to call
->> __pm_relax(). Otherwise, userland may take over processing of this
->> event, and this is why the awake state needs to be extended by 1/2
->> second.
->
-> The __pm_stay_awake() is required to prevent autosleep during the time
-> between the card detect interrupt and when the userspace process that
-> gets the notification runs.  The 1/2 second delay is used because it
-> is easier than trying to detect when the userspace process has
-> received the notification, at which time it should hold its own
-> wakelock and the mmc subsystem can call __pm_relax().
+On Mon 17-06-13 16:34:23, Roman Gushchin wrote:
+> On 15.06.2013 00:26, David Rientjes wrote:
+> >On Fri, 14 Jun 2013, Christoph Lameter wrote:
+> >
+> >>>It's possible to avoid such problems (or at least to make them less probable)
+> >>>by avoiding direct compaction. If it's not possible to allocate a contiguous
+> >>>page without compaction, slub will fall back to order 0 page(s). In this case
+> >>>kswapd will be woken to perform asynchronous compaction. So, slub can return
+> >>>to default order allocations as soon as memory will be de-fragmented.
+> >>
+> >>Sounds like a good idea. Do you have some numbers to show the effect of
+> >>this patch?
+> >>
+> >
+> >I'm surprised you like this patch, it basically makes slub allocations to
+> >be atomic and doesn't try memory compaction nor reclaim.  Asynchronous
+> >compaction certainly isn't aggressive enough to mimick the effects of the
+> >old lumpy reclaim that would have resulted in less fragmented memory.  If
+> >slub is the only thing that is doing high-order allocations, it will start
+> >falling back to the smallest page order much much more often.
+> >
+> >I agree that this doesn't seem like a slub issue at all but rather a page
+> >allocator issue; if we have many simultaneous thp faults at the same time
+> >and /sys/kernel/mm/transparent_hugepage/defrag is "always" then you'll get
+> >the same problem if deferred compaction isn't helping.
+> >
+> >So I don't think we should be patching slub in any special way here.
+> >
+> >Roman, are you using the latest kernel?  If so, what does
+> >grep compact_ /proc/vmstat show after one or more of these events?
+> >
+> 
+> We're using 3.4. And the problem reveals when we moved from 3.2 to 3.4.
+> It can be also reproduced on 3.5.
 
-Hi Colin,
+FWIW, there were some compaction locking related patches merged
+around 3.7. See 2a1402aa044b55c2d30ab0ed9405693ef06fb07c and follow ups.
 
-I don't have the in-depth knowledge about how the userspace deamons
-handles the event notifications, so please bare with me while I am
-trying to understand more here.
+> I'll send the exact numbers as soon I'll reproduce it again.
+> It can take up to 1 week.
+> 
+> Thanks!
+> 
+> Regards,
+> Roman
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-First of all, are we trying to solve an  issue here or just improving
-some specific situation, that is not clear to me.
-
-I might have misunderstood this patch, but it seems like your concern
-is that you believe the event notification can get lost - if userspace
-are about to trigger a suspend while a card is being inserted/removed.
-If that is the case, could you elaborate on what level the
-notification can get lost?
-
-Kind regards
-Ulf Hansson
+-- 
+Michal Hocko
+SUSE Labs
