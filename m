@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3FQRts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:49:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50618 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab3FQRfc (ORCPT
+	id S1754404Ab3FQRu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:50:27 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16463 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab3FQRuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:35:32 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 57/84] xen/smp: Fixup NOHZ per cpu data when onlining an offline CPU.
-Date: Mon, 17 Jun 2013 10:31:01 -0700
-Message-Id: <1371490288-23167-58-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 17 Jun 2013 13:50:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 17 Jun 2013 10:50:22 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH 0/2] Fix kernel panics with certain I2C tps6* chips
+Date: Mon, 17 Jun 2013 20:47:35 +0300
+Message-ID: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.3 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+Latest linux-next head (next-20130617) seems to have some backwards-incompatible
+changes to the i2c core, which breaks the tps* drivers in our boards and cause
+panics on boot.
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+ttynkkynen@ttynkkynen-lnx:~/upstream/kernel$ git bisect bad
+c80f52847c50109ca248c22efbf71ff10553dca4 is the first bad commit
+commit c80f52847c50109ca248c22efbf71ff10553dca4
+Author: Linus Walleij <linus.walleij@linaro.org>
+Date:   Mon May 13 22:18:21 2013 +0200
 
-commit 466318a87f28cb3ba0d08a3b7ef1a37ae73d5aa7 upstream.
+    i2c: core: make it possible to match a pure device tree driver
+    
+    This tries to address an issue found when writing an MFD driver
+    for the Nomadik STw481x PMICs: as the platform is using device
+    tree exclusively I want to specify the driver matching like
+    this:
+    
+    static const struct of_device_id stw481x_match[] = {
+    	{ .compatible = "st,stw4810", },
+    	{ .compatible = "st,stw4811", },
+    	{},
+    };
+    
+    static struct i2c_driver stw481x_driver = {
+    	.driver = {
+    		.name	= "stw481x",
+    		.of_match_table = stw481x_match,
+    	},
+    	.probe		= stw481x_probe,
+    	.remove		= stw481x_remove,
+    };
+    
+    However that turns out not to be possible: the I2C probe code
+    is written so that the probe() call is always passed a match
+    from i2c_match_id() using non-devicetree matches.
+    
+    This is probably why most devices using device tree for I2C
+    clients currently will pass no .of_match_table *at all* but
+    instead just use .id_table from struct i2c_driver to match
+    the device. As you realize that means that the whole idea with
+    compatible strings is discarded, and that is why we find strange
+    device tree I2C device compatible strings like "product" instead
+    of "vendor,product" as you could expect.
+    
+    Let's figure out how to fix this before the mess spreads. This
+    patch will allow probeing devices with only an of_match_table
+    as per above, and will pass NULL as the second argument to the
+    probe() function. If the driver wants to deduce secondary info
+    from the struct of_device_id .data field, it has to call
+    of_match_device() on its own match table in the probe function
+    device tree probe path.
+    
+    If drivers define both an .of_match_table *AND* a i2c_driver
+    .id_table, the .of_match_table will take precedence, just
+    as is done in the i2c_device_match() function in i2c-core.c.
+    
+    I2C devices probed from device tree should subsequently be
+    fixed to handle the case where of_match_table() is
+    used (I think none of them do that today), and platforms should
+    fix their device trees to use compatible strings for I2C devices
+    instead of setting the name to Linux device driver names as is
+    done in multiple cases today.
+    
+    Cc: Rob Herring <rob.herring@calxeda.com>
+    Cc: Grant Likely <grant.likely@linaro.org>
+    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+    Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-The xen_play_dead is an undead function. When the vCPU is told to
-offline it ends up calling xen_play_dead wherin it calls the
-VCPUOP_down hypercall which offlines the vCPU. However, when the
-vCPU is onlined back, it resumes execution right after
-VCPUOP_down hypercall.
+Tuomas Tynkkynen (2):
+  mfd: tps65910: Fix crash in i2c_driver .probe
+  regulator: tps62360: Fix crash in i2c_driver .probe
 
-That was OK (albeit the API for play_dead assumes that the CPU
-stays dead and never returns) but with commit 4b0c0f294
-(tick: Cleanup NOHZ per cpu data on cpu down) that is no longer safe
-as said commit resets the ts->inidle which at the start of the
-cpu_idle loop was set.
+ drivers/mfd/tps65910.c                 | 6 ++++--
+ drivers/regulator/tps62360-regulator.c | 8 ++++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-The net effect is that we get this warn:
-
-Broke affinity for irq 16
-installing Xen timer for CPU 1
-cpu 1 spinlock event irq 48
-------------[ cut here ]------------
-WARNING: at /home/konrad/linux-linus/kernel/time/tick-sched.c:935 tick_nohz_idle_exit+0x195/0x1b0()
-Modules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc3upstream-00068-gdcdbe33 #1
-Hardware name: BIOSTAR Group N61PB-M2S/N61PB-M2S, BIOS 6.00 PG 09/03/2009
- ffffffff8193b448 ffff880039da5e60 ffffffff816707c8 ffff880039da5ea0
- ffffffff8108ce8b ffff880039da4010 ffff88003fa8e500 ffff880039da4010
- 0000000000000001 ffff880039da4000 ffff880039da4010 ffff880039da5eb0
-Call Trace:
- [<ffffffff816707c8>] dump_stack+0x19/0x1b
- [<ffffffff8108ce8b>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff8108ced5>] warn_slowpath_null+0x15/0x20
- [<ffffffff810e4745>] tick_nohz_idle_exit+0x195/0x1b0
- [<ffffffff810da755>] cpu_startup_entry+0x205/0x250
- [<ffffffff81661070>] cpu_bringup_and_idle+0x13/0x15
----[ end trace 915c8c486004dda1 ]---
-
-b/c ts_inidle is set to zero. Thomas suggested that we just add a workaround
-to call tick_nohz_idle_enter before returning from xen_play_dead() - and
-that is what this patch does and fixes the issue.
-
-We also add the stable part b/c git commit 4b0c0f294 is on the stable
-tree.
-
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/xen/smp.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 48d7b2c..5f8e4fb 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -17,6 +17,7 @@
- #include <linux/slab.h>
- #include <linux/smp.h>
- #include <linux/irq_work.h>
-+#include <linux/tick.h>
- 
- #include <asm/paravirt.h>
- #include <asm/desc.h>
-@@ -432,6 +433,13 @@ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
- 	play_dead_common();
- 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
- 	cpu_bringup();
-+	/*
-+	 * commit 4b0c0f294 (tick: Cleanup NOHZ per cpu data on cpu down)
-+	 * clears certain data that the cpu_idle loop (which called us
-+	 * and that we return from) expects. The only way to get that
-+	 * data back is to call:
-+	 */
-+	tick_nohz_idle_enter();
- }
- 
- #else /* !CONFIG_HOTPLUG_CPU */
 -- 
-1.8.1.2
+1.8.1.5
 
