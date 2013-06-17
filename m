@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab3FQDJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:09:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51325 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab3FQDJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:09:30 -0400
-Date: Mon, 17 Jun 2013 13:09:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20130617130918.a8a361ff284b1ac2186598ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	id S1755698Ab3FQDNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:13:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59527 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755573Ab3FQDNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 23:13:35 -0400
+Message-ID: <1371438800.22681.38.camel@ul30vt.home>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Date: Sun, 16 Jun 2013 21:13:20 -0600
+In-Reply-To: <1371422343.21896.143.camel@pasglop>
+References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
+	 <1370412673-1345-4-git-send-email-aik@ozlabs.ru>
+	 <1371422343.21896.143.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-06-17 at 08:39 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-06-05 at 16:11 +1000, Alexey Kardashevskiy wrote:
+> > +long kvm_vm_ioctl_create_spapr_tce_iommu(struct kvm *kvm,
+> > +               struct kvm_create_spapr_tce_iommu *args)
+> > +{
+> > +       struct kvmppc_spapr_tce_table *tt = NULL;
+> > +       struct iommu_group *grp;
+> > +       struct iommu_table *tbl;
+> > +
+> > +       /* Find an IOMMU table for the given ID */
+> > +       grp = iommu_group_get_by_id(args->iommu_id);
+> > +       if (!grp)
+> > +               return -ENXIO;
+> > +
+> > +       tbl = iommu_group_get_iommudata(grp);
+> > +       if (!tbl)
+> > +               return -ENXIO;
+> 
+> So Alex Graf pointed out here, there is a security issue here, or are we
+> missing something ?
+> 
+> What prevents a malicious program that has access to /dev/kvm from
+> taking over random iommu groups (including host used ones) that way?
+> 
+> What is the security model of that whole iommu stuff to begin with ?
 
-Hi Dave,
+IOMMU groups themselves don't provide security, they're accessed by
+interfaces like VFIO, which provide the security.  Given a brief look, I
+agree, this looks like a possible backdoor.  The typical VFIO way to
+handle this would be to pass a VFIO file descriptor here to prove that
+the process has access to the IOMMU group.  This is how /dev/vfio/vfio
+gains the ability to setup an IOMMU domain an do mappings with the
+SET_CONTAINER ioctl using a group fd.  Thanks,
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_sdvo.c between commit c3456fb3e471 ("drm/i915:
-prefer VBT modes for SVDO-LVDS over EDID") from Linus' tree and commit
-41aa344866e3 ("drm/i915: Organize VBT stuff inside drm_i915_private")
-from the drm tree.
+Alex
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/i915/intel_sdvo.c
-index d4ea6c2,7068195..0000000
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@@ -1776,17 -1848,14 +1848,17 @@@ static void intel_sdvo_get_lvds_modes(s
-  	 * Assume that the preferred modes are
-  	 * arranged in priority order.
-  	 */
- -	intel_ddc_get_modes(connector, intel_sdvo->i2c);
- -	if (list_empty(&connector->probed_modes) =3D=3D false)
- -		goto end;
- +	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
- =20
- -	/* Fetch modes from VBT */
- +	/*
- +	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
- +	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
- +	 * drm_mode_probed_add adds the mode at the head of the list we add it
- +	 * last.
- +	 */
-- 	if (dev_priv->sdvo_lvds_vbt_mode !=3D NULL) {
-+ 	if (dev_priv->vbt.sdvo_lvds_vbt_mode !=3D NULL) {
-  		newmode =3D drm_mode_duplicate(connector->dev,
-- 					     dev_priv->sdvo_lvds_vbt_mode);
-+ 					     dev_priv->vbt.sdvo_lvds_vbt_mode);
-  		if (newmode !=3D NULL) {
-  			/* Guarantee the mode is preferred */
-  			newmode->type =3D (DRM_MODE_TYPE_PREFERRED |
-
---Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRvn3iAAoJEECxmPOUX5FEinAP/3r1F4jn4E3O56GEdOtBEXtK
-Lffn7hViM2oCYaz3D/YTDHvbWJqlvw9Sy48WiIfZakAi4JSX4o0MOGAu0aOzHpYx
-uHtSIErrB34ZBavsrQghvuGRPikjE9iwh771ezlRwlgLzb+f2WnqiOftt7NRyew7
-9uDjJGfTIy/TR6qxG7rIgCDVIalTqHsGmrhnphOqLeP7kfXMomv5noLTrzXNP9km
-NrcSfiU8yCqNttCeneXbZ2Yn1QDVbOlRM8QQKoFUAuI5tFQhg1hC38vjlMj+tfWS
-5nhwmz1cTeLjd0ehT8EeTSqcE+eGm9Z4qhsZSA6xnVmWOZLBo1f0tUiyDYjr4RPi
-73W+qDBPkL8uFWddJBjyzElJcxL2Tp+L+ET9l+46vAg8ETsV+FJ1OTlgZytVtHh6
-fIC+cR2KHPrddiGUIgGsiBbOpu4ol8TOWUMQOoh/w6w1wV4bAKUMTppj2r+ajvvN
-QcnMrqg9shZduPG14vnRKE1yWxqjQUZTIHHym5qUXv/9ha/YtKtDaiNLGu0s37Y7
-iME0AVxBd4Dq2DRmBw8tPpBopa8k9u2/GNqaSgRa0KIxKcpPCRQzOnwPDshijqNS
-KgUDpChicfrDXc6ZRdfX26PYDQkmN2bsDSfeKWBsXPg45mo6nnNElQgwW19wCZBr
-Fiw+v61N6qMAnlRgPLxJ
-=t22J
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_13_09_18_+1000_.R5VNNYZ5F_nqn8R--
