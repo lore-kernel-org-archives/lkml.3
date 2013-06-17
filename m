@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3FQSZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:25:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48562 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab3FQSZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 14:25:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,882,1363158000"; 
-   d="scan'208";a="355029464"
-Message-ID: <51BF5611.1080307@linux.intel.com>
-Date: Mon, 17 Jun 2013 11:31:45 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754804Ab3FQS1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:27:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39982 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3FQS1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 14:27:50 -0400
+Date: Mon, 17 Jun 2013 11:27:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH/RESEND 01/12] msm_serial: Convert to clk_prepare/unprepare
+Message-ID: <20130617182749.GA15627@kroah.com>
+References: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
+ <1371490999-15501-2-git-send-email-sboyd@codeaurora.org>
+ <20130617175510.GA15370@kroah.com>
+ <20130617180728.GA21158@codeaurora.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH -next v2] thermal:  fix x86_pkg_temp_thermal.c build and
- Kconfig
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au> <51BF4159.1000004@infradead.org> <51BF46C3.3090900@linux.intel.com> <51BF4DA2.40601@infradead.org> <51BF50E3.9000806@linux.intel.com> <51BF5174.805@infradead.org> <20130617181702.GA7217@pd.tnic>
-In-Reply-To: <20130617181702.GA7217@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617180728.GA21158@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 11:17 AM, Borislav Petkov wrote:
-> On Mon, Jun 17, 2013 at 11:12:04AM -0700, Randy Dunlap wrote:
->> On 06/17/13 11:09, Srinivas Pandruvada wrote:
->>> Sorry for this issue. I was about to submit a patch for this,
->>>
->>> You should change to
->>>
->>> depends on X86 && X86_MCE && X86_THERMAL_VECTOR
->> ---
->> From: Randy Dunlap <rdunlap@infradead.org>
->>
->> Fix build error in x86_pkg_temp_thermal.c.  It requires that
->> X86_MCE be enabled, so depend on that symbol.
->> Also, X86_PKG_TEMP_THERMAL is already inside an "if THERMAL" block,
->> so remove that duplicated dependency.
->>
->> ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
->> ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
->>
->> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->> ---
->>   drivers/thermal/Kconfig |    3 +--
->>   1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> --- linux-next-20130617.orig/drivers/thermal/Kconfig
->> +++ linux-next-20130617/drivers/thermal/Kconfig
->> @@ -171,8 +171,7 @@ config INTEL_POWERCLAMP
->>   
->>   config X86_PKG_TEMP_THERMAL
->>   	tristate "X86 package temperature thermal driver"
->> -	depends on THERMAL
->> -	depends on X86
->> +	depends on X86 && X86_MCE && X86_THERMAL_VECTOR
-> X86_THERMAL_VECTOR depends on X86_MCE_INTEL which depends on X86_MCE. So
->
-> 	depends on X86_THERMAL_VECTOR
->
-> should be enough, IMO.
-OK
+On Mon, Jun 17, 2013 at 11:07:28AM -0700, David Brown wrote:
+> On Mon, Jun 17, 2013 at 10:55:10AM -0700, Greg Kroah-Hartman wrote:
+> >On Mon, Jun 17, 2013 at 10:43:08AM -0700, Stephen Boyd wrote:
+> >>Add calls to clk_prepare and unprepare so that MSM can migrate to
+> >>the common clock framework.
+> >>
+> >>Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >
+> >Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >
+> >Or do you want me to take the serial ones through my tree?  It's your
+> >choice, either is fine for me.
+> 
+> I can go ahead and pull them through the MSM tree.
 
+Please do, thanks.
+
+greg k-h
