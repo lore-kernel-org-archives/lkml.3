@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab3FQVKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:10:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54692 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab3FQVKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:10:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: monstr@monstr.eu
-Subject: Re: [PATCH v4 0/7] xilinxfb changes
-Date: Mon, 17 Jun 2013 23:07:18 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@tabi.org>, devicetree-discuss@lists.ozlabs.org,
-        linux-fbdev@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-References: <cover.1370254386.git.michal.simek@xilinx.com> <20130617085640.GE305@game.jcrosoft.org> <51BED093.1040207@monstr.eu>
-In-Reply-To: <51BED093.1040207@monstr.eu>
+	id S1754200Ab3FQVMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:12:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57813 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753739Ab3FQVMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 17:12:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,883,1363158000"; 
+   d="scan'208";a="351294645"
+Message-ID: <51BF7BAA.5030803@intel.com>
+Date: Mon, 17 Jun 2013 14:12:10 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+References: <51B7B128.60909@intel.com> <20130614140940.GA20401@gmail.com> <20130614140215.GA1017@thunk.org> <20130614170028.GA21544@gmail.com> <20130614180054.GB1017@thunk.org> <20130617101033.GA17828@gmail.com>
+In-Reply-To: <20130617101033.GA17828@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306172307.19114.arnd@arndb.de>
-X-Provags-ID: V02:K0:jxKXZe2htRXGeika7pET7ap7rVWZ7ObL8CFQ7Tr3Hdc
- FH2KsI/TGGSzoXGT4n5cLNLGgckYta6oePHE/7Ir4N2T9a0/e2
- P+EAluIB6V4zZYXcLu+mHqE414qew+16Ds3b0OL7l0eHByOU8B
- 6/+kxe0llrQYeqM4hX3zWQp+Q8PD0hqUli3PlmgjC6hXZ+xLCK
- WWgYL15oRguYjHrEgtEBOyk97kfNNQGPkrrbbsXa0fw+f5G1jg
- UfLY1MtNfP94s0R5E7FhRWLewkxna3KBKm9OOTiCAFPq5m5QuA
- 4EqUx7OLAWGHw+73P+3pQ7N75KDOBAprov0RT3IVpJr9ePpZGH
- 2LR1WkSnQlx/UYhCvMl0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 June 2013, Michal Simek wrote:
-> On 06/17/2013 10:56 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > On 07:23 Mon 17 Jun     , Michal Simek wrote:
-> >> On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >>> On 12:13 Mon 03 Jun     , Michal Simek wrote:
-> >>>> Hi,
-> >>>>
-> >>>
-> >>> Arnd can you take look on it again please
-> >>>
-> >>> I'll take a look on it next week
-> >>
-> >> Any update on this?
-> > look ok but I want the Ack from Arnd
+On 06/17/2013 03:10 AM, Zheng Liu wrote:
+> Dave, that would be great if you could do your testing again to confirm
+> this patch is useful.
 
-Sorry for the delay, everything looks good to me.
+I was able to apply this to Ted's
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+	https://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/
+
+"ext4/dev" tree with a bit of fuzz.  What did you generate this against,
+btw?
+
+It does seem to be functioning OK for me, and passes the other tests
+that saw so much spinlock contention previously.  You can add my
+Tested-by if you like.
