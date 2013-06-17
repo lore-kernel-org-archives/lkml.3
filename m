@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab3FQJqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:46:36 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:46071 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188Ab3FQJqe convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Mon, 17 Jun 2013 05:46:34 -0400
-Message-Id: <51BEF71402000078000DEC12@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 17 Jun 2013 10:46:28 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt@console-pimps.org>, "Joey Lee" <JLee@suse.com>
-Cc: "Zach Bobroff" <zacharyb@ami.com>, "Matt Fleming" <matt.fleming@intel.com>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
- <1371139233.6523.272.camel@linux-s257.site>
- <20130617092107.GA5440@console-pimps.org>
-In-Reply-To: <20130617092107.GA5440@console-pimps.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932439Ab3FQJtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:49:36 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47610 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab3FQJtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 05:49:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <51B2948A.60309@intel.com>
+References: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
+ <1370590169-24804-2-git-send-email-alex.shi@intel.com> <CAKfTPtA=pVQ69pfv97kgcdawgHbQbkbXW4sFGN6_bAzZcD9b9Q@mail.gmail.com>
+ <51B2948A.60309@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 02:49:03 -0700
+Message-ID: <CAPM31RK6+kdEcD3xqdvu0dsvL1THkgGnJoU3f7SLx_+9uqym-Q@mail.gmail.com>
+Subject: Re: [RFC patch 1/4] sched: change cfs_rq load avg to unsigned long
+To: Alex Shi <alex.shi@intel.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.06.13 at 11:21, Matt Fleming <matt@console-pimps.org> wrote:
-> On Fri, 14 Jun, at 12:00:33AM, joeyli wrote:
->> > From: Zach Bobroff <zacharyb@ami.com>
->> > --- a/arch/x86/boot/compressed/eboot.c
->> > +++ b/arch/x86/boot/compressed/eboot.c
->> > @@ -1037,18 +1037,20 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
->> >  	efi_memory_desc_t *mem_map;
->> >  	efi_status_t status;
->> >  	__u32 desc_version;
->> > +	bool called_exit = false;
->> >  	u8 nr_entries;
->> >  	int i;
->> >  
->> >  	size = sizeof(*mem_map) * 32;
->> >  
->> >  again:
->> > -	size += sizeof(*mem_map);
->> > +	size += sizeof(*mem_map) * 2;
->> >  	_size = size;
->> >  	status = low_alloc(size, 1, (unsigned long *)&mem_map);
->> 
->> Can we know why increased the size of double *mem_map is big enough?
->> Does there have any real guarantee to be sufficient?
->  
-> It's not guaranteed to be sufficient, it's simply a best guess. If we
-> haven't allocated enough memory to store the memory map we should loop
-> around to the 'again' label anyway. It's just an optimisation, right
-> Zach?
+On Fri, Jun 7, 2013 at 7:18 PM, Alex Shi <alex.shi@intel.com> wrote:
+> On 06/07/2013 05:07 PM, Vincent Guittot wrote:
+>> On 7 June 2013 09:29, Alex Shi <alex.shi@intel.com> wrote:
+>>> > Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
+>>> > smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
+>>> > vaiables to describe them. unsigned long is more efficient and convenience.
+>>> >
+>> Hi Alex,
+>>
+>> I just want to point out that we can't have more than 48388 tasks with
+>> highest priority on a runqueue with an unsigned long on a 32 bits
+>> system.  I don't know if we can reach such kind of limit on a 32bits
+>> machine ? For sure, not on an embedded system.
 
-If that were the case, the code change wouldn't be necessary at
-all, i.e. the increment could remain to be a single array element
-steps.
+This should be ok.
 
->> And, why would doubling the increment be necessary here, but not in
->> __get_map()?
->  
-> Again, we'll grow the map if it isn't large enough.
+Note that:
+  runnable_load_avg = \Sum se->load_avg_contrib <= \Sum
+se->load.weight = cfs_rq->load.weight
 
-But in single element steps only. The question though was why
-doubling the step was necessary (and sufficient) there, but isn't
-also necessary here.
+And load_weight uses unsigned longs also.
 
-To me, all this looks like it is being done on phenomenological basis,
-taking a particular build of a particular firmware implementation as
-the reference. Imo we shouldn't change the code in this way. This
-also applies to the fact that the step is being doubled rather than
-e.g. tripled: With it ending up a "again" anyway (see below), what's
-the point of avoiding one more of the iterations?
+blocked_load_avg must be also safe since anything appearing in blocked
+load could have appeared in runnable load and we've said that was ok
+above.
 
-Generic considerations would result in the increment being at least
-3 * element size; twice the element size assumes that the allocator
-would behave in certain ways (like returning the head or tail part of
-a larger piece of memory).
+Reviewed-By: Paul Turner <pjt@google.com>
 
->> >  	if (status != EFI_SUCCESS)
->> >  		return status;
->> >  
->> > +get_map:
->> 
->> The get_map label is being placed such that the size doesn't
->> get adjusted anymore, yet it is supposed to deal with an allocation
->> having happened during ExitBootServices(), which could have
->> grown the map.
->> 
->> Why doesn't direct goto 'again' label?
->  
-> It makes more sense to query GetMemoryMap() directly first to get the
-> required size of the memory map. Then we jump to 'again' and allocate
-> the correct size.
-
-Ah, okay, I didn't pay attention to this indirectly ending up at
-"again".
-
->> >  	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
->> >  				mem_map, &key, &desc_size, &desc_version);
->> >  	if (status == EFI_BUFFER_TOO_SMALL) {
->> > @@ -1074,8 +1076,20 @@ again:
->> >  	/* Might as well exit boot services now */
->> >  	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
->> >  				handle, key);
->> > -	if (status != EFI_SUCCESS)
->> > -		goto free_mem_map;
->> > +	if (status != EFI_SUCCESS) {
->> > +		/*
->> > +		 * ExitBootServices() will fail if any of the event
->> > +		 * handlers change the memory map. In which case, we
->> > +		 * must be prepared to retry, but only once so that
->> > +		 * we're guaranteed to exit on repeated failures instead
->> > +		 * of spinning forever.
->> > +		 */
->> > +		if (called_exit)
->> > +			goto free_mem_map;
->> > +
->> > +		called_exit = true;
->> 
->> Why a single retry is having reasonable guarantees to work when the
->> original one failed (nothing prevents an event handler to do another
->> allocation the next time through).
->> 
->> Why not retry 3, 4, 5 or even unlimited times?
->  
-> There has to be an upper limit on the number of retries. It seems fair
-> to retry once but any more than that and it's more likely that there's a
-> serious problem and we should bail.
-
-I agree that there ought to be an upper limit. But a single retry here
-again looks like a tailored solution to a particular observed (mis-)
-behavior, rather than something resulting from general considerations.
-
-Jan
+>
+> Thanks question!
+> It should be a talked problem. I just remember the conclusion is when
+> you get the up bound task number, you already run out the memory space
+> on 32 bit.
+>
+> Just for kernel resource for a process, it need 2 pages stack.
+> mm_struct, task_struct, task_stats, vm_area_struct, page table etc.
+> these are already beyond 4 pages. so 4 * 4k * 48388 = 774MB. plus user
+> level resources.
+>
+> So, usually the limited task number in Linux is often far lower this
+> number: $ulimit -u.
+>
+> Anyway, at least, the runnable_load_avg is smaller then load.weight. if
+> load.weight can use long type, runablle_load_avg is no reason can't.
+>
+> --
+> Thanks
+>     Alex
