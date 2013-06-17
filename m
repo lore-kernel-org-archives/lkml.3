@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab3FQKgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:36:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33214 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab3FQKgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:36:22 -0400
-Date: Mon, 17 Jun 2013 11:35:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20130617103557.GC1403@sirena.org.uk>
-References: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
+	id S932645Ab3FQKgc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:36:32 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:61059 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932409Ab3FQKg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:36:29 -0400
+Message-ID: <51BEE6A8.2050307@imgtec.com>
+Date: Mon, 17 Jun 2013 11:36:24 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="otRuG/a1bzWynmKC"
-Content-Disposition: inline
-In-Reply-To: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: pl022: remove unused ret and pins_state variables
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Oleg Nesterov <oleg@redhat.com>,
+        <linux-mips@linux-mips.org>
+CC: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v2] MIPS: Reduce _NSIG from 128 to 127 to avoid BUG_ON
+References: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_17_11_36_26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14/06/13 17:03, James Hogan wrote:
+> MIPS has 128 signals, the highest of which has the number 128 (they
+> start from 1). The following command causes get_signal_to_deliver() to
+> pass this signal number straight through to do_group_exit() as the exit
+> code:
+> 
+>   strace sleep 10 & sleep 1 && kill -128 `pidof sleep`
+> 
+> However do_group_exit() checks for the core dump bit (0x80) in the exit
+> code which matches in this particular case and the kernel panics:
+> 
+>   BUG_ON(exit_code & 0x80); /* core dumps don't get here */
+> 
+> Lets avoid this by changing the ABI by reducing the number of signals to
+> 127 (so that the maximum signal number is 127). Glibc incorrectly sets
+> [__]SIGRTMAX to 127 already. uClibc sets it to 128 so it's conceivable
+> that programs built against uClibc which intentionally uses RT signals
+> from the top (SIGRTMAX-n, n>=0) would need an updated uClibc (and a
+> rebuild if it's crazy enough to use __SIGRTMAX).
 
---otRuG/a1bzWynmKC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm, although this works around the BUG_ON, this doesn't actually seem
+to be sufficient to behave correctly.
 
-On Mon, Jun 17, 2013 at 12:08:15PM +0200, Fabio Baltieri wrote:
-> Removes the warnings:
->=20
-> drivers/spi/spi-pl022.c: In function 'pl022_suspend_resources':
-> drivers/spi/spi-pl022.c:2322:24: warning: unused variable 'pins_state' [-=
-Wunused-variable]
-> drivers/spi/spi-pl022.c:2321:6: warning: unused variable 'ret' [-Wunused-=
-variable]
-> drivers/spi/spi-pl022.c: In function 'pl022_resume_resources':
-> drivers/spi/spi-pl022.c:2334:6: warning: unused variable 'ret' [-Wunused-=
-variable]
->=20
-> introduced in:
->=20
-> f1c9cf0 spi: pl022: use pinctrl PM helpers
+So it appears the exit status is constructed like this:
+bits	purpose
+0x007f	signal number (0-127)
+0x0080	core dump
+0xff00	exit status
 
-Acked-by: Mark Brown <broonie@linaro.org>
+but the macros in waitstatus.h and wait.h in libc
+(see also "man 2 wait"):
+WIFEXITED:   status & 0x7f == 0
+WIFSIGNALED: status & 0x7f in [1..126] (i.e. not 0 or 127)
+WIFSTOPPED:  status & 0xff == 127
 
---otRuG/a1bzWynmKC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So termination due to SIG127 looks like it's been stopped instead of
+terminated via a signal, unless a core dump occurs in which case none of
+the above match.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+(And termination due to SIG128 hits BUG_ON, otherwise would appear to
+have exited normally with core dump).
 
-iQIcBAEBAgAGBQJRvuaKAAoJELSic+t+oim9AsUP/2PqPzsj8t+s0KOTeuMUAM0P
-A68aENNPaWy/5Mt1UQKwcvffJ4gCyLCcYqIAlSRDF+U2ZtgOWIJXirKCmhOmEaGz
-mHuVlHusVcyuAJ8s5nnXOg2KRlYpwmHKUmfkSjUpBUZS1+sDqRh1azH9Mvm7D9+s
-H9hks4/k9ThTn2KHSchl1nipDb4bFFH5MeWE9SIHb6+SBWeX3wQpQCDNxBsXZjlo
-PA0DAqmYmFbh/P7eDWr3pDL+NSuZ4AvzYmz/XsokYqx2LMuYw2E33XIp/IWw7EAE
-kdSo/hBQHAY5hYleDzF8WVoxjqRMW0H6T4AKHRbCldOor8siM+YqUKTELXc6Lsdh
-CtAo7eJGBeCcovbLNMXLKAqLzHm8gpbVYdbtpIKnzTupl+eUX/ByToWorF0fw3UK
-/gj/m76zhWHVTTnS/90qDDtEMcoGq702QHTEprR+LFVtLAo6z5jyiFlEtB8Vxkdh
-fxXNB+er58+Ait5wMFBI9HyvmgKDTmhh/x9ZSY1GfVfOJriw9YmPDs/vhdBAhcXp
-ySM4JxxTKXQrNBrKe4Q4XShKswF4dQQavg7cNm7yGGIM7z10GaKpSS34aK2UX78i
-OszobP0EMl+GShEdFL6vLZ0JG3yEYmYHzE4bU9lPlUNb6NXOAFb9FzfxTlR0lRW5
-XBUQY2foi6EKusao5FUo
-=Pf3x
------END PGP SIGNATURE-----
 
---otRuG/a1bzWynmKC--
+Reducing number of signals to 126 to avoid this will change the glibc
+ABI too, in which case we may as well reduce to 64 to match other
+arches, which is more likely to break something (I'm not really
+comfortable making that change).
+
+Reducing to 127 (this patch) still leaves incorrect exit status codes
+for SIG127, in which case we may as well leave it at 128, workaround the
+BUG_ON and just accept that exit codes may refer to the wrong signal
+number in the "terminated by SIG127 or SIG128" cases (something like the
+first patch I sent, but with maximum reduced to 126). It would probably
+be sensible to then reduce number of signals hardcoded in the C
+libraries to avoid these problematic signals (which wouldn't be an ABI
+break).
+
+Any further thoughts/opinions?
+
+Cheers
+James
+
