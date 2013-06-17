@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3FQPRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:17:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62250 "EHLO mx1.redhat.com"
+	id S1752782Ab3FQPSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:18:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3FQPOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:14:34 -0400
+	id S1752042Ab3FQPOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:14:33 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,108 +15,147 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v3 09/13] locks: turn the blocked_list into a hashtable
-Date: Mon, 17 Jun 2013 11:13:52 -0400
-Message-Id: <1371482036-15958-10-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 08/13] locks: convert fl_link to a hlist_node
+Date: Mon, 17 Jun 2013 11:13:51 -0400
+Message-Id: <1371482036-15958-9-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Break up the blocked_list into a hashtable, using the fl_owner as a key.
-This speeds up searching the hash chains, which is especially significant
-for deadlock detection.
-
-Note that the initial implementation assumes that hashing on fl_owner is
-sufficient. In most cases it should be, with the notable exception being
-server-side lockd, which compares ownership using a tuple of the
-nlm_host and the pid sent in the lock request. So, this may degrade to a
-single hash bucket when you only have a single NFS client. That will be
-addressed in a later patch.
-
-The careful observer may note that this patch leaves the file_lock_list
-alone. There's much less of a case for turning the file_lock_list into a
-hashtable. The only user of that list is the code that generates
-/proc/locks, and it always walks the entire list.
+Testing has shown that iterating over the blocked_list for deadlock
+detection turns out to be a bottleneck. In order to alleviate that,
+begin the process of turning it into a hashtable. We start by turning
+the fl_link into a hlist_node and the global lists into hlists. A later
+patch will do the conversion of the blocked_list to a hashtable.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- fs/locks.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
+ fs/locks.c         |   24 ++++++++++++------------
+ include/linux/fs.h |    2 +-
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/fs/locks.c b/fs/locks.c
-index 32826ed..d93b291 100644
+index a8f3b33..32826ed 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -126,6 +126,7 @@
- #include <linux/time.h>
- #include <linux/rcupdate.h>
- #include <linux/pid_namespace.h>
-+#include <linux/hashtable.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -160,12 +161,20 @@ int lease_break_time = 45;
- static HLIST_HEAD(file_lock_list);
+@@ -157,13 +157,13 @@ int lease_break_time = 45;
+  * The global file_lock_list is only used for displaying /proc/locks. Protected
+  * by the file_lock_lock.
+  */
+-static LIST_HEAD(file_lock_list);
++static HLIST_HEAD(file_lock_list);
  
  /*
-- * The blocked_list is used to find POSIX lock loops for deadlock detection.
-- * Protected by file_lock_lock.
-+ * The blocked_hash is used to find POSIX lock loops for deadlock detection.
-+ * It is protected by file_lock_lock.
-+ *
-+ * We hash locks by lockowner in order to optimize searching for the lock a
-+ * particular lockowner is waiting on.
-+ *
-+ * FIXME: make this value scale via some heuristic? We generally will want more
-+ * buckets when we have more lockowners holding locks, but that's a little
-+ * difficult to determine without knowing what the workload will look like.
+  * The blocked_list is used to find POSIX lock loops for deadlock detection.
+  * Protected by file_lock_lock.
   */
--static HLIST_HEAD(blocked_list);
-+#define BLOCKED_HASH_BITS	7
-+static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+-static LIST_HEAD(blocked_list);
++static HLIST_HEAD(blocked_list);
  
--/* Protects the two list heads above, and fl->fl_block list. */
-+/* Protects the file_lock_list, the blocked_hash and fl->fl_block list */
+ /* Protects the two list heads above, and fl->fl_block list. */
  static DEFINE_SPINLOCK(file_lock_lock);
+@@ -172,7 +172,7 @@ static struct kmem_cache *filelock_cache __read_mostly;
  
- static struct kmem_cache *filelock_cache __read_mostly;
-@@ -499,13 +508,13 @@ locks_delete_global_locks(struct file_lock *waiter)
+ static void locks_init_lock_heads(struct file_lock *fl)
+ {
+-	INIT_LIST_HEAD(&fl->fl_link);
++	INIT_HLIST_NODE(&fl->fl_link);
+ 	INIT_LIST_HEAD(&fl->fl_block);
+ 	init_waitqueue_head(&fl->fl_wait);
+ }
+@@ -206,7 +206,7 @@ void locks_free_lock(struct file_lock *fl)
+ {
+ 	BUG_ON(waitqueue_active(&fl->fl_wait));
+ 	BUG_ON(!list_empty(&fl->fl_block));
+-	BUG_ON(!list_empty(&fl->fl_link));
++	BUG_ON(!hlist_unhashed(&fl->fl_link));
+ 
+ 	locks_release_private(fl);
+ 	kmem_cache_free(filelock_cache, fl);
+@@ -484,7 +484,7 @@ static inline void
+ locks_insert_global_locks(struct file_lock *waiter)
+ {
+ 	spin_lock(&file_lock_lock);
+-	list_add_tail(&waiter->fl_link, &file_lock_list);
++	hlist_add_head(&waiter->fl_link, &file_lock_list);
+ 	spin_unlock(&file_lock_lock);
+ }
+ 
+@@ -492,20 +492,20 @@ static inline void
+ locks_delete_global_locks(struct file_lock *waiter)
+ {
+ 	spin_lock(&file_lock_lock);
+-	list_del_init(&waiter->fl_link);
++	hlist_del_init(&waiter->fl_link);
+ 	spin_unlock(&file_lock_lock);
+ }
+ 
  static inline void
  locks_insert_global_blocked(struct file_lock *waiter)
  {
--	hlist_add_head(&waiter->fl_link, &blocked_list);
-+	hash_add(blocked_hash, &waiter->fl_link, (unsigned long)waiter->fl_owner);
+-	list_add(&waiter->fl_link, &blocked_list);
++	hlist_add_head(&waiter->fl_link, &blocked_list);
  }
  
  static inline void
  locks_delete_global_blocked(struct file_lock *waiter)
  {
--	hlist_del_init(&waiter->fl_link);
-+	hash_del(&waiter->fl_link);
+-	list_del_init(&waiter->fl_link);
++	hlist_del_init(&waiter->fl_link);
  }
  
  /* Remove waiter from blocker's block list.
-@@ -730,7 +739,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+@@ -730,7 +730,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
  {
  	struct file_lock *fl;
  
--	hlist_for_each_entry(fl, &blocked_list, fl_link) {
-+	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
+-	list_for_each_entry(fl, &blocked_list, fl_link) {
++	hlist_for_each_entry(fl, &blocked_list, fl_link) {
  		if (posix_same_owner(fl, block_fl))
  			return fl->fl_next;
  	}
-@@ -866,7 +875,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	/*
- 	 * New lock request. Walk all POSIX locks and look for conflicts. If
- 	 * there are any, either return error or put the request on the
--	 * blocker's list of waiters and the global blocked_list.
-+	 * blocker's list of waiters and the global blocked_hash.
- 	 */
- 	if (request->fl_type != F_UNLCK) {
- 		for_each_lock(inode, before) {
+@@ -2285,7 +2285,7 @@ static int locks_show(struct seq_file *f, void *v)
+ {
+ 	struct file_lock *fl, *bfl;
+ 
+-	fl = list_entry(v, struct file_lock, fl_link);
++	fl = hlist_entry(v, struct file_lock, fl_link);
+ 
+ 	lock_get_status(f, fl, *((loff_t *)f->private), "");
+ 
+@@ -2301,14 +2301,14 @@ static void *locks_start(struct seq_file *f, loff_t *pos)
+ 
+ 	spin_lock(&file_lock_lock);
+ 	*p = (*pos + 1);
+-	return seq_list_start(&file_lock_list, *pos);
++	return seq_hlist_start(&file_lock_list, *pos);
+ }
+ 
+ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ {
+ 	loff_t *p = f->private;
+ 	++*p;
+-	return seq_list_next(v, &file_lock_list, pos);
++	return seq_hlist_next(v, &file_lock_list, pos);
+ }
+ 
+ static void locks_stop(struct seq_file *f, void *v)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e2f896d..3b340f7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -946,7 +946,7 @@ int locks_in_grace(struct net *);
+  */
+ struct file_lock {
+ 	struct file_lock *fl_next;	/* singly linked list for this inode  */
+-	struct list_head fl_link;	/* doubly linked list of all locks */
++	struct hlist_node fl_link;	/* node in global lists */
+ 	struct list_head fl_block;	/* circular list of blocked processes */
+ 	fl_owner_t fl_owner;
+ 	unsigned int fl_flags;
 -- 
 1.7.1
 
