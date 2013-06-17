@@ -1,142 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3FQPTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:19:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab3FQPOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:14:32 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
-Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v3 05/13] locks: encapsulate the fl_link list handling
-Date: Mon, 17 Jun 2013 11:13:48 -0400
-Message-Id: <1371482036-15958-6-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
-References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
+	id S1752409Ab3FQPVN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:21:13 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:39116 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3FQPVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:21:11 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v4 00/11] media: davinci: vpif driver cleanup
+Date: Mon, 17 Jun 2013 20:50:40 +0530
+Message-Id: <1371482451-18314-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the fl_link list handling routines into a separate set of helpers.
-Also ensure that locks and requests are always put on global lists
-last (after fully initializing them) and are taken off before unintializing
-them.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c |   45 ++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 36 insertions(+), 9 deletions(-)
+This patch series cleans the VPIF driver, uses devm_* api wherever
+required and uses module_platform_driver() to simplify the code.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index c186649..c0e613f 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -153,13 +153,15 @@ int lease_break_time = 45;
- #define for_each_lock(inode, lockp) \
- 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
- 
-+/* The global file_lock_list is only used for displaying /proc/locks. */
- static LIST_HEAD(file_lock_list);
-+
-+/* The blocked_list is used to find POSIX lock loops for deadlock detection. */
- static LIST_HEAD(blocked_list);
-+
-+/* Protects the two list heads above, plus the inode->i_flock list */
- static DEFINE_SPINLOCK(file_lock_lock);
- 
--/*
-- * Protects the two list heads above, plus the inode->i_flock list
-- */
- void lock_flocks(void)
- {
- 	spin_lock(&file_lock_lock);
-@@ -484,13 +486,37 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
- 	return fl1->fl_owner == fl2->fl_owner;
- }
- 
-+static inline void
-+locks_insert_global_locks(struct file_lock *waiter)
-+{
-+	list_add_tail(&waiter->fl_link, &file_lock_list);
-+}
-+
-+static inline void
-+locks_delete_global_locks(struct file_lock *waiter)
-+{
-+	list_del_init(&waiter->fl_link);
-+}
-+
-+static inline void
-+locks_insert_global_blocked(struct file_lock *waiter)
-+{
-+	list_add(&waiter->fl_link, &blocked_list);
-+}
-+
-+static inline void
-+locks_delete_global_blocked(struct file_lock *waiter)
-+{
-+	list_del_init(&waiter->fl_link);
-+}
-+
- /* Remove waiter from blocker's block list.
-  * When blocker ends up pointing to itself then the list is empty.
-  */
- static void __locks_delete_block(struct file_lock *waiter)
- {
-+	locks_delete_global_blocked(waiter);
- 	list_del_init(&waiter->fl_block);
--	list_del_init(&waiter->fl_link);
- 	waiter->fl_next = NULL;
- }
- 
-@@ -512,10 +538,10 @@ static void locks_insert_block(struct file_lock *blocker,
- 			       struct file_lock *waiter)
- {
- 	BUG_ON(!list_empty(&waiter->fl_block));
--	list_add_tail(&waiter->fl_block, &blocker->fl_block);
- 	waiter->fl_next = blocker;
-+	list_add_tail(&waiter->fl_block, &blocker->fl_block);
- 	if (IS_POSIX(blocker))
--		list_add(&waiter->fl_link, &blocked_list);
-+		locks_insert_global_blocked(request);
- }
- 
- /*
-@@ -543,13 +569,13 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
-  */
- static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
- {
--	list_add(&fl->fl_link, &file_lock_list);
--
- 	fl->fl_nspid = get_pid(task_tgid(current));
- 
- 	/* insert into file's list */
- 	fl->fl_next = *pos;
- 	*pos = fl;
-+
-+	locks_insert_global_locks(fl);
- }
- 
- /*
-@@ -562,9 +588,10 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
- {
- 	struct file_lock *fl = *thisfl_p;
- 
-+	locks_delete_global_locks(fl);
-+
- 	*thisfl_p = fl->fl_next;
- 	fl->fl_next = NULL;
--	list_del_init(&fl->fl_link);
- 
- 	if (fl->fl_nspid) {
- 		put_pid(fl->fl_nspid);
+This patch series applies on http://git.linuxtv.org/hverkuil/media_tree.git/
+shortlog/refs/heads/for-v3.11 and is tested on OMAP-L138 EVM.
+
+Changes for v2:
+1: Rebased on v3.11 branch of Hans.
+2: Dropped the patches which removed headers as mentioned by Laurent.
+
+Changes for v3:
+1: Splitted the patches logically as mentioned by Laurent.
+2: Fixed review comments pointed by Laurent.
+3: Included Ack's.
+
+Changes for v4:
+1: Rebased on v3.11 branch of Hans.
+2: Fixed review comments pointed by Laurent and Sergei.
+3: Included Ack's.
+4: Removed unnecessary loop for IRQ resource.
+
+
+Lad, Prabhakar (11):
+  media: davinci: vpif: remove unwanted header mach/hardware.h and sort
+    the includes alphabetically
+  media: davinci: vpif: Convert to devm_* api
+  media: davinci: vpif: remove unnecessary braces around defines
+  media: davinci: vpif_capture: move the freeing of irq and global
+    variables to remove()
+  media: davinci: vpif_capture: use module_platform_driver()
+  media: davinci: vpif_capture: Convert to devm_* api
+  media: davinci: vpif_capture: remove unnecessary loop for IRQ
+    resource
+  media: davinci: vpif_display: move the freeing of irq and global
+    variables to remove()
+  media: davinci: vpif_display: use module_platform_driver()
+  media: davinci: vpif_display: Convert to devm_* api
+  media: davinci: vpif_display: remove unnecessary loop for IRQ
+    resource
+
+ drivers/media/platform/davinci/vpif.c         |   45 ++++-----------
+ drivers/media/platform/davinci/vpif_capture.c |   76 +++++--------------------
+ drivers/media/platform/davinci/vpif_display.c |   65 +++++----------------
+ 3 files changed, 39 insertions(+), 147 deletions(-)
+
 -- 
-1.7.1
+1.7.9.5
 
