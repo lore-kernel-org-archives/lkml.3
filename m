@@ -1,152 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab3FQUzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:55:36 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:63360 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab3FQUze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:55:34 -0400
-Message-ID: <51BF77C2.70004@gmail.com>
-Date: Mon, 17 Jun 2013 15:55:30 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Wolfram Sang <wsa@the-dreams.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH REBASE] i2c-designware: make SDA hold time configurable
-References: <20130514110745.GA10906@intel.com> <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
-In-Reply-To: <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753943Ab3FQU4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:56:04 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:58531 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753578Ab3FQU4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 16:56:02 -0400
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+To: arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: maxime.ripard@free-electrons.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, andy.shevchenko@gmail.com,
+        linux@arm.linux.org.uk, linus.walleij@linaro.org,
+        linux-sunxi@googlegroups.com, Oliver Schinagl <oliver@schinagl.nl>
+Subject: [PATCH] Add sunxi-sid to dts for sun4i and sun5i
+Date: Mon, 17 Jun 2013 22:53:44 +0200
+Message-Id: <1371502424-15054-2-git-send-email-oliver+list@schinagl.nl>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1371502424-15054-1-git-send-email-oliver+list@schinagl.nl>
+References: <1371502424-15054-1-git-send-email-oliver+list@schinagl.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 08:04 AM, Christian Ruppert wrote:
-> This patch makes the SDA hold time configurable through device tree.
-> 
-> [rebased to i2c-current/i2c-next/mainline-3.10-rc1]
-> 
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> ---
->  .../devicetree/bindings/i2c/i2c-designware.txt     |   14 ++++++++++++++
->  drivers/i2c/busses/i2c-designware-core.c           |    5 +++++
->  drivers/i2c/busses/i2c-designware-core.h           |    1 +
->  drivers/i2c/busses/i2c-designware-platdrv.c        |    9 +++++++++
->  4 files changed, 29 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-> index e42a2ee..21fabe7 100644
-> --- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-> @@ -10,6 +10,9 @@ Recommended properties :
->  
->   - clock-frequency : desired I2C bus clock frequency in Hz.
->  
-> +Optional properties :
-> + - sda-hold-time : should contain the SDA hold time in nanoseconds.
+From: Oliver Schinagl <oliver@schinagl.nl>
 
-Please specify time units in the property name. Perhaps
-i2c-sda-hold-time-ns.
+This patch shall add support for the sunxi-sid driver to the device table for
+sun4i and sun5i.
 
-Based on reading the discussion, there is one similar property I have
-found: "samsung,i2c-sda-delay = <100>". I wouldn't copy it as it doesn't
-tell the units or what the delay is.
+Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+---
+ arch/arm/boot/dts/sun4i-a10.dtsi | 5 +++++
+ arch/arm/boot/dts/sun5i-a13.dtsi | 5 +++++
+ 2 files changed, 10 insertions(+)
 
-Otherwise, looks fine to me.
-
-Rob
-
-> +
->  Example :
->  
->  	i2c@f0000 {
-> @@ -20,3 +23,14 @@ Example :
->  		interrupts = <11>;
->  		clock-frequency = <400000>;
->  	};
-> +
-> +	i2c@1120000 {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "snps,designware-i2c";
-> +		reg = <0x1120000 0x1000>;
-> +		interrupt-parent = <&ictl>;
-> +		interrupts = <12 1>;
-> +		clock-frequency = <400000>;
-> +		sda-hold-time = <300>;
-> +	};
-> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-> index 21fbb34..91d422c 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.c
-> +++ b/drivers/i2c/busses/i2c-designware-core.c
-> @@ -67,6 +67,7 @@
->  #define DW_IC_STATUS		0x70
->  #define DW_IC_TXFLR		0x74
->  #define DW_IC_RXFLR		0x78
-> +#define DW_IC_SDA_HOLD		0x7c
->  #define DW_IC_TX_ABRT_SOURCE	0x80
->  #define DW_IC_ENABLE_STATUS	0x9c
->  #define DW_IC_COMP_PARAM_1	0xf4
-> @@ -332,6 +333,10 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
->  	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
->  	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
->  
-> +	/* Configure SDA Hold Time if required */
-> +	if (dev->sda_hold_time)
-> +		dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
-> +
->  	/* Configure Tx/Rx FIFO threshold levels */
->  	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
->  	dw_writel(dev, 0, DW_IC_RX_TL);
-> diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-> index 9c1840e..33dfec3 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.h
-> +++ b/drivers/i2c/busses/i2c-designware-core.h
-> @@ -88,6 +88,7 @@ struct dw_i2c_dev {
->  	u32			master_cfg;
->  	unsigned int		tx_fifo_depth;
->  	unsigned int		rx_fifo_depth;
-> +	u32			sda_hold_time;
->  };
->  
->  #define ACCESS_SWAP		0x00000001
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index 8ec9133..589f414 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -34,6 +34,7 @@
->  #include <linux/sched.h>
->  #include <linux/err.h>
->  #include <linux/interrupt.h>
-> +#include <linux/of.h>
->  #include <linux/of_i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/pm.h>
-> @@ -120,6 +121,14 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		return PTR_ERR(dev->clk);
->  	clk_prepare_enable(dev->clk);
->  
-> +	if (pdev->dev.of_node) {
-> +		u32 ht;
-> +		u32 ic_clk = dev->get_clk_rate_khz(dev);
-> +
-> +		of_property_read_u32(pdev->dev.of_node, "sda-hold-time", &ht);
-> +		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
-> +	}
-> +
->  	dev->functionality =
->  		I2C_FUNC_I2C |
->  		I2C_FUNC_10BIT_ADDR |
-> 
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index e7ef619..bc71d64 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -213,6 +213,11 @@
+ 			reg = <0x01c20c90 0x10>;
+ 		};
+ 
++		sid: eeprom@01c23800 {
++			compatible = "allwinner,sun4i-sid";
++			reg = <0x01c23800 0x10>;
++		};
++
+ 		uart0: serial@01c28000 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28000 0x400>;
+diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
+index 8ba65c1..c80c81b 100644
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -196,6 +196,11 @@
+ 			reg = <0x01c20c90 0x10>;
+ 		};
+ 
++		sid: eeprom@01c23800 {
++			compatible = "allwinner,sun4i-sid";
++			reg = <0x01c23800 0x10>;
++		};
++
+ 		uart1: serial@01c28400 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28400 0x400>;
+-- 
+1.8.1.5
 
