@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab3FQLzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:55:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48937 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932390Ab3FQLzT (ORCPT
+	id S932801Ab3FQLza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:55:30 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53811 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab3FQLz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 07:55:19 -0400
-Message-ID: <1371470111.3495.5.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [68/83] ath9k: Disable PowerSave by default
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 17 Jun 2013 12:55:11 +0100
-In-Reply-To: <87fvwhrrhx.fsf@canonical.com>
-References: <lsq.1371420098.113375664@decadent.org.uk>
-	 <87fvwhrrhx.fsf@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-oW8Obraw7ry9HR3nKW+r"
-X-Mailer: Evolution 3.4.4-3 
+	Mon, 17 Jun 2013 07:55:26 -0400
+X-Nat-Received: from [202.181.97.72]:63524 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1371470113.6650
+To: davidlohr.bueso@hp.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
+Message-Id: <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 17 Jun 2013 20:55:04 +0900
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17062013 #10352088, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I got this.
 
---=-oW8Obraw7ry9HR3nKW+r
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+===============================
+[ INFO: suspicious RCU usage. ]
+3.10.0-rc6-next-20130617 #7 Not tainted
+-------------------------------
+include/linux/rcupdate.h:475 Illegal context switch in RCU read-side critical section!
 
-On Mon, 2013-06-17 at 10:55 +0100, Luis Henriques wrote:
-> Ben Hutchings <ben@decadent.org.uk> writes:
->=20
-> > 3.2.47-rc1 review patch.  If anyone has any objections, please let me k=
-now.
-> >
-> > ------------------
-> >
-> > From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-> >
-> > commit 73c79617596b89a3693ff0d89d42bcd5ddedcf15 upstream.
->=20
-> This SHA1 seems to be wrong, you probably meant
-> 531671cb17af07281e6f28c1425f754346e65c41.
-
-What I did here was to resolve the slightly different context by
-substituting in the patch I'd already applied to Debian.
-
-I failed to notice that the same change had been committed on two
-branches - the one above is for the earlier commit which is only in
-wireless-next.  I also failed to add my Signed-off-by.
-
-Ben.
-
---=20
-Ben Hutchings
-The generation of random numbers is too important to be left to chance.
-                                                            - Robert Coveyo=
-u
+other info that might help us debug this:
 
 
---=-oW8Obraw7ry9HR3nKW+r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+rcu_scheduler_active = 1, debug_locks = 1
+2 locks held by udevd/1909:
+ #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
+ #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+stack backtrace:
+CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
+Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
+ 00000001 da591e94 c0677931 00000001 da591ebc c0199606 c07f690d c07f83fa
+ 00000001 00000001 c07e7904 00000000 000001a8 c081e5f7 da591ee4 c0176231
+ 00000246 00000002 00000001 00000000 00000000 000000d0 deee0f0c ffffffe4
+Call Trace:
+ [<c0677931>] dump_stack+0x4c/0x6b
+ [<c0199606>] lockdep_rcu_suspicious+0xc6/0x100
+ [<c0176231>] __might_sleep+0xb1/0x200
+ [<c04098f1>] idr_preload+0xa1/0xd0
+ [<c038b4d2>] ipc_addid+0x52/0x190
+ [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
+ [<c038e7aa>] newary+0xba/0x1a0
+ [<c038c4be>] ipcget+0x4e/0x70
+ [<c019d7a2>] ? __lock_release+0x72/0x1b0
+ [<c038e6cf>] SyS_semget+0x6f/0x80
+ [<c038e6f0>] ? sem_security+0x10/0x10
+ [<c038e6e0>] ? SyS_semget+0x80/0x80
+ [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
+ [<c0392ab3>] SyS_ipc+0xa3/0x250
+ [<c0235426>] ? vm_munmap+0x46/0x60
+ [<c067c89a>] sysenter_do_call+0x12/0x32
+BUG: sleeping function called from invalid context at lib/idr.c:424
+in_atomic(): 1, irqs_disabled(): 0, pid: 1909, name: udevd
+2 locks held by udevd/1909:
+ #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
+ #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
+CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
+Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
+ 000001a8 da591ebc c0677931 da594260 da591ee4 c01762dd c07e79fc 00000001
+ 00000000 00000775 da594518 000000d0 deee0f0c ffffffe4 da591ef0 c04098f1
+ c08e2b84 da591f10 c038b4d2 da591f10 c038dfbd ffffffff 00000001 c08e2b80
+Call Trace:
+ [<c0677931>] dump_stack+0x4c/0x6b
+ [<c01762dd>] __might_sleep+0x15d/0x200
+ [<c04098f1>] idr_preload+0xa1/0xd0
+ [<c038b4d2>] ipc_addid+0x52/0x190
+ [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
+ [<c038e7aa>] newary+0xba/0x1a0
+ [<c038c4be>] ipcget+0x4e/0x70
+ [<c019d7a2>] ? __lock_release+0x72/0x1b0
+ [<c038e6cf>] SyS_semget+0x6f/0x80
+ [<c038e6f0>] ? sem_security+0x10/0x10
+ [<c038e6e0>] ? SyS_semget+0x80/0x80
+ [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
+ [<c0392ab3>] SyS_ipc+0xa3/0x250
+ [<c0235426>] ? vm_munmap+0x46/0x60
+ [<c067c89a>] sysenter_do_call+0x12/0x32
 
-iQIVAwUAUb75H+e/yOyVhhEJAQpntRAAlzA084IzeqhuUitm4ghFJBeYioUGQEMh
-zr17qzun2kSwQAGJ8G4o/JWTXOT4MZV+FVTXqjiCofXI5gmswW6hn3uSs/AMjMou
-nBvjx4oJWkpCq44cTrYSeZzqMHy4uxPaRYM5nRFrdK1pwVcAgXx23Wm9utLzYlav
-MjaUobwi0CkKi8OrfOsVZ6qV4xwsqffWz+kJ8HXAE6Y2MQ1UjAj2cbirURKwn7Vb
-0lZ4VOyusERr+a0+m6mjmDTkjpOtGDX7ReePuQdm++iCUhqs2u9Oop58FMGtUQM/
-yqeYFtxLi8BTvhN4LjfldU2Jxlm2+oYAxPRm+CUGojdsz+9LzVUuIyfjlYGO2P2T
-ljsbbenTyGUVxaJ82V2p54GMVd+nePLOq3bw87RdF5+1jlK3walt220B9xXa/oM4
-urX7r9Z21yhZ9o/6VjJdxe4ou1UOOOFH3Fn4tm4pnz5cGa5seJpnTc5c1RbHmMkX
-UHHGCQMpKCnVQe1iU1+g2SSfw0QbiW8a0xXznaqfGAPtKH+19pxs6Qd0zoyMbyRO
-dSZ3ZdE0PpvKKwY6e1kXskwfqTlaiiLt4n3LcnP9kXtJYpZ9NUEAFdBn55z9kZSf
-SBEG+iQaRULKWcixPWPpr1M+oGlbKueV7UKf0OgsdI9FAvzpYIg50gl1XsJ+PgYP
-FZn9e1ZH0wE=
-=WAAi
------END PGP SIGNATURE-----
+----------
+>From da6fbd77764e01cd611bd488666f349c11e1d4f3 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 17 Jun 2013 20:49:25 +0900
+Subject: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
 
---=-oW8Obraw7ry9HR3nKW+r--
+Commit 4964214b "ipc: move rcu lock out of ipc_addid" moved
+idr_preload(GFP_KERNEL) into RCU read-side critical section.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ ipc/util.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/ipc/util.c b/ipc/util.c
+index a746abb..00aca85 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -261,7 +261,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+ 	if (ids->in_use >= size)
+ 		return -ENOSPC;
+ 
+-	idr_preload(GFP_KERNEL);
++	idr_preload(GFP_ATOMIC);
+ 
+ 	spin_lock_init(&new->lock);
+ 	new->deleted = 0;
+-- 
+1.7.1
