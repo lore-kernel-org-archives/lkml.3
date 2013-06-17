@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3FQJjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:39:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38569 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab3FQJjB (ORCPT
+	id S932356Ab3FQJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:40:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52883 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab3FQJk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 05:39:01 -0400
-Date: Mon, 17 Jun 2013 11:38:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com, Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 9/9] sched/tg: remove blocked_load_avg in balance
-Message-ID: <20130617093838.GN3204@twins.programming.kicks-ass.net>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
- <1370589652-24549-10-git-send-email-alex.shi@intel.com>
+	Mon, 17 Jun 2013 05:40:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370589652-24549-10-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130617092146.GM3204@twins.programming.kicks-ass.net>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+ <1370589652-24549-4-git-send-email-alex.shi@intel.com> <CAPM31RJFsh_gBXBHc4E6z=MtORR9D8sWs=86Yqy9onxK9x9fOg@mail.gmail.com>
+ <51BB25BC.9070500@intel.com> <20130617092146.GM3204@twins.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 02:39:53 -0700
+Message-ID: <CAPM31RKnosQ21GbiG7txV1roCzzYh1u_8i+EBBp8mP3q-ZWVCA@mail.gmail.com>
+Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
+ forked task
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 03:20:52PM +0800, Alex Shi wrote:
-> blocked_load_avg sometime is too heavy and far bigger than runnable load
-> avg, that make balance make wrong decision. So remove it.
-> 
-> Changlong tested this patch, found ltp cgroup stress testing get better
-> performance: https://lkml.org/lkml/2013/5/23/65
-> ---
-> 3.10-rc1          patch1-7         patch1-8
-> duration=764   duration=754   duration=750
-> duration=764   duration=754   duration=751
-> duration=763   duration=755   duration=751
-> 
-> duration means the seconds of testing cost.
-> ---
-> 
-> And Jason also tested this patchset on his 8 sockets machine:
-> https://lkml.org/lkml/2013/5/29/673
-> ---
-> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-> improvement in performance of the workload compared to when using the
-> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-> kernel with just patches 1-7, the performance improvement of the
-> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
-> ---
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Tested-by: Changlong Xie <changlongx.xie@intel.com>
-> Tested-by: Jason Low <jason.low2@hp.com>
-> ---
->  kernel/sched/fair.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 3aa1dc0..985d47e 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1358,7 +1358,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->  	struct task_group *tg = cfs_rq->tg;
->  	s64 tg_contrib;
->  
-> -	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-> +	tg_contrib = cfs_rq->runnable_load_avg;
->  	tg_contrib -= cfs_rq->tg_load_contrib;
->  
->  	if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+I actually did read it before, and still wasn't sure of the right tag to use.
 
-PJT ping! ;-)
+"13) When to use Acked-by: and Cc:
+
+The Signed-off-by: tag indicates that the signer was involved in the
+development of the patch, or that he/she was in the patch's delivery path.
+
+If a person was not directly involved in the preparation or handling of a
+patch but wishes to signify and record their approval of it then they can
+arrange to have an Acked-by: line added to the patch's changelog."
+https://www.kernel.org/doc/Documentation/SubmittingPatches
+
+Acked-By seemed to fail the direct involvement test.
+The definition of "delivery path" is not clear; is this strictly by
+inputs to Linus' tree or recipients of the original patch?
+
+Is Reviewed-By always more appropriate here?
+
+
+
+On Mon, Jun 17, 2013 at 2:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Jun 14, 2013 at 10:16:28PM +0800, Alex Shi wrote:
+>> On 06/14/2013 07:09 PM, Paul Turner wrote:
+>> > Minor comments; looks good otherwise.
+>> >
+>> > Signed-off-by: Paul Turner <pjt@google.com>
+>>
+>> thanks a lot Paul. the patch with your input updated here:
+>>
+>> BTW, would you like to give some comments on the last patch of this patchset?
+>>
+>> ---
+>> From ed35080d0bae803d68f84a3e683d34a356a5a5de Mon Sep 17 00:00:00 2001
+>> From: Alex Shi <alex.shi@intel.com>
+>> Date: Tue, 14 May 2013 09:41:09 +0800
+>> Subject: [PATCH 3/8] sched: set initial value of runnable avg for new forked
+>>  task
+>>
+>> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
+>> new forked task.
+>> Otherwise random values of above variables cause mess when do new task
+>> enqueue:
+>>     enqueue_task_fair
+>>         enqueue_entity
+>>             enqueue_entity_load_avg
+>>
+>> and make forking balancing imbalance since incorrect load_avg_contrib.
+>>
+>> Further more, Morten Rasmussen notice some tasks were not launched at
+>> once after created. So Paul and Peter suggest giving a start value for
+>> new task runnable avg time same as sched_slice().
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> Signed-off-by: Paul Turner <pjt@google.com>
+>
+> Should you all go read: Documentation/SubmittingPatches , or am I
+> somehow confused on the SoB rules?
