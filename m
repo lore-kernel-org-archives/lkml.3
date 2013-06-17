@@ -1,124 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab3FQSBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:01:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50401 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3FQRbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Gabor Juhos <juhosg@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 04/84] ath9k: use correct OTP register offsets for AR9550
-Date: Mon, 17 Jun 2013 10:30:08 -0700
-Message-Id: <1371490288-23167-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755517Ab3FQSDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:03:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38414 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753992Ab3FQSDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 14:03:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,882,1363158000"; 
+   d="scan'208";a="355020380"
+Message-ID: <51BF50E3.9000806@linux.intel.com>
+Date: Mon, 17 Jun 2013 11:09:39 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH -next] thermal:  fix x86_pkg_temp_thermal.c build and
+ Kconfig
+References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au> <51BF4159.1000004@infradead.org> <51BF46C3.3090900@linux.intel.com> <51BF4DA2.40601@infradead.org>
+In-Reply-To: <51BF4DA2.40601@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.3 -stable review patch.  If anyone has any objections, please let me know.
+Sorry for this issue. I was about to submit a patch for this,
 
-------------------
+You should change to
 
-From: Gabor Juhos <juhosg@openwrt.org>
+depends on X86 && X86_MCE && X86_THERMAL_VECTOR
 
-commit add295a4afbdf5852d004c754c552d692b0fcac8 upstream.
 
-Accessing the OTP memory on AR9950 causes a data bus
-like this:
+Thanks,
+Srinivas
 
-  Data bus error, epc == 801f7774, ra == 801f7774
-  Oops[#1]:
-  CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0-rc3 #592
-  task: 87c28000 ti: 87c22000 task.ti: 87c22000
-  $ 0   : 00000000 00000061 deadc0de 00000000
-  $ 4   : b8115f18 00015f18 00000007 00000004
-  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
-  $12   : 7c7c3c7c 80320a68 00000000 7c7c7c3c
-  $16   : 87cd8010 00015f18 00000007 00000000
-  $20   : 00000064 00000004 87c23c7c 8035210c
-  $24   : 00000000 801f3674
-  $28   : 87c22000 87c23b48 00000001 801f7774
-  Hi    : 00000000
-  Lo    : 00000064
-  epc   : 801f7774 ath9k_hw_wait+0x58/0xb0
-      Not tainted
-  ra    : 801f7774 ath9k_hw_wait+0x58/0xb0
-  Status: 1000cc03 KERNEL EXL IE
-  Cause : 4080801c
-  PrId  : 00019750 (MIPS 74Kc)
-  Modules linked in:
-  Process swapper (pid: 1, threadinfo=87c22000, task=87c28000, ts=00000000)
-  Stack : 0000000f 00000061 00002710 8006240c 00000001 87cd8010 87c23bb0 87cd8010
-          00000000 00000004 00000003 80210c7c 000000b3 67fa8000 0000032a 000006fe
-          000003e8 00000002 00000028 87c23bf0 000003ff 80210d24 803e5630 80210e28
-          00000000 00000007 87cd8010 00007044 00000004 00000061 000003ff 000001ff
-          87c26000 87cd8010 00000220 87cd8bb8 80210000 8020fcf4 87c22000 87c23c08
-          ...
-  Call Trace:
-  [<801f7774>] ath9k_hw_wait+0x58/0xb0
-  [<80210c7c>] ar9300_otp_read_word+0x80/0xd4
-  [<80210d24>] ar9300_read_otp+0x54/0xb0
-  [<8020fcf4>] ar9300_check_eeprom_header+0x1c/0x40
-  [<80210fe4>] ath9k_hw_ar9300_fill_eeprom+0x118/0x39c
-  [<80206650>] ath9k_hw_eeprom_init+0x74/0xb4
-  [<801f96d0>] ath9k_hw_init+0x7ec/0x96c
-  [<801e65ec>] ath9k_init_device+0x340/0x758
-  [<801f35d0>] ath_ahb_probe+0x21c/0x2c0
-  [<801c041c>] driver_probe_device+0xc0/0x1e4
-  [<801c05ac>] __driver_attach+0x6c/0xa4
-  [<801bea08>] bus_for_each_dev+0x64/0xa8
-  [<801bfa40>] bus_add_driver+0xcc/0x24c
-  [<801c0954>] driver_register+0xbc/0x17c
-  [<803f8fc0>] ath9k_init+0x5c/0x88
-  [<800608fc>] do_one_initcall+0xec/0x1a0
-  [<803e6a68>] kernel_init_freeable+0x13c/0x200
-  [<80309cdc>] kernel_init+0x1c/0xe4
-  [<80062450>] ret_from_kernel_thread+0x10/0x18
 
-On the AR9550, the OTP registers are located at
-the same address as on the AR9340. Use the correct
-values to avoid the error.
 
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.h | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-index 54ba42f..874f657 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-@@ -68,13 +68,16 @@
- #define AR9300_BASE_ADDR 0x3ff
- #define AR9300_BASE_ADDR_512 0x1ff
- 
--#define AR9300_OTP_BASE			(AR_SREV_9340(ah) ? 0x30000 : 0x14000)
--#define AR9300_OTP_STATUS		(AR_SREV_9340(ah) ? 0x30018 : 0x15f18)
-+#define AR9300_OTP_BASE \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30000 : 0x14000)
-+#define AR9300_OTP_STATUS \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30018 : 0x15f18)
- #define AR9300_OTP_STATUS_TYPE		0x7
- #define AR9300_OTP_STATUS_VALID		0x4
- #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
- #define AR9300_OTP_STATUS_SM_BUSY	0x1
--#define AR9300_OTP_READ_DATA		(AR_SREV_9340(ah) ? 0x3001c : 0x15f1c)
-+#define AR9300_OTP_READ_DATA \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x3001c : 0x15f1c)
- 
- enum targetPowerHTRates {
- 	HT_TARGET_RATE_0_8_16,
--- 
-1.8.1.2
+On 06/17/2013 10:55 AM, Randy Dunlap wrote:
+> On 06/17/13 10:26, Srinivas Pandruvada wrote:
+>> On 06/17/2013 10:03 AM, Randy Dunlap wrote:
+>>> On 06/17/13 01:51, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20130607:
+>>>>
+>>> on i386 and x86_64:
+>>>
+>>> when built as loadable module:
+>>>
+>>> ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
+>>> ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
+>>>
+>>> or when built-in:
+>>>
+>>> drivers/built-in.o: In function `pkg_temp_thermal_init':
+>>> x86_pkg_temp_thermal.c:(.init.text+0x1492b): undefined reference to `platform_thermal_package_notify'
+>>> x86_pkg_temp_thermal.c:(.init.text+0x14936): undefined reference to `platform_thermal_package_rate_control'
+>>> x86_pkg_temp_thermal.c:(.init.text+0x150fe): undefined reference to `platform_thermal_package_notify'
+>>> x86_pkg_temp_thermal.c:(.init.text+0x15109): undefined reference to `platform_thermal_package_rate_control'
+>>> drivers/built-in.o: In function `pkg_temp_thermal_exit':
+>>> x86_pkg_temp_thermal.c:(.exit.text+0x3a9b): undefined reference to `platform_thermal_package_notify'
+>>> x86_pkg_temp_thermal.c:(.exit.text+0x3aa6): undefined reference to `platform_thermal_package_rate_control'
+>>>
+>>>
+>>> Full randconfig file is attached (for loadable module build).
+>>>
+>>>
+>>>
+>> This requires CONFIG_X86_MCE, which is by default is set to "y".
+> But you can't rely on that symbol being enabled -- there needs to be some
+> enforcement of it, like the patch below.
+>
+>
+> ---
+> From: Randy Dunlap <rdunlap@infradead.org>
+>
+> Fix build error in x86_pkg_temp_thermal.c.  It requires that
+> X86_MCE be enabled, so depend on that symbol.
+> Also, X86_PKG_TEMP_THERMAL is already inside an "if THERMAL" block,
+> so remove that duplicated dependency.
+>
+> ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
+> ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>   drivers/thermal/Kconfig |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> --- linux-next-20130617.orig/drivers/thermal/Kconfig
+> +++ linux-next-20130617/drivers/thermal/Kconfig
+> @@ -171,8 +171,7 @@ config INTEL_POWERCLAMP
+>   
+>   config X86_PKG_TEMP_THERMAL
+>   	tristate "X86 package temperature thermal driver"
+> -	depends on THERMAL
+> -	depends on X86
+> +	depends on X86 && X86_MCE
+
+depends on X86 && X86_MCE && X86_THERMAL_VECTOR
+
+
+>   	select THERMAL_GOV_USER_SPACE
+>   	default m
+>   	help
+>
 
