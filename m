@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab3FQEuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 00:50:54 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:64589 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab3FQEuw (ORCPT
+	id S932093Ab3FQE4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 00:56:23 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:48396 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab3FQE4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 00:50:52 -0400
-Message-ID: <51BE95A5.5090509@linaro.org>
-Date: Mon, 17 Jun 2013 10:20:45 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 00:56:22 -0400
+Date: Mon, 17 Jun 2013 04:56:21 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+cc: linux-kernel@vger.kernel.org, neilb@suse.de, linux-omap@vger.kernel.org,
+        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        stable@vger.kernel.org,
+        "'Jean-Philippe Francois'" <jp.francois@cynove.com>
+Subject: Re: [PATCH 3.9-stable] ARM: omap3: clock: fix wrong container_of in
+ clock36xx.c
+In-Reply-To: <008d01ce6aea$96291790$c27b46b0$%choi@samsung.com>
+Message-ID: <alpine.DEB.2.02.1306170454330.4477@utopia.booyaka.com>
+References: <008d01ce6aea$96291790$c27b46b0$%choi@samsung.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
-        swarren@wwwdotorg.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
-Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
-References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <2070978.AjQD2isvSl@flatron> <51B54B4F.3000503@linaro.org> <3226068.I7g6oVyl1p@flatron>
-In-Reply-To: <3226068.I7g6oVyl1p@flatron>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 12:23 AM, Tomasz Figa wrote:
-> On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
->> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
->>> On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
+On Mon, 17 Jun 2013, Jonghwan Choi wrote:
 
-[ ... ]
+> This patch looks like it should be in the 3.9-stable tree, should we apply
+> it?
 
->>>>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
->>>>
->>>> -			SRC_CPU, 16, 1, "mout_core"),
->>>> +			SRC_CPU, 16, 1, "moutcore"),
->>>
->>> IMHO those typo corrections are not part of this patch.
->>
->> But the older drivers (before migration to CCF) were using the clock
->> "moutcore" (not "mout_core").
+Please do.
+
+
+- Paul
+
 > 
-> I mean, this should be placed in a separate patch, as this change is not 
-> "adding alias for cpufreq related clocks", but rather fixing a typo.
+> ------------------
+> 
+> From: "Jean-Philippe Francois <jp.francois@cynove.com>"
+> 
+> commit a93d8a1cea0899982993e9a93404c6f78b123697 upstream
+> 
+> omap36xx_pwrdn_clk_enable_with_hsdiv_restore expects the parent hw of
+> the clock to be a clk_hw_omap. However, looking at cclock3xxx_data.c,
+> all concerned clock have parent defined as clk_divider.  Fix the
+> function to use clk_divider.  Tested with 3.9 on dm3730.
+> 
+> Signed-off-by: Jean-Philippe Francois <jp.francois@cynove.com>
+> Cc: NeilBrown <neilb@suse.de>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  arch/arm/mach-omap2/clock36xx.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/clock36xx.c
+> b/arch/arm/mach-omap2/clock36xx.c
+> index 8f3bf4e..bbd6a3f 100644
+> --- a/arch/arm/mach-omap2/clock36xx.c
+> +++ b/arch/arm/mach-omap2/clock36xx.c
+> @@ -20,11 +20,12 @@
+>  
+>  #include <linux/kernel.h>
+>  #include <linux/clk.h>
+> +#include <linux/clk-provider.h>
+>  #include <linux/io.h>
+>  
+>  #include "clock.h"
+>  #include "clock36xx.h"
+> -
+> +#define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
+>  
+>  /**
+>   * omap36xx_pwrdn_clk_enable_with_hsdiv_restore - enable clocks suffering
+> @@ -39,29 +40,28 @@
+>   */
+>  int omap36xx_pwrdn_clk_enable_with_hsdiv_restore(struct clk_hw *clk)
+>  {
+> -	struct clk_hw_omap *parent;
+> +	struct clk_divider *parent;
+>  	struct clk_hw *parent_hw;
+> -	u32 dummy_v, orig_v, clksel_shift;
+> +	u32 dummy_v, orig_v;
+>  	int ret;
+>  
+>  	/* Clear PWRDN bit of HSDIVIDER */
+>  	ret = omap2_dflt_clk_enable(clk);
+>  
+>  	parent_hw = __clk_get_hw(__clk_get_parent(clk->clk));
+> -	parent = to_clk_hw_omap(parent_hw);
+> +	parent = to_clk_divider(parent_hw);
+>  
+>  	/* Restore the dividers */
+>  	if (!ret) {
+> -		clksel_shift = __ffs(parent->clksel_mask);
+> -		orig_v = __raw_readl(parent->clksel_reg);
+> +		orig_v = __raw_readl(parent->reg);
+>  		dummy_v = orig_v;
+>  
+>  		/* Write any other value different from the Read value */
+> -		dummy_v ^= (1 << clksel_shift);
+> -		__raw_writel(dummy_v, parent->clksel_reg);
+> +		dummy_v ^= (1 << parent->shift);
+> +		__raw_writel(dummy_v, parent->reg);
+>  
+>  		/* Write the original divider */
+> -		__raw_writel(orig_v, parent->clksel_reg);
+> +		__raw_writel(orig_v, parent->reg);
+>  	}
+>  
+>  	return ret;
+> -- 
+> 1.7.9.5
 > 
 
-Is it ok if I split this patch into 2, one adding clock alias
-'mout_apll' and another one fixing the alias names 'mout_mpll',
-'moutcore' and 'armclk'?
 
-[ ... ]
-
->>> Basically I don't like the idea of those global aliases, which IMHO
->>> should be completely dropped. Someone might not like it, but I'd go
->>> with the conversion of our cpufreq drivers to platform drivers
->>> instead, which could receive things like clocks and regulators using
->>> DT-based lookups.
->> I agree. Migration of exynos-cpufreq driver as a platform driver is the
->> best solution. But unless someone picks up that work, cpufreq support
->> for EXYNOS4 based systems is broken because of the incorrect clock
->> aliases.
-> 
-> We have patches for this in our internal tree. I will clean them up a bit 
-> and submit soon.
-> 
-
-If you are going to submit the cpufreq driver patches for v3.11, then we
-can ignore this patchset. Otherwise, I would prefer to get these patches
-merged for v3.11 to get cpufreq working. Once the driver changes are
-incorporated, we can very well modify these later.
-
-Thanks.
--- 
-Tushar Behera
+- Paul
