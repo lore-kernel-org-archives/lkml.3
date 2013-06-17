@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3FQUeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:34:00 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:43094 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab3FQUd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:33:58 -0400
-Date: Mon, 17 Jun 2013 22:33:54 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Airlie <airlied@linux.ie>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/tegra: Include linux/types.h
-Message-ID: <20130617203353.GC5265@mithrandir>
-References: <1371470294.26299.21.camel@x61.thuisdomein>
+	id S1753449Ab3FQUfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:35:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587Ab3FQUfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 16:35:02 -0400
+Message-ID: <51BF72DA.3050106@redhat.com>
+Date: Mon, 17 Jun 2013 16:34:34 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
-Content-Disposition: inline
-In-Reply-To: <1371470294.26299.21.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Ingo Molnar <mingo@kernel.org>, Hannes Reinecke <hare@suse.de>,
+        "Li, Zhen-Hua" <zhen-hual@hp.com>, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH v3, part2 17/20] PCI, iommu: use hotplug-safe iterators
+ to walk PCI buses
+References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com> <1369583597-3801-18-git-send-email-jiang.liu@huawei.com> <20130617202010.GC7877@google.com>
+In-Reply-To: <20130617202010.GC7877@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/17/2013 04:20 PM, Bjorn Helgaas wrote:
+> On Sun, May 26, 2013 at 11:53:14PM +0800, Jiang Liu wrote:
+>> Enhance iommu drviers to use hotplug-safe iterators to walk
+>> PCI buses.
+>>
+>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+>> Cc: Joerg Roedel<joro@8bytes.org>
+>> Cc: Ingo Molnar<mingo@kernel.org>
+>> Cc: Donald Dutile<ddutile@redhat.com>
+>> Cc: Hannes Reinecke<hare@suse.de>
+>> Cc: "Li, Zhen-Hua"<zhen-hual@hp.com>
+>> Cc: iommu@lists.linux-foundation.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/iommu/amd_iommu.c | 4 +++-
+>>   drivers/iommu/dmar.c      | 6 ++++--
+>
+> The AMD and Intel IOMMU drivers are very different, and I would
+> split this into a patch for each.
+>
++1
 
---O3RTKUHj+75w1tg5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>   2 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+>> index 21d02b0..eef7a7e 100644
+>> --- a/drivers/iommu/amd_iommu.c
+>> +++ b/drivers/iommu/amd_iommu.c
+>> @@ -352,6 +352,7 @@ static int init_iommu_group(struct device *dev)
+>>   	struct iommu_dev_data *dev_data;
+>>   	struct iommu_group *group;
+>>   	struct pci_dev *dma_pdev;
+>> +	struct pci_bus *b = NULL;
+>>   	int ret;
+>>
+>>   	group = iommu_group_get(dev);
+>> @@ -388,7 +389,7 @@ static int init_iommu_group(struct device *dev)
+>>   		 * the alias.  Be careful to also test the parent device if
+>>   		 * we think the alias is the root of the group.
+>>   		 */
+>> -		bus = pci_find_bus(0, alias>>  8);
+>> +		b = bus = pci_get_bus(0, alias>>  8);
+>>   		if (!bus)
+>>   			goto use_group;
+>>
+>> @@ -408,6 +409,7 @@ static int init_iommu_group(struct device *dev)
+>>   	dma_pdev = get_isolation_root(pci_dev_get(to_pci_dev(dev)));
+>>   use_pdev:
+>>   	ret = use_pdev_iommu_group(dma_pdev, dev);
+>> +	pci_bus_put(b);
+>>   	pci_dev_put(dma_pdev);
+>>   	return ret;
+>>   use_group:
+>> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+>> index a7967ce..7162787 100644
+>> --- a/drivers/iommu/dmar.c
+>> +++ b/drivers/iommu/dmar.c
+>> @@ -67,12 +67,12 @@ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+>>   static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
+>>   					   struct pci_dev **dev, u16 segment)
+>>   {
+>> -	struct pci_bus *bus;
+>> +	struct pci_bus *b, *bus;
+>>   	struct pci_dev *pdev = NULL;
+>>   	struct acpi_dmar_pci_path *path;
+>>   	int count;
+>>
+>> -	bus = pci_find_bus(segment, scope->bus);
+>> +	b = bus = pci_get_bus(segment, scope->bus);
+>>   	path = (struct acpi_dmar_pci_path *)(scope + 1);
+>>   	count = (scope->length - sizeof(struct acpi_dmar_device_scope))
+>>   		/ sizeof(struct acpi_dmar_pci_path);
+>> @@ -97,6 +97,8 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
+>>   		count --;
+>>   		bus = pdev->subordinate;
+>>   	}
+>> +	pci_bus_put(b);
+>> +
+>>   	if (!pdev) {
+>>   		pr_warn("Device scope device [%04x:%02x:%02x.%02x] not found\n",
+>>   			segment, scope->bus, path->dev, path->fn);
+>> --
+>> 1.8.1.2
+>>
 
-On Mon, Jun 17, 2013 at 01:58:14PM +0200, Paul Bolle wrote:
-> "make headers_check" complains about include/uapi/drm/tegra_drm.h:
->     [...]/usr/include/drm/tegra_drm.h:21: found __[us]{8,16,32,64} type w=
-ithout #include <linux/types.h>
->=20
-> So let's include linux/types.h in this header.
->=20
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Tested only with "make headers_check". I don't actually build or run
-> code that uses tegra_drm.h.
->=20
->  include/uapi/drm/tegra_drm.h | 2 ++
->  1 file changed, 2 insertions(+)
-
-That has already been fixed in linux-next.
-
-Thierry
-
---O3RTKUHj+75w1tg5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRv3KxAAoJEN0jrNd/PrOhyV8P/AqOcKEtzd0mvftiBLi2PhcB
-TJUXu/DQNFkyGLTpxNTPxJtOvWv/QpY3czSeCkNj/eJ13gYW+ILIVP6X9lXw70+5
-pa9Ij4OtSVX+DTcNZ7st+2J1nWBW9odIsxxdigwgmlNEH+g4vPpmapuls+fYsuzL
-LnwsfbXw3m9K4Udfr9O4U3M03lz0Ta0Hv31+sW5qCBrn7XDQTugqUC/l1z6Ugj9K
-+UPeY8heVLrOcSrn/EsFtrk3JWpiRb5wwNAR1+K/GbmJjdZJNsP/aZhXGk1Ot0xv
-54ZuAlFydlwzu9kLnN0GJUsqqRD4XRYMjnOb/UjNNciUaFnmVeMDS6PuPYlu24yF
-2pYjV4SmErHv2tNwB+NcQeTXhahVmv3UY/05w6DzK6rt4uWdRY0Ia4NJTM+kiFif
-F+KR9hIxEnCGftJ8K9v2jJ2BAdlLa19+P3qs5Sau28K1EBNeQQ0ZYzSIXSL89M+f
-zq49PUcIjHyZy+tkoIZErzLdTbBjW6BoViyubk0Nhhd+hICaaXxm8XIFTXZNdTHj
-e/iekSEyMTpg+cJKNFXJeLhHvop+Gcf8UfGDFPPFuPCmVD1TcUUuLIyDrcaY0z4a
-4meFaQF+vmdZHAArVT0DnfA5jzuhuk30yAEWhou6HyqKdh7jQrPXIfVLZUrR/zcV
-O4E+dpi+AuNN6I3W3pxn
-=VzP9
------END PGP SIGNATURE-----
-
---O3RTKUHj+75w1tg5--
