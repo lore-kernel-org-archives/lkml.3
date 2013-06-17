@@ -1,30 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3FQLLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:11:23 -0400
-Received: from umdac-ch1.ad.umu.se ([130.239.1.246]:5093 "EHLO mail.ad.umu.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756082Ab3FQLLW convert rfc822-to-8bit (ORCPT
+	id S932680Ab3FQLWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:22:32 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:37434 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932400Ab3FQLWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 07:11:22 -0400
-X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jun 2013 07:11:21 EDT
-From: Stig-Olof Holm <Stig-Olof.Holm@emg.umu.se>
-Date: Mon, 17 Jun 2013 13:05:36 +0200
-Subject: =?iso-8859-1?Q?V=E4nligen_Verifiera_<Account_problem>?=
-Thread-Topic: =?iso-8859-1?Q?V=E4nligen_Verifiera_<Account_problem>?=
-Thread-Index: AQHOa0qY47BKShNMF0msi/4ybuOl/g==
-Message-ID: <986D6831C0FA4346A8AB765EAF53225EA134B879E3@UMDAC-CCR1.ad.umu.se>
-Accept-Language: sv-SE
-Content-Language: sv-SE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Jun 2013 07:22:31 -0400
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Mon, 17 Jun 2013 13:22:30 +0200
+Message-ID: <CACRpkdb_AKomxOQA_tN4kev8v5paPtm_M5WGR+drhO6n37AKKQ@mail.gmail.com>
+Subject: Re: [PATCH] spi: pl022: remove unused ret and pins_state variables
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Din brevlåda har överskridit det lagringsutrymme som anges av administratören och du kommer inte att kunna ta emot nya meddelanden förrän du återaktiverar den. Att validera -> Kopiera eller klicka här http://swedenwebmailwatch.webs.com<http://swedenwebmailwatch.webs.com/>
+On Mon, Jun 17, 2013 at 12:08 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
+
+> Removes the warnings:
+>
+> drivers/spi/spi-pl022.c: In function 'pl022_suspend_resources':
+> drivers/spi/spi-pl022.c:2322:24: warning: unused variable 'pins_state' [-Wunused-variable]
+> drivers/spi/spi-pl022.c:2321:6: warning: unused variable 'ret' [-Wunused-variable]
+> drivers/spi/spi-pl022.c: In function 'pl022_resume_resources':
+> drivers/spi/spi-pl022.c:2334:6: warning: unused variable 'ret' [-Wunused-variable]
+>
+> introduced in:
+>
+> f1c9cf0 spi: pl022: use pinctrl PM helpers
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+
+How sloppy of me. Applied with Mark's ACK.
+
+Thanks!
+Linus Walleij
