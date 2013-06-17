@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab3FQQIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:08:53 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:52932 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3FQQIw (ORCPT
+	id S1752854Ab3FQQJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:09:01 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60958 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab3FQQI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:08:52 -0400
+	Mon, 17 Jun 2013 12:08:59 -0400
+Date: Mon, 17 Jun 2013 17:08:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130617160853.GG1403@sirena.org.uk>
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+ <1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
+ <51BED2F9.1020307@linaro.org>
+ <20130617100525.GA1403@sirena.org.uk>
+ <51BEE64C.80608@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130617120340.GE10305@atomide.com>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
-	<1369995191-20855-2-git-send-email-gururaja.hebbar@ti.com>
-	<CACRpkdZjvW6M1Q+K3OD1x_Jkz91AofdOdBThyJLGJ+Wx-BDTNw@mail.gmail.com>
-	<20130617120340.GE10305@atomide.com>
-Date: Mon, 17 Jun 2013 18:08:51 +0200
-Message-ID: <CACRpkdZGV7v2=rrKfiLXF7k3JG-1BEDr5=dC+E96gvpnPCCRcQ@mail.gmail.com>
-Subject: Re: [PATCH 01/11] pinctrl: single: adopt pinctrl sleep mode management
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>, sudhakar.raj@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tZPt2X9wWvZFnOOr"
+Content-Disposition: inline
+In-Reply-To: <51BEE64C.80608@linaro.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 11/15] regulator: ti-abb: Convert to use
+ devm_ioremap_resource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 2:03 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Linus Walleij <linus.walleij@linaro.org> [130617 04:38]:
->> On Fri, May 31, 2013 at 12:13 PM, Hebbar Gururaja
->> <gururaja.hebbar@ti.com> wrote:
->>
->> > Make pinctrl-single able to handle suspend/resume events and change
->> > hogged pins states accordingly.
->> >
->> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
->> > Cc: Linus Walleij <linus.walleij@linaro.org>
->>
->> Noone said anything about this patch, but it looks very straight-forward
->> to me and seems sound so I have applied it.
->>
->> If Tony or Haojian has strong feelings about it I will dequeue it.
->
-> I don't like the hogged pins at all as they prevent me from unloading
-> pinctrl-single.. But the patch seems fine to me:
 
-Hm? I think the hogged pins are the *only* pins we can
-reliably release when unloading the driver, look:
+--tZPt2X9wWvZFnOOr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-void pinctrl_unregister(struct pinctrl_dev *pctldev)
-{
-(...)
-        if (!IS_ERR(pctldev->p))
-                pinctrl_put(pctldev->p);
+On Mon, Jun 17, 2013 at 04:04:52PM +0530, Tushar Behera wrote:
+> On 06/17/2013 03:35 PM, Mark Brown wrote:
+> > On Mon, Jun 17, 2013 at 02:42:25PM +0530, Tushar Behera wrote:
 
-That releases all hogged pinctrl handles when unloading
-a pinctrl driver.
+> >> Ping.
+i
+> > Don't send contentless pings.  I seem to recall you already got some
+> > review on this.
 
-Yours,
-Linus Walleij
+>=20
+> The comment was on removal of the error message during
+> devm_ioremap_resource() error check . Since there are a few other error
+> messages in the driver (related to devm_ioremap_nocache) in the same
+> format, I prefer to leave this error message right now.
+
+So we should say the same thing repeatedly?  That seems silly.  That
+seems silly.   It's like the contentless pings issue...
+
+--tZPt2X9wWvZFnOOr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRvzSSAAoJELSic+t+oim9by8P/14JZqxcjgaJ1SqGZQOEcidR
+ZIpJlK1r5m3VySGx8niGxKv3ApmE1ZKNBbZNi/nsbKmeQPF2wsRDkWupceuuUyEh
+crf4VJAey57oNdbmLX6MRhih9arSJz4UmhciUpoP7RaCxX0tS67DNBd14f10sK5G
+6JbV1Idu3KZxv0wH3ITgQQtNmsDFZFbq3AMkJ2NfjshUWsNL5q5WZ3vPbdfnZXi4
+Rqq3lxw5HYQbX67c7GbhRKsZtvXVhc6FgluhGIjSQ30/pw+t2pppuIbPYnWUbroo
+JELqmu91nDpmDzKl9qVO72ZC1xJ5/c4bg7BAPafwoxe6KTwmaXJKswA7jdjUvvUi
+epXsS9uEjtYIAYrAWLCz24GDOFq6mSWfPwxSFUT1oAje27h8axYm9HdVH0TmwJqR
+it7gJfbHBYxqAkzP0Eql8e4gImwlkl9twOXgransOGBVWaSx85U6qIJhsm4Vjb7S
+StUULkqcvkW/oCLY77AXxv7sSoX5waDOc5LxiNA7PA6z5XfPkMUqtbTZXnWHcLZQ
+jA7/WM4D+TrJS/5TTiMRoRPqYxOcbOa1BZevS6nisCkHgBjwNf2+Zn7hJMkHJu32
+QQknNcJ7jIpG72rXCjJP23g68oYQIENvoCop8VcMHl74hU71/jHAm18/Kyt0m27g
+A0j0YYgdy6CuySOHSrAa
+=yY00
+-----END PGP SIGNATURE-----
+
+--tZPt2X9wWvZFnOOr--
