@@ -1,117 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab3FQKUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:20:11 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:40403 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab3FQKUH (ORCPT
+	id S932407Ab3FQKVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:21:11 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.164]:8209 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932300Ab3FQKVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:20:07 -0400
+	Mon, 17 Jun 2013 06:21:09 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-16.tower-38.messagelabs.com!1371464454!13162916!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 17 Jun 2013 12:20:55 +0200
+Date: Mon, 17 Jun 2013 12:24:13 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: <wim@iguana.be>
+CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
+Subject: [PATCH v10 2/2] watchdog: Sysfs interface for MEN A21 watchdog
+Message-ID: <20130617102407.GA25443@jtlinux>
 MIME-Version: 1.0
-In-Reply-To: <1370590169-24804-4-git-send-email-alex.shi@intel.com>
-References: <1370590169-24804-1-git-send-email-alex.shi@intel.com> <1370590169-24804-4-git-send-email-alex.shi@intel.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 17 Jun 2013 03:19:35 -0700
-Message-ID: <CAPM31RKUW2vM7BJFXOPtGHnSHbreWLL_7pyBVwPZG617xStxBA@mail.gmail.com>
-Subject: Re: [RFC patch 3/4] sched/cfs_rq: change atomic64_t removed_load to atomic_long_t
-To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130617102242.GA25393@jtlinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 17 Jun 2013 10:20:54.0670 (UTC) FILETIME=[59ABC2E0:01CE6B44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 12:29 AM, Alex Shi <alex.shi@intel.com> wrote:
-> Like as runnable_load_avg, blocked_load_avg variable, long type is
-> enough for removed_load in 64 bit or 32 bit machine.
->
-> Then we avoid the expensive atomic64 operations on 32 bit machine.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+This patch adds a sysfs interface for the watchdog
+device found on MEN A21 Boards.
 
-So while this isn't under quite the same constraints as blocked_load
-since this is per-migration and only cleared on the tick; it would
-take an awful lot (~47k) of wake-upmigrations of a large (nice-20)
-task to overflow.
+The newly generated files are:
+* rebootcause:
+Can be one of:
+Power on Reset,
+CPU Reset Request,
+Push Button,
+FPGA Reset Request,
+Watchdog,
+Local Power Bad,
+Invalid or
+BDI
+and shows the reason of the boards last reboot.
 
-One concern is that this would be potentially user-triggerable using
-sched_setaffinity() when combined with a sufficiently low HZ.
+* active:
+Shows if the watchdog CPLD is actually running
 
-Although all this would actually do would strand blocked load on the
-cpu, which mostly punishes the cgroup doing this (likely an ok
-behavior).  If it ever became an issue we could force a
-update_cfs_rq_blocked_load() when a removal would result in an
-overflow, but I think this is fine for now.
+* allow_disable:
+Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
 
-Reviewed-by: Paul Turner <pjt@google.com>
+* fastmode:
+Shows if the CPLD is running in fast mode (1s timeout), once it is in
+fastmode it can't be switched back to slow mode (30s timeout) until the
+next reboot.
 
-> ---
->  kernel/sched/fair.c  | 10 ++++++----
->  kernel/sched/sched.h |  3 ++-
->  2 files changed, 8 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 30fb7dc..9cc4211 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1517,8 +1517,9 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->         if (!decays && !force_update)
->                 return;
->
-> -       if (atomic64_read(&cfs_rq->removed_load)) {
-> -               u64 removed_load = atomic64_xchg(&cfs_rq->removed_load, 0);
-> +       if (atomic_long_read(&cfs_rq->removed_load)) {
-> +               unsigned long removed_load;
-> +               removed_load = atomic_long_xchg(&cfs_rq->removed_load, 0);
->                 subtract_blocked_load_contrib(cfs_rq, removed_load);
->         }
->
-> @@ -3479,7 +3480,8 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->          */
->         if (se->avg.decay_count) {
->                 se->avg.decay_count = -__synchronize_entity_decay(se);
-> -               atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
-> +               atomic_long_add(se->avg.load_avg_contrib,
-> +                                               &cfs_rq->removed_load);
->         }
->  }
->  #endif /* CONFIG_SMP */
-> @@ -5944,7 +5946,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
->  #endif
->  #if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
->         atomic64_set(&cfs_rq->decay_counter, 1);
-> -       atomic64_set(&cfs_rq->removed_load, 0);
-> +       atomic_long_set(&cfs_rq->removed_load, 0);
->  #endif
->  }
->
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 1bfa91a..874731f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -278,8 +278,9 @@ struct cfs_rq {
->          * the FAIR_GROUP_SCHED case).
->          */
->         unsigned long runnable_load_avg, blocked_load_avg;
-> -       atomic64_t decay_counter, removed_load;
-> +       atomic64_t decay_counter;
->         u64 last_decay;
-> +       atomic_long_t removed_load;
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->         /* Required to track per-cpu representation of a task_group */
-> --
-> 1.7.12
->
+Revision 2:
+* Re-worked sysfs patch to apply on re-worked base
+
+Revision 3:
+* Re-worked sysfs patch to apply on re-worked base
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/watchdog/mena21_wdt.c |   89 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+
+diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
+index 96dbba9..91cc90b 100644
+--- a/drivers/watchdog/mena21_wdt.c
++++ b/drivers/watchdog/mena21_wdt.c
+@@ -22,6 +22,17 @@
+
+ #define NUM_GPIOS 6
+
++static char *reset_causes[] = {
++	"Power On Reset",
++	"CPU Reset Request",
++	"Push Button",
++	"FPGA Reset Request",
++	"Watchdog",
++	"Local Power Bad",
++	"Invalid",
++	"BDI",
++};
++
+ enum a21_wdt_gpios {
+ 	GPIO_WD_ENAB,
+ 	GPIO_WD_FAST,
+@@ -53,6 +64,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
+ 	return reset;
+ }
+
++static ssize_t rebootcause_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++	unsigned int reset = 0;
++
++	reset = a21_wdt_get_bootstatus(drv);
++
++	return sprintf(buf, "%s\n", reset_causes[reset]);
++}
++static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
++
++static ssize_t active_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
++}
++static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
++
++static ssize_t allow_disable_show(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	return sprintf(buf, "%d\n", !nowayout);
++}
++static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
++
++static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
++}
++static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
++
++static int a21_wdt_create_files(struct watchdog_device *wdev)
++{
++	int ret;
++
++	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_active);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static void a21_wdt_remove_files(struct watchdog_device *wdev)
++{
++	device_remove_file(wdev->dev, &dev_attr_rebootcause);
++	device_remove_file(wdev->dev, &dev_attr_active);
++	device_remove_file(wdev->dev, &dev_attr_allow_disable);
++	device_remove_file(wdev->dev, &dev_attr_fastmode);
++}
++
+ static int a21_wdt_start(struct watchdog_device *wdt)
+ {
+ 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+@@ -215,11 +293,20 @@ static int a21_wdt_probe(struct platform_device *pdev)
+ 	}
+
+ 	dev_set_drvdata(&pdev->dev, drv);
++	dev_set_drvdata(a21_wdt.dev, drv);
++
++	ret = a21_wdt_create_files(&a21_wdt);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
++		goto err_create_sysfs;
++	}
+
+ 	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
+
+ 	return 0;
+
++err_create_sysfs:
++	watchdog_unregister_device(&drv->wdt);
+ err_register_wd:
+ 	mutex_destroy(&drv->lock);
+
+@@ -233,6 +320,8 @@ static int a21_wdt_remove(struct platform_device *pdev)
+ 	dev_warn(&pdev->dev,
+ 		"Unregistering A21 watchdog driver, board may reboot\n");
+
++	a21_wdt_remove_files(&drv->wdt);
++
+ 	watchdog_unregister_device(&drv->wdt);
+
+ 	mutex_destroy(&drv->lock);
+--
+1.7.9.5
+
