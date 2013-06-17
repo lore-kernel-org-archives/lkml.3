@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab3FQRcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:32:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50461 "EHLO
+	id S1753748Ab3FQRcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:32:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50456 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3FQRci (ORCPT
+	with ESMTP id S1753583Ab3FQRcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:32:38 -0400
+	Mon, 17 Jun 2013 13:32:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ash Willis <ashwillis@programmer.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 39/84] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
-Date: Mon, 17 Jun 2013 10:30:43 -0700
-Message-Id: <1371490288-23167-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 20/84] USB: ark3116: fix control-message timeout
+Date: Mon, 17 Jun 2013 10:30:24 -0700
+Message-Id: <1371490288-23167-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,42 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit 634371911730a462626071065b64cd6e1fe213e0 upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+The control-message timeout is specified in milliseconds and should not
+depend on HZ.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/video.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/ark3116.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index afc2a8d..545246f 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -457,6 +457,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP 1000 Notebook PC",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+diff --git a/drivers/usb/serial/ark3116.c b/drivers/usb/serial/ark3116.c
+index 0b44e45..ca45f8d 100644
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -43,7 +43,7 @@
+ #define DRIVER_NAME "ark3116"
+ 
+ /* usb timeout of 1 second */
+-#define ARK_TIMEOUT (1*HZ)
++#define ARK_TIMEOUT 1000
+ 
+ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x6547, 0x0232) },
 -- 
 1.8.1.2
 
