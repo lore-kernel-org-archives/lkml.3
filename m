@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab3FQPzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:55:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab3FQPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:55:37 -0400
-Date: Mon, 17 Jun 2013 11:55:08 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: Re: [PATCH v3 07/13] locks: avoid taking global lock if possible
- when waking up blocked waiters
-Message-ID: <20130617115508.4db5e5f9@tlielax.poochiereds.net>
-In-Reply-To: <1371482036-15958-8-git-send-email-jlayton@redhat.com>
-References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
-	<1371482036-15958-8-git-send-email-jlayton@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752773Ab3FQPzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:55:49 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47372 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab3FQPzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:55:46 -0400
+Message-ID: <51BF317A.7040008@samsung.com>
+Date: Tue, 18 Jun 2013 00:55:38 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] MAINTAINERS: Add exynos filename match to ARM/S5P
+ EXYNOS ARM ARCHITECTURES
+References: <1371143144-31764-1-git-send-email-dianders@chromium.org>	<1371421068-28743-1-git-send-email-dianders@chromium.org>	<1371421068-28743-2-git-send-email-dianders@chromium.org>	<51BF2D52.2040000@samsung.com> <CAD=FV=Wy5H0JzDTtwo4p6TCk186G0KOecB7Tk=t2s0_XwzO2nw@mail.gmail.com>
+In-Reply-To: <CAD=FV=Wy5H0JzDTtwo4p6TCk186G0KOecB7Tk=t2s0_XwzO2nw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 11:13:50 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+On 06/18/13 00:48, Doug Anderson wrote:
+> Kukjin,
+>
+> On Mon, Jun 17, 2013 at 8:37 AM, Kukjin Kim<kgene.kim@samsung.com>  wrote:
+>> On 06/17/13 07:17, Doug Anderson wrote:
+>>>
+>>> This will help direct patches related to exynos to the
+>>> linux-samsung-soc mailing list for discussion.
+>>>
+>>> Suggested by Joe Perches.
+>>>
+>>> Signed-off-by: Doug Anderson<dianders@chromium.org>
+>>
+>>
+>> Acked-by: Kukjin Kim<kgene.kim@samsung.com>
+>
+> I _think_ you can even apply this to your tree.  Looking at commits to
+> MAINTAINERS it looks individual maintainers just include this in their
+> trees, though I could be wrong.
+>
+OK, let me take this into samsung tree.
 
-> Since we always hold the i_lock when inserting a new waiter onto the
-> fl_block list, we can avoid taking the global lock at all if we find
-> that it's empty when we go to wake up blocked waiters.
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 8f56651..a8f3b33 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -532,7 +532,10 @@ static void locks_delete_block(struct file_lock *waiter)
->   * the order they blocked. The documentation doesn't require this but
->   * it seems like the reasonable thing to do.
->   *
-> - * Must be called with file_lock_lock held!
-> + * Must be called with both the i_lock and file_lock_lock held. The fl_block
-> + * list itself is protected by the file_lock_list, but by ensuring that the
-> + * i_lock is also held on insertions we can avoid taking the file_lock_lock
-> + * in some cases when we see that the fl_block list is empty.
->   */
->  static void __locks_insert_block(struct file_lock *blocker,
->  					struct file_lock *waiter)
-> @@ -560,8 +563,16 @@ static void locks_insert_block(struct file_lock *blocker,
->   */
->  static void locks_wake_up_blocks(struct file_lock *blocker)
->  {
-> +	/*
-> +	 * Avoid taking global lock if list is empty. This is safe since new
-> +	 * blocked requests are only added to the list under the i_lock, and
-> +	 * the i_lock is always held here.
-> +	 */
-> +	if (list_empty(&blocker->fl_block))
-> +		return;
-> +
-
-
-Ok, potential race here. We hold the i_lock when we check list_empty()
-above, but it's possible for the fl_block list to become empty between
-that check and when we take the spinlock below. locks_delete_block does
-not require that you hold the i_lock, and some callers don't hold it.
-
-This is trivially fixable by just keeping this as a while() loop. We'll
-do the list_empty() check twice in that case, but that shouldn't change
-the performance here much.
-
-I'll fix that in my tree and it'll be in the next resend. Sorry for the
-noise...
-
->  	spin_lock(&file_lock_lock);
-> -	while (!list_empty(&blocker->fl_block)) {
-> +	do {
-
->  		struct file_lock *waiter;
->  
->  		waiter = list_first_entry(&blocker->fl_block,
-> @@ -571,7 +582,7 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
->  			waiter->fl_lmops->lm_notify(waiter);
->  		else
->  			wake_up(&waiter->fl_wait);
-> -	}
-> +	} while (!list_empty(&blocker->fl_block));
->  	spin_unlock(&file_lock_lock);
->  }
->  
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks,
+- Kukjin
