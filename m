@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3FQAh0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 20:37:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56676 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3FQAhZ (ORCPT
+	id S1755582Ab3FQAjr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 20:39:47 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:54307 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab3FQAjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 20:37:25 -0400
-Date: Mon, 17 Jun 2013 10:37:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>, Gleb Natapov <gleb@redhat.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: linux-next: manual merge of the arm64 tree with Linus' tree
-Message-Id: <20130617103715.3c97aaeb932d8f69e31c0039@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_10_37_15_+1000_mlfmfFAD=8JA1b62"
+	Sun, 16 Jun 2013 20:39:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130616091005.GP18614@n2100.arm.linux.org.uk>
+References: <1371338108-26354-1-git-send-email-grant.likely@linaro.org> <20130616091005.GP18614@n2100.arm.linux.org.uk>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 17 Jun 2013 01:39:25 +0100
+X-Google-Sender-Auth: 8feRIaNji7Z_Dn3XJGgFXPccvks
+Message-ID: <CACxGe6vy6kNzmP7s1NPvKYCfe+1mKHGJbOobr9Kxy=J16r2L0A@mail.gmail.com>
+Subject: Re: [RFC] arm: Remove sa1111 special case from mm setup code
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_10_37_15_+1000_mlfmfFAD=8JA1b62
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jun 16, 2013 at 10:10 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Jun 16, 2013 at 12:15:08AM +0100, Grant Likely wrote:
+>> I don't think this special case is needed anymore. From what I can tell,
+>> setup_dma_zone() takes care of marking the region to be reserved for
+>> DMA, and that happens before arm_memblock_init() which calls
+>> arm_mm_memblock_reserve(). Therefore the mm setup should already know
+>> about the reserved region and it won't need to be explicitly reserved
+>> and then freed. That means the special case can be dropped from the
+>> common code.
+>
+> No it doesn't.  setup_dma_zone is all about setting the high watermark
+> for GFP_DMA allocations.  It has nothing to do with _temoprarily_
+> reserving the low 1MB, ensuring that no other user can use any of that
+> precious SA1111 memory during the kernel boot.
 
-Hi Catalin,
+Ah, okay. So it's to protect against early allocations. All right,
+I've got an alternate patch that at least gets rid of one of the
+special case hooks. I'll post that one shortly.
 
-Today's linux-next merge of the arm64 tree got a conflict in
-include/uapi/linux/kvm.h between commit 2a8fedd0c142 ("kvm: Add
-definition of KVM_REG_MIPS") from Linus' tree and commit 7c8c5e6a9101
-("arm64: KVM: system register handling") from the arm64 tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/uapi/linux/kvm.h
-index d88c8ee,aac2764..0000000
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@@ -783,7 -784,7 +784,8 @@@ struct kvm_dirty_tlb=20
-  #define KVM_REG_IA64		0x3000000000000000ULL
-  #define KVM_REG_ARM		0x4000000000000000ULL
-  #define KVM_REG_S390		0x5000000000000000ULL
-+ #define KVM_REG_ARM64		0x6000000000000000ULL
- +#define KVM_REG_MIPS		0x7000000000000000ULL
- =20
-  #define KVM_REG_SIZE_SHIFT	52
-  #define KVM_REG_SIZE_MASK	0x00f0000000000000ULL
-
---Signature=_Mon__17_Jun_2013_10_37_15_+1000_mlfmfFAD=8JA1b62
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRvlo/AAoJEECxmPOUX5FEJCAP/3bwMqDgXby35sORzZB7GBxl
-TgvHmXDOm0SDJyGhZrGCvfrcjY028nS92SKk9izywZTWT0NJffgrwWoTSfrVsrW/
-QYQuUb19lOZdNx6upcfH6nFsDLSIjOSB44F/PpWpN+NBiQ+Zm7BQTkCPgjAXAOdh
-g4LpuEGadAl6Ppm3BHby7ncjZhFAtkN0+0pLhIPu86JTXz3xaiVgk6f9EnY8CEzw
-vncAxw8Jl8G50kUojVaXqaZCnv0qphhyONPtIHN/zIbETa/TVTC71B9BVV9HtJcy
-LnFtfSeDDldnvF8/3xOphPrbuRE5aNhk2dYMVpdNKtSOsgPJzhz6OZehk9B67yYJ
-7RUVrgdBBcCs/kOYrlCefnrapWKTVe1SfD6rjlrDhmQEbDunQJyD6dzm4TVErINq
-8/YBzwCmvqN1ucS8yRJtMZWsHpUjzSp71h4/ZXp0lihO04bt1rMa5mrgXGjC3ud8
-O/rBGYt8N/Q/rPBimGtgkEbEzAjlXUeLc0AnrQLexzN+dLj//08+kvPurs9vxDeb
-psV8Y/Sv+3mudYNLl+6/arvU3oscqRGZpAfiqFrO32DNZnHyyqLmsGpwmTzM28kE
-e6RHrZxky6+K2rg96Sh/Qavyvd0HfrQnLU6dGImidXftaFFtIOuDGzcOQhnGPDyE
-ui/kddi4fLFP2wmkSO7u
-=rjKO
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_10_37_15_+1000_mlfmfFAD=8JA1b62--
+g.
