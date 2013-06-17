@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab3FQReQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:34:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50516 "EHLO
+	id S1754224Ab3FQRee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:34:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50559 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab3FQRdh (ORCPT
+	with ESMTP id S1754064Ab3FQRec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:33:37 -0400
+	Mon, 17 Jun 2013 13:34:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 30/84] USB: whiteheat: fix broken port configuration
-Date: Mon, 17 Jun 2013 10:30:34 -0700
-Message-Id: <1371490288-23167-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 65/84] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+Date: Mon, 17 Jun 2013 10:31:09 -0700
+Message-Id: <1371490288-23167-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,34 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 9eecf22d2b375b9064a20421c6c307b760b03d46 upstream.
+commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
 
-When configuring the port (e.g. set_termios) the port minor number
-rather than the port number was used in the request (and they only
-coincide for minor number 0).
+In
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c
+Author: Egbert Eich <eich@suse.de>
+Date:   Tue Jun 4 17:13:21 2013 +0200
+
+    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
+
+Egbert Eich fixed a long-standing bug where we simply used a
+non-working i2c controller to read the EDID for SDVO-LVDS panels.
+Unfortunately some machines seem to not be able to cope with the mode
+provided in the EDID. Specifically they seem to not be able to cope
+with a 4x pixel mutliplier instead of a 2x one, which seems to have
+been worked around by slightly changing the panels native mode in the
+VBT so that the dotclock is just barely above 50MHz.
+
+Since it took forever to notice the breakage it's fairly safe to
+assume that at least for SDVO-LVDS panels the VBT contains fairly sane
+data. So just switch around the order and use VBT modes first.
+
+v2: Also add EDID modes just in case, and spell Egbert correctly.
+
+v3: Elaborate a bit more about what's going on on Chris' machine.
+
+Cc: Egbert Eich <eich@suse.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
+Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/whiteheat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_sdvo.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
-index b9fca35..347caad 100644
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -649,7 +649,7 @@ static void firm_setup_port(struct tty_struct *tty)
- 	struct whiteheat_port_settings port_settings;
- 	unsigned int cflag = tty->termios.c_cflag;
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 601dc05..75da731 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1746,10 +1746,13 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
+ 	 * arranged in priority order.
+ 	 */
+ 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+-	if (list_empty(&connector->probed_modes) == false)
+-		goto end;
  
--	port_settings.port = port->number + 1;
-+	port_settings.port = port->number - port->serial->minor + 1;
+-	/* Fetch modes from VBT */
++	/*
++	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
++	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
++	 * drm_mode_probed_add adds the mode at the head of the list we add it
++	 * last.
++	 */
+ 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
+ 		newmode = drm_mode_duplicate(connector->dev,
+ 					     dev_priv->sdvo_lvds_vbt_mode);
+@@ -1761,7 +1764,6 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
+ 		}
+ 	}
  
- 	/* get the byte size */
- 	switch (cflag & CSIZE) {
+-end:
+ 	list_for_each_entry(newmode, &connector->probed_modes, head) {
+ 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
+ 			intel_sdvo->sdvo_lvds_fixed_mode =
 -- 
 1.8.1.2
 
