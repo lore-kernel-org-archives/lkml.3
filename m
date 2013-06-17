@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3FQS6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:58:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039Ab3FQS6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 14:58:20 -0400
-Date: Mon, 17 Jun 2013 14:58:10 -0400
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: [3.10-rc6] WARNING: at fs/btrfs/inode.c:7961
- btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
-Message-ID: <20130617185810.GA13370@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
-References: <20130617134955.GB15861@redhat.com>
- <20130617173942.15057.63201@localhost.localdomain>
- <20130617182005.GA9839@redhat.com>
- <20130617184227.15057.75499@localhost.localdomain>
+	id S1752601Ab3FQTB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 15:01:56 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:61228 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab3FQTBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 15:01:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130617184227.15057.75499@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+	<1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com>
+Date: Mon, 17 Jun 2013 21:01:54 +0200
+X-Google-Sender-Auth: OxHr3Ci3byRJ6Ut8Clem3KnqyiI
+Message-ID: <CAMuHMdVDex1AOe+w_tdpweRFBHzi1_ChGLgOct33SZU6f4znzw@mail.gmail.com>
+Subject: Re: [PATCH v2] mn10300: Fix include dependency in irqflags.h et al.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, David Daney <david.s.daney@gmail.com>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 02:42:27PM -0400, Chris Mason wrote:
- > Quoting Dave Jones (2013-06-17 14:20:06)
- > > On Mon, Jun 17, 2013 at 01:39:42PM -0400, Chris Mason wrote:
- > >  > Quoting Dave Jones (2013-06-17 09:49:55)
- > >  > > Hit this while running this script in a loop..
- > >  > > https://github.com/kernelslacker/io-tests/blob/master/setup.sh
- > >  > > [34385.251507] ------------[ cut here ]------------
- > >  > > [34385.254068] WARNING: at fs/btrfs/inode.c:7961 btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
- > >  > 
- > >  > Thanks Dave, how long did you have to run the script to trigger it?
- > >  > 
- > >  > -chris
- > > 
- > > Judging by the timestamp, about 9 hours.  This is on a 3 disk (sata)
- > > (oldish) quad opteron. Might repro faster on a more modern machine.
- > 
- > Exactly how did you run it?  I want to make sure I'm matching your
- > config.
+On Mon, Jun 17, 2013 at 5:46 PM,  <ddaney.cavm@gmail.com> wrote:
+> We need to pick up the definition of raw_smp_processor_id() from
+> asm/smp.h.  For the !SMP case, we need to supply a definition of
+> raw_smp_processor_id().
+>
+> Because of the include dependencies we cannot use smp_call_func_t in
+> asm/smp.h, but we do need linux/thread_info.h
+>
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-while [ 1 ];
-do
-  setup.sh
-done
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-You'll need to set DISK1 etc variables at the top of the script to point to
-at least 3 disks for it to scribble over.
+> Changes from v1: Remove redundant #ifndef __ASSEMBLY__, fix SMP case.
 
-you'll also need fsx and fsstress in /usr/local/bin.
+Many thanks, now both mn10300 defconfigs build fine.
 
-Think that's all.
+Gr{oetje,eeting}s,
 
-	Dave
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
