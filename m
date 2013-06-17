@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab3FQRlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:41:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50694 "EHLO
+	id S1755436Ab3FQRmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:42:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50686 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3FQRgB (ORCPT
+	with ESMTP id S1754482Ab3FQRgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:36:01 -0400
+	Mon, 17 Jun 2013 13:36:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 58/84] ceph: fix statvfs fr_size
-Date: Mon, 17 Jun 2013 10:31:02 -0700
-Message-Id: <1371490288-23167-59-git-send-email-kamal@canonical.com>
+Cc: Jim Schutt <jaschut@sandia.gov>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 60/84] ceph: add cpu_to_le32() calls when encoding a reconnect capability
+Date: Mon, 17 Jun 2013 10:31:04 -0700
+Message-Id: <1371490288-23167-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -26,66 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Jim Schutt <jaschut@sandia.gov>
 
-commit 92a49fb0f79f3300e6e50ddf56238e70678e4202 upstream.
+commit c420276a532a10ef59849adc2681f45306166b89 upstream.
 
-Different versions of glibc are broken in different ways, but the short of
-it is that for the time being, frsize should == bsize, and be used as the
-multiple for the blocks, free, and available fields.  This mirrors what is
-done for NFS.  The previous reporting of the page size for frsize meant
-that newer glibc and df would report a very small value for the fs size.
+In his review, Alex Elder mentioned that he hadn't checked that
+num_fcntl_locks and num_flock_locks were properly decoded on the
+server side, from a le32 over-the-wire type to a cpu type.
+I checked, and AFAICS it is done; those interested can consult
+    Locker::_do_cap_update()
+in src/mds/Locker.cc and src/include/encoding.h in the Ceph server
+code (git://github.com/ceph/ceph).
 
-Fixes http://tracker.ceph.com/issues/3793.
+I also checked the server side for flock_len decoding, and I believe
+that also happens correctly, by virtue of having been declared
+__le32 in struct ceph_mds_cap_reconnect, in src/include/ceph_fs.h.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Greg Farnum <greg@inktank.com>
+Signed-off-by: Jim Schutt <jaschut@sandia.gov>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ceph/super.c | 7 ++++++-
- fs/ceph/super.h | 2 +-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ fs/ceph/locks.c      | 7 +++++--
+ fs/ceph/mds_client.c | 2 +-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index e86aa994..9fe17c6c 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -71,8 +71,14 @@ static int ceph_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	/*
- 	 * express utilization in terms of large blocks to avoid
- 	 * overflow on 32-bit machines.
-+	 *
-+	 * NOTE: for the time being, we make bsize == frsize to humor
-+	 * not-yet-ancient versions of glibc that are broken.
-+	 * Someday, we will probably want to report a real block
-+	 * size...  whatever that may mean for a network file system!
- 	 */
- 	buf->f_bsize = 1 << CEPH_BLOCK_SHIFT;
-+	buf->f_frsize = 1 << CEPH_BLOCK_SHIFT;
- 	buf->f_blocks = le64_to_cpu(st.kb) >> (CEPH_BLOCK_SHIFT-10);
- 	buf->f_bfree = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
- 	buf->f_bavail = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
-@@ -80,7 +86,6 @@ static int ceph_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	buf->f_files = le64_to_cpu(st.num_objects);
- 	buf->f_ffree = -1;
- 	buf->f_namelen = NAME_MAX;
--	buf->f_frsize = PAGE_CACHE_SIZE;
+diff --git a/fs/ceph/locks.c b/fs/ceph/locks.c
+index 80576d05..e9960c8 100644
+--- a/fs/ceph/locks.c
++++ b/fs/ceph/locks.c
+@@ -206,10 +206,12 @@ int ceph_encode_locks(struct inode *inode, struct ceph_pagelist *pagelist,
+ 	int err = 0;
+ 	int seen_fcntl = 0;
+ 	int seen_flock = 0;
++	__le32 nlocks;
  
- 	/* leave fsid little-endian, regardless of host endianness */
- 	fsid = *(u64 *)(&monmap->fsid) ^ *((u64 *)&monmap->fsid + 1);
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index 66ebe72..cb258e8 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -21,7 +21,7 @@
+ 	dout("encoding %d flock and %d fcntl locks", num_flock_locks,
+ 	     num_fcntl_locks);
+-	err = ceph_pagelist_append(pagelist, &num_fcntl_locks, sizeof(u32));
++	nlocks = cpu_to_le32(num_fcntl_locks);
++	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
+ 	if (err)
+ 		goto fail;
+ 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
+@@ -229,7 +231,8 @@ int ceph_encode_locks(struct inode *inode, struct ceph_pagelist *pagelist,
+ 			goto fail;
+ 	}
  
- /* large granularity for statfs utilization stats to facilitate
-  * large volume sizes on 32-bit machines. */
--#define CEPH_BLOCK_SHIFT   20  /* 1 MB */
-+#define CEPH_BLOCK_SHIFT   22  /* 4 MB */
- #define CEPH_BLOCK         (1 << CEPH_BLOCK_SHIFT)
- 
- #define CEPH_MOUNT_OPT_DIRSTAT         (1<<4) /* `cat dirname` for stats */
+-	err = ceph_pagelist_append(pagelist, &num_flock_locks, sizeof(u32));
++	nlocks = cpu_to_le32(num_flock_locks);
++	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
+ 	if (err)
+ 		goto fail;
+ 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 9165eb8..000bb36 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -2452,7 +2452,7 @@ static int encode_caps_cb(struct inode *inode, struct ceph_cap *cap,
+ 			lock_flocks();
+ 			ceph_count_locks(inode, &num_fcntl_locks,
+ 					 &num_flock_locks);
+-			rec.v2.flock_len = (2*sizeof(u32) +
++			rec.v2.flock_len = cpu_to_le32(2*sizeof(u32) +
+ 					    (num_fcntl_locks+num_flock_locks) *
+ 					    sizeof(struct ceph_filelock));
+ 			unlock_flocks();
 -- 
 1.8.1.2
 
