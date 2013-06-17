@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab3FQMdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:33:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42372 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab3FQMdr (ORCPT
+	id S1756226Ab3FQMea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:34:30 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:49487 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096Ab3FQMe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:33:47 -0400
-Date: Mon, 17 Jun 2013 14:33:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Alex Shi <alex.shi@intel.com>, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
- forked task
-Message-ID: <20130617123315.GU3204@twins.programming.kicks-ass.net>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
- <1370589652-24549-4-git-send-email-alex.shi@intel.com>
- <CALZhoSS=xMgW8sgjL4qS+LkqAucFptJnOa2Yt53rNwJPEpA0Hg@mail.gmail.com>
- <20130617092033.GL3204@twins.programming.kicks-ass.net>
- <CALZhoSTNg+QWY4VMH97oF8ReJx_nVY7Ux7iEM=66XvNmdbdH6w@mail.gmail.com>
+	Mon, 17 Jun 2013 08:34:29 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51BF024F.2080609@yandex-team.ru>
+Date: Mon, 17 Jun 2013 16:34:23 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSTNg+QWY4VMH97oF8ReJx_nVY7Ux7iEM=66XvNmdbdH6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@gentwo.org>, penberg@kernel.org, mpm@selenic.com,
+        akpm@linux-foundation.org, mgorman@suse.de, glommer@parallels.com,
+        hannes@cmpxchg.org, minchan@kernel.org, jiang.liu@huawei.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: Avoid direct compaction if possible
+References: <51BB1802.8050108@yandex-team.ru> <0000013f4319cb46-a5a3de58-1207-4037-ae39-574b58135ea2-000000@email.amazonses.com> <alpine.DEB.2.02.1306141322490.17237@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1306141322490.17237@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 08:26:55PM +0800, Lei Wen wrote:
-> Hi Peter,
-> 
-> > So the 'problem' is that our running avg is a 'floating' average; ie. it
-> > decays with time. Now we have to guess about the future of our newly
-> > spawned task -- something that is nigh impossible seeing these CPU
-> > vendors keep refusing to implement the crystal ball instruction.
-> 
-> I am curious at this "crystal ball instruction" saying. :)
-> Could it be real? I mean what kind of hw mechanism could achieve such
-> magic power? What I see, for silicon vendor they could provide more
-> monitor unit, but to precise predict the sw's behavior, I don't think hw
-> also this kind of power...
+On 15.06.2013 00:26, David Rientjes wrote:
+> On Fri, 14 Jun 2013, Christoph Lameter wrote:
+>
+>>> It's possible to avoid such problems (or at least to make them less probable)
+>>> by avoiding direct compaction. If it's not possible to allocate a contiguous
+>>> page without compaction, slub will fall back to order 0 page(s). In this case
+>>> kswapd will be woken to perform asynchronous compaction. So, slub can return
+>>> to default order allocations as soon as memory will be de-fragmented.
+>>
+>> Sounds like a good idea. Do you have some numbers to show the effect of
+>> this patch?
+>>
+>
+> I'm surprised you like this patch, it basically makes slub allocations to
+> be atomic and doesn't try memory compaction nor reclaim.  Asynchronous
+> compaction certainly isn't aggressive enough to mimick the effects of the
+> old lumpy reclaim that would have resulted in less fragmented memory.  If
+> slub is the only thing that is doing high-order allocations, it will start
+> falling back to the smallest page order much much more often.
+>
+> I agree that this doesn't seem like a slub issue at all but rather a page
+> allocator issue; if we have many simultaneous thp faults at the same time
+> and /sys/kernel/mm/transparent_hugepage/defrag is "always" then you'll get
+> the same problem if deferred compaction isn't helping.
+>
+> So I don't think we should be patching slub in any special way here.
+>
+> Roman, are you using the latest kernel?  If so, what does
+> grep compact_ /proc/vmstat show after one or more of these events?
+>
 
-There's indeed no known mechanism for this crystal ball instruction to
-really work with. Its just something I often wish for ;-) It would make
-life so much easier - although I have no experience with handling the
-resulting paradoxes, so who knows :-)
+We're using 3.4. And the problem reveals when we moved from 3.2 to 3.4.
+It can be also reproduced on 3.5.
 
-> > So there's two asymptotic cases we want to deal well with; 1) the case
-> > where the newly spawned program will be 'nearly' idle for its lifetime;
-> > and 2) the case where its cpu-bound.
-> >
-> > Since we have to guess, we'll go for worst case and assume its
-> > cpu-bound; now we don't want to make the avg so heavy adjusting to the
-> > near-idle case takes forever. We want to be able to quickly adjust and
-> > lower our running avg.
-> >
-> > Now we also don't want to make our avg too light, such that it gets
-> > decremented just for the new task not having had a chance to run yet --
-> > even if when it would run, it would be more cpu-bound than not.
-> >
-> > So what we do is we make the initial avg of the same duration as that we
-> > guess it takes to run each task on the system at least once -- aka
-> > sched_slice().
-> >
-> > Of course we can defeat this with wakeup/fork bombs, but in the 'normal'
-> > case it should be good enough.
-> >
-> >
-> > Does that make sense?
-> 
-> Thanks for your detailed explanation. Very useful indeed! :)
-> 
-> BTW, I have no question for the patch itself, but just confuse at the
-> patch's comment
-> "some tasks were not launched at once after created".
+I'll send the exact numbers as soon I'll reproduce it again.
+It can take up to 1 week.
 
-Right, I might edit that on applying to clarify things.
+Thanks!
+
+Regards,
+Roman
