@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab3FQWsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:48:53 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56824 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3FQWsw (ORCPT
+	id S1751966Ab3FQWwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:52:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab3FQWwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:48:52 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes
-Date: Mon, 17 Jun 2013 15:47:40 -0700
-Message-Id: <1371509260-2340-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 17 Jun 2013 18:52:13 -0400
+Date: Mon, 17 Jun 2013 15:52:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andi Shyti <andi@etezian.org>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, pc@asdf.org,
+        oatilla@gmail.com
+Subject: Re: [PATCH 03/19] bh1770glc: lux0_glass_factor & lux0_comp_factor on
+ sysfs
+Message-ID: <20130617225212.GA21613@kroah.com>
+References: <cover.1371145891.git.andi@etezian.org>
+ <0336a23507f74f1dcf7c2f7d08ddf77c7d83df26.1371145891.git.andi@etezian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0336a23507f74f1dcf7c2f7d08ddf77c7d83df26.1371145891.git.andi@etezian.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zynq's Ethernet clocks are created by the following hierarchy:
-	mux0 ---> div0 ---> div1 ---> mux1 ---> gate
-Rate change requests on the gate have to propagate all the way up to
-div0 to properly leverage all dividers. Mux1 was missing the
-CLK_SET_RATE_PARENT flag, which is required to achieve this.
+On Thu, Jun 13, 2013 at 08:20:37PM +0200, Andi Shyti wrote:
+> From: Onur Atilla <oatilla@gmail.com>
+> 
+> Introduced lux0_glass_factor and lux0_comp_factor on sysfs
+> 
+> lux0_glass_factor and lux0_sensor_comp_factor are provided as
+> read-only files on the sysfs structure of the bh1770glc optical sensor.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/clk/zynq/clkc.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+You can't add/remove/modify sysfs files without the proper
+Documentation/ABI changes as well.  Please redo this patch with those
+updates.
 
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index 515a573..089d3e3 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -365,8 +365,9 @@ static void __init zynq_clk_setup(struct device_node *np)
- 			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 20, 6,
- 			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
- 			&gem0clk_lock);
--	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2, 0,
--			SLCR_GEM0_CLK_CTRL, 6, 1, 0, &gem0clk_lock);
-+	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2,
-+			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 6, 1, 0,
-+			&gem0clk_lock);
- 	clks[gem0] = clk_register_gate(NULL, clk_output_name[gem0],
- 			"gem0_emio_mux", CLK_SET_RATE_PARENT,
- 			SLCR_GEM0_CLK_CTRL, 0, 0, &gem0clk_lock);
-@@ -387,8 +388,9 @@ static void __init zynq_clk_setup(struct device_node *np)
- 			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 20, 6,
- 			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
- 			&gem1clk_lock);
--	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2, 0,
--			SLCR_GEM1_CLK_CTRL, 6, 1, 0, &gem1clk_lock);
-+	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2,
-+			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 6, 1, 0,
-+			&gem1clk_lock);
- 	clks[gem1] = clk_register_gate(NULL, clk_output_name[gem1],
- 			"gem1_emio_mux", CLK_SET_RATE_PARENT,
- 			SLCR_GEM1_CLK_CTRL, 0, 0, &gem1clk_lock);
--- 
-1.8.3.1
+thanks,
 
+greg k-h
