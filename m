@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3FQM4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:56:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41050 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397Ab3FQM4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:56:01 -0400
-Date: Mon, 17 Jun 2013 14:55:59 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Clear page active before releasing pages
-Message-ID: <20130617125559.GA8853@dhcp22.suse.cz>
-References: <20130617085439.GF1875@suse.de>
+	id S932836Ab3FQNA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:00:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43060 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150Ab3FQNAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:00:25 -0400
+Date: Mon, 17 Jun 2013 15:00:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
+ forked task
+Message-ID: <20130617130004.GV3204@twins.programming.kicks-ass.net>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+ <1370589652-24549-4-git-send-email-alex.shi@intel.com>
+ <CAPM31RJFsh_gBXBHc4E6z=MtORR9D8sWs=86Yqy9onxK9x9fOg@mail.gmail.com>
+ <51BB25BC.9070500@intel.com>
+ <20130617092146.GM3204@twins.programming.kicks-ass.net>
+ <CAPM31RKnosQ21GbiG7txV1roCzzYh1u_8i+EBBp8mP3q-ZWVCA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130617085439.GF1875@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPM31RKnosQ21GbiG7txV1roCzzYh1u_8i+EBBp8mP3q-ZWVCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-06-13 09:54:39, Mel Gorman wrote:
-> Active pages should not be freed to the page allocator as it triggers
-> a bad page state warning. Fengguang Wu reported the following
-> bug and bisected it to the patch "mm: remove lru parameter from
-> __lru_cache_add and lru_cache_add_lru" which is currently in mmotm as
-> mm-remove-lru-parameter-from-__lru_cache_add-and-lru_cache_add_lru.patch
+On Mon, Jun 17, 2013 at 02:39:53AM -0700, Paul Turner wrote:
+> I actually did read it before, and still wasn't sure of the right tag to use.
 > 
-> [   84.212960] BUG: Bad page state in process rm  pfn:0b0c9
-> [   84.214682] page:ffff88000d646240 count:0 mapcount:0 mapping:          (null) index:0x0
-> [   84.216883] page flags: 0x20000000004c(referenced|uptodate|active)
-> [   84.218697] CPU: 1 PID: 283 Comm: rm Not tainted 3.10.0-rc4-04361-geeb9bfc #49
-> [   84.220729]  ffff88000d646240 ffff88000d179bb8 ffffffff82562956 ffff88000d179bd8
-> [   84.223242]  ffffffff811333f1 000020000000004c ffff88000d646240 ffff88000d179c28
-> [   84.225387]  ffffffff811346a4 ffff880000270000 0000000000000000 0000000000000006
-> [   84.227294] Call Trace:
-> [   84.227867]  [<ffffffff82562956>] dump_stack+0x27/0x30
-> [   84.229045]  [<ffffffff811333f1>] bad_page+0x130/0x158
-> [   84.230261]  [<ffffffff811346a4>] free_pages_prepare+0x8b/0x1e3
-> [   84.231765]  [<ffffffff8113542a>] free_hot_cold_page+0x28/0x1cf
-> [   84.233171]  [<ffffffff82585830>] ? _raw_spin_unlock_irqrestore+0x6b/0xc6
-> [   84.234822]  [<ffffffff81135b59>] free_hot_cold_page_list+0x30/0x5a
-> [   84.236311]  [<ffffffff8113a4ed>] release_pages+0x251/0x267
-> [   84.237653]  [<ffffffff8112a88d>] ? delete_from_page_cache+0x48/0x9e
-> [   84.239142]  [<ffffffff8113ad93>] __pagevec_release+0x2b/0x3d
-> [   84.240473]  [<ffffffff8113b45a>] truncate_inode_pages_range+0x1b0/0x7ce
-> [   84.242032]  [<ffffffff810e76ab>] ? put_lock_stats.isra.20+0x1c/0x53
-> [   84.243480]  [<ffffffff810e77f5>] ? lock_release_holdtime+0x113/0x11f
-> [   84.244935]  [<ffffffff8113ba8c>] truncate_inode_pages+0x14/0x1d
-> [   84.246337]  [<ffffffff8119b3ef>] evict+0x11f/0x232
-> [   84.247501]  [<ffffffff8119c527>] iput+0x1a5/0x218
-> [   84.248607]  [<ffffffff8118f015>] do_unlinkat+0x19b/0x25a
-> [   84.249828]  [<ffffffff810ea993>] ? trace_hardirqs_on_caller+0x210/0x2ce
-> [   84.251382]  [<ffffffff8144372e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [   84.252879]  [<ffffffff8118f10d>] SyS_unlinkat+0x39/0x4c
-> [   84.254174]  [<ffffffff825874d6>] system_call_fastpath+0x1a/0x1f
-> [   84.255596] Disabling lock debugging due to kernel taint
+> "13) When to use Acked-by: and Cc:
 > 
-> The problem was that a page marked for activation was released via
-> pagevec. This patch clears the active bit before freeing in this case.
+> The Signed-off-by: tag indicates that the signer was involved in the
+> development of the patch, or that he/she was in the patch's delivery path.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reported-and-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> If a person was not directly involved in the preparation or handling of a
+> patch but wishes to signify and record their approval of it then they can
+> arrange to have an Acked-by: line added to the patch's changelog."
+> https://www.kernel.org/doc/Documentation/SubmittingPatches
+> 
+> Acked-By seemed to fail the direct involvement test.
+> The definition of "delivery path" is not clear; is this strictly by
+> inputs to Linus' tree or recipients of the original patch?
 
-Yes it fixes a flood of "Bad page state" messages I was seeing during
-boot while testing my patches on top of mm tree. I just didn't get to
-reporting the issue as there seem to be more of them. I will report
-others after I have some more specifics.
+The way I interpret the delivery path is when its part of a bigger
+grouping. The author is always the first SOB, if the patch series isn't
+by the same author then he who compiles the aggregate work adds his SOB.
 
-That being said feel free to add my
-Tested-by: Michal Hocko <mhocko@suse.cz>
+Similar for (sub)maintainers passing it onwards towards Linus. I compile
+batches of patch series and feed them to Ingo, Ingo stuffs the lot into
+-tip and feeds them to Linus.
 
-> ---
->  mm/swap.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/mm/swap.c b/mm/swap.c
-> index ac23602..4a1d0d2 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -739,6 +739,9 @@ void release_pages(struct page **pages, int nr, int cold)
->  			del_page_from_lru_list(page, lruvec, page_off_lru(page));
->  		}
->  
-> +		/* Clear Active bit in case of parallel mark_page_accessed */
-> +		ClearPageActive(page);
-> +
->  		list_add(&page->lru, &pages_to_free);
->  	}
->  	if (zone)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+So supposing you wrote a patch, gave it to Alex who composed the bigger
+series, which I picked up and handed to Ingo we'd get something like:
 
--- 
-Michal Hocko
-SUSE Labs
+SoB: PJT
+SoB: Alex
+SoB: PeterZ
+SoB: Mingo
+
+and then when Linus pulls the lot he could add his SOB too, although
+looking at git history he typically doesn't add his sob to each and
+everything he pulls.
+
+But yes, I see where the confusion stems from.
+
+> Is Reviewed-By always more appropriate here?
+
+Yes, or even Acked would work. The difference between reviewed and acked
+is the level of involvement. An ack is for something you glanced over
+and generally agree with, a review is for something you looked at in
+minute detail.
+
+Then there's some people (and I tend to lean towards this) who can't be
+bothered with that distinction too much and simply always use ack.
+
+
