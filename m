@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab3FQXiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:38:05 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:63591 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab3FQXiC (ORCPT
+	id S1752690Ab3FQXih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:38:37 -0400
+Received: from mail-ye0-f170.google.com ([209.85.213.170]:42086 "EHLO
+	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab3FQXif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:38:02 -0400
+	Mon, 17 Jun 2013 19:38:35 -0400
+Date: Mon, 17 Jun 2013 16:38:27 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Part1 PATCH v5 07/22] x86, ACPI: Store override acpi tables
+ phys addr in cpio files info array
+Message-ID: <20130617233827.GP32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1371128589-8953-8-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1371511350.27152.25.camel@misato.fc.hp.com>
-References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-	<1371257800-11720-5-git-send-email-yinghai@kernel.org>
-	<1371511350.27152.25.camel@misato.fc.hp.com>
-Date: Mon, 17 Jun 2013 16:38:01 -0700
-X-Google-Sender-Auth: TopA-q-9wL7CeVInLTNSFr7JaBo
-Message-ID: <CAE9FiQWoTkH4YnS6PEKwVqAd1tB9+8d5gpnJ+qeySU2E30cegA@mail.gmail.com>
-Subject: Re: [PATCH v5 04/22] x86, ACPI: Search buffer above 4G in second try
- for acpi override tables
-From: Yinghai Lu <yinghai@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Thomas Renninger <trenn@suse.de>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371128589-8953-8-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 4:22 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Fri, 2013-06-14 at 17:56 -0700, Yinghai Lu wrote:
->> Now we only search buffer for override acpi table under 4G.
->> In some case, like user use memmap to exclude all low ram,
->> we may not find range for it under 4G.
->>
->> Do second try to search above 4G.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
->> Cc: linux-acpi@vger.kernel.org
->> Tested-by: Thomas Renninger <trenn@suse.de>
->> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
->> Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
->> ---
->>  drivers/acpi/osl.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
->> index 93e3194..42c48fc 100644
->> --- a/drivers/acpi/osl.c
->> +++ b/drivers/acpi/osl.c
->> @@ -627,6 +627,10 @@ void __init acpi_initrd_override(void *data, size_t size)
->>       /* under 4G at first, then above 4G */
->>       acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
->>                                       all_tables_size, PAGE_SIZE);
->> +     if (!acpi_tables_addr)
->> +             acpi_tables_addr = memblock_find_in_range(0,
->> +                                     ~(phys_addr_t)0,
->> +                                     all_tables_size, PAGE_SIZE);
->
-> Should this search start from 4G, instead of 0?
+On Thu, Jun 13, 2013 at 09:02:54PM +0800, Tang Chen wrote:
+> -static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+> +struct file_pos {
+> +	phys_addr_t data;
+> +	phys_addr_t size;
+> +};
 
-should be ok, as memblock searching is top-down.
+Isn't file_pos too generic as name?  Would acpi_initrd_file_pos too
+long?  Maybe just struct acpi_initrd_file?
 
-Thanks
+Thanks.
 
-Yinghai
+-- 
+tejun
