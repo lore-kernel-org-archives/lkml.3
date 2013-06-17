@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3FQQNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:13:45 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:55573 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab3FQQNn (ORCPT
+	id S1752013Ab3FQQOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:14:22 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:63630 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab3FQQOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:13:43 -0400
-Date: Mon, 17 Jun 2013 09:13:43 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Sage Weil <sage@newdream.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the ceph tree
-In-Reply-To: <20130617182934.8aab7e40dc01c91702b564b1@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.00.1306170913270.31579@cobra.newdream.net>
-References: <20130617182934.8aab7e40dc01c91702b564b1@canb.auug.org.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 17 Jun 2013 12:14:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1371446435.2776.122@driftwood>
+References: <1371377909-5921-1-git-send-email-linus.walleij@stericsson.com>
+	<1371446435.2776.122@driftwood>
+Date: Mon, 17 Jun 2013 18:14:20 +0200
+Message-ID: <CACRpkdZdPR-hrV_dRpochwZsM_E1SMZoSXFM9-MN_3Ko6Aa2cw@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: update GPIO range doc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Landley <rob@landley.net>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<facepalm>, fixed.  Thanks!
+On Mon, Jun 17, 2013 at 7:20 AM, Rob Landley <rob@landley.net> wrote:
+> On 06/16/2013 05:18:29 AM, Linus Walleij wrote:
+>>
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> This updates the GPIO range documentation with the API changes
+>> for sparse/random/arbitrary pin-to-GPIO mappings.
+>
+> Acked-by: Rob Landley <rob@landley.net>
+>
+> Why isn't this part of the pinctrl series you posted right afterwards? (It
+> should go in through that maintainer...)
 
-sage
+Well I'm the pinctrl maintainer so I keep it all in my head :-D
 
-On Mon, 17 Jun 2013, Stephen Rothwell wrote:
+>> +in gpio number, and use the ranges internals to retrive a pin number.
+>> After
+>
+> Range's perhaps?
 
-> Hi Sage,
-> 
-> After merging the ceph tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> drivers/block/rbd.c: In function 'rbd_release':
-> drivers/block/rbd.c:510:2: warning: 'return' with a value, in function returning void [enabled by default]
->   return 0;
->   ^
-> 
-> Caused by commit f28d6bf9ef4d ("Merge remote-tracking branch
-> 'linus/master' into testing").
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
+Thanks, fixed it up.
+
+Yours,
+Linus Walleij
