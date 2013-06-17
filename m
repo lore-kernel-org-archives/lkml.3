@@ -1,178 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab3FQHna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:43:30 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:60975 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113Ab3FQHn2 (ORCPT
+	id S932258Ab3FQHpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:45:36 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46142 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab3FQHpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:43:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130617091549.398b865f@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1371195540-2991-1-git-send-email-l.majewski@samsung.com>
-	<1371195540-2991-2-git-send-email-l.majewski@samsung.com>
-	<CAKohpokQAsuAqWi7rNx9RaFz8KVRNXVkBD22KC5_Qh05k66qqA@mail.gmail.com>
-	<20130617091549.398b865f@amdc308.digital.local>
-Date: Mon, 17 Jun 2013 13:13:27 +0530
-Message-ID: <CAKohpo=nfuqwCoQJRczmNRNXCOTL5FSJQEzjKpVdXU+wu-KJ1g@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Jun 2013 03:45:35 -0400
+Date: Mon, 17 Jun 2013 17:45:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: linux-next: manual merge of the arm64-hugepages tree with the arm64
+ tree
+Message-Id: <20130617174528.fc0381c10f8c5296b4efe776@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Jun_2013_17_45_28_+1000_O4SlmQi/tnc=JyOH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 June 2013 12:45, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> On Mon, 17 Jun 2013 11:13:18 +0530, Viresh Kumar wrote:
->> On 14 June 2013 13:08, Lukasz Majewski <l.majewski@samsung.com> wrote:
+--Signature=_Mon__17_Jun_2013_17_45_28_+1000_O4SlmQi/tnc=JyOH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> > +int cpufreq_boost_trigger_state(int state) +{
+Hi Steve,
 
->> > +       if (!cpufreq_driver->boost_supported)
->> > +               return -ENODEV;
->>
->> This can't happen. sysfs directory is present only when we
->> have boost supported.
->
-> I know, that we shall not look into the future. But this method will be
-> used when somebody would like to enable boost from kernel. Let's say
-> new governor or such :-).
+Today's linux-next merge of the arm64-hugepages tree got conflicts in
+arch/arm64/include/asm/pgtable-hwdef.h and
+arch/arm64/include/asm/pgtable.h between commit 363116073a26 ("arm64:
+KVM: define HYP and Stage-2 translation page flags") from the arm64 tree
+and commits 072b1b62a643 ("ARM64: mm: Make PAGE_NONE pages read only and
+no-execute") and af07484863e0 ("ARM64: mm: THP support") from the
+arm64-hugepages tree.
 
-We don't know if that would be acceptable or not as of now.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> I can remove this and add it later, but I think, that it is safer to
-> add it straightaway.
+Note that the arm64 tree version of PMD_SECT_USER used a pteval_t where I
+would have expected a pmdval_t like the arm64-hugepages tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Remove it for now.
+diff --cc arch/arm64/include/asm/pgtable.h
+index 5588e8a,720fc4a..0000000
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@@ -76,13 -76,7 +76,13 @@@ extern pgprot_t pgprot_default
+  #define PAGE_KERNEL		_MOD_PROT(pgprot_default, PTE_PXN | PTE_UXN | PTE_DI=
+RTY)
+  #define PAGE_KERNEL_EXEC	_MOD_PROT(pgprot_default, PTE_UXN | PTE_DIRTY)
+ =20
+ +#define PAGE_HYP		_MOD_PROT(pgprot_default, PTE_HYP)
+ +#define PAGE_HYP_DEVICE		__pgprot(PROT_DEVICE_nGnRE | PTE_HYP)
+ +
+ +#define PAGE_S2			__pgprot_modify(pgprot_default, PTE_S2_MEMATTR_MASK, PT=
+E_S2_MEMATTR(MT_S2_NORMAL) | PTE_S2_RDONLY)
+ +#define PAGE_S2_DEVICE		__pgprot(PROT_DEFAULT | PTE_S2_MEMATTR(MT_S2_DEVI=
+CE_nGnRE) | PTE_S2_RDWR | PTE_UXN)
+ +
+- #define __PAGE_NONE		__pgprot(((_PAGE_DEFAULT) & ~PTE_TYPE_MASK) | PTE_PR=
+OT_NONE)
++ #define __PAGE_NONE		__pgprot(((_PAGE_DEFAULT) & ~PTE_TYPE_MASK) | PTE_PR=
+OT_NONE | PTE_RDONLY | PTE_PXN | PTE_UXN)
+  #define __PAGE_SHARED		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_P=
+XN | PTE_UXN)
+  #define __PAGE_SHARED_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | P=
+TE_PXN)
+  #define __PAGE_COPY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_PXN=
+ | PTE_UXN | PTE_RDONLY)
 
->>
->> > +       if (cpufreq_boost_enabled != state) {
->> > +               if (cpufreq_driver->set_boost_freq) {
->> > +                       ret = cpufreq_driver->set_boost_freq(state);
->>
->> I thought this routine was for setting boost frequency and not
->> for enabling boost feature. If boost has to be enabled separately
->> then this routine must take care of it while setting freq.
->>
->> So, in other words, this must not be called here.
->
-> This function explicitly follows current logic of acpi-cpufreq.c.
->
-> I would like to avoid modifying legacy/working code as much as
-> possible (especially when I hadn't yet received any feedback about
-> acpi-cpufreq.c file changes).
+--Signature=_Mon__17_Jun_2013_17_45_28_+1000_O4SlmQi/tnc=JyOH
+Content-Type: application/pgp-signature
 
-Hmm.. I saw that code now. You are talking about: boost_set_msrs ??
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-So, this function has nothing to do with set_boost_freq() but
-enable_boost(). Rename your function similarly and keep this code.
+iQIcBAEBCAAGBQJRvr6YAAoJEECxmPOUX5FECKEQAI3lsxix2vmYti51W09C0Way
+n3dkHMgkkox/qbn87UOJJL8yxQlwwphK150mQMv4L12Dgv8HOIfVcUqUvrdm1pUP
+9uZ3L5/aYRspGtQKnS1eUhKYHOe91koqbkd9Eocdi5KIOn8s5Rx44VNHpR12p0Fe
+pDM0o+OvOrSWFrb9lwtGkysz6Uqg/D3r5CpVhxXHWpVLMmHpLgYjBXqpjDYe9iSO
+2pnCDcOJPd7JmUWeYmghK+tBlMAmYv270SwfWpaNnhd2Qq46VIl53zPslfi6naj8
++V9KJ/Y5WNnC/svLPqOJ4BeLa+TkxsJihzrOz6XATCLr3agbpT1ZRm8k/OTohZPt
+LHGfowDy1GsrXIOh0N6dXqYaOHbOkPoHX2/f6Gh/htod3VG4WqZKd+7AhmMQMMpF
+X7wB3x2v+XZh/A9UFa5B9Xfwyqq/zL/W6DtD/qLxuOSRaeg0+AtrfrZU0zAR1dz5
+dzdwQXVgDVJIB6CxYF4ieYWBe6+0CMZaGOSmYK8SrjuE0EHV2091Sbr+KNJ1bqLG
+dsQm5aPtFm2xVfKZgGvyGnocV/66BCGHr/ZAt/dq1lEOX8pFcQQFyI21RGJ2puXc
+x3jMzmSPM0xAYtUz/xmAxkZqcTcca94gaRwi8fJxH3FrGD4i6n5YSMd8j0XQ/yjo
+b3p2ayUW0GX792rtLMBr
+=4kqb
+-----END PGP SIGNATURE-----
 
->> > +                       if (ret) {
->> > +                               pr_err("%s: BOOST cannot enable
->> > (%d)\n",
->> > +                                      __func__, ret);
->> > +                               return ret;
->> > +                       }
->> > +               }
->> > +
->> > +               for_each_possible_cpu(cpu) {
->> > +                       policy = cpufreq_cpu_get(cpu);
->>
->> In case this code is required, it would make more sense to keep list
->> of all available policies, which we can iterate through.
->
-> Maybe I don't get the big picture, but why we cannot iterate
-> through possible CPUs? At least one shall have valid policy and
-> freq_table combination.
-
-Many cpus share same policy structure and so iterating over all of them
-isn't a very good idea. Either keep a mask of cpus already iterated,
-copy policy->cpus to it on each iteration. If a cpu is already done
-skip loop for it.
-
-OR keep a list of policies. I would prefer the later (do it in a separate
-patch), as this can be used later too.
-
-> I've already proposed list of all policies (at v1), but we decided to
-> abandon this idea.
-
-I don't remember why it was there but reason wasn't good enough to
-keep it.
-
->> I am not sure if this is required at all. Or what complications can be
->> there when we update max/min on the fly here.
->
-> Correct me if I'm wrong, but I'm using scripts for tests which run
-> simultaneously and enables/disables boost feature. I don't recall if
-> there is a lock at sysfs, which would prevent from simultaneous write
-> to the "boost" sysfs attribute.
->
-> I will doubble check that.
-
-It isn't about a crash but how cpufreq subsystem works. I will think over
-it later too, for now you can keep it.
-
->> > +{
->> > +       return cpufreq_boost_enabled;
->>
->> s/cpufreq_boost_enabled/boost_enabled
-
-??
-
->> > @@ -318,6 +322,10 @@ __ATTR(_name, _perm, show_##_name, NULL)
->> >  static struct freq_attr _name =                        \
->> >  __ATTR(_name, 0644, show_##_name, store_##_name)
->> >
->> > +#define cpufreq_attr_available_freq(_name)       \
->> > +struct freq_attr cpufreq_freq_attr_##_name##_freqs =     \
->> > +__ATTR_RO(_name##_frequencies)
->>
->> What is this doing in cpufreq.h? It will only be used by freq_table.c
->> file.
->
-> I wanted to add those #defines to the place where other similar ones
-> are placed.
-
-That's not how these or any other declaration should be placed. By adding
-these to cpufreq.h, you are inviting other parts of kernel to use them.
-Which we don't want.
-
-> I can put it to freq_table.c.
-
-Thanks.
-
->> Again, I couldn't see how boost freqs are getting used? You have
->> probably made them part of normal freq range here and so they
->> might be used during normal operations. But we wanted it to be
->> used only when we have few cpus on... etc.. Where is that logic?
->
-> The logic is as follow:
-> - cpufreq_driver exports .attr field. When driver supports boost then
->   two attributes are exported (even when boost is not enabled, but
->   supported):
->         - scaling_available_frequencies (only normal frequencies - this
->           attribute is unchanged)
->         - scaling_boost_frequencies - list possible boost frequencies.
->
-> When boost is not supported - then only scaling_available_frequencies
-> is exported (as it is done now).
-
-You are missing the whole point behind keeping this patchset. Its not
-about how to expose boost freqs to sysfs (that's what you are talking
-about) but to use these frequencies on the fly. Some part of kernel
-code would be setting these frequencies in real hardware. Who will
-set these frequencies? On what basis? How do we ensure we don't
-burn your chip?
+--Signature=_Mon__17_Jun_2013_17_45_28_+1000_O4SlmQi/tnc=JyOH--
