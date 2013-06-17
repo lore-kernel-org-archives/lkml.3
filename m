@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab3FQOVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:21:08 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:39802 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752963Ab3FQOVG (ORCPT
+	id S1756395Ab3FQOWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:22:31 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:38652 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab3FQOW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:21:06 -0400
-From: Lorenz Haspel <lorenz@badgers.com>
-To: devel@linuxdriverproject.org
-Cc: gregkh@linuxfoundation.org, puff65537@bansheeslibrary.com,
-        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
-        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de,
-        Lorenz Haspel <lorenz@badgers.com>
-Subject: [PATCH 3/5] silicom: checkpatch: explicit initialised statics
-Date: Mon, 17 Jun 2013 16:20:15 +0200
-Message-Id: <1371478817-28357-3-git-send-email-lorenz@badgers.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371478817-28357-1-git-send-email-lorenz@badgers.com>
-References: <1371478817-28357-1-git-send-email-lorenz@badgers.com>
+	Mon, 17 Jun 2013 10:22:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+Date: Mon, 17 Jun 2013 16:22:28 +0200
+Message-ID: <CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Colin Cross <ccross@android.com>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed checkpatch error:
-removed expicit initialisations of statics to 0 or NULL
+On 14 June 2013 22:52, Colin Cross <ccross@android.com> wrote:
+> On Fri, Jun 14, 2013 at 11:42 AM, Zoran Markovic
+> <zoran.markovic@linaro.org> wrote:
+>>> I am not sure I understand why this patch is needed. When a new card
+>>> is inserted/removed and the upper levels gets notification about the
+>>> new card, triggering the mounting/un-mounting of the file system, why
+>>> should it be the lowest layer (mmc) that prevents the platform from
+>>> enter suspend/sleep? Why do we need to prevent it at all?
+>>>
+>>> Note that notifier handling in mmc_pm_notify, was if I remember
+>>> correctly, not completely developed when the original version of this
+>>> patch was being discussed. mmc_pm_notify prevents cards from being
+>>> inserted/removed in the middle of suspend->resume sequence, is that
+>>> not enough?
+>>
+>> I will try to speak on behalf of the original implementers in a hope
+>> they would provide the original motivation for the patch.
+>>
+>> My understanding is that any preemption in the procedure could be an
+>> opportunity to suspend, as there may be a suspend request racing with
+>> this code. This is why the calls to __pm_stay_awake() and
+>> queue_delayed_work() are so tightly coupled. It would be up to the
+>> delayed work procedure (mmc_rescan()) to decide whether or not it is
+>> safe to suspend. If there are no changes in the MMC state or all
+>> changes can be handled by mmc_rescan(), it is safe to call
+>> __pm_relax(). Otherwise, userland may take over processing of this
+>> event, and this is why the awake state needs to be extended by 1/2
+>> second.
+>
+> The __pm_stay_awake() is required to prevent autosleep during the time
+> between the card detect interrupt and when the userspace process that
+> gets the notification runs.  The 1/2 second delay is used because it
+> is easier than trying to detect when the userspace process has
+> received the notification, at which time it should hold its own
+> wakelock and the mmc subsystem can call __pm_relax().
 
-Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
-Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
----
- drivers/staging/silicom/bpctl_mod.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Hi Colin,
 
-diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-index 2420383..78570dd 100644
---- a/drivers/staging/silicom/bpctl_mod.c
-+++ b/drivers/staging/silicom/bpctl_mod.c
-@@ -35,7 +35,7 @@
- #define BP_MOD_DESCR "Silicom Bypass-SD Control driver"
- #define BP_SYNC_FLAG 1
- 
--static int major_num = 0;
-+static int major_num;
- 
- MODULE_AUTHOR("Anna Lukin, annal@silicom.co.il");
- MODULE_LICENSE("GPL");
-@@ -112,7 +112,7 @@ typedef struct _bpctl_dev {
- static bpctl_dev_t *bpctl_dev_arr;
- 
- static struct semaphore bpctl_sema;
--static int device_num = 0;
-+static int device_num;
- 
- static int get_dev_idx(int ifindex);
- static bpctl_dev_t *get_master_port_fn(bpctl_dev_t *pbpctl_dev);
-@@ -134,7 +134,7 @@ static int bp_device_event(struct notifier_block *unused,
- 			   unsigned long event, void *ptr)
- {
- 	struct net_device *dev = ptr;
--	static bpctl_dev_t *pbpctl_dev = NULL, *pbpctl_dev_m = NULL;
-+	static bpctl_dev_t *pbpctl_dev, *pbpctl_dev_m;
- 	int dev_num = 0, ret = 0, ret_d = 0, time_left = 0;
- 	/* printk("BP_PROC_SUPPORT event =%d %s %d\n", event,dev->name, dev->ifindex ); */
- 	/* return NOTIFY_DONE; */
-@@ -7855,7 +7855,7 @@ RW_FOPS(wd_autoreset)
- int bypass_proc_create_dev_sd(bpctl_dev_t *pbp_device_block)
- {
- 	struct bypass_pfs_sd *current_pfs = &(pbp_device_block->bypass_pfs_set);
--	static struct proc_dir_entry *procfs_dir = NULL;
-+	static struct proc_dir_entry *procfs_dir;
- 	int ret = 0;
- 
- 	if (!pbp_device_block->ndev)
--- 
-1.7.10.4
+I don't have the in-depth knowledge about how the userspace deamons
+handles the event notifications, so please bare with me while I am
+trying to understand more here.
 
+First of all, are we trying to solve an  issue here or just improving
+some specific situation, that is not clear to me.
+
+I might have misunderstood this patch, but it seems like your concern
+is that you believe the event notification can get lost - if userspace
+are about to trigger a suspend while a card is being inserted/removed.
+If that is the case, could you elaborate on what level the
+notification can get lost?
+
+Kind regards
+Ulf Hansson
