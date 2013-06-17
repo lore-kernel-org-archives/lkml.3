@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab3FQHW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:22:29 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:44125 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab3FQHW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:22:27 -0400
-Date: Mon, 17 Jun 2013 09:22:15 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/9] dasd: implement block timeout
-Message-ID: <20130617092215.6c0df7d1@mschwide>
-In-Reply-To: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
-References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061707-0542-0000-0000-0000058E7102
+	id S1756062Ab3FQHXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:23:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35140 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754191Ab3FQHXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 03:23:21 -0400
+Message-ID: <51BEB955.1020809@ti.com>
+Date: Mon, 17 Jun 2013 10:23:01 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Dave Airlie <airlied@linux.ie>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <linux-fbdev@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: Re: linux-next: manual merge of the fbdev tree with the drm tree
+References: <20130617142120.b42dafb967974d3906a43fc9@canb.auug.org.au>
+In-Reply-To: <20130617142120.b42dafb967974d3906a43fc9@canb.auug.org.au>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="----enig2TOCMVMLBHOFPOMFKBIQW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 Jun 2013 17:03:13 +0200
-Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+------enig2TOCMVMLBHOFPOMFKBIQW
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> This is a re-send of a patch series Hannes sent last january. Stefan
-> looked at the patches and our tests went well, so I guess this is ready
-> for upstream integration.
-> 
-> The changes to block/blk-core.c and block/blk-timeout.c look good
-> to me, but I would like to request an acked-by from Jens for the
-> block layer parts in patch #6 and #7 of the series (pretty please :-)
-> 
-> The original patch description from Hannes:
-> 
-> This patch series implements a block timeout handler for
-> DASDs. The main impetus was to allow for a fixed upper
-> timeout value after which a request is aborted.
-> This is required eg when implementing a host-based
-> mirroring system where otherwise the entire mirror
-> would stall under certain circumstances.
-> 
-> Changes since v1:
-> - Fixed lock inversion in dasd_times_out()
-> - Checked for 'device->block' when writing to 'timeout' attribute
-> - Check against 'UINT_MAX' when verifying the 'timeout' value
-> 
-> Once I got the required acked-by I can carry the patch set in the
-> linux-s390 tree for the next merge window.
-> 
-> Hannes Reinecke (9):
->   dasd: Clarify comment
->   dasd: make number of retries configurable
->   dasd: process all requests in the device tasklet
->   dasd: Implement block timeout handling
->   dasd: Reduce amount of messages for specific errors
->   block,dasd: detailed I/O errors
->   block: check for timeout function in blk_rq_timed_out()
->   dasd: Add 'timeout' attribute
->   dasd: Fail all requests when DASD_FLAG_ABORTIO is set
-> 
->  arch/s390/include/uapi/asm/dasd.h |    4 ++
->  block/blk-core.c                  |    3 +
->  block/blk-timeout.c               |    5 +-
->  drivers/s390/block/dasd.c         |  115 +++++++++++++++++++++++++++++++++----
->  drivers/s390/block/dasd_devmap.c  |   97 +++++++++++++++++++++++++++++++
->  drivers/s390/block/dasd_diag.c    |    8 ++-
->  drivers/s390/block/dasd_eckd.c    |   15 +++--
->  drivers/s390/block/dasd_erp.c     |    8 +++
->  drivers/s390/block/dasd_fba.c     |   10 +++-
->  drivers/s390/block/dasd_int.h     |   10 ++++
->  drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
->  11 files changed, 313 insertions(+), 21 deletions(-)
-> 
+Hi,
 
-Ping. Jens could you please look at patch #6 and #7? I don't want
-to do a please pull with block layer parts without your consent.
+On 17/06/13 07:21, Stephen Rothwell wrote:
+> Hi all,
+>=20
+> Today's linux-next merge of the fbdev tree got a conflict in
+> drivers/video/of_display_timing.c between commit f583662347c6 ("video:
+> display_timing: make parameter const") from the drm tree and commits
+> fcf7e6e5bd84 ("videomode: don't allocate mem in of_get_display_timing()=
+")
+> and ffa3fd21de8a ("videomode: implement public of_get_display_timing()"=
+)
+> from the fbdev tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action=
 
--- 
-blue skies,
-   Martin.
+> is required).
 
-"Reality continues to ruin my life." - Calvin.
+Thanks, looks correct to me.
 
+I guess it'd be better to merge videomode and display_timing stuff via a
+single tree from this on. Being in drivers/video/, I suggest the fbdev tr=
+ee.
+
+ Tomi
+
+
+
+------enig2TOCMVMLBHOFPOMFKBIQW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRvrlZAAoJEPo9qoy8lh71etgP/jsT/ZZt9o7oZFIrUadXPOVg
+Zi8ZUf/5/4RcWWBDhuXlYbmHOawt6LhlCGVF0tmWiNBa39DBh8HSTE6uXedZ8rlX
+Tf6b5kf1Je5t001Q8l98kIpgkCJT1QzQkFGK6OPvb7vhu8s+AjS//7gRUsfxmxHl
+wZ5BfZsYfQ7muVEyLskhLj+MCq52RddNov0gZQWBshxKVk22jYDNwqYUzgNCAnI4
+24wXPSILBGVZGUBYuZXM379hYiAGGhe6WuChgm9GauNtaX4JXUeVp5WnGhkk4Dz5
+E+LBgiJOLC0Khq+OkCDwkLK49Ru35oYkOVWWn+5ZV5YhiEfM2IcqBM7qLxVnt8Js
+6YoJuiwUUgXbBtfkffJb5gQuwPUK6yvRHb3nxTdXhav84iVZmpz61K4ktUMLB7sR
+dWsI8V8JVMZg1fTQgL4ltak7kNlndtV0jHIQ39+BYjR0lFXW3UqTt/IeZLnzBokN
+t7UdpPaqz36UifUnrX3CV7COS3yXIr1vulKeWGP7EGO8tSTerFer/A0HN93bepdy
+h7540LWtvStoZof3ZTrJtBgGwSoxg1bN2vA3sLIzDh3ojwWKTnqpGc6zlOiDmpQn
+CXpfXwtZ22bAqL5UsIEJ2R5EI2cdDnD3dlf195Bib3ku1zXMW0aGwyRfJaUwiug0
+XpwLocVAFw7rxstdXeZD
+=6nT8
+-----END PGP SIGNATURE-----
+
+------enig2TOCMVMLBHOFPOMFKBIQW--
