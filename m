@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab3FQLvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:51:43 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:60980 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711Ab3FQLvl (ORCPT
+	id S932773Ab3FQLyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:54:35 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44668 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab3FQLye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 07:51:41 -0400
+	Mon, 17 Jun 2013 07:54:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370589652-24549-5-git-send-email-alex.shi@intel.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-5-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1370589652-24549-6-git-send-email-alex.shi@intel.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-6-git-send-email-alex.shi@intel.com>
 From: Paul Turner <pjt@google.com>
-Date: Mon, 17 Jun 2013 04:51:09 -0700
-Message-ID: <CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
-Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
+Date: Mon, 17 Jun 2013 04:54:02 -0700
+Message-ID: <CAPM31RKkBHkL69K4AnEmmQcMaj2rfs6cWbc2WksT9G8=btjsQw@mail.gmail.com>
+Subject: Re: [patch v8 5/9] sched: update cpu load after task_tick.
 To: Alex Shi <alex.shi@intel.com>
 Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -36,48 +36,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
-> The wakeuped migrated task will __synchronize_entity_decay(se); in
-> migrate_task_fair, then it needs to set
-> `se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
-> before update_entity_load_avg, in order to avoid slept time is updated
-> twice for se.avg.load_avg_contrib in both __syncchronize and
-> update_entity_load_avg.
->
-> but if the slept task is waked up from self cpu, it miss the
-> last_runnable_update before update_entity_load_avg(se, 0, 1), then the
-> slept time was used twice in both functions.
-> So we need to remove the double slept time counting.
-
-Good catch.
-
+> To get the latest runnable info, we need do this cpuload update after
+> task_tick.
 >
 > Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 1fc30b9..42c7be0 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1570,7 +1570,8 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->                 }
->                 wakeup = 0;
->         } else {
-> -               __synchronize_entity_decay(se);
-> +               se->avg.last_runnable_update += __synchronize_entity_decay(se)
-> +                                                       << 20;
-
-Can you add something like:
-
-+               /*
-+                * Task re-woke on same cpu (or else
-migrate_task_rq_fair()
-+                * would have made count negative); we must be careful
-to avoid
-+                * double-accounting blocked time after synchronizing
-decays.
-+                */
-
 
 Reviewed-by: Paul Turner <pjt@google.com>
+
+> ---
+>  kernel/sched/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 6f226c2..05176b8 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2152,8 +2152,8 @@ void scheduler_tick(void)
+>
+>         raw_spin_lock(&rq->lock);
+>         update_rq_clock(rq);
+> -       update_cpu_load_active(rq);
+>         curr->sched_class->task_tick(rq, curr, 0);
+> +       update_cpu_load_active(rq);
+>         raw_spin_unlock(&rq->lock);
+>
+>         perf_event_task_tick();
+> --
+> 1.7.12
+>
