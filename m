@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3FQQxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:53:36 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:64453 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3FQQxe (ORCPT
+	id S1753317Ab3FQQyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:54:17 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56628 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3FQQyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:53:34 -0400
+	Mon, 17 Jun 2013 12:54:15 -0400
+Date: Mon, 17 Jun 2013 20:54:10 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130617165409.GA10764@localhost.localdomain>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617153302.GI5018@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1371216160-2595-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1371216160-2595-1-git-send-email-fabio.baltieri@linaro.org>
-Date: Mon, 17 Jun 2013 18:53:33 +0200
-Message-ID: <CACRpkdbkXUkq5VBq8QEf11r=ByqmeyNcxMHkfVs8ip=_O5G4CA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: add restart support via prcmu
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617153302.GI5018@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 3:22 PM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
+On Mon, Jun 17, 2013 at 05:33:02PM +0200, Michal Hocko wrote:
+> On Mon 17-06-13 19:14:12, Glauber Costa wrote:
+> > On Mon, Jun 17, 2013 at 04:18:22PM +0200, Michal Hocko wrote:
+> > > Hi,
+> > 
+> > Hi,
+> > 
+> > > I managed to trigger:
+> > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> > > on top. 
+> > > 
+> > > This is obviously BUG_ON(nlru->nr_items < 0) and 
+> > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> > > [...]
+> > > ffffffff81122d9c:       0f 0b                   ud2
+> > > 
+> > > RAX is -1UL.
+> >
+> > Yes, fearing those kind of imbalances, we decided to leave the counter
+> > as a signed quantity and BUG, instead of an unsigned quantity.
+> > 
+> > > I assume that the current backtrace is of no use and it would most
+> > > probably be some shrinker which doesn't behave.
+> > > 
+> > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+> > Assuming you are not using xfs, we are left with dentries and inodes.
+> > 
+> > The first thing to do is to find which one of them is misbehaving. You
+> > can try finding this out by the address of the list_lru, and where it
+> > lays in the superblock.
+> 
+> I am not sure I understand. Care to prepare a debugging patch for me?
+>  
+> > Once we know each of them is misbehaving, then we'll have to figure
+> > out why.
+> > 
+> > Any special filesystem workload ?
+> 
+> This is two parallel kernel builds with separate kernel trees running
+> under 2 hard unlimitted groups (with 0 soft limit) followed by rm -rf
+> source trees + drop caches. Sometimes I have to repeat this multiple
+> times. I can also see some timer specific crashes which are most
+> probably not related so I am getting back to my mm tree and will hope
+> the tree is healthy.
+> 
+> I have seen some other traces as well (mentioning ext3 dput paths) but I
+> cannot reproduce them anymore.
+> 
 
-> Add necessary code to restart ux500 based machines using
-> prcmu_system_reset().
->
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> ---
->
-> Hi Linus,
->
-> this is something I had in my tree for some time.  This adds basic
-> soft-reboot support for all ux500 machines using prcmu (the actual
-> reboot code was already there) and may also be useful as a base to add
-> the remaining "reboot reason" code if necessary.
->
-> This is based on your current ste-next branch.
+Do you have those traces? If there is a bug in the ext3 dput, then it is
+most likely the culprit. dput() is when we insert things into the LRU. So
+if we are not fully inserting an element that we should have - and later
+on try to remove it, we'll go negative.
 
-Patch applied.
-
-If you're meriging "reboot reason" code, rename "reason" to
-"cause" everywhere. Cause and effect. Causality. Not the
-age of reason.
-
-Yours,
-Linus Walleij
+Can we see those traces?
