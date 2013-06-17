@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab3FQRuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:50:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16470 "EHLO
+	id S1754949Ab3FQRu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:50:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16464 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab3FQRuY (ORCPT
+	with ESMTP id S1753560Ab3FQRuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:50:24 -0400
+	Mon, 17 Jun 2013 13:50:23 -0400
 X-PGP-Universal: processed;
 	by hqnvupgp08.nvidia.com on Mon, 17 Jun 2013 10:50:22 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
@@ -15,9 +15,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>,
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-i2c@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 1/2] mfd: tps65910: Fix crash in i2c_driver .probe
-Date: Mon, 17 Jun 2013 20:47:36 +0300
-Message-ID: <1371491257-23791-2-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH 2/2] regulator: tps62360: Fix crash in i2c_driver .probe
+Date: Mon, 17 Jun 2013 20:47:37 +0300
+Message-ID: <1371491257-23791-3-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
@@ -35,35 +35,42 @@ This caused kernel panics due to NULL dereference.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- drivers/mfd/tps65910.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/regulator/tps62360-regulator.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index d792772..a62c30d 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -461,16 +461,18 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	struct tps65910_board *of_pmic_plat_data = NULL;
- 	struct tps65910_platform_data *init_data;
- 	int ret = 0;
--	int chip_id = id->driver_data;
-+	int chip_id = -1;
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index 612919c..a490d5b 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -351,7 +351,6 @@ static int tps62360_probe(struct i2c_client *client,
+ 	int chip_id;
  
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
+ 	pdata = client->dev.platform_data;
+-	chip_id = id->driver_data;
  
--	if (!pmic_plat_data && i2c->dev.of_node) {
-+	if (id) {
+ 	if (client->dev.of_node) {
+ 		const struct of_device_id *match;
+@@ -364,6 +363,11 @@ static int tps62360_probe(struct i2c_client *client,
+ 		chip_id = (int)match->data;
+ 		if (!pdata)
+ 			pdata = of_get_tps62360_platform_data(&client->dev);
++	} else if (id) {
 +		chip_id = id->driver_data;
-+	} else if (i2c->dev.of_node) {
- 		pmic_plat_data = tps65910_parse_dt(i2c, &chip_id);
- 		of_pmic_plat_data = pmic_plat_data;
++	} else {
++		dev_err(&client->dev, "No device tree match or id table match found\n");
++		return -ENODEV;
  	}
  
--	if (!pmic_plat_data)
-+	if (!pmic_plat_data || chip_id < 0)
- 		return -EINVAL;
+ 	if (!pdata) {
+@@ -402,7 +406,7 @@ static int tps62360_probe(struct i2c_client *client,
+ 		return -ENODEV;
+ 	}
  
- 	init_data = devm_kzalloc(&i2c->dev, sizeof(*init_data), GFP_KERNEL);
+-	tps->desc.name = id->name;
++	tps->desc.name = client->name;
+ 	tps->desc.id = 0;
+ 	tps->desc.ops = &tps62360_dcdc_ops;
+ 	tps->desc.type = REGULATOR_VOLTAGE;
 -- 
 1.8.1.5
 
