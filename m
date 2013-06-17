@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3FQJFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:05:40 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:49894 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884Ab3FQJFj (ORCPT
+	id S1755968Ab3FQJFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:05:55 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:55816 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab3FQJFy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 05:05:39 -0400
+	Mon, 17 Jun 2013 05:05:54 -0400
+From: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
+Subject: RE : [GIT PULL v3] at91: USBA DT support / drivers update for 3.11
+ #1
+Thread-Topic: [GIT PULL v3] at91: USBA DT support / drivers update for 3.11
+ #1
+Thread-Index: AQHOaWyOPuPyVfD9NkauoQBirj4nLJk5mz9l
+Date: Mon, 17 Jun 2013 09:05:50 +0000
+Message-ID: <EABCC4A72A203F4BA2E04297CF0282C427D1E181@hnombx01.corp.atmel.com>
+References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+ <1371247364-23213-1-git-send-email-nicolas.ferre@atmel.com>,<20130615020343.GB25585@quad.lixom.net>
+In-Reply-To: <20130615020343.GB25585@quad.lixom.net>
+Accept-Language: fr-FR, en-US
+Content-Language: fr-FR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.161.30.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1370527523-1030-1-git-send-email-archit@ti.com>
-References: <1370527523-1030-1-git-send-email-archit@ti.com>
-Date: Mon, 17 Jun 2013 11:05:38 +0200
-Message-ID: <CACRpkdY-HZ4AGqKr-DA1pvfnaVYEGZoEDn_wfDr8=9Qr+6dpiw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Enable pcf857x GPIO expander for Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Archit Taneja <archit@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 4:05 PM, Archit Taneja <archit@ti.com> wrote:
 
-> Add code to parse the GPIO expander Device Tree node and extract platform data
-> out of it, and populate the struct 'pcf857x_platform_data' maintained by the
-> driver. This enables devices to reference the gpio expander from Device Tree.
+From: Olof Johansson [olof@lixom.net]
+>On Sat, Jun 15, 2013 at 12:02:44AM +0200, Nicolas Ferre wrote:
+>> Arnd, Olof,
+>>
+>> This is a rework of the previous pull-request done by Jean-Christophe
+>> PLAGNIOL-VILLARD ([GIT PULL] at91: USBA DT support for 3.11).
+>> It is also the division of my previous pull request (v2) to extract only
+>> patches related to drivers. The DT patches will be stacked on top of our
+>> arm-soc/at91/dt branch in an upcoming pull-request.
+>> You should see that this material is based on the cleanup branch that you
+>> already have in arm-soc/at91/cleanup.
+>>
+>> This adds the DT support for USBA gadget driver present in the most recent
+>> AT91 SoCs.
+>> As agreed with Arnd and Felipe we send these drivers updates via arm-soc.
+>>
+>> Thanks, best regards,
+>>
+>> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
+>>
+>>   ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
+>>
+>> are available in the git repository at:
+>>
+>>   git://github.com/at91linux/linux-at91.git tags/at91-drivers
 >
-> Add DT binding info in Documentation.
->
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Archit Taneja <archit@ti.com>
+>Pulled, thanks. This had conflicts with some code from fixes. The change/remove
+>ones were easy (cs-gpio vs interrupts), but there was one dealing with pinctrl.
+>PLease double-check that there wasn't a need to carry over a fix to the
+>include-file-based version.
 
-(...)
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
-> @@ -0,0 +1,44 @@
-> +PCF857x I2C based GPIO controller bindings
-> +
-> +Required properties:
-> +- compatible:
-> +  - "nxp,pca9670" for NXP PCA9670 8 bit I/O expander
-> +  - "nxp,pca9672" for NXP PCA9672 8 bit I/O expander with interrupt
-> +  - "nxp,pca9674" for NXP PCA9672 8 bit I/O expander with interrupt
-> +  - "nxp,pca8574" for NXP PCA8574 8 bit I/O expander with interrupt
-> +  - "nxp,pca8575" for NXP PCA8575 16 bit I/O expander with interrupt
-> +  - "nxp,pca9671" for NXP PCA9671 16 bit I/O expander
-> +  - "nxp,pca9673" for NXP PCA9673 16 bit I/O expander with interrupt
-> +  - "nxp,pca9675" for NXP PCA9675 16 bit I/O expander with interrupt
-> +  - "ti,pcf8574"  for TI PCF8574 8 bit I/O expander with interrupt
-> +  - "ti,pcf8574a" for TI PCF8574A 8 bit I/O expander with interrupt
-> +  - "ti,pcf8575"  for TI PCF8575 16 bit I/O expander with interrupt
-> +  - "ti,tca9554"  for TI TCA9554 8 bit I/O expander with interrupt
-> +  - "maxim,max7328" for MAXIM MAX7328 8 bit I/O expander with interrupt
-> +  - "maxim,max7329" for MAXIM MAX7329 8 bit I/O expander with interrupt
-> +- gpio-controller : Marks the device node as a GPIO controller.
-> +- #gpio-cells : Should be two.
-> +  - first cell is the pin number.
-> +  - second cell is unused.
+I have just double-checked and your resolution about pinctrl is right. Thanks a lot Olof.
+(note that I do not see the arm-soc/at91/drivers branch...)
 
-I guess you're adding this because the generic GPIO bindings use it and
-of_gpio_simple_xlate() depends on this two-cell layout.
-
-Make a reference to the generic GPIO bindings and note that the
-second cell is *NOT* unused, as it is used in the GPIOlib!
-
-> +- interrupt-controller: Mark the device node as an interrupt controller.
-> +- #interrupt-cells : Should be two.
-> +  - first cell is the GPIO number.
-
-Surely it is the IRQ number and not the GPIO number.
-The fact that the IRQ originates in a GPIO controller does not
-matter.
-
-> +  - second cell is unused.
-
-So why do you add it? Usually this is used for trigger flags.
-Are you planning to add this later, i.e. does the chip support this,
-and if it doesn't then get rid of this flag.
-
-> +- reg: I2C address of the chip.
-> +
-> +Device speific properties:
-> +- n_latch:             optional bit-inverse of initial register value; if
-> +                       you leave this initialized to zero the driver will act
-> +                       like the chip was just reset.
-
-Explain what happens if you do *not* leave it as zero and what the
-bits mean in that case.
-
-Yours,
-Linus Walleij
+Bye,
