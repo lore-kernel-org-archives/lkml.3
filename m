@@ -1,149 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3FQPuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:50:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab3FQPuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:50:14 -0400
-Date: Mon, 17 Jun 2013 11:49:38 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: Re: [PATCH v3 06/13] locks: protect most of the file_lock handling
- with i_lock
-Message-ID: <20130617114938.447a8d81@tlielax.poochiereds.net>
-In-Reply-To: <20130617114609.708a336b@tlielax.poochiereds.net>
-References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
-	<1371482036-15958-7-git-send-email-jlayton@redhat.com>
-	<20130617114609.708a336b@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752421Ab3FQPv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:51:27 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58421 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3FQPvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:51:25 -0400
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: [RFC PATCH v4 1/2] drivers: mfd: refactor the vexpress config bridge API
+Date: Mon, 17 Jun 2013 16:51:08 +0100
+Message-Id: <1371484269-11743-2-git-send-email-lorenzo.pieralisi@arm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com>
+References: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com>
+X-OriginalArrivalTime: 17 Jun 2013 15:51:20.0862 (UTC) FILETIME=[830093E0:01CE6B72]
+X-MC-Unique: 113061716512304001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r5HFpXXS022418
 
-On Mon, 17 Jun 2013 11:46:09 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+From: Pawel Moll <pawel.moll@arm.com>
 
-> On Mon, 17 Jun 2013 11:13:49 -0400
-> Jeff Layton <jlayton@redhat.com> wrote:
-> 
-> > Having a global lock that protects all of this code is a clear
-> > scalability problem. Instead of doing that, move most of the code to be
-> > protected by the i_lock instead. The exceptions are the global lists
-> > that the ->fl_link sits on, and the ->fl_block list.
-> > 
-> > ->fl_link is what connects these structures to the
-> > global lists, so we must ensure that we hold those locks when iterating
-> > over or updating these lists.
-> > 
-> > Furthermore, sound deadlock detection requires that we hold the
-> > blocked_list state steady while checking for loops. We also must ensure
-> > that the search and update to the list are atomic.
-> > 
-> > For the checking and insertion side of the blocked_list, push the
-> > acquisition of the global lock into __posix_lock_file and ensure that
-> > checking and update of the  blocked_list is done without dropping the
-> > lock in between.
-> > 
-> > On the removal side, when waking up blocked lock waiters, take the
-> > global lock before walking the blocked list and dequeue the waiters from
-> > the global list prior to removal from the fl_block list.
-> > 
-> > With this, deadlock detection should be race free while we minimize
-> > excessive file_lock_lock thrashing.
-> > 
-> > Finally, in order to avoid a lock inversion problem when handling
-> > /proc/locks output we must ensure that manipulations of the fl_block
-> > list are also protected by the file_lock_lock.
-> > 
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  Documentation/filesystems/Locking |   21 ++++--
-> >  fs/afs/flock.c                    |    5 +-
-> >  fs/ceph/locks.c                   |    2 +-
-> >  fs/ceph/mds_client.c              |    8 +-
-> >  fs/cifs/cifsfs.c                  |    2 +-
-> >  fs/cifs/file.c                    |   13 ++--
-> >  fs/gfs2/file.c                    |    2 +-
-> >  fs/lockd/svcsubs.c                |   12 ++--
-> >  fs/locks.c                        |  151 ++++++++++++++++++++++---------------
-> >  fs/nfs/delegation.c               |   10 +-
-> >  fs/nfs/nfs4state.c                |    8 +-
-> >  fs/nfsd/nfs4state.c               |    8 +-
-> >  include/linux/fs.h                |   11 ---
-> >  13 files changed, 140 insertions(+), 113 deletions(-)
-> > 
-> 
-> [...]
-> 
-> > @@ -1231,7 +1254,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
-> >  	if (IS_ERR(new_fl))
-> >  		return PTR_ERR(new_fl);
-> >  
-> > -	lock_flocks();
-> > +	spin_lock(&inode->i_lock);
-> >  
-> >  	time_out_leases(inode);
-> >  
-> > @@ -1281,11 +1304,11 @@ restart:
-> >  			break_time++;
-> >  	}
-> >  	locks_insert_block(flock, new_fl);
-> > -	unlock_flocks();
-> > +	spin_unlock(&inode->i_lock);
-> >  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
-> >  						!new_fl->fl_next, break_time);
-> > -	lock_flocks();
-> > -	__locks_delete_block(new_fl);
-> > +	spin_lock(&inode->i_lock);
-> > +	locks_delete_block(new_fl);
-> 
-> Doh -- bug here. This should not have been changed to
-> locks_delete_block(). My apologies.
-> 
-> >  	if (error >= 0) {
-> >  		if (error == 0)
-> >  			time_out_leases(inode);
-> 
-> [...]
-> 
-> >  posix_unblock_lock(struct file *filp, struct file_lock *waiter)
-> >  {
-> > +	struct inode *inode = file_inode(filp);
-> >  	int status = 0;
-> >  
-> > -	lock_flocks();
-> > +	spin_lock(&inode->i_lock);
-> >  	if (waiter->fl_next)
-> > -		__locks_delete_block(waiter);
-> > +		locks_delete_block(waiter);
-> 
-> 
-> Ditto here...
-> 
-> >  	else
-> >  		status = -ENOENT;
-> > -	unlock_flocks();
-> > +	spin_unlock(&inode->i_lock);
-> >  	return status;
-> >  }
-> >  
-> 
+The introduction of Serial Power Controller (SPC) requires the vexpress
+config interface to change slightly since the SPC memory mapped interface
+can be used as configuration bus but also for operating points
+programming and retrieval. The helper that allocates the bridge functions
+requires an additional parameter allowing to request component specific
+functions that need not be initialized through device tree bindings but
+just using simple look-up and statically defined constants.
 
-Bah, scratch that -- this patch is actually fine. We hold the i_lock
-here and locks_delete_block takes the file_lock_lock, which is correct.
-There is a potential race in patch 7 though. I'll reply to that patch
-to point it out in a minute.
+This patch introduces the necessary changes to the vexpress config layer
+to cater for the new vexpress bridge interface requirements.
 
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Achin Gupta <achin.gupta@arm.com>
+Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+---
+ drivers/mfd/vexpress-config.c | 61 ++++++----
+ drivers/mfd/vexpress-sysreg.c |  2 +-
+ include/linux/vexpress.h      | 16 ++-
+ 3 files changed, 51 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index 84ce6b9..1af2b0e 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -86,29 +86,13 @@ void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
+ }
+ EXPORT_SYMBOL(vexpress_config_bridge_unregister);
+ 
+-
+-struct vexpress_config_func {
+-	struct vexpress_config_bridge *bridge;
+-	void *func;
+-};
+-
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node)
++static struct vexpress_config_bridge *
++		vexpress_config_bridge_find(struct device_node *node)
+ {
+-	struct device_node *bridge_node;
+-	struct vexpress_config_func *func;
+ 	int i;
++	struct vexpress_config_bridge *res = NULL;
++	struct device_node *bridge_node = of_node_get(node);
+ 
+-	if (WARN_ON(dev && node && dev->of_node != node))
+-		return NULL;
+-	if (dev && !node)
+-		node = dev->of_node;
+-
+-	func = kzalloc(sizeof(*func), GFP_KERNEL);
+-	if (!func)
+-		return NULL;
+-
+-	bridge_node = of_node_get(node);
+ 	while (bridge_node) {
+ 		const __be32 *prop = of_get_property(bridge_node,
+ 				"arm,vexpress,config-bridge", NULL);
+@@ -129,13 +113,46 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+ 
+ 		if (test_bit(i, vexpress_config_bridges_map) &&
+ 				bridge->node == bridge_node) {
+-			func->bridge = bridge;
+-			func->func = bridge->info->func_get(dev, node);
++			res = bridge;
+ 			break;
+ 		}
+ 	}
+ 	mutex_unlock(&vexpress_config_bridges_mutex);
+ 
++	return res;
++}
++
++
++struct vexpress_config_func {
++	struct vexpress_config_bridge *bridge;
++	void *func;
++};
++
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id)
++{
++	struct vexpress_config_func *func;
++
++	if (WARN_ON(dev && node && dev->of_node != node))
++		return NULL;
++	if (dev && !node)
++		node = dev->of_node;
++
++	if (!bridge)
++		bridge = vexpress_config_bridge_find(node);
++	if (!bridge)
++		return NULL;
++
++	func = kzalloc(sizeof(*func), GFP_KERNEL);
++	if (!func)
++		return NULL;
++
++	func->bridge = bridge;
++	func->func = bridge->info->func_get(dev, node, id);
++
+ 	if (!func->func) {
+ 		of_node_put(node);
+ 		kfree(func);
+diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+index 96a020b..d2599aa 100644
+--- a/drivers/mfd/vexpress-sysreg.c
++++ b/drivers/mfd/vexpress-sysreg.c
+@@ -165,7 +165,7 @@ static u32 *vexpress_sysreg_config_data;
+ static int vexpress_sysreg_config_tries;
+ 
+ static void *vexpress_sysreg_config_func_get(struct device *dev,
+-		struct device_node *node)
++		struct device_node *node, const char *id)
+ {
+ 	struct vexpress_sysreg_config_func *config_func;
+ 	u32 site;
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index 6e7980d..50368e0 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -68,7 +68,8 @@
+  */
+ struct vexpress_config_bridge_info {
+ 	const char *name;
+-	void *(*func_get)(struct device *dev, struct device_node *node);
++	void *(*func_get)(struct device *dev, struct device_node *node,
++			  const char *id);
+ 	void (*func_put)(void *func);
+ 	int (*func_exec)(void *func, int offset, bool write, u32 *data);
+ };
+@@ -87,12 +88,17 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
+ 
+ struct vexpress_config_func;
+ 
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node);
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id);
++#define vexpress_config_func_get(bridge, id) \
++		__vexpress_config_func_get(bridge, NULL, NULL, id)
+ #define vexpress_config_func_get_by_dev(dev) \
+-		__vexpress_config_func_get(dev, NULL)
++		__vexpress_config_func_get(NULL, dev, NULL, NULL)
+ #define vexpress_config_func_get_by_node(node) \
+-		__vexpress_config_func_get(NULL, node)
++		__vexpress_config_func_get(NULL, NULL, node, NULL)
+ void vexpress_config_func_put(struct vexpress_config_func *func);
+ 
+ /* Both may sleep! */
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.8.2.2
+
+
