@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3FQR6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:58:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50428 "EHLO
+	id S1754026Ab3FQR7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:59:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50424 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3FQRbo (ORCPT
+	with ESMTP id S1753344Ab3FQRbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:44 -0400
+	Mon, 17 Jun 2013 13:31:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Camuso <tcamuso@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 10/84] xhci - correct comp_mode_recovery_timer on return from hibernate
-Date: Mon, 17 Jun 2013 10:30:14 -0700
-Message-Id: <1371490288-23167-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 07/84] tg3: Add read dma workaround for 5720
+Date: Mon, 17 Jun 2013 10:30:11 -0700
+Message-Id: <1371490288-23167-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,106 +29,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Camuso <tcamuso@redhat.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 77df9e0b799b03e1d5d9c68062709af5f637e834 upstream.
+commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
 
-Commit 71c731a2 (usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
-Hardware) was a workaround for systems using the SN65LVPE502CP,
-controller, but it introduced a bug in resume from hibernate.
+Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
+DMA workaround" added a workaround for TX DMA stall on the 5719. This
+workaround needs to be applied to the 5720 as well.
 
-The fix created a timer, comp_mode_recovery_timer, which is deleted from
-a timer list when xhci_suspend() is called. However, the hibernate image,
-including the timer list containing the comp_mode_recovery_timer, had
-already been saved before the timer was deleted.
-
-Upon resume from hibernate, the list containing the comp_mode_recovery_timer
-is restored from the image saved to disk, and xhci_resume(), assuming that
-the timer had been deleted by xhci_suspend(), makes a call to
-compliance_mode_recoery_timer_init(), which creates a new instance of the
-comp_mode_recovery_timer and attempts to place it into the same list in which
-it is already active, thus corrupting the list during the list_add() call.
-
-At this point, a call trace is emitted indicating the list corruption.
-Soon afterward, the system locks up, the watchdog times out, and the
-ensuing NMI crashes the system.
-
-The problem did not occur when resuming from suspend. In suspend, the
-image in RAM remains exactly as it was when xhci_suspend() deleted the
-comp_mode_recovery_timer, so there is no problem when xhci_resume()
-creates a new instance of this timer and places it in the still empty
-list.
-
-This patch avoids the problem by deleting the timer in xhci_resume()
-when resuming from hibernate. Now xhci_resume() can safely make the
-call to create a new instance of this timer, whether returning from
-suspend or hibernate.
-
-Thanks to Alan Stern for his help with understanding the problem.
-
-[Sarah reworked this patch to cover the case where the xHCI restore
-register operation fails, and (temp & STS_SRE) is true (and we re-init
-the host, including re-init for the compliance mode), but hibernate is
-false.  The original patch would have caused list corruption in this
-case.]
-
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
-
-Signed-off-by: Tony Camuso <tcamuso@redhat.com>
-Tested-by: Tony Camuso <tcamuso@redhat.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Roland Dreier <roland@purestorage.com>
+Tested-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c | 21 +++++++++++++++------
+ drivers/net/ethernet/broadcom/tg3.h |  5 +++--
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 849470b..a0bd618 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -952,6 +952,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
- 	int			retval = 0;
-+	bool			comp_timer_running = false;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 6917998..591ba95 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8981,6 +8981,14 @@ static void tg3_rss_write_indir_tbl(struct tg3 *tp)
+ 	}
+ }
  
- 	/* Wait a bit if either of the roothubs need to settle from the
- 	 * transition into bus suspend.
-@@ -989,6 +990,13 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
++static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
++{
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
++	else
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
++}
++
+ /* tp->lock is held. */
+ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+ {
+@@ -9638,16 +9646,17 @@ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+ 	tw32_f(RDMAC_MODE, rdmac_mode);
+ 	udelay(40);
  
- 	/* If restore operation fails, re-initialize the HC during resume */
- 	if ((temp & STS_SRE) || hibernated) {
-+
-+		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-+				!(xhci_all_ports_seen_u0(xhci))) {
-+			del_timer_sync(&xhci->comp_mode_recovery_timer);
-+			xhci_dbg(xhci, "Compliance Mode Recovery Timer deleted!\n");
-+		}
-+
- 		/* Let the USB core know _both_ roothubs lost power. */
- 		usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
- 		usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
-@@ -1031,6 +1039,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 		retval = xhci_init(hcd->primary_hcd);
- 		if (retval)
- 			return retval;
-+		comp_timer_running = true;
-+
- 		xhci_dbg(xhci, "Start the primary HCD\n");
- 		retval = xhci_run(hcd->primary_hcd);
- 		if (!retval) {
-@@ -1072,7 +1082,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 	 * to suffer the Compliance Mode issue again. It doesn't matter if
- 	 * ports have entered previously to U0 before system's suspension.
- 	 */
--	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
-+	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && !comp_timer_running)
- 		compliance_mode_recovery_timer_init(xhci);
+-	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
++	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
+ 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
+ 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
+ 				break;
+ 		}
+ 		if (i < TG3_NUM_RDMA_CHANNELS) {
+ 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
++			val |= tg3_lso_rd_dma_workaround_bit(tp);
+ 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-			tg3_flag_set(tp, 5719_RDMA_BUG);
++			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
+ 		}
+ 	}
  
- 	/* Re-enable port polling. */
+@@ -10003,15 +10012,15 @@ static void tg3_periodic_fetch_stats(struct tg3 *tp)
+ 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
+ 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
+ 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
+-	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
++	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
+ 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
+ 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
+ 		u32 val;
+ 
+ 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
++		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
+ 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-		tg3_flag_clear(tp, 5719_RDMA_BUG);
++		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
+ 	}
+ 
+ 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
+diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
+index 6f9b74c..3deec2b 100644
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -1417,7 +1417,8 @@
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
+-#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
+ /* 0x4914 --> 0x4be0 unused */
+ 
+ #define TG3_NUM_RDMA_CHANNELS		4
+@@ -3021,7 +3022,7 @@ enum TG3_FLAGS {
+ 	TG3_FLAG_APE_HAS_NCSI,
+ 	TG3_FLAG_TX_TSTAMP_EN,
+ 	TG3_FLAG_4K_FIFO_LIMIT,
+-	TG3_FLAG_5719_RDMA_BUG,
++	TG3_FLAG_5719_5720_RDMA_BUG,
+ 	TG3_FLAG_RESET_TASK_PENDING,
+ 	TG3_FLAG_PTP_CAPABLE,
+ 	TG3_FLAG_5705_PLUS,
 -- 
 1.8.1.2
 
