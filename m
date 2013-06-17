@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3FQU6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:58:09 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:58574 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab3FQU6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:58:05 -0400
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: maxime.ripard@free-electrons.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, andy.shevchenko@gmail.com,
-        linux@arm.linux.org.uk, linus.walleij@linaro.org,
-        linux-sunxi@googlegroups.com, Oliver Schinagl <oliver@schinagl.nl>
-Subject: [PATCH 2/2] Add sunxi-sid to dts for sun4i and sun5i
-Date: Mon, 17 Jun 2013 22:55:39 +0200
-Message-Id: <1371502539-15657-3-git-send-email-oliver+list@schinagl.nl>
-X-Mailer: git-send-email 1.8.1.5
+	id S1753896Ab3FQU7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:59:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753675Ab3FQU7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 16:59:21 -0400
+Date: Mon, 17 Jun 2013 13:59:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Daney <david.daney@cavium.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: Linux 3.10-rc6
+Message-Id: <20130617135920.587959a34da85d7940a6936f@linux-foundation.org>
+In-Reply-To: <51BF7610.10803@caviumnetworks.com>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
+	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
+	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
+	<51BF7610.10803@caviumnetworks.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Schinagl <oliver@schinagl.nl>
+On Mon, 17 Jun 2013 13:48:16 -0700 David Daney <ddaney@caviumnetworks.com> wrote:
 
-This patch shall add support for the sunxi-sid driver to the device table for
-sun4i and sun5i.
+> On 06/17/2013 01:30 PM, Andrew Morton wrote:
+> [...]
+> >
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > Subject: include/linux/smp.h:on_each_cpu(): switch back to a macro
+> >
+> > f21afc25f9ed4 ("smp.h: Use local_irq_{save,restore}() in !SMP version of
+> > on_each_cpu()") converted on_each_cpu() to a C function.  This required
+> > inclusion of irqflags.h, which broke ia64 and mn10300 (at least) due to
+> > header ordering hell.
+> >
+> > Switch on_each_cpu() back to a macro to fix this.
+> 
+> FYI:  I have already sent a pair of patches that fix the include 
+> dependencies:
+> 
+> https://lkml.org/lkml/2013/6/16/113
+> https://lkml.org/lkml/2013/6/17/422
 
-Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
----
- arch/arm/boot/dts/sun4i-a10.dtsi | 5 +++++
- arch/arm/boot/dts/sun5i-a13.dtsi | 5 +++++
- 2 files changed, 10 insertions(+)
+I wasn't cc'ed.
 
-diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index e7ef619..bc71d64 100644
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -213,6 +213,11 @@
- 			reg = <0x01c20c90 0x10>;
- 		};
- 
-+		sid: eeprom@01c23800 {
-+			compatible = "allwinner,sun4i-sid";
-+			reg = <0x01c23800 0x10>;
-+		};
-+
- 		uart0: serial@01c28000 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28000 0x400>;
-diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index 8ba65c1..c80c81b 100644
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -196,6 +196,11 @@
- 			reg = <0x01c20c90 0x10>;
- 		};
- 
-+		sid: eeprom@01c23800 {
-+			compatible = "allwinner,sun4i-sid";
-+			reg = <0x01c23800 0x10>;
-+		};
-+
- 		uart1: serial@01c28400 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28400 0x400>;
--- 
-1.8.1.5
+> Obviously, it is Linus' choice as to how best to handle the failure, but 
+> I think it is important to know that there are two options (fixing ia64 
+> and mn10300, or reverting the patch).
+
+I certainly prefer the inline function over a crappy macro.  The
+additional nested include is regrettable - more complexity.
+
+Also, it's good to have the SMP and non-SMP versions either both using
+macros or both using C.  Having them different can cause irritating
+unused-variable compilation warnings when using the macro version.
+
+I think switch-back-to-a-macro is simplest and safest for now.  Perhaps
+you can queue a 3.11 patch which restores the C function and fixes up
+mn10300 and ia64?
 
