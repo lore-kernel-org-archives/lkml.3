@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab3FQObF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:31:05 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43097 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab3FQObD (ORCPT
+	id S1751435Ab3FQOsE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:48:04 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:15368 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3FQOsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:31:03 -0400
-Date: Mon, 17 Jun 2013 15:30:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Jensen <jonas.jensen@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ulli.kroll@googlemail.com, arm@kernel.org,
-        Florian Fainelli <florian@openwrt.org>, Imre Kaloz <kaloz@openwrt.org>
-Subject: Re: [PATCH] ARM: mm: cpu_fa526_do_idle: remove WFI
-Message-ID: <20130617143021.GI2718@n2100.arm.linux.org.uk>
-References: <1371476360-8751-1-git-send-email-jonas.jensen@gmail.com> <5020304.hteFFmWh1u@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5020304.hteFFmWh1u@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 17 Jun 2013 10:48:03 -0400
+Message-ID: <1371480480.2709.0.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Jun 2013 07:48:00 -0700
+In-Reply-To: <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
+References: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
+	 <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 04:14:03PM +0200, Arnd Bergmann wrote:
-> On Monday 17 June 2013 15:39:20 Jonas Jensen wrote:
-> > As it was already suggested by Russell King and Arnd Bergmann ( https://lkml.org/lkml/2013/5/16/133 ), moxart and gemini seem to be the only platforms using CPU_FA526, and instead of pointing arm_pm_idle to an empty function from platform code, it makes sense to remove WFI code from the processor specific idle function.
-> > 
-> > Note: moxart boots and prints to UART without this patch, but input is broken.
+On Mon, 2013-06-17 at 20:55 +0900, Tetsuo Handa wrote:
+> I got this.
 > 
-> Please make sure you have proper line wraps. Lines in checkin
-> comments should be no longer than 70 characters normally.
+> ===============================
+> [ INFO: suspicious RCU usage. ]
+> 3.10.0-rc6-next-20130617 #7 Not tainted
+> -------------------------------
+> include/linux/rcupdate.h:475 Illegal context switch in RCU read-side critical section!
 > 
-> > Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> other info that might help us debug this:
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> Since this patch is independent from the actual platform support,
-> it should go through Russell's patch tracker at
-> http://www.arm.linux.org.uk/developer/patches/
+> rcu_scheduler_active = 1, debug_locks = 1
+> 2 locks held by udevd/1909:
+>  #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
+>  #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
+> 
+> stack backtrace:
+> CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
+> Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
+>  00000001 da591e94 c0677931 00000001 da591ebc c0199606 c07f690d c07f83fa
+>  00000001 00000001 c07e7904 00000000 000001a8 c081e5f7 da591ee4 c0176231
+>  00000246 00000002 00000001 00000000 00000000 000000d0 deee0f0c ffffffe4
+> Call Trace:
+>  [<c0677931>] dump_stack+0x4c/0x6b
+>  [<c0199606>] lockdep_rcu_suspicious+0xc6/0x100
+>  [<c0176231>] __might_sleep+0xb1/0x200
+>  [<c04098f1>] idr_preload+0xa1/0xd0
+>  [<c038b4d2>] ipc_addid+0x52/0x190
+>  [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
+>  [<c038e7aa>] newary+0xba/0x1a0
+>  [<c038c4be>] ipcget+0x4e/0x70
+>  [<c019d7a2>] ? __lock_release+0x72/0x1b0
+>  [<c038e6cf>] SyS_semget+0x6f/0x80
+>  [<c038e6f0>] ? sem_security+0x10/0x10
+>  [<c038e6e0>] ? SyS_semget+0x80/0x80
+>  [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
+>  [<c0392ab3>] SyS_ipc+0xa3/0x250
+>  [<c0235426>] ? vm_munmap+0x46/0x60
+>  [<c067c89a>] sysenter_do_call+0x12/0x32
+> BUG: sleeping function called from invalid context at lib/idr.c:424
+> in_atomic(): 1, irqs_disabled(): 0, pid: 1909, name: udevd
+> 2 locks held by udevd/1909:
+>  #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
+>  #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
+> CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
+> Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
+>  000001a8 da591ebc c0677931 da594260 da591ee4 c01762dd c07e79fc 00000001
+>  00000000 00000775 da594518 000000d0 deee0f0c ffffffe4 da591ef0 c04098f1
+>  c08e2b84 da591f10 c038b4d2 da591f10 c038dfbd ffffffff 00000001 c08e2b80
+> Call Trace:
+>  [<c0677931>] dump_stack+0x4c/0x6b
+>  [<c01762dd>] __might_sleep+0x15d/0x200
+>  [<c04098f1>] idr_preload+0xa1/0xd0
+>  [<c038b4d2>] ipc_addid+0x52/0x190
+>  [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
+>  [<c038e7aa>] newary+0xba/0x1a0
+>  [<c038c4be>] ipcget+0x4e/0x70
+>  [<c019d7a2>] ? __lock_release+0x72/0x1b0
+>  [<c038e6cf>] SyS_semget+0x6f/0x80
+>  [<c038e6f0>] ? sem_security+0x10/0x10
+>  [<c038e6e0>] ? SyS_semget+0x80/0x80
+>  [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
+>  [<c0392ab3>] SyS_ipc+0xa3/0x250
+>  [<c0235426>] ? vm_munmap+0x46/0x60
+>  [<c067c89a>] sysenter_do_call+0x12/0x32
+> 
 
-Except... the patch is wrong.
+This should already be fixed here:
+https://lkml.org/lkml/2013/6/11/705
 
-> >  arch/arm/mm/proc-fa526.S |    4 +---
-> >  1 files changed, 1 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/arm/mm/proc-fa526.S b/arch/arm/mm/proc-fa526.S
-> > index d217e97..85280b1 100644
-> > --- a/arch/arm/mm/proc-fa526.S
-> > +++ b/arch/arm/mm/proc-fa526.S
-> > @@ -81,9 +81,7 @@ ENDPROC(cpu_fa526_reset)
-> >   */
-> >  	.align	4
-> >  ENTRY(cpu_fa526_do_idle)
-> > -	mcr	p15, 0, r0, c7, c0, 4		@ Wait for interrupt
-> > -	mov	pc, lr
-> > -
-> > +	nop
+Thanks,
+Davidlohr
 
-It replaces the WFI and return with a pure nop, so we will fall through
-to cpu_fa526_dcache_clean_area().  Do we really want to clean a random
-D cache entry depending on what r0 happened to hold at this point?  I
-think not...
