@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab3FQKRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:17:50 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34364 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932313Ab3FQKRs (ORCPT
+	id S932557Ab3FQKS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:18:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47890 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932345Ab3FQKSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:17:48 -0400
-Date: Mon, 17 Jun 2013 11:17:45 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Joey Lee <JLee@suse.com>, Zach Bobroff <zacharyb@ami.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-Message-ID: <20130617101745.GB8569@console-pimps.org>
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
- <1371139233.6523.272.camel@linux-s257.site>
- <20130617092107.GA5440@console-pimps.org>
- <51BEF71402000078000DEC12@nat28.tlf.novell.com>
+	Mon, 17 Jun 2013 06:18:25 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org,
+        "Alexander Beregalov" <a.beregalov@gmail.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, "Zheng Liu" <wenqing.lz@taobao.com>
+Subject: Re: [28/83] ext4: lock i_mutex when truncating orphan inodes
+References: <lsq.1371420097.220610690@decadent.org.uk>
+Date: Mon, 17 Jun 2013 11:18:20 +0100
+In-Reply-To: <lsq.1371420097.220610690@decadent.org.uk> (Ben Hutchings's
+	message of "Sun, 16 Jun 2013 23:01:37 +0100")
+Message-ID: <87a9mprqfn.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BEF71402000078000DEC12@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun, at 10:46:28AM, Jan Beulich wrote:
-> To me, all this looks like it is being done on phenomenological basis,
-> taking a particular build of a particular firmware implementation as
-> the reference. Imo we shouldn't change the code in this way. This
-> also applies to the fact that the step is being doubled rather than
-> e.g. tripled: With it ending up a "again" anyway (see below), what's
-> the point of avoiding one more of the iterations?
-> 
-> Generic considerations would result in the increment being at least
-> 3 * element size; twice the element size assumes that the allocator
-> would behave in certain ways (like returning the head or tail part of
-> a larger piece of memory).
- 
-I have no issue with changing the multiplier. But let's get
-clarification from Zach as to what exactly is going on here.
+Ben Hutchings <ben@decadent.org.uk> writes:
 
-> I agree that there ought to be an upper limit. But a single retry here
-> again looks like a tailored solution to a particular observed (mis-)
-> behavior, rather than something resulting from general considerations.
+> 3.2.47-rc1 review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Theodore Ts'o <tytso@mit.edu>
+>
+> commit 721e3eba21e43532e438652dd8f1fcdfce3187e7 upstream.
 
-What value would you suggest for the retry?
+I'm also queuing this commit as it looks like 3.5 is also missing it.
 
+Cheers,
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Luis
+
+>
+> Commit c278531d39 added a warning when ext4_flush_unwritten_io() is
+> called without i_mutex being taken.  It had previously not been taken
+> during orphan cleanup since races weren't possible at that point in
+> the mount process, but as a result of this c278531d39, we will now see
+> a kernel WARN_ON in this case.  Take the i_mutex in
+> ext4_orphan_cleanup() to suppress this warning.
+>
+> Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  fs/ext4/super.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -2260,7 +2260,9 @@ static void ext4_orphan_cleanup(struct s
+>  				__func__, inode->i_ino, inode->i_size);
+>  			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
+>  				  inode->i_ino, inode->i_size);
+> +			mutex_lock(&inode->i_mutex);
+>  			ext4_truncate(inode);
+> +			mutex_unlock(&inode->i_mutex);
+>  			nr_truncates++;
+>  		} else {
+>  			ext4_msg(sb, KERN_DEBUG,
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
