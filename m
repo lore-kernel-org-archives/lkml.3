@@ -1,121 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab3FQE4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 00:56:23 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:48396 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab3FQE4W (ORCPT
+	id S1755787Ab3FQE7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 00:59:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:47555 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab3FQE7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 00:56:22 -0400
-Date: Mon, 17 Jun 2013 04:56:21 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-cc: linux-kernel@vger.kernel.org, neilb@suse.de, linux-omap@vger.kernel.org,
-        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
-        stable@vger.kernel.org,
-        "'Jean-Philippe Francois'" <jp.francois@cynove.com>
-Subject: Re: [PATCH 3.9-stable] ARM: omap3: clock: fix wrong container_of in
- clock36xx.c
-In-Reply-To: <008d01ce6aea$96291790$c27b46b0$%choi@samsung.com>
-Message-ID: <alpine.DEB.2.02.1306170454330.4477@utopia.booyaka.com>
-References: <008d01ce6aea$96291790$c27b46b0$%choi@samsung.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 17 Jun 2013 00:59:47 -0400
+Message-ID: <51BE97C0.1070203@hitachi.com>
+Date: Mon, 17 Jun 2013 13:59:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/3] tracing/kprobes: Kill probe_enable_lock
+References: <20130616172149.GA8540@redhat.com>
+In-Reply-To: <20130616172149.GA8540@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013, Jonghwan Choi wrote:
-
-> This patch looks like it should be in the 3.9-stable tree, should we apply
-> it?
-
-Please do.
-
-
-- Paul
-
+(2013/06/17 2:21), Oleg Nesterov wrote:
+> enable_trace_probe() and disable_trace_probe() should not worry about
+> serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
+> holds event_mutex.
 > 
-> ------------------
+> They are also called by kprobe_trace_self_tests_init(), but this __init
+> function can't race with itself or trace_events.c
+
+Right,
+For safety, we should comment this at the caller side, because
+those calls are the reason why I have introduced this lock.
+
+Thank you,
+
+> And note that this code depended on event_mutex even before 41a7dd420c
+> which introduced probe_enable_lock. In fact it assumes that the caller
+> kprobe_register() can never race with itself. Otherwise, say, tp->flags
+> manipulations are racy.
 > 
-> From: "Jean-Philippe Francois <jp.francois@cynove.com>"
-> 
-> commit a93d8a1cea0899982993e9a93404c6f78b123697 upstream
-> 
-> omap36xx_pwrdn_clk_enable_with_hsdiv_restore expects the parent hw of
-> the clock to be a clk_hw_omap. However, looking at cclock3xxx_data.c,
-> all concerned clock have parent defined as clk_divider.  Fix the
-> function to use clk_divider.  Tested with 3.9 on dm3730.
-> 
-> Signed-off-by: Jean-Philippe Francois <jp.francois@cynove.com>
-> Cc: NeilBrown <neilb@suse.de>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Paul Walmsley <paul@pwsan.com>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  arch/arm/mach-omap2/clock36xx.c |   18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+>  kernel/trace/trace_kprobe.c |   33 ++++++++++-----------------------
+>  1 files changed, 10 insertions(+), 23 deletions(-)
 > 
-> diff --git a/arch/arm/mach-omap2/clock36xx.c
-> b/arch/arm/mach-omap2/clock36xx.c
-> index 8f3bf4e..bbd6a3f 100644
-> --- a/arch/arm/mach-omap2/clock36xx.c
-> +++ b/arch/arm/mach-omap2/clock36xx.c
-> @@ -20,11 +20,12 @@
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index c0af476..5a73de0 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -183,16 +183,15 @@ static struct trace_probe *find_trace_probe(const char *event,
+>  	return NULL;
+>  }
 >  
->  #include <linux/kernel.h>
->  #include <linux/clk.h>
-> +#include <linux/clk-provider.h>
->  #include <linux/io.h>
->  
->  #include "clock.h"
->  #include "clock36xx.h"
-> -
-> +#define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
->  
->  /**
->   * omap36xx_pwrdn_clk_enable_with_hsdiv_restore - enable clocks suffering
-> @@ -39,29 +40,28 @@
->   */
->  int omap36xx_pwrdn_clk_enable_with_hsdiv_restore(struct clk_hw *clk)
+> +/*
+> + * This and enable_trace_probe/disable_trace_probe rely on event_mutex
+> + * held by the caller, __ftrace_set_clr_event().
+> + */
+>  static int trace_probe_nr_files(struct trace_probe *tp)
 >  {
-> -	struct clk_hw_omap *parent;
-> +	struct clk_divider *parent;
->  	struct clk_hw *parent_hw;
-> -	u32 dummy_v, orig_v, clksel_shift;
-> +	u32 dummy_v, orig_v;
->  	int ret;
+> -	struct ftrace_event_file **file;
+> +	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+>  	int ret = 0;
 >  
->  	/* Clear PWRDN bit of HSDIVIDER */
->  	ret = omap2_dflt_clk_enable(clk);
->  
->  	parent_hw = __clk_get_hw(__clk_get_parent(clk->clk));
-> -	parent = to_clk_hw_omap(parent_hw);
-> +	parent = to_clk_divider(parent_hw);
->  
->  	/* Restore the dividers */
->  	if (!ret) {
-> -		clksel_shift = __ffs(parent->clksel_mask);
-> -		orig_v = __raw_readl(parent->clksel_reg);
-> +		orig_v = __raw_readl(parent->reg);
->  		dummy_v = orig_v;
->  
->  		/* Write any other value different from the Read value */
-> -		dummy_v ^= (1 << clksel_shift);
-> -		__raw_writel(dummy_v, parent->clksel_reg);
-> +		dummy_v ^= (1 << parent->shift);
-> +		__raw_writel(dummy_v, parent->reg);
->  
->  		/* Write the original divider */
-> -		__raw_writel(orig_v, parent->clksel_reg);
-> +		__raw_writel(orig_v, parent->reg);
->  	}
->  
+> -	/*
+> -	 * Since all tp->files updater is protected by probe_enable_lock,
+> -	 * we don't need to lock an rcu_read_lock.
+> -	 */
+> -	file = rcu_dereference_raw(tp->files);
+>  	if (file)
+>  		while (*(file++))
+>  			ret++;
+> @@ -200,8 +199,6 @@ static int trace_probe_nr_files(struct trace_probe *tp)
 >  	return ret;
-> -- 
-> 1.7.9.5
+>  }
+>  
+> -static DEFINE_MUTEX(probe_enable_lock);
+> -
+>  /*
+>   * Enable trace_probe
+>   * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+> @@ -211,8 +208,6 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  {
+>  	int ret = 0;
+>  
+> -	mutex_lock(&probe_enable_lock);
+> -
+>  	if (file) {
+>  		struct ftrace_event_file **new, **old;
+>  		int n = trace_probe_nr_files(tp);
+> @@ -223,7 +218,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  			      GFP_KERNEL);
+>  		if (!new) {
+>  			ret = -ENOMEM;
+> -			goto out_unlock;
+> +			goto out;
+>  		}
+>  		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+>  		new[n] = file;
+> @@ -247,10 +242,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		else
+>  			ret = enable_kprobe(&tp->rp.kp);
+>  	}
+> -
+> - out_unlock:
+> -	mutex_unlock(&probe_enable_lock);
+> -
+> + out:
+>  	return ret;
+>  }
+>  
+> @@ -283,8 +275,6 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  {
+>  	int ret = 0;
+>  
+> -	mutex_lock(&probe_enable_lock);
+> -
+>  	if (file) {
+>  		struct ftrace_event_file **new, **old;
+>  		int n = trace_probe_nr_files(tp);
+> @@ -293,7 +283,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		old = rcu_dereference_raw(tp->files);
+>  		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
+>  			ret = -EINVAL;
+> -			goto out_unlock;
+> +			goto out;
+>  		}
+>  
+>  		if (n == 1) {	/* Remove the last file */
+> @@ -304,7 +294,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  				      GFP_KERNEL);
+>  			if (!new) {
+>  				ret = -ENOMEM;
+> -				goto out_unlock;
+> +				goto out;
+>  			}
+>  
+>  			/* This copy & check loop copies the NULL stopper too */
+> @@ -327,10 +317,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		else
+>  			disable_kprobe(&tp->rp.kp);
+>  	}
+> -
+> - out_unlock:
+> -	mutex_unlock(&probe_enable_lock);
+> -
+> + out:
+>  	return ret;
+>  }
+>  
 > 
 
 
-- Paul
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
