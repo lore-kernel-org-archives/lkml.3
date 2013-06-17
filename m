@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab3FQJWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:22:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38153 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab3FQJWM (ORCPT
+	id S932327Ab3FQJWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:22:30 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:35577 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab3FQJW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 05:22:12 -0400
-Date: Mon, 17 Jun 2013 11:21:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
- forked task
-Message-ID: <20130617092146.GM3204@twins.programming.kicks-ass.net>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
- <1370589652-24549-4-git-send-email-alex.shi@intel.com>
- <CAPM31RJFsh_gBXBHc4E6z=MtORR9D8sWs=86Yqy9onxK9x9fOg@mail.gmail.com>
- <51BB25BC.9070500@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BB25BC.9070500@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 17 Jun 2013 05:22:28 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com, patches@linaro.org, sachin.kamat@linaro.org,
+        sparclinux@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH V2 1/15] sparc,leon: Convert to use devm_ioremap_resource
+Date: Mon, 17 Jun 2013 14:37:44 +0530
+Message-Id: <1371460064-19549-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370864113-17895-2-git-send-email-tushar.behera@linaro.org>
+References: <1370864113-17895-2-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 10:16:28PM +0800, Alex Shi wrote:
-> On 06/14/2013 07:09 PM, Paul Turner wrote:
-> > Minor comments; looks good otherwise.
-> > 
-> > Signed-off-by: Paul Turner <pjt@google.com>
-> 
-> thanks a lot Paul. the patch with your input updated here:
-> 
-> BTW, would you like to give some comments on the last patch of this patchset?
-> 
-> ---
-> From ed35080d0bae803d68f84a3e683d34a356a5a5de Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Tue, 14 May 2013 09:41:09 +0800
-> Subject: [PATCH 3/8] sched: set initial value of runnable avg for new forked
->  task
-> 
-> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-> new forked task.
-> Otherwise random values of above variables cause mess when do new task
-> enqueue:
->     enqueue_task_fair
->         enqueue_entity
->             enqueue_entity_load_avg
-> 
-> and make forking balancing imbalance since incorrect load_avg_contrib.
-> 
-> Further more, Morten Rasmussen notice some tasks were not launched at
-> once after created. So Paul and Peter suggest giving a start value for
-> new task runnable avg time same as sched_slice().
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Signed-off-by: Paul Turner <pjt@google.com>
+Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+introduced devm_ioremap_resource() and deprecated the use of
+devm_request_and_ioremap().
 
-Should you all go read: Documentation/SubmittingPatches , or am I
-somehow confused on the SoB rules?
+While at it, also remove the error message as devm_ioremap_resource()
+also prints similar error message.
+
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+CC: sparclinux@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>
+---
+Changes for V2:
+* Removed redundant error message.
+
+ arch/sparc/kernel/leon_pci_grpci1.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/arch/sparc/kernel/leon_pci_grpci1.c b/arch/sparc/kernel/leon_pci_grpci1.c
+index 7739a54..6df26e3 100644
+--- a/arch/sparc/kernel/leon_pci_grpci1.c
++++ b/arch/sparc/kernel/leon_pci_grpci1.c
+@@ -536,11 +536,9 @@ static int grpci1_of_probe(struct platform_device *ofdev)
+ 
+ 	/* find device register base address */
+ 	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
+-	regs = devm_request_and_ioremap(&ofdev->dev, res);
+-	if (!regs) {
+-		dev_err(&ofdev->dev, "io-regs mapping failed\n");
+-		return -EADDRNOTAVAIL;
+-	}
++	regs = devm_ioremap_resource(&ofdev->dev, res);
++	if (IS_ERR(regs))
++		return PTR_ERR(regs);
+ 
+ 	/*
+ 	 * check that we're in Host Slot and that we can act as a Host Bridge
+-- 
+1.7.9.5
+
