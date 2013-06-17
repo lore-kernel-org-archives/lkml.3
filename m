@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab3FQHLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:11:03 -0400
-Received: from sauhun.de ([89.238.76.85]:59627 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465Ab3FQHLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:11:02 -0400
-Date: Mon, 17 Jun 2013 09:12:51 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] i2c: vt8500: Add support for I2C bus on Wondermedia
- SoCs
-Message-ID: <20130617071250.GA2957@katana>
-References: <1371246736-5460-1-git-send-email-linux@prisktech.co.nz>
- <20130615111817.GA2938@katana>
- <51BCE39D.4030505@prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
-Content-Disposition: inline
-In-Reply-To: <51BCE39D.4030505@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932227Ab3FQHNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:13:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44047 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3FQHNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 03:13:13 -0400
+Date: Mon, 17 Jun 2013 17:13:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ulrich Hecht <ulrich.hecht@gmail.com>,
+        Bastian Hecht <hechtb@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the renesas tree with the sh tree
+Message-Id: <20130617171305.d97598f75a42dfba89b3dbd0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---DocE+STaALJfprDB
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jun 16, 2013 at 09:58:53AM +1200, Tony Prisk wrote:
-> On 15/06/13 23:18, Wolfram Sang wrote:
-> >On Sat, Jun 15, 2013 at 09:52:16AM +1200, Tony Prisk wrote:
-> >>This patch adds support for the I2C bus controllers found on Wondermedia
-> >>8xxx-series SoCs. Only master-mode is supported.
-> >>
-> >>Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> >>---
-> >...
-> >
-> >>+/* REG_TR */
-> >>+#define SCL_TIMEOUT(x)		(((x) & 0xFF) << 16)
-> >I assume this should be << 8 since all regs are 16 bit wide.
-> >
-> >Fixed it locally and ready to apply. Please confirm or send a proper
-> >fix. Rest looks fine.
-> >
-> >Thanks for the submission!
-> >
-> It should be << 8. Please apply your locally corrected version.
+Hi Simon,
 
-Applied to for-next, thanks!
+Today's linux-next merge of the renesas tree got a conflict in
+include/linux/serial_sci.h between commit ada80ee7fa60 ("serial: sh-sci:
+Add OF support") from the sh tree and commit 24610a30600b ("serial:
+sh-sci: HSCIF support") from the renesas tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
---DocE+STaALJfprDB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/serial_sci.h
+index 857eec4,d340497..0000000
+--- a/include/linux/serial_sci.h
++++ b/include/linux/serial_sci.h
+@@@ -18,8 -16,7 +18,9 @@@ enum=20
+  	SCBRR_ALGO_3,		/* (((clk * 2) + 16 * bps) / (16 * bps) - 1) */
+  	SCBRR_ALGO_4,		/* (((clk * 2) + 16 * bps) / (32 * bps) - 1) */
+  	SCBRR_ALGO_5,		/* (((clk * 1000 / 32) / bps) - 1) */
++ 	SCBRR_ALGO_6,		/* HSCIF variable sample rate algorithm */
+ +
+ +	SCBRR_NR_ALGOS,
+  };
+ =20
+  #define SCSCR_TIE	(1 << 7)
+
+--Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRvrbyAAoJEBQN5MwUoCm2vBQQAKMXsKX7pUN1fcqIfwnzAJgI
-kUTY1Bbw7R2xlghCJBkczp/Ici+SStGX44CaJUF/7pMaCu+dphByI1fFCYp/5fYc
-kbHFWFpXXye9l1K0To/hWXfgPgvyp6XQNknIYUQieoMH6sp8hJTHbr8vMmD7KPPM
-DVDvNbyNgHQ9nvI2p/ycLh4bpNbT97Qa8p0cF0rWoYZCo/5AAuCojezx5e3F1S81
-Eryi8dy9co4EApdgMEXjj1/HboADM4iW97vYwB46cw97JEI0DATb1s+RlTFW5wzr
-X2kXzmk+od0T5lKSRNwpk8qGEGj4hY1VnfuXldh+pSm2M+1Dc9GJQS6NfMRPtv04
-drVHz5NrY+bFGbZUtivA/ui/uInXJa2z69sIctdlRce7VPG+ZKnA1R1GnMi+6R7h
-qh8d333wW+jCennsoQG9ayXtMcDHsrIqiukZ+lXe54yJANoJflieRpmeBv4gmRfC
-LrJztsYHw0gZxsgfNeKAclH33i/4hcSpaE1AVKXff7MO/Ab+038AJrjGhF0YgWfg
-eRl+u75Kef6Npzm3aS6kHL57MqruG2hJlcbgOk60yo3Fdg88bJmPy3XJnMnTkomH
-gcuJH3bylHFtGdrT60ORrBoN3/B9U7gC7ygU3lOiSowMQ9qqTu3oS0nHRkvU0kPr
-/wuqnKW0QfSe8S0uj8cS
-=A1ha
+iQIcBAEBCAAGBQJRvrcGAAoJEECxmPOUX5FErtQP/1owf6eCPPP8QBx1oqym8Zoq
+IeTG0dDTm3JHJQ0ur8rDLhDN70nHG+hJsXwgnTRcgwxsMcn7WPqU6/lxp+StEm7A
+XQfxthhmLsFDzOabHVGW5QrGyjVxZydlLnq1ImaHMNKim8HIP6klfyIk41qGDOnL
+7T3JocovGkJyr5FRyXv5rtBeZgT/U27hmfaXyAc+oLWcDSD9ic5dD9Vtux3P+sUO
+Fu/yUqM5f+OEbKyNVpeU40mR/sNKRe5XJIWmi1um9pS9NuoFfDmLh7vlvQ/ybl1r
+mkRM4XqfVzP4WIPtYTg6SOQU3GPRwmjA0E/C5Q8GA7qp9VRiK4km5j3NZzgzfjV7
+IIp2LXXQTiXJoeZkbiG2AGx3r78/nuDn/jsqQIpkK0fk6pzEsFvGh2rrfdrcb//F
+2Eu8m6cUmrFIdQK4lL/bnKjyztvgPLjnZ+Q103BjJeUdV7JdhqijRoEeANcoUhPl
+s0eYUEs+e5DwIReNRmFn7tPOU/ZrH29GKSz1gFYGcJd8pco8EnJMUbDu1+2frHUD
+f5/eyjgbe9DIRlXvRUIHwqsn69bBTOgMLPk6YpdDZGvTVZLTDJrXbtwM01y1qZE5
+hzj0hm+oVEvDVq9Dj/JDNvyR83iN8DDYfaL69FKfSLGy87T7QNcZQFbp5tKyceyl
+lyPYhz/1fn/Vv3DHt90u
+=bYtj
 -----END PGP SIGNATURE-----
 
---DocE+STaALJfprDB--
+--Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=--
