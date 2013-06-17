@@ -1,129 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3FQWXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:23:50 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39995 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3FQWXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:23:49 -0400
-Date: Mon, 17 Jun 2013 15:23:53 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org
-Subject: Re: [PATCH 2/3] ARM: mach-moxart: add MOXA ART device tree files
-Message-ID: <20130617222353.GB13266@quad.lixom.net>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
- <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
- <20130612224952.GB8146@quad.lixom.net>
- <CACmBeS0T1n92CcGN6kR+eBcFPuwsWc+PsUx7Cms+4vbeVFhQKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACmBeS0T1n92CcGN6kR+eBcFPuwsWc+PsUx7Cms+4vbeVFhQKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752777Ab3FQWYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:24:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20658 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab3FQWYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:24:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
+   d="scan'208";a="331136176"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20130617151417.f7610d56b4b43ced30c40133@linux-foundation.org>
+References: <1371506740-14606-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130617151417.f7610d56b4b43ced30c40133@linux-foundation.org>
+Subject: Re: [PATCH] thp: define HPAGE_PMD_* constans as BUILD_BUG() if !THP
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130617222703.D8C4AE0090@blue.fi.intel.com>
+Date: Tue, 18 Jun 2013 01:27:03 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 04:34:24PM +0200, Jonas Jensen wrote:
-> Hi,
+Andrew Morton wrote:
+> On Tue, 18 Jun 2013 01:05:40 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 > 
-> Thanks for the replies.
-> 
-> What isn't commented below should already be fixed.
-> 
-> On 13 June 2013 00:49, Olof Johansson <olof@lixom.net> wrote:
-> > Hi,
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > Currently, HPAGE_PMD_* constans rely on PMD_SHIFT regardless of
+> > CONFIG_TRANSPARENT_HUGEPAGE. PMD_SHIFT is not defined everywhere (e.g.
+> > arm nommu case).
+> > 
+> > It means we can't use anything like this in generic code:
+> > 
+> >         if (PageTransHuge(page))
+> >                 zero_huge_user(page, 0, HPAGE_PMD_SIZE);
+> >         else
+> >                 clear_highpage(page);
+> > 
+> > For !THP case, PageTransHuge() is 0 and compiler can eliminate
+> > zero_huge_user() call. But it still need to be valid C expression, means
+> > HPAGE_PMD_SIZE has to expand to something compiler can understand.
+> > 
+> > Previously, HPAGE_PMD_* were defined to BUILD_BUG() for !THP. Let's come
+> > back to it.
+> > 
+> > ...
 > >
-> > You should add a bindings description for the MOXA SoC platforms, similar to
-> > how others do it, under Documentation/devicetree/bindings/arm/.
+> > --- a/include/linux/huge_mm.h
+> > +++ b/include/linux/huge_mm.h
+> > @@ -58,11 +58,12 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+> >  
+> >  #define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+> >  #define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
+> > +
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> >  #define HPAGE_PMD_SHIFT PMD_SHIFT
+> >  #define HPAGE_PMD_SIZE	((1UL) << HPAGE_PMD_SHIFT)
+> >  #define HPAGE_PMD_MASK	(~(HPAGE_PMD_SIZE - 1))
+> >  
+> > -#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> >  extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+> >  
+> >  #define transparent_hugepage_enabled(__vma)				\
+> > @@ -180,6 +181,9 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+> >  				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+> >  
+> >  #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+> > +#define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
+> > +#define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+> > +#define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+> >  
 > 
-> The following is now added under Documentation:
-> 
->  Documentation/devicetree/bindings/arm/moxart.txt   |    8 +++
->  .../arm/moxart/moxart-interrupt-controller.txt     |   29 ++++++++++++
->  .../bindings/arm/moxart/moxart-timer.txt           |   17 +++++++
-> 
-> > Same goes for other device bindings below -- they all need to be added to the
-> > bindings documentation. You might be better off removing some of them until you
-> > post and merge the corresponding drivers.
-> 
-> I'll remove them for now with the intent of adding them later. Maybe
-> when (and if) all drivers are posted and merged.
-> 
-> >> +/dts-v1/;
-> >> +/include/ "moxart.dtsi"
-> >> +
-> >> +/ {
-> >> +     model = "MOXA UC-7112-LX";
-> >> +     compatible = "moxa,moxart-uc-7112-lx";
-> >
-> > Is there a generic board design / eval board that you can have as a fallback
-> > compatible value? That way you won't have to add every board to the table in
-> > the c file.
-> 
-> There isn't really a generic board but the same can be accomplished by
-> adding "moxa,moxart" to compatible? New boards can then be added
-> without patching arch/arm/mach-moxart/moxart.c.
+> We've done this sort of thing before and it blew up.  We do want to be
+> able to use things like HPAGE_PMD_foo in global-var initialisers and
+> definitions, but the problem is that BUILD_BUG() can't be used outside
+> functions.
 
-Sounds good. See comment on the other email about checking for machine
-compatible in the init setup function too, that'll work well.
+I don't see how it's a blocker. For global variables, we will have to use
+#ifdefs, but the approach is still useful for in-function code.
 
-> 
-> >> +     mxser@98200040 {
-> >> +             compatible = "moxa,moxart-mxser";
-> >> +             reg =   <0x98200040 0x00000080>,        /* UART "3" base */
-> >> +                             <0x982000e4 0x00000080>,        /* UART mode base */
-> >> +                             <0x982000c0 0x00000020>;        /* UART interrupt vector */
-> >
-> > Are there other registers for other devices inbetween, or could you just do one
-> > large memory area here?
-> 
-> No, reg could simply be 0x98200040 to 0x982000e0. I split them out as
-> documentation but those could be defined in the driver instead, also
-> because it's sort of easier to assign values with of_iomap.
-
-I'd say just go with one register area, it's how most other drivers do it so
-it's most familiar to someone else coming in and reading your code to fix bugs
-or whatnot.
-
-> >> +             interrupts = <31 1>;
-> >> +     };
-> >> +
-> >> +     mac0: mac@90900000 {
-> >> +             compatible = "moxa,moxart-mac0";
-> >> +             reg =   <0x90900000 0x1000>,
-> >> +                             <0x80000050 0x5>;                       /* MAC address stored on flash */
-> >
-> > This is a pretty unusal way to indicate mac address location. While I suppose
-> > it works, I'd like to get the device tree maintainers in the loop. ADding them
-> > to cc.
-> >
-> > Also, there should be a bindings doc for this device (and a driver)
-> 
-> I'm removing ethernet until the driver is submitted. This allows me to
-> submit bindings doc later?
-
-Yep.
-
-> 
-> > I'm also surprised that you have a 5-byte mac address. 6 bytes is much more
-> > common. :)
-> 
-> That _is_ surprising :) Corrected to 6 bytes.
-
-:)
-
-> > Finally, are the two MACs using the same driver? if so, using the same
-> > compatible value makes more sense.
-> 
-> Yes, using the same driver is the point. I see now they can use the
-> same value, they'll still be probed from the DT entries.
-
-Yeah. Let's discuss that further when the driver is ready if needed.
-
-
--Olof
+-- 
+ Kirill A. Shutemov
