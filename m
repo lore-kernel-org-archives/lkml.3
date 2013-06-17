@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab3FQI3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 04:29:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54410 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab3FQI3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 04:29:43 -0400
-Date: Mon, 17 Jun 2013 18:29:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the ceph tree
-Message-Id: <20130617182934.8aab7e40dc01c91702b564b1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_18_29_34_+1000_bN=qlaK0tL8_JO3I"
+	id S932411Ab3FQIaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 04:30:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52751 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932315Ab3FQIaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 04:30:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,879,1363158000"; 
+   d="scan'208";a="354767814"
+Date: Mon, 17 Jun 2013 11:34:20 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] i2c: designware: fix race between subsequent xfers
+Message-ID: <20130617083420.GK11878@intel.com>
+References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+ <1370595083-801-1-git-send-email-christian.ruppert@abilis.com>
+ <20130614143740.GD2929@katana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130614143740.GD2929@katana>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_18_29_34_+1000_bN=qlaK0tL8_JO3I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 14, 2013 at 04:37:41PM +0200, Wolfram Sang wrote:
+> On Fri, Jun 07, 2013 at 10:51:23AM +0200, Christian Ruppert wrote:
+> > The designware block is not always properly disabled in the case of
+> > transfer errors. Interrupts from aborted transfers might be handled
+> > after the data structures for the following transfer are initialised but
+> > before the hardware is set up. This can corrupt the data structures to
+> > the point that the system is stuck in an infinite interrupt loop (where
+> > FIFOs are never emptied because dev->msg_read_idx == dev->msgs_num).
+> > 
+> > This patch cleanly disables the designware-i2c hardware at the end of
+> > every transfer, be it successful or not.
+> > 
+> > This patch requires https://patchwork.kernel.org/patch/2601241/ to be
+> > applied first.
+> 
+> These last two lines should be below "---".
+> 
+> > 
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > ---
+> >  drivers/i2c/busses/i2c-designware-core.c |   10 ++++++++--
+> >  1 files changed, 8 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+> > index b75d292..55a9991 100644
+> > --- a/drivers/i2c/busses/i2c-designware-core.c
+> > +++ b/drivers/i2c/busses/i2c-designware-core.c
+> > @@ -588,11 +588,19 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+> >  	ret = wait_for_completion_timeout(&dev->cmd_complete, HZ);
+> >  	if (ret == 0) {
+> >  		dev_err(dev->dev, "controller timed out\n");
+> > +		/* i2c_dw_init implicitly disables the adapter */
+> >  		i2c_dw_init(dev);
+> >  		ret = -ETIMEDOUT;
+> >  		goto done;
+> >  	}
+> >  
+> > +	/*
+> > +	 * We must disable the adapter before unlocking the &dev->lock mutex
+> > +	 * below. Otherwise the hardware might continue generating interrupts
+> > +	 * which in turn causes a race condition with the following transfer.
+> 
+> I added "Needs some more investigation if the additional interrupts are
+> a hardware bug or this driver doesn't handle them correctly yet." to the
+> comment and
+> 
+> Applied to for-next, thanks!
 
-Hi Sage,
-
-After merging the ceph tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
-
-drivers/block/rbd.c: In function 'rbd_release':
-drivers/block/rbd.c:510:2: warning: 'return' with a value, in function retu=
-rning void [enabled by default]
-  return 0;
-  ^
-
-Caused by commit f28d6bf9ef4d ("Merge remote-tracking branch
-'linus/master' into testing").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__17_Jun_2013_18_29_34_+1000_bN=qlaK0tL8_JO3I
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRvsjyAAoJEECxmPOUX5FEhsgP/1Tqc9s8pTvy/HJNFOrhmmvL
-fHwNvRpFYt2Z6gli5l7vmQt5mTgWqt5T9MgP1uiXQM2OVTsazsfwid/Qx1Paq0lG
-53RyRK9zAIhIHcX2etQy5PBuBg3XfZsXeKyZdpHNiYhKH0tG/USbs+dfl5Tmh4BL
-Cx+IPCCI5wHn5mDGsjuYFwCTvAT/YuaRw4A9pcCeBDylZ5c0RALwecaoseW98gwi
-VX0AJSWee107gFXvyTNtdEi5TKArAViLCxR5TqaFqverRtcgHZs9UG6JE8t3yxzA
-BNb3Rx67EDFr6UefClzhaNI1R185JEoqxKEGSjjoNwROsmj7MBDNqaijrucfpnkn
-639ZjI5TOTl1Dh26/KS6i4vkr6//yamvtXTNroN9KsttInxtN+sIR2Ma225MOtiE
-Wm8cFmn0Ya3/1uGMRZqzsNg8ZSS6whFj1pXoT48X0Hd0ZfKUYH3XYw2oVAh866Dg
-iPGzkieajKVQsJU4sA1FDoZZfYVLLE3l+K72+NaIL41k2NbWQrfEVnzaNgnlbc6b
-FsUrXGobzL4qCAXw06KRrkQH4R3PagTOCAJTqH9l1lEFx9HhfctQxUZ1x0vV1GhH
-UdeVhy172LYuxyiklMuHm/uT5hqhgUD8zkFrZHNtJK9h6W6hT2gebZYLHR50P7NG
-bMrrYnEjGaTcGxnCAfui
-=SIFx
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_18_29_34_+1000_bN=qlaK0tL8_JO3I--
+Sorry for the late response (was on vacation). This patch looks good to me
+as well. Thanks for applying it!
