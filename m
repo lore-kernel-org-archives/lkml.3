@@ -1,82 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab3FQHNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:13:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44047 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab3FQHNN (ORCPT
+	id S932269Ab3FQHNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:13:35 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47140 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab3FQHNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:13:13 -0400
-Date: Mon, 17 Jun 2013 17:13:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulrich Hecht <ulrich.hecht@gmail.com>,
-        Bastian Hecht <hechtb@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: linux-next: manual merge of the renesas tree with the sh tree
-Message-Id: <20130617171305.d97598f75a42dfba89b3dbd0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN="
+	Mon, 17 Jun 2013 03:13:33 -0400
+X-AuditID: 9c93017e-b7cbcae00000388c-77-51beb71b8047
+Date: Mon, 17 Jun 2013 16:13:31 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 7/8] vrange: Add method to purge volatile ranges
+Message-ID: <20130617071331.GA3251@bbox>
+References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
+ <1371010971-15647-8-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371010971-15647-8-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello John,
 
-Hi Simon,
+I am rewriting purging path and found a bug from this patch.
+I might forget it so I will send this comment for recording.
 
-Today's linux-next merge of the renesas tree got a conflict in
-include/linux/serial_sci.h between commit ada80ee7fa60 ("serial: sh-sci:
-Add OF support") from the sh tree and commit 24610a30600b ("serial:
-sh-sci: HSCIF support") from the renesas tree.
+On Tue, Jun 11, 2013 at 09:22:50PM -0700, John Stultz wrote:
+> From: Minchan Kim <minchan@kernel.org>
+> 
+> This patch adds discarding function to purge volatile ranges under
+> memory pressure. Logic is as following:
+> 
+> 1. Memory pressure happens
+> 2. VM start to reclaim pages
+> 3. Check the page is in volatile range.
+> 4. If so, zap the page from the process's page table.
+>    (By semantic vrange(2), we should mark it with another one to
+>     make page fault when you try to access the address. It will
+>     be introduced later patch)
+> 5. If page is unmapped from all processes, discard it instead of swapping.
+> 
+> This patch does not address the case where there is no swap, which
+> keeps anonymous pages from being aged off the LRUs. Minchan has
+> additional patches that add support for purging anonymous pages
+> 
+> XXX: First pass at file purging. Seems to work, but is likely broken
+> and needs close review.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Robert Love <rlove@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+> Cc: Dave Chinner <david@fromorbit.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Andrea Righi <andrea@betterlinux.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: Mike Hommey <mh@glandium.org>
+> Cc: Taras Glek <tglek@mozilla.com>
+> Cc: Dhaval Giani <dgiani@mozilla.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> [jstultz: Reworked to add purging of file pages, commit log tweaks]
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  include/linux/rmap.h   |  12 +-
+>  include/linux/swap.h   |   1 +
+>  include/linux/vrange.h |   7 ++
+>  mm/ksm.c               |   2 +-
+>  mm/rmap.c              |  30 +++--
+>  mm/swapfile.c          |  36 ++++++
+>  mm/vmscan.c            |  16 ++-
+>  mm/vrange.c            | 332 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  8 files changed, 420 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index 6dacb93..6432dfb 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -83,6 +83,8 @@ enum ttu_flags {
+>  };
+>  
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+< snip >
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> @@ -662,7 +663,7 @@ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma)
+>   */
+>  int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+>  			unsigned long address, unsigned int *mapcount,
+> -			unsigned long *vm_flags)
+> +			unsigned long *vm_flags, int *is_vrange)
+>  {
+>  	struct mm_struct *mm = vma->vm_mm;
+>  	int referenced = 0;
+> @@ -724,6 +725,9 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+>  				referenced++;
+>  		}
+>  		pte_unmap_unlock(pte, ptl);
+> +		if (is_vrange &&
+> +			vrange_address(mm, address, address + PAGE_SIZE - 1))
+> +			*is_vrange = 1;
 
-diff --cc include/linux/serial_sci.h
-index 857eec4,d340497..0000000
---- a/include/linux/serial_sci.h
-+++ b/include/linux/serial_sci.h
-@@@ -18,8 -16,7 +18,9 @@@ enum=20
-  	SCBRR_ALGO_3,		/* (((clk * 2) + 16 * bps) / (16 * bps) - 1) */
-  	SCBRR_ALGO_4,		/* (((clk * 2) + 16 * bps) / (32 * bps) - 1) */
-  	SCBRR_ALGO_5,		/* (((clk * 1000 / 32) / bps) - 1) */
-+ 	SCBRR_ALGO_6,		/* HSCIF variable sample rate algorithm */
- +
- +	SCBRR_NR_ALGOS,
-  };
- =20
-  #define SCSCR_TIE	(1 << 7)
+< snip >
 
---Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=
-Content-Type: application/pgp-signature
+> +static bool __vrange_address(struct vrange_root *vroot,
+> +			unsigned long start, unsigned long end)
+> +{
+> +	struct interval_tree_node *node;
+> +
+> +	node = interval_tree_iter_first(&vroot->v_rb, start, end);
+> +	return node ? true : false;
+> +}
+> +
+> +bool vrange_address(struct mm_struct *mm,
+> +			unsigned long start, unsigned long end)
+> +{
+> +	struct vrange_root *vroot;
+> +	unsigned long vstart_idx, vend_idx;
+> +	struct vm_area_struct *vma;
+> +	bool ret;
+> +
+> +	vma = find_vma(mm, start);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+It seems to be tweaked by you while you are refactoring with file-vrange
+The problem of the code is that you couldn't use vma without holding
+the lock of mmap_sem and you couldn't use the lock in purging path
+because you couldn't know other tasks's state so it might be a dealock
+if you try to hold a lock.
 
-iQIcBAEBCAAGBQJRvrcGAAoJEECxmPOUX5FErtQP/1owf6eCPPP8QBx1oqym8Zoq
-IeTG0dDTm3JHJQ0ur8rDLhDN70nHG+hJsXwgnTRcgwxsMcn7WPqU6/lxp+StEm7A
-XQfxthhmLsFDzOabHVGW5QrGyjVxZydlLnq1ImaHMNKim8HIP6klfyIk41qGDOnL
-7T3JocovGkJyr5FRyXv5rtBeZgT/U27hmfaXyAc+oLWcDSD9ic5dD9Vtux3P+sUO
-Fu/yUqM5f+OEbKyNVpeU40mR/sNKRe5XJIWmi1um9pS9NuoFfDmLh7vlvQ/ybl1r
-mkRM4XqfVzP4WIPtYTg6SOQU3GPRwmjA0E/C5Q8GA7qp9VRiK4km5j3NZzgzfjV7
-IIp2LXXQTiXJoeZkbiG2AGx3r78/nuDn/jsqQIpkK0fk6pzEsFvGh2rrfdrcb//F
-2Eu8m6cUmrFIdQK4lL/bnKjyztvgPLjnZ+Q103BjJeUdV7JdhqijRoEeANcoUhPl
-s0eYUEs+e5DwIReNRmFn7tPOU/ZrH29GKSz1gFYGcJd8pco8EnJMUbDu1+2frHUD
-f5/eyjgbe9DIRlXvRUIHwqsn69bBTOgMLPk6YpdDZGvTVZLTDJrXbtwM01y1qZE5
-hzj0hm+oVEvDVq9Dj/JDNvyR83iN8DDYfaL69FKfSLGy87T7QNcZQFbp5tKyceyl
-lyPYhz/1fn/Vv3DHt90u
-=bYtj
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_17_13_05_+1000_+jyu+a8f9Byx2xN=--
+> +	if (vma->vm_file && (vma->vm_flags & VM_SHARED)) {
+> +		vroot = &vma->vm_file->f_mapping->vroot;
+> +		vstart_idx = vma->vm_pgoff + start - vma->vm_start;
+> +		vend_idx = vma->vm_pgoff + end - vma->vm_start;
+> +	} else {
+> +		vroot = &mm->vroot;
+> +		vstart_idx = start;
+> +		vend_idx = end;
+> +	}
+> +
+> +	vrange_lock(vroot);
+> +	ret = __vrange_address(vroot, vstart_idx, vend_idx);
+> +	vrange_unlock(vroot);
+> +	return ret;
+> +}
+> +
+-- 
+Kind regards,
+Minchan Kim
