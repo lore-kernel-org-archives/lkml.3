@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3FQRhK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:37:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50766 "EHLO
+	id S1755226Ab3FQRhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:37:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50778 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab3FQRhF (ORCPT
+	with ESMTP id S1755189Ab3FQRhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:37:05 -0400
+	Mon, 17 Jun 2013 13:37:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 81/84] mm: migration: add migrate_entry_wait_huge()
-Date: Mon, 17 Jun 2013 10:31:25 -0700
-Message-Id: <1371490288-23167-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 80/84] mm/page_alloc.c: fix watermark check in __zone_watermark_ok()
+Date: Mon, 17 Jun 2013 10:31:24 -0700
+Message-Id: <1371490288-23167-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -31,115 +31,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 
-commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
+commit 026b08147923142e925a7d0aaa39038055ae0156 upstream.
 
-When we have a page fault for the address which is backed by a hugepage
-under migration, the kernel can't wait correctly and do busy looping on
-hugepage fault until the migration finishes.  As a result, users who try
-to kick hugepage migration (via soft offlining, for example) occasionally
-experience long delay or soft lockup.
+The watermark check consists of two sub-checks.  The first one is:
 
-This is because pte_offset_map_lock() can't get a correct migration entry
-or a correct page table lock for hugepage.  This patch introduces
-migration_entry_wait_huge() to solve this.
+	if (free_pages <= min + lowmem_reserve)
+		return false;
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+The check assures that there is minimal amount of RAM in the zone.  If
+CMA is used then the free_pages is reduced by the number of free pages
+in CMA prior to the over-mentioned check.
+
+	if (!(alloc_flags & ALLOC_CMA))
+		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+
+This prevents the zone from being drained from pages available for
+non-movable allocations.
+
+The second check prevents the zone from getting too fragmented.
+
+	for (o = 0; o < order; o++) {
+		free_pages -= z->free_area[o].nr_free << o;
+		min >>= 1;
+		if (free_pages <= min)
+			return false;
+	}
+
+The field z->free_area[o].nr_free is equal to the number of free pages
+including free CMA pages.  Therefore the CMA pages are subtracted twice.
+This may cause a false positive fail of __zone_watermark_ok() if the CMA
+area gets strongly fragmented.  In such a case there are many 0-order
+free pages located in CMA.  Those pages are subtracted twice therefore
+they will quickly drain free_pages during the check against
+fragmentation.  The test fails even though there are many free non-cma
+pages in the zone.
+
+This patch fixes this issue by subtracting CMA pages only for a purpose of
+(free_pages <= min + lowmem_reserve) check.
+
+Laura said:
+
+  We were observing allocation failures of higher order pages (order 5 =
+  128K typically) under tight memory conditions resulting in driver
+  failure.  The output from the page allocation failure showed plenty of
+  free pages of the appropriate order/type/zone and mostly CMA pages in
+  the lower orders.
+
+  For full disclosure, we still observed some page allocation failures
+  even after applying the patch but the number was drastically reduced and
+  those failures were attributed to fragmentation/other system issues.
+
+Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Tested-by: Laura Abbott <lauraa@codeaurora.org>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/swapops.h |  3 +++
- mm/hugetlb.c            |  2 +-
- mm/migrate.c            | 23 ++++++++++++++++++-----
- 3 files changed, 22 insertions(+), 6 deletions(-)
+ mm/page_alloc.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/swapops.h b/include/linux/swapops.h
-index 47ead51..c5fd30d 100644
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -137,6 +137,7 @@ static inline void make_migration_entry_read(swp_entry_t *entry)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index bb791f0..7d77c57 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1616,6 +1616,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ 	long min = mark;
+ 	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+ 	int o;
++	long free_cma = 0;
  
- extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					unsigned long address);
-+extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
- #else
- 
- #define make_migration_entry(page, write) swp_entry(0, 0)
-@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp_entry_t swp)
- static inline void make_migration_entry_read(swp_entry_t *entryp) { }
- static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					 unsigned long address) { }
-+static inline void migration_entry_wait_huge(struct mm_struct *mm,
-+					pte_t *pte) { }
- static inline int is_write_migration_entry(swp_entry_t entry)
- {
- 	return 0;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 88eb939..dc66048 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2827,7 +2827,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (ptep) {
- 		entry = huge_ptep_get(ptep);
- 		if (unlikely(is_hugetlb_entry_migration(entry))) {
--			migration_entry_wait(mm, (pmd_t *)ptep, address);
-+			migration_entry_wait_huge(mm, ptep);
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 4c6250a..8f1bd12 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -200,15 +200,14 @@ static void remove_migration_ptes(struct page *old, struct page *new)
-  * get to the page and wait until migration is finished.
-  * When we return from this function the fault will be retried.
-  */
--void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
--				unsigned long address)
-+static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
-+				spinlock_t *ptl)
- {
--	pte_t *ptep, pte;
--	spinlock_t *ptl;
-+	pte_t pte;
- 	swp_entry_t entry;
- 	struct page *page;
- 
--	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	spin_lock(ptl);
- 	pte = *ptep;
- 	if (!is_swap_pte(pte))
- 		goto out;
-@@ -236,6 +235,20 @@ out:
- 	pte_unmap_unlock(ptep, ptl);
- }
- 
-+void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
-+				unsigned long address)
-+{
-+	spinlock_t *ptl = pte_lockptr(mm, pmd);
-+	pte_t *ptep = pte_offset_map(pmd, address);
-+	__migration_entry_wait(mm, ptep, ptl);
-+}
+ 	free_pages -= (1 << order) - 1;
+ 	if (alloc_flags & ALLOC_HIGH)
+@@ -1625,9 +1626,10 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ #ifdef CONFIG_CMA
+ 	/* If allocation can't use CMA areas don't use free CMA pages */
+ 	if (!(alloc_flags & ALLOC_CMA))
+-		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
++		free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+ #endif
+-	if (free_pages <= min + lowmem_reserve)
 +
-+void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
-+{
-+	spinlock_t *ptl = &(mm)->page_table_lock;
-+	__migration_entry_wait(mm, pte, ptl);
-+}
-+
- #ifdef CONFIG_BLOCK
- /* Returns true if all buffers are successfully locked */
- static bool buffer_migrate_lock_buffers(struct buffer_head *head,
++	if (free_pages - free_cma <= min + lowmem_reserve)
+ 		return false;
+ 	for (o = 0; o < order; o++) {
+ 		/* At the next order, this order's pages become unavailable */
 -- 
 1.8.1.2
 
