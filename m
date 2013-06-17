@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab3FQPOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:14:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15484 "EHLO mx1.redhat.com"
+	id S1752645Ab3FQPRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:17:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62250 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab3FQPO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:14:29 -0400
+	id S1751090Ab3FQPOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:14:34 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,103 +15,108 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v3 03/13] locks: comment cleanups and clarifications
-Date: Mon, 17 Jun 2013 11:13:46 -0400
-Message-Id: <1371482036-15958-4-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 09/13] locks: turn the blocked_list into a hashtable
+Date: Mon, 17 Jun 2013 11:13:52 -0400
+Message-Id: <1371482036-15958-10-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Break up the blocked_list into a hashtable, using the fl_owner as a key.
+This speeds up searching the hash chains, which is especially significant
+for deadlock detection.
+
+Note that the initial implementation assumes that hashing on fl_owner is
+sufficient. In most cases it should be, with the notable exception being
+server-side lockd, which compares ownership using a tuple of the
+nlm_host and the pid sent in the lock request. So, this may degrade to a
+single hash bucket when you only have a single NFS client. That will be
+addressed in a later patch.
+
+The careful observer may note that this patch leaves the file_lock_list
+alone. There's much less of a case for turning the file_lock_list into a
+hashtable. The only user of that list is the code that generates
+/proc/locks, and it always walks the entire list.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- fs/locks.c         |   21 +++++++++++++--------
- include/linux/fs.h |   18 ++++++++++++++++++
- 2 files changed, 31 insertions(+), 8 deletions(-)
+ fs/locks.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/fs/locks.c b/fs/locks.c
-index e3140b8..1e6301b 100644
+index 32826ed..d93b291 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -518,9 +518,10 @@ static void locks_insert_block(struct file_lock *blocker,
- 		list_add(&waiter->fl_link, &blocked_list);
+@@ -126,6 +126,7 @@
+ #include <linux/time.h>
+ #include <linux/rcupdate.h>
+ #include <linux/pid_namespace.h>
++#include <linux/hashtable.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -160,12 +161,20 @@ int lease_break_time = 45;
+ static HLIST_HEAD(file_lock_list);
+ 
+ /*
+- * The blocked_list is used to find POSIX lock loops for deadlock detection.
+- * Protected by file_lock_lock.
++ * The blocked_hash is used to find POSIX lock loops for deadlock detection.
++ * It is protected by file_lock_lock.
++ *
++ * We hash locks by lockowner in order to optimize searching for the lock a
++ * particular lockowner is waiting on.
++ *
++ * FIXME: make this value scale via some heuristic? We generally will want more
++ * buckets when we have more lockowners holding locks, but that's a little
++ * difficult to determine without knowing what the workload will look like.
+  */
+-static HLIST_HEAD(blocked_list);
++#define BLOCKED_HASH_BITS	7
++static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+ 
+-/* Protects the two list heads above, and fl->fl_block list. */
++/* Protects the file_lock_list, the blocked_hash and fl->fl_block list */
+ static DEFINE_SPINLOCK(file_lock_lock);
+ 
+ static struct kmem_cache *filelock_cache __read_mostly;
+@@ -499,13 +508,13 @@ locks_delete_global_locks(struct file_lock *waiter)
+ static inline void
+ locks_insert_global_blocked(struct file_lock *waiter)
+ {
+-	hlist_add_head(&waiter->fl_link, &blocked_list);
++	hash_add(blocked_hash, &waiter->fl_link, (unsigned long)waiter->fl_owner);
  }
  
--/* Wake up processes blocked waiting for blocker.
-- * If told to wait then schedule the processes until the block list
-- * is empty, otherwise empty the block list ourselves.
-+/*
-+ * Wake up processes blocked waiting for blocker.
-+ *
-+ * Must be called with the file_lock_lock held!
-  */
- static void locks_wake_up_blocks(struct file_lock *blocker)
+ static inline void
+ locks_delete_global_blocked(struct file_lock *waiter)
  {
-@@ -806,6 +807,11 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
+-	hlist_del_init(&waiter->fl_link);
++	hash_del(&waiter->fl_link);
+ }
  
- 	lock_flocks();
-+	/*
-+	 * New lock request. Walk all POSIX locks and look for conflicts. If
-+	 * there are any, either return error or put the request on the
-+	 * blocker's list of waiters and the global blocked_list.
-+	 */
+ /* Remove waiter from blocker's block list.
+@@ -730,7 +739,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+ {
+ 	struct file_lock *fl;
+ 
+-	hlist_for_each_entry(fl, &blocked_list, fl_link) {
++	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
+ 		if (posix_same_owner(fl, block_fl))
+ 			return fl->fl_next;
+ 	}
+@@ -866,7 +875,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 	/*
+ 	 * New lock request. Walk all POSIX locks and look for conflicts. If
+ 	 * there are any, either return error or put the request on the
+-	 * blocker's list of waiters and the global blocked_list.
++	 * blocker's list of waiters and the global blocked_hash.
+ 	 */
  	if (request->fl_type != F_UNLCK) {
  		for_each_lock(inode, before) {
- 			fl = *before;
-@@ -844,7 +850,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		before = &fl->fl_next;
- 	}
- 
--	/* Process locks with this owner.  */
-+	/* Process locks with this owner. */
- 	while ((fl = *before) && posix_same_owner(request, fl)) {
- 		/* Detect adjacent or overlapping regions (if same lock type)
- 		 */
-@@ -930,10 +936,9 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
- 
- 	/*
--	 * The above code only modifies existing locks in case of
--	 * merging or replacing.  If new lock(s) need to be inserted
--	 * all modifications are done bellow this, so it's safe yet to
--	 * bail out.
-+	 * The above code only modifies existing locks in case of merging or
-+	 * replacing. If new lock(s) need to be inserted all modifications are
-+	 * done below this, so it's safe yet to bail out.
- 	 */
- 	error = -ENOLCK; /* "no luck" */
- 	if (right && left == right && !new_fl2)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b9d7816..94105d2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -926,6 +926,24 @@ int locks_in_grace(struct net *);
- /* that will die - we need it for nfs_lock_info */
- #include <linux/nfs_fs_i.h>
- 
-+/*
-+ * struct file_lock represents a generic "file lock". It's used to represent
-+ * POSIX byte range locks, BSD (flock) locks, and leases. It's important to
-+ * note that the same struct is used to represent both a request for a lock and
-+ * the lock itself, but the same object is never used for both.
-+ *
-+ * FIXME: should we create a separate "struct lock_request" to help distinguish
-+ * these two uses?
-+ *
-+ * The i_flock list is ordered by:
-+ *
-+ * 1) lock type -- FL_LEASEs first, then FL_FLOCK, and finally FL_POSIX
-+ * 2) lock owner
-+ * 3) lock range start
-+ * 4) lock range end
-+ *
-+ * Obviously, the last two criteria only matter for POSIX locks.
-+ */
- struct file_lock {
- 	struct file_lock *fl_next;	/* singly linked list for this inode  */
- 	struct list_head fl_link;	/* doubly linked list of all locks */
 -- 
 1.7.1
 
