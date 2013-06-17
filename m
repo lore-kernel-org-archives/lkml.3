@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab3FQQUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:20:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52596 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3FQQUd (ORCPT
+	id S1752621Ab3FQQV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:21:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65235 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab3FQQV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:20:33 -0400
-Date: Mon, 17 Jun 2013 17:20:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        sachin.kamat@linaro.org, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20130617162010.GJ1403@sirena.org.uk>
-References: <20130617102000.GB1403@sirena.org.uk>
- <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
+	Mon, 17 Jun 2013 12:21:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Fernandes, Joel A" <joelagnel@ti.com>
+Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
+Date: Mon, 17 Jun 2013 18:19:57 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Matt Porter" <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        "Devicetree Discuss" <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+References: <1371263570-9323-1-git-send-email-joelagnel@ti.com> <3940138.jZFEtfGGLz@wuerfel> <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
+In-Reply-To: <083BC63EECB6FD41B8E81CF7FD87CC0F2E4E9395@DLEE08.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A6/RaK8Cbiy3x9M4"
-Content-Disposition: inline
-In-Reply-To: <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V3 12/15] ASoC: spear: Convert to use
- devm_ioremap_resource
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306171819.57900.arnd@arndb.de>
+X-Provags-ID: V02:K0:y4UP0GPseVJyEAk+/foXF0KH3XxOGA3dcSdtvLLQTrX
+ CIMrgzsUQUGF6ucfUR3BIfNplJGgP+bW/+VNhOnj/bS8T/Qdbu
+ sWkTjvk0Ya8lC5wobgeaseKItoNGOjIIgTaa+jXsPC370dyg/C
+ hFTVUe9S8L0QK8oGK5qYxxrIkPuwT1VJv4v61oTqug9Rs4PhfT
+ UHVHsCw58AAM3zSCV2SJ37Sge0MXlhkUS7qIEO9AUyycfhmbqK
+ mn/6eBAtz7TrZUvzOmsszbdjVeJtO53QjQOSEWmmS/ZsXLuU9p
+ 7igMGnyXArWhNonrE0gt2453qtY7HNu4c+gq7UciiHv568Vv36
+ er9W0r5C60PjITvxGXog=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 17 June 2013, Fernandes, Joel A wrote:
+> [Joel] Thanks for the suggestion, I updated it and it looks like this now:
+>                                                                                                              
+> Required properties:                                                                                                                   
+> - compatible : "ti,edma3"                                                                                                              
+> - ti,hwmods: Name of the hwmods associated to the EDMA                                                                                 
+> - ti,edma-regions: Number of regions                                                                                                   
+> - ti,edma-slots: Number of slots
+> - #dma-cells: Should be set to <1> 
+>               Clients should use a single number per DMA channel request.
 
---A6/RaK8Cbiy3x9M4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That still does not say what that number refers to.
+Is it a channel number, or a request line number, or something completely
+different?
 
-On Mon, Jun 17, 2013 at 04:10:57PM +0530, Tushar Behera wrote:
-> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> introduced devm_ioremap_resource() and deprecated the use of
-> devm_request_and_ioremap().
-
-Applied, thanks.
-
---A6/RaK8Cbiy3x9M4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRvzc3AAoJELSic+t+oim9e0EP/0UhBdVI8dyz8+Avw6xsx6G+
-NvByUFwaLyw4qWx3PvREyAFuwI+VYFa3eG6LGJtFOTXT92B08BX5phYKa/EEH+6/
-lfuHLiuD88ksJDFiCCtRYoYD++7P5DHhR2trz3qgSMNWTUQRowKWyYjMhZhtrdcJ
-ScG1djObnBeHsAHAtYvICfcQgbaCjSzbnvtieNsnBpnwpz5Th0jMwxq5BoZDJKUi
-cpcpEcGJkxJwWaJcd8+T//OrbFHamNbBQ+fWibU3+wCqtDlNyKu+hSIA9Pgt5H7l
-ltVYCwZfzVytUUk7FMtkRc+4UDr8oXIQj9Z/SyZQZWRCAFRqAHDRt5u+gWPgkNmY
-nPeODbTCBJtoK2Keoysa+bnle4oxOJPx+8MPRSQ5S0Vgym7fohAJhgitdEMGIWDM
-+prJmN9sfT/s+2qMali/eARk5gkXWbxN4SJCjRPeNhPXkG/F5EqmeLOaIMjhJfx7
-rHRNXXheUvUsEciUFWFpXSlT1R/bMAavXXYegbeAmSR+CHxju7GOfiMTZRuNCyHb
-llzaELdm9fhOqSprCsghex+zcEyEJdGnfPaPbPrjpZrepIU0z2yyEgI81EE7qbi3
-dpae+OqDGbhtHi9ybEUXQUbkMXUzO5UDHNCRAzpAmeD7guo1iDXISsWZRO2xvPBt
-1DAW/An9QYnlzDdW81Gx
-=yL2B
------END PGP SIGNATURE-----
-
---A6/RaK8Cbiy3x9M4--
+	Arnd
