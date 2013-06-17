@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3FQR46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:56:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50492 "EHLO
+	id S1753836Ab3FQRdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:33:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50476 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab3FQRdY (ORCPT
+	with ESMTP id S1753802Ab3FQRdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:33:24 -0400
+	Mon, 17 Jun 2013 13:33:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Alex Hung <alex.hung@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 40/84] ALSA: usb-audio: fix Roland/Cakewalk UM-3G support
-Date: Mon, 17 Jun 2013 10:30:44 -0700
-Message-Id: <1371490288-23167-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 37/84] ACPI video: ignore BIOS initial backlight value for HP 1000
+Date: Mon, 17 Jun 2013 10:30:41 -0700
+Message-Id: <1371490288-23167-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit a0c6d309c6df14655f9962f666d1da96318b0b7c upstream.
+commit 4ef366c583d6180b1c951147869ee5a3038834f2 upstream.
 
-Commit 927c9423dd5f2d1c0b93d5e694ab84b4a5559713 (ALSA: usb-audio: add
-Edirol UM-3G support) used a wrong quirk type, which would make the
-driver refuse to attach with the error message "MIDIStreaming interface
-descriptor not found".
+On HP 1000 lapops, BIOS reports minimum backlight on boot and
+causes backlight to dim completely. This ignores the initial backlight
+values and set to max brightness.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+References:: https://bugs.launchpad.net/bugs/1167760
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/quirks-table.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/video.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-index 820580a..28a8d63 100644
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1714,7 +1714,11 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	USB_DEVICE_VENDOR_SPEC(0x0582, 0x0108),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		.ifnum = 0,
--		.type = QUIRK_MIDI_STANDARD_INTERFACE
-+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-+		.data = & (const struct snd_usb_midi_endpoint_info) {
-+			.out_cables = 0x0007,
-+			.in_cables  = 0x0007
-+		}
- 	}
- },
- {
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index d7329bc..a6e1a4d 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -455,6 +455,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP 1000 Notebook PC",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP 1000 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 -- 
 1.8.1.2
 
