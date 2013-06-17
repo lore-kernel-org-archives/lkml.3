@@ -1,154 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab3FQMQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 08:16:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46622 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932719Ab3FQMQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 08:16:55 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <broonie@kernel.org>, <j-keerthy@ti.com>, <ldewangan@nvidia.com>,
-        <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
-        <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <gg@slimlogic.co.uk>
-Subject: [PATCH 1/4] MFD: Palmas: Add Interrupt feature
-Date: Mon, 17 Jun 2013 17:39:11 +0530
-Message-ID: <1371470954-9124-2-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1371470954-9124-1-git-send-email-j-keerthy@ti.com>
-References: <1371470954-9124-1-git-send-email-j-keerthy@ti.com>
+	id S932895Ab3FQMVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 08:21:21 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52347 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932693Ab3FQMVU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 08:21:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1370589652-24549-10-git-send-email-alex.shi@intel.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-10-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 05:20:46 -0700
+Message-ID: <CAPM31RJ_0xgymfN+5FzQCSrv-qgpT+42EOmWke1rOGy7GfHcYg@mail.gmail.com>
+Subject: Re: [patch v8 9/9] sched/tg: remove blocked_load_avg in balance
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Palmas PMICs have an INT line. This line is one single
-Interrupt line to the application processor. The interrupt
-feature enables to selectively request irq for only those
-specific chips which have INT line connected to a valid
-IRQ line of the application processor.
+On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+> blocked_load_avg sometime is too heavy and far bigger than runnable load
+> avg, that make balance make wrong decision. So remove it.
 
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
----
- drivers/mfd/palmas.c       |   32 +++++++++++++++++++++++++-------
- include/linux/mfd/palmas.h |   14 ++++++++++++++
- 2 files changed, 39 insertions(+), 7 deletions(-)
+Ok so this is  going to have terrible effects on the correctness of
+shares distribution; I'm fairly opposed to it in its present form.
 
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index 62fa728..d06ce62 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -231,6 +231,16 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
- 		palmas_set_pdata_irq_flag(i2c, pdata);
- }
- 
-+static unsigned int palmas_features = PALMAS_PMIC_FEATURE_INTERRUPT;
-+
-+static const struct of_device_id of_palmas_match_tbl[] = {
-+	{
-+		.compatible = "ti,palmas",
-+		.data = &palmas_features,
-+	},
-+	{ },
-+};
-+
- static int palmas_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
-@@ -238,8 +248,9 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	struct palmas_platform_data *pdata;
- 	struct device_node *node = i2c->dev.of_node;
- 	int ret = 0, i;
--	unsigned int reg, addr;
-+	unsigned int reg, addr, *features;
- 	int slave;
-+	const struct of_device_id *match;
- 
- 	pdata = dev_get_platdata(&i2c->dev);
- 
-@@ -261,9 +272,17 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, palmas);
- 	palmas->dev = &i2c->dev;
--	palmas->id = id->driver_data;
- 	palmas->irq = i2c->irq;
- 
-+	match = of_match_device(of_match_ptr(of_palmas_match_tbl), &i2c->dev);
-+
-+	if (match) {
-+		features = (unsigned int *)match->data;
-+		palmas->features = *features;
-+	} else {
-+		return -ENODATA;
-+	}
-+
- 	for (i = 0; i < PALMAS_NUM_CLIENTS; i++) {
- 		if (i == 0)
- 			palmas->i2c_clients[i] = i2c;
-@@ -290,6 +309,9 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 		}
- 	}
- 
-+	if (!PALMAS_PMIC_HAS(palmas, INTERRUPT))
-+		goto no_int;
-+
- 	/* Change interrupt line output polarity */
- 	if (pdata->irq_flags & IRQ_TYPE_LEVEL_HIGH)
- 		reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
-@@ -316,6 +338,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err;
- 
-+no_int:
- 	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
- 	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
- 			PALMAS_PRIMARY_SECONDARY_PAD1);
-@@ -427,11 +450,6 @@ static const struct i2c_device_id palmas_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, palmas_i2c_id);
- 
--static struct of_device_id of_palmas_match_tbl[] = {
--	{ .compatible = "ti,palmas", },
--	{ /* end */ }
--};
--
- static struct i2c_driver palmas_i2c_driver = {
- 	.driver = {
- 		   .name = "palmas",
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index 8f21daf..1b5b5f3 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -32,6 +32,19 @@
- 			((a) == PALMAS_CHIP_ID))
- #define is_palmas_charger(a) ((a) == PALMAS_CHIP_CHARGER_ID)
- 
-+/**
-+ * DOC: Palmas PMIC feature types
-+ *
-+ * PALMAS_PMIC_FEATURE_INTERRUPT - used when the PMIC has Interrupt line going
-+ *	to an application processor.
-+ *
-+ * PALMAS_PMIC_HAS(b, f) - macro to check if a bandgap device is capable of a
-+ *	specific feature (above) or not. Return non-zero, if yes.
-+ */
-+#define PALMAS_PMIC_FEATURE_INTERRUPT	BIT(0)
-+#define PALMAS_PMIC_HAS(b, f)			\
-+			((b)->features & PALMAS_PMIC_FEATURE_ ## f)
-+
- struct palmas_pmic;
- struct palmas_gpadc;
- struct palmas_resource;
-@@ -46,6 +59,7 @@ struct palmas {
- 	/* Stored chip id */
- 	int id;
- 
-+	unsigned int features;
- 	/* IRQ Data */
- 	int irq;
- 	u32 irq_mask;
--- 
-1.7.5.4
+So let's see, what could be happening..
 
+In  "sched: compute runnable load avg in cpu_load and
+cpu_avg_load_per_task" you already update the load average weights
+solely based on current runnable load.  While this is generally poor
+for stability (and I suspect the benefit is coming largely from
+weighted_cpuload() where you do want to use runnable_load_avg and not
+get_rq_runnable_load() where I suspect including blocked_load_avg() is
+correct in the longer term).
+
+Ah so.. I have an inkling:
+  Inside weighted_cpuload() where you're trying to use only
+runnable_load_avg; this is in-fact still including blocked_load_avg
+for a cgroup since in the cgroup case a group entities' contribution
+is a function of both runnable and blocked load.
+
+Having weighted_cpuload() pull rq->load (possibly moderated by
+rq->avg) would reasonably avoid this since issued shares are
+calculated using instantaneous weights, without breaking the actual
+model for how much load overall that we believe the group has.
+
+>
+> Changlong tested this patch, found ltp cgroup stress testing get better
+> performance: https://lkml.org/lkml/2013/5/23/65
+> ---
+> 3.10-rc1          patch1-7         patch1-8
+> duration=764   duration=754   duration=750
+> duration=764   duration=754   duration=751
+> duration=763   duration=755   duration=751
+>
+> duration means the seconds of testing cost.
+> ---
+>
+> And Jason also tested this patchset on his 8 sockets machine:
+> https://lkml.org/lkml/2013/5/29/673
+> ---
+> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
+> improvement in performance of the workload compared to when using the
+> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
+> kernel with just patches 1-7, the performance improvement of the
+> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
+> ---
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Tested-by: Changlong Xie <changlongx.xie@intel.com>
+> Tested-by: Jason Low <jason.low2@hp.com>
+> ---
+>  kernel/sched/fair.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 3aa1dc0..985d47e 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1358,7 +1358,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>         struct task_group *tg = cfs_rq->tg;
+>         s64 tg_contrib;
+>
+> -       tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+> +       tg_contrib = cfs_rq->runnable_load_avg;
+>         tg_contrib -= cfs_rq->tg_load_contrib;
+>
+>         if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+> --
+> 1.7.12
+>
