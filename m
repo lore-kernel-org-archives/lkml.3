@@ -1,33 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3FQFxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:53:22 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:50667 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3FQFxU (ORCPT
+	id S1755903Ab3FQFy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:54:29 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:48849 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3FQFy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:53:20 -0400
+	Mon, 17 Jun 2013 01:54:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370360926-3695-1-git-send-email-wsa@the-dreams.de>
-References: <1370360926-3695-1-git-send-email-wsa@the-dreams.de>
-Date: Mon, 17 Jun 2013 07:53:20 +0200
-Message-ID: <CACRpkdYR4xAhekC3XagYEu2K+nEY22hEthB1ojHqPDsR=KKT_Q@mail.gmail.com>
-Subject: Re: [PATCH] gpio: devres: make comments proper
+In-Reply-To: <1370373600-31921-1-git-send-email-sboyd@codeaurora.org>
+References: <1370373600-31921-1-git-send-email-sboyd@codeaurora.org>
+Date: Mon, 17 Jun 2013 07:54:26 +0200
+Message-ID: <CACRpkdZ5x3q9tn3J5_mQj-nJ_wO3HWgX5DTMQdMzF3mUDrAieQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: msm-v1: Remove errant __devinit to fix compile
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 5:48 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+On Tue, Jun 4, 2013 at 9:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-> The free-function mentioned "interrupt" instead of "GPIO". While we are
-> here, use "GPIO" (capital letters) consistently.
+> Commit 7bce696 (gpio: Make gpio-msm-v1 into a platform driver,
+> 2013-03-04) was based on an older kernel where __devinit still
+> existed. Remove the erroneous __devinit marking.
 >
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: David Brown <davidb@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
 Patch applied.
 
