@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab3FQRcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:32:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50451 "EHLO
+	id S1752248Ab3FQRcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:32:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50461 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3FQRcc (ORCPT
+	with ESMTP id S1753691Ab3FQRci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:32:32 -0400
+	Mon, 17 Jun 2013 13:32:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matt Fleming <matt.fleming@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+Cc: Ash Willis <ashwillis@programmer.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 29/84] x86/PCI: Map PCI setup data with ioremap() so it can be in highmem
-Date: Mon, 17 Jun 2013 10:30:33 -0700
-Message-Id: <1371490288-23167-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 39/84] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
+Date: Mon, 17 Jun 2013 10:30:43 -0700
+Message-Id: <1371490288-23167-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -30,72 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Ash Willis <ashwillis.kernel@gmail.com>
 
-commit 65694c5aaddfedd9da082e4e150cafc6b3fc8a6a upstream.
+commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
 
-f9a37be0f0 ("x86: Use PCI setup data") added support for using PCI ROM
-images from setup_data.  This used phys_to_virt(), which is not valid for
-highmem addresses, and can cause a crash when booting a 32-bit kernel via
-the EFI boot stub.
+This patch addresses kernel bug 56661. BIOS reports an incorrect
+backlight value, causing the driver to switch off the backlight
+completely during startup. This patch ignores the incorrect value from
+BIOS.
 
-pcibios_add_device() assumes that the physical addresses stored in
-setup_data are accessible via the direct kernel mapping, and that calling
-phys_to_virt() is valid.  This isn't guaranteed to be true on x86 where the
-direct mapping range is much smaller than on x86-64.
-
-Calling phys_to_virt() on a highmem address results in the following:
-
- BUG: unable to handle kernel paging request at 39a3c198
- IP: [<c262be0f>] pcibios_add_device+0x2f/0x90
- ...
- Call Trace:
-  [<c2370c73>] pci_device_add+0xe3/0x130
-  [<c274640b>] pci_scan_single_device+0x8b/0xb0
-  [<c2370d08>] pci_scan_slot+0x48/0x100
-  [<c2371904>] pci_scan_child_bus+0x24/0xc0
-  [<c262a7b0>] pci_acpi_scan_root+0x2c0/0x490
-  [<c23b7203>] acpi_pci_root_add+0x312/0x42f
-  ...
-
-The solution is to use ioremap() instead of phys_to_virt() to map the
-setup data into the kernel address space.
-
-[bhelgaas: changelog]
-Tested-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
+Signed-off-by: Ash Willis <ashwillis@programmer.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/pci/common.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/acpi/video.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index ccd0ab3..f24ba14 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -618,7 +618,9 @@ int pcibios_add_device(struct pci_dev *dev)
- 
- 	pa_data = boot_params.hdr.setup_data;
- 	while (pa_data) {
--		data = phys_to_virt(pa_data);
-+		data = ioremap(pa_data, sizeof(*rom));
-+		if (!data)
-+			return -ENOMEM;
- 
- 		if (data->type == SETUP_PCI) {
- 			rom = (struct pci_setup_rom *)data;
-@@ -635,6 +637,7 @@ int pcibios_add_device(struct pci_dev *dev)
- 			}
- 		}
- 		pa_data = data->next;
-+		iounmap(data);
- 	}
- 	return 0;
- }
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index afc2a8d..545246f 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -457,6 +457,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	},
+ 	{
+ 	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Pavilion g6 Notebook PC",
++	 .matches = {
++		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
++		},
++	},
++	{
++	 .callback = video_ignore_initial_backlight,
+ 	 .ident = "HP 1000 Notebook PC",
+ 	 .matches = {
+ 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
 -- 
 1.8.1.2
 
