@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab3FQPiD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:38:03 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38437 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab3FQPiA (ORCPT
+	id S1752517Ab3FQPip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:38:45 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:57824 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab3FQPio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:38:00 -0400
-Message-ID: <51BF2D52.2040000@samsung.com>
-Date: Tue, 18 Jun 2013 00:37:54 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 17 Jun 2013 11:38:44 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] MAINTAINERS: Add exynos filename match to ARM/S5P
- EXYNOS ARM ARCHITECTURES
-References: <1371143144-31764-1-git-send-email-dianders@chromium.org> <1371421068-28743-1-git-send-email-dianders@chromium.org> <1371421068-28743-2-git-send-email-dianders@chromium.org>
-In-Reply-To: <1371421068-28743-2-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130617135028.GE10671@intel.com>
+References: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+	<CACRpkdYBfvr0kA7bd-6Ns78UH7JtBCFDzFxyHLgtReB32O4D+w@mail.gmail.com>
+	<20130530173326.GD3767@intel.com>
+	<CACRpkdZhK6TUAC132vzcaLKqdMTwPma+ZhKG5Y+AUvekNpz6EQ@mail.gmail.com>
+	<20130612095443.GU4107@intel.com>
+	<CACRpkdYS8MYEBs_kcGyOPvcenBALxAXtksRA=+TmkeyOZW=Xzg@mail.gmail.com>
+	<20130617135028.GE10671@intel.com>
+Date: Mon, 17 Jun 2013 17:38:43 +0200
+Message-ID: <CACRpkdYf3cx=-+nZJGCxGJs5TbBAkLwtfaYXWErzn-wnxeFLuQ@mail.gmail.com>
+Subject: Re: [PATCH -next v2] dmaengine: ste_dma40: fix error return code in d40_probe()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>, "arm@kernel.org" <arm@kernel.org>
+Cc: Wei Yongjun <weiyj.lk@gmail.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/13 07:17, Doug Anderson wrote:
-> This will help direct patches related to exynos to the
-> linux-samsung-soc mailing list for discussion.
->
-> Suggested by Joe Perches.
->
-> Signed-off-by: Doug Anderson<dianders@chromium.org>
+On Mon, Jun 17, 2013 at 3:50 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Thu, Jun 13, 2013 at 09:49:04AM +0200, Linus Walleij wrote:
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>> I haven't sent this patch to ARM SoC so it will not appear from any other source
+>> in the merge window or cause any conflicts.
+>
+> Doesnt apply on my next or -rc6. I think it has some ste dependecies. So either
+> we wait and I send this for next -rc2 or you apply with my Ack
 
-Thanks,
-- Kukjin
+I have it queued in my tree so it won't be forgotten.
 
-> ---
-> Changes in v2:
-> - New for this version.
->
->   MAINTAINERS | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index f55e3c7..2e95fd8 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1140,6 +1140,7 @@ L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
->   S:	Maintained
->   F:	arch/arm/mach-s5p*/
->   F:	arch/arm/mach-exynos*/
-> +N:	exynos
->
->   ARM/SAMSUNG MOBILE MACHINE SUPPORT
->   M:	Kyungmin Park<kyungmin.park@samsung.com>
+That said: ARM SoC folks: can you apply this fix directly
+to wherever in the ARM SoC tree the DMA40 patches have
+ended up? (Looks like next/drivers)
+
+Yours,
+Linus Walleij
