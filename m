@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3FQSBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:01:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50413 "EHLO
+	id S1755647Ab3FQSB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:01:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50394 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3FQRbm (ORCPT
+	with ESMTP id S1753010Ab3FQRbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:42 -0400
+	Mon, 17 Jun 2013 13:31:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Vladimir Murzin <murzin.v@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 18/84] USB: mos7720: fix DMA to stack
-Date: Mon, 17 Jun 2013 10:30:22 -0700
-Message-Id: <1371490288-23167-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 09/84] xhci: fix list access before init
+Date: Mon, 17 Jun 2013 10:30:13 -0700
+Message-Id: <1371490288-23167-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,50 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Vladimir Murzin <murzin.v@gmail.com>
 
-commit 72ea18a558ed7a63a50bb121ba60d73b5b38ae30 upstream.
+commit 88696ae432ce7321540ac53d9caab3de9118b094 upstream.
 
-The read_mos_reg function is called with stack-allocated buffers, which
-must not be used for control messages.
+If for whatever reason we fall into fail path in xhci_mem_init()
+before bw table gets initialized we may access the uninitialized lists
+in xhci_mem_cleanup().
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Check for bw table before traversing lists in cleanup routine.
+
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
+information about roothubs and TTs."
+
+Reported-by: Sergey Dyasly <dserrg@gmail.com>
+Tested-by: Sergey Dyasly <dserrg@gmail.com>
+Signed-off-by: Vladimir Murzin <murzin.v@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/mos7720.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-mem.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index f57a6b1..1b2bcdc 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -228,11 +228,22 @@ static int read_mos_reg(struct usb_serial *serial, unsigned int serial_portnum,
- 	__u8 requesttype = (__u8)0xc0;
- 	__u16 index = get_reg_index(reg);
- 	__u16 value = get_reg_value(reg, serial_portnum);
--	int status = usb_control_msg(usbdev, pipe, request, requesttype, value,
--				     index, data, 1, MOS_WDR_TIMEOUT);
--	if (status < 0)
-+	u8 *buf;
-+	int status;
-+
-+	buf = kmalloc(1, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	status = usb_control_msg(usbdev, pipe, request, requesttype, value,
-+				     index, buf, 1, MOS_WDR_TIMEOUT);
-+	if (status == 1)
-+		*data = *buf;
-+	else if (status < 0)
- 		dev_err(&usbdev->dev,
- 			"mos7720: usb_control_msg() failed: %d", status);
-+	kfree(buf);
-+
- 	return status;
- }
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 59c08b2..0618f25 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1847,6 +1847,9 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
++	if (!xhci->rh_bw)
++		goto no_bw;
++
+ 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+ 	for (i = 0; i < num_ports; i++) {
+ 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+@@ -1865,6 +1868,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 		}
+ 	}
+ 
++no_bw:
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
+ 	xhci->num_active_eps = 0;
 -- 
 1.8.1.2
 
