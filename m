@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab3FQPpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:45:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52362 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab3FQPpF (ORCPT
+	id S1753140Ab3FQPqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:46:22 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33992 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3FQPqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:45:05 -0400
-Message-ID: <51BF2EEF.8070209@ti.com>
-Date: Mon, 17 Jun 2013 21:14:47 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Joel A Fernandes <agnel.joel@gmail.com>
-CC: <matt@ohporter.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v2 0/3] omap_hsmmc DT DMA Client support
-References: <1362518004-7083-1-git-send-email-mporter@ti.com> <201303052126.01572.arnd@arndb.de> <20130306133717.GJ6209@beef> <CAD=GYpbmFyZxwpRwSVjasehhmR5UzMQaGCZf_5Gfo9biQyb0Ww@mail.gmail.com> <CAD=GYpaSMkTCWgetPxvchuZMWzzB09_F3nqazKFRJob1imoXUw@mail.gmail.com>
-In-Reply-To: <CAD=GYpaSMkTCWgetPxvchuZMWzzB09_F3nqazKFRJob1imoXUw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 11:46:20 -0400
+From: ddaney.cavm@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com
+Cc: david.s.daney@gmail.com, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2] mn10300: Fix include dependency in irqflags.h et al.
+Date: Mon, 17 Jun 2013 08:46:07 -0700
+Message-Id: <1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+References: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 June 2013 11:40 PM, Joel A Fernandes wrote:
-> Resending on Matt's new email, thanks.
->
-> On Fri, Jun 14, 2013 at 1:10 PM, Joel A Fernandes <agnel.joel@gmail.com> wrote:
->> Hi,
->>
->> On Wed, Mar 6, 2013 at 7:37 AM, Matt Porter <mporter@ti.com> wrote:
->>> On Tue, Mar 05, 2013 at 09:26:01PM +0000, Arnd Bergmann wrote:
->>>> On Tuesday 05 March 2013, Matt Porter wrote:
->>>>> Changes since v1:
->>>>>          - rebase to 3.9-rc1, previous dependencies upstream
->>>>>
->>>>> This series adds DT DMA Engine Client support to the omap_hsmmc.
->>>>> It leverages the generic DMA OF helpers in -next and the
->>>>> dma_request_slave_channel_compat() wrapper introduced in the
->>>>> AM33XX DMA Engine series to support DMA in omap_hsmmc on platforms
->>>>> booting via DT. These platforms include omap2/3/4/5 and am33xx.
->>>>>
->>>>> These patches were split out from the v5 version of the AM33XX DMA
->>>>> series and split from the EDMA-specific omap_hsmmc changes.
->>>>>
->>>>
->>>> The description seems stale, but the patches all look good to me.
->>>>
->>>> I guess they can now get merged in any order.
->>>>
->>>> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>>
->>> Yes, missed updating that to indicating that those are now in
->>> 3.9-rc1.
->>
->> If there are no more changes, could this patch please be merged in for
->> 3.10 or if not, could Matt please update the description as requested
->> and repost?
->>
-Hi Joel,
+From: David Daney <david.daney@cavium.com>
 
-   mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
-   mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
-got merged in 3.10 rc5
+We need to pick up the definition of raw_smp_processor_id() from
+asm/smp.h.  For the !SMP case, we need to supply a definition of
+raw_smp_processor_id().
 
-   mmc: omap_hsmmc: add generic DMA request support to the DT binding
-should go along with edma dts patch series
+Because of the include dependencies we cannot use smp_call_func_t in
+asm/smp.h, but we do need linux/thread_info.h
 
->> Thanks,
->> Joel
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+
+Changes from v1: Remove redundant #ifndef __ASSEMBLY__, fix SMP case.
+
+
+ arch/mn10300/include/asm/irqflags.h | 5 ++---
+ arch/mn10300/include/asm/smp.h      | 4 +++-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/mn10300/include/asm/irqflags.h b/arch/mn10300/include/asm/irqflags.h
+index 678f68d..8730c0a 100644
+--- a/arch/mn10300/include/asm/irqflags.h
++++ b/arch/mn10300/include/asm/irqflags.h
+@@ -13,9 +13,8 @@
+ #define _ASM_IRQFLAGS_H
+ 
+ #include <asm/cpu-regs.h>
+-#ifndef __ASSEMBLY__
+-#include <linux/smp.h>
+-#endif
++/* linux/smp.h <- linux/irqflags.h needs asm/smp.h first */
++#include <asm/smp.h>
+ 
+ /*
+  * interrupt control
+diff --git a/arch/mn10300/include/asm/smp.h b/arch/mn10300/include/asm/smp.h
+index 6745dbe..56c4241 100644
+--- a/arch/mn10300/include/asm/smp.h
++++ b/arch/mn10300/include/asm/smp.h
+@@ -24,6 +24,7 @@
+ #ifndef __ASSEMBLY__
+ #include <linux/threads.h>
+ #include <linux/cpumask.h>
++#include <linux/thread_info.h>
+ #endif
+ 
+ #ifdef CONFIG_SMP
+@@ -85,7 +86,7 @@ extern cpumask_t cpu_boot_map;
+ extern void smp_init_cpus(void);
+ extern void smp_cache_interrupt(void);
+ extern void send_IPI_allbutself(int irq);
+-extern int smp_nmi_call_function(smp_call_func_t func, void *info, int wait);
++extern int smp_nmi_call_function(void (*func)(void *), void *info, int wait);
+ 
+ extern void arch_send_call_function_single_ipi(int cpu);
+ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+@@ -100,6 +101,7 @@ extern void __cpu_die(unsigned int cpu);
+ #ifndef __ASSEMBLY__
+ 
+ static inline void smp_init_cpus(void) {}
++#define raw_smp_processor_id() 0
+ 
+ #endif /* __ASSEMBLY__ */
+ #endif /* CONFIG_SMP */
+-- 
+1.7.11.7
 
