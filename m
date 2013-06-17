@@ -1,297 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3FQGVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:21:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56021 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab3FQGVk convert rfc822-to-8bit (ORCPT
+	id S932185Ab3FQGVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:21:47 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:48995 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142Ab3FQGVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:21:40 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: RE: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and regulator
- nodes
-Thread-Topic: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and regulator
- nodes
-Thread-Index: AQHOZ+7UhtfCJexSIkigCr6os/kkTpkz26YwgAWZ1tA=
-Date: Mon, 17 Jun 2013 06:21:07 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EBEB1@DBDE04.ent.ti.com>
-References: <1371097811-4618-1-git-send-email-j-keerthy@ti.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Jun 2013 02:21:44 -0400
+Message-ID: <51BEAAF5.6070003@monstr.eu>
+Date: Mon, 17 Jun 2013 08:21:41 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 6/6] DT: Add documentation for gpio-xilinx
+References: <d96317c2681b5feb9e058efe0bd60ff101a0e0fa.1370262666.git.michal.simek@xilinx.com> <af7595252de09373f5591f21262e5ffa7c9e0dc2.1370262666.git.michal.simek@xilinx.com> <CACRpkdaaZKyqBeJHnL4Q5vc3ZVa_psF61McJ2wsFQJMTGvn-NA@mail.gmail.com>
+In-Reply-To: <CACRpkdaaZKyqBeJHnL4Q5vc3ZVa_psF61McJ2wsFQJMTGvn-NA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2PCWIGJANAVCVGJLACRJP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2PCWIGJANAVCVGJLACRJP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: J, KEERTHY
-> Sent: Thursday, June 13, 2013 10:19 PM
-> To: Cousson, Benoit
-> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@wwwdotorg.org;
-> swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk;
-> lee.jones@linaro.org; devicetree-discuss@lists.ozlabs.org
-> Subject: RE: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and
-> regulator nodes
-> 
-> Hi Benoit,
-> 
-> 
-> > -----Original Message-----
-> > From: J, KEERTHY
-> > Sent: Thursday, June 13, 2013 10:00 AM
-> > To: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org
-> > Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > ldewangan@nvidia.com; grant.likely@secretlab.ca;
-> > swarren@wwwdotorg.org; swarren@nvidia.com; sameo@linux.intel.com;
-> > gg@slimlogic.co.uk; lee.jones@linaro.org; J, KEERTHY
-> > Subject: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and
-> regulator
-> > nodes
-> >
-> > This patch adds Palmas MFD node and the regulator nodes for OMAP5.
-> >
-> > The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
-> >
-> > Boot tested on omap5-uevm board.
-> 
-> Could you please pull this patch?
-> 
+On 06/17/2013 07:50 AM, Linus Walleij wrote:
+> On Mon, Jun 3, 2013 at 2:31 PM, Michal Simek <michal.simek@xilinx.com> =
+wrote:
+>=20
+>> Describe gpio-xilinx binding.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>> Changes in v2:
+>> - Extend description
+>=20
+> Thanks, patch applied but look into this:
+>=20
+>> +Optional properties:
+>> +- interrupts : Interrupt mapping for GPIO IRQ.
+>> +- interrupt-parent : Phandle for the interrupt controller that
+>> +  services interrupts for this device.
+>> +- xlnx,all-inputs : if n-th bit is setup, GPIO-n is input
+>> +- xlnx,dout-default : if n-th bit is 1, GPIO-n default value is 1
+>> +- xlnx,gpio-width : gpio width
+>> +- xlnx,tri-default : if n-th bit is 1, GPIO-n is in tristate mode
+>> +- xlnx,is-dual : if 1, controller also uses the second channel
+>=20
+> If is present, xlnx,is-dual;
+>=20
+>> +Example:
+>> +gpio: gpio@40000000 {
+>> +       #gpio-cells =3D <2>;
+>> +       compatible =3D "xlnx,xps-gpio-1.00.a";
+>> +       gpio-controller ;
+>> +       interrupt-parent =3D <&microblaze_0_intc>;
+>> +       interrupts =3D < 6 2 >;
+>> +       reg =3D < 0x40000000 0x10000 >;
+>> +       xlnx,all-inputs =3D <0x0>;
+>> +       xlnx,all-inputs-2 =3D <0x0>;
+>> +       xlnx,dout-default =3D <0x0>;
+>> +       xlnx,dout-default-2 =3D <0x0>;
+>> +       xlnx,gpio-width =3D <0x2>;
+>> +       xlnx,gpio2-width =3D <0x2>;
+>> +       xlnx,interrupt-present =3D <0x1>;
+>> +       xlnx,is-dual =3D <0x1>;
+>=20
+> xlnx,is-dual;
+>=20
+> I'm not giving up on this suggestion.
 
-A gentle ping on this patch.
+I have commented this in the v1. The point is that all dtses for the last=
 
-> Regards,
-> Keerthy
+3-4 years are using this binding and this value is present there for a lo=
+ng
+time. That's why I think it is better to keep this binding and do not bre=
+ak
+backward compatibility which there is.
+Also it reflects how design tool describe hardware.
+IP is designed that can be easily extended to more channels which means
+that it won't be simple yes/no option.
 
-Regards,
-Keerthy
-> 
-> >
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> > V6:
-> > Changed the order of properties.
-> >
-> > V5:
-> > Corrected the IRQ_TYPE flag for OMAP5 board.
-> >
-> > V4:
-> > Removed splitting Palmas node.
-> >
-> > V3:
-> > Moved the entire Palmas device tree node to board file.
-> >
-> >  arch/arm/boot/dts/omap5-uevm.dts |  167
-> > ++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 167 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/arm/boot/dts/omap5-uevm.dts
-> > b/arch/arm/boot/dts/omap5-uevm.dts
-> > index 927db1e..3d0b7b6 100644
-> > --- a/arch/arm/boot/dts/omap5-uevm.dts
-> > +++ b/arch/arm/boot/dts/omap5-uevm.dts
-> > @@ -8,6 +8,8 @@
-> >  /dts-v1/;
-> >
-> >  #include "omap5.dtsi"
-> > +#include <dt-bindings/interrupt-controller/irq.h>
-> > +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> >
-> >  / {
-> >  	model = "TI OMAP5 uEVM board";
-> > @@ -254,6 +256,171 @@
-> >  	pinctrl-0 = <&i2c1_pins>;
-> >
-> >  	clock-frequency = <400000>;
-> > +
-> > +	palmas: palmas@48 {
-> > +		compatible = "ti,palmas";
-> > +		interrupts = <GIC_SPI 7 IRQ_TYPE_NONE>; /* IRQ_SYS_1N */
-> > +		interrupt-parent = <&gic>;
-> > +		reg = <0x48>;
-> > +		interrupt-controller;
-> > +		#interrupt-cells = <2>;
-> > +
-> > +		palmas_pmic {
-> > +			compatible = "ti,palmas-pmic";
-> > +			interrupt-parent = <&palmas>;
-> > +			interrupts = <14 IRQ_TYPE_NONE>;
-> > +			interrupt-name = "short-irq";
-> > +
-> > +			ti,ldo6-vibrator;
-> > +
-> > +			regulators {
-> > +				smps123_reg: smps123 {
-> > +					regulator-name = "smps123";
-> > +					regulator-min-microvolt = < 600000>;
-> > +					regulator-max-microvolt = <1500000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				smps45_reg: smps45 {
-> > +					regulator-name = "smps45";
-> > +					regulator-min-microvolt = < 600000>;
-> > +					regulator-max-microvolt = <1310000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				smps6_reg: smps6 {
-> > +					regulator-name = "smps6";
-> > +					regulator-min-microvolt = <1200000>;
-> > +					regulator-max-microvolt = <1200000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				smps7_reg: smps7 {
-> > +					regulator-name = "smps7";
-> > +					regulator-min-microvolt = <1800000>;
-> > +					regulator-max-microvolt = <1800000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				smps8_reg: smps8 {
-> > +					regulator-name = "smps8";
-> > +					regulator-min-microvolt = < 600000>;
-> > +					regulator-max-microvolt = <1310000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				smps9_reg: smps9 {
-> > +					regulator-name = "smps9";
-> > +					regulator-min-microvolt = <2100000>;
-> > +					regulator-max-microvolt = <2100000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +					ti,smps-range = <0x80>;
-> > +				};
-> > +
-> > +				smps10_reg: smps10 {
-> > +					regulator-name = "smps10";
-> > +					regulator-min-microvolt = <5000000>;
-> > +					regulator-max-microvolt = <5000000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo1_reg: ldo1 {
-> > +					regulator-name = "ldo1";
-> > +					regulator-min-microvolt = <2800000>;
-> > +					regulator-max-microvolt = <2800000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo2_reg: ldo2 {
-> > +					regulator-name = "ldo2";
-> > +					regulator-min-microvolt = <2900000>;
-> > +					regulator-max-microvolt = <2900000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo3_reg: ldo3 {
-> > +					regulator-name = "ldo3";
-> > +					regulator-min-microvolt = <3000000>;
-> > +					regulator-max-microvolt = <3000000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo4_reg: ldo4 {
-> > +					regulator-name = "ldo4";
-> > +					regulator-min-microvolt = <2200000>;
-> > +					regulator-max-microvolt = <2200000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo5_reg: ldo5 {
-> > +					regulator-name = "ldo5";
-> > +					regulator-min-microvolt = <1800000>;
-> > +					regulator-max-microvolt = <1800000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo6_reg: ldo6 {
-> > +					regulator-name = "ldo6";
-> > +					regulator-min-microvolt = <1500000>;
-> > +					regulator-max-microvolt = <1500000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo7_reg: ldo7 {
-> > +					regulator-name = "ldo7";
-> > +					regulator-min-microvolt = <1500000>;
-> > +					regulator-max-microvolt = <1500000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo8_reg: ldo8 {
-> > +					regulator-name = "ldo8";
-> > +					regulator-min-microvolt = <1500000>;
-> > +					regulator-max-microvolt = <1500000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldo9_reg: ldo9 {
-> > +					regulator-name = "ldo9";
-> > +					regulator-min-microvolt = <1800000>;
-> > +					regulator-max-microvolt = <3300000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldoln_reg: ldoln {
-> > +					regulator-name = "ldoln";
-> > +					regulator-min-microvolt = <1800000>;
-> > +					regulator-max-microvolt = <1800000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +
-> > +				ldousb_reg: ldousb {
-> > +					regulator-name = "ldousb";
-> > +					regulator-min-microvolt = <3250000>;
-> > +					regulator-max-microvolt = <3250000>;
-> > +					regulator-always-on;
-> > +					regulator-boot-on;
-> > +				};
-> > +			};
-> > +		};
-> > +	};
-> >  };
-> >
-> >  &i2c5 {
-> > --
-> > 1.7.5.4
+Thanks,
+Michal
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2PCWIGJANAVCVGJLACRJP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG+qvUACgkQykllyylKDCHkPACdEcoHTEqhdgwg8mFEdr7Nby4l
+rkgAoIbbodkQh1JyFCSsrPo4AkdcnwGE
+=yTP5
+-----END PGP SIGNATURE-----
+
+------enig2PCWIGJANAVCVGJLACRJP--
