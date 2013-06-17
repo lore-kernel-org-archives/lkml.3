@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab3FQUjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:39:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40812 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab3FQUju (ORCPT
+	id S1753625Ab3FQUjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:39:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54379 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab3FQUjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:39:50 -0400
-Date: Mon, 17 Jun 2013 13:39:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com, balbi@ti.com,
-        florian@openwrt.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yuanlmm@gmail.com,
-        ratbert.chuang@gmail.com, john453@faraday-tech.com
-Subject: Re: [PATCH] usb: host: Faraday fotg210-hcd driver
-Message-ID: <20130617203948.GA32731@kroah.com>
-References: <1370452543-19014-1-git-send-email-yhchen@faraday-tech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370452543-19014-1-git-send-email-yhchen@faraday-tech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Jun 2013 16:39:51 -0400
+From: David Brown <davidb@codeaurora.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH] ARM: dts: msm: Fix merge resolution
+Date: Mon, 17 Jun 2013 13:39:38 -0700
+Message-Id: <1371501578-24484-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 05:15:43PM +0000, Yuan-Hsin Chen wrote:
-> FOTG210 is an OTG controller which can be configured as an
-> USB2.0 host. FOTG210 host is an ehci-like controller with
-> some differences. First, register layout of FOTG210 is
-> incompatible with EHCI. Furthermore, FOTG210 is lack of
-> siTDs which means iTDs are used for both HS and FS ISO
-> transfer.
-> 
-> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-> ---
->  drivers/usb/Makefile           |    1 +
->  drivers/usb/host/Kconfig       |   12 +
->  drivers/usb/host/Makefile      |    1 +
->  drivers/usb/host/fotg210-hcd.c | 5967 ++++++++++++++++++++++++++++++++++++++++
->  drivers/usb/host/fotg210.h     |  746 +++++
->  5 files changed, 6727 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/usb/host/fotg210-hcd.c
->  create mode 100644 drivers/usb/host/fotg210.h
+Commit e45600107b (Merge tag 'msm-cleanup-for-3.11' of
+git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm into
+next/cleanup) incorrectly resolved a merge conflict, resulting in a
+node address that doesn't match the register address.
 
-You obviously didn't even run this through checkpatch.pl, did you?
+Fix this node address.
 
-$ ./scripts/checkpatch.pl --terse ../usb.mbox | tail -n 1
-total: 138 errors, 618 warnings, 6742 lines checked
+Signed-off-by: David Brown <davidb@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/boot/dts/msm8960-cdp.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Please fix all of these if you wish us to at least start reviewing the
-patch.  Your internal Q/A should have caught this first, please be more
-careful in the future.
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index e9eb835..db2060c 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -37,7 +37,7 @@
+ 		reg = <0xfd510000 0x4000>;
+ 	};
+ 
+-	serial@19440000 {
++	serial@16440000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x16440000 0x1000>,
+ 		      <0x16400000 0x1000>;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-thanks,
-
-greg k-h
