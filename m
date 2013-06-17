@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3FQGt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:49:26 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61252 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932651Ab3FQGtV (ORCPT
+	id S932653Ab3FQGtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:49:12 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:62935 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932637Ab3FQGtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:49:21 -0400
+	Mon, 17 Jun 2013 02:49:08 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
         jonghwa3.lee@samsung.com
-Subject: [PATCH V6 30/30] arm: exynos: enable ARCH_HAS_BANDGAP
-Date: Mon, 17 Jun 2013 12:16:39 +0530
-Message-Id: <1371451599-31035-31-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V6 27/30] Documentation: thermal: Explain the exynos thermal driver model
+Date: Mon, 17 Jun 2013 12:16:36 +0530
+Message-Id: <1371451599-31035-28-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
 References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com>
@@ -23,60 +23,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables ARCH_HAS_BANDGAP config for exynos4210, 4212, 4412, 5250
-and 5440 SOC. This config symbol is recently added to allow the platforms
-to enable bandgap based temperature sensor.
+This patch updates the documentation to explain the driver model
+and file layout.
 
 Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- arch/arm/mach-exynos/Kconfig |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ Documentation/thermal/exynos_thermal |   43 ++++++++++++++++++++++++++-------
+ 1 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index d19edff..d3cb5c7 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -33,6 +33,7 @@ config CPU_EXYNOS4210
- 	bool "SAMSUNG EXYNOS4210"
- 	default y
- 	depends on ARCH_EXYNOS4
-+	select ARCH_HAS_BANDGAP
- 	select ARM_CPU_SUSPEND if PM
- 	select PM_GENERIC_DOMAINS
- 	select S5P_PM if PM
-@@ -45,6 +46,7 @@ config SOC_EXYNOS4212
- 	bool "SAMSUNG EXYNOS4212"
- 	default y
- 	depends on ARCH_EXYNOS4
-+	select ARCH_HAS_BANDGAP
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
- 	select SAMSUNG_DMADEV
-@@ -55,6 +57,7 @@ config SOC_EXYNOS4412
- 	bool "SAMSUNG EXYNOS4412"
- 	default y
- 	depends on ARCH_EXYNOS4
-+	select ARCH_HAS_BANDGAP
- 	select SAMSUNG_DMADEV
- 	help
- 	  Enable EXYNOS4412 SoC support
-@@ -63,6 +66,7 @@ config SOC_EXYNOS5250
- 	bool "SAMSUNG EXYNOS5250"
- 	default y
- 	depends on ARCH_EXYNOS5
-+	select ARCH_HAS_BANDGAP
- 	select PM_GENERIC_DOMAINS if PM
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
-@@ -76,6 +80,7 @@ config SOC_EXYNOS5440
- 	default y
- 	depends on ARCH_EXYNOS5
- 	select ARCH_HAS_OPP
-+	select ARCH_HAS_BANDGAP
- 	select ARM_ARCH_TIMER
- 	select AUTO_ZRELADDR
- 	select PINCTRL
+diff --git a/Documentation/thermal/exynos_thermal b/Documentation/thermal/exynos_thermal
+index 2b46f67..9010c44 100644
+--- a/Documentation/thermal/exynos_thermal
++++ b/Documentation/thermal/exynos_thermal
+@@ -1,17 +1,17 @@
+-Kernel driver exynos4_tmu
++Kernel driver exynos_tmu
+ =================
+ 
+ Supported chips:
+-* ARM SAMSUNG EXYNOS4 series of SoC
+-  Prefix: 'exynos4-tmu'
++* ARM SAMSUNG EXYNOS4, EXYNOS5 series of SoC
+   Datasheet: Not publicly available
+ 
+ Authors: Donggeun Kim <dg77.kim@samsung.com>
++Authors: Amit Daniel <amit.daniel@samsung.com>
+ 
+-Description
+------------
++TMU controller Description:
++---------------------------
+ 
+-This driver allows to read temperature inside SAMSUNG EXYNOS4 series of SoC.
++This driver allows to read temperature inside SAMSUNG EXYNOS4/5 series of SoC.
+ 
+ The chip only exposes the measured 8-bit temperature code value
+ through a register.
+@@ -34,9 +34,9 @@ The three equations are:
+   TI2: Trimming info for 85 degree Celsius (stored at TRIMINFO register)
+        Temperature code measured at 85 degree Celsius which is unchanged
+ 
+-TMU(Thermal Management Unit) in EXYNOS4 generates interrupt
++TMU(Thermal Management Unit) in EXYNOS4/5 generates interrupt
+ when temperature exceeds pre-defined levels.
+-The maximum number of configurable threshold is four.
++The maximum number of configurable threshold is five.
+ The threshold levels are defined as follows:
+   Level_0: current temperature > trigger_level_0 + threshold
+   Level_1: current temperature > trigger_level_1 + threshold
+@@ -47,6 +47,31 @@ The threshold levels are defined as follows:
+   through the corresponding registers.
+ 
+ When an interrupt occurs, this driver notify kernel thermal framework
+-with the function exynos4_report_trigger.
++with the function exynos_report_trigger.
+ Although an interrupt condition for level_0 can be set,
+ it can be used to synchronize the cooling action.
++
++TMU driver description:
++-----------------------
++
++The exynos thermal driver is structured as,
++
++					Kernel Core thermal framework
++				(thermal_core.c, step_wise.c, cpu_cooling.c)
++								^
++								|
++								|
++TMU configuration data -------> TMU Driver  <------> Exynos Core thermal wrapper
++(exynos_tmu_data.c)	      (exynos_tmu.c)	   (exynos_thermal_common.c)
++(exynos_tmu_data.h)	      (exynos_tmu.h)	   (exynos_thermal_common.h)
++
++a) TMU configuration data: This consist of TMU register offsets/bitfields
++		described through structure exynos_tmu_registers. Also several
++		other platform data (struct exynos_tmu_platform_data) members
++		are used to configure the TMU.
++b) TMU driver: This component initialises the TMU controller and sets different
++		thresholds. It invokes core thermal implementation with the call
++		exynos_report_trigger.
++c) Exynos Core thermal wrapper: This provides 3 wrapper function to use the
++		Kernel core thermal framework. They are exynos_unregister_thermal,
++		exynos_register_thermal and exynos_report_trigger.
 -- 
 1.7.1
 
