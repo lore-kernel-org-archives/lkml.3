@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3FQKvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:51:39 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:39860 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab3FQKvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:51:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370589652-24549-7-git-send-email-alex.shi@intel.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 17 Jun 2013 03:51:05 -0700
-Message-ID: <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com>
-Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932678Ab3FQKwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:52:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38724 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab3FQKwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:52:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,880,1363158000"; 
+   d="scan'208";a="256076529"
+Subject: Re: [PATCH] tcp: Modify the condition for the first skb to collapse
+From: Jun Chen <jun.d.chen@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: ycheng@google.com, ncardwell@google.com, edumazet@google.com,
+        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1371464962.3252.181.camel@edumazet-glaptop>
+References: <1371478739.10495.5.camel@chenjun-workstation>
+	 <1371456935.3252.177.camel@edumazet-glaptop>
+	 <1371490190.28418.6.camel@chenjun-workstation>
+	 <1371464962.3252.181.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jun 2013 14:52:13 -0400
+Message-ID: <1371495133.28418.19.camel@chenjun-workstation>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
-> They are the base values in load balance, update them with rq runnable
-> load average, then the load balance will consider runnable load avg
-> naturally.
->
-> We also try to include the blocked_load_avg as cpu load in balancing,
-> but that cause kbuild performance drop 6% on every Intel machine, and
-> aim7/oltp drop on some of 4 CPU sockets machines.
->
+On Mon, 2013-06-17 at 03:29 -0700, Eric Dumazet wrote:
+> On Mon, 2013-06-17 at 13:29 -0400, Jun Chen wrote:
+> > > 
+> > hi,
+> > When the condition of tcp_win_from_space(skb->truesize) > skb->len is
+> > true but the before(start, TCP_SKB_CB(skb)->seq) is also true, the final
+> > condition will be true. The follow line:
+> > int offset = start - TCP_SKB_CB(skb)->seq;
+> > BUG_ON(offset < 0);
+> > this BUG_ON will be triggered.
+> > 
+> 
+> Really this should never happen, we must track what's happening here.
+It's very very rare, but the logic of codes have such a little hole.
+> 
+> Are you using a pristine kernel, without any patches ?
+The based kernel version is 3.4.  
+> 
+> Are you able to reproduce this bug in a short amount of time ?
+I can't reproduce it in short time, this log had just been found once
+for long long time tests on many devices . 
+> 
+> What kind of driver is in use ? (your stack trace was truncated)
 
-This looks fine.
+I attach the whole stack traces for you.
 
-Did you try including blocked_load_avg in only get_rq_runnable_load()
-[ and not weighted_cpuload() which is called by new-idle ]?
+<0>[ 7736.348788] Call Trace:
 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c |  5 +++--
->  kernel/sched/proc.c | 17 +++++++++++++++--
->  2 files changed, 18 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 42c7be0..eadd2e7 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  /* Used instead of source_load when we know the type == 0 */
->  static unsigned long weighted_cpuload(const int cpu)
->  {
-> -       return cpu_rq(cpu)->load.weight;
-> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
->  }
->
->  /*
-> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->         struct rq *rq = cpu_rq(cpu);
->         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
->
->         if (nr_running)
-> -               return rq->load.weight / nr_running;
-> +               return load_avg / nr_running;
->
->         return 0;
->  }
-> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-> index bb3a6a0..ce5cd48 100644
-> --- a/kernel/sched/proc.c
-> +++ b/kernel/sched/proc.c
-> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->         sched_avg_update(this_rq);
->  }
->
-> +#ifdef CONFIG_SMP
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +       return rq->cfs.runnable_load_avg;
-> +}
-> +#else
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +       return rq->load.weight;
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_NO_HZ_COMMON
->  /*
->   * There is no sane way to deal with nohz on smp when using jiffies because the
-> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->  void update_idle_cpu_load(struct rq *this_rq)
->  {
->         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-> -       unsigned long load = this_rq->load.weight;
-> +       unsigned long load = get_rq_runnable_load(this_rq);
->         unsigned long pending_updates;
->
->         /*
-> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
->   */
->  void update_cpu_load_active(struct rq *this_rq)
->  {
-> +       unsigned long load = get_rq_runnable_load(this_rq);
->         /*
->          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
->          */
->         this_rq->last_load_update_tick = jiffies;
-> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
-> +       __update_cpu_load(this_rq, load, 1);
->
->         calc_load_account_active(this_rq);
->  }
-> --
-> 1.7.12
->
+<4>[ 7736.348861]  [<c18addd0>] tcp_prune_queue+0x120/0x2f0
+
+<4>[ 7736.348984]  [<c18aea27>] tcp_data_queue+0x777/0xf00
+
+<4>[ 7736.349055]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
+
+<4>[ 7736.349126]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
+
+<4>[ 7736.349196]  [<c18b2e84>] tcp_rcv_established+0x114/0x680
+
+<4>[ 7736.349269]  [<c18bb034>] tcp_v4_do_rcv+0x164/0x350
+
+<4>[ 7736.349396]  [<c18de301>] ? nf_nat_fn+0xb1/0x1d0
+
+<4>[ 7736.349470]  [<c18bc0c1>] tcp_v4_rcv+0x6f1/0x7a0
+
+<4>[ 7736.349599]  [<c1881dad>] ? nf_hook_slow+0x10d/0x150
+
+<4>[ 7736.349673]  [<c189b30b>] ip_local_deliver_finish+0x8b/0x200
+
+<4>[ 7736.349796]  [<c189b60f>] ip_local_deliver+0x8f/0xa0
+
+<4>[ 7736.349867]  [<c189b280>] ? ip_rcv_finish+0x300/0x300
+
+<4>[ 7736.349937]  [<c189b05f>] ip_rcv_finish+0xdf/0x300
+
+<4>[ 7736.350062]  [<c189b878>] ip_rcv+0x258/0x330
+
+<4>[ 7736.350132]  [<c189af80>] ? inet_del_protocol+0x30/0x30
+
+<4>[ 7736.350258]  [<c1864175>] __netif_receive_skb+0x325/0x410
+
+<4>[ 7736.350331]  [<c1864956>] process_backlog+0x96/0x150
+
+<4>[ 7736.350455]  [<c1864ba5>] net_rx_action+0x115/0x210
+
+<4>[ 7736.350525]  [<c18b7680>] ? tcp_out_of_resources+0xb0/0xb0
+
+<4>[ 7736.350652]  [<c123dc0b>] __do_softirq+0x9b/0x220
+
+<4>[ 7736.350723]  [<c123db70>] ? local_bh_enable_ip+0xd0/0xd0
+
+> 
+> 
+> 
+
+
