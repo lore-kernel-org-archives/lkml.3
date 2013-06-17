@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab3FQVXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:23:00 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52446 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3FQVW7 (ORCPT
+	id S1751077Ab3FQVYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:24:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44779 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3FQVYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:22:59 -0400
+	Mon, 17 Jun 2013 17:24:44 -0400
+Date: Tue, 18 Jun 2013 00:23:20 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lorenz Haspel <lorenz@badgers.com>
+Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
+        michael.banken@mathe.stud.uni-erlangen.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 1/4 v2] silicom: checkpatch: assignments in if conditions
+Message-ID: <20130617212320.GN5008@mwanda>
+References: <1371486386-8043-1-git-send-email-lorenz@badgers.com>
+ <1371496539-25461-1-git-send-email-lorenz@badgers.com>
 MIME-Version: 1.0
-In-Reply-To: <20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
-References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
-	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
-	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
-	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
-Date: Mon, 17 Jun 2013 23:22:58 +0200
-X-Google-Sender-Auth: vOxJPHl_xXGL4TSOT0y1ggDVFkg
-Message-ID: <CAMuHMdX6iryPpkBHsbfZJpScVNhAJ2pmAwgHsWr1yt8nY5-T2w@mail.gmail.com>
-Subject: Re: Linux 3.10-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Daney <david.daney@cavium.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371496539-25461-1-git-send-email-lorenz@badgers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 10:30 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: include/linux/smp.h:on_each_cpu(): switch back to a macro
->
-> f21afc25f9ed4 ("smp.h: Use local_irq_{save,restore}() in !SMP version of
-> on_each_cpu()") converted on_each_cpu() to a C function.  This required
-> inclusion of irqflags.h, which broke ia64 and mn10300 (at least) due to
-> header ordering hell.
->
-> Switch on_each_cpu() back to a macro to fix this.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: David Daney <david.daney@cavium.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+On Mon, Jun 17, 2013 at 09:15:39PM +0200, Lorenz Haspel wrote:
+> Fixes checkpatch error:
+> There were assignments in if conditions, so I extracted them.
+> 
+> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+> Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
+> ---
+> v2: removed some buggy extra lines and fixed white space issues
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Gar....  This isn't right either.  Now it has *too many* blank
+lines.  It's only between declarations and code that I was
+complaining about.  You've added them between assignments and error
+checks.
 
-Gr{oetje,eeting}s,
 
-                        Geert
+> @@ -1224,7 +1237,9 @@ static int wdt_pulse(bpctl_dev_t *pbpctl_dev)
+>  		return -1;
+>  #endif
+>  	if (pbpctl_dev->bp_10g9) {
+> -		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
+> +		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
+> +
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+This blank line is harmful.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> +		if (!pbpctl_dev_c)
+>  			return -1;
+>  	}
+>  
+> @@ -1742,9 +1757,9 @@ static void write_data_port_int(bpctl_dev_t *pbpctl_dev,
+>  
+>  static int write_data_int(bpctl_dev_t *pbpctl_dev, unsigned char value)
+>  {
+> -	bpctl_dev_t *pbpctl_dev_b = NULL;
+> +	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+>  
+
+This blank line is required.
+
+So what you have here is fine, but if you wanted you could re-write
+this like:
+{
+	bpctl_dev_t *pbpctl_dev_b;
+
+	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+	if (!pbpctl_dev_b)
+		return -1;
+
+Generally, you shouldn't put anything complicated in the initializer
+statement.  People don't read that code as thouroughly and
+initializers are sometimes a source of bugs.  But what you have here
+is also perfectly acceptable.
+
+> -	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
+> +	if (!pbpctl_dev_b)
+>  		return -1;
+>  	atomic_set(&pbpctl_dev->wdt_busy, 1);
+>  	write_data_port_int(pbpctl_dev, value & 0x3);
+
+rergards,
+dan carpenter
