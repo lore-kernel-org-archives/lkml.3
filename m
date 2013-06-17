@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab3FQVOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:14:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41160 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3FQVOT (ORCPT
+	id S1753823Ab3FQVXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:23:00 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:52446 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab3FQVW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:14:19 -0400
-Date: Mon, 17 Jun 2013 14:14:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Lorenz Haspel <lorenz@badgers.com>, devel@linuxdriverproject.org,
-        puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
-        michael.banken@mathe.stud.uni-erlangen.de, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 4/4 v2] silicom: checkpatch: errors caused by macros
-Message-ID: <20130617211418.GA3219@kroah.com>
-References: <1371486386-8043-4-git-send-email-lorenz@badgers.com>
- <1371496814-26104-1-git-send-email-lorenz@badgers.com>
- <1371498132.2213.7.camel@joe-AO722>
- <20130617204922.GM5008@mwanda>
- <1371503023.2213.9.camel@joe-AO722>
+	Mon, 17 Jun 2013 17:22:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371503023.2213.9.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
+	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
+	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
+Date: Mon, 17 Jun 2013 23:22:58 +0200
+X-Google-Sender-Auth: vOxJPHl_xXGL4TSOT0y1ggDVFkg
+Message-ID: <CAMuHMdX6iryPpkBHsbfZJpScVNhAJ2pmAwgHsWr1yt8nY5-T2w@mail.gmail.com>
+Subject: Re: Linux 3.10-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Daney <david.daney@cavium.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 02:03:43PM -0700, Joe Perches wrote:
-> On Mon, 2013-06-17 at 23:49 +0300, Dan Carpenter wrote:
-> > On Mon, Jun 17, 2013 at 12:42:12PM -0700, Joe Perches wrote:
-> > > On Mon, 2013-06-17 at 21:20 +0200, Lorenz Haspel wrote:
-> > > > fixed checkpatch error:
-> > > > added parenthesis around complex macro.
-> > > > 
-> > > > Macro with return was only used once in the code,
-> > > > so I expandet it in-place.
-> > > []
-> > > > diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-> > > []
-> > > > -#define lock_bpctl()					\
-> > > > -if (down_interruptible(&bpctl_sema)) {			\
-> > > > -	return -ERESTARTSYS;				\
-> > > > -}							\
-> > > > -
-> > > >  #define unlock_bpctl()					\
-> > > >  	up(&bpctl_sema);
-> > > 
-> > > Symmetry please.
-> > > 
-> > > Most likely, this unlock_bpctl macro is only used once too.
-> > > I suggest removing it as well.
-> > > 
-> > 
-> > Joe is right, of course, but this could be fixed in a later patch.
-> 
-> Generally I think it's better that new submitters patches
-> should go through more strict reviews and be as correct
-> as possible.  I think this is especially true for patches
-> that are just checkpatch driven.
+On Mon, Jun 17, 2013 at 10:30 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: include/linux/smp.h:on_each_cpu(): switch back to a macro
+>
+> f21afc25f9ed4 ("smp.h: Use local_irq_{save,restore}() in !SMP version of
+> on_each_cpu()") converted on_each_cpu() to a C function.  This required
+> inclusion of irqflags.h, which broke ia64 and mn10300 (at least) due to
+> header ordering hell.
+>
+> Switch on_each_cpu() back to a macro to fix this.
+>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: David Daney <david.daney@cavium.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-I totally disagree, sorry.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
