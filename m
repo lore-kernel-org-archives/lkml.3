@@ -1,201 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab3FQKVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:21:11 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.164]:8209 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932300Ab3FQKVJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:21:09 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-16.tower-38.messagelabs.com!1371464454!13162916!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 17 Jun 2013 12:20:55 +0200
-Date: Mon, 17 Jun 2013 12:24:13 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
-Subject: [PATCH v10 2/2] watchdog: Sysfs interface for MEN A21 watchdog
-Message-ID: <20130617102407.GA25443@jtlinux>
+	id S932566Ab3FQKVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:21:39 -0400
+Received: from gmmr1.centrum.cz ([46.255.225.252]:35912 "EHLO gmmr1.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932307Ab3FQKVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:21:37 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
+Date: Mon, 17 Jun 2013 12:21:34 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20130208152402.GD7557@dhcp22.suse.cz>, <20130208165805.8908B143@pobox.sk>, <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk>, <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk> <20130607131157.GF8117@dhcp22.suse.cz>
+In-Reply-To: <20130607131157.GF8117@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130617102242.GA25393@jtlinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 17 Jun 2013 10:20:54.0670 (UTC) FILETIME=[59ABC2E0:01CE6B44]
+Message-Id: <20130617122134.2E072BA8@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a sysfs interface for the watchdog
-device found on MEN A21 Boards.
+>Here we go. I hope I didn't screw anything (Johannes might double check)
+>because there were quite some changes in the area since 3.2. Nothing
+>earth shattering though. Please note that I have only compile tested
+>this. Also make sure you remove the previous patches you have from me.
 
-The newly generated files are:
-* rebootcause:
-Can be one of:
-Power on Reset,
-CPU Reset Request,
-Push Button,
-FPGA Reset Request,
-Watchdog,
-Local Power Bad,
-Invalid or
-BDI
-and shows the reason of the boards last reboot.
 
-* active:
-Shows if the watchdog CPLD is actually running
+Hi Michal,
 
-* allow_disable:
-Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
+it, unfortunately, didn't work. Everything was working fine but original problem is still occuring. I'm unable to send you stacks or more info because problem is taking down the whole server for some time now (don't know what exactly caused it to start happening, maybe newer versions of 3.2.x). But i'm sure of one thing - when problem occurs, nothing is able to access hard drives (every process which tries it is freezed until problem is resolved or server is rebooted). Problem is fixed after killing processes from cgroup which caused it and everything immediatelly starts to work normally. I find this out by keeping terminal opened from another server to one where my problem is occuring quite often and running several apps there (htop, iotop, etc.). When problem occurs, all apps which wasn't working with HDD was ok. The htop proved to be very usefull here because it's only reading proc filesystem and is also able to send KILL signals - i was able to resolve the problem with it
+  without rebooting the server.
 
-* fastmode:
-Shows if the CPLD is running in fast mode (1s timeout), once it is in
-fastmode it can't be switched back to slow mode (30s timeout) until the
-next reboot.
+I created a special daemon (about month ago) which is able to detect and fix the problem so i'm not having server outages now. The point was to NOT access anything which is stored on HDDs, the daemon is only reading info from cgroup filesystem and sending KILL signals to processes. Maybe i should be able to also read stack files before killing, i will try it.
 
-Revision 2:
-* Re-worked sysfs patch to apply on re-worked base
+Btw, which vanilla kernel includes this patch?
 
-Revision 3:
-* Re-worked sysfs patch to apply on re-worked base
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- drivers/watchdog/mena21_wdt.c |   89 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 89 insertions(+)
+Thank you and everyone involved very much for time and help.
 
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-index 96dbba9..91cc90b 100644
---- a/drivers/watchdog/mena21_wdt.c
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -22,6 +22,17 @@
-
- #define NUM_GPIOS 6
-
-+static char *reset_causes[] = {
-+	"Power On Reset",
-+	"CPU Reset Request",
-+	"Push Button",
-+	"FPGA Reset Request",
-+	"Watchdog",
-+	"Local Power Bad",
-+	"Invalid",
-+	"BDI",
-+};
-+
- enum a21_wdt_gpios {
- 	GPIO_WD_ENAB,
- 	GPIO_WD_FAST,
-@@ -53,6 +64,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
- 	return reset;
- }
-
-+static ssize_t rebootcause_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+	unsigned int reset = 0;
-+
-+	reset = a21_wdt_get_bootstatus(drv);
-+
-+	return sprintf(buf, "%s\n", reset_causes[reset]);
-+}
-+static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-+
-+static ssize_t active_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
-+}
-+static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
-+
-+static ssize_t allow_disable_show(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	return sprintf(buf, "%d\n", !nowayout);
-+}
-+static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
-+
-+static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
-+}
-+static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
-+
-+static int a21_wdt_create_files(struct watchdog_device *wdev)
-+{
-+	int ret;
-+
-+	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_active);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_remove_files(struct watchdog_device *wdev)
-+{
-+	device_remove_file(wdev->dev, &dev_attr_rebootcause);
-+	device_remove_file(wdev->dev, &dev_attr_active);
-+	device_remove_file(wdev->dev, &dev_attr_allow_disable);
-+	device_remove_file(wdev->dev, &dev_attr_fastmode);
-+}
-+
- static int a21_wdt_start(struct watchdog_device *wdt)
- {
- 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-@@ -215,11 +293,20 @@ static int a21_wdt_probe(struct platform_device *pdev)
- 	}
-
- 	dev_set_drvdata(&pdev->dev, drv);
-+	dev_set_drvdata(a21_wdt.dev, drv);
-+
-+	ret = a21_wdt_create_files(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
-+		goto err_create_sysfs;
-+	}
-
- 	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-
- 	return 0;
-
-+err_create_sysfs:
-+	watchdog_unregister_device(&drv->wdt);
- err_register_wd:
- 	mutex_destroy(&drv->lock);
-
-@@ -233,6 +320,8 @@ static int a21_wdt_remove(struct platform_device *pdev)
- 	dev_warn(&pdev->dev,
- 		"Unregistering A21 watchdog driver, board may reboot\n");
-
-+	a21_wdt_remove_files(&drv->wdt);
-+
- 	watchdog_unregister_device(&drv->wdt);
-
- 	mutex_destroy(&drv->lock);
---
-1.7.9.5
-
+azur
