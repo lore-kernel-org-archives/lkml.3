@@ -1,167 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab3FQKnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:43:11 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:53560 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab3FQKnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:43:09 -0400
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Jan Beulich <JBeulich@suse.com>, Zach Bobroff <zacharyb@ami.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-In-Reply-To: <20130617101745.GB8569@console-pimps.org>
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
-	 <1371139233.6523.272.camel@linux-s257.site>
-	 <20130617092107.GA5440@console-pimps.org>
-	 <51BEF71402000078000DEC12@nat28.tlf.novell.com>
-	 <20130617101745.GB8569@console-pimps.org>
-Content-Type: multipart/mixed; boundary="=-qKDLrrS1szolY5Edu2H+"
-Date: Mon, 17 Jun 2013 18:41:30 +0800
-Message-ID: <1371465690.6523.331.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S932581Ab3FQKqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:46:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35114 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab3FQKqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:46:35 -0400
+Message-ID: <51BEE906.5010306@suse.de>
+Date: Mon, 17 Jun 2013 12:46:30 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
+MIME-Version: 1.0
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 1/4] KVM: PPC: Add support for multiple-TCE hcalls
+References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru> <1370412673-1345-2-git-send-email-aik@ozlabs.ru> <0A6C24DE-1422-4ABA-A516-2B864F4714F8@suse.de> <51BEC0FE.4020805@ozlabs.ru> <F3AAE42F-F325-462B-AD22-F3E568C39A8C@suse.de> <51BECA2B.60401@ozlabs.ru> <5BDDB985-B0A2-476C-B6E5-76E88E3FB182@suse.de> <51BECDF9.2020701@ozlabs.ru>
+In-Reply-To: <51BECDF9.2020701@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/17/2013 10:51 AM, Alexey Kardashevskiy wrote:
+> On 06/17/2013 06:40 PM, Alexander Graf wrote:
+>> On 17.06.2013, at 10:34, Alexey Kardashevskiy wrote:
+>>
+>>> On 06/17/2013 06:02 PM, Alexander Graf wrote:
+>>>> On 17.06.2013, at 09:55, Alexey Kardashevskiy wrote:
+>>>>
+>>>>> On 06/17/2013 08:06 AM, Alexander Graf wrote:
+>>>>>> On 05.06.2013, at 08:11, Alexey Kardashevskiy wrote:
+>>>>>>
+>>>>>>> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
+>>>>>>> H_STUFF_TCE hypercalls for QEMU emulated devices such as
+>>>>>>> IBMVIO devices or emulated PCI.  These calls allow adding
+>>>>>>> multiple entries (up to 512) into the TCE table in one call
+>>>>>>> which saves time on transition to/from real mode.
+>>>>>>>
+>>>>>>> This adds a tce_tmp cache to kvm_vcpu_arch to save valid TCEs
+>>>>>>> (copied from user and verified) before writing the whole list
+>>>>>>> into the TCE table. This cache will be utilized more in the
+>>>>>>> upcoming VFIO/IOMMU support to continue TCE list processing in
+>>>>>>> the virtual mode in the case if the real mode handler failed
+>>>>>>> for some reason.
+>>>>>>>
+>>>>>>> This adds a guest physical to host real address converter and
+>>>>>>> calls the existing H_PUT_TCE handler. The converting function
+>>>>>>> is going to be fully utilized by upcoming VFIO supporting
+>>>>>>> patches.
+>>>>>>>
+>>>>>>> This also implements the KVM_CAP_PPC_MULTITCE capability, so
+>>>>>>> in order to support the functionality of this patch, QEMU
+>>>>>>> needs to query for this capability and set the
+>>>>>>> "hcall-multi-tce" hypertas property only if the capability is
+>>>>>>> present, otherwise there will be serious performance
+>>>>>>> degradation.
+>>>>>>>
+>>>>>>> Cc: David Gibson<david@gibson.dropbear.id.au>  Signed-off-by:
+>>>>>>> Alexey Kardashevskiy<aik@ozlabs.ru>  Signed-off-by: Paul
+>>>>>>> Mackerras<paulus@samba.org>
+>>>>>> Only a few minor nits. Ben already commented on implementation
+>>>>>> details.
+>>>>>>
+>>>>>>> --- Changelog: 2013/06/05: * fixed mistype about IBMVIO in the
+>>>>>>> commit message * updated doc and moved it to another section *
+>>>>>>> changed capability number
+>>>>>>>
+>>>>>>> 2013/05/21: * added kvm_vcpu_arch::tce_tmp * removed cleanup
+>>>>>>> if put_indirect failed, instead we do not even start writing
+>>>>>>> to TCE table if we cannot get TCEs from the user and they are
+>>>>>>> invalid * kvmppc_emulated_h_put_tce is split to
+>>>>>>> kvmppc_emulated_put_tce and kvmppc_emulated_validate_tce (for
+>>>>>>> the previous item) * fixed bug with failthrough for H_IPI *
+>>>>>>> removed all get_user() from real mode handlers *
+>>>>>>> kvmppc_lookup_pte() added (instead of making lookup_linux_pte
+>>>>>>> public) --- Documentation/virtual/kvm/api.txt       |   17 ++
+>>>>>>> arch/powerpc/include/asm/kvm_host.h     |    2 +
+>>>>>>> arch/powerpc/include/asm/kvm_ppc.h      |   16 +-
+>>>>>>> arch/powerpc/kvm/book3s_64_vio.c        |  118 ++++++++++++++
+>>>>>>> arch/powerpc/kvm/book3s_64_vio_hv.c     |  266
+>>>>>>> +++++++++++++++++++++++++++---- arch/powerpc/kvm/book3s_hv.c
+>>>>>>> |   39 +++++ arch/powerpc/kvm/book3s_hv_rmhandlers.S |    6 +
+>>>>>>> arch/powerpc/kvm/book3s_pr_papr.c       |   37 ++++-
+>>>>>>> arch/powerpc/kvm/powerpc.c              |    3 +
+>>>>>>> include/uapi/linux/kvm.h                |    1 + 10 files
+>>>>>>> changed, 473 insertions(+), 32 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/Documentation/virtual/kvm/api.txt
+>>>>>>> b/Documentation/virtual/kvm/api.txt index 5f91eda..6c082ff
+>>>>>>> 100644 --- a/Documentation/virtual/kvm/api.txt +++
+>>>>>>> b/Documentation/virtual/kvm/api.txt @@ -2362,6 +2362,23 @@
+>>>>>>> calls by the guest for that service will be passed to
+>>>>>>> userspace to be handled.
+>>>>>>>
+>>>>>>>
+>>>>>>> +4.83 KVM_CAP_PPC_MULTITCE + +Capability:
+>>>>>>> KVM_CAP_PPC_MULTITCE +Architectures: ppc +Type: vm + +This
+>>>>>>> capability tells the guest that multiple TCE entry add/remove
+>>>>>>> hypercalls +handling is supported by the kernel. This
+>>>>>>> significanly accelerates DMA +operations for PPC KVM guests.
+>>>>>>> + +Unlike other capabilities in this section, this one does
+>>>>>>> not have an ioctl. +Instead, when the capability is present,
+>>>>>>> the H_PUT_TCE_INDIRECT and +H_STUFF_TCE hypercalls are to be
+>>>>>>> handled in the host kernel and not passed to +the guest.
+>>>>>>> Othwerwise it might be better for the guest to continue using
+>>>>>>> H_PUT_TCE +hypercall (if KVM_CAP_SPAPR_TCE or
+>>>>>>> KVM_CAP_SPAPR_TCE_IOMMU are present).
+>>>>>> While this describes perfectly well what the consequences are of
+>>>>>> the patches, it does not describe properly what the CAP actually
+>>>>>> expresses. The CAP only says "this kernel is able to handle
+>>>>>> H_PUT_TCE_INDIRECT and H_STUFF_TCE hypercalls directly". All
+>>>>>> other consequences are nice to document, but the semantics of
+>>>>>> the CAP are missing.
+>>>>>
+>>>>> ? It expresses ability to handle 2 hcalls. What is missing?
+>>>> You don't describe the kvm<->  qemu interface. You describe some
+>>>> decisions qemu can take from this cap.
+>>>
+>>> This file does not mention qemu at all. And the interface is - qemu
+>>> (or kvmtool could do that) just adds "hcall-multi-tce" to
+>>> "ibm,hypertas-functions" but this is for pseries linux and AIX could
+>>> always do it (no idea about it). Does it really have to be in this
+>>> file?
+>> Ok, let's go back a step. What does this CAP describe? Don't look at the
+>> description you wrote above. Just write a new one.
+> The CAP means the kernel is capable of handling hcalls A and B without
+> passing those into the user space. That accelerates DMA.
+>
+>
+>> What exactly can user space expect when it finds this CAP?
+> The user space can expect that its handlers for A and B are not going to be
+> called if it configures the guest appropriately.
+>
+> Any better? :)
 
---=-qKDLrrS1szolY5Edu2H+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+A lot, yes. This is what the CAP actually means.
 
-於 一，2013-06-17 於 11:17 +0100，Matt Fleming 提到：
-> On Mon, 17 Jun, at 10:46:28AM, Jan Beulich wrote:
-> > To me, all this looks like it is being done on phenomenological basis,
-> > taking a particular build of a particular firmware implementation as
-> > the reference. Imo we shouldn't change the code in this way. This
-> > also applies to the fact that the step is being doubled rather than
-> > e.g. tripled: With it ending up a "again" anyway (see below), what's
-> > the point of avoiding one more of the iterations?
-> > 
-> > Generic considerations would result in the increment being at least
-> > 3 * element size; twice the element size assumes that the allocator
-> > would behave in certain ways (like returning the head or tail part of
-> > a larger piece of memory).
->  
-> I have no issue with changing the multiplier. But let's get
-> clarification from Zach as to what exactly is going on here.
-> 
-> > I agree that there ought to be an upper limit. But a single retry here
-> > again looks like a tailored solution to a particular observed (mis-)
-> > behavior, rather than something resulting from general considerations.
-> 
-> What value would you suggest for the retry?
-> 
-
-Currently grub2 retry unlimited times like attached patch.
-
-But, I also agree need have a upper limit.
+It's nice to give some guidance in the documentation of implications 
+(should expose "ibm,hypertas-functions" to enable the guest to actually 
+use these for example) but the first paragraph should only indicate what 
+the CAP changes.
 
 
-Thanks a lot!
-Joey Lee
-
-
---=-qKDLrrS1szolY5Edu2H+
-Content-Disposition: attachment; filename="bug-823386_grub-r4778.diff"
-Content-Type: text/x-patch; name="bug-823386_grub-r4778.diff"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-------------------------------------------------------------
-revno: 4778
-committer: Vladimir 'phcoder' Serbinenko <phcoder@gmail.com>
-branch nick: grub
-timestamp: Tue 2013-03-26 11:34:56 +0100
-message:
-  	* grub-core/kern/efi/mm.c (grub_efi_finish_boot_services):
-  	Try terminating EFI services several times due to quirks in some
-  	implementations.
-diff:
-=== modified file 'ChangeLog'
---- ChangeLog	2013-03-26 10:29:52 +0000
-+++ ChangeLog	2013-03-26 10:34:56 +0000
-@@ -1,3 +1,9 @@
-+2013-03-26  Vladimir Serbinenko  <phcoder@gmail.com>
-+
-+	* grub-core/kern/efi/mm.c (grub_efi_finish_boot_services):
-+	Try terminating EFI services several times due to quirks in some
-+	implementations.
-+
- 2013-03-26  Colin Watson  <cjwatson@ubuntu.com>
- 
- 	* grub-core/commands/acpihalt.c (skip_ext_op): Add support for
-
-=== modified file 'grub-core/kern/efi/mm.c'
---- grub-core/kern/efi/mm.c	2013-01-13 01:10:41 +0000
-+++ grub-core/kern/efi/mm.c	2013-03-26 10:34:56 +0000
-@@ -160,27 +160,41 @@
- 			   apple, sizeof (apple)) == 0);
- #endif
- 
--  if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
--			       &finish_desc_size, &finish_desc_version) < 0)
--    return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
--
--  if (outbuf && *outbuf_size < finish_mmap_size)
--    return grub_error (GRUB_ERR_IO, "memory map buffer is too small");
--
--  finish_mmap_buf = grub_malloc (finish_mmap_size);
--  if (!finish_mmap_buf)
--    return grub_errno;
--
--  if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
--			       &finish_desc_size, &finish_desc_version) <= 0)
--    return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
--
--  b = grub_efi_system_table->boot_services;
--  status = efi_call_2 (b->exit_boot_services, grub_efi_image_handle,
--		       finish_key);
--  if (status != GRUB_EFI_SUCCESS)
--    return grub_error (GRUB_ERR_IO, "couldn't terminate EFI services");
--
-+  while (1)
-+    {
-+      if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
-+				   &finish_desc_size, &finish_desc_version) < 0)
-+	return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
-+
-+      if (outbuf && *outbuf_size < finish_mmap_size)
-+	return grub_error (GRUB_ERR_IO, "memory map buffer is too small");
-+
-+      finish_mmap_buf = grub_malloc (finish_mmap_size);
-+      if (!finish_mmap_buf)
-+	return grub_errno;
-+
-+      if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
-+				   &finish_desc_size, &finish_desc_version) <= 0)
-+	{
-+	  grub_free (finish_mmap_buf);
-+	  return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
-+	}
-+
-+      b = grub_efi_system_table->boot_services;
-+      status = efi_call_2 (b->exit_boot_services, grub_efi_image_handle,
-+			   finish_key);
-+      if (status == GRUB_EFI_SUCCESS)
-+	break;
-+
-+      if (status != GRUB_EFI_INVALID_PARAMETER)
-+	{
-+	  grub_free (finish_mmap_buf);
-+	  return grub_error (GRUB_ERR_IO, "couldn't terminate EFI services");
-+	}
-+
-+      grub_free (finish_mmap_buf);
-+      grub_printf ("Trying to terminate EFI services again\n");
-+    }
-   grub_efi_is_finished = 1;
-   if (outbuf_size)
-     *outbuf_size = finish_mmap_size;
-
---=-qKDLrrS1szolY5Edu2H+--
+Alex
 
