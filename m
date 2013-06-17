@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab3FQO32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:29:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53968 "EHLO mga09.intel.com"
+	id S1751308Ab3FQOa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:30:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6944 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab3FQO30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:29:26 -0400
+	id S1751062Ab3FQOa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 10:30:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="354919477"
-Message-ID: <51BF1D3E.6050407@intel.com>
-Date: Mon, 17 Jun 2013 22:29:18 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+   d="scan'208";a="256151288"
+Date: Mon, 17 Jun 2013 19:20:28 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Wei Yongjun <weiyj.lk@gmail.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next v2] dmaengine: ste_dma40: fix error return code
+ in d40_probe()
+Message-ID: <20130617135028.GE10671@intel.com>
+References: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+ <CACRpkdYBfvr0kA7bd-6Ns78UH7JtBCFDzFxyHLgtReB32O4D+w@mail.gmail.com>
+ <20130530173326.GD3767@intel.com>
+ <CACRpkdZhK6TUAC132vzcaLKqdMTwPma+ZhKG5Y+AUvekNpz6EQ@mail.gmail.com>
+ <20130612095443.GU4107@intel.com>
+ <CACRpkdYS8MYEBs_kcGyOPvcenBALxAXtksRA=+TmkeyOZW=Xzg@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com, Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 8/9] sched: consider runnable load average in move_tasks
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-9-git-send-email-alex.shi@intel.com> <20130617135909.GY3204@twins.programming.kicks-ass.net>
-In-Reply-To: <20130617135909.GY3204@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYS8MYEBs_kcGyOPvcenBALxAXtksRA=+TmkeyOZW=Xzg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 09:59 PM, Peter Zijlstra wrote:
->> >  #else
->> >  static inline void update_blocked_averages(int cpu)
-> Should we not also change the !FAIR_GROUP_SCHED version of task_h_load()
-> for this?
+On Thu, Jun 13, 2013 at 09:49:04AM +0200, Linus Walleij wrote:
+> On Wed, Jun 12, 2013 at 11:54 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> 
+> >> Let me know how you want it, I've removed it from my
+> >> dma40 branch for the time being.
+> >
+> > Have you removed, Also I see a v3 of this, do you want to ack that before I
+> > apply
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> I haven't sent this patch to ARM SoC so it will not appear from any other source
+> in the merge window or cause any conflicts.
+Doesnt apply on my next or -rc6. I think it has some ste dependecies. So either
+we wait and I send this for next -rc2 or you apply with my Ack
 
-yes, it is needed. Sorry for omit this.
----
-
->From dc6a4b052c05d793938f6fbf40190d8cec959ca4 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Mon, 3 Dec 2012 23:00:53 +0800
-Subject: [PATCH 1/2] sched: consider runnable load average in move_tasks
-
-Except using runnable load average in background, move_tasks is also
-the key functions in load balance. We need consider the runnable load
-average in it in order to the apple to apple load comparison.
-
-Morten had caught a div u64 bug on ARM, thanks!
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/fair.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4b68f9f..0ca9cc3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4179,11 +4179,14 @@ static int tg_load_down(struct task_group *tg, void *data)
- 	long cpu = (long)data;
- 
- 	if (!tg->parent) {
--		load = cpu_rq(cpu)->load.weight;
-+		load = cpu_rq(cpu)->avg.load_avg_contrib;
- 	} else {
-+		unsigned long tmp_rla;
-+		tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
-+
- 		load = tg->parent->cfs_rq[cpu]->h_load;
--		load *= tg->se[cpu]->load.weight;
--		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
-+		load *= tg->se[cpu]->avg.load_avg_contrib;
-+		load /= tmp_rla;
- 	}
- 
- 	tg->cfs_rq[cpu]->h_load = load;
-@@ -4209,12 +4212,9 @@ static void update_h_load(long cpu)
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
--	unsigned long load;
--
--	load = p->se.load.weight;
--	load = div_u64(load * cfs_rq->h_load, cfs_rq->load.weight + 1);
- 
--	return load;
-+	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
-+			cfs_rq->runnable_load_avg + 1);
- }
- #else
- static inline void update_blocked_averages(int cpu)
-@@ -4227,7 +4227,7 @@ static inline void update_h_load(long cpu)
- 
- static unsigned long task_h_load(struct task_struct *p)
- {
--	return p->se.load.weight;
-+	return p->se.avg.load_avg_contrib;
- }
- #endif
- 
--- 
-1.7.5.4
-
+--
+~Vinod
