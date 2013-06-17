@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3FQRQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:16:59 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:39421 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab3FQRQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:16:57 -0400
-Date: Mon, 17 Jun 2013 10:16:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, koverstreet@google.com,
-        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        Mike Snitzer <snitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 11/11] cgroup: use percpu refcnt for cgroup_subsys_states
-Message-ID: <20130617171651.GE32663@mtj.dyndns.org>
-References: <1371096298-24402-1-git-send-email-tj@kernel.org>
- <1371096298-24402-12-git-send-email-tj@kernel.org>
- <20130614132026.GD10084@dhcp22.suse.cz>
- <20130614223125.GD6593@mtj.dyndns.org>
- <20130615053522.GA7017@htj.dyndns.org>
- <20130617132744.GB5018@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130617132744.GB5018@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753056Ab3FQRRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:17:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563Ab3FQRRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 13:17:45 -0400
+Date: Mon, 17 Jun 2013 13:17:41 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        aquini@redhat.com
+Subject: Re: [PATCH v2] virtio_balloon: leak_balloon(): only tell host if we
+ got pages deflated
+Message-ID: <20130617131741.3489b85d@redhat.com>
+In-Reply-To: <20130605211837.1fc9b902@redhat.com>
+References: <20130605211837.1fc9b902@redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+On Wed, 5 Jun 2013 21:18:37 -0400
+Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
-On Mon, Jun 17, 2013 at 03:27:44PM +0200, Michal Hocko wrote:
-> Thanks for your results! Yes the boost can be really high. I will try to
-> measure some memcg workloads as soon as I have some spare cycles. I do
-> not expect a big win but I also do not think this would regress.
+> The balloon_page_dequeue() function can return NULL. If it does for
+> the first page being freed, then leak_balloon() will create a
+> scatter list with len=0. Which in turn seems to generate an invalid
+> virtio request.
+> 
+> I didn't get this in practice, I found it by code review. On the other
+> hand, such an invalid virtio request will cause errors in QEMU and
+> fill_balloon() also performs the same check implemented by this commit.
+> 
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> Acked-by: Rafael Aquini <aquini@redhat.com>
 
-With the just committed RCU-sched conversion, the slowdown even on
-single CPU configuration w/ CONFIG_PREEMPT should be in the range of a
-few percent points in the worst cases and will mostly be in the noise
-in any realistic scenarios.  So, yeah, looks pretty good to me. :)
+Andrew, can you pick this one?
 
-Thanks.
+> ---
+> 
+> o v2
+> 
+>  - Improve changelog
+> 
+>  drivers/virtio/virtio_balloon.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index bd3ae32..71af7b5 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -191,7 +191,8 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+>  	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+>  	 * is true, we *have* to do it in this order
+>  	 */
+> -	tell_host(vb, vb->deflate_vq);
+> +	if (vb->num_pfns != 0)
+> +		tell_host(vb, vb->deflate_vq);
+>  	mutex_unlock(&vb->balloon_lock);
+>  	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+>  }
 
--- 
-tejun
