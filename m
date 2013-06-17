@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab3FQFUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:20:40 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:52076 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab3FQFUi convert rfc822-to-8bit (ORCPT
+	id S1754446Ab3FQFYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:24:05 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:55875 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab3FQFYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:20:38 -0400
-Date: Mon, 17 Jun 2013 00:20:35 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] pinctrl: update GPIO range doc
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-References: <1371377909-5921-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1371377909-5921-1-git-send-email-linus.walleij@stericsson.com>
-	(from linus.walleij@stericsson.com on Sun Jun 16 05:18:29 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1371446435.2776.122@driftwood>
+	Mon, 17 Jun 2013 01:24:03 -0400
+Message-ID: <51BE9D6A.70001@monstr.eu>
+Date: Mon, 17 Jun 2013 07:23:54 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 0/7] xilinxfb changes
+References: <cover.1370254386.git.michal.simek@xilinx.com> <20130606162336.GW19468@game.jcrosoft.org>
+In-Reply-To: <20130606162336.GW19468@game.jcrosoft.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2DBLSSIASFSJATVRLDSHX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2013 05:18:29 AM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This updates the GPIO range documentation with the API changes
-> for sparse/random/arbitrary pin-to-GPIO mappings.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2DBLSSIASFSJATVRLDSHX
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rob Landley <rob@landley.net>
+On 06/06/2013 06:23 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 12:13 Mon 03 Jun     , Michal Simek wrote:
+>> Hi,
+>>
+>=20
+> Arnd can you take look on it again please
+>=20
+> I'll take a look on it next week
 
-Why isn't this part of the pinctrl series you posted right afterwards?  
-(It should go in through that maintainer...)
+Any update on this?
 
->  For all functionalities dealing with pin biasing, pin muxing etc,  
-> the pin
-> -controller subsystem will subtract the range's .base offset from the  
-> passed
-> -in gpio number, and add the ranges's .pin_base offset to retrive a  
-> pin number.
-> -After that, the subsystem passes it on to the pin control driver, so  
-> the driver
-> +controller subsystem will look up the corresponding pin number from  
-> the passed
-> +in gpio number, and use the ranges internals to retrive a pin  
-> number. After
+Thanks,
+Michal
 
-Range's perhaps?
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-Rob
+
+
+------enig2DBLSSIASFSJATVRLDSHX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG+nWoACgkQykllyylKDCES8gCfUdxI7Uf0tw9BmWoyGvtQR+Je
+YmEAn0UbbF1w5yPfuNieotHQWpsID0hX
+=oqMA
+-----END PGP SIGNATURE-----
+
+------enig2DBLSSIASFSJATVRLDSHX--
