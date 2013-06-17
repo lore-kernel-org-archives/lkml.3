@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3FQT1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 15:27:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53503 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3FQT1q (ORCPT
+	id S1753268Ab3FQTfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 15:35:17 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:50204 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752915Ab3FQTfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 15:27:46 -0400
-Message-ID: <51BF6315.9020501@infradead.org>
-Date: Mon, 17 Jun 2013 12:27:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 15:35:14 -0400
+X-Sasl-enc: 6ItLSFE9V/lbOiuNRl8VGlti/GS7j31uqTtpa3CiaZqi 1371497706
+Date: Mon, 17 Jun 2013 12:35:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Simon Horman <horms@verge.net.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jingchang Lu <b35083@freescale.com>,
+        Ulrich Hecht <ulrich.hecht@gmail.com>
+Subject: Re: linux-next: manual merge of the renesas tree with the tty tree
+Message-ID: <20130617193505.GA20255@kroah.com>
+References: <20130617171622.450bae1a5319f54004a18e2d@canb.auug.org.au>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH -next v3] thermal:  fix x86_pkg_temp_thermal.c build and Kconfig
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au> <51BF4159.1000004@infradead.org> <51BF46C3.3090900@linux.intel.com> <51BF4DA2.40601@infradead.org> <51BF50E3.9000806@linux.intel.com> <51BF5174.805@infradead.org> <20130617181702.GA7217@pd.tnic>
-In-Reply-To: <20130617181702.GA7217@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617171622.450bae1a5319f54004a18e2d@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Mon, Jun 17, 2013 at 05:16:22PM +1000, Stephen Rothwell wrote:
+> Hi Simon,
+> 
+> Today's linux-next merge of the renesas tree got a conflict in
+> include/uapi/linux/serial_core.h between commit c9e2e946fb0b ("tty:
+> serial: add Freescale lpuart driver support") from the tty tree and
+> commit 24610a30600b ("serial: sh-sci: HSCIF support") from the renesas
+> tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc include/uapi/linux/serial_core.h
+> index c8eaeb5,26eee07..0000000
+> --- a/include/uapi/linux/serial_core.h
+> +++ b/include/uapi/linux/serial_core.h
+> @@@ -226,7 -226,7 +226,10 @@@
+>   /* Rocketport EXPRESS/INFINITY */
+>   #define PORT_RP2	102
+>   
+>  +/* Freescale lpuart */
+>  +#define PORT_LPUART	103
+>  +
+> + /* SH-SCI */
+>  -#define PORT_HSCIF	103
+> ++#define PORT_HSCIF	104
 
-Fix build error in x86_pkg_temp_thermal.c.  It requires that
-X86_MCE & X86_THERMAL_VECTOR be enabled, so depend on the latter symbol,
-since it depends on X86_MCE (indirectly).
+Looks correct to me, thanks.
 
-Also, X86_PKG_TEMP_THERMAL is already inside an "if THERMAL" block,
-so remove that duplicated dependency.
-
-ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
-ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
-
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/thermal/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- linux-next-20130617.orig/drivers/thermal/Kconfig
-+++ linux-next-20130617/drivers/thermal/Kconfig
-@@ -171,8 +171,7 @@ config INTEL_POWERCLAMP
- 
- config X86_PKG_TEMP_THERMAL
- 	tristate "X86 package temperature thermal driver"
--	depends on THERMAL
--	depends on X86
-+	depends on X86_THERMAL_VECTOR
- 	select THERMAL_GOV_USER_SPACE
- 	default m
- 	help
+greg k-h
