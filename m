@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3FQJtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:49:52 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:10374 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab3FQJtv (ORCPT
+	id S932498Ab3FQJvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:51:22 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:34478 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313Ab3FQJvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 05:49:51 -0400
-Message-ID: <51BEDBBC.2010800@atmel.com>
-Date: Mon, 17 Jun 2013 10:49:48 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 05:51:21 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        sachin.kamat@linaro.org, patches@linaro.org,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 1/1] pinctrl: exynos: Fix build breakage
+Date: Mon, 17 Jun 2013 15:06:36 +0530
+Message-Id: <1371461796-5061-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: staging  mailing list dead ?
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+'exynos_wkup_irq_mask' should be defined ahead of its call.
 
-First of all I am sorry to bother all of you, as this might not be the 
-right place to ask this question.
-But since last few days, I am not able to reach staging mailing list 
-(1), neither I am receiving emails from staging mailing list.
+Fixes the following error:
+drivers/pinctrl/pinctrl-exynos.c: In function ‘exynos_wkup_irq_mask’:
+drivers/pinctrl/pinctrl-exynos.c:299:3: error: implicit declaration of
+function ‘exynos_wkup_irq_ack’ [-Werror=implicit-function-declaration]
+   exynos_wkup_irq_ack(irqd);
 
-As well linux driver project server is unreachable. (2)
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>
+---
+ drivers/pinctrl/pinctrl-exynos.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Can anyone shed some light on what is state of same ?
-
-(1) devel@driverdev.osuosl.org
-(2) www.linuxdriverproject.org/‎
-
+diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
+index 8cd5bf5..f9277bc 100644
+--- a/drivers/pinctrl/pinctrl-exynos.c
++++ b/drivers/pinctrl/pinctrl-exynos.c
+@@ -279,6 +279,15 @@ err_domains:
+ 	return ret;
+ }
+ 
++static void exynos_wkup_irq_ack(struct irq_data *irqd)
++{
++	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
++	struct samsung_pinctrl_drv_data *d = b->drvdata;
++	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
++
++	writel(1 << irqd->hwirq, d->virt_base + pend);
++}
++
+ static void exynos_wkup_irq_mask(struct irq_data *irqd)
+ {
+ 	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
+@@ -307,15 +316,6 @@ static void exynos_wkup_irq_mask(struct irq_data *irqd)
+ 	spin_unlock_irqrestore(&b->slock, flags);
+ }
+ 
+-static void exynos_wkup_irq_ack(struct irq_data *irqd)
+-{
+-	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
+-	struct samsung_pinctrl_drv_data *d = b->drvdata;
+-	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
+-
+-	writel(1 << irqd->hwirq, d->virt_base + pend);
+-}
+-
+ static void exynos_wkup_irq_unmask(struct irq_data *irqd)
+ {
+ 	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
 -- 
-Regards,
-Rupesh Gujare
+1.7.9.5
 
