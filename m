@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3FQDDL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:03:11 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46021 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255Ab3FQDDJ convert rfc822-to-8bit (ORCPT
+	id S1755606Ab3FQDFr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:05:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33619 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab3FQDFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:03:09 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 0/5] pinctrl: fix some issues with new pinconfig dt parsing
-Date: Mon, 17 Jun 2013 05:03:22 +0200
-Message-ID: <2162180.An6kI8rHhm@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51BB3C62.4070000@imgtec.com>
-References: <201306141741.46077.heiko@sntech.de> <51BB3C62.4070000@imgtec.com>
+	Sun, 16 Jun 2013 23:05:46 -0400
+Message-ID: <51BE7CFB.6020008@ti.com>
+Date: Sun, 16 Jun 2013 23:05:31 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        <jonghwa3.lee@samsung.com>
+Subject: Re: [PATCH V5 02/30] thermal: exynos: Add ARCH_HAS_TMU config to
+ know the supported soc's
+References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com> <1370955220-2949-3-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1370955220-2949-3-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2WXGDDBRSFUMEOPULOTXF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+------enig2WXGDDBRSFUMEOPULOTXF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Friday 14 June 2013 16:53:06 James Hogan wrote:
-> On 14/06/13 16:41, Heiko Stübner wrote:
-> > Some issues with the recently submitted generic pinconfig parsing from dt
-> > came up, so fix these in this follow-up series.
-> > 
-> > Hopefully I did catch all of them.
-> > 
-> > Tested on my rk3066 device.
-> > 
-> > Heiko Stuebner (5):
-> >   pinctrl: update the documentation for some pinconfig params
-> >   pinctrl: clarify some dt pinconfig options
-> >   pinctrl: handle zero found dt pinconfig properties better
-> >   pinctrl: dynamically alloc temp array when parsing dt pinconf options
-> 
-> patches 1-4:
-> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Hey Amit,
 
-Probably too late as Linus has already applied the patches, but for 2, 3 and 4
+On 11-06-2013 08:53, Amit Daniel Kachhap wrote:
+> This patch adds config sybmol ARCH_HAS_TMU to enable the TMU driver.
+> This will allow adding support for new soc easily as now it is the
+> platform responsibility to enable this config symbol.
+>=20
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  drivers/thermal/samsung/Kconfig |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/=
+Kconfig
+> index 2d3d9dc..145a55d 100644
+> --- a/drivers/thermal/samsung/Kconfig
+> +++ b/drivers/thermal/samsung/Kconfig
+> @@ -1,6 +1,9 @@
+> +config ARCH_HAS_TMU
+> +	bool
+> +
+>  config EXYNOS_THERMAL
+>  	tristate "Temperature sensor on Samsung EXYNOS"
+> -	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
+> +	depends on ARCH_HAS_TMU
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+I would rather use ARCH_HAS_BANDGAP as discussed and agreed during your
+v4 review. I managed push this patch through RMK's system:
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=3D7758/1
 
--- 
-Regards,
+>  	depends on CPU_THERMAL
+>  	help
+>  	  If you say yes here you get support for TMU (Thermal Management
+>=20
 
-Laurent Pinchart
 
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2WXGDDBRSFUMEOPULOTXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlG+fPsACgkQCXcVR3XQvP1WzwEAmtlAswHrz46LPK6MIo/e9vs8
+chXTAUh0g5SQwQLFWDgA/1NpiPYjyzJEchEyIN2zJcYAKdjdNx1V80kIk3kN2cO4
+=+DOd
+-----END PGP SIGNATURE-----
+
+------enig2WXGDDBRSFUMEOPULOTXF--
