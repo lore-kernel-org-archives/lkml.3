@@ -1,75 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3FQWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:21:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59867 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3FQWV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:21:27 -0400
-Message-ID: <51BF8BE6.5080704@codeaurora.org>
-Date: Mon, 17 Jun 2013 15:21:26 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752680Ab3FQWV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:21:59 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40670 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3FQWV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:21:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch, lenb@kernel.org,
+        Bob Moore <robert.moore@intel.com>
+Subject: Re: [PATCH 2/3] ACPICA: Add interface for getting latest OS version requested via _OSI
+Date: Tue, 18 Jun 2013 00:31:14 +0200
+Message-ID: <2212597.t9jOQU2YXi@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1370818899-8595-3-git-send-email-matthew.garrett@nebula.com>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1370818899-8595-3-git-send-email-matthew.garrett@nebula.com>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: sched_clock: Load cycle count after epoch stabilizes
-References: <1371082214-1119-1-git-send-email-sboyd@codeaurora.org> <51BF68DC.5030804@codeaurora.org> <51BF848B.2030501@linaro.org>
-In-Reply-To: <51BF848B.2030501@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/13 14:50, John Stultz wrote:
-> On 06/17/2013 12:51 PM, Stephen Boyd wrote:
->> John,
->>
->> I just saw your pull request for making this code generic. I believe
->> this patch fixes a bug that nobody has seen in practice so it's probably
->> fine to delay this until 3.11.
->>
->> Also, I've just noticed that "ARM: sched_clock: Return suspended count
->> earlier" that I sent in that series is going to break the arm
->> architected timer path because they're circumventing all this epoch_ns
->> code. It would be better if you could replace that patch with this patch
->> because this optimizes it in the same way and also fixes a bug at the
->> same time.
->
-> Sorry, could you clarify a bit more? The above sounds like there are
-> two issues, but you only sent one patch.
+Hi Matthew,
 
-I'm saying that the "return the suspended count earlier" patch is bad.
-But this patch does what that patch is doing plus it fixes a race at the
-same time. So it would be better to just take this patch and drop the other.
+On Sunday, June 09, 2013 07:01:38 PM Matthew Garrett wrote:
+> Drivers may need to make policy decisions based on the OS that the firmware
+> believes it's interacting with. ACPI firmware will make a series of _OSI
+> calls, starting from the oldest OS version they support and ending with the
+> most recent. Add a function to return the last successful call so that
+> drivers know what the firmware's expecting.
+> 
+> Based on a patch by Seth Forshee <seth.forshee@canonical.com>
 
-The problem is that when the cd.suspended flag is true we're going to
-return the jiffies based sched_clock value for the ARM architected timer
-driver (the only driver that replaces the sched_clock_func function
-pointer with its own function). Jiffies should be pretty close to the
-actual time anyway, but since the ARM architected timer driver is
-already broken with respect to suspend (because it doesn't stop the
-sched_clock value from incrementing during suspend) it doesn't really
-matter. Every other driver using the sched_clock code will not be
-affected either way.
+Bob (CCed) would prefer us to access acpi_gbl_osi_data directly instead of
+adding the wrapper to ACPICA.  He also thinks that the symbol definitions
+should go into include/acpi/actypes.h rather than into acpixf.h.
 
->
-> I'm also not sure how to proceed with the patch you sent, since it
-> collides with the patch that moves sched_clock to be generic.
+Then, the only ACPICA change would be to move the symbols and we can
+add a Linux-specific patch on top of that adding the acpi_gbl_osi_data
+wrapper.
 
-Ah I thought that the git rename detection would just make it work.
+How does that sound?
 
->
-> Could you refactor the change on-top of git branch I sent to Thomas?
-> Otherwise I'll have to withdraw the pull request, and we'll probably
-> miss 3.11 for the generic sched_clock change.
+Rafael
 
-Sure. I'll send it right now.
 
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> Cc: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/acpi/acpica/aclocal.h | 13 -------------
+>  drivers/acpi/acpica/utxface.c | 19 +++++++++++++++++++
+>  include/acpi/acpixf.h         | 22 ++++++++++++++++++++++
+>  3 files changed, 41 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+> index d5bfbd3..8a2f532 100644
+> --- a/drivers/acpi/acpica/aclocal.h
+> +++ b/drivers/acpi/acpica/aclocal.h
+> @@ -948,19 +948,6 @@ struct acpi_bit_register_info {
+>  
+>  /* Structs and definitions for _OSI support and I/O port validation */
+>  
+> -#define ACPI_OSI_WIN_2000               0x01
+> -#define ACPI_OSI_WIN_XP                 0x02
+> -#define ACPI_OSI_WIN_XP_SP1             0x03
+> -#define ACPI_OSI_WINSRV_2003            0x04
+> -#define ACPI_OSI_WIN_XP_SP2             0x05
+> -#define ACPI_OSI_WINSRV_2003_SP1        0x06
+> -#define ACPI_OSI_WIN_VISTA              0x07
+> -#define ACPI_OSI_WINSRV_2008            0x08
+> -#define ACPI_OSI_WIN_VISTA_SP1          0x09
+> -#define ACPI_OSI_WIN_VISTA_SP2          0x0A
+> -#define ACPI_OSI_WIN_7                  0x0B
+> -#define ACPI_OSI_WIN_8                  0x0C
+> -
+>  #define ACPI_ALWAYS_ILLEGAL             0x00
+>  
+>  struct acpi_interface_info {
+> diff --git a/drivers/acpi/acpica/utxface.c b/drivers/acpi/acpica/utxface.c
+> index 6505774..c1638c3 100644
+> --- a/drivers/acpi/acpica/utxface.c
+> +++ b/drivers/acpi/acpica/utxface.c
+> @@ -389,6 +389,25 @@ ACPI_EXPORT_SYMBOL(acpi_install_interface_handler)
+>  
+>  /*****************************************************************************
+>   *
+> + * FUNCTION:    acpi_osi_version
+> + *
+> + * PARAMETERS:  None
+> + *
+> + * RETURN:      Last OS version requested via _OSI
+> + *
+> + * DESCRIPTION: Returns the argument to the most recent _OSI query performed
+> + *		by the firmware
+> + *
+> + ****************************************************************************/
+> +u8 acpi_osi_version(void)
+> +{
+> +	return acpi_gbl_osi_data;
+> +}
+> +
+> +ACPI_EXPORT_SYMBOL(acpi_osi_version)
+> +
+> +/*****************************************************************************
+> + *
+>   * FUNCTION:    acpi_check_address_range
+>   *
+>   * PARAMETERS:  space_id            - Address space ID
+> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+> index 454881e..41d3ac1 100644
+> --- a/include/acpi/acpixf.h
+> +++ b/include/acpi/acpixf.h
+> @@ -82,6 +82,22 @@ extern u8 acpi_gbl_truncate_io_addresses;
+>  extern u8 acpi_gbl_disable_auto_repair;
+>  
+>  /*
+> + * Values returned by acpi_osi_version()
+> + */
+> +#define ACPI_OSI_WIN_2000               0x01
+> +#define ACPI_OSI_WIN_XP                 0x02
+> +#define ACPI_OSI_WIN_XP_SP1             0x03
+> +#define ACPI_OSI_WINSRV_2003            0x04
+> +#define ACPI_OSI_WIN_XP_SP2             0x05
+> +#define ACPI_OSI_WINSRV_2003_SP1        0x06
+> +#define ACPI_OSI_WIN_VISTA              0x07
+> +#define ACPI_OSI_WINSRV_2008            0x08
+> +#define ACPI_OSI_WIN_VISTA_SP1          0x09
+> +#define ACPI_OSI_WIN_VISTA_SP2          0x0A
+> +#define ACPI_OSI_WIN_7                  0x0B
+> +#define ACPI_OSI_WIN_8                  0x0C
+> +
+> +/*
+>   * Hardware-reduced prototypes. All interfaces that use these macros will
+>   * be configured out of the ACPICA build if the ACPI_REDUCED_HARDWARE flag
+>   * is set to TRUE.
+> @@ -307,6 +323,12 @@ acpi_status acpi_install_notify_handler(acpi_handle device, u32 handler_type,
+>  					acpi_notify_handler handler,
+>  					void *context);
+>  
+> +#ifdef CONFIG_ACPI
+> +u8 acpi_osi_version(void);
+> +#else
+> +static inline u8 acpi_osi_version(void) { return 0; }
+> +#endif
+> +
+>  acpi_status
+>  acpi_remove_notify_handler(acpi_handle device,
+>  			   u32 handler_type, acpi_notify_handler handler);
+> 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
