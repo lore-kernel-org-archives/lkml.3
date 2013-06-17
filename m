@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3FQW23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:28:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40683 "EHLO hydra.sisk.pl"
+	id S1752852Ab3FQW2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:28:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34361 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab3FQW20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:28:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] ACPI / PM: Fix error code path for power resources initialization
-Date: Tue, 18 Jun 2013 00:37:45 +0200
-Message-ID: <8547354.D2OPcUytEB@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752204Ab3FQW2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 18:28:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
+   d="scan'208";a="331138674"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1371495933.1778.29.camel@buesod1.americas.hpqcorp.net>
+References: <1371165333.27102.568.camel@schen9-DESK>
+	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+	 <51BD8A77.2080201@intel.com>
+	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
+	 <1371494746.27102.633.camel@schen9-DESK>
+	 <1371495933.1778.29.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jun 2013 15:28:41 -0700
+Message-ID: <1371508121.27102.640.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, 2013-06-17 at 12:05 -0700, Davidlohr Bueso wrote:
 
-Commit 781d737 (ACPI: Drop power resources driver) introduced a
-bug in the power resources initialization error code path causing
-a NULL pointer to be referenced in acpi_release_power_resource()
-if there's an error triggering a jump to the 'err' label in
-acpi_add_power_resource().  This happens because the list_node
-field of struct acpi_power_resource has not been initialized yet
-at this point and doing a list_del() on it is a bad idea.
+> > 
+> > Thanks.  Those are encouraging numbers.  On my exim workload I didn't
+> > get a boost when I added in the preempt disable in optimistic spin and
+> > put Alex's changes in. Can you send me your combined patch to see if
+> > there may be something you did that I've missed.  I have a tweak to
+> > Alex's patch below to simplify things a bit.  
+> > 
+> 
+> I'm using:
+> 
+> int rwsem_optimistic_spin(struct rw_semaphore *sem)
+> {
+>         struct  task_struct     *owner;
+> 
+>         /* sem->wait_lock should not be held when attempting optimistic spinning */
+>         if (!rwsem_can_spin_on_owner(sem))
+>                 return 0;
+> 
+>         preempt_disable();
+>         for (;;) {
+>                 owner = ACCESS_ONCE(sem->owner);
+>                 if (owner && !rwsem_spin_on_owner(sem, owner))
+>                         break;
+> 
+>                 /* wait_lock will be acquired if write_lock is obtained */
+>                 if (rwsem_try_write_lock(sem->count, true, sem)) {
+>                         preempt_enable();
+>                         return 1;
+>                 }
+> 
+>                 /*                                                                                                                                                                   
+>                  * When there's no owner, we might have preempted between the                                                                                                        
+>                  * owner acquiring the lock and setting the owner field. If                                                                                                          
+>                  * we're an RT task that will live-lock because we won't let                                                                                                         
+>                  * the owner complete.                                                                                                                                               
+>                  */
+>                 if (!owner && (need_resched() || rt_task(current)))
+>                         break;
+> 
+>                 /*                                                                                                                                                                   
+>                  * The cpu_relax() call is a compiler barrier which forces                                                                                                           
+>                  * everything in this loop to be re-loaded. We don't need                                                                                                            
+>                  * memory barriers as we'll eventually observe the right                                                                                                             
+>                  * values at the cost of a few extra spins.                                                                                                                          
+>                  */
+>                 arch_mutex_cpu_relax();
+> 
+>         }
+> 
+>         preempt_enable();
+>         return 0;
+> }
 
-To prevent this problem from occuring, initialize the list_node
-field of struct acpi_power_resource upfront.
+This is identical to the changes that I've tested.  Thanks for sharing.
 
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: 3.9+ <stable@vger.kernel.org>
----
- drivers/acpi/power.c |    1 +
- 1 file changed, 1 insertion(+)
+Tim
 
-Index: linux-pm/drivers/acpi/power.c
-===================================================================
---- linux-pm.orig/drivers/acpi/power.c
-+++ linux-pm/drivers/acpi/power.c
-@@ -882,6 +882,7 @@ int acpi_add_power_resource(acpi_handle
- 				ACPI_STA_DEFAULT);
- 	mutex_init(&resource->resource_lock);
- 	INIT_LIST_HEAD(&resource->dependent);
-+	INIT_LIST_HEAD(&resource->list_node);
- 	resource->name = device->pnp.bus_id;
- 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
- 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
+> > > > @@ -85,15 +85,28 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+> > > >  	adjustment = 0;
+> > > >  	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+> > > >  		adjustment = RWSEM_ACTIVE_READ_BIAS;
+> > > > - try_reader_grant:
+> > > > -		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+> > > > -		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+> > > > -			/* A writer stole the lock. Undo our reader grant. */
+> > > > +		while (1) {
+> > > > +			long oldcount;
+> > > > +
+> > > > +			/* A writer stole the lock. */
+> > > > +			if (unlikely(sem->count & RWSEM_ACTIVE_MASK))
+> > > > +				return sem;
+> > > > +
+> > > > +			if (unlikely(sem->count < RWSEM_WAITING_BIAS)) {
+> > > > +				cpu_relax();
+> > > > +				continue;
+> > > > +			}
+> > 
+> > The above two if statements could be cleaned up as a single check:
+> > 		
+> > 			if (unlikely(sem->count < RWSEM_WAITING_BIAS))
+> > 				return sem;
+> > 	 
+> > This one statement is sufficient to check that we don't have a writer
+> > stolen the lock before we attempt to acquire the read lock by modifying
+> > sem->count.  
+> 
+> We probably still want to keep the cpu relaxation if the statement
+> doesn't comply.
+> 
+> Thanks,
+> Davidlohr
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
