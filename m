@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3FQRrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:47:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50659 "EHLO
+	id S1754476Ab3FQRfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:35:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50633 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3FQRft (ORCPT
+	with ESMTP id S1754423Ab3FQRfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:35:49 -0400
+	Mon, 17 Jun 2013 13:35:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Mesman <ben@bnc.nl>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 43/84] drm/i915: no lvds quirk for hp t5740
-Date: Mon, 17 Jun 2013 10:30:47 -0700
-Message-Id: <1371490288-23167-44-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 46/84] ALSA: usb-audio - Apply Logitech QuickCam Pro 9000 quirk only to audio iface
+Date: Mon, 17 Jun 2013 10:30:50 -0700
+Message-Id: <1371490288-23167-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -27,41 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Mesman <ben@bnc.nl>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 45a211d75137b1ac869a8a758a6667f15827a115 upstream.
+commit 8eafc0a161123d90617c9ca2eddfe87b382b1b89 upstream.
 
-Last year, a patch was made for the "HP t5740e Thin Client" (see
-http://lists.freedesktop.org/archives/dri-devel/2012-May/023245.html).
-This device reports an lvds panel, but does not really have one.
+... instead of applying to all interfaces.
 
-The predecessor of this device is the "hp t5740", which also does not have
-an lvds panel. This patch will add the same quirk for this device.
+Reference: http://forums.gentoo.org/viewtopic-p-6886404.html
 
-Signed-off-by: Ben Mesman <ben@bnc.nl>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/quirks-table.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 8b383a6..2f0364d 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -743,10 +743,10 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
--		.ident = "Hewlett-Packard HP t5740e Thin Client",
-+		.ident = "Hewlett-Packard HP t5740",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "HP t5740e Thin Client"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, " t5740"),
- 		},
- 	},
- 	{
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index 28a8d63..7f1585b 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -215,7 +215,13 @@
+ 	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL
+ },
+ {
+-	USB_DEVICE(0x046d, 0x0990),
++	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
++		       USB_DEVICE_ID_MATCH_INT_CLASS |
++		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
++	.idVendor = 0x046d,
++	.idProduct = 0x0990,
++	.bInterfaceClass = USB_CLASS_AUDIO,
++	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		.vendor_name = "Logitech, Inc.",
+ 		.product_name = "QuickCam Pro 9000",
 -- 
 1.8.1.2
 
