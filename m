@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3FQHG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 03:06:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49955 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab3FQHGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 03:06:53 -0400
-Date: Mon, 17 Jun 2013 09:06:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@gmail.com>
-Cc: "ananth@in.ibm.com" <ananth@in.ibm.com>, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH] Re: [Patch] MCE, APEI: Don't enable CMCI when Firmware
- First mode is set in
-Message-ID: <20130617070650.GA7203@pd.tnic>
-References: <3908561D78D1C84285E8C5FCA982C28F2DA47F03@ORSMSX101.amr.corp.intel.com>
- <20130614181721.11206.95341.stgit@localhost.localdomain>
- <20130615144830.GA13310@pd.tnic>
- <51BEB3F5.8070002@gmail.com>
+	id S1756066Ab3FQHHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 03:07:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45264 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3FQHHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 03:07:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51BEB3F5.8070002@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+References: <1371413189-2568-1-git-send-email-ddaney.cavm@gmail.com>
+	<1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+Date: Mon, 17 Jun 2013 09:07:16 +0200
+X-Google-Sender-Auth: 8Vjn5H22U9KteGzhx-_0wWPwMpo
+Message-ID: <CAMuHMdXb5ydj-y_=3oPRLVZ4DmmrXrFQi_xxpbkg5DtzORN1gA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mn10300: Fix include dependency in irqflags.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, david.s.daney@gmail.com,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 12:30:05PM +0530, Naveen N. Rao wrote:
-> >Hmm, so if CMCI is not supported, you just disabled polling of this bank
-> >and returned here. Not good.
-> 
-> This is on purpose. If the bank doesn't support CMCI and we were
-> polling it earlier, we want to disable that. The firmware should be
-> notifying us of error events in either case.
+On Sun, Jun 16, 2013 at 10:06 PM,  <ddaney.cavm@gmail.com> wrote:
+> From: David Daney <david.daney@cavium.com>
+>
+> We need to pick up the definition of raw_smp_processor_id() from
+> asm/smp.h.  For the !SMP case, we need to supply a definition of
+> raw_smp_processor_id().
 
-Not for corrected errors - for those we poll since the hardware doesn't
-generate an exception for them.
+Thanks, this fixes the build!
 
-Basically, the absence of CMCI support shouldn't change the old polling
-behavior.
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-Thanks.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
--- 
-Regards/Gruss,
-    Boris.
+Gr{oetje,eeting}s,
 
-Sent from a fat crate under my desk. Formatting is fine.
+                        Geert
+
 --
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
