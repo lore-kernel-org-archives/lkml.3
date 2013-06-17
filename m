@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab3FQVZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:25:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41233 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3FQVZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:25:00 -0400
-Date: Mon, 17 Jun 2013 14:24:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Yannick Brosseau <yannick.brosseau@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Rob van der Heij <rvdheij@gmail.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
-Subject: Re: [-stable 3.8.1 performance regression] madvise
- POSIX_FADV_DONTNEED
-Message-Id: <20130617142459.1d563072231ba269cdac8f11@linux-foundation.org>
-In-Reply-To: <20130617141357.GA6034@Krystal>
-References: <51BE1828.3060206@gmail.com>
-	<20130617141357.GA6034@Krystal>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751288Ab3FQV00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:26:26 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:52788
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750928Ab3FQV0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 17:26:25 -0400
+Message-ID: <51BF7EE9.8060308@caviumnetworks.com>
+Date: Mon, 17 Jun 2013 14:26:01 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Daney <david.daney@cavium.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: Linux 3.10-rc6
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com> <CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com> <CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com> <20130617133055.20463ce157e104af15ef60a1@linux-foundation.org> <51BF7610.10803@caviumnetworks.com> <20130617135920.587959a34da85d7940a6936f@linux-foundation.org> <51BF7ABD.3080508@caviumnetworks.com> <20130617141310.3d62ea2b05041ec5974f9525@linux-foundation.org>
+In-Reply-To: <20130617141310.3d62ea2b05041ec5974f9525@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-PRVS: 0880FB6EC1
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(199002)(479174002)(377454002)(24454002)(189002)(51704005)(53416002)(76786001)(47976001)(77982001)(74366001)(36756003)(74502001)(16406001)(54316002)(81542001)(76796001)(56816003)(80022001)(64126003)(46102001)(53806001)(79102001)(66066001)(47776003)(69226001)(63696002)(51856001)(59896001)(33656001)(74662001)(31966008)(77096001)(23756003)(54356001)(65956001)(47736001)(74876001)(47446002)(59766001)(49866001)(50466002)(56776001)(76482001)(4396001)(81342001)(50986001)(74706001)(65806001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR07MB020;H:BN1PRD0712HT002.namprd07.prod.outlook.com;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 10:13:57 -0400 Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On 06/17/2013 02:13 PM, Andrew Morton wrote:
+> On Mon, 17 Jun 2013 14:08:13 -0700 David Daney <ddaney@caviumnetworks.com> wrote:
+>
+>>>
+>>> I think switch-back-to-a-macro is simplest and safest for now.  Perhaps
+>>> you can queue a 3.11 patch which restores the C function and fixes up
+>>> mn10300 and ia64?
+>>>
+>>
+>> If the patch is reverted, I will do that.
+>
+> I'm not proposing that we revert f21afc25f9ed4.  Retain its
+> functionality, but do it via a macro for 3.10.
+>
 
-> Hi,
-> 
-> CCing lkml on this,
-> 
-> * Yannick Brosseau (yannick.brosseau@gmail.com) wrote:
-> > Hi all,
-> > 
-> > We discovered a performance regression in recent kernels with LTTng
-> > related to the use of fadvise DONTNEED.
-> > A call to this syscall is present in the LTTng consumer.
-> > 
-> > The following kernel commit cause the call to fadvise to be sometime
-> > really slower.
-> > 
-> > Kernel commit info:
-> > mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to discard
-> > all pages
-> > main tree: (since 3.9-rc1)
-> > commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732
-> > stable tree: (since 3.8.1)
-> > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit?id=bb01afe62feca1e7cdca60696f8b074416b0910d
-> > 
-> > On the workload test, we observe that the call to fadvise takes about
-> > 4-5 us before this patch is applied. After applying the patch, The
-> > syscall now takes values from 5 us up to 4 ms (4000 us) sometime. The
-> > effect on lttng is that the consumer is frozen for this long period
-> > which leads to dropped event in the trace.
+I misread your patch.  Your patch may be incorrect in that the flags 
+variable you introduce has name space collisions with code using the 
+macro.  Linus found this exact problem with the first version of my 
+patch (which was identical to your patch).
 
-That change wasn't terribly efficient - if there are any unpopulated
-pages in the range (which is quite likely), fadvise() will now always
-call invalidate_mapping_pages() a second time.
+Once you fix the name of 'flags', I hope you don't run into the same 
+Include Hell on ia64 and mn10300 that I did.
 
-Perhaps this is fixable.  Say, make lru_add_drain_all() return a
-success code, or even teach lru_add_drain_all() to return a code
-indicating that one of the spilled pages was (or might have been) on a
-particular mapping.
-
-
-But I don't see why that would cause fadvise(POSIX_FADV_DONTNEED) to
-sometimes take four milliseconds(!).  Is it possible that a context
-switch is now occurring, so the fadvise()-calling task sometimes spends
-a few milliseconds asleep?
-
-
-> We use POSIX_FADV_DONTNEED in LTTng so the kernel know it's not useful
-> to keep the trace data around after it is flushed to disk. From what I
-> gather from the commit changelog, it seems that the POSIX_FADV_DONTNEED
-> operation now touches kernel data structures shared amongst processors
-> that have much higher contention/overhead than previously.
-> 
-> How does your page cache memory usage behave prior/after this kernel
-> commit ?
-> 
-> Also, can you try instrumenting the "count", "start_index" and
-> "end_index" values within fadvise64_64 with commit
-> 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732 applied and log this though
-> LTTng ? This will tell us whether the lru_add_drain_all() hit is taken
-> for a good reason, or due to an unforeseen off-by-one type of issue in
-> the new test:
-> 
->   if (count < (end_index - start_index + 1)) {
-> 
+David Daney
 
