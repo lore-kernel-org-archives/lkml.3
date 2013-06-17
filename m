@@ -1,177 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab3FQN5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:57:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4804 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab3FQN5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:57:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="256138067"
-Message-ID: <51BF15C4.1090906@intel.com>
-Date: Mon, 17 Jun 2013 21:57:24 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
+	id S1755457Ab3FQN7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:59:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44721 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab3FQN7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:59:31 -0400
+Date: Mon, 17 Jun 2013 15:59:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com, Jason Low <jason.low2@hp.com>,
         Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com> <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com>
-In-Reply-To: <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        fweisbec@gmail.com
+Subject: Re: [patch v8 8/9] sched: consider runnable load average in
+ move_tasks
+Message-ID: <20130617135909.GY3204@twins.programming.kicks-ass.net>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+ <1370589652-24549-9-git-send-email-alex.shi@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370589652-24549-9-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 08:17 PM, Paul Turner wrote:
-> On Mon, Jun 17, 2013 at 3:51 AM, Paul Turner <pjt@google.com> wrote:
->> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
->>> They are the base values in load balance, update them with rq runnable
->>> load average, then the load balance will consider runnable load avg
->>> naturally.
->>>
->>> We also try to include the blocked_load_avg as cpu load in balancing,
->>> but that cause kbuild performance drop 6% on every Intel machine, and
->>> aim7/oltp drop on some of 4 CPU sockets machines.
->>>
->>
->> This looks fine.
->>
->> Did you try including blocked_load_avg in only get_rq_runnable_load()
->> [ and not weighted_cpuload() which is called by new-idle ]?
+On Fri, Jun 07, 2013 at 03:20:51PM +0800, Alex Shi wrote:
+> Except using runnable load average in background, move_tasks is also
+> the key functions in load balance. We need consider the runnable load
+> average in it in order to the apple to apple load comparison.
 > 
-> Looking at this more this feels less correct since you're taking
-> averages of averages.
+> Morten had caught a div u64 bug on ARM, thanks!
 > 
-> This was previously discussed at:
->   https://lkml.org/lkml/2013/5/6/109
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
 > 
-> And  you later replied suggesting this didn't seem to hurt; what's the
-> current status there?
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index eadd2e7..3aa1dc0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4178,11 +4178,14 @@ static int tg_load_down(struct task_group *tg, void *data)
+>  	long cpu = (long)data;
+>  
+>  	if (!tg->parent) {
+> -		load = cpu_rq(cpu)->load.weight;
+> +		load = cpu_rq(cpu)->avg.load_avg_contrib;
+>  	} else {
+> +		unsigned long tmp_rla;
+> +		tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
+> +
+>  		load = tg->parent->cfs_rq[cpu]->h_load;
+> -		load *= tg->se[cpu]->load.weight;
+> -		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
+> +		load *= tg->se[cpu]->avg.load_avg_contrib;
+> +		load /= tmp_rla;
+>  	}
+>  
+>  	tg->cfs_rq[cpu]->h_load = load;
+> @@ -4208,12 +4211,9 @@ static void update_h_load(long cpu)
+>  static unsigned long task_h_load(struct task_struct *p)
+>  {
+>  	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> -	unsigned long load;
+> -
+> -	load = p->se.load.weight;
+> -	load = div_u64(load * cfs_rq->h_load, cfs_rq->load.weight + 1);
+>  
+> -	return load;
+> +	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
+> +			cfs_rq->runnable_load_avg + 1);
+>  }
+>  #else
+>  static inline void update_blocked_averages(int cpu)
 
-Yes, your example show the blocked_load_avg value.
-So I had given a patch for review at that time before do detailed
-testing. https://lkml.org/lkml/2013/5/7/66
-
-But in detailed testing, the patch cause a big performance regression.
-When I look into for details. I found some cpu in kbuild just had a big
-blocked_load_avg, with a very small runnable_load_avg value.
-
-Seems accumulating current blocked_load_avg into cpu load isn't a good
-idea. Because:
-1, The blocked_load_avg is decayed same as runnable load, sometime is
-far bigger than runnable load, that drive tasks to other idle or slight
-load cpu, than cause both performance and power issue. But if the
-blocked load is decayed too fast, it lose its effect.
-2, Another issue of blocked load is that when waking up task, we can not
-know blocked load proportion of the task on rq. So, the blocked load is
-meaningless in wake affine decision.
-
-According to above problem, I give up to enable blocked_load_avg in balance.
-
-
-> 
-> 
->>
->>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>> ---
->>>  kernel/sched/fair.c |  5 +++--
->>>  kernel/sched/proc.c | 17 +++++++++++++++--
->>>  2 files changed, 18 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 42c7be0..eadd2e7 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->>>  /* Used instead of source_load when we know the type == 0 */
->>>  static unsigned long weighted_cpuload(const int cpu)
->>>  {
->>> -       return cpu_rq(cpu)->load.weight;
->>> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
->>>  }
->>>
->>>  /*
->>> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
->>>  {
->>>         struct rq *rq = cpu_rq(cpu);
->>>         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
->>> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
->>>
->>>         if (nr_running)
->>> -               return rq->load.weight / nr_running;
->>> +               return load_avg / nr_running;
->>>
->>>         return 0;
->>>  }
->>> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
->>> index bb3a6a0..ce5cd48 100644
->>> --- a/kernel/sched/proc.c
->>> +++ b/kernel/sched/proc.c
->>> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->>>         sched_avg_update(this_rq);
->>>  }
->>>
->>> +#ifdef CONFIG_SMP
->>> +unsigned long get_rq_runnable_load(struct rq *rq)
->>> +{
->>> +       return rq->cfs.runnable_load_avg;
->>> +}
->>> +#else
->>> +unsigned long get_rq_runnable_load(struct rq *rq)
->>> +{
->>> +       return rq->load.weight;
->>> +}
->>> +#endif
->>> +
->>>  #ifdef CONFIG_NO_HZ_COMMON
->>>  /*
->>>   * There is no sane way to deal with nohz on smp when using jiffies because the
->>> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->>>  void update_idle_cpu_load(struct rq *this_rq)
->>>  {
->>>         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
->>> -       unsigned long load = this_rq->load.weight;
->>> +       unsigned long load = get_rq_runnable_load(this_rq);
->>>         unsigned long pending_updates;
->>>
->>>         /*
->>> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
->>>   */
->>>  void update_cpu_load_active(struct rq *this_rq)
->>>  {
->>> +       unsigned long load = get_rq_runnable_load(this_rq);
->>>         /*
->>>          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
->>>          */
->>>         this_rq->last_load_update_tick = jiffies;
->>> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
->>> +       __update_cpu_load(this_rq, load, 1);
->>>
->>>         calc_load_account_active(this_rq);
->>>  }
->>> --
->>> 1.7.12
->>>
-
-
--- 
-Thanks
-    Alex
+Should we not also change the !FAIR_GROUP_SCHED version of task_h_load()
+for this?
