@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab3FQKwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:52:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38724 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007Ab3FQKwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:52:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,880,1363158000"; 
-   d="scan'208";a="256076529"
-Subject: Re: [PATCH] tcp: Modify the condition for the first skb to collapse
-From: Jun Chen <jun.d.chen@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: ycheng@google.com, ncardwell@google.com, edumazet@google.com,
-        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1371464962.3252.181.camel@edumazet-glaptop>
-References: <1371478739.10495.5.camel@chenjun-workstation>
-	 <1371456935.3252.177.camel@edumazet-glaptop>
-	 <1371490190.28418.6.camel@chenjun-workstation>
-	 <1371464962.3252.181.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jun 2013 14:52:13 -0400
-Message-ID: <1371495133.28418.19.camel@chenjun-workstation>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932685Ab3FQKzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:55:22 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63957 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756164Ab3FQKzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 06:55:21 -0400
+From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+To: namhyung@kernel.org, acme@ghostprotocols.net
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+Subject: [PATCH] perf: fix bench numa compilation
+Date: Mon, 17 Jun 2013 12:54:59 +0200
+Message-Id: <1371466499-28291-1-git-send-email-riccardo.magliocchetti@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <8761xd2k1c.fsf@sejong.aot.lge.com>
+References: <8761xd2k1c.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 03:29 -0700, Eric Dumazet wrote:
-> On Mon, 2013-06-17 at 13:29 -0400, Jun Chen wrote:
-> > > 
-> > hi,
-> > When the condition of tcp_win_from_space(skb->truesize) > skb->len is
-> > true but the before(start, TCP_SKB_CB(skb)->seq) is also true, the final
-> > condition will be true. The follow line:
-> > int offset = start - TCP_SKB_CB(skb)->seq;
-> > BUG_ON(offset < 0);
-> > this BUG_ON will be triggered.
-> > 
-> 
-> Really this should never happen, we must track what's happening here.
-It's very very rare, but the logic of codes have such a little hole.
-> 
-> Are you using a pristine kernel, without any patches ?
-The based kernel version is 3.4.  
-> 
-> Are you able to reproduce this bug in a short amount of time ?
-I can't reproduce it in short time, this log had just been found once
-for long long time tests on many devices . 
-> 
-> What kind of driver is in use ? (your stack trace was truncated)
+Fix the following errors on gcc 4.8.1 / x86:
 
-I attach the whole stack traces for you.
+bench/numa.c: In function ‘worker_thread’:
+bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+    if (diff.tv_sec >= g->p.nr_secs) {
+                    ^
+bench/numa.c:1161:6: error: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format=]
+      process_nr, thread_nr, runtime_ns_max / bytes_done, val);
+      ^
 
-<0>[ 7736.348788] Call Trace:
+Signed-off-by: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+---
+ tools/perf/bench/numa.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-<4>[ 7736.348861]  [<c18addd0>] tcp_prune_queue+0x120/0x2f0
+changes from v1:
+- make it actually work on 64bit too as reported by Namhyung Kim
 
-<4>[ 7736.348984]  [<c18aea27>] tcp_data_queue+0x777/0xf00
-
-<4>[ 7736.349055]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
-
-<4>[ 7736.349126]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
-
-<4>[ 7736.349196]  [<c18b2e84>] tcp_rcv_established+0x114/0x680
-
-<4>[ 7736.349269]  [<c18bb034>] tcp_v4_do_rcv+0x164/0x350
-
-<4>[ 7736.349396]  [<c18de301>] ? nf_nat_fn+0xb1/0x1d0
-
-<4>[ 7736.349470]  [<c18bc0c1>] tcp_v4_rcv+0x6f1/0x7a0
-
-<4>[ 7736.349599]  [<c1881dad>] ? nf_hook_slow+0x10d/0x150
-
-<4>[ 7736.349673]  [<c189b30b>] ip_local_deliver_finish+0x8b/0x200
-
-<4>[ 7736.349796]  [<c189b60f>] ip_local_deliver+0x8f/0xa0
-
-<4>[ 7736.349867]  [<c189b280>] ? ip_rcv_finish+0x300/0x300
-
-<4>[ 7736.349937]  [<c189b05f>] ip_rcv_finish+0xdf/0x300
-
-<4>[ 7736.350062]  [<c189b878>] ip_rcv+0x258/0x330
-
-<4>[ 7736.350132]  [<c189af80>] ? inet_del_protocol+0x30/0x30
-
-<4>[ 7736.350258]  [<c1864175>] __netif_receive_skb+0x325/0x410
-
-<4>[ 7736.350331]  [<c1864956>] process_backlog+0x96/0x150
-
-<4>[ 7736.350455]  [<c1864ba5>] net_rx_action+0x115/0x210
-
-<4>[ 7736.350525]  [<c18b7680>] ? tcp_out_of_resources+0xb0/0xb0
-
-<4>[ 7736.350652]  [<c123dc0b>] __do_softirq+0x9b/0x220
-
-<4>[ 7736.350723]  [<c123db70>] ? local_bh_enable_ip+0xd0/0xd0
-
-> 
-> 
-> 
-
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index 30d1c32..bd501454 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
+ 		/* Check whether our max runtime timed out: */
+ 		if (g->p.nr_secs) {
+ 			timersub(&stop, &start0, &diff);
+-			if (diff.tv_sec >= g->p.nr_secs) {
++			if (diff.tv_sec >= (long int)g->p.nr_secs) {
+ 				g->stop_work = true;
+ 				break;
+ 			}
+@@ -1157,8 +1157,8 @@ static void *worker_thread(void *__tdata)
+ 			runtime_ns_max += diff.tv_usec * 1000;
+ 
+ 			if (details >= 0) {
+-				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
+-					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
++				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016llx]\n",
++					process_nr, thread_nr, runtime_ns_max / bytes_done, (unsigned long long)val);
+ 			}
+ 			fflush(stdout);
+ 		}
+-- 
+1.8.3.1
 
