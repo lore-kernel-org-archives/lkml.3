@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab3FQAL5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 20:11:57 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:60067 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3FQALz (ORCPT
+	id S1755600Ab3FQAVA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 20:21:00 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:58898 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab3FQAU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 20:11:55 -0400
-From: Chad Williamson <chad@dahc.us>
-To: gregkh@linuxfoundation.org
-Cc: puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
-        tulinizer@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chad Williamson <chad@dahc.us>
-Subject: [PATCH 3/3] Staging: silicom: remove the EXPORT_SYMBOL_NOVERS macro
-Date: Sun, 16 Jun 2013 19:05:25 -0500
-Message-Id: <1371427525-6007-4-git-send-email-chad@dahc.us>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371427525-6007-1-git-send-email-chad@dahc.us>
-References: <1371427525-6007-1-git-send-email-chad@dahc.us>
+	Sun, 16 Jun 2013 20:20:58 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mark.rutland@arm.com, linux-sh@vger.kernel.org, marc.zyngier@arm.com,
+        catalin.marinas@arm.com, horms@verge.net.au, john.stultz@linaro.org,
+        shinya.kuribayashi.px@renesas.com, Magnus Damm <magnus.damm@gmail.com>,
+        tglx@linutronix.de
+Date: Mon, 17 Jun 2013 09:20:56 +0900
+Message-Id: <20130617002056.7646.54131.sendpatchset@w520>
+Subject: [PATCH/RFC] arm: arch_timer: Do not set C3STOP in case CPU_IDLE=n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since all references to EXPORT_SYMBOL_NOVERS have been removed,
-we can remove its definition from bp_mod.h and bypasslib/bplibk.h.
+From: Magnus Damm <damm@opensource.se>
 
-Signed-off-by: Chad Williamson <chad@dahc.us>
+Modify the ARM architected timer driver to not set C3STOP
+in case CPU_IDLE is disabled. This is a short term fix that
+allows use of high resolution timers even though no additional
+clock event is registered.
+
+Not-really-Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- drivers/staging/silicom/bp_mod.h           | 2 --
- drivers/staging/silicom/bypasslib/bplibk.h | 2 --
- 2 files changed, 4 deletions(-)
 
-diff --git a/drivers/staging/silicom/bp_mod.h b/drivers/staging/silicom/bp_mod.h
-index b8275f5..cfa1f43 100644
---- a/drivers/staging/silicom/bp_mod.h
-+++ b/drivers/staging/silicom/bp_mod.h
-@@ -15,8 +15,6 @@
- #define BP_MOD_H
- #include "bits.h"
- 
--#define EXPORT_SYMBOL_NOVERS EXPORT_SYMBOL
--
- #define usec_delay(x) udelay(x)
- #ifndef msec_delay_bp
- #define msec_delay_bp(x)			\
-diff --git a/drivers/staging/silicom/bypasslib/bplibk.h b/drivers/staging/silicom/bypasslib/bplibk.h
-index b31694f..c5c75c4 100644
---- a/drivers/staging/silicom/bypasslib/bplibk.h
-+++ b/drivers/staging/silicom/bypasslib/bplibk.h
-@@ -28,8 +28,6 @@
- 	 ((pid == INTEL_PEG4BPII_PID) ||   \
- 	  (pid == INTEL_PEG4BPFII_PID)))
- 
--#define EXPORT_SYMBOL_NOVERS EXPORT_SYMBOL
--
- #ifdef BP_VENDOR_SUPPORT
- char *bp_desc_array[] = { "e1000bp", "e1000bpe", "slcm5700",
- 			"bnx2xbp", "ixgbp", "ixgbpe", NULL };
--- 
-1.8.1.4
+ If someone cares about this case then perhaps it should be
+ moved up to the clock event main code. The same issue should
+ in theory trigger on all architectures, perhaps x86 people
+ hunting for low latency may try to disable CPU_IDLE?
 
+ I propose carrying this patch locally to enable high resolution
+ timers until CPU_IDLE and an additional clock event is supported.
+
+ Observed on r8a73a4 and APE6EVM.
+
+ drivers/clocksource/arm_arch_timer.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+--- 0001/drivers/clocksource/arm_arch_timer.c
++++ work/drivers/clocksource/arm_arch_timer.c	2013-06-17 09:03:44.000000000 +0900
+@@ -125,7 +125,23 @@ static int arch_timer_set_next_event_phy
+ 
+ static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
+ {
+-	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
++	clk->features = CLOCK_EVT_FEAT_ONESHOT;
++#ifdef CONFIG_CPU_IDLE
++	/* By not setting the C3STOP flag it is possible to let the
++	 * ARM architected timer to be the only clock event installed
++	 * on the system and have working high resolution timers.
++	 *
++	 * If the C3STOP flag is set unconditionally then the kernel
++	 * will always prevent using the high resoultion timer feature
++	 * unless an additional clock event is registered.
++	 *
++	 * In the case where CPU_IDLE is enabled then there is a chance
++	 * that deeper sleep states will be handled by software, but
++	 * if CPU_IDLE is disabled then deep sleep states cannot be
++	 * entered and the feature flagged by C3STOP is not needed.
++	 */
++	clk->features |= CLOCK_EVT_FEAT_C3STOP;
++#endif
+ 	clk->name = "arch_sys_timer";
+ 	clk->rating = 450;
+ 	if (arch_timer_use_virtual) {
