@@ -1,217 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab3FQGkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:40:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56475 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab3FQGku (ORCPT
+	id S932254Ab3FQGk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:40:57 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:40078 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab3FQGky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:40:50 -0400
-From: Tanya Brokhman <tlinder@codeaurora.org>
-To: axboe@kernel.dk
-Cc: linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Tanya Brokhman <tlinder@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v9 3/4] block: Add API for urgent request handling
-Date: Mon, 17 Jun 2013 09:40:35 +0300
-Message-Id: <1371451241-2422-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
+	Mon, 17 Jun 2013 02:40:54 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, johnstul@us.ibm.com, horms@verge.net.au,
+        shinya.kuribayashi.px@renesas.com, Magnus Damm <magnus.damm@gmail.com>,
+        tglx@linutronix.de
+Date: Mon, 17 Jun 2013 15:40:52 +0900
+Message-Id: <20130617064052.3573.68839.sendpatchset@w520>
+Subject: [PATCH] clocksource: sh_cmt: 32-bit control register support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add support in block & elevator layers for handling
-urgent requests. The decision if a request is urgent or not is taken
-by the scheduler. Request is marked as urgent in cmd_flags (by the
-scheduler) with a new flag - REQ_URGENT.
-Urgent request notification is passed to the underlying
-block device driver (eMMC for example). Block device driver may decide to
-interrupt the currently running low priority request to serve the new
-urgent request. By doing so READ latency is greatly reduced in read&write
-collision scenarios.
+From: Magnus Damm <damm@opensource.se>
 
-Note that if the current scheduler doesn't implement the urgent request
-mechanism, this code path is never activated.
+Add support for CMT hardware with 32-bit control and counter
+registers, as found on r8a73a4 and r8a7790. To use the CMT
+with 32-bit hardware a second I/O memory resource needs to
+point out the CMSTR register and it needs to be 32 bit wide.
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 97d84ec..05c1be9 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -295,6 +295,13 @@ EXPORT_SYMBOL(blk_sync_queue);
-  *    This variant runs the queue whether or not the queue has been
-  *    stopped. Must be called with the queue lock held and interrupts
-  *    disabled. See also @blk_run_queue.
+ Tested on r8a73a4 used on APE6EVM.
+
+ drivers/clocksource/sh_cmt.c |   50 ++++++++++++++++++++++++++++++------------
+ 1 file changed, 36 insertions(+), 14 deletions(-)
+
+--- 0001/drivers/clocksource/sh_cmt.c
++++ work/drivers/clocksource/sh_cmt.c	2013-06-17 13:47:34.000000000 +0900
+@@ -37,6 +37,7 @@
+ 
+ struct sh_cmt_priv {
+ 	void __iomem *mapbase;
++	void __iomem *mapbase_str;
+ 	struct clk *clk;
+ 	unsigned long width; /* 16 or 32 bit version of hardware block */
+ 	unsigned long overflow_bit;
+@@ -79,6 +80,12 @@ struct sh_cmt_priv {
+  * CMCSR 0xffca0060 16-bit
+  * CMCNT 0xffca0064 32-bit
+  * CMCOR 0xffca0068 32-bit
 + *
-+ *    Device driver will be notified of an urgent request
-+ *    pending under the following conditions:
-+ *    1. The driver and the current scheduler support urgent reques handling
-+ *    2. There is an urgent request pending in the scheduler
-+ *    3. There isn't already an urgent request in flight, meaning previously
-+ *       notified urgent request completed (!q->notified_urgent)
++ * "32-bit counter and 32-bit control" as found on r8a73a4 and r8a7790:
++ * CMSTR 0xffca0500 32-bit
++ * CMCSR 0xffca0510 32-bit
++ * CMCNT 0xffca0514 32-bit
++ * CMCOR 0xffca0518 32-bit
   */
- inline void __blk_run_queue_uncond(struct request_queue *q)
+ 
+ static unsigned long sh_cmt_read16(void __iomem *base, unsigned long offs)
+@@ -109,9 +116,7 @@ static void sh_cmt_write32(void __iomem
+ 
+ static inline unsigned long sh_cmt_read_cmstr(struct sh_cmt_priv *p)
  {
-@@ -309,7 +316,16 @@ inline void __blk_run_queue_uncond(struct request_queue *q)
- 	 * can wait until all these request_fn calls have finished.
- 	 */
- 	q->request_fn_active++;
--	q->request_fn(q);
-+
-+	if (!q->notified_urgent &&
-+		q->elevator->type->ops.elevator_is_urgent_fn &&
-+		q->urgent_request_fn &&
-+		q->elevator->type->ops.elevator_is_urgent_fn(q)) {
-+		q->notified_urgent = true;
-+		q->urgent_request_fn(q);
-+	} else
-+		q->request_fn(q);
-+
- 	q->request_fn_active--;
+-	struct sh_timer_config *cfg = p->pdev->dev.platform_data;
+-
+-	return p->read_control(p->mapbase - cfg->channel_offset, 0);
++	return p->read_control(p->mapbase_str, 0);
  }
  
-@@ -1192,6 +1208,18 @@ static void __blk_put_back_rq(struct request_queue *q, struct request *rq)
- 		blk_queue_end_tag(q, rq);
- 
- 	BUG_ON(blk_queued_rq(rq));
-+
-+	if (rq->cmd_flags & REQ_URGENT) {
-+		/*
-+		 * It's not compliant with the design to re-insert
-+		 * urgent requests. We want to be able to track this
-+		 * down.
-+		 */
-+		pr_debug("%s(): requeueing/reinserting an URGENT request",
-+			__func__);
-+		WARN_ON(!q->dispatched_urgent);
-+		q->dispatched_urgent = false;
-+	}
+ static inline unsigned long sh_cmt_read_cmcsr(struct sh_cmt_priv *p)
+@@ -127,9 +132,7 @@ static inline unsigned long sh_cmt_read_
+ static inline void sh_cmt_write_cmstr(struct sh_cmt_priv *p,
+ 				      unsigned long value)
+ {
+-	struct sh_timer_config *cfg = p->pdev->dev.platform_data;
+-
+-	p->write_control(p->mapbase - cfg->channel_offset, 0, value);
++	p->write_control(p->mapbase_str, 0, value);
  }
  
- /**
-@@ -2157,6 +2185,10 @@ struct request *blk_peek_request(struct request_queue *q)
- 			 * not be passed by new incoming requests
- 			 */
- 			rq->cmd_flags |= REQ_STARTED;
-+			if (rq->cmd_flags & REQ_URGENT) {
-+				WARN_ON(q->dispatched_urgent);
-+				q->dispatched_urgent = true;
-+			}
- 			trace_block_rq_issue(q, rq);
- 		}
- 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index c50ecf0..2c63a26 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -100,6 +100,18 @@ void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn)
- EXPORT_SYMBOL_GPL(blk_queue_lld_busy);
- 
- /**
-+ * blk_urgent_request() - Set an urgent_request handler function for queue
-+ * @q:		queue
-+ * @fn:		handler for urgent requests
-+ *
-+ */
-+void blk_urgent_request(struct request_queue *q, request_fn_proc *fn)
-+{
-+	q->urgent_request_fn = fn;
-+}
-+EXPORT_SYMBOL(blk_urgent_request);
-+
-+/**
-  * blk_set_default_limits - reset limits to default values
-  * @lim:  the queue_limits structure to reset
-  *
-diff --git a/block/elevator.c b/block/elevator.c
-index e28011b..06f4320 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -788,6 +788,11 @@ void elv_completed_request(struct request_queue *q, struct request *rq)
+ static inline void sh_cmt_write_cmcsr(struct sh_cmt_priv *p,
+@@ -676,7 +679,7 @@ static int sh_cmt_register(struct sh_cmt
+ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
  {
- 	struct elevator_queue *e = q->elevator;
+ 	struct sh_timer_config *cfg = pdev->dev.platform_data;
+-	struct resource *res;
++	struct resource *res, *res2;
+ 	int irq, ret;
+ 	ret = -ENXIO;
  
-+	if (rq->cmd_flags & REQ_URGENT) {
-+		q->notified_urgent = false;
-+		WARN_ON(!q->dispatched_urgent);
-+		q->dispatched_urgent = false;
+@@ -694,6 +697,9 @@ static int sh_cmt_setup(struct sh_cmt_pr
+ 		goto err0;
+ 	}
+ 
++	/* optional resource for the shared timer start/stop register */
++	res2 = platform_get_resource(p->pdev, IORESOURCE_MEM, 1);
++
+ 	irq = platform_get_irq(p->pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&p->pdev->dev, "failed to get irq\n");
+@@ -707,6 +713,15 @@ static int sh_cmt_setup(struct sh_cmt_pr
+ 		goto err0;
+ 	}
+ 
++	/* map second resource for CMSTR */
++	p->mapbase_str = ioremap_nocache(res2 ? res2->start :
++					 res->start - cfg->channel_offset,
++					 res2 ? resource_size(res2) : 2);
++	if (p->mapbase_str == NULL) {
++		dev_err(&p->pdev->dev, "failed to remap I/O second memory\n");
++		goto err1;
 +	}
- 	/*
- 	 * request is released from the driver, io must be done
- 	 */
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index c26801e..db123c8 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -178,6 +178,7 @@ enum rq_flag_bits {
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
- 	__REQ_KERNEL, 		/* direct IO to kernel pages */
- 	__REQ_PM,		/* runtime pm request */
-+	__REQ_URGENT,	/* urgent request */
- 	__REQ_NR_BITS,		/* stops here */
- };
++
+ 	/* request irq using setup_irq() (too early for request_irq()) */
+ 	p->irqaction.name = dev_name(&p->pdev->dev);
+ 	p->irqaction.handler = sh_cmt_interrupt;
+@@ -719,11 +734,17 @@ static int sh_cmt_setup(struct sh_cmt_pr
+ 	if (IS_ERR(p->clk)) {
+ 		dev_err(&p->pdev->dev, "cannot get clock\n");
+ 		ret = PTR_ERR(p->clk);
+-		goto err1;
++		goto err2;
+ 	}
  
-@@ -191,6 +192,7 @@ enum rq_flag_bits {
- #define REQ_DISCARD		(1ULL << __REQ_DISCARD)
- #define REQ_WRITE_SAME		(1ULL << __REQ_WRITE_SAME)
- #define REQ_NOIDLE		(1ULL << __REQ_NOIDLE)
-+#define REQ_URGENT		(1ULL << __REQ_URGENT)
+-	p->read_control = sh_cmt_read16;
+-	p->write_control = sh_cmt_write16;
++	if (res2 && (resource_size(res2) == 4)) {
++		/* assume both CMSTR and CMCSR to be 32-bit */
++		p->read_control = sh_cmt_read32;
++		p->write_control = sh_cmt_write32;
++	} else {
++		p->read_control = sh_cmt_read16;
++		p->write_control = sh_cmt_write16;
++	}
  
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 84d51bd..12cb015 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -304,6 +304,7 @@ struct request_queue {
- 	struct request_list	root_rl;
+ 	if (resource_size(res) == 6) {
+ 		p->width = 16;
+@@ -752,22 +773,23 @@ static int sh_cmt_setup(struct sh_cmt_pr
+ 			      cfg->clocksource_rating);
+ 	if (ret) {
+ 		dev_err(&p->pdev->dev, "registration failed\n");
+-		goto err2;
++		goto err3;
+ 	}
+ 	p->cs_enabled = false;
  
- 	request_fn_proc		*request_fn;
-+	request_fn_proc		*urgent_request_fn;
- 	make_request_fn		*make_request_fn;
- 	prep_rq_fn		*prep_rq_fn;
- 	unprep_rq_fn		*unprep_rq_fn;
-@@ -404,6 +405,8 @@ struct request_queue {
- #endif
+ 	ret = setup_irq(irq, &p->irqaction);
+ 	if (ret) {
+ 		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
+-		goto err2;
++		goto err3;
+ 	}
  
- 	struct queue_limits	limits;
-+	bool			notified_urgent;
-+	bool			dispatched_urgent;
+ 	platform_set_drvdata(pdev, p);
  
- 	/*
- 	 * sg stuff
-@@ -910,6 +913,7 @@ extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
- extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
- extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
- 						      request_fn_proc *, spinlock_t *);
-+extern void blk_urgent_request(struct request_queue *q, request_fn_proc *fn);
- extern void blk_cleanup_queue(struct request_queue *);
- extern void blk_queue_make_request(struct request_queue *, make_request_fn *);
- extern void blk_queue_bounce_limit(struct request_queue *, u64);
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index d703f94..e753f88 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -25,6 +25,7 @@ typedef int (elevator_dispatch_fn) (struct request_queue *, int);
- typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
- typedef int (elevator_reinsert_req_fn) (struct request_queue *,
- 					struct request *);
-+typedef bool (elevator_is_urgent_fn) (struct request_queue *);
- typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
- typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
- typedef int (elevator_may_queue_fn) (struct request_queue *, int);
-@@ -51,6 +52,7 @@ struct elevator_ops
- 	elevator_dispatch_fn *elevator_dispatch_fn;
- 	elevator_add_req_fn *elevator_add_req_fn;
- 	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
-+	elevator_is_urgent_fn *elevator_is_urgent_fn;
- 
- 	elevator_activate_req_fn *elevator_activate_req_fn;
- 	elevator_deactivate_req_fn *elevator_deactivate_req_fn;
--- 
-1.7.6
-
--- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundatio
+ 	return 0;
+-err2:
++err3:
+ 	clk_put(p->clk);
+-
++err2:
++	iounmap(p->mapbase_str);
+ err1:
+ 	iounmap(p->mapbase);
+ err0:
