@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab3FQKfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:35:19 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:53451 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932412Ab3FQKfR (ORCPT
+	id S932626Ab3FQKgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:36:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33214 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932409Ab3FQKgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:35:17 -0400
-Message-ID: <1371465315.26299.17.camel@x61.thuisdomein>
-Subject: [PATCH] ioatdma: silence GCC warnings
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 17 Jun 2013 12:35:15 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 17 Jun 2013 10:35:15.0776 (UTC) FILETIME=[5AEE1C00:01CE6B46]
-X-RcptDomain: vger.kernel.org
+	Mon, 17 Jun 2013 06:36:22 -0400
+Date: Mon, 17 Jun 2013 11:35:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130617103557.GC1403@sirena.org.uk>
+References: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="otRuG/a1bzWynmKC"
+Content-Disposition: inline
+In-Reply-To: <1371463695-21252-1-git-send-email-fabio.baltieri@linaro.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: pl022: remove unused ret and pins_state variables
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building dma_v3.o triggers two GCC warnings:
-    drivers/dma/ioat/dma_v3.c: In function ‘__ioat3_prep_pq16_lock’:
-    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
-    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
 
-These warnings are caused by pq16_set_src(). It uses "int idx" as an
-index to an eight element array. Changing "idx" to unsigned int silences
-these warnings. Apparently GCC can then determine that "idx" will never
-be negative.
+--otRuG/a1bzWynmKC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Compile tested only.
+On Mon, Jun 17, 2013 at 12:08:15PM +0200, Fabio Baltieri wrote:
+> Removes the warnings:
+>=20
+> drivers/spi/spi-pl022.c: In function 'pl022_suspend_resources':
+> drivers/spi/spi-pl022.c:2322:24: warning: unused variable 'pins_state' [-=
+Wunused-variable]
+> drivers/spi/spi-pl022.c:2321:6: warning: unused variable 'ret' [-Wunused-=
+variable]
+> drivers/spi/spi-pl022.c: In function 'pl022_resume_resources':
+> drivers/spi/spi-pl022.c:2334:6: warning: unused variable 'ret' [-Wunused-=
+variable]
+>=20
+> introduced in:
+>=20
+> f1c9cf0 spi: pl022: use pinctrl PM helpers
 
-1) These warning were introduced in v3.10-rc1. That must have been
-through commit 7727eaa449 ("ioatdma: Adding support for 16 src PQ ops
-and super extended descriptors").
+Acked-by: Mark Brown <broonie@linaro.org>
 
- drivers/dma/ioat/dma_v3.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+--otRuG/a1bzWynmKC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index ca6ea9b..b5102da 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
- }
- 
- static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
--			dma_addr_t addr, u32 offset, u8 coef, int idx)
-+			dma_addr_t addr, u32 offset, u8 coef, unsigned int idx)
- {
- 	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
- 	struct ioat_pq16a_descriptor *pq16 =
-@@ -1180,7 +1180,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
- 	struct ioat_pq_descriptor *pq;
- 	u32 offset = 0;
- 	u8 op;
--	int i, s, idx, num_descs;
-+	int i, idx, num_descs;
- 
- 	/* this function only handles src_cnt 9 - 16 */
- 	BUG_ON(src_cnt < 9);
-@@ -1206,6 +1206,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
- 	do {
- 		struct ioat_raw_descriptor *descs[4];
- 		size_t xfer_size = min_t(size_t, len, 1 << ioat->xfercap_log);
-+		unsigned int s;
- 
- 		desc = ioat2_get_ring_ent(ioat, idx + i);
- 		pq = desc->pq;
--- 
-1.8.1.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRvuaKAAoJELSic+t+oim9AsUP/2PqPzsj8t+s0KOTeuMUAM0P
+A68aENNPaWy/5Mt1UQKwcvffJ4gCyLCcYqIAlSRDF+U2ZtgOWIJXirKCmhOmEaGz
+mHuVlHusVcyuAJ8s5nnXOg2KRlYpwmHKUmfkSjUpBUZS1+sDqRh1azH9Mvm7D9+s
+H9hks4/k9ThTn2KHSchl1nipDb4bFFH5MeWE9SIHb6+SBWeX3wQpQCDNxBsXZjlo
+PA0DAqmYmFbh/P7eDWr3pDL+NSuZ4AvzYmz/XsokYqx2LMuYw2E33XIp/IWw7EAE
+kdSo/hBQHAY5hYleDzF8WVoxjqRMW0H6T4AKHRbCldOor8siM+YqUKTELXc6Lsdh
+CtAo7eJGBeCcovbLNMXLKAqLzHm8gpbVYdbtpIKnzTupl+eUX/ByToWorF0fw3UK
+/gj/m76zhWHVTTnS/90qDDtEMcoGq702QHTEprR+LFVtLAo6z5jyiFlEtB8Vxkdh
+fxXNB+er58+Ait5wMFBI9HyvmgKDTmhh/x9ZSY1GfVfOJriw9YmPDs/vhdBAhcXp
+ySM4JxxTKXQrNBrKe4Q4XShKswF4dQQavg7cNm7yGGIM7z10GaKpSS34aK2UX78i
+OszobP0EMl+GShEdFL6vLZ0JG3yEYmYHzE4bU9lPlUNb6NXOAFb9FzfxTlR0lRW5
+XBUQY2foi6EKusao5FUo
+=Pf3x
+-----END PGP SIGNATURE-----
+
+--otRuG/a1bzWynmKC--
