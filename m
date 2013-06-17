@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3FQIHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 04:07:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56232 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab3FQIHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 04:07:44 -0400
-Date: Mon, 17 Jun 2013 18:07:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: linux-next: manual merge of the akpm tree with the kvm tree
-Message-Id: <20130617180735.c10c058469ce0633c65225a4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_18_07_35_+1000_kSj6GGA/6hQbFOWY"
+	id S932319Ab3FQIKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 04:10:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56657 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755089Ab3FQIKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 04:10:15 -0400
+Date: Mon, 17 Jun 2013 10:10:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] mm/page_alloc: fix blank in show_free_areas
+Message-ID: <20130617081012.GA19194@dhcp22.suse.cz>
+References: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1371345290-19588-4-git-send-email-liwanp@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371345290-19588-4-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_18_07_35_+1000_kSj6GGA/6hQbFOWY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun 16-06-13 09:14:47, Wanpeng Li wrote:
+> There is a blank in show_free_areas which lead to dump messages aren't
+> aligned. This patch remove blank.
+> 
+> Before patch:
+> 
+> [155219.720141] active_anon:50675 inactive_anon:35273 isolated_anon:0
+> [155219.720141]  active_file:215421 inactive_file:344268 isolated_file:0
+> [155219.720141]  unevictable:0 dirty:35 writeback:0 unstable:0
+> [155219.720141]  free:1334870 slab_reclaimable:28833 slab_unreclaimable:5115
+> [155219.720141]  mapped:25233 shmem:35511 pagetables:1705 bounce:0
+> [155219.720141]  free_cma:0
+> 
+> After patch:
+> 
+> [   73.913889] active_anon:39578 inactive_anon:32082 isolated_anon:0
+> [   73.913889] active_file:14621 inactive_file:57993 isolated_file:0
+> [   73.913889] unevictable:0dirty:263 writeback:0 unstable:0
+> [   73.913889] free:1865614 slab_reclaimable:3264 slab_unreclaimable:4566
+> [   73.913889] mapped:21192 shmem:32327 pagetables:1572 bounce:0
+> [   73.913889] free_cma:0
 
-Hi Andrew,
+Not that I would care much but this format is here for ages. An
+additional space was kind of nice to visually separate this part from
+the per-zone data.
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/kvm/mmu.c between commit 365c886860c4 ("KVM: MMU: reclaim the
-zapped-obsolete page first") from the kvm tree and commit "shrinker:
-convert remaining shrinkers to count/scan API" from the akpm tree.
+Is there any special reason for this change?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  mm/page_alloc.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 18102e1..e6e881a 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3004,12 +3004,12 @@ void show_free_areas(unsigned int filter)
+>  	}
+>  
+>  	printk("active_anon:%lu inactive_anon:%lu isolated_anon:%lu\n"
+> -		" active_file:%lu inactive_file:%lu isolated_file:%lu\n"
+> -		" unevictable:%lu"
+> -		" dirty:%lu writeback:%lu unstable:%lu\n"
+> -		" free:%lu slab_reclaimable:%lu slab_unreclaimable:%lu\n"
+> -		" mapped:%lu shmem:%lu pagetables:%lu bounce:%lu\n"
+> -		" free_cma:%lu\n",
+> +		"active_file:%lu inactive_file:%lu isolated_file:%lu\n"
+> +		"unevictable:%lu"
+> +		"dirty:%lu writeback:%lu unstable:%lu\n"
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+There is a space missing between unevictable and dirty.
 
-diff --cc arch/x86/kvm/mmu.c
-index 6941fa7,422493d..0000000
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@@ -4312,12 -4213,8 +4312,13 @@@ restart
-  	spin_unlock(&kvm->mmu_lock);
-  }
- =20
- +static bool kvm_has_zapped_obsolete_pages(struct kvm *kvm)
- +{
- +	return unlikely(!list_empty_careful(&kvm->arch.zapped_obsolete_pages));
- +}
- +
-- static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
-+ static long
-+ mmu_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
-  {
-  	struct kvm *kvm;
-  	int nr_to_scan =3D sc->nr_to_scan;
-@@@ -4352,16 -4246,9 +4351,16 @@@
-  		idx =3D srcu_read_lock(&kvm->srcu);
-  		spin_lock(&kvm->mmu_lock);
- =20
- +		if (kvm_has_zapped_obsolete_pages(kvm)) {
- +			kvm_mmu_commit_zap_page(kvm,
- +			      &kvm->arch.zapped_obsolete_pages);
- +			goto unlock;
- +		}
- +
-- 		prepare_zap_oldest_mmu_page(kvm, &invalid_list);
-+ 		freed +=3D prepare_zap_oldest_mmu_page(kvm, &invalid_list);
-  		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- =20
- +unlock:
-  		spin_unlock(&kvm->mmu_lock);
-  		srcu_read_unlock(&kvm->srcu, idx);
- =20
+> +		"free:%lu slab_reclaimable:%lu slab_unreclaimable:%lu\n"
+> +		"mapped:%lu shmem:%lu pagetables:%lu bounce:%lu\n"
+> +		"free_cma:%lu\n",
+>  		global_page_state(NR_ACTIVE_ANON),
+>  		global_page_state(NR_INACTIVE_ANON),
+>  		global_page_state(NR_ISOLATED_ANON),
 
---Signature=_Mon__17_Jun_2013_18_07_35_+1000_kSj6GGA/6hQbFOWY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRvsPLAAoJEECxmPOUX5FEJ98P/1k6sW/8muJ/+ObkuH1XbRHH
-RISYKs3AOY37bwz4jr+q9ccBBoPQN8M5jf+EicBqXpWxEqNooaHjaZ2TTX7D6UnK
-+A26wHNq0PuznXozUtwDQ6ntt1JDJN0umY78I762BXhE+5fHQJE8kk6hiYgu6V8a
-O0/+eMPYQe9W7HCKePH3gD86bCsHk7yFRl646IKvmQJSGbrgg5jU+OXvL30th5+D
-nO3yW6ZOv/iiJ6Q6KAeSK6PY+QAUF1K15JVUQ5zny1szgah9Rnfmc7ndgn1tYD09
-8vWF3wOZdVrC7L0VPlgpd5Rzx5Ybeb1PmnJEZXTCXFMJ8nYXWLHVxmzdI8wKO7nl
-3LWZHUDIkDdPkIXFzwV8mvt2y4lV/KXDMSNIa4EGc892HWv3XAZ79naWkmg3mecw
-aGf0qI+8YXTw0fGQHcOt5gE1rKON+wYq6h5y+ozBmk4cSaMp2F8TEja0PlbRpVkA
-7rGFjUK+Q+tt68zIzixoiQtuAgevoXqpTOE7AjTlG8cY7euL4IQBNBbU5SKC+hIj
-pdsMMyEsPFMQSX7FZaPVTAj1QiBtuVu5cp3eDyvWs9E+y5SRXPDlDaYqr47sg0/F
-qB4pNDd4/XlNDNgv5jVUuGnlov/Trsoi95cQbDWq7EIdiMnFkkg8dqmUX37u7IT2
-IzMFzXWBKyyUDk6mJ2fE
-=snIw
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_18_07_35_+1000_kSj6GGA/6hQbFOWY--
+-- 
+Michal Hocko
+SUSE Labs
