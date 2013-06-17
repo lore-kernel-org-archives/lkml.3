@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3FQIUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 04:20:38 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:14894 "EHLO mail.abilis.ch"
+	id S1756178Ab3FQIUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 04:20:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57258 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab3FQIUg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 04:20:36 -0400
-Date: Mon, 17 Jun 2013 10:19:33 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] i2c: designware: fix race between subsequent xfers
-Message-ID: <20130617081931.GB19380@ab42.lan>
-References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
- <1370595083-801-1-git-send-email-christian.ruppert@abilis.com>
- <20130614143740.GD2929@katana>
+	id S1751619Ab3FQIUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 04:20:42 -0400
+Date: Mon, 17 Jun 2013 10:20:40 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 7/7] mm/pgtable: Don't accumulate addr during pgd
+ prepopulate pmd
+Message-ID: <20130617082040.GC19194@dhcp22.suse.cz>
+References: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1371345290-19588-7-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130614143740.GD2929@katana>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1371345290-19588-7-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 04:37:41PM +0200, Wolfram Sang wrote:
-> On Fri, Jun 07, 2013 at 10:51:23AM +0200, Christian Ruppert wrote:
-> [...]
-> > +	/*
-> > +	 * We must disable the adapter before unlocking the &dev->lock mutex
-> > +	 * below. Otherwise the hardware might continue generating interrupts
-> > +	 * which in turn causes a race condition with the following transfer.
+On Sun 16-06-13 09:14:50, Wanpeng Li wrote:
+> The old codes accumulate addr to get right pmd, however,
+> currently pmds are preallocated and transfered as a parameter,
+> there is unnecessary to accumulate addr variable any more, this
+> patch remove it.
 > 
-> I added "Needs some more investigation if the additional interrupts are
-> a hardware bug or this driver doesn't handle them correctly yet." to the
-> comment and
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Good idea, thanks.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-> Applied to for-next, thanks!
+> ---
+>  arch/x86/mm/pgtable.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> BTW since I am currently here: i2c-designware-core should be in the
-> 'algos' directory, no?
-
-At the risk of passing for a complete moron: What exactly is the
-difference between I2C algos and I2C bus drivers?
-
-Greetings,
-  Christian
+> diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+> index 17fda6a..cb787da 100644
+> --- a/arch/x86/mm/pgtable.c
+> +++ b/arch/x86/mm/pgtable.c
+> @@ -240,7 +240,6 @@ static void pgd_mop_up_pmds(struct mm_struct *mm, pgd_t *pgdp)
+>  static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+>  {
+>  	pud_t *pud;
+> -	unsigned long addr;
+>  	int i;
+>  
+>  	if (PREALLOCATED_PMDS == 0) /* Work around gcc-3.4.x bug */
+> @@ -248,8 +247,7 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+>  
+>  	pud = pud_offset(pgd, 0);
+>  
+> - 	for (addr = i = 0; i < PREALLOCATED_PMDS;
+> -	     i++, pud++, addr += PUD_SIZE) {
+> +	for (i = 0; i < PREALLOCATED_PMDS; i++, pud++) {
+>  		pmd_t *pmd = pmds[i];
+>  
+>  		if (i >= KERNEL_PGD_BOUNDARY)
+> -- 
+> 1.8.1.2
+> 
 
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Michal Hocko
+SUSE Labs
