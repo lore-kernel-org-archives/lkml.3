@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3FQRbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:31:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50382 "EHLO
+	id S1753900Ab3FQR6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:58:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50428 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3FQRbl (ORCPT
+	with ESMTP id S1753413Ab3FQRbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:41 -0400
+	Mon, 17 Jun 2013 13:31:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>,
+Cc: Tony Camuso <tcamuso@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 13/84] usb: dwc3: gadget: free trb pool only from epnum 2
-Date: Mon, 17 Jun 2013 10:30:17 -0700
-Message-Id: <1371490288-23167-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 10/84] xhci - correct comp_mode_recovery_timer on return from hibernate
+Date: Mon, 17 Jun 2013 10:30:14 -0700
+Message-Id: <1371490288-23167-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -27,53 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Cherian <george.cherian@ti.com>
+From: Tony Camuso <tcamuso@redhat.com>
 
-commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
+commit 77df9e0b799b03e1d5d9c68062709af5f637e834 upstream.
 
-we never allocate a TRB pool for physical endpoints
-0 and 1 so trying to free it (a invalid TRB pool pointer)
-will lead us in a warning while removing dwc3.ko module.
+Commit 71c731a2 (usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
+Hardware) was a workaround for systems using the SN65LVPE502CP,
+controller, but it introduced a bug in resume from hibernate.
 
-In order to fix the situation, all we have to do is skip
-dwc3_free_trb_pool() for physical endpoints 0 and 1 just
-as we while deleting endpoints from the endpoints list.
+The fix created a timer, comp_mode_recovery_timer, which is deleted from
+a timer list when xhci_suspend() is called. However, the hibernate image,
+including the timer list containing the comp_mode_recovery_timer, had
+already been saved before the timer was deleted.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ kamal: backport to 3.8 ]
+Upon resume from hibernate, the list containing the comp_mode_recovery_timer
+is restored from the image saved to disk, and xhci_resume(), assuming that
+the timer had been deleted by xhci_suspend(), makes a call to
+compliance_mode_recoery_timer_init(), which creates a new instance of the
+comp_mode_recovery_timer and attempts to place it into the same list in which
+it is already active, thus corrupting the list during the list_add() call.
+
+At this point, a call trace is emitted indicating the list corruption.
+Soon afterward, the system locks up, the watchdog times out, and the
+ensuing NMI crashes the system.
+
+The problem did not occur when resuming from suspend. In suspend, the
+image in RAM remains exactly as it was when xhci_suspend() deleted the
+comp_mode_recovery_timer, so there is no problem when xhci_resume()
+creates a new instance of this timer and places it in the still empty
+list.
+
+This patch avoids the problem by deleting the timer in xhci_resume()
+when resuming from hibernate. Now xhci_resume() can safely make the
+call to create a new instance of this timer, whether returning from
+suspend or hibernate.
+
+Thanks to Alan Stern for his help with understanding the problem.
+
+[Sarah reworked this patch to cover the case where the xHCI restore
+register operation fails, and (temp & STS_SRE) is true (and we re-init
+the host, including re-init for the compliance mode), but hibernate is
+false.  The original patch would have caused list corruption in this
+case.]
+
+This patch should be backported to kernels as old as 3.2, that
+contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
+xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+
+Signed-off-by: Tony Camuso <tcamuso@redhat.com>
+Tested-by: Tony Camuso <tcamuso@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 09835b6..3c0351a 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1627,10 +1627,20 @@ static void dwc3_gadget_free_endpoints(struct dwc3 *dwc)
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 849470b..a0bd618 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -952,6 +952,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	struct usb_hcd		*secondary_hcd;
+ 	int			retval = 0;
++	bool			comp_timer_running = false;
  
- 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
- 		dep = dwc->eps[epnum];
--		dwc3_free_trb_pool(dep);
+ 	/* Wait a bit if either of the roothubs need to settle from the
+ 	 * transition into bus suspend.
+@@ -989,6 +990,13 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
  
--		if (epnum != 0 && epnum != 1)
-+		/*
-+		 * Physical endpoints 0 and 1 are special; they form the
-+		 * bi-directional USB endpoint 0.
-+		 *
-+		 * For those two physical endpoints, we don't allocate a TRB
-+		 * pool nor do we add them the endpoints list. Due to that, we
-+		 * shouldn't do these two operations otherwise we would end up
-+		 * with all sorts of bugs when removing dwc3.ko.
-+		 */
-+		if (epnum != 0 && epnum != 1) {
-+			dwc3_free_trb_pool(dep);
- 			list_del(&dep->endpoint.ep_list);
+ 	/* If restore operation fails, re-initialize the HC during resume */
+ 	if ((temp & STS_SRE) || hibernated) {
++
++		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
++				!(xhci_all_ports_seen_u0(xhci))) {
++			del_timer_sync(&xhci->comp_mode_recovery_timer);
++			xhci_dbg(xhci, "Compliance Mode Recovery Timer deleted!\n");
 +		}
++
+ 		/* Let the USB core know _both_ roothubs lost power. */
+ 		usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
+ 		usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
+@@ -1031,6 +1039,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 		retval = xhci_init(hcd->primary_hcd);
+ 		if (retval)
+ 			return retval;
++		comp_timer_running = true;
++
+ 		xhci_dbg(xhci, "Start the primary HCD\n");
+ 		retval = xhci_run(hcd->primary_hcd);
+ 		if (!retval) {
+@@ -1072,7 +1082,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	 * to suffer the Compliance Mode issue again. It doesn't matter if
+ 	 * ports have entered previously to U0 before system's suspension.
+ 	 */
+-	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
++	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && !comp_timer_running)
+ 		compliance_mode_recovery_timer_init(xhci);
  
- 		kfree(dep);
- 	}
+ 	/* Re-enable port polling. */
 -- 
 1.8.1.2
 
