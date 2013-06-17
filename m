@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab3FQFxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 01:53:09 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:25726 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3FQFxH (ORCPT
+	id S1755917Ab3FQFxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 01:53:22 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50667 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab3FQFxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 01:53:07 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: David Woodhouse <dwmw2@infradead.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] x86/iommu: remove useless code
-Date: Mon, 17 Jun 2013 13:51:46 +0800
-Message-Id: <1371448306-6884-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 17 Jun 2013 01:53:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370360926-3695-1-git-send-email-wsa@the-dreams.de>
+References: <1370360926-3695-1-git-send-email-wsa@the-dreams.de>
+Date: Mon, 17 Jun 2013 07:53:20 +0200
+Message-ID: <CACRpkdYR4xAhekC3XagYEu2K+nEY22hEthB1ojHqPDsR=KKT_Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: devres: make comments proper
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+On Tue, Jun 4, 2013 at 5:48 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
 
-In intel-iommu.c, the function dma_pte_addr does not change the
-value of its parameter (pte). So it is useless if it nobody catches
-its return value.
+> The free-function mentioned "interrupt" instead of "GPIO". While we are
+> here, use "GPIO" (capital letters) consistently.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/intel-iommu.c |    1 -
- 1 file changed, 1 deletion(-)
+Patch applied.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index b4f0e28..d9d378b 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -809,7 +809,6 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 				/* Someone else set it while we were thinking; use theirs. */
- 				free_pgtable_page(tmp_page);
- 			} else {
--				dma_pte_addr(pte);
- 				domain_flush_cache(domain, pte, sizeof(*pte));
- 			}
- 		}
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
