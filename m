@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab3FQRdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:33:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50481 "EHLO
+	id S1753892Ab3FQRd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:33:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50487 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab3FQRdP (ORCPT
+	with ESMTP id S1753632Ab3FQRdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:33:15 -0400
+	Mon, 17 Jun 2013 13:33:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Weinberger <richard@nod.at>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 25/84] USB: serial: Add Option GTM681W to qcserial device table.
-Date: Mon, 17 Jun 2013 10:30:29 -0700
-Message-Id: <1371490288-23167-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 27/84] USB: keyspan: fix bogus array index
+Date: Mon, 17 Jun 2013 10:30:31 -0700
+Message-Id: <1371490288-23167-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,32 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8a2f132a01c2dd4c3905fa560f92019761ed72b1 upstream.
+commit a07088098a650267b2eda689538133a324b9523f upstream.
 
-The Option GTM681W uses a qualcomm chip and can be
-served by the qcserial device driver.
+The outcont_endpoints array was indexed using the port minor number
+(which can be greater than the array size) rather than the device port
+number.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/qcserial.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/keyspan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 59b32b7..bd794b4 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -118,6 +118,7 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(0x1199, 0x901b)},	/* Sierra Wireless MC7770 */
- 	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
- 	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
-+	{USB_DEVICE(0x0AF0, 0x8120)},	/* Option GTM681W */
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index 97bc49f..c7585cb 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -1604,7 +1604,7 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
+ 	d_details = s_priv->device_details;
+ 	device_port = port->number - port->serial->minor;
  
- 	/* non Gobi Qualcomm serial devices */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x0f3d, 0x68a2, 0)},	/* Sierra Wireless MC7700 Device Management */
+-	outcont_urb = d_details->outcont_endpoints[port->number];
++	outcont_urb = d_details->outcont_endpoints[device_port];
+ 	this_urb = p_priv->outcont_urb;
+ 
+ 	dev_dbg(&port->dev, "%s - endpoint %d\n", __func__, usb_pipeendpoint(this_urb->pipe));
 -- 
 1.8.1.2
 
