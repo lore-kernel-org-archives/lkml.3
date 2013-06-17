@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3FQP2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:28:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:31204 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab3FQP2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:28:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="256174581"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-In-Reply-To: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
-Subject: RE: [PATCH 0/8] Transparent huge page cache: phase 0, prep work
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130617153120.6EADFE0090@blue.fi.intel.com>
-Date: Mon, 17 Jun 2013 18:31:20 +0300 (EEST)
-To: unlisted-recipients:; (no To-header on input)
+	id S1751615Ab3FQP34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:29:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49534 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3FQP3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:29:55 -0400
+Date: Mon, 17 Jun 2013 18:28:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lorenz Haspel <lorenz@badgers.com>
+Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
+        michael.banken@mathe.stud.uni-erlangen.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 4/5] silicom: checkpatch: trailing statements
+Message-ID: <20130617152823.GF5008@mwanda>
+References: <1371478817-28357-1-git-send-email-lorenz@badgers.com>
+ <1371478817-28357-4-git-send-email-lorenz@badgers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371478817-28357-4-git-send-email-lorenz@badgers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Mon, Jun 17, 2013 at 04:20:16PM +0200, Lorenz Haspel wrote:
+> fixed checkpatch error:
+> trailing statements that should be on next line
 > 
-> My patchset which introduces transparent huge page cache is pretty big and
-> hardly reviewable. Dave Hansen suggested to split it in few parts.
+> Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
+> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+> ---
+>  drivers/staging/silicom/bpctl_mod.c |   14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
 > 
-> This is the first part: preparation work. I think it's useful without rest
-> patches.
-> 
-> There's one fix for bug in lru_add_page_tail(). I doubt it's possible to
-> trigger it on current code, but nice to have it upstream anyway.
-> Rest is cleanups.
-> 
-> Patch 8 depends on patch 7. Other patches are independent and can be
-> applied separately.
-> 
-> Please, consider applying.
+> diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+> index 78570dd..85aa900 100644
+> --- a/drivers/staging/silicom/bpctl_mod.c
+> +++ b/drivers/staging/silicom/bpctl_mod.c
+> @@ -165,7 +165,9 @@ static int bp_device_event(struct notifier_block *unused,
+>  			memcpy(&cbuf, drvinfo.bus_info, 32);
+>  			buf = &cbuf[0];
+>  
+> -			while (*buf++ != ':') ;
+> +			while (*buf != ':')
+> +				buf++;
+> +			buf++;
 
-Andrew, Andrea, any feedback?
 
--- 
- Kirill A. Shutemov
+No.  This is more complicated than the original.  While loops like
+this are idiomatic in C.  The way to fix this is just to do:
+
+			while (*buf++ != ':')
+				;
+
+Same for the rest, just move the semi-colon down in every case.
+
+regards,
+dan carpenter
+
