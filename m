@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3FQW3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:29:37 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49645 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab3FQW3f (ORCPT
+	id S1752829Ab3FQWaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:30:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48979 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab3FQWaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:29:35 -0400
+	Mon, 17 Jun 2013 18:30:10 -0400
+Date: Tue, 18 Jun 2013 02:30:05 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130617223004.GB2538@localhost.localdomain>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1371228049-27080-1-git-send-email-javier.martinez@collabora.co.uk>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 17 Jun 2013 23:29:15 +0100
-X-Google-Sender-Auth: kC5DEtUaS2Z6Q5Zdvh0_VBYpayU
-Message-ID: <CACxGe6smNZofiGdO=nBM88MiWyoDvCTiPGFG5enEUwP_zCn17A@mail.gmail.com>
-Subject: Re: [PATCH 0/7] genirq: add irq_get_trigger_type() to get IRQ flags
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+In-Reply-To: <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 5:40 PM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Drivers that want to get the trigger edge/level type flags for a
-> given interrupt have to first call irq_get_irq_data(irq) to get
-> the struct irq_data and then irqd_get_trigger_type(irq_data) to
-> obtain the IRQ flags.
->
-> This is not only error prone but also unnecessary exposes the
-> struct irq_data to callers. This patch-set adds a new function
-> irq_get_trigger_type() to obtain the edge/level flags for an IRQ
-> and updates the places where irq_get_irq_data(irq) was called
-> just to obtain the flags from the struct irq_data.
->
-> The patch-set is composed of the following patches:
->
-> [PATCH 1/7] genirq: add irq_get_trigger_type() to get IRQ flags
-> [PATCH 2/7] gpio: mvebu: use irq_get_trigger_type() to get IRQ flags
-> [PATCH 3/7] mfd: twl4030-irq: use irq_get_trigger_type() to get IRQ flags
-> [PATCH 4/7] mfd: stmpe: use irq_get_trigger_type() to get IRQ flags
-> [PATCH 5/7] arm: orion: use irq_get_trigger_type() to get IRQ flags
-> [PATCH 6/7] MIPS: octeon: use irq_get_trigger_type() to get IRQ flags
-> [PATCH 7/7] irqdomain: use irq_get_trigger_type() to get IRQ flags
 
-For the whole series:
-Acked-by: Grant Likely <grant.likely@linaro.org>
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->  arch/arm/plat-orion/gpio.c           |    2 +-
->  arch/mips/cavium-octeon/octeon-irq.c |    2 +-
->  drivers/gpio/gpio-mvebu.c            |    2 +-
->  drivers/mfd/stmpe.c                  |    3 +--
->  drivers/mfd/twl4030-irq.c            |    5 +----
->  include/linux/irq.h                  |    6 ++++++
->  kernel/irq/irqdomain.c               |    2 +-
->  7 files changed, 12 insertions(+), 10 deletions(-)
->
-> Best regards,
-> Javier
+On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
+> On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
+> 
+> > > I managed to trigger:
+> > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> > > on top. 
+> > > 
+> > > This is obviously BUG_ON(nlru->nr_items < 0) and 
+> > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> > > [...]
+> > > ffffffff81122d9c:       0f 0b                   ud2
+> > > 
+> > > RAX is -1UL.
+> > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
+> > and BUG, instead of an unsigned quantity.
+> > 
+> > > 
+> > > I assume that the current backtrace is of no use and it would most
+> > > probably be some shrinker which doesn't behave.
+> > > 
+> > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+> > Assuming you are not using xfs, we are left with dentries and inodes.
+> > 
+> > The first thing to do is to find which one of them is misbehaving. You can try finding
+> > this out by the address of the list_lru, and where it lays in the superblock.
+> > 
+> > Once we know each of them is misbehaving, then we'll have to figure out why.
+> 
+> The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
+> it's inodes?
+> 
+Assuming there is no memory corruption of any sort going on , let's check the code.
+nr_item is only manipulated in 3 places:
+
+1) list_lru_add, where it is increased
+2) list_lru_del, where it is decreased in case the user have voluntarily removed the
+   element from the list
+3) list_lru_walk_node, where an element is removing during shrink.
+
+All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
+Either the element was never added to the list, or it was added, removed, and we didn't notice
+it. (Again, your backing storage is not XFS, is it? If it is , we have another user to look for)
+
+I will assume that Andrew is correct and this is inode related. list_lru_del reads as follows:
+        spin_lock(&nlru->lock);
+        if (!list_empty(item)) { ... }
+
+So one possibility is that we are manipulating this list outside this lock somewhere. Going to
+inode.c... We always manipulate the LRU inside the lock, but the element is not always in the LRU,
+if it is in a list. Could it be possible that the element is in the dispose_list, and at the same
+time someone calls list_lru_del at it, creating the imbalance ?
+
+callers:
+iput_final, evict_inodes, invalidate_inodes.
+Both evict_inodes and invalidate_inodes will do the following pattern:
+
+                inode->i_state |= I_FREEING;                                            
+                inode_lru_list_del(inode);
+                spin_unlock(&inode->i_lock);
+                list_add(&inode->i_lru, &dispose);
+
+IOW, they will remove the element from the LRU, and add it to the dispose list.
+Both of them will also bail out if they see I_FREEING already set, so they are safe
+against each other - because the flag is manipulated inside the lock.
+
+But how about iput_final? It seems to me that if we are calling iput_final at the
+same time as the other two, this *could* happen (maybe there is some extra protection
+that can be seen from Australia but not from here. Dave?)
+
+Right now this is my best theory.
+
+I am attaching a patch that should make a difference in case I am right.
+
+
+
+
+
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline; filename="inode.patch"
+
+diff --git a/fs/inode.c b/fs/inode.c
+index 00b804e..c46c92e 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
+ 
+ static void inode_lru_list_del(struct inode *inode)
+ {
++	if (inode->i_state & I_FREEING)
++		return;
+ 
+ 	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
+ 		this_cpu_dec(nr_unused);
+@@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
+ 		inode->i_state &= ~I_WILL_FREE;
+ 	}
+ 
++	inode_lru_list_del(inode);
+ 	inode->i_state |= I_FREEING;
+-	if (!list_empty(&inode->i_lru))
+-		inode_lru_list_del(inode);
+ 	spin_unlock(&inode->i_lock);
+ 
+ 	evict(inode);
+
+--YZ5djTAD1cGYuMQK--
