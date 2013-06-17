@@ -1,95 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab3FQPqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:46:22 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:33992 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab3FQPqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:46:20 -0400
-From: ddaney.cavm@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com
-Cc: david.s.daney@gmail.com, David Daney <david.daney@cavium.com>
-Subject: [PATCH v2] mn10300: Fix include dependency in irqflags.h et al.
-Date: Mon, 17 Jun 2013 08:46:07 -0700
-Message-Id: <1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
-References: <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+	id S1753189Ab3FQPqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:46:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab3FQPql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:46:41 -0400
+Date: Mon, 17 Jun 2013 11:46:09 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
+        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
+        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: Re: [PATCH v3 06/13] locks: protect most of the file_lock handling
+ with i_lock
+Message-ID: <20130617114609.708a336b@tlielax.poochiereds.net>
+In-Reply-To: <1371482036-15958-7-git-send-email-jlayton@redhat.com>
+References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
+	<1371482036-15958-7-git-send-email-jlayton@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Mon, 17 Jun 2013 11:13:49 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
 
-We need to pick up the definition of raw_smp_processor_id() from
-asm/smp.h.  For the !SMP case, we need to supply a definition of
-raw_smp_processor_id().
+> Having a global lock that protects all of this code is a clear
+> scalability problem. Instead of doing that, move most of the code to be
+> protected by the i_lock instead. The exceptions are the global lists
+> that the ->fl_link sits on, and the ->fl_block list.
+> 
+> ->fl_link is what connects these structures to the
+> global lists, so we must ensure that we hold those locks when iterating
+> over or updating these lists.
+> 
+> Furthermore, sound deadlock detection requires that we hold the
+> blocked_list state steady while checking for loops. We also must ensure
+> that the search and update to the list are atomic.
+> 
+> For the checking and insertion side of the blocked_list, push the
+> acquisition of the global lock into __posix_lock_file and ensure that
+> checking and update of the  blocked_list is done without dropping the
+> lock in between.
+> 
+> On the removal side, when waking up blocked lock waiters, take the
+> global lock before walking the blocked list and dequeue the waiters from
+> the global list prior to removal from the fl_block list.
+> 
+> With this, deadlock detection should be race free while we minimize
+> excessive file_lock_lock thrashing.
+> 
+> Finally, in order to avoid a lock inversion problem when handling
+> /proc/locks output we must ensure that manipulations of the fl_block
+> list are also protected by the file_lock_lock.
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  Documentation/filesystems/Locking |   21 ++++--
+>  fs/afs/flock.c                    |    5 +-
+>  fs/ceph/locks.c                   |    2 +-
+>  fs/ceph/mds_client.c              |    8 +-
+>  fs/cifs/cifsfs.c                  |    2 +-
+>  fs/cifs/file.c                    |   13 ++--
+>  fs/gfs2/file.c                    |    2 +-
+>  fs/lockd/svcsubs.c                |   12 ++--
+>  fs/locks.c                        |  151 ++++++++++++++++++++++---------------
+>  fs/nfs/delegation.c               |   10 +-
+>  fs/nfs/nfs4state.c                |    8 +-
+>  fs/nfsd/nfs4state.c               |    8 +-
+>  include/linux/fs.h                |   11 ---
+>  13 files changed, 140 insertions(+), 113 deletions(-)
+> 
 
-Because of the include dependencies we cannot use smp_call_func_t in
-asm/smp.h, but we do need linux/thread_info.h
+[...]
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
+> @@ -1231,7 +1254,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
+>  	if (IS_ERR(new_fl))
+>  		return PTR_ERR(new_fl);
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  
+>  	time_out_leases(inode);
+>  
+> @@ -1281,11 +1304,11 @@ restart:
+>  			break_time++;
+>  	}
+>  	locks_insert_block(flock, new_fl);
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+>  						!new_fl->fl_next, break_time);
+> -	lock_flocks();
+> -	__locks_delete_block(new_fl);
+> +	spin_lock(&inode->i_lock);
+> +	locks_delete_block(new_fl);
 
-Changes from v1: Remove redundant #ifndef __ASSEMBLY__, fix SMP case.
+Doh -- bug here. This should not have been changed to
+locks_delete_block(). My apologies.
+
+>  	if (error >= 0) {
+>  		if (error == 0)
+>  			time_out_leases(inode);
+
+[...]
+
+>  posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+>  {
+> +	struct inode *inode = file_inode(filp);
+>  	int status = 0;
+>  
+> -	lock_flocks();
+> +	spin_lock(&inode->i_lock);
+>  	if (waiter->fl_next)
+> -		__locks_delete_block(waiter);
+> +		locks_delete_block(waiter);
 
 
- arch/mn10300/include/asm/irqflags.h | 5 ++---
- arch/mn10300/include/asm/smp.h      | 4 +++-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+Ditto here...
 
-diff --git a/arch/mn10300/include/asm/irqflags.h b/arch/mn10300/include/asm/irqflags.h
-index 678f68d..8730c0a 100644
---- a/arch/mn10300/include/asm/irqflags.h
-+++ b/arch/mn10300/include/asm/irqflags.h
-@@ -13,9 +13,8 @@
- #define _ASM_IRQFLAGS_H
- 
- #include <asm/cpu-regs.h>
--#ifndef __ASSEMBLY__
--#include <linux/smp.h>
--#endif
-+/* linux/smp.h <- linux/irqflags.h needs asm/smp.h first */
-+#include <asm/smp.h>
- 
- /*
-  * interrupt control
-diff --git a/arch/mn10300/include/asm/smp.h b/arch/mn10300/include/asm/smp.h
-index 6745dbe..56c4241 100644
---- a/arch/mn10300/include/asm/smp.h
-+++ b/arch/mn10300/include/asm/smp.h
-@@ -24,6 +24,7 @@
- #ifndef __ASSEMBLY__
- #include <linux/threads.h>
- #include <linux/cpumask.h>
-+#include <linux/thread_info.h>
- #endif
- 
- #ifdef CONFIG_SMP
-@@ -85,7 +86,7 @@ extern cpumask_t cpu_boot_map;
- extern void smp_init_cpus(void);
- extern void smp_cache_interrupt(void);
- extern void send_IPI_allbutself(int irq);
--extern int smp_nmi_call_function(smp_call_func_t func, void *info, int wait);
-+extern int smp_nmi_call_function(void (*func)(void *), void *info, int wait);
- 
- extern void arch_send_call_function_single_ipi(int cpu);
- extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-@@ -100,6 +101,7 @@ extern void __cpu_die(unsigned int cpu);
- #ifndef __ASSEMBLY__
- 
- static inline void smp_init_cpus(void) {}
-+#define raw_smp_processor_id() 0
- 
- #endif /* __ASSEMBLY__ */
- #endif /* CONFIG_SMP */
+>  	else
+>  		status = -ENOENT;
+> -	unlock_flocks();
+> +	spin_unlock(&inode->i_lock);
+>  	return status;
+>  }
+>  
+
 -- 
-1.7.11.7
-
+Jeff Layton <jlayton@redhat.com>
