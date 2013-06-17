@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3FQSUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 14:20:32 -0400
-Received: from mail-ye0-f173.google.com ([209.85.213.173]:61702 "EHLO
-	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab3FQSUa (ORCPT
+	id S1755653Ab3FQSUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 14:20:43 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:56563 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088Ab3FQSUa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Jun 2013 14:20:30 -0400
-Date: Mon, 17 Jun 2013 11:20:23 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: A question on RCU vs. preempt-RCU
-Message-ID: <20130617182023.GH32663@mtj.dyndns.org>
-References: <20130616023611.GA19863@htj.dyndns.org>
- <8761xer1s8.fsf@rustcorp.com.au>
+X-IronPort-AV: E=Sophos;i="4.87,882,1363158000"; 
+   d="scan'208";a="65506722"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH v2 2/4] SUNRPC: fix races on PipeFS MOUNT notifications
+Thread-Topic: [PATCH v2 2/4] SUNRPC: fix races on PipeFS MOUNT notifications
+Thread-Index: AQHOZrF6v+dkhqG430WNjUF3loQYrpk6tqMA
+Date: Mon, 17 Jun 2013 18:20:28 +0000
+Message-ID: <1371493226.9595.5.camel@leira.trondhjem.org>
+References: <20130611143725.16046.17279.stgit@localhost.localdomain>
+	 <20130611143917.16046.15791.stgit@localhost.localdomain>
+In-Reply-To: <20130611143917.16046.15791.stgit@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <20FCEC3514F7A94C91D80A38D1F1059E@hq.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761xer1s8.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rusty.
-
-On Sun, Jun 16, 2013 at 04:16:15PM +0930, Rusty Russell wrote:
-> > For most use cases, the trade-off should be fine.  With any kind of
-> > cross-cpu traffic, which there usually will be, it should be an easy
-> > win for the percpu-refcount even when CONFIG_PREEMPT; however, I've
-> > been looking to replace the module ref with the generic one and the
-> > performance degradation there has low but existing possibility of
-> > being noticeable in some edge use cases.
+On Tue, 2013-06-11 at 18:39 +0400, Stanislav Kinsbursky wrote:
+> Below are races, when RPC client can be created without PiepFS dentries
 > 
-> I'm confused: is it actually 10% slower than the existing module
-> refcount code, or 10% slower than atomic inc?
-
-Heh, sorry about the confusion.  I was comparing percpu_ref to
-atomic_t and then worrying about the rcu flipping overhead as it
-definitely seemed higher than flipping preemption.  As I wrote in a
-reply to Paul, if I compare perpcu-ref with normal RCU against
-RCU-sched, the performance difference is around 18% in favor of
-RCU-sched.
-
-> CONFIG_PREEMPT, now with more preempt!  Sure, that has a cost, but
-> you're arguably fixing a bug.
-
-It seems that using RCU-sched is the right flavor for perpcu_ref.  In
-theory, we shouldn't see any performance degradation when converting
-module ref to percpu_ref.
-
-> If we want to improve CONFIG_PREEMPT performance, we can probably use a
-> trick I wanted to try long ago:
-
-So, this is a slight digression.
-
-> 1) Use a per-cpu counter rather than a per-task counter for preempt.
-> 2) Lay out preempt_counter so it covers NR_CPU pages, one per page.
-> 3) When you want to preempt a CPU and counter isn't zero, make the page RO.
-> 4) Handle preemption enable in the fault handler.
+> CPU#0					CPU#1
+> -----------------------------		-----------------------------
+> rpc_new_client				rpc_fill_super
+> rpc_setup_pipedir
+> mutex_lock(&sn->pipefs_sb_lock)
+> rpc_get_sb_net == NULL
+> (no per-net PipeFS superblock)
+> 					sn->pipefs_sb = sb;
+> 					notifier_call_chain(MOUNT)
+> 					(client is not in the list)
+> rpc_register_client
+> (client without pipes dentries)
 > 
-> Then there's no branch in preempt_enable().
+> To fix this patch:
+> 1) makes PipeFS mount notification call with pipefs_sb_lock being held.
+> 2) releases pipefs_sb_lock on new SUNRPC client creation only after
+> registration.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Cc: stable@vger.kernel.org
 
-Buth yeah, interesting trick.  We'll be doing IPIs, flushing TLB and
-taking faults until it hits zero.  It'll all depend on the frequency
-of preemption but given that branches don't tend to be too expensive
-on modern processors, maybe it'd be a bit too hairy for possibly
-marginal gain?
+Hi Stanislav,
 
-Thanks.
+This isn't going to apply to the stable kernels without the cleanup
+patch. Could you please reorganise this patch series so that the cleanup
+comes last.
+
+Thanks,
+  Trond
+
 
 -- 
-tejun
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
