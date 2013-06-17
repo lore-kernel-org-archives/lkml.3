@@ -1,122 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3FQKsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:48:41 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:27065
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932264Ab3FQKsj (ORCPT
+	id S932655Ab3FQKvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:51:39 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:39860 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932507Ab3FQKvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:48:39 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zz98dI936eI1dbaI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1de2h1dfeh1dffh1155h)
-Date: Mon, 17 Jun 2013 18:48:32 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>, <leoli@freescale.com>, <scottwood@freescale.com>,
-        <Priyanka.Jain@freescale.com>
-Subject: Re: [PATCH][RFC] kernel/cpu: do not change the cpus_allowed of the
- current task when unplugging cpus
-Message-ID: <20130617104832.GA20410@localhost.localdomain>
-References: <1368699439-13034-1-git-send-email-chenhui.zhao@freescale.com>
- <20130607090543.GD10280@linutronix.de>
- <20130609095942.GA8548@localhost.localdomain>
- <20130614152917.GA8597@linutronix.de>
+	Mon, 17 Jun 2013 06:51:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130614152917.GA8597@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1370589652-24549-7-git-send-email-alex.shi@intel.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 03:51:05 -0700
+Message-ID: <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com>
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 05:29:17PM +0200, Sebastian Andrzej Siewior wrote:
-> * Zhao Chenhui | 2013-06-09 17:59:42 [+0800]:
-> 
-> >No. _cpu_down() on mainline do not change the cpus_allowed.
-> My bad.
-> 
-> >The problem is that the task which turned off cpu2 (for instance)
-> >can not run on cpu2 again after cpu2 is turned on, because cpu2 has been
-> >removed from the cpus_allowed of the task.
-> >
-> >The task can put himself back on cpu2 throuhg the system call,
-> >but I think applications should not do this work and do not care which cpu
-> >it is running on in most time.
-> 
-> The mask needs to be changed because you may not be on the CPU while it
-> is going down. What do you think about:
-> 
+On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+> They are the base values in load balance, update them with rq runnable
+> load average, then the load balance will consider runnable load avg
+> naturally.
+>
+> We also try to include the blocked_load_avg as cpu load in balancing,
+> but that cause kbuild performance drop 6% on every Intel machine, and
+> aim7/oltp drop on some of 4 CPU sockets machines.
+>
 
-I don't think it is necessary to change the mask. migration_call() invoked by
-the cpu notify "CPU_DYING" will remove all running tasks from the dying cpu.
-Even if the current task is running on the dying cpu, it will be transfered
-to another online cpu. 
+This looks fine.
 
-I guess that changing the mask benefits the latency of the system.
-Please correct me.
+Did you try including blocked_load_avg in only get_rq_runnable_load()
+[ and not weighted_cpuload() which is called by new-idle ]?
 
--Chenhui
-
-> Subject: [PATCH] kernel/hotplug: restore original cpu mask oncpu/down
-> 
-> If a task which is allowed to run only on CPU X puts CPU Y down then it
-> will be allowed on all CPUs but the on CPU Y after it comes back from
-> kernel. This patch ensures that we don't lose the initial setting unless
-> the CPU the task is running is going down.
-> 
-> Cc: stable-rt@vger.kernel.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
 > ---
->  kernel/cpu.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 3acf17d..f5ad8e1 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -545,6 +545,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  		.hcpu = hcpu,
->  	};
->  	cpumask_var_t cpumask;
-> +	cpumask_var_t cpumask_org;
->  
->  	if (num_online_cpus() == 1)
->  		return -EBUSY;
-> @@ -555,6 +556,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  	/* Move the downtaker off the unplug cpu */
->  	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
->  		return -ENOMEM;
-> +	if (!alloc_cpumask_var(&cpumask_org, GFP_KERNEL))  {
-> +		free_cpumask_var(cpumask);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	cpumask_copy(cpumask_org, tsk_cpus_allowed(current));
->  	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
->  	set_cpus_allowed_ptr(current, cpumask);
->  	free_cpumask_var(cpumask);
-> @@ -563,7 +570,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  	if (mycpu == cpu) {
->  		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
->  		migrate_enable();
-> -		return -EBUSY;
-> +		err = -EBUSY;
-> +		goto restore_cpus;
->  	}
->  
->  	cpu_hotplug_begin();
-> @@ -622,6 +630,9 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  	cpu_hotplug_done();
->  	if (!err)
->  		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
-> +restore_cpus:
-> +	set_cpus_allowed_ptr(current, cpumask_org);
-> +	free_cpumask_var(cpumask_org);
->  	return err;
+>  kernel/sched/fair.c |  5 +++--
+>  kernel/sched/proc.c | 17 +++++++++++++++--
+>  2 files changed, 18 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 42c7be0..eadd2e7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  /* Used instead of source_load when we know the type == 0 */
+>  static unsigned long weighted_cpuload(const int cpu)
+>  {
+> -       return cpu_rq(cpu)->load.weight;
+> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
 >  }
->  
-
+>
+>  /*
+> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>  {
+>         struct rq *rq = cpu_rq(cpu);
+>         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
+>
+>         if (nr_running)
+> -               return rq->load.weight / nr_running;
+> +               return load_avg / nr_running;
+>
+>         return 0;
+>  }
+> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+> index bb3a6a0..ce5cd48 100644
+> --- a/kernel/sched/proc.c
+> +++ b/kernel/sched/proc.c
+> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>         sched_avg_update(this_rq);
+>  }
+>
+> +#ifdef CONFIG_SMP
+> +unsigned long get_rq_runnable_load(struct rq *rq)
+> +{
+> +       return rq->cfs.runnable_load_avg;
+> +}
+> +#else
+> +unsigned long get_rq_runnable_load(struct rq *rq)
+> +{
+> +       return rq->load.weight;
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_NO_HZ_COMMON
+>  /*
+>   * There is no sane way to deal with nohz on smp when using jiffies because the
+> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>  void update_idle_cpu_load(struct rq *this_rq)
+>  {
+>         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> -       unsigned long load = this_rq->load.weight;
+> +       unsigned long load = get_rq_runnable_load(this_rq);
+>         unsigned long pending_updates;
+>
+>         /*
+> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
+>   */
+>  void update_cpu_load_active(struct rq *this_rq)
+>  {
+> +       unsigned long load = get_rq_runnable_load(this_rq);
+>         /*
+>          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>          */
+>         this_rq->last_load_update_tick = jiffies;
+> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
+> +       __update_cpu_load(this_rq, load, 1);
+>
+>         calc_load_account_active(this_rq);
+>  }
+> --
+> 1.7.12
+>
