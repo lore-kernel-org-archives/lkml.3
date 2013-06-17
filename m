@@ -1,133 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab3FQNw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:52:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:55193 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab3FQNwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:52:55 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-90-51bf14b58574
-Date: Mon, 17 Jun 2013 15:51:56 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+	id S1755139Ab3FQN5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:57:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4804 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab3FQN5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:57:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="256138067"
+Message-ID: <51BF15C4.1090906@intel.com>
+Date: Mon, 17 Jun 2013 21:57:24 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
         Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
-Message-id: <20130617155156.4c729b5a@amdc308.digital.local>
-In-reply-to: <CAKohpo=yPcH0FW7T38cd3E1xOpzC0AhJ5mtyVaQyuj_S8iLovw@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371195540-2991-1-git-send-email-l.majewski@samsung.com>
- <1371195540-2991-2-git-send-email-l.majewski@samsung.com>
- <CAKohpokQAsuAqWi7rNx9RaFz8KVRNXVkBD22KC5_Qh05k66qqA@mail.gmail.com>
- <20130617091549.398b865f@amdc308.digital.local>
- <CAKohpo=nfuqwCoQJRczmNRNXCOTL5FSJQEzjKpVdXU+wu-KJ1g@mail.gmail.com>
- <20130617110811.1e1805d2@amdc308.digital.local>
- <CAKohpo=oy3SQXgvNvOydggZ5NZu9yyVtKrdFQjNOGVmzhSaQUw@mail.gmail.com>
- <20130617115809.5206c42c@amdc308.digital.local>
- <CAKohpo=yPcH0FW7T38cd3E1xOpzC0AhJ5mtyVaQyuj_S8iLovw@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xoO5Wkf2BBqv2Sls0XA2x+PN2OavF
-	06Yf7BbzPstadJ59wmzRu+Aqm8WbR9wWl3fNYbP43HuE0eJ24wo2i/6FvUwWHUe+MVts/Orh
-	wOtx59oeNo91094ye/RtWcXo8WhxC6PH501yAaxRXDYpqTmZZalF+nYJXBkXp21hLPgrVPFp
-	+RrWBsaHfF2MnBwSAiYSO16tYIOwxSQu3FsPZHNxCAlMZ5T42/KWCcJpZ5LYNf82C0gVi4Cq
-	xLnDH9hBbDYBPYnPd58CFXFwiAhoSby8mQoSZhaYySJx+rciiC0s4CFx7sg0RhCbV8BaYs6D
-	3WCtnALBEtcebGeBmP+eRWLHv4Ng8/kFJCXa//1ghrjITuLcpw3sEM2CEj8m32OBWKAlsXlb
-	EyuELS+xec1b5gmMgrOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEx
-	80x6B+OqBotDjAIcjEo8vBx1+wKFWBPLiitzDzFKcDArifDGTgQK8aYkVlalFuXHF5XmpBYf
-	YpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYJy9Zu6DeV/MZDfmnJKelMCXdfhPhqbK
-	n8AI5gt7hOeKv0i+qHWvdemS7wHTudjZr23T07A3Vc9zS36rd+zuiXKONls7RbfTf3l1jryy
-	C10upx31t2qJe2/Ryx8f/MUF1C59mBeVsUBxEQfPz0U2ebF/t94JNWdXuc9anVYe4BDDKZ16
-	LV4sUYmlOCPRUIu5qDgRAPPch+OVAgAA
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com> <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com>
+In-Reply-To: <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 18:40:50 +0530, Viresh Kumar wrote:
-> On 17 June 2013 15:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > Yes. But I don't want to hardcode anything. Especially starting CPU
-> > number.
+On 06/17/2013 08:17 PM, Paul Turner wrote:
+> On Mon, Jun 17, 2013 at 3:51 AM, Paul Turner <pjt@google.com> wrote:
+>> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+>>> They are the base values in load balance, update them with rq runnable
+>>> load average, then the load balance will consider runnable load avg
+>>> naturally.
+>>>
+>>> We also try to include the blocked_load_avg as cpu load in balancing,
+>>> but that cause kbuild performance drop 6% on every Intel machine, and
+>>> aim7/oltp drop on some of 4 CPU sockets machines.
+>>>
+>>
+>> This looks fine.
+>>
+>> Did you try including blocked_load_avg in only get_rq_runnable_load()
+>> [ and not weighted_cpuload() which is called by new-idle ]?
 > 
-> There is nothing wrong with it. for_each_online_cpu() is good enough
-> on these cases.
+> Looking at this more this feels less correct since you're taking
+> averages of averages.
+> 
+> This was previously discussed at:
+>   https://lkml.org/lkml/2013/5/6/109
+> 
+> And  you later replied suggesting this didn't seem to hurt; what's the
+> current status there?
 
-I've already changed this code to use list of policies.
+Yes, your example show the blocked_load_avg value.
+So I had given a patch for review at that time before do detailed
+testing. https://lkml.org/lkml/2013/5/7/66
 
-I will send this at v4.
+But in detailed testing, the patch cause a big performance regression.
+When I look into for details. I found some cpu in kbuild just had a big
+blocked_load_avg, with a very small runnable_load_avg value.
+
+Seems accumulating current blocked_load_avg into cpu load isn't a good
+idea. Because:
+1, The blocked_load_avg is decayed same as runnable load, sometime is
+far bigger than runnable load, that drive tasks to other idle or slight
+load cpu, than cause both performance and power issue. But if the
+blocked load is decayed too fast, it lose its effect.
+2, Another issue of blocked load is that when waking up task, we can not
+know blocked load proportion of the task on rq. So, the blocked load is
+meaningless in wake affine decision.
+
+According to above problem, I give up to enable blocked_load_avg in balance.
+
 
 > 
-> >> > How one can control the boost? I'm now (on my setup) using
-> >> > thermal subsystem. I set proper trip points and when one of them
-> >> > is met, then boost is disabled. Moreover the thermal governor
-> >> > (stepwise) also reduces frequency.
-> >> >
-> >> > It works stable with v3.10 (with 3.8 there were some bugs - now
-> >> > they are fixed).
-> >> >
-> >> >
-> >> > The core acpi-cpufreq.c code hadn't been changed by me, so I
-> >> > assume that it will work as before.
-> >>
-> >> That should adapt your patch in your patchset.
-
-Could you explain what do you mean? 
-
-
 > 
-> ??
-> 
-> >> From sysfs?? I thought we are going to have some automatic control
-> >> of this stuff from inside kernel.
-> >
-> > From sysfs I just enable the boost. I do not order from userpace the
-> > cpufreq to run with a particular (boosted) frequency.
-> >
-> > When I enable boost - I ask (politely) the cpufreq core to
-> > reevaluate policies and when applicable increase policy->max.
-> >
-> > Then governor can use this new frequencies for normal operation.
-> 
-> So, with your current patchset in, ondemand or conservative governors
-> will start using boost frequencies. Which might burn your chip.
+>>
+>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>>> ---
+>>>  kernel/sched/fair.c |  5 +++--
+>>>  kernel/sched/proc.c | 17 +++++++++++++++--
+>>>  2 files changed, 18 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index 42c7be0..eadd2e7 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>>>  /* Used instead of source_load when we know the type == 0 */
+>>>  static unsigned long weighted_cpuload(const int cpu)
+>>>  {
+>>> -       return cpu_rq(cpu)->load.weight;
+>>> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
+>>>  }
+>>>
+>>>  /*
+>>> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>>>  {
+>>>         struct rq *rq = cpu_rq(cpu);
+>>>         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+>>> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
+>>>
+>>>         if (nr_running)
+>>> -               return rq->load.weight / nr_running;
+>>> +               return load_avg / nr_running;
+>>>
+>>>         return 0;
+>>>  }
+>>> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+>>> index bb3a6a0..ce5cd48 100644
+>>> --- a/kernel/sched/proc.c
+>>> +++ b/kernel/sched/proc.c
+>>> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>>         sched_avg_update(this_rq);
+>>>  }
+>>>
+>>> +#ifdef CONFIG_SMP
+>>> +unsigned long get_rq_runnable_load(struct rq *rq)
+>>> +{
+>>> +       return rq->cfs.runnable_load_avg;
+>>> +}
+>>> +#else
+>>> +unsigned long get_rq_runnable_load(struct rq *rq)
+>>> +{
+>>> +       return rq->load.weight;
+>>> +}
+>>> +#endif
+>>> +
+>>>  #ifdef CONFIG_NO_HZ_COMMON
+>>>  /*
+>>>   * There is no sane way to deal with nohz on smp when using jiffies because the
+>>> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>>  void update_idle_cpu_load(struct rq *this_rq)
+>>>  {
+>>>         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>>> -       unsigned long load = this_rq->load.weight;
+>>> +       unsigned long load = get_rq_runnable_load(this_rq);
+>>>         unsigned long pending_updates;
+>>>
+>>>         /*
+>>> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
+>>>   */
+>>>  void update_cpu_load_active(struct rq *this_rq)
+>>>  {
+>>> +       unsigned long load = get_rq_runnable_load(this_rq);
+>>>         /*
+>>>          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>>>          */
+>>>         this_rq->last_load_update_tick = jiffies;
+>>> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
+>>> +       __update_cpu_load(this_rq, load, 1);
+>>>
+>>>         calc_load_account_active(this_rq);
+>>>  }
+>>> --
+>>> 1.7.12
+>>>
 
-Two scenarios:
-1. Thermal framework is compiled in and enabled (for exynos/other SoC)
--> trip point is reached -> boost is disabled -> frequency is reduced ->
-SoC is cooled down.
-
-I think, that thermal framework is a good "safe valve" here.
-
-
-2. Thermal framework is disabled and user has enabled boost and used
-ondemand / conservative governor. 
-Then execute gzip < /dev/urandom > /dev/null & (on all cores).
-
-Then yes, chip will hang/burn due to crossing operating point (or burn).
-
-
-What other means of control (despite of thermal) would you consider
-applicable? 
-
-What comes to my mind is modifying governor logic to count how long the
-CPU run with boost enabled and then disable it. 
 
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Thanks
+    Alex
