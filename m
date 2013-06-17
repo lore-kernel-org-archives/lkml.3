@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3FQWsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 18:48:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39919 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3FQWse (ORCPT
+	id S1752197Ab3FQWsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 18:48:53 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:56824 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3FQWsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 18:48:34 -0400
-Date: Mon, 17 Jun 2013 15:48:29 -0700 (PDT)
-Message-Id: <20130617.154829.1257549505509165519.davem@davemloft.net>
-To: eliezer.tamir@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
-        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
-        amirv@mellanox.com, alexr@mellanox.com, avnerb@mellanox.com,
-        ork@mellanox.com, sockperf-dev@googlegroups.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v5 net-next 0/4] net: low latency sockets follow ups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130614133314.6126.77315.stgit@ladj378.jer.intel.com>
-References: <20130614133314.6126.77315.stgit@ladj378.jer.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 18:48:52 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes
+Date: Mon, 17 Jun 2013 15:47:40 -0700
+Message-Id: <1371509260-2340-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Date: Fri, 14 Jun 2013 16:33:14 +0300
+Zynq's Ethernet clocks are created by the following hierarchy:
+	mux0 ---> div0 ---> div1 ---> mux1 ---> gate
+Rate change requests on the gate have to propagate all the way up to
+div0 to properly leverage all dividers. Mux1 was missing the
+CLK_SET_RATE_PARENT flag, which is required to achieve this.
 
-> Here are three clean up patches, plus one that adds a socket option for LLS.
-> 
-> Patch 1 converts sysctl_net_ll_poll into an unsigned int
-> Patch 2 converts low latency sockets to sched_clock.
-> Patch 3 removes the config menu for NET_LL_RX_POLL and defaults to y.
-> Patch 4 adds an SO_LL socket option to allow per-socket control of busy polling.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/clk/zynq/clkc.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Series applied, thanks.
+diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+index 515a573..089d3e3 100644
+--- a/drivers/clk/zynq/clkc.c
++++ b/drivers/clk/zynq/clkc.c
+@@ -365,8 +365,9 @@ static void __init zynq_clk_setup(struct device_node *np)
+ 			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 20, 6,
+ 			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
+ 			&gem0clk_lock);
+-	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2, 0,
+-			SLCR_GEM0_CLK_CTRL, 6, 1, 0, &gem0clk_lock);
++	clk = clk_register_mux(NULL, "gem0_emio_mux", gem0_mux_parents, 2,
++			CLK_SET_RATE_PARENT, SLCR_GEM0_CLK_CTRL, 6, 1, 0,
++			&gem0clk_lock);
+ 	clks[gem0] = clk_register_gate(NULL, clk_output_name[gem0],
+ 			"gem0_emio_mux", CLK_SET_RATE_PARENT,
+ 			SLCR_GEM0_CLK_CTRL, 0, 0, &gem0clk_lock);
+@@ -387,8 +388,9 @@ static void __init zynq_clk_setup(struct device_node *np)
+ 			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 20, 6,
+ 			CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO,
+ 			&gem1clk_lock);
+-	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2, 0,
+-			SLCR_GEM1_CLK_CTRL, 6, 1, 0, &gem1clk_lock);
++	clk = clk_register_mux(NULL, "gem1_emio_mux", gem1_mux_parents, 2,
++			CLK_SET_RATE_PARENT, SLCR_GEM1_CLK_CTRL, 6, 1, 0,
++			&gem1clk_lock);
+ 	clks[gem1] = clk_register_gate(NULL, clk_output_name[gem1],
+ 			"gem1_emio_mux", CLK_SET_RATE_PARENT,
+ 			SLCR_GEM1_CLK_CTRL, 0, 0, &gem1clk_lock);
+-- 
+1.8.3.1
+
