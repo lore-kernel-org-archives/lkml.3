@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3FQPMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:12:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57844 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3FQPMT (ORCPT
+	id S1751768Ab3FQPOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:14:18 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:51743 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3FQPOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:12:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH] pinctrl: export pinctrl_pm_select_*_state
-Date: Mon, 17 Jun 2013 17:12:28 +0200
-Message-ID: <3037061.7rG6iWz9IX@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
-References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+	Mon, 17 Jun 2013 11:14:17 -0400
+Date: Mon, 17 Jun 2013 19:14:12 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130617151403.GA25172@localhost.localdomain>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TmT+mZphSmb5+CQmTNKfbjk+ZqaV9ktiODaJgXuLWeJ
- 0nfBbu9SwqTRWaI+stA7nrvL2RRGp2nOgXHs/quu8kP+iASpB9
- T6r/TYbsmMZMcmjOjbDgxb72SpvB0iy+qjtflBdAagRUlWp8LQ
- UePFv0nUv4wesuYTmv+6JS88EVSLyGFNhSvFc8mML2rb5WojV0
- JcXiBioFYhznyAIk5rw6RVruLhyINOAOj4prpW1qQNrhMDZ7JB
- T3bOIiFwo/UZ0oaPeQkR55y+vdlGigJOhzACKMf18PtLm9xn8X
- 8++/addOPDwfRPYz+qe8TlFvD97N4wNxg6hwywia9wd2QMl/Rl
- xNr7lqD1rynkDj5GCc/o=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617141822.GF5018@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The three functions pinctrl_pm_select_default_state,
-pinctrl_pm_select_sleep_state, and pinctrl_pm_select_idle_state
-are used in drivers that can be loadable modules, and should
-be exported.
+On Mon, Jun 17, 2013 at 04:18:22PM +0200, Michal Hocko wrote:
+> Hi,
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Hi,
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 33710b5..32eb7e2 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1245,6 +1245,7 @@ int pinctrl_pm_select_default_state(struct device *dev)
- 		dev_err(dev, "failed to activate default pinctrl state\n");
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(pinctrl_pm_select_default_state);
- 
- /**
-  * pinctrl_pm_select_sleep_state() - select sleep pinctrl state for PM
-@@ -1264,6 +1265,7 @@ int pinctrl_pm_select_sleep_state(struct device *dev)
- 		dev_err(dev, "failed to activate pinctrl sleep state\n");
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(pinctrl_pm_select_sleep_state);
- 
- /**
-  * pinctrl_pm_select_idle_state() - select idle pinctrl state for PM
-@@ -1283,7 +1285,7 @@ int pinctrl_pm_select_idle_state(struct device *dev)
- 		dev_err(dev, "failed to activate pinctrl idle state\n");
- 	return ret;
- }
--
-+EXPORT_SYMBOL_GPL(pinctrl_pm_select_idle_state);
- #endif
- 
- #ifdef CONFIG_DEBUG_FS
+> I managed to trigger:
+> [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> on top. 
+> 
+> This is obviously BUG_ON(nlru->nr_items < 0) and 
+> ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> [...]
+> ffffffff81122d9c:       0f 0b                   ud2
+> 
+> RAX is -1UL.
+Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
+and BUG, instead of an unsigned quantity.
+
+> 
+> I assume that the current backtrace is of no use and it would most
+> probably be some shrinker which doesn't behave.
+> 
+There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+Assuming you are not using xfs, we are left with dentries and inodes.
+
+The first thing to do is to find which one of them is misbehaving. You can try finding
+this out by the address of the list_lru, and where it lays in the superblock.
+
+Once we know each of them is misbehaving, then we'll have to figure out why.
+
+Any special filesystem workload ?
+
 
