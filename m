@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3FQKzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:55:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42723 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab3FQKzo (ORCPT
+	id S932729Ab3FQK7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:59:10 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:52470 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932715Ab3FQK7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:55:44 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, sachin.kamat@linaro.org,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH V3 12/15] ASoC: spear: Convert to use devm_ioremap_resource
-Date: Mon, 17 Jun 2013 16:10:57 +0530
-Message-Id: <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130617102000.GB1403@sirena.org.uk>
-References: <20130617102000.GB1403@sirena.org.uk>
+	Mon, 17 Jun 2013 06:59:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370589652-24549-9-git-send-email-alex.shi@intel.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-9-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 03:58:32 -0700
+Message-ID: <CAPM31RJs=A+j5NtSr4TXzQ8sAHMSkz+cNoZjOhsmc2p2HksZNg@mail.gmail.com>
+Subject: Re: [patch v8 8/9] sched: consider runnable load average in move_tasks
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-introduced devm_ioremap_resource() and deprecated the use of
-devm_request_and_ioremap().
+On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+> Except using runnable load average in background, move_tasks is also
+> the key functions in load balance. We need consider the runnable load
+> average in it in order to the apple to apple load comparison.
+>
+> Morten had caught a div u64 bug on ARM, thanks!
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index eadd2e7..3aa1dc0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4178,11 +4178,14 @@ static int tg_load_down(struct task_group *tg, void *data)
+>         long cpu = (long)data;
+>
+>         if (!tg->parent) {
+> -               load = cpu_rq(cpu)->load.weight;
+> +               load = cpu_rq(cpu)->avg.load_avg_contrib;
+>         } else {
+> +               unsigned long tmp_rla;
+> +               tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
+> +
+>                 load = tg->parent->cfs_rq[cpu]->h_load;
+> -               load *= tg->se[cpu]->load.weight;
+> -               load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
+> +               load *= tg->se[cpu]->avg.load_avg_contrib;
+> +               load /= tmp_rla;
 
-devm_request_mem_region is called in devm_ioremap_resource(). Hence that
-part can also be removed.
+Why do we need the temporary here?
 
-Since devm_ioremap_resource prints error message on failure, there is
-no need to print an explicit warning message.
-
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: alsa-devel@alsa-project.org
-CC: Liam Girdwood <lgirdwood@gmail.com>
-CC: Mark Brown <broonie@kernel.org>
----
-Changes for V3:
-* Rebased on for-next branch of sound/soc git tree
-git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
-
-Changes for V2:
-* Removed redundant print of error message from devm_ioremap_resource
-exit path
-* Call to devm_request_mem_region is removed.
-
- sound/soc/spear/spdif_out.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
-
-diff --git a/sound/soc/spear/spdif_out.c b/sound/soc/spear/spdif_out.c
-index a4a8748..2fdf68c 100644
---- a/sound/soc/spear/spdif_out.c
-+++ b/sound/soc/spear/spdif_out.c
-@@ -282,27 +282,16 @@ static int spdif_out_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	int ret;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -EINVAL;
--
--	if (!devm_request_mem_region(&pdev->dev, res->start,
--				resource_size(res), pdev->name)) {
--		dev_warn(&pdev->dev, "Failed to get memory resourse\n");
--		return -ENOENT;
--	}
--
- 	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
- 	if (!host) {
- 		dev_warn(&pdev->dev, "kzalloc fail\n");
- 		return -ENOMEM;
- 	}
- 
--	host->io_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!host->io_base) {
--		dev_warn(&pdev->dev, "ioremap failed\n");
--		return -ENOMEM;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	host->io_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(host->io_base))
-+		return PTR_ERR(host->io_base);
- 
- 	host->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(host->clk))
--- 
-1.7.9.5
-
+>         }
+>
+>         tg->cfs_rq[cpu]->h_load = load;
+> @@ -4208,12 +4211,9 @@ static void update_h_load(long cpu)
+>  static unsigned long task_h_load(struct task_struct *p)
+>  {
+>         struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> -       unsigned long load;
+> -
+> -       load = p->se.load.weight;
+> -       load = div_u64(load * cfs_rq->h_load, cfs_rq->load.weight + 1);
+>
+> -       return load;
+> +       return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
+> +                       cfs_rq->runnable_load_avg + 1);
+>  }
+>  #else
+>  static inline void update_blocked_averages(int cpu)
+> --
+> 1.7.12
+>
