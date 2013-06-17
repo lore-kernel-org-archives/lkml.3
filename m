@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab3FQLCN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:02:13 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:59653 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674Ab3FQLCL convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Mon, 17 Jun 2013 07:02:11 -0400
-Message-Id: <51BF08CD02000078000DEC99@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 17 Jun 2013 12:02:05 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt@console-pimps.org>
-Cc: "Zach Bobroff" <zacharyb@ami.com>, "Matt Fleming" <matt.fleming@intel.com>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>, "Joey Lee" <JLee@suse.com>,
-        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
- <1371139233.6523.272.camel@linux-s257.site>
- <20130617092107.GA5440@console-pimps.org>
- <51BEF71402000078000DEC12@nat28.tlf.novell.com>
- <20130617101745.GB8569@console-pimps.org>
-In-Reply-To: <20130617101745.GB8569@console-pimps.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756206Ab3FQLCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:02:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43140 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755983Ab3FQLCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 07:02:49 -0400
+Message-ID: <51BEEC84.1080102@ti.com>
+Date: Mon, 17 Jun 2013 16:31:24 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Joel A Fernandes <joelagnel@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v10 5/8] dmaengine: edma: Add TI EDMA device tree binding
+References: <1371263570-9323-1-git-send-email-joelagnel@ti.com> <1371263570-9323-5-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1371263570-9323-5-git-send-email-joelagnel@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.06.13 at 12:17, Matt Fleming <matt@console-pimps.org> wrote:
-> On Mon, 17 Jun, at 10:46:28AM, Jan Beulich wrote:
->> I agree that there ought to be an upper limit. But a single retry here
->> again looks like a tailored solution to a particular observed (mis-)
->> behavior, rather than something resulting from general considerations.
+Grant, Rob,
+
+Can one of you please take a look at this patch and see if you have any
+comments on the binding definition?
+
+Joel,
+
+Ideally the bindings are described before they are used or along with
+its usage. In that aspect, this patch is present too far back in the
+series. Can you please fix this if you get to posting another version. I
+think I gave the same comment on v9 as well.
+
+On 6/15/2013 8:02 AM, Joel A Fernandes wrote:
+> From: Matt Porter <mdp@ti.com>
 > 
-> What value would you suggest for the retry?
+> The binding definition is based on the generic DMA controller
+> binding.
+> 
+> Joel: Droped reserved and queue DT entries from Documentation
+> for now from the original patch series.
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+> ---
+>  Documentation/devicetree/bindings/dma/ti-edma.txt |   26 +++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> new file mode 100644
+> index 0000000..ada0018
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> @@ -0,0 +1,26 @@
+> +TI EDMA
+> +
+> +Required properties:
+> +- compatible : "ti,edma3"
+> +- ti,hwmods: Name of the hwmods associated to the EDMA
 
-I'd be considering something like 5...10, but this to some degree
-depends on what odd kinds of behavior this in fact needs to
-cover.
+ti,hwmods should be optional, no? hwmod is not present on DaVinci where
+EDMA is also used. If it is not optional then these bindings wont work
+there.
 
-Jan
-
+Thanks,
+Sekhar
