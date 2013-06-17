@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3FQRew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:34:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50575 "EHLO
+	id S1754322Ab3FQRfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:35:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50583 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3FQRet (ORCPT
+	with ESMTP id S1754002Ab3FQRfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:34:49 -0400
+	Mon, 17 Jun 2013 13:35:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
@@ -14,9 +14,9 @@ Cc: Johan Hedberg <johan.hedberg@intel.com>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 66/84] Bluetooth: Fix missing length checks for L2CAP signalling PDUs
-Date: Mon, 17 Jun 2013 10:31:10 -0700
-Message-Id: <1371490288-23167-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 67/84] Bluetooth: Fix mgmt handling of power on failures
+Date: Mon, 17 Jun 2013 10:31:11 -0700
+Message-Id: <1371490288-23167-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -31,244 +31,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit cb3b3152b2f5939d67005cff841a1ca748b19888 upstream.
+commit 96570ffcca0b872dc8626e97569d2697f374d868 upstream.
 
-There has been code in place to check that the L2CAP length header
-matches the amount of data received, but many PDU handlers have not been
-checking that the data received actually matches that expected by the
-specific PDU. This patch adds passing the length header to the specific
-handler functions and ensures that those functions fail cleanly in the
-case of an incorrect amount of data.
+If hci_dev_open fails we need to ensure that the corresponding
+mgmt_set_powered command gets an appropriate response. This patch fixes
+the missing response by adding a new mgmt_set_powered_failed function
+that's used to indicate a power on failure to mgmt. Since a situation
+with the device being rfkilled may require special handling in user
+space the patch uses a new dedicated mgmt status code for this.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/l2cap_core.c | 70 ++++++++++++++++++++++++++++++++++------------
- 1 file changed, 52 insertions(+), 18 deletions(-)
+ include/net/bluetooth/hci_core.h |  1 +
+ include/net/bluetooth/mgmt.h     |  1 +
+ net/bluetooth/hci_core.c         |  6 +++++-
+ net/bluetooth/mgmt.c             | 21 +++++++++++++++++++++
+ 4 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 22e6583..1275126 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -3573,10 +3573,14 @@ static void l2cap_conf_rfc_get(struct l2cap_chan *chan, void *rsp, int len)
+diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
+index 014a2ea..26a1894 100644
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -1060,6 +1060,7 @@ void hci_sock_dev_event(struct hci_dev *hdev, int event);
+ int mgmt_control(struct sock *sk, struct msghdr *msg, size_t len);
+ int mgmt_index_added(struct hci_dev *hdev);
+ int mgmt_index_removed(struct hci_dev *hdev);
++int mgmt_set_powered_failed(struct hci_dev *hdev, int err);
+ int mgmt_powered(struct hci_dev *hdev, u8 powered);
+ int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable);
+ int mgmt_connectable(struct hci_dev *hdev, u8 connectable);
+diff --git a/include/net/bluetooth/mgmt.h b/include/net/bluetooth/mgmt.h
+index 22980a7..9944c3e 100644
+--- a/include/net/bluetooth/mgmt.h
++++ b/include/net/bluetooth/mgmt.h
+@@ -42,6 +42,7 @@
+ #define MGMT_STATUS_NOT_POWERED		0x0f
+ #define MGMT_STATUS_CANCELLED		0x10
+ #define MGMT_STATUS_INVALID_INDEX	0x11
++#define MGMT_STATUS_RFKILLED		0x12
+ 
+ struct mgmt_hdr {
+ 	__le16	opcode;
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index 0f78e34..7a1dd72 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1139,11 +1139,15 @@ static const struct rfkill_ops hci_rfkill_ops = {
+ static void hci_power_on(struct work_struct *work)
+ {
+ 	struct hci_dev *hdev = container_of(work, struct hci_dev, power_on);
++	int err;
+ 
+ 	BT_DBG("%s", hdev->name);
+ 
+-	if (hci_dev_open(hdev->id) < 0)
++	err = hci_dev_open(hdev->id);
++	if (err < 0) {
++		mgmt_set_powered_failed(hdev, err);
+ 		return;
++	}
+ 
+ 	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
+ 		schedule_delayed_work(&hdev->power_off, HCI_AUTO_OFF_TIMEOUT);
+diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
+index f559b96..d8ba861 100644
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2957,6 +2957,27 @@ int mgmt_powered(struct hci_dev *hdev, u8 powered)
+ 	return err;
  }
  
- static inline int l2cap_command_rej(struct l2cap_conn *conn,
--				    struct l2cap_cmd_hdr *cmd, u8 *data)
-+				    struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+				    u8 *data)
++int mgmt_set_powered_failed(struct hci_dev *hdev, int err)
++{
++	struct pending_cmd *cmd;
++	u8 status;
++
++	cmd = mgmt_pending_find(MGMT_OP_SET_POWERED, hdev);
++	if (!cmd)
++		return -ENOENT;
++
++	if (err == -ERFKILL)
++		status = MGMT_STATUS_RFKILLED;
++	else
++		status = MGMT_STATUS_FAILED;
++
++	err = cmd_status(cmd->sk, hdev->id, MGMT_OP_SET_POWERED, status);
++
++	mgmt_pending_remove(cmd);
++
++	return err;
++}
++
+ int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable)
  {
- 	struct l2cap_cmd_rej_unk *rej = (struct l2cap_cmd_rej_unk *) data;
- 
-+	if (cmd_len < sizeof(*rej))
-+		return -EPROTO;
-+
- 	if (rej->reason != L2CAP_REJ_NOT_UNDERSTOOD)
- 		return 0;
- 
-@@ -3725,11 +3729,14 @@ sendresp:
- }
- 
- static int l2cap_connect_req(struct l2cap_conn *conn,
--			     struct l2cap_cmd_hdr *cmd, u8 *data)
-+			     struct l2cap_cmd_hdr *cmd, u16 cmd_len, u8 *data)
- {
- 	struct hci_dev *hdev = conn->hcon->hdev;
- 	struct hci_conn *hcon = conn->hcon;
- 
-+	if (cmd_len < sizeof(struct l2cap_conn_req))
-+		return -EPROTO;
-+
- 	hci_dev_lock(hdev);
- 	if (test_bit(HCI_MGMT, &hdev->dev_flags) &&
- 	    !test_and_set_bit(HCI_CONN_MGMT_CONNECTED, &hcon->flags))
-@@ -3743,7 +3750,8 @@ static int l2cap_connect_req(struct l2cap_conn *conn,
- }
- 
- static int l2cap_connect_create_rsp(struct l2cap_conn *conn,
--				    struct l2cap_cmd_hdr *cmd, u8 *data)
-+				    struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+				    u8 *data)
- {
- 	struct l2cap_conn_rsp *rsp = (struct l2cap_conn_rsp *) data;
- 	u16 scid, dcid, result, status;
-@@ -3751,6 +3759,9 @@ static int l2cap_connect_create_rsp(struct l2cap_conn *conn,
- 	u8 req[128];
- 	int err;
- 
-+	if (cmd_len < sizeof(*rsp))
-+		return -EPROTO;
-+
- 	scid   = __le16_to_cpu(rsp->scid);
- 	dcid   = __le16_to_cpu(rsp->dcid);
- 	result = __le16_to_cpu(rsp->result);
-@@ -3848,6 +3859,9 @@ static inline int l2cap_config_req(struct l2cap_conn *conn,
- 	struct l2cap_chan *chan;
- 	int len, err = 0;
- 
-+	if (cmd_len < sizeof(*req))
-+		return -EPROTO;
-+
- 	dcid  = __le16_to_cpu(req->dcid);
- 	flags = __le16_to_cpu(req->flags);
- 
-@@ -3871,7 +3885,7 @@ static inline int l2cap_config_req(struct l2cap_conn *conn,
- 
- 	/* Reject if config buffer is too small. */
- 	len = cmd_len - sizeof(*req);
--	if (len < 0 || chan->conf_len + len > sizeof(chan->conf_req)) {
-+	if (chan->conf_len + len > sizeof(chan->conf_req)) {
- 		l2cap_send_cmd(conn, cmd->ident, L2CAP_CONF_RSP,
- 			       l2cap_build_conf_rsp(chan, rsp,
- 			       L2CAP_CONF_REJECT, flags), rsp);
-@@ -3949,14 +3963,18 @@ unlock:
- }
- 
- static inline int l2cap_config_rsp(struct l2cap_conn *conn,
--				   struct l2cap_cmd_hdr *cmd, u8 *data)
-+				   struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+				   u8 *data)
- {
- 	struct l2cap_conf_rsp *rsp = (struct l2cap_conf_rsp *)data;
- 	u16 scid, flags, result;
- 	struct l2cap_chan *chan;
--	int len = le16_to_cpu(cmd->len) - sizeof(*rsp);
-+	int len = cmd_len - sizeof(*rsp);
- 	int err = 0;
- 
-+	if (cmd_len < sizeof(*rsp))
-+		return -EPROTO;
-+
- 	scid   = __le16_to_cpu(rsp->scid);
- 	flags  = __le16_to_cpu(rsp->flags);
- 	result = __le16_to_cpu(rsp->result);
-@@ -4057,7 +4075,8 @@ done:
- }
- 
- static inline int l2cap_disconnect_req(struct l2cap_conn *conn,
--				       struct l2cap_cmd_hdr *cmd, u8 *data)
-+				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+				       u8 *data)
- {
- 	struct l2cap_disconn_req *req = (struct l2cap_disconn_req *) data;
- 	struct l2cap_disconn_rsp rsp;
-@@ -4065,6 +4084,9 @@ static inline int l2cap_disconnect_req(struct l2cap_conn *conn,
- 	struct l2cap_chan *chan;
- 	struct sock *sk;
- 
-+	if (cmd_len != sizeof(*req))
-+		return -EPROTO;
-+
- 	scid = __le16_to_cpu(req->scid);
- 	dcid = __le16_to_cpu(req->dcid);
- 
-@@ -4104,12 +4126,16 @@ static inline int l2cap_disconnect_req(struct l2cap_conn *conn,
- }
- 
- static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn,
--				       struct l2cap_cmd_hdr *cmd, u8 *data)
-+				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+				       u8 *data)
- {
- 	struct l2cap_disconn_rsp *rsp = (struct l2cap_disconn_rsp *) data;
- 	u16 dcid, scid;
- 	struct l2cap_chan *chan;
- 
-+	if (cmd_len != sizeof(*rsp))
-+		return -EPROTO;
-+
- 	scid = __le16_to_cpu(rsp->scid);
- 	dcid = __le16_to_cpu(rsp->dcid);
- 
-@@ -4139,11 +4165,15 @@ static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn,
- }
- 
- static inline int l2cap_information_req(struct l2cap_conn *conn,
--					struct l2cap_cmd_hdr *cmd, u8 *data)
-+					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+					u8 *data)
- {
- 	struct l2cap_info_req *req = (struct l2cap_info_req *) data;
- 	u16 type;
- 
-+	if (cmd_len != sizeof(*req))
-+		return -EPROTO;
-+
- 	type = __le16_to_cpu(req->type);
- 
- 	BT_DBG("type 0x%4.4x", type);
-@@ -4190,11 +4220,15 @@ static inline int l2cap_information_req(struct l2cap_conn *conn,
- }
- 
- static inline int l2cap_information_rsp(struct l2cap_conn *conn,
--					struct l2cap_cmd_hdr *cmd, u8 *data)
-+					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
-+					u8 *data)
- {
- 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
- 	u16 type, result;
- 
-+	if (cmd_len != sizeof(*rsp))
-+		return -EPROTO;
-+
- 	type   = __le16_to_cpu(rsp->type);
- 	result = __le16_to_cpu(rsp->result);
- 
-@@ -5060,16 +5094,16 @@ static inline int l2cap_bredr_sig_cmd(struct l2cap_conn *conn,
- 
- 	switch (cmd->code) {
- 	case L2CAP_COMMAND_REJ:
--		l2cap_command_rej(conn, cmd, data);
-+		l2cap_command_rej(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_CONN_REQ:
--		err = l2cap_connect_req(conn, cmd, data);
-+		err = l2cap_connect_req(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_CONN_RSP:
- 	case L2CAP_CREATE_CHAN_RSP:
--		err = l2cap_connect_create_rsp(conn, cmd, data);
-+		err = l2cap_connect_create_rsp(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_CONF_REQ:
-@@ -5077,15 +5111,15 @@ static inline int l2cap_bredr_sig_cmd(struct l2cap_conn *conn,
- 		break;
- 
- 	case L2CAP_CONF_RSP:
--		err = l2cap_config_rsp(conn, cmd, data);
-+		err = l2cap_config_rsp(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_DISCONN_REQ:
--		err = l2cap_disconnect_req(conn, cmd, data);
-+		err = l2cap_disconnect_req(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_DISCONN_RSP:
--		err = l2cap_disconnect_rsp(conn, cmd, data);
-+		err = l2cap_disconnect_rsp(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_ECHO_REQ:
-@@ -5096,11 +5130,11 @@ static inline int l2cap_bredr_sig_cmd(struct l2cap_conn *conn,
- 		break;
- 
- 	case L2CAP_INFO_REQ:
--		err = l2cap_information_req(conn, cmd, data);
-+		err = l2cap_information_req(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_INFO_RSP:
--		err = l2cap_information_rsp(conn, cmd, data);
-+		err = l2cap_information_rsp(conn, cmd, cmd_len, data);
- 		break;
- 
- 	case L2CAP_CREATE_CHAN_REQ:
+ 	struct cmd_lookup match = { NULL, hdev };
 -- 
 1.8.1.2
 
