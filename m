@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3FQQFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:05:32 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:17874 "EHLO mail.abilis.ch"
+	id S1753296Ab3FQQFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:05:45 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:17889 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab3FQQFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:05:22 -0400
+	id S1753114Ab3FQQFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 12:05:31 -0400
 From: Christian Ruppert <christian.ruppert@abilis.com>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Linus Walleij <linus.walleij@linaro.org>
@@ -17,9 +17,9 @@ Cc: Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         Alexandre Courbot <acourbot@nvidia.com>,
         Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH 4/4] Add Abilis Systems Sarl to device tree vendor prefixes
-Date: Mon, 17 Jun 2013 18:04:46 +0200
-Message-Id: <1371485086-16016-4-git-send-email-christian.ruppert@abilis.com>
+Subject: [PATCH 3/4] GPIO: Add TB10x GPIO driver
+Date: Mon, 17 Jun 2013 18:04:45 +0200
+Message-Id: <1371485086-16016-3-git-send-email-christian.ruppert@abilis.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20130617160324.GA15853@ab42.lan>
 References: <20130617160324.GA15853@ab42.lan>
@@ -27,24 +27,886 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The GPIO driver for the Abilis Systems TB10x series of SOCs based on ARC700
+CPUs. It supports GPIO control and GPIO interrupt generation.
 
+Signed-off-by: Sascha Leuenberger <sascha.leuenberger@abilis.com>
 Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 ---
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/gpio/abilis,tb10x-gpio.txt |   36 ++
+ arch/arc/boot/dts/abilis_tb100.dtsi                |   42 ++-
+ arch/arc/boot/dts/abilis_tb100_dvk.dts             |   24 +-
+ arch/arc/boot/dts/abilis_tb101.dtsi                |   42 ++-
+ arch/arc/boot/dts/abilis_tb101_dvk.dts             |   24 +-
+ drivers/gpio/Kconfig                               |    4 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-tb10x.c                          |  341 ++++++++++++++++++++
+ 8 files changed, 462 insertions(+), 52 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
+ create mode 100644 drivers/gpio/gpio-tb10x.c
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 6931c43..e2a8fff 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
- This isn't an exhaustive list, but you should add new prefixes to it before
- using them to avoid name-space collisions.
+diff --git a/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt b/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
+new file mode 100644
+index 0000000..26a3c68
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
+@@ -0,0 +1,36 @@
++* Abilis TB10x GPIO controller
++
++Required Properties:
++- compatible: Should be "abilis,tb10x-gpio"
++- reg: Address and length of the register set for the device
++- gpio-controller: Marks the device node as a gpio controller.
++- #gpio-cells: Should be <2>. The first cell is the pin number and the
++  second cell is used to specify optional parameters:
++   - bit 0 specifies polarity (0 for normal, 1 for inverted).
++- ngpio: the number of GPIO pins this driver controls.
++
++Optional Properties:
++- interrupt-controller: Marks the device node as an interrupt controller.
++- #interrupt-cells: Should be <1>. Interrupts are triggered on both edges.
++- interrupts: Defines the interrupt line connecting this GPIO controller to
++  its parent interrupt controller.
++- interrupt-parent: Defines the parent interrupt controller.
++
++GPIO ranges are specified as described in
++Documentation/devicetree/bindings/gpio/gpio.txt
++
++Example:
++
++	gpioa: gpio@FF140000 {
++		compatible = "abilis,tb10x-gpio";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		interrupt-parent = <&tb10x_ictl>;
++		interrupts = <27 2>;
++		reg = <0xFF140000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		ngpio = <3>;
++		gpio-ranges = <&iomux 0 0 0>;
++		gpio-ranges-group-names = "gpioa_pins";
++	};
+diff --git a/arch/arc/boot/dts/abilis_tb100.dtsi b/arch/arc/boot/dts/abilis_tb100.dtsi
+index 1a42cf1..f1fa416 100644
+--- a/arch/arc/boot/dts/abilis_tb100.dtsi
++++ b/arch/arc/boot/dts/abilis_tb100.dtsi
+@@ -176,7 +176,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF140000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioa_pins";
+ 		};
+@@ -188,7 +189,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF141000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiob_pins";
+ 		};
+@@ -200,7 +202,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF142000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioc_pins";
+ 		};
+@@ -212,7 +215,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF143000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiod_pins";
+ 		};
+@@ -224,7 +228,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF144000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioe_pins";
+ 		};
+@@ -236,7 +241,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF145000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiof_pins";
+ 		};
+@@ -248,7 +254,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF146000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiog_pins";
+ 		};
+@@ -260,7 +267,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF147000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioh_pins";
+ 		};
+@@ -272,7 +280,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF148000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <12>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioi_pins";
+ 		};
+@@ -284,7 +293,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF149000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <32>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioj_pins";
+ 		};
+@@ -296,7 +306,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14A000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <22>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiok_pins";
+ 		};
+@@ -308,7 +319,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14B000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <4>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiol_pins";
+ 		};
+@@ -320,7 +332,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14C000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <4>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiom_pins";
+ 		};
+@@ -332,7 +345,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14D000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <5>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpion_pins";
+ 		};
+diff --git a/arch/arc/boot/dts/abilis_tb100_dvk.dts b/arch/arc/boot/dts/abilis_tb100_dvk.dts
+index 0fa0d4a..d6af955 100644
+--- a/arch/arc/boot/dts/abilis_tb100_dvk.dts
++++ b/arch/arc/boot/dts/abilis_tb100_dvk.dts
+@@ -64,62 +64,62 @@
+ 			compatible = "gpio-leds";
+ 			power {
+ 				label = "Power";
+-				gpios = <&gpioi 0>;
++				gpios = <&gpioi 0 0>;
+ 				linux,default-trigger = "default-on";
+ 			};
+ 			heartbeat {
+ 				label = "Heartbeat";
+-				gpios = <&gpioi 1>;
++				gpios = <&gpioi 1 0>;
+ 				linux,default-trigger = "heartbeat";
+ 			};
+ 			led2 {
+ 				label = "LED2";
+-				gpios = <&gpioi 2>;
++				gpios = <&gpioi 2 0>;
+ 				default-state = "off";
+ 			};
+ 			led3 {
+ 				label = "LED3";
+-				gpios = <&gpioi 3>;
++				gpios = <&gpioi 3 0>;
+ 				default-state = "off";
+ 			};
+ 			led4 {
+ 				label = "LED4";
+-				gpios = <&gpioi 4>;
++				gpios = <&gpioi 4 0>;
+ 				default-state = "off";
+ 			};
+ 			led5 {
+ 				label = "LED5";
+-				gpios = <&gpioi 5>;
++				gpios = <&gpioi 5 0>;
+ 				default-state = "off";
+ 			};
+ 			led6 {
+ 				label = "LED6";
+-				gpios = <&gpioi 6>;
++				gpios = <&gpioi 6 0>;
+ 				default-state = "off";
+ 			};
+ 			led7 {
+ 				label = "LED7";
+-				gpios = <&gpioi 7>;
++				gpios = <&gpioi 7 0>;
+ 				default-state = "off";
+ 			};
+ 			led8 {
+ 				label = "LED8";
+-				gpios = <&gpioi 8>;
++				gpios = <&gpioi 8 0>;
+ 				default-state = "off";
+ 			};
+ 			led9 {
+ 				label = "LED9";
+-				gpios = <&gpioi 9>;
++				gpios = <&gpioi 9 0>;
+ 				default-state = "off";
+ 			};
+ 			led10 {
+ 				label = "LED10";
+-				gpios = <&gpioi 10>;
++				gpios = <&gpioi 10 0>;
+ 				default-state = "off";
+ 			};
+ 			led11 {
+ 				label = "LED11";
+-				gpios = <&gpioi 11>;
++				gpios = <&gpioi 11 0>;
+ 				default-state = "off";
+ 			};
+ 		};
+diff --git a/arch/arc/boot/dts/abilis_tb101.dtsi b/arch/arc/boot/dts/abilis_tb101.dtsi
+index 08986cd..311116f 100644
+--- a/arch/arc/boot/dts/abilis_tb101.dtsi
++++ b/arch/arc/boot/dts/abilis_tb101.dtsi
+@@ -185,7 +185,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF140000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioa_pins";
+ 		};
+@@ -197,7 +198,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF141000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiob_pins";
+ 		};
+@@ -209,7 +211,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF142000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioc_pins";
+ 		};
+@@ -221,7 +224,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF143000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiod_pins";
+ 		};
+@@ -233,7 +237,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF144000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioe_pins";
+ 		};
+@@ -245,7 +250,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF145000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiof_pins";
+ 		};
+@@ -257,7 +263,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF146000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <3>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiog_pins";
+ 		};
+@@ -269,7 +276,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF147000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <2>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioh_pins";
+ 		};
+@@ -281,7 +289,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF148000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <12>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioi_pins";
+ 		};
+@@ -293,7 +302,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF149000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <32>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpioj_pins";
+ 		};
+@@ -305,7 +315,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14A000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <22>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiok_pins";
+ 		};
+@@ -317,7 +328,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14B000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <4>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiol_pins";
+ 		};
+@@ -329,7 +341,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14C000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <4>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpiom_pins";
+ 		};
+@@ -341,7 +354,8 @@
+ 			interrupts = <27 1>;
+ 			reg = <0xFF14D000 0x1000>;
+ 			gpio-controller;
+-			#gpio-cells = <1>;
++			#gpio-cells = <2>;
++			ngpio = <5>;
+ 			gpio-ranges = <&iomux 0 0 0>;
+ 			gpio-ranges-group-names = "gpion_pins";
+ 		};
+diff --git a/arch/arc/boot/dts/abilis_tb101_dvk.dts b/arch/arc/boot/dts/abilis_tb101_dvk.dts
+index a4d80ce..811a73b 100644
+--- a/arch/arc/boot/dts/abilis_tb101_dvk.dts
++++ b/arch/arc/boot/dts/abilis_tb101_dvk.dts
+@@ -64,62 +64,62 @@
+ 			compatible = "gpio-leds";
+ 			power {
+ 				label = "Power";
+-				gpios = <&gpioi 0>;
++				gpios = <&gpioi 0 0>;
+ 				linux,default-trigger = "default-on";
+ 			};
+ 			heartbeat {
+ 				label = "Heartbeat";
+-				gpios = <&gpioi 1>;
++				gpios = <&gpioi 1 0>;
+ 				linux,default-trigger = "heartbeat";
+ 			};
+ 			led2 {
+ 				label = "LED2";
+-				gpios = <&gpioi 2>;
++				gpios = <&gpioi 2 0>;
+ 				default-state = "off";
+ 			};
+ 			led3 {
+ 				label = "LED3";
+-				gpios = <&gpioi 3>;
++				gpios = <&gpioi 3 0>;
+ 				default-state = "off";
+ 			};
+ 			led4 {
+ 				label = "LED4";
+-				gpios = <&gpioi 4>;
++				gpios = <&gpioi 4 0>;
+ 				default-state = "off";
+ 			};
+ 			led5 {
+ 				label = "LED5";
+-				gpios = <&gpioi 5>;
++				gpios = <&gpioi 5 0>;
+ 				default-state = "off";
+ 			};
+ 			led6 {
+ 				label = "LED6";
+-				gpios = <&gpioi 6>;
++				gpios = <&gpioi 6 0>;
+ 				default-state = "off";
+ 			};
+ 			led7 {
+ 				label = "LED7";
+-				gpios = <&gpioi 7>;
++				gpios = <&gpioi 7 0>;
+ 				default-state = "off";
+ 			};
+ 			led8 {
+ 				label = "LED8";
+-				gpios = <&gpioi 8>;
++				gpios = <&gpioi 8 0>;
+ 				default-state = "off";
+ 			};
+ 			led9 {
+ 				label = "LED9";
+-				gpios = <&gpioi 9>;
++				gpios = <&gpioi 9 0>;
+ 				default-state = "off";
+ 			};
+ 			led10 {
+ 				label = "LED10";
+-				gpios = <&gpioi 10>;
++				gpios = <&gpioi 10 0>;
+ 				default-state = "off";
+ 			};
+ 			led11 {
+ 				label = "LED11";
+-				gpios = <&gpioi 11>;
++				gpios = <&gpioi 11 0>;
+ 				default-state = "off";
+ 			};
+ 		};
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 573c449..1faeb7c 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -317,6 +317,10 @@ config GPIO_GRGPIO
+ 	  Select this to support Aeroflex Gaisler GRGPIO cores from the GRLIB
+ 	  VHDL IP core library.
  
-+abilis	Abilis Systems Sarl
- ad	Avionic Design GmbH
- adi	Analog Devices, Inc.
- aeroflexgaisler	Aeroflex Gaisler AB
++config GPIO_TB10X
++	bool
++	select OF_GPIO
++
+ comment "I2C GPIO expanders:"
+ 
+ config GPIO_ARIZONA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0cb2d65..7bc567f 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -68,6 +68,7 @@ obj-$(CONFIG_GPIO_STA2X11)	+= gpio-sta2x11.o
+ obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
+ obj-$(CONFIG_GPIO_STP_XWAY)	+= gpio-stp-xway.o
+ obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
++obj-$(CONFIG_GPIO_TB10X)	+= gpio-tb10x.o
+ obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
+ obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
+ obj-$(CONFIG_GPIO_TIMBERDALE)	+= gpio-timberdale.o
+diff --git a/drivers/gpio/gpio-tb10x.c b/drivers/gpio/gpio-tb10x.c
+new file mode 100644
+index 0000000..7f67a4c
+--- /dev/null
++++ b/drivers/gpio/gpio-tb10x.c
+@@ -0,0 +1,341 @@
++/* Abilis Systems MODULE DESCRIPTION
++ *
++ * Copyright (C) Abilis Systems 2013
++ *
++ * Authors: Sascha Leuenberger <sascha.leuenberger@abilis.com>
++ *          Christian Ruppert <christian.ruppert@abilis.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
++#include <linux/spinlock.h>
++#include <linux/bitops.h>
++#include <linux/pinctrl/consumer.h>
++
++#define TB10X_GPIO_DIR_IN	(0x00000000)
++#define TB10X_GPIO_DIR_OUT	(0x00000001)
++#define OFFSET_TO_REG_DDR	(0x00)
++#define OFFSET_TO_REG_DATA	(0x04)
++#define OFFSET_TO_REG_INT_EN	(0x08)
++#define OFFSET_TO_REG_CHANGE	(0x0C)
++#define OFFSET_TO_REG_WRMASK	(0x10)
++#define OFFSET_TO_REG_INT_TYPE	(0x14)
++
++
++/**
++ * @spinlock: used for atomic read/modify/write of registers
++ * @base: register base address
++ * @domain: IRQ domain of GPIO generated interrupts managed by this controller
++ * @irq: Interrupt line of parent interrupt controller
++ * @gc: gpio_chip structure associated to this GPIO controller
++ */
++struct tb10x_gpio {
++	spinlock_t spinlock;
++	void __iomem *base;
++	struct irq_domain *domain;
++	int irq;
++	struct gpio_chip gc;
++};
++
++static inline u32 tb10x_reg_read(struct tb10x_gpio *gpio, unsigned int offs)
++{
++	return ioread32(gpio->base + offs);
++}
++
++static inline void tb10x_reg_write(struct tb10x_gpio *gpio, unsigned int offs,
++				u32 val)
++{
++	iowrite32(val, gpio->base + offs);
++}
++
++static inline void tb10x_set_bits(struct tb10x_gpio *gpio, unsigned int offs,
++				u32 mask, u32 val)
++{
++	u32 r;
++	unsigned long flags;
++
++	spin_lock_irqsave(&gpio->spinlock, flags);
++
++	r = tb10x_reg_read(gpio, offs);
++	r = (r & ~mask) | (val & mask);
++
++	tb10x_reg_write(gpio, offs, r);
++
++	spin_unlock_irqrestore(&gpio->spinlock, flags);
++}
++
++static inline struct tb10x_gpio *to_tb10x_gpio(struct gpio_chip *chip)
++{
++	return container_of(chip, struct tb10x_gpio, gc);
++}
++
++static int tb10x_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++{
++	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
++	int mask = BIT(offset);
++	int val = TB10X_GPIO_DIR_IN << offset;
++
++	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DDR, mask, val);
++
++	return 0;
++}
++
++static int tb10x_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
++	int val;
++
++	val = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_DATA);
++
++	if (val & BIT(offset))
++		return 1;
++	else
++		return 0;
++}
++
++static void tb10x_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
++	int mask = BIT(offset);
++	int val = value << offset;
++
++	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DATA, mask, val);
++}
++
++static int tb10x_gpio_direction_out(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
++	int mask = BIT(offset);
++	int val = TB10X_GPIO_DIR_OUT << offset;
++
++	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DDR, mask, val);
++
++	return 0;
++}
++
++static int tb10x_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
++
++static void tb10x_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++}
++
++static int tb10x_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
++
++	return irq_create_mapping(tb10x_gpio->domain, offset);
++}
++
++static int tb10x_gpio_irq_set_type(struct irq_data *data, unsigned int type)
++{
++	if ((type & IRQF_TRIGGER_MASK) != IRQ_TYPE_EDGE_BOTH) {
++		pr_err("Only (both) edge triggered interrupts supported.\n");
++		return -EINVAL;
++	}
++
++	irqd_set_trigger_type(data, type);
++
++	return IRQ_SET_MASK_OK;
++}
++
++static irqreturn_t tb10x_gpio_irq_cascade(int irq, void *data)
++{
++	struct tb10x_gpio *tb10x_gpio = data;
++	u32 r = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_CHANGE);
++	u32 m = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_INT_EN);
++	const unsigned long bits = r & m;
++	int i;
++
++	for_each_set_bit(i, &bits, 32)
++		generic_handle_irq(irq_find_mapping(tb10x_gpio->domain, i));
++
++	return IRQ_HANDLED;
++}
++
++static int tb10x_gpio_probe(struct platform_device *pdev)
++{
++	struct tb10x_gpio *tb10x_gpio;
++	struct resource *mem;
++	struct device_node *dn = pdev->dev.of_node;
++	int ret = -EBUSY;
++	u32 ngpio;
++
++	if (!dn)
++		return -EINVAL;
++
++	if (of_property_read_u32(dn, "ngpio", &ngpio))
++		return -EINVAL;
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!mem) {
++		dev_err(&pdev->dev, "No memory resource defined.\n");
++		return -EINVAL;
++	}
++
++	tb10x_gpio = devm_kzalloc(&pdev->dev, sizeof(*tb10x_gpio), GFP_KERNEL);
++	if (tb10x_gpio == NULL)
++		return -ENOMEM;
++
++	spin_lock_init(&tb10x_gpio->spinlock);
++
++	tb10x_gpio->base = devm_ioremap_resource(&pdev->dev, mem);
++	if (!tb10x_gpio->base) {
++		dev_err(&pdev->dev, "Could not remap reg space.\n");
++		goto fail_ioremap;
++	}
++
++	tb10x_gpio->gc.label		= of_node_full_name(dn);
++	tb10x_gpio->gc.dev		= &pdev->dev;
++	tb10x_gpio->gc.owner		= THIS_MODULE;
++	tb10x_gpio->gc.direction_input	= tb10x_gpio_direction_in;
++	tb10x_gpio->gc.get		= tb10x_gpio_get;
++	tb10x_gpio->gc.direction_output	= tb10x_gpio_direction_out;
++	tb10x_gpio->gc.set		= tb10x_gpio_set;
++	tb10x_gpio->gc.request		= tb10x_gpio_request;
++	tb10x_gpio->gc.free		= tb10x_gpio_free;
++	tb10x_gpio->gc.base		= -1;
++	tb10x_gpio->gc.ngpio		= ngpio;
++	tb10x_gpio->gc.can_sleep	= 0;
++
++
++	ret = gpiochip_add(&tb10x_gpio->gc);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not add gpiochip.\n");
++		goto fail_gpiochip_registration;
++	}
++
++	platform_set_drvdata(pdev, tb10x_gpio);
++
++	if (of_find_property(dn, "interrupt-controller", NULL)) {
++		struct irq_chip_generic *gc;
++
++		ret = platform_get_irq(pdev, 0);
++		if (ret < 0) {
++			dev_err(&pdev->dev, "No interrupt specified.\n");
++			goto fail_get_irq;
++		}
++
++		tb10x_gpio->gc.to_irq	= tb10x_gpio_to_irq;
++		tb10x_gpio->irq		= ret;
++
++		ret = devm_request_irq(&pdev->dev, ret, tb10x_gpio_irq_cascade,
++				IRQF_TRIGGER_NONE | IRQF_SHARED,
++				dev_name(&pdev->dev), tb10x_gpio);
++		if (ret != 0)
++			goto fail_request_irq;
++
++		tb10x_gpio->domain = irq_domain_add_linear(dn,
++						tb10x_gpio->gc.ngpio,
++						&irq_generic_chip_ops, NULL);
++		if (!tb10x_gpio->domain) {
++			ret = -ENOMEM;
++			goto fail_irq_domain;
++		}
++
++		ret = irq_alloc_domain_generic_chips(tb10x_gpio->domain,
++				tb10x_gpio->gc.ngpio, 1, tb10x_gpio->gc.label,
++				handle_edge_irq, IRQ_NOREQUEST, IRQ_NOPROBE,
++				IRQ_GC_INIT_MASK_CACHE);
++		if (ret)
++			goto fail_irq_domain;
++
++		gc = tb10x_gpio->domain->gc->gc[0];
++		gc->reg_base                         = tb10x_gpio->base;
++		gc->chip_types[0].type               = IRQ_TYPE_EDGE_BOTH;
++		gc->chip_types[0].chip.irq_ack       = irq_gc_ack_set_bit;
++		gc->chip_types[0].chip.irq_mask      = irq_gc_mask_clr_bit;
++		gc->chip_types[0].chip.irq_unmask    = irq_gc_mask_set_bit;
++		gc->chip_types[0].chip.irq_set_type  = tb10x_gpio_irq_set_type;
++		gc->chip_types[0].regs.ack           = OFFSET_TO_REG_CHANGE;
++		gc->chip_types[0].regs.mask          = OFFSET_TO_REG_INT_EN;
++	}
++
++	return 0;
++
++fail_irq_domain:
++fail_request_irq:
++fail_get_irq:
++	gpiochip_remove(&tb10x_gpio->gc);
++fail_gpiochip_registration:
++fail_ioremap:
++	return ret;
++}
++
++static int __exit tb10x_gpio_remove(struct platform_device *pdev)
++{
++	struct tb10x_gpio *tb10x_gpio = platform_get_drvdata(pdev);
++	int ret;
++
++	if (tb10x_gpio->gc.to_irq) {
++		irq_remove_generic_chip(tb10x_gpio->domain->gc->gc[0],
++					BIT(tb10x_gpio->gc.ngpio) - 1, 0, 0);
++		kfree(tb10x_gpio->domain->gc);
++		irq_domain_remove(tb10x_gpio->domain);
++		free_irq(tb10x_gpio->irq, tb10x_gpio);
++	}
++	ret = gpiochip_remove(&tb10x_gpio->gc);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static const struct of_device_id tb10x_gpio_dt_ids[] = {
++	{ .compatible = "abilis,tb10x-gpio" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, tb10x_gpio_dt_ids);
++
++static struct platform_driver tb10x_gpio_driver = {
++	.probe		= tb10x_gpio_probe,
++	.remove		= tb10x_gpio_remove,
++	.driver = {
++		.name	= "tb10x-gpio",
++		.of_match_table = of_match_ptr(tb10x_gpio_dt_ids),
++		.owner	= THIS_MODULE,
++	}
++};
++
++static int __init ab_gpio_init(void)
++{
++	return platform_driver_register(&tb10x_gpio_driver);
++}
++
++static void __exit ab_gpio_exit(void)
++{
++	platform_driver_unregister(&tb10x_gpio_driver);
++}
++
++module_init(ab_gpio_init);
++module_exit(ab_gpio_exit);
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("tb10x gpio.");
++MODULE_VERSION("0.0.1");
 -- 
 1.7.1
 
