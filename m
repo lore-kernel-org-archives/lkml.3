@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3FQPcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:32:10 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:57809 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab3FQPcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:32:08 -0400
-Message-ID: <51BF2BF0.6000100@samsung.com>
-Date: Tue, 18 Jun 2013 00:32:00 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1752566Ab3FQPcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:32:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42096 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752362Ab3FQPcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:32:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="354787507"
+Message-ID: <51BF2BFD.1090704@intel.com>
+Date: Mon, 17 Jun 2013 23:32:13 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        Tushar Behera <tushar.behera@linaro.org>
-Subject: Re: [PATCH] ARM: dts: Enable RTC node for exynos5250-snow
-References: <1371481572-926-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1371481572-926-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 2/9] sched: move few runnable tg variables into CONFIG_SMP
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-3-git-send-email-alex.shi@intel.com> <CAPM31RLzTyi5vsW-3Fx-CA4i6oneoh588VRBBhvzkKSeDJjP0g@mail.gmail.com>
+In-Reply-To: <CAPM31RLzTyi5vsW-3Fx-CA4i6oneoh588VRBBhvzkKSeDJjP0g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/13 00:06, Doug Anderson wrote:
-> By default the exynos RTC is disabled.  Enable it for snow.  There's
-> also an external RTC on the max77686 PMIC but we haven't yet enabled
-> that.
->
-> Signed-off-by: Doug Anderson<dianders@chromium.org>
-> ---
->   arch/arm/boot/dts/exynos5250-snow.dts | 4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index d449feb..05244f1 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -171,6 +171,10 @@
->   		};
->   	};
->
-> +	rtc {
-> +		status = "okay";
-> +	};
-> +
->   	/*
->   	 * On Snow we've got SIP WiFi and so can keep drive strengths low to
->   	 * reduce EMI.
+On 06/17/2013 08:26 PM, Paul Turner wrote:
+> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
+>> The following 2 variables only used under CONFIG_SMP, so better to move
+>> their definiation into CONFIG_SMP too.
+>>
+>>         atomic64_t load_avg;
+>>         atomic_t runnable_avg;
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> 
+> Looks fine; the manipulations to the structs could perhaps be
+> collapsed to one patch.
+> 
 
-OK, applied.
+thanks for review!
 
-Thanks,
-- Kukjin
+-- 
+Thanks
+    Alex
