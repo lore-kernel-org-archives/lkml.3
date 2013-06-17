@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3FQNmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:42:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7238 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3FQNmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:42:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
-   d="scan'208";a="354896759"
-Date: Mon, 17 Jun 2013 18:32:30 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Xiang Wang <wangxfdu@gmail.com>
-Cc: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
-        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
-Subject: Re: [PATCH] dma: mmp_pdma: fix a memory alloc error
-Message-ID: <20130617130230.GX4107@intel.com>
-References: <1369742713-13528-1-git-send-email-wangxfdu@gmail.com>
+	id S932144Ab3FQNro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:47:44 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54323 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755887Ab3FQNrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:47:43 -0400
+Date: Mon, 17 Jun 2013 15:47:41 +0200
+From: Pavel Machek <pavel@denx.de>
+To: dzu@denx.de, hjk@hansjkoch.de, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
+ using command line option
+Message-ID: <20130617134741.GA15547@amd.pavel.ucw.cz>
+References: <20130412184335.GA5510@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369742713-13528-1-git-send-email-wangxfdu@gmail.com>
+In-Reply-To: <20130412184335.GA5510@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 08:05:13PM +0800, Xiang Wang wrote:
-> From: Xiang Wang <wangx@marvell.com>
-> 
-> pdev->phy is of type "struct mmp_pdma_phy *". But when
-> allocating memory for it, "struct mmp_pdma_chan" is used
-> by mistake.
-> 
-> Signed-off-by: Xiang Wang <wangx@marvell.com>
-> ---
->  drivers/dma/mmp_pdma.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-> index c26699f..76a8dcf 100644
-> --- a/drivers/dma/mmp_pdma.c
-> +++ b/drivers/dma/mmp_pdma.c
-> @@ -801,7 +801,7 @@ static int mmp_pdma_probe(struct platform_device *op)
->  	}
->  
->  	pdev->phy = devm_kzalloc(pdev->dev,
-> -		dma_channels * sizeof(struct mmp_pdma_chan), GFP_KERNEL);
-> +		dma_channels * sizeof(struct mmp_pdma_phy), GFP_KERNEL);
-why not sizeof(*pdev-phy), that way you dont make above error
+Hi!
 
---
-~Vinod
+> This adds ability to bind uio driver to given open firmware device
+> using command line option. Thus, userspace driver can be developed and
+> used without modifying the kernel.
+> 
+> Signed-off-by: Pavel Machek <pavel@denx.de> 
+
+Ping? Greg, could you apply this patch? Or is there someone else I
+should ask to apply it?
+
+								Pavel
+
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index c122bca..8fcc2c7 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -264,9 +275,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+>  
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id uio_of_genirq_match[] = {
+> -	{ /* empty for now */ },
+> +	{ /* This is filled with module_parm */ },
+> +	{ /* Sentinel */ },
+>  };
+>  MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +
+> +module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
+> +MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
+>  #else
+>  # define uio_of_genirq_match NULL
+>  #endif
+> 
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
