@@ -1,132 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab3FQXfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:35:50 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:19720 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3FQXfs (ORCPT
+	id S1752796Ab3FQXgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:36:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42514 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3FQXgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:35:48 -0400
-Message-ID: <1371512129.27152.27.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v5 05/22] x86, ACPI: Increase override tables number
- limit
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Thomas Renninger <trenn@suse.de>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Date: Mon, 17 Jun 2013 17:35:29 -0600
-In-Reply-To: <1371257800-11720-6-git-send-email-yinghai@kernel.org>
-References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
-	 <1371257800-11720-6-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 19:36:08 -0400
+Date: Mon, 17 Jun 2013 16:36:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andi Shyti <andi.shyti@gmail.com>
+Cc: Andi Shyti <andi@etezian.org>, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        pc@asdf.org, oatilla@gmail.com
+Subject: Re: [PATCH 01/19] bh1770glc: added input device interface
+Message-ID: <20130617233607.GC14084@kroah.com>
+References: <cover.1371145891.git.andi@etezian.org>
+ <90a9ed312d038eda11648a6ed49bb968824bf875.1371145891.git.andi@etezian.org>
+ <20130617225241.GB21613@kroah.com>
+ <20130617232739.GA4454@jack.whiskey>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617232739.GA4454@jack.whiskey>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-14 at 17:56 -0700, Yinghai Lu wrote:
-> Current acpi tables in initrd is limited to 10, that is too small.
-> 64 should be good enough as we have 35 sigs and could have several
-> SSDT.
+On Tue, Jun 18, 2013 at 01:27:39AM +0200, Andi Shyti wrote:
+> Hi Greg,
 > 
-> Two problems in current code prevent us from increasing limit:
-> 1. that cpio file info array is put in stack, as every element is 32
->    bytes, could run out of stack if we have that array size to 64.
->    We can move it out from stack, and make it as global and put it in
->    __initdata section.
-> 2. early_ioremap only can remap 256k one time. Current code is mapping
->    10 tables one time. If we increase that limit, whole size could be
->    more than 256k, early_ioremap will fail with that.
->    We can map table one by one during copying, instead of mapping
->    all them one time.
+> > > The driver generates an event in /dev/input/ under the name
+> > > 'bh1770'. It's a switch event where is reported '0' or '1'
+> > > whenever the sensor detects something crossing the threshold.
+> > > 
+> > > Signed-off-by: Onur Atilla <oatilla@gmail.com>
+> > > Signed-off-by: Phil Carmody <pc@asdf.org>
+> > > Signed-off-by: Andi Shyti <andi@etezian.org>
+> > > ---
+> > >  drivers/misc/bh1770glc.c |   58 +++++++++++++++++++++++++++++++++++++++++++++-
+> > >  1 file changed, 57 insertions(+), 1 deletion(-)
+> > 
+> > Doesn't this mean that this driver is now an "input" driver, so it
+> > shouldn't be using the odd sysfs api, and should move to the
+> > drivers/input/ directory tree?
 > 
-> -v2: According to tj, split it out to separated patch, also
->      rename array name to acpi_initrd_files.
-> -v3: Add some comments about mapping table one by one during copying
->      per tj.
+> The driver has also lots of interfaces in
+> sysfs that are used from userspace, like proximity value and
+> ambient light value.
 > 
-> Signed-off-by: Yinghai <yinghai@kernel.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Tested-by: Thomas Renninger <trenn@suse.de>
-> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+> What the input interface provides is just one of the features
+> from the driver. Shall I move it anyway?
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Hm, why not make it an iio driver instead?  That way you get input and
+sysfs all together.
 
-Thanks,
--Toshi
+thanks,
 
-
-> ---
->  drivers/acpi/osl.c | 26 +++++++++++++++-----------
->  1 file changed, 15 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 42c48fc..c4ea2b7 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -569,8 +569,8 @@ static const char * const table_sigs[] = {
->  
->  #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
->  
-> -/* Must not increase 10 or needs code modification below */
-> -#define ACPI_OVERRIDE_TABLES 10
-> +#define ACPI_OVERRIDE_TABLES 64
-> +static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
->  
->  void __init acpi_initrd_override(void *data, size_t size)
->  {
-> @@ -579,7 +579,6 @@ void __init acpi_initrd_override(void *data, size_t size)
->  	struct acpi_table_header *table;
->  	char cpio_path[32] = "kernel/firmware/acpi/";
->  	struct cpio_data file;
-> -	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
->  	char *p;
->  
->  	if (data == NULL || size == 0)
-> @@ -617,8 +616,8 @@ void __init acpi_initrd_override(void *data, size_t size)
->  			table->signature, cpio_path, file.name, table->length);
->  
->  		all_tables_size += table->length;
-> -		early_initrd_files[table_nr].data = file.data;
-> -		early_initrd_files[table_nr].size = file.size;
-> +		acpi_initrd_files[table_nr].data = file.data;
-> +		acpi_initrd_files[table_nr].size = file.size;
->  		table_nr++;
->  	}
->  	if (table_nr == 0)
-> @@ -648,14 +647,19 @@ void __init acpi_initrd_override(void *data, size_t size)
->  	memblock_reserve(acpi_tables_addr, all_tables_size);
->  	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
->  
-> -	p = early_ioremap(acpi_tables_addr, all_tables_size);
-> -
-> +	/*
-> +	 * early_ioremap only can remap 256k one time. If we map all
-> +	 * tables one time, we will hit the limit. Need to map table
-> +	 * one by one during copying.
-> +	 */
->  	for (no = 0; no < table_nr; no++) {
-> -		memcpy(p + total_offset, early_initrd_files[no].data,
-> -		       early_initrd_files[no].size);
-> -		total_offset += early_initrd_files[no].size;
-> +		phys_addr_t size = acpi_initrd_files[no].size;
-> +
-> +		p = early_ioremap(acpi_tables_addr + total_offset, size);
-> +		memcpy(p, acpi_initrd_files[no].data, size);
-> +		early_iounmap(p, size);
-> +		total_offset += size;
->  	}
-> -	early_iounmap(p, all_tables_size);
->  }
->  #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
->  
-
-
+greg k-h
