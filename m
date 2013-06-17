@@ -1,123 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab3FQLza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 07:55:30 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53811 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3FQLz0 (ORCPT
+	id S932781Ab3FQL6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 07:58:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:51785 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932610Ab3FQL6H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 07:55:26 -0400
-X-Nat-Received: from [202.181.97.72]:63524 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1371470113.6650
-To: davidlohr.bueso@hp.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
-Message-Id: <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 17 Jun 2013 20:55:04 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17062013 #10352088, status: clean
+	Mon, 17 Jun 2013 07:58:07 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-aa-51bef9cd7593
+From: Tomasz Figa <t.figa@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>, linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        patches@linaro.org, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH Resend] pinctrl: exynos: Fix build breakage
+Date: Mon, 17 Jun 2013 13:57:58 +0200
+Message-id: <1992157.1uNu7hFias@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.10.3 (Linux/3.8.8-gentoo; KDE/4.10.3; x86_64; ; )
+In-reply-to: <1371461892-5298-1-git-send-email-sachin.kamat@linaro.org>
+References: <1371461892-5298-1-git-send-email-sachin.kamat@linaro.org>
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=utf-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t/xy7pnf+4LNDi0Usri7LKDbBZT/ixn
+	sri8aw6bxYzz+5gsphz+wmJx8k8vowObx+yGiywed67tYfP4vEkugDmKyyYlNSezLLVI3y6B
+	K6Nt+1vGgkNCFZdf3GdtYDzL38XIySEhYCKx/2oTO4QtJnHh3nq2LkYuDiGBpYwSLRO2MUI4
+	XUwSxybeZQWpYhNQk/jc8IgNxBYRcJF4/WsRM0gRs0ADo8TKzZPARgkL2EvMuXUdqJuDg0VA
+	VeLlLDWQMK+ApsTLebsZQWx+AXWJd9ueMoHYogKuEu9XH2YBsTkF3CX+dewGGyMk4Caxat0P
+	doheQYkfk++B1TALaEs8eXeBFWQ8M9CcKVNyJzAKzkJSNQtJ1SyEqgWMzKsYRVNLkwuKk9Jz
+	DfWKE3OLS/PS9ZLzczcxQoL7yw7GxcesDjEKcDAq8fBuqN4XKMSaWFZcmXuIUYKDWUmEN3Yi
+	UIg3JbGyKrUoP76oNCe1+BAjEwenVAOjidSK5KjN/YLe6+79Mzsg3O0aPJPzxpHJ1xJvOszZ
+	+HyGln5qZOniBj/TF0LfVvdLbGGs3dFtddg0+v3X6TYle56u1b0QtenkR1f3rw1Ty+dJ/ti4
+	OPbRkonTp31m2VcV3rBcbjvj4zmL+q8lrNSexvHNgSVZOKXnW/DUcIW+rxk3Qza1OR8oUmIp
+	zkg01GIuKk4EALK3f/xMAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got this.
+Hi Sachin,
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.10.0-rc6-next-20130617 #7 Not tainted
--------------------------------
-include/linux/rcupdate.h:475 Illegal context switch in RCU read-side critical section!
+On Monday 17 of June 2013 15:08:12 Sachin Kamat wrote:
+> 'exynos_wkup_irq_ack' should be defined ahead of its call.
+> 
+> Fixes the following error:
+> drivers/pinctrl/pinctrl-exynos.c: In function ‘exynos_wkup_irq_mask’:
+> drivers/pinctrl/pinctrl-exynos.c:299:3: error: implicit declaration of
+> function ‘exynos_wkup_irq_ack’ [-Werror=implicit-function-declaration]
+>    exynos_wkup_irq_ack(irqd);
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Doug Anderson <dianders@chromium.org>
+> ---
+> Fixed the commit message.
+> ---
 
-other info that might help us debug this:
+This patch is incorrect.
 
+Compilation error is caused by merge error of Doug's patch:
 
-rcu_scheduler_active = 1, debug_locks = 1
-2 locks held by udevd/1909:
- #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
- #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
+pinctrl: exynos: ack level-triggered interrupts before unmasking
 
-stack backtrace:
-CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
- 00000001 da591e94 c0677931 00000001 da591ebc c0199606 c07f690d c07f83fa
- 00000001 00000001 c07e7904 00000000 000001a8 c081e5f7 da591ee4 c0176231
- 00000246 00000002 00000001 00000000 00000000 000000d0 deee0f0c ffffffe4
-Call Trace:
- [<c0677931>] dump_stack+0x4c/0x6b
- [<c0199606>] lockdep_rcu_suspicious+0xc6/0x100
- [<c0176231>] __might_sleep+0xb1/0x200
- [<c04098f1>] idr_preload+0xa1/0xd0
- [<c038b4d2>] ipc_addid+0x52/0x190
- [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
- [<c038e7aa>] newary+0xba/0x1a0
- [<c038c4be>] ipcget+0x4e/0x70
- [<c019d7a2>] ? __lock_release+0x72/0x1b0
- [<c038e6cf>] SyS_semget+0x6f/0x80
- [<c038e6f0>] ? sem_security+0x10/0x10
- [<c038e6e0>] ? SyS_semget+0x80/0x80
- [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
- [<c0392ab3>] SyS_ipc+0xa3/0x250
- [<c0235426>] ? vm_munmap+0x46/0x60
- [<c067c89a>] sysenter_do_call+0x12/0x32
-BUG: sleeping function called from invalid context at lib/idr.c:424
-in_atomic(): 1, irqs_disabled(): 0, pid: 1909, name: udevd
-2 locks held by udevd/1909:
- #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
- #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
-CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
- 000001a8 da591ebc c0677931 da594260 da591ee4 c01762dd c07e79fc 00000001
- 00000000 00000775 da594518 000000d0 deee0f0c ffffffe4 da591ef0 c04098f1
- c08e2b84 da591f10 c038b4d2 da591f10 c038dfbd ffffffff 00000001 c08e2b80
-Call Trace:
- [<c0677931>] dump_stack+0x4c/0x6b
- [<c01762dd>] __might_sleep+0x15d/0x200
- [<c04098f1>] idr_preload+0xa1/0xd0
- [<c038b4d2>] ipc_addid+0x52/0x190
- [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
- [<c038e7aa>] newary+0xba/0x1a0
- [<c038c4be>] ipcget+0x4e/0x70
- [<c019d7a2>] ? __lock_release+0x72/0x1b0
- [<c038e6cf>] SyS_semget+0x6f/0x80
- [<c038e6f0>] ? sem_security+0x10/0x10
- [<c038e6e0>] ? SyS_semget+0x80/0x80
- [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
- [<c0392ab3>] SyS_ipc+0xa3/0x250
- [<c0235426>] ? vm_munmap+0x46/0x60
- [<c067c89a>] sysenter_do_call+0x12/0x32
+hunk of which went to wrong function - mask instead of unmask.
 
-----------
->From da6fbd77764e01cd611bd488666f349c11e1d4f3 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 17 Jun 2013 20:49:25 +0900
-Subject: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
+Linus, could you fix it?
 
-Commit 4964214b "ipc: move rcu lock out of ipc_addid" moved
-idr_preload(GFP_KERNEL) into RCU read-side critical section.
+Best regards,
+Tomasz
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- ipc/util.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/ipc/util.c b/ipc/util.c
-index a746abb..00aca85 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -261,7 +261,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
- 	if (ids->in_use >= size)
- 		return -ENOSPC;
- 
--	idr_preload(GFP_KERNEL);
-+	idr_preload(GFP_ATOMIC);
- 
- 	spin_lock_init(&new->lock);
- 	new->deleted = 0;
--- 
-1.7.1
+>  drivers/pinctrl/pinctrl-exynos.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-exynos.c
+> b/drivers/pinctrl/pinctrl-exynos.c index 8cd5bf5..f9277bc 100644
+> --- a/drivers/pinctrl/pinctrl-exynos.c
+> +++ b/drivers/pinctrl/pinctrl-exynos.c
+> @@ -279,6 +279,15 @@ err_domains:
+>  	return ret;
+>  }
+> 
+> +static void exynos_wkup_irq_ack(struct irq_data *irqd)
+> +{
+> +	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
+> +	struct samsung_pinctrl_drv_data *d = b->drvdata;
+> +	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
+> +
+> +	writel(1 << irqd->hwirq, d->virt_base + pend);
+> +}
+> +
+>  static void exynos_wkup_irq_mask(struct irq_data *irqd)
+>  {
+>  	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
+> @@ -307,15 +316,6 @@ static void exynos_wkup_irq_mask(struct irq_data *irqd)
+> spin_unlock_irqrestore(&b->slock, flags);
+>  }
+> 
+> -static void exynos_wkup_irq_ack(struct irq_data *irqd)
+> -{
+> -	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
+> -	struct samsung_pinctrl_drv_data *d = b->drvdata;
+> -	unsigned long pend = d->ctrl->weint_pend + b->eint_offset;
+> -
+> -	writel(1 << irqd->hwirq, d->virt_base + pend);
+> -}
+> -
+>  static void exynos_wkup_irq_unmask(struct irq_data *irqd)
+>  {
+>  	struct samsung_pin_bank *b = irq_data_get_irq_chip_data(irqd);
