@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab3FQVfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 17:35:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41349 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3FQVfL (ORCPT
+	id S1751656Ab3FQVhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 17:37:08 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41416 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab3FQVhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 17:35:11 -0400
-Date: Mon, 17 Jun 2013 14:35:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-Id: <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
-In-Reply-To: <20130617151403.GA25172@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
-	<20130617151403.GA25172@localhost.localdomain>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 17:37:05 -0400
+Date: Mon, 17 Jun 2013 14:37:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: Add unlikely for current_order test
+In-Reply-To: <51BE6BFC.3030009@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.02.1306171431470.20631@chino.kir.corp.google.com>
+References: <51BC4A83.50302@gmail.com> <alpine.DEB.2.02.1306161103020.22688@chino.kir.corp.google.com> <51BE6BFC.3030009@cn.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
+On Mon, 17 Jun 2013, Zhang Yanfei wrote:
 
-> > I managed to trigger:
-> > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > on top. 
+> > I don't understand the justification at all, current_order being unlikely 
+> > greater than or equal to pageblock_order / 2 doesn't imply at all that 
+> > it's unlikely that current_order is greater than or equal to 
+> > pageblock_order.
 > > 
-> > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > [...]
-> > ffffffff81122d9c:       0f 0b                   ud2
-> > 
-> > RAX is -1UL.
-> Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
-> and BUG, instead of an unsigned quantity.
 > 
-> > 
-> > I assume that the current backtrace is of no use and it would most
-> > probably be some shrinker which doesn't behave.
-> > 
-> There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> Assuming you are not using xfs, we are left with dentries and inodes.
+> hmmm... I am confused. Since current_order is >= pageblock_order / 2 is unlikely,
+> why current_order is >= pageblock_order isn't unlikely. Or there are other
+> tips?
 > 
-> The first thing to do is to find which one of them is misbehaving. You can try finding
-> this out by the address of the list_lru, and where it lays in the superblock.
+> Actually, I am also a little confused about why current_order should be
+> unlikely greater than or equal to pageblock_order / 2. When borrowing pages
+> with other migrate_type, we always search from MAX_ORDER-1, which is greater
+> or equal to pageblock_order.
 > 
-> Once we know each of them is misbehaving, then we'll have to figure out why.
 
-The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
-it's inodes?
+Look at what is being done in the function: current_order loops down from 
+MAX_ORDER-1 to the order passed.  It is not at all "unlikely" that 
+current_order is greater than pageblock_order, or pageblock_order / 2.
 
+MAX_ORDER is typically 11 and pageblock_order is typically 9 on x86.  
+Integer division truncates, so pageblock_order / 2 is 4.  For the first 
+eight iterations, it's guaranteed that current_order >= pageblock_order / 
+2 if it even gets that far!
+
+So just remove the unlikely() entirely, it's completely bogus.
