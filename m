@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3FQR7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:59:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50426 "EHLO
+	id S1754324Ab3FQR7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:59:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50411 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3FQRbn (ORCPT
+	with ESMTP id S1753284Ab3FQRbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:31:43 -0400
+	Mon, 17 Jun 2013 13:31:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Tim Richardson <tim@tim-richardson.net>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 15/84] USB: revert periodic scheduling bugfix
-Date: Mon, 17 Jun 2013 10:30:19 -0700
-Message-Id: <1371490288-23167-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 17/84] USB: visor: fix initialisation of Treo/Kyocera devices
+Date: Mon, 17 Jun 2013 10:30:21 -0700
+Message-Id: <1371490288-23167-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -30,49 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
+commit 420021a395ce38b7ab2cceb52dee4038be7d8fa3 upstream.
 
-This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
-(USB: EHCI: fix bug in scheduling periodic split transfers).  The
-commit was valid -- it fixed a real bug -- but the periodic scheduler
-in ehci-hcd is in such bad shape (especially the part that handles
-split transactions) that fixing one bug is very likely to cause
-another to surface.  That's what happened in this case; the result was
-choppy and noisy playback on certain 24-bit audio devices.
+Fix regression introduced by commit 214916f2e ("USB: visor: reimplement
+using generic framework") which broke initialisation of Treo/Kyocera
+devices that re-mapped bulk-in endpoints.
 
-The only real fix will be to rewrite this entire section of code.  My
-next project...
-
-This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
-
-Thanks to Tim Richardson for extra testing and feedback, and to Joseph
-Salisbury and Tyson Tan for tracking down the original source of the
-problem.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: Tim Richardson <tim@tim-richardson.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/ehci-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/visor.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index 010f686..5a00ef3 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -213,7 +213,7 @@ static inline unsigned char tt_start_uframe(struct ehci_hcd *ehci, __hc32 mask)
- }
- 
- static const unsigned char
--max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
-+max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
- 
- /* carryover low/fullspeed bandwidth that crosses uframe boundries */
- static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
+diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
+index b56bd7b..c24ee17 100644
+--- a/drivers/usb/serial/visor.c
++++ b/drivers/usb/serial/visor.c
+@@ -566,9 +566,17 @@ static int treo_attach(struct usb_serial *serial)
+ 	*/
+ #define COPY_PORT(dest, src)						\
+ 	do { \
++		int i;							\
++									\
++		for (i = 0; i < ARRAY_SIZE(src->read_urbs); ++i) {	\
++			dest->read_urbs[i] = src->read_urbs[i];		\
++			dest->read_urbs[i]->context = dest;		\
++			dest->bulk_in_buffers[i] = src->bulk_in_buffers[i]; \
++		}							\
+ 		dest->read_urb = src->read_urb;				\
+ 		dest->bulk_in_endpointAddress = src->bulk_in_endpointAddress;\
+ 		dest->bulk_in_buffer = src->bulk_in_buffer;		\
++		dest->bulk_in_size = src->bulk_in_size;			\
+ 		dest->interrupt_in_urb = src->interrupt_in_urb;		\
+ 		dest->interrupt_in_urb->context = dest;			\
+ 		dest->interrupt_in_endpointAddress = \
 -- 
 1.8.1.2
 
