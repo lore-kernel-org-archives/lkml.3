@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3FQC6S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 22:58:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33432 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755546Ab3FQC6R (ORCPT
+	id S1755653Ab3FQC7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 22:59:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34726 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755522Ab3FQC7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 22:58:17 -0400
-Date: Sun, 16 Jun 2013 19:58:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andi Shyti <andi@etezian.org>
-Cc: arnd@arndb.de, rob@landley.net, oatilla@gmail.com, szsolt@gmail.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 0/2] etzkx accelerometer support
-Message-ID: <20130617025854.GB12522@kroah.com>
-References: <cover.1371418586.git.andi@etezian.org>
- <20130616215110.GA10834@kroah.com>
- <20130616222648.GE4385@jack.whiskey>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130616222648.GE4385@jack.whiskey>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Jun 2013 22:59:32 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v2 0/5] clk: dt: bindings for mux, divider & gate clocks
+Date: Sun, 16 Jun 2013 19:58:20 -0700
+Message-Id: <1371437905-15567-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 12:26:48AM +0200, Andi Shyti wrote:
-> > > these two patches provide the etzkx device driver which supports
-> > > the following accelerometers:
-> > > 
-> > >  - Kionix kxcnl
-> > >  - Kionix kxtnk
-> > >  - ST lisn3dsh
-> > > 
-> > > Support for ST lis3dsh accelerometer is still in progress.
-> > > 
-> > > The etzkx accelerometers are a kind of devices that are able to
-> > > do gesture recognition directly on the device. It uses two slots
-> > > of 16 steps (bytes) each for loading algorithms which perform
-> > > gesture recognition.
-> > > 
-> > > The second patch contains the documentation of the device driver.
-> > > 
-> > > On http://www.etezian.org/etzkx/etzkx/ is possible to find more
-> > > informations about the accelerometer.
-> > 
-> > Why isn't this a drivers/iio/accel/ driver instead of a misc driver?
-> > Please make this an iio driver, then you will be using the correct
-> > user/kernel api to talk to your device.
-> 
-> I was thinking it may be an issue, but it's not iio because the
-> time I developed the driver, iio was in the first staging period
-> and mainly because the on the board I'm using I cannot update the
-> Kernel to use the latest iio.
-> 
-> I guess you don't like the promise "I can do it later" once the
-> supplier sends me a development board (which is planned) :)
+This series introduces binding definitions for common register-mapped
+clock multiplexer, divider and gate IP blocks along with the
+corresponding setup functions for matching DT data.  The bindings are
+similar to the struct definitions but please don't hold that against the
+binding: the struct definitions closely model the hardware register
+layout.
 
-Sure, I'll gladly accept "I can do it later" from anyone, as long as you
-don't mind my, "I will merge it later" as well :)
+This version incorporates review comments from the last RFC and includes
+the basic gate clock as well. This version is not considered RFC and
+hopefully can be agreed upon for 3.11, review comments notwithstanding.
 
-Sorry, I can't accept a driver now, that is known to going to be
-changing the kernel/user api in the future.  So please, rewrite it to
-use IIO, that's what that interface / subsystem is there for.
+Also this second version of the series converts the divider
+implementation to use a bitmask internally. The registration APIs are
+not changed so existing users are not affected. This gives us a cleaner
+binding and a more flexible representation for more exotic hardware
+designs.
 
-thanks,
+I'm currently looking at the best way to match and setup these basic
+clocks without requiring every platform to write a small clock driver
+that matches the basic types. That is missing from this series but can
+be merged later as a separate change.
 
-greg k-h
+Testing was done on OMAP4460 Panda ES using the experimental out-of-tree
+OMAP CCF conversion patches posted recently.
+
+Heiko, enough changed here such that I did not keep your Acked-by's and
+Tested-by's. But I am happy to take them again :-)
+
+Mike Turquette (5):
+  clk: divider: replace bitfield width with mask
+  clk: of: helper for determining number of parent clocks
+  clk: dt: binding for basic multiplexer clock
+  clk: dt: binding for basic divider clock
+  clk: dt: binding for basic gate clock
+
+ .../devicetree/bindings/clock/divider-clock.txt    |  87 +++++++++++++++
+ .../devicetree/bindings/clock/gate-clock.txt       |  34 ++++++
+ .../devicetree/bindings/clock/mux-clock.txt        |  77 +++++++++++++
+ arch/arm/mach-imx/clk-busy.c                       |   2 +-
+ drivers/clk/clk-divider.c                          | 121 ++++++++++++++++++---
+ drivers/clk/clk-gate.c                             |  40 +++++++
+ drivers/clk/clk-mux.c                              |  62 ++++++++++-
+ drivers/clk/clk.c                                  |   6 +
+ drivers/clk/mxs/clk-div.c                          |   2 +-
+ include/linux/clk-private.h                        |   2 +-
+ include/linux/clk-provider.h                       |  12 +-
+ 11 files changed, 422 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/divider-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/gate-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
+
+-- 
+1.8.1.2
+
