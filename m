@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab3FQNVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:21:30 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48627 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038Ab3FQNV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:21:26 -0400
-Message-ID: <1371475281.3252.198.camel@edumazet-glaptop>
-Subject: Re: [PATCH] tcp: Modify the condition for the first skb to collapse
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jun Chen <jun.d.chen@intel.com>
-Cc: ycheng@google.com, ncardwell@google.com, edumazet@google.com,
-        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Jun 2013 06:21:21 -0700
-In-Reply-To: <1371495133.28418.19.camel@chenjun-workstation>
-References: <1371478739.10495.5.camel@chenjun-workstation>
-	 <1371456935.3252.177.camel@edumazet-glaptop>
-	 <1371490190.28418.6.camel@chenjun-workstation>
-	 <1371464962.3252.181.camel@edumazet-glaptop>
-	 <1371495133.28418.19.camel@chenjun-workstation>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S932331Ab3FQNX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:23:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49494 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756256Ab3FQNX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:23:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="354887486"
+Message-ID: <51BF0DE2.1070806@intel.com>
+Date: Mon, 17 Jun 2013 21:23:46 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 3/9] sched: set initial value of runnable avg for new
+ forked task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-4-git-send-email-alex.shi@intel.com> <CAPM31RJFsh_gBXBHc4E6z=MtORR9D8sWs=86Yqy9onxK9x9fOg@mail.gmail.com> <51BB25BC.9070500@intel.com> <20130617092146.GM3204@twins.programming.kicks-ass.net> <51BEDD9E.600@intel.com> <20130617130738.GW3204@twins.programming.kicks-ass.net>
+In-Reply-To: <20130617130738.GW3204@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 14:52 -0400, Jun Chen wrote:
-> On Mon, 2013-06-17 at 03:29 -0700, Eric Dumazet wrote:
-> > On Mon, 2013-06-17 at 13:29 -0400, Jun Chen wrote:
-> > > > 
-> > > hi,
-> > > When the condition of tcp_win_from_space(skb->truesize) > skb->len is
-> > > true but the before(start, TCP_SKB_CB(skb)->seq) is also true, the final
-> > > condition will be true. The follow line:
-> > > int offset = start - TCP_SKB_CB(skb)->seq;
-> > > BUG_ON(offset < 0);
-> > > this BUG_ON will be triggered.
-> > > 
-> > 
-> > Really this should never happen, we must track what's happening here.
-> It's very very rare, but the logic of codes have such a little hole.
-> > 
-> > Are you using a pristine kernel, without any patches ?
-> The based kernel version is 3.4.  
-> > 
-> > Are you able to reproduce this bug in a short amount of time ?
-> I can't reproduce it in short time, this log had just been found once
-> for long long time tests on many devices . 
-> > 
-> > What kind of driver is in use ? (your stack trace was truncated)
 > 
-> I attach the whole stack traces for you.
+> Example:
 > 
-> <0>[ 7736.348788] Call Trace:
+> From: PJT
 > 
-> <4>[ 7736.348861]  [<c18addd0>] tcp_prune_queue+0x120/0x2f0
+> foo patch implements foo because bar; note the fubar detail.
 > 
-> <4>[ 7736.348984]  [<c18aea27>] tcp_data_queue+0x777/0xf00
+> SoB: PJT
+> [alex@intel: changed ponies into horses to make it fit]
+> SoB: Alex
 > 
-> <4>[ 7736.349055]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
+> The other case is where a 'simple' modification of the initial patch
+> simply won't do; you need to change the core idea of the patch or
+> similar. In this case I've seen things like:
 > 
-> <4>[ 7736.349126]  [<c18dc8f8>] ? ipt_do_table+0x1f8/0x480
+> From: Alex
 > 
-> <4>[ 7736.349196]  [<c18b2e84>] tcp_rcv_established+0x114/0x680
+> foo patch implements foo because bar; note the fubar detail.
 > 
-> <4>[ 7736.349269]  [<c18bb034>] tcp_v4_do_rcv+0x164/0x350
+> Based-on-patch-by: PJT
+> SoB: Alex
 > 
-> <4>[ 7736.349396]  [<c18de301>] ? nf_nat_fn+0xb1/0x1d0
 > 
-> <4>[ 7736.349470]  [<c18bc0c1>] tcp_v4_rcv+0x6f1/0x7a0
-> 
-> <4>[ 7736.349599]  [<c1881dad>] ? nf_hook_slow+0x10d/0x150
-> 
-> <4>[ 7736.349673]  [<c189b30b>] ip_local_deliver_finish+0x8b/0x200
-> 
-> <4>[ 7736.349796]  [<c189b60f>] ip_local_deliver+0x8f/0xa0
-> 
-> <4>[ 7736.349867]  [<c189b280>] ? ip_rcv_finish+0x300/0x300
-> 
-> <4>[ 7736.349937]  [<c189b05f>] ip_rcv_finish+0xdf/0x300
-> 
-> <4>[ 7736.350062]  [<c189b878>] ip_rcv+0x258/0x330
-> 
-> <4>[ 7736.350132]  [<c189af80>] ? inet_del_protocol+0x30/0x30
-> 
-> <4>[ 7736.350258]  [<c1864175>] __netif_receive_skb+0x325/0x410
-> 
-> <4>[ 7736.350331]  [<c1864956>] process_backlog+0x96/0x150
-> 
-> <4>[ 7736.350455]  [<c1864ba5>] net_rx_action+0x115/0x210
-> 
-> <4>[ 7736.350525]  [<c18b7680>] ? tcp_out_of_resources+0xb0/0xb0
-> 
-> <4>[ 7736.350652]  [<c123dc0b>] __do_softirq+0x9b/0x220
-> 
-> <4>[ 7736.350723]  [<c123db70>] ? local_bh_enable_ip+0xd0/0xd0
-> 
+> This isn't actually in the submitting patches document and I'm not sure
+> it should be; although some clarification for these weird cases might be
+> useful.
 
-Any other suspect messages before this, a memory allocation error for
-example ?
+It is very very useful clarification!
 
-I believe we have a bug in tcp_collapse() if one alloc_skb() returns
-NULL while we were in the middle of collapsing a big GRO packet.
+Currently even some maintainers do not use the 'From' and SoB correctly.
+So I do suggest including it into Documentation/SubmittingPatches files.
+That will help everyone! :)
 
-gro_skb needed 3 skb to be rebuilt, and only two skbs could be allocated
-
-skb1: seq=X  end_seq=X+4000
-skb2: seq=X+4000 end_seq=X+8000
-<missing>
-grp_skb: seq=X end_seq=X+16000
-
-Next time we call tcp_collapse(), we might split again the GRO packet
-and get following incorrect queue :
-
-skb1: seq=X  end_seq=X+4000
-skb2: seq=X+4000 end_seq=X+8000
-skb3: seq=X  end_seq=X+4000
-skb4: seq=X+4000 end_seq=X+8000
-skb5: seq=X+8000 end_seq=X+12000
-skb6: seq=X+12000 end_seq=X+16000
-
-
-I would use the following patch instead, to narrow the problem
-
-If we really find in the ofo queue a skb with a lower seq than the
-previous one, we should complain instead of lowering @start, since
-this is going to crash later.
-
-receive_queue / ofo_queue should contain monotonically increasing
-skb->seq.
-
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 46271cdc..5507a09 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4513,8 +4513,10 @@ static void tcp_collapse_ofo_queue(struct sock *sk)
- 			start = TCP_SKB_CB(skb)->seq;
- 			end = TCP_SKB_CB(skb)->end_seq;
- 		} else {
--			if (before(TCP_SKB_CB(skb)->seq, start))
--				start = TCP_SKB_CB(skb)->seq;
-+			if (before(TCP_SKB_CB(skb)->seq, start)) {
-+				pr_err_once("tcp_collapse_ofo_queue() : seq %08x before start %08X\n",
-+					    TCP_SKB_CB(skb)->seq, start);
-+			}
- 			if (after(TCP_SKB_CB(skb)->end_seq, end))
- 				end = TCP_SKB_CB(skb)->end_seq;
- 		}
-
-
+-- 
+Thanks
+    Alex
