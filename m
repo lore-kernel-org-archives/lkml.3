@@ -1,115 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab3FQGUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 02:20:08 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:56846 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab3FQGUG (ORCPT
+	id S1756005Ab3FQGUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 02:20:24 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35675 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab3FQGUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 02:20:06 -0400
+	Mon, 17 Jun 2013 02:20:21 -0400
+Message-ID: <51BEAAA1.20806@hitachi.com>
+Date: Mon, 17 Jun 2013 15:20:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 14:20:05 +0800
-Message-ID: <CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
-Subject: Re: [PATCHv13 3/4] zswap: add to mm/
-From: Bob Liu <lliubbo@gmail.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] tracing/kprobes: Turn trace_probe->files into
+ list_head
+References: <20130616172152.GA8543@redhat.com>
+In-Reply-To: <20130616172152.GA8543@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+(2013/06/17 2:21), Oleg Nesterov wrote:
+> I think that "ftrace_event_file *trace_probe[]" complicates the
+> code for no reason, turn it into list_head to simplify the code.
+> enable_trace_probe() no longer needs synchronize_sched().
 
-On Tue, Jun 4, 2013 at 4:33 AM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> zswap is a thin backend for frontswap that takes pages that are in the process
-> of being swapped out and attempts to compress them and store them in a
-> RAM-based memory pool.  This can result in a significant I/O reduction on the
-> swap device and, in the case where decompressing from RAM is faster than
-> reading from the swap device, can also improve workload performance.
->
-> It also has support for evicting swap pages that are currently compressed in
-> zswap to the swap device on an LRU(ish) basis. This functionality makes zswap a
-> true cache in that, once the cache is full, the oldest pages can be moved out
-> of zswap to the swap device so newer pages can be compressed and stored in
-> zswap.
->
-> This patch adds the zswap driver to mm/
->
+Looks cleaner :)
 
-Do you have any more benchmark can share with me ? To figure out that
-we can benefit from zswap.
+> 
+> This needs the extra sizeof(list_head) memory for every attached
+> ftrace_event_file, hopefully not a problem in this case.
 
-I found zswap will cause performance drop when using mmtests-0.10 to test it.
-The config file I'm using is: config-global-dhp__parallelio-memcachetest
+I think it's no problem, because the number depends on the instances
+and it could not be so much. :)
 
-The result is:
-(v3.10-rc4-2G-nozswap was without zswap but the performance is better.)
+Thanks!
 
-                                         v3.10-rc4                   v3.10-rc4
-                                     2G-zswap-base                  2G-nozswap
-Ops memcachetest-0M               604.00 (  0.00%)           1077.00 ( 78.31%)
-Ops memcachetest-198M             630.00 (  0.00%)           1007.00 ( 59.84%)
-Ops memcachetest-430M             609.00 (  0.00%)            939.00 ( 54.19%)
-Ops memcachetest-661M             604.00 (  0.00%)            845.00 ( 39.90%)
-Ops memcachetest-893M             591.00 (  0.00%)            839.00 ( 41.96%)
-Ops memcachetest-1125M            599.00 (  0.00%)            781.00 ( 30.38%)
-Ops memcachetest-1356M            588.00 (  0.00%)            771.00 ( 31.12%)
-Ops io-duration-0M                  0.00 (  0.00%)              1.00 (-99.00%)
-Ops io-duration-198M              177.00 (  0.00%)             21.00 ( 88.14%)
-Ops io-duration-430M              168.00 (  0.00%)             25.00 ( 85.12%)
-Ops io-duration-661M              214.00 (  0.00%)             30.00 ( 85.98%)
-Ops io-duration-893M              186.00 (  0.00%)             32.00 ( 82.80%)
-Ops io-duration-1125M             175.00 (  0.00%)             42.00 ( 76.00%)
-Ops io-duration-1356M             245.00 (  0.00%)             51.00 ( 79.18%)
-Ops swaptotal-0M               487760.00 (  0.00%)         459754.00 (  5.74%)
-Ops swaptotal-198M             563581.00 (  0.00%)         485194.00 ( 13.91%)
-Ops swaptotal-430M             579472.00 (  0.00%)         500817.00 ( 13.57%)
-Ops swaptotal-661M             568086.00 (  0.00%)         524209.00 (  7.72%)
-Ops swaptotal-893M             584405.00 (  0.00%)         509846.00 ( 12.76%)
-Ops swaptotal-1125M            572992.00 (  0.00%)         534115.00 (  6.78%)
-Ops swaptotal-1356M            573259.00 (  0.00%)         529814.00 (  7.58%)
-Ops swapin-0M                  231250.00 (  0.00%)         236069.00 ( -2.08%)
-Ops swapin-198M                312259.00 (  0.00%)         239149.00 ( 23.41%)
-Ops swapin-430M                327178.00 (  0.00%)         246803.00 ( 24.57%)
-Ops swapin-661M                319575.00 (  0.00%)         273644.00 ( 14.37%)
-Ops swapin-893M                328195.00 (  0.00%)         257327.00 ( 21.59%)
-Ops swapin-1125M               317345.00 (  0.00%)         271109.00 ( 14.57%)
-Ops swapin-1356M               312858.00 (  0.00%)         266050.00 ( 14.96%)
-Ops minorfaults-0M             592150.00 (  0.00%)         646076.00 ( -9.11%)
-Ops minorfaults-198M           637339.00 (  0.00%)         676441.00 ( -6.14%)
-Ops minorfaults-430M           626228.00 (  0.00%)         684715.00 ( -9.34%)
-Ops minorfaults-661M           625089.00 (  0.00%)         670639.00 ( -7.29%)
-Ops minorfaults-893M           612877.00 (  0.00%)         669723.00 ( -9.28%)
-Ops minorfaults-1125M          624800.00 (  0.00%)         667025.00 ( -6.76%)
-Ops minorfaults-1356M          618800.00 (  0.00%)         657600.00 ( -6.27%)
-Ops majorfaults-0M              67664.00 (  0.00%)          40060.00 ( 40.80%)
-Ops majorfaults-198M            72377.00 (  0.00%)          39517.00 ( 45.40%)
-Ops majorfaults-430M            71822.00 (  0.00%)          38895.00 ( 45.85%)
-Ops majorfaults-661M            70009.00 (  0.00%)          39625.00 ( 43.40%)
-Ops majorfaults-893M            74988.00 (  0.00%)          38073.00 ( 49.23%)
-Ops majorfaults-1125M           72458.00 (  0.00%)          38206.00 ( 47.27%)
-Ops majorfaults-1356M           70549.00 (  0.00%)          37430.00 ( 46.94%)
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Regards,
--Bob
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_kprobe.c |  138 ++++++++++++-------------------------------
+>  1 files changed, 37 insertions(+), 101 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 5a73de0..b95f683 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -35,12 +35,17 @@ struct trace_probe {
+>  	const char		*symbol;	/* symbol name */
+>  	struct ftrace_event_class	class;
+>  	struct ftrace_event_call	call;
+> -	struct ftrace_event_file * __rcu *files;
+> +	struct list_head	files;
+>  	ssize_t			size;		/* trace entry size */
+>  	unsigned int		nr_args;
+>  	struct probe_arg	args[];
+>  };
+>  
+> +struct event_file_link {
+> +	struct ftrace_event_file	*file;
+> +	struct list_head		list;
+> +};
+> +
+>  #define SIZEOF_TRACE_PROBE(n)			\
+>  	(offsetof(struct trace_probe, args) +	\
+>  	(sizeof(struct probe_arg) * (n)))
+> @@ -150,6 +155,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
+>  		goto error;
+>  
+>  	INIT_LIST_HEAD(&tp->list);
+> +	INIT_LIST_HEAD(&tp->files);
+>  	return tp;
+>  error:
+>  	kfree(tp->call.name);
+> @@ -184,22 +190,6 @@ static struct trace_probe *find_trace_probe(const char *event,
+>  }
+>  
+>  /*
+> - * This and enable_trace_probe/disable_trace_probe rely on event_mutex
+> - * held by the caller, __ftrace_set_clr_event().
+> - */
+> -static int trace_probe_nr_files(struct trace_probe *tp)
+> -{
+> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+> -	int ret = 0;
+> -
+> -	if (file)
+> -		while (*(file++))
+> -			ret++;
+> -
+> -	return ret;
+> -}
+> -
+> -/*
+>   * Enable trace_probe
+>   * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+>   */
+> @@ -209,29 +199,18 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  	int ret = 0;
+>  
+>  	if (file) {
+> -		struct ftrace_event_file **new, **old;
+> -		int n = trace_probe_nr_files(tp);
+> -
+> -		old = rcu_dereference_raw(tp->files);
+> -		/* 1 is for new one and 1 is for stopper */
+> -		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
+> -			      GFP_KERNEL);
+> -		if (!new) {
+> +		struct event_file_link *link;
+> +
+> +		link = kmalloc(sizeof(*link), GFP_KERNEL);
+> +		if (!link) {
+>  			ret = -ENOMEM;
+>  			goto out;
+>  		}
+> -		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+> -		new[n] = file;
+> -		/* The last one keeps a NULL */
+>  
+> -		rcu_assign_pointer(tp->files, new);
+> -		tp->flags |= TP_FLAG_TRACE;
+> +		link->file = file;
+> +		list_add_rcu(&link->list, &tp->files);
+>  
+> -		if (old) {
+> -			/* Make sure the probe is done with old files */
+> -			synchronize_sched();
+> -			kfree(old);
+> -		}
+> +		tp->flags |= TP_FLAG_TRACE;
+>  	} else
+>  		tp->flags |= TP_FLAG_PROFILE;
+>  
+> @@ -246,24 +225,16 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  	return ret;
+>  }
+>  
+> -static int
+> -trace_probe_file_index(struct trace_probe *tp, struct ftrace_event_file *file)
+> +static struct event_file_link *
+> +find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
+>  {
+> -	struct ftrace_event_file **files;
+> -	int i;
+> +	struct event_file_link *link;
+>  
+> -	/*
+> -	 * Since all tp->files updater is protected by probe_enable_lock,
+> -	 * we don't need to lock an rcu_read_lock.
+> -	 */
+> -	files = rcu_dereference_raw(tp->files);
+> -	if (files) {
+> -		for (i = 0; files[i]; i++)
+> -			if (files[i] == file)
+> -				return i;
+> -	}
+> +	list_for_each_entry(link, &tp->files, list)
+> +		if (link->file == file)
+> +			return link;
+>  
+> -	return -1;
+> +	return NULL;
+>  }
+>  
+>  /*
+> @@ -276,38 +247,23 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  	int ret = 0;
+>  
+>  	if (file) {
+> -		struct ftrace_event_file **new, **old;
+> -		int n = trace_probe_nr_files(tp);
+> -		int i, j;
+> +		struct event_file_link *link;
+>  
+> -		old = rcu_dereference_raw(tp->files);
+> -		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
+> +		link = find_event_file_link(tp, file);
+> +		if (!link) {
+>  			ret = -EINVAL;
+>  			goto out;
+>  		}
+>  
+> -		if (n == 1) {	/* Remove the last file */
+> -			tp->flags &= ~TP_FLAG_TRACE;
+> -			new = NULL;
+> -		} else {
+> -			new = kzalloc(n * sizeof(struct ftrace_event_file *),
+> -				      GFP_KERNEL);
+> -			if (!new) {
+> -				ret = -ENOMEM;
+> -				goto out;
+> -			}
+> -
+> -			/* This copy & check loop copies the NULL stopper too */
+> -			for (i = 0, j = 0; j < n && i < n + 1; i++)
+> -				if (old[i] != file)
+> -					new[j++] = old[i];
+> -		}
+> +		list_del_rcu(&link->list);
+> +		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
+> +		synchronize_sched();
+> +		kfree(link);
+>  
+> -		rcu_assign_pointer(tp->files, new);
+> +		if (!list_empty(&tp->files))
+> +			goto out;
+>  
+> -		/* Make sure the probe is done with old files */
+> -		synchronize_sched();
+> -		kfree(old);
+> +		tp->flags &= ~TP_FLAG_TRACE;
+>  	} else
+>  		tp->flags &= ~TP_FLAG_PROFILE;
+>  
+> @@ -872,20 +828,10 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+>  static __kprobes void
+>  kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
+>  {
+> -	/*
+> -	 * Note: preempt is already disabled around the kprobe handler.
+> -	 * However, we still need an smp_read_barrier_depends() corresponding
+> -	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
+> -	 */
+> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+> -
+> -	if (unlikely(!file))
+> -		return;
+> +	struct event_file_link *link;
+>  
+> -	while (*file) {
+> -		__kprobe_trace_func(tp, regs, *file);
+> -		file++;
+> -	}
+> +	list_for_each_entry_rcu(link, &tp->files, list)
+> +		__kprobe_trace_func(tp, regs, link->file);
+>  }
+>  
+>  /* Kretprobe handler */
+> @@ -932,20 +878,10 @@ static __kprobes void
+>  kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  		     struct pt_regs *regs)
+>  {
+> -	/*
+> -	 * Note: preempt is already disabled around the kprobe handler.
+> -	 * However, we still need an smp_read_barrier_depends() corresponding
+> -	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
+> -	 */
+> -	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+> -
+> -	if (unlikely(!file))
+> -		return;
+> +	struct event_file_link *link;
+>  
+> -	while (*file) {
+> -		__kretprobe_trace_func(tp, ri, regs, *file);
+> -		file++;
+> -	}
+> +	list_for_each_entry_rcu(link, &tp->files, list)
+> +		__kretprobe_trace_func(tp, ri, regs, link->file);
+>  }
+>  
+>  /* Event entry printers */
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
