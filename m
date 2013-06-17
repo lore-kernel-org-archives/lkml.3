@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3FQQyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:54:17 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56628 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab3FQQyP (ORCPT
+	id S1753346Ab3FQQ4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:56:22 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:48146 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3FQQ4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:54:15 -0400
-Date: Mon, 17 Jun 2013 20:54:10 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130617165409.GA10764@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617153302.GI5018@dhcp22.suse.cz>
+	Mon, 17 Jun 2013 12:56:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130617153302.GI5018@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <EABCC4A72A203F4BA2E04297CF0282C427D1E112@hnombx01.corp.atmel.com>
+References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+	<1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com>
+	<20130615015224.GA25585@quad.lixom.net>
+	<EABCC4A72A203F4BA2E04297CF0282C427D1E112@hnombx01.corp.atmel.com>
+Date: Mon, 17 Jun 2013 09:56:20 -0700
+Message-ID: <CAOesGMjHTSB3y3+TxLqM=s06jg8Qx8XnEeW9c2dDcWnneZPVXA@mail.gmail.com>
+Subject: Re: RE : [GIT PULL] at91: Device Tree update for 3.11 #2
+From: Olof Johansson <olof@lixom.net>
+To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "balbi@ti.com" <balbi@ti.com>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Shen, Voice" <Voice.Shen@atmel.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 05:33:02PM +0200, Michal Hocko wrote:
-> On Mon 17-06-13 19:14:12, Glauber Costa wrote:
-> > On Mon, Jun 17, 2013 at 04:18:22PM +0200, Michal Hocko wrote:
-> > > Hi,
-> > 
-> > Hi,
-> > 
-> > > I managed to trigger:
-> > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > > on top. 
-> > > 
-> > > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > > [...]
-> > > ffffffff81122d9c:       0f 0b                   ud2
-> > > 
-> > > RAX is -1UL.
-> >
-> > Yes, fearing those kind of imbalances, we decided to leave the counter
-> > as a signed quantity and BUG, instead of an unsigned quantity.
-> > 
-> > > I assume that the current backtrace is of no use and it would most
-> > > probably be some shrinker which doesn't behave.
-> > > 
-> > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> > Assuming you are not using xfs, we are left with dentries and inodes.
-> > 
-> > The first thing to do is to find which one of them is misbehaving. You
-> > can try finding this out by the address of the list_lru, and where it
-> > lays in the superblock.
-> 
-> I am not sure I understand. Care to prepare a debugging patch for me?
->  
-> > Once we know each of them is misbehaving, then we'll have to figure
-> > out why.
-> > 
-> > Any special filesystem workload ?
-> 
-> This is two parallel kernel builds with separate kernel trees running
-> under 2 hard unlimitted groups (with 0 soft limit) followed by rm -rf
-> source trees + drop caches. Sometimes I have to repeat this multiple
-> times. I can also see some timer specific crashes which are most
-> probably not related so I am getting back to my mm tree and will hope
-> the tree is healthy.
-> 
-> I have seen some other traces as well (mentioning ext3 dput paths) but I
-> cannot reproduce them anymore.
-> 
+On Mon, Jun 17, 2013 at 1:34 AM, Ferre, Nicolas <Nicolas.FERRE@atmel.com> wrote:
+>
+>>On Sat, Jun 15, 2013 at 12:47:47AM +0200, Nicolas Ferre wrote:
+>>> Arnd, Olof,
+>>>
+>>> Additional pull-request for AT91 DT patches.
+>>> It contains the remaining part of the USB gadget pull-request that I sent you
+>>> last week. After having split it, here is the DT part.
+>>> It also contains the update of DMA bindings: it is the AT91 part the should go
+>>> through arm-soc. I have included the patch (ARM: at91: dt: add header to define
+>>> at_hdmac configuration) so that we avoid build errors whichever git tree
+>>> (slave-dma or arm-soc) is merged first.
+>>> A SPI DT patch for at91sam9x5 is also added.
+>>>
+>>> Thanks, best regards,
+>>>
+>>> The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
+>>>
+>>>   ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>   git://github.com/at91linux/linux-at91.git tags/at91-dt
+>>
+>>Pulled, thanks.
+>
+> Hi,
+>
+> I do not see it appearing in arm-soc/at91/dt branch even though is it present in arm-soc/for-next: is it normal?
 
-Do you have those traces? If there is a bug in the ext3 dput, then it is
-most likely the culprit. dput() is when we insert things into the LRU. So
-if we are not fully inserting an element that we should have - and later
-on try to remove it, we'll go negative.
+I had missed to push that (and the driver branch) up. They are there
+now, as at91/dt2 and at91/drivers. Fixed the bad branch name in
+arm-soc-for-next-contents.txt as well.
 
-Can we see those traces?
+
+-Olof
