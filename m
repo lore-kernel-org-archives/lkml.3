@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab3FQRgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:36:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50703 "EHLO
+	id S1755333Ab3FQRlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:41:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50708 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab3FQRgD (ORCPT
+	with ESMTP id S1754619Ab3FQRgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:36:03 -0400
+	Mon, 17 Jun 2013 13:36:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 55/84] hpfs: fix warnings when the filesystem fills up
-Date: Mon, 17 Jun 2013 10:30:59 -0700
-Message-Id: <1371490288-23167-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 22/84] USB: mos7720: fix message timeouts
+Date: Mon, 17 Jun 2013 10:30:26 -0700
+Message-Id: <1371490288-23167-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,55 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit bbd465df73f0d8ba41b8a0732766a243d0f5b356 upstream.
+commit 849513a7809175420d353625b6f651d961e99d49 upstream.
 
-This patch fixes warnings due to missing lock on write error path.
+The control and bulk-message timeouts are specified in milliseconds and
+should not depend on HZ.
 
-  WARNING: at fs/hpfs/hpfs_fn.h:353 hpfs_truncate+0x75/0x80 [hpfs]()
-  Hardware name: empty
-  Pid: 26563, comm: dd Tainted: P           O 3.9.4 #12
-  Call Trace:
-    hpfs_truncate+0x75/0x80 [hpfs]
-    hpfs_write_begin+0x84/0x90 [hpfs]
-    _hpfs_bmap+0x10/0x10 [hpfs]
-    generic_file_buffered_write+0x121/0x2c0
-    __generic_file_aio_write+0x1c7/0x3f0
-    generic_file_aio_write+0x7c/0x100
-    do_sync_write+0x98/0xd0
-    hpfs_file_write+0xd/0x50 [hpfs]
-    vfs_write+0xa2/0x160
-    sys_write+0x51/0xa0
-    page_fault+0x22/0x30
-    system_call_fastpath+0x1a/0x1f
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/hpfs/file.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/mos7720.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/hpfs/file.c b/fs/hpfs/file.c
-index fbfe2df..4816908 100644
---- a/fs/hpfs/file.c
-+++ b/fs/hpfs/file.c
-@@ -109,10 +109,14 @@ static void hpfs_write_failed(struct address_space *mapping, loff_t to)
- {
- 	struct inode *inode = mapping->host;
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index 1b2bcdc..d9da2d4 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -40,7 +40,7 @@
+ #define DRIVER_DESC "Moschip USB Serial Driver"
  
-+	hpfs_lock(inode->i_sb);
-+
- 	if (to > inode->i_size) {
- 		truncate_pagecache(inode, to, inode->i_size);
- 		hpfs_truncate(inode);
- 	}
-+
-+	hpfs_unlock(inode->i_sb);
- }
+ /* default urb timeout */
+-#define MOS_WDR_TIMEOUT	(HZ * 5)
++#define MOS_WDR_TIMEOUT	5000
  
- static int hpfs_write_begin(struct file *file, struct address_space *mapping,
+ #define MOS_MAX_PORT	0x02
+ #define MOS_WRITE	0x0E
+@@ -2006,7 +2006,7 @@ static int mos7720_startup(struct usb_serial *serial)
+ 
+ 	/* setting configuration feature to one */
+ 	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+-			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5*HZ);
++			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5000);
+ 
+ 	/* start the interrupt urb */
+ 	ret_val = usb_submit_urb(serial->port[0]->interrupt_in_urb, GFP_KERNEL);
+@@ -2049,7 +2049,7 @@ static void mos7720_release(struct usb_serial *serial)
+ 		/* wait for synchronous usb calls to return */
+ 		if (mos_parport->msg_pending)
+ 			wait_for_completion_timeout(&mos_parport->syncmsg_compl,
+-						    MOS_WDR_TIMEOUT);
++					    msecs_to_jiffies(MOS_WDR_TIMEOUT));
+ 
+ 		parport_remove_port(mos_parport->pp);
+ 		usb_set_serial_data(serial, NULL);
 -- 
 1.8.1.2
 
