@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab3FQDZq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:25:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33306 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab3FQDZp (ORCPT
+	id S1755727Ab3FQD11 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:27:27 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53241 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556Ab3FQD10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:25:45 -0400
-Date: Mon, 17 Jun 2013 13:25:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20130617132537.430b7875a3600a9cbd0f7ad5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_13_25_37_+1000__HnnVMRg6r7J7qq9"
+	Sun, 16 Jun 2013 23:27:26 -0400
+Message-ID: <51BE8213.4000701@linux.vnet.ibm.com>
+Date: Mon, 17 Jun 2013 11:27:15 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Lei Wen <leiwen@marvell.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
+References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
+In-Reply-To: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061703-9264-0000-0000-000003F4CEBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_13_25_37_+1000__HnnVMRg6r7J7qq9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi, Lei
 
-Hi all,
+On 06/17/2013 10:21 AM, Lei Wen wrote:
+> nr_busy_cpus in sched_group_power structure cannot present the purpose
+> for judging below statement:
+> "this cpu's scheduler group has multiple busy cpu's exceeding
+>  the group's power."
+> 
+> But only could tell how many cpus is doing their jobs for currently.
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit d62cf62ad07d
-("drm/i915: Quirk the pipe A quirk in the modeset state checker") from
-Linus' tree and commit 6c49f24180c3 ("drm/i915: hw state readout support
-for pixel_multiplier") from the drm-intel tree.
+AFAIK, this nr_busy_cpus presents how many cpus in local group are not
+idle, the logical here in nohz_kick_needed() is:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+	if domain cpus share resources and at least 2 cpus in
+	local group are not idle, prefer to do balance.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+And the idea behind is, we catch the timing when there are idle-cpu and
+busy-group and task-moving may cost low.
 
-diff --cc drivers/gpu/drm/i915/intel_display.c
-index 6eb99e1,218bc93..0000000
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@@ -8177,11 -8264,14 +8264,19 @@@ check_crtc_state(struct drm_device *dev
- =20
-  		active =3D dev_priv->display.get_pipe_config(crtc,
-  							   &pipe_config);
- +
- +		/* hw state is inconsistent with the pipe A quirk */
- +		if (crtc->pipe =3D=3D PIPE_A && dev_priv->quirks & QUIRK_PIPEA_FORCE)
- +			active =3D crtc->active;
- +
-+ 		list_for_each_entry(encoder, &dev->mode_config.encoder_list,
-+ 				    base.head) {
-+ 			if (encoder->base.crtc !=3D &crtc->base)
-+ 				continue;
-+ 			if (encoder->get_config)
-+ 				encoder->get_config(encoder, &pipe_config);
-+ 		}
-+=20
-  		WARN(crtc->active !=3D active,
-  		     "crtc active state doesn't match with hw state "
-  		     "(expected %i, found %i)\n", crtc->active, active);
+Your change will remove this timing for balance, I think you may need
+some test to prove that this patch will make things better.
 
---Signature=_Mon__17_Jun_2013_13_25_37_+1000__HnnVMRg6r7J7qq9
-Content-Type: application/pgp-signature
+Regards,
+Michael Wang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> 
+> However, the original purpose to add this logic still looks good.
+> So we move this kind of logic to find_new_ilb, so that we could pick
+> out peer from our sharing resource domain whenever possible.
+> 
+> Signed-off-by: Lei Wen <leiwen@marvell.com>
+> ---
+>  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
+>  1 file changed, 22 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c61a614..64f9120 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5368,10 +5368,31 @@ static struct {
+>  	unsigned long next_balance;     /* in jiffy units */
+>  } nohz ____cacheline_aligned;
+> 
+> +/*
+> + * Add the heuristic logic to try waking up idle cpu from
+> + * those peers who share resources with us, so that the
+> + * cost would be brought to minimum.
+> + */
+>  static inline int find_new_ilb(int call_cpu)
+>  {
+> -	int ilb = cpumask_first(nohz.idle_cpus_mask);
+> +	int ilb = nr_cpu_ids;
+> +	struct sched_domain *sd;
+> +
+> +	rcu_read_lock();
+> +	for_each_domain(call_cpu, sd) {
+> +		/* We loop till sched_domain no longer share resource */
+> +		if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+> +			ilb = cpumask_first(nohz.idle_cpus_mask);
+> +			break;
+> +		}
+> 
+> +		/* else, we would try to pick the idle cpu from peers first */
+> +		ilb = cpumask_first_and(nohz.idle_cpus_mask,
+> +				sched_domain_span(sd));
+> +		if (ilb < nr_cpu_ids)
+> +			break;
+> +	}
+> +	rcu_read_unlock();
+>  	if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>  		return ilb;
+> 
+> @@ -5620,8 +5641,6 @@ end:
+>   * Current heuristic for kicking the idle load balancer in the presence
+>   * of an idle cpu is the system.
+>   *   - This rq has more than one task.
+> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
+> - *     busy cpu's exceeding the group's power.
+>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>   *     domain span are idle.
+>   */
+> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>  		struct sched_group_power *sgp = sg->sgp;
+>  		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
+> 
+> -		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+> -			goto need_kick_unlock;
+> -
+>  		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+>  		    && (cpumask_first_and(nohz.idle_cpus_mask,
+>  					  sched_domain_span(sd)) < cpu))
+> 
 
-iQIcBAEBCAAGBQJRvoG0AAoJEECxmPOUX5FEQCMP/2pvSBjpmqDJyNlYspumm027
-wJ93PW3JPSfV/CGQFtWFoeXJj71nnkuePQEl9K+iVvxWgRc7VppfuTaycICxXL2T
-2bINIXaXinVQeXLZa/O+w4gmuvzoqWXW2o5eNBV4QXqJjQzfBkuugKX66QzyHTSW
-9ocowNL6cn1IXX0yFaa+HBjf+hFd1yOjmFy+ONSi/AZtl9Tjqqox/+y1XJYg/cct
-UrK7bAiRzFa8wozpjyVL4rwBbBd6UOBxC1jck9avT/vot1wa8pvTRE3l3qQeEP9N
-oKtIIg7PO6cBN5Cb5Jikcd+bVY2uWhsDlmpBGFYvnXSpGM6v+43oAo5BOxO4Hnhj
-wLZYrfofRf76AqyPc3jtUrQD/8vG/pgXIt0vwvKX1zmxOq0NBrAIj2qbpKdTa6iF
-G84XIj+ZdkfipDo6u2iX86EGHwOpF20fSTpUJ1NcFXAZ++nY7quFFNeNpa+a+pxd
-//dJjAQi/IPOe6ey6THJBPDpEJQStC3i2Kr2jVyPdyKXcgeQ31rkzdQ1zEzSUc8O
-onsFKs4+f1Nvr1pMsSJX/hTGRxpMmGOXPbE1g5CzfXKPSw35LlY92CUBnrumAv/3
-z0PAh2SOcC8CimCns3qXwh0wi71xksASIq0hkSh7SqwsK8cZUjBluFpKXU89vDB1
-IlaFq68s2oEGdpO5CbKx
-=PTo0
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_13_25_37_+1000__HnnVMRg6r7J7qq9--
