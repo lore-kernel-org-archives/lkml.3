@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3FQPWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:22:05 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:50619 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3FQPWC (ORCPT
+	id S1753307Ab3FQPWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:22:24 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:32999 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3FQPWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:22:02 -0400
+	Mon, 17 Jun 2013 11:22:18 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Mauro Carvalho Chehab <mchehab@redhat.com>,
         LMML <linux-media@vger.kernel.org>,
@@ -15,9 +15,9 @@ To: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v4 08/11] media: davinci: vpif_display: move the freeing of irq and global variables to remove()
-Date: Mon, 17 Jun 2013 20:50:48 +0530
-Message-Id: <1371482451-18314-9-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v4 10/11] media: davinci: vpif_display: Convert to devm_* api
+Date: Mon, 17 Jun 2013 20:50:50 +0530
+Message-Id: <1371482451-18314-11-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371482451-18314-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1371482451-18314-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -27,75 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Ideally the freeing of irq's and the global variables needs to be
-done in the remove() rather than module_exit(), this patch moves
-the freeing up of irq's and freeing the memory allocated to channel
-objects to remove() callback of struct platform_driver.
+use devm_request_irq() instead of request_irq(). This ensures
+more consistent error values and simplifies error paths.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/media/platform/davinci/vpif_display.c |   30 ++++++++++---------------
- 1 file changed, 12 insertions(+), 18 deletions(-)
+ drivers/media/platform/davinci/vpif_display.c |   35 +++++++------------------
+ 1 file changed, 10 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index 6c521f2..371af34 100644
+index 473d1a9..1bf289d 100644
 --- a/drivers/media/platform/davinci/vpif_display.c
 +++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -1829,10 +1829,20 @@ vpif_int_err:
+@@ -1652,15 +1652,14 @@ static __init int vpif_probe(struct platform_device *pdev)
+ 
+ 	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
+ 		for (i = res->start; i <= res->end; i++) {
+-			if (request_irq(i, vpif_channel_isr, IRQF_SHARED,
+-					"VPIF_Display", (void *)
+-					(&vpif_obj.dev[res_idx]->channel_id))) {
+-				err = -EBUSY;
+-				for (j = 0; j < i; j++)
+-					free_irq(j, (void *)
+-					(&vpif_obj.dev[res_idx]->channel_id));
++			err = devm_request_irq(&pdev->dev, i, vpif_channel_isr,
++					     IRQF_SHARED, "VPIF_Display",
++					     (void *)(&vpif_obj.dev[res_idx]->
++					     channel_id));
++			if (err) {
++				err = -EINVAL;
+ 				vpif_err("VPIF IRQ request failed\n");
+-				goto vpif_int_err;
++				goto vpif_unregister;
+ 			}
+ 		}
+ 		res_idx++;
+@@ -1678,7 +1677,7 @@ static __init int vpif_probe(struct platform_device *pdev)
+ 				video_device_release(ch->video_dev);
+ 			}
+ 			err = -ENOMEM;
+-			goto vpif_int_err;
++			goto vpif_unregister;
+ 		}
+ 
+ 		/* Initialize field of video device */
+@@ -1812,13 +1811,8 @@ vpif_sd_error:
+ 		/* Note: does nothing if ch->video_dev == NULL */
+ 		video_device_release(ch->video_dev);
+ 	}
+-vpif_int_err:
++vpif_unregister:
+ 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+-	for (i = 0; i < res_idx; i++) {
+-		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+-		for (j = res->start; j <= res->end; j++)
+-			free_irq(j, (void *)(&vpif_obj.dev[i]->channel_id));
+-	}
+ 
+ 	return err;
+ }
+@@ -1829,16 +1823,7 @@ vpif_int_err:
  static int vpif_remove(struct platform_device *device)
  {
  	struct channel_obj *ch;
--	int i;
-+	struct resource *res;
-+	int irq_num;
-+	int i = 0;
-+
-+	while ((res = platform_get_resource(device, IORESOURCE_IRQ, i))) {
-+		for (irq_num = res->start; irq_num <= res->end; irq_num++)
-+			free_irq(irq_num,
-+				 (void *)(&vpif_obj.dev[i]->channel_id));
-+		i++;
-+	}
- 
- 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
- 
-+	kfree(vpif_obj.sd);
- 	/* un-register device */
- 	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
- 		/* Get the pointer to the channel object */
-@@ -1841,6 +1851,7 @@ static int vpif_remove(struct platform_device *device)
- 		video_unregister_device(ch->video_dev);
- 
- 		ch->video_dev = NULL;
-+		kfree(vpif_obj.dev[i]);
- 	}
- 
- 	return 0;
-@@ -1938,24 +1949,7 @@ static __init int vpif_init(void)
-  */
- static void vpif_cleanup(void)
- {
--	struct platform_device *pdev;
 -	struct resource *res;
 -	int irq_num;
 -	int i = 0;
 -
--	pdev = container_of(vpif_dev, struct platform_device, dev);
--
--	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+-	while ((res = platform_get_resource(device, IORESOURCE_IRQ, i))) {
 -		for (irq_num = res->start; irq_num <= res->end; irq_num++)
 -			free_irq(irq_num,
 -				 (void *)(&vpif_obj.dev[i]->channel_id));
 -		i++;
 -	}
--
- 	platform_driver_unregister(&vpif_driver);
--	kfree(vpif_obj.sd);
--	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++)
--		kfree(vpif_obj.dev[i]);
- }
++	int i;
  
- module_init(vpif_init);
+ 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+ 
 -- 
 1.7.9.5
 
