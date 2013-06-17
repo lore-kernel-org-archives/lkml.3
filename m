@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3FQNv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:51:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25139 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab3FQNv4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:51:56 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=w1cNLofYa50A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=yqaEuN8awxIA:10 a=jftd6GDzklWGfV9mnzAA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371477109.18733.7.camel@gandalf.local.home>
-Subject: Re: Regression in RCU subsystem in latest mainline kernel
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rojhalat Ibrahim <imr@rtschenk.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Mon, 17 Jun 2013 09:51:49 -0400
-In-Reply-To: <1558776.vQIgbXvFW8@pcimr>
-References: <1626500.7WAVXjfS9F@pcimr> <1371261741.21896.20.camel@pasglop>
-	 <1371262654.9844.340.camel@gandalf.local.home> <1558776.vQIgbXvFW8@pcimr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756213Ab3FQNwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:52:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754832Ab3FQNwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:52:34 -0400
+Date: Mon, 17 Jun 2013 15:48:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tracing/kprobes: Avoid perf_trace_buf_*() if
+	->perf_events is empty
+Message-ID: <20130617134805.GA29246@redhat.com>
+References: <20130616172146.GA8533@redhat.com> <51BE857A.1080505@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BE857A.1080505@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 15:21 +0200, Rojhalat Ibrahim wrote:
-> On Friday 14 June 2013 22:17:34 Steven Rostedt wrote:
-> > On Sat, 2013-06-15 at 12:02 +1000, Benjamin Herrenschmidt wrote:
-> > > On Fri, 2013-06-14 at 17:06 -0400, Steven Rostedt wrote:
-> > > > I was pretty much able to reproduce this on my PA Semi PPC box. Funny
-> > > > thing is, when I type on the console, it makes progress. Anyway, it
-> > > > seems that powerpc has an issue with irq_work(). I'll try to get some
-> > > > time either tonight or next week to figure it out.
-> > > 
-> > > Does this help ?
-> > 
-> > It did for me. Rojhalat, did this fix your issue too?
-> > 
-> 
-> FWIW, since the fix is already applied, but it fixes my problem too.
-> 
+On 06/17, zhangwei(Jovi) wrote:
+>
+> On 2013/6/17 1:21, Oleg Nesterov wrote:
+> > perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
+> > if this task/CPU has no active counters. Change kprobe_perf_func()
+> > and kretprobe_perf_func() to check call->perf_events beforehand
+> > and return if this list is empty.
+> >
+> > For example, "perf record -e some_probe -p1". Only /sbin/init will
+> > report, all other threads which hit the same probe will do
+> > perf_trace_buf_prepare/perf_trace_buf_submit just to realize that
+> > nobody wants perf_swevent_event().
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Good point, I think we also need to change other places in below patch.
+>
+> After applied the patch, perf_tp_event() function call reduced a lots
+> when using task based perf tracing.
 
-Thanks for the update. Yeah, Ben was about to send a queue to Linus, and
-as this proved to fix it for me, he felt that it needed to go in that
-queue instead of waiting for an update.
+Yes, I was going to do this, but this is not that simple.
 
-But I do appreciate the update as I wasn't 100% that this would fix the
-problem for you too.
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -659,6 +659,10 @@ perf_trace_##call(void *__data, proto)					\
+>  	int __data_size;						\
+>  	int rctx;							\
+>  									\
+> +	head = this_cpu_ptr(event_call->perf_events);			\
+> +	if (hlist_empty(head))						\
+> +		return;							\
+> +									\
 
--- Steve
+This is not right. Please note __perf_task() and
+"if (task && task != current)" in perf_tp_event().
 
+Oleg.
 
