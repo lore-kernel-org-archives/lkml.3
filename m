@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3FQQ4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:56:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33260 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3FQQ4k (ORCPT
+	id S1753401Ab3FQQ4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:56:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32870 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3FQQ4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:56:40 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=FBRt8xqedWUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XzXmEfpJ-cEA:10 a=i0EeH86SAAAA:8 a=GDueeOTqcwh8Oily-i4A:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371488199.18733.20.camel@gandalf.local.home>
-Subject: Re: [PATCH] uprobes: fix return value in error handling path
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, srikar@linux.vnet.ibm.com,
+	Mon, 17 Jun 2013 12:56:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdZT_jvUzMmOrmwLOR5Gc2TWEp85kWa+yyMAp1bG3xrWXw@mail.gmail.com>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
+	<1371141522-29255-3-git-send-email-dianders@chromium.org>
+	<CACRpkdZT_jvUzMmOrmwLOR5Gc2TWEp85kWa+yyMAp1bG3xrWXw@mail.gmail.com>
+Date: Mon, 17 Jun 2013 18:56:36 +0200
+Message-ID: <CACRpkdZcc8a1zG446jKRDyKr2Cpu2tV1J52gwSOhL2NcUDyAwA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] pinctrl: exynos: ack level-triggered interrupts
+ before unmasking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Ilho Lee <ilho215.lee@samsung.com>, Eunki Kim <eunki_kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Jun 2013 12:56:39 -0400
-In-Reply-To: <51B964FF.5000106@huawei.com>
-References: <51B964FF.5000106@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar,
+On Thu, Jun 13, 2013 at 8:20 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Jun 13, 2013 at 6:38 PM, Doug Anderson <dianders@chromium.org> wrote:
+>
+>> A level-triggered interrupt should be acked after the interrupt line
+>> becomes inactive and before it is unmasked, or else another interrupt
+>> will be immediately triggered.  Acking before or after calling the
+>> handler is not enough.
+>>
+>> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>> Changes in v2:
+>> - Greatly simplified using Tomasz's suggestion of irqd_get_trigger_type
+>> - Moved acking out of the bank spinlock since since it's not needed.
+>> - Linus W. has already applied parts 1 and 2, so not resending.
+>
+> Thanks, this v2 version applied with Tomasz ACK.
 
-Can you give an Ack (or nack) for this?
+As noted this thing exploded due to patch fuzzing.
 
-Thanks,
+Could you respin this on top of my "devel" branch?
 
--- Steve
-
-
-On Thu, 2013-06-13 at 14:21 +0800, zhangwei(Jovi) wrote:
-> When I inject incorrect argument into uprobe_events,
-> 
-> [root@jovi tracing]# echo 'p:myprobe /bin/bash' > uprobe_events
-> [root@jovi tracing]#
-> 
-> it doesn't return any error value in there, this patch fix it.
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> ---
->  kernel/trace/trace_uprobe.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 32494fb0..d5d0cd3 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -283,8 +283,10 @@ static int create_trace_uprobe(int argc, char **argv)
->  		return -EINVAL;
->  	}
->  	arg = strchr(argv[1], ':');
-> -	if (!arg)
-> +	if (!arg) {
-> +		ret = -EINVAL;
->  		goto fail_address_parse;
-> +	}
-> 
->  	*arg++ = '\0';
->  	filename = argv[1];
-
-
+Yours,
+Linus Walleij
