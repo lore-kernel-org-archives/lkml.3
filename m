@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab3FQKUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:20:04 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48618 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab3FQKUD (ORCPT
+	id S932623Ab3FQKUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:20:11 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:40403 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab3FQKUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:20:03 -0400
-Date: Mon, 17 Jun 2013 11:20:00 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        sachin.kamat@linaro.org, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20130617102000.GB1403@sirena.org.uk>
-References: <1370864113-17895-13-git-send-email-tushar.behera@linaro.org>
- <1371460388-26177-1-git-send-email-tushar.behera@linaro.org>
+	Mon, 17 Jun 2013 06:20:07 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oQzL12nKbmSHS3MD"
-Content-Disposition: inline
-In-Reply-To: <1371460388-26177-1-git-send-email-tushar.behera@linaro.org>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2 12/15] ASoC: spear: Convert to use
- devm_ioremap_resource
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1370590169-24804-4-git-send-email-alex.shi@intel.com>
+References: <1370590169-24804-1-git-send-email-alex.shi@intel.com> <1370590169-24804-4-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 17 Jun 2013 03:19:35 -0700
+Message-ID: <CAPM31RKUW2vM7BJFXOPtGHnSHbreWLL_7pyBVwPZG617xStxBA@mail.gmail.com>
+Subject: Re: [RFC patch 3/4] sched/cfs_rq: change atomic64_t removed_load to atomic_long_t
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 7, 2013 at 12:29 AM, Alex Shi <alex.shi@intel.com> wrote:
+> Like as runnable_load_avg, blocked_load_avg variable, long type is
+> enough for removed_load in 64 bit or 32 bit machine.
+>
+> Then we avoid the expensive atomic64 operations on 32 bit machine.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
 
---oQzL12nKbmSHS3MD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So while this isn't under quite the same constraints as blocked_load
+since this is per-migration and only cleared on the tick; it would
+take an awful lot (~47k) of wake-upmigrations of a large (nice-20)
+task to overflow.
 
-On Mon, Jun 17, 2013 at 02:43:08PM +0530, Tushar Behera wrote:
-> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> introduced devm_ioremap_resource() and deprecated the use of
-> devm_request_and_ioremap().
+One concern is that this would be potentially user-triggerable using
+sched_setaffinity() when combined with a sufficiently low HZ.
 
-This doesn't apply against current code, please check and resend.
+Although all this would actually do would strand blocked load on the
+cpu, which mostly punishes the cgroup doing this (likely an ok
+behavior).  If it ever became an issue we could force a
+update_cfs_rq_blocked_load() when a removal would result in an
+overflow, but I think this is fine for now.
 
---oQzL12nKbmSHS3MD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Reviewed-by: Paul Turner <pjt@google.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRvuLMAAoJELSic+t+oim9ZFYP/2mGzQNaaKGMOF/1zuJpYCU3
-zTjmm1XJrTwz4W4PHHa7G0n6o9R2sjkj8QQbLsTZteXlE5BxKEt9kVJobcS9aTib
-SP0QtGXFeDsxwTNymCvMmHdCboU4yv6n3Rln6927WC0twwg2ZKYRipTq1Tqe2ago
-+wHaD0bOlTJx1x/m4l83aVpVVgONNOnX2cWiEZd0FNZ+hWPeVwSheQQM7XSAbsmK
-UCZWfB7x1dydAuR5zUENG+jIjr13teAO0hS1HjxfzRNJnUD241soPfIYzHU2JhiL
-M67+m42mKzEsHt9/o7ekwleW2lg/LIcTiGaTAL5qtnywxMOOYMgmu9fVtO8wf9qy
-I6iWP+bqHkgwVl+C70Su7DcXSdO8G/tt25XjPyJJKBu/+NvHwRuz8Iahjy+lHE/i
-X9xCkRuEzQY58FNkLAUrjD1bH2HPHqTEa5GUR3Q1Pc/Wt75hycqef4wRrAF7M/Fe
-8bKee3A+EoDbSbX2Sfe0TLcvDgjq1TPrXmkjJsvd0wPXXEsMMENZhblShLBOyGLS
-TnzVP1iLGi8ZTahhPO2EZiM2jmP+N+kXYx2ZLPkhPJUKswdABv7CXuqdR9ayBYss
-czSljb+4F0XFocYT2oAxYN9Ce8qV875k+9mBtydRvSwi7/MBGZjqcgHXCEVenIQd
-tPQnofRjfXv5W27KRqVn
-=8kn7
------END PGP SIGNATURE-----
-
---oQzL12nKbmSHS3MD--
+> ---
+>  kernel/sched/fair.c  | 10 ++++++----
+>  kernel/sched/sched.h |  3 ++-
+>  2 files changed, 8 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 30fb7dc..9cc4211 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1517,8 +1517,9 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>         if (!decays && !force_update)
+>                 return;
+>
+> -       if (atomic64_read(&cfs_rq->removed_load)) {
+> -               u64 removed_load = atomic64_xchg(&cfs_rq->removed_load, 0);
+> +       if (atomic_long_read(&cfs_rq->removed_load)) {
+> +               unsigned long removed_load;
+> +               removed_load = atomic_long_xchg(&cfs_rq->removed_load, 0);
+>                 subtract_blocked_load_contrib(cfs_rq, removed_load);
+>         }
+>
+> @@ -3479,7 +3480,8 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+>          */
+>         if (se->avg.decay_count) {
+>                 se->avg.decay_count = -__synchronize_entity_decay(se);
+> -               atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
+> +               atomic_long_add(se->avg.load_avg_contrib,
+> +                                               &cfs_rq->removed_load);
+>         }
+>  }
+>  #endif /* CONFIG_SMP */
+> @@ -5944,7 +5946,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
+>  #endif
+>  #if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
+>         atomic64_set(&cfs_rq->decay_counter, 1);
+> -       atomic64_set(&cfs_rq->removed_load, 0);
+> +       atomic_long_set(&cfs_rq->removed_load, 0);
+>  #endif
+>  }
+>
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 1bfa91a..874731f 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -278,8 +278,9 @@ struct cfs_rq {
+>          * the FAIR_GROUP_SCHED case).
+>          */
+>         unsigned long runnable_load_avg, blocked_load_avg;
+> -       atomic64_t decay_counter, removed_load;
+> +       atomic64_t decay_counter;
+>         u64 last_decay;
+> +       atomic_long_t removed_load;
+>
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>         /* Required to track per-cpu representation of a task_group */
+> --
+> 1.7.12
+>
