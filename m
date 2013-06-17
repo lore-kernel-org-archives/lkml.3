@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab3FQOsE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:48:04 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:15368 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3FQOsD (ORCPT
+	id S1751620Ab3FQOse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:48:34 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37383 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab3FQOsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:48:03 -0400
-Message-ID: <1371480480.2709.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH linux-next] ipc: Avoid sleeping inside RCU.
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 17 Jun 2013 07:48:00 -0700
-In-Reply-To: <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
-References: <201306170039.GEG18281.MQFtOOSJFOLHVF@I-love.SAKURA.ne.jp>
-	 <201306172055.GHD65623.LMtVQFHOOFFSOJ@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 17 Jun 2013 10:48:31 -0400
+Message-ID: <51BF21D7.60707@gmail.com>
+Date: Mon, 17 Jun 2013 07:48:55 -0700
+From: David Daney <david.s.daney@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 2/2] mn10300: Fix include dependency in irqflags.h
+References: <1371413189-2568-1-git-send-email-ddaney.cavm@gmail.com> <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com> <CAMuHMdXb5ydj-y_=3oPRLVZ4DmmrXrFQi_xxpbkg5DtzORN1gA@mail.gmail.com> <CAMuHMdW4tZCzZ-4wTxsjfhu+UMZqsb2tuTo8+Yho-ZDE2dck8A@mail.gmail.com>
+In-Reply-To: <CAMuHMdW4tZCzZ-4wTxsjfhu+UMZqsb2tuTo8+Yho-ZDE2dck8A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 20:55 +0900, Tetsuo Handa wrote:
-> I got this.
-> 
-> ===============================
-> [ INFO: suspicious RCU usage. ]
-> 3.10.0-rc6-next-20130617 #7 Not tainted
-> -------------------------------
-> include/linux/rcupdate.h:475 Illegal context switch in RCU read-side critical section!
-> 
-> other info that might help us debug this:
-> 
-> 
-> rcu_scheduler_active = 1, debug_locks = 1
-> 2 locks held by udevd/1909:
->  #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
->  #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
-> 
-> stack backtrace:
-> CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
-> Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
->  00000001 da591e94 c0677931 00000001 da591ebc c0199606 c07f690d c07f83fa
->  00000001 00000001 c07e7904 00000000 000001a8 c081e5f7 da591ee4 c0176231
->  00000246 00000002 00000001 00000000 00000000 000000d0 deee0f0c ffffffe4
-> Call Trace:
->  [<c0677931>] dump_stack+0x4c/0x6b
->  [<c0199606>] lockdep_rcu_suspicious+0xc6/0x100
->  [<c0176231>] __might_sleep+0xb1/0x200
->  [<c04098f1>] idr_preload+0xa1/0xd0
->  [<c038b4d2>] ipc_addid+0x52/0x190
->  [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
->  [<c038e7aa>] newary+0xba/0x1a0
->  [<c038c4be>] ipcget+0x4e/0x70
->  [<c019d7a2>] ? __lock_release+0x72/0x1b0
->  [<c038e6cf>] SyS_semget+0x6f/0x80
->  [<c038e6f0>] ? sem_security+0x10/0x10
->  [<c038e6e0>] ? SyS_semget+0x80/0x80
->  [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
->  [<c0392ab3>] SyS_ipc+0xa3/0x250
->  [<c0235426>] ? vm_munmap+0x46/0x60
->  [<c067c89a>] sysenter_do_call+0x12/0x32
-> BUG: sleeping function called from invalid context at lib/idr.c:424
-> in_atomic(): 1, irqs_disabled(): 0, pid: 1909, name: udevd
-> 2 locks held by udevd/1909:
->  #0:  (&ids->rw_mutex){+.+.+.}, at: [<c038c4b5>] ipcget+0x45/0x70
->  #1:  (rcu_read_lock){.+.+..}, at: [<c038df60>] rcu_read_lock+0x0/0x80
-> CPU: 0 PID: 1909 Comm: udevd Not tainted 3.10.0-rc6-next-20130617 #7
-> Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
->  000001a8 da591ebc c0677931 da594260 da591ee4 c01762dd c07e79fc 00000001
->  00000000 00000775 da594518 000000d0 deee0f0c ffffffe4 da591ef0 c04098f1
->  c08e2b84 da591f10 c038b4d2 da591f10 c038dfbd ffffffff 00000001 c08e2b80
-> Call Trace:
->  [<c0677931>] dump_stack+0x4c/0x6b
->  [<c01762dd>] __might_sleep+0x15d/0x200
->  [<c04098f1>] idr_preload+0xa1/0xd0
->  [<c038b4d2>] ipc_addid+0x52/0x190
->  [<c038dfbd>] ? rcu_read_lock+0x5d/0x80
->  [<c038e7aa>] newary+0xba/0x1a0
->  [<c038c4be>] ipcget+0x4e/0x70
->  [<c019d7a2>] ? __lock_release+0x72/0x1b0
->  [<c038e6cf>] SyS_semget+0x6f/0x80
->  [<c038e6f0>] ? sem_security+0x10/0x10
->  [<c038e6e0>] ? SyS_semget+0x80/0x80
->  [<c038dd80>] ? SyS_msgctl+0xb0/0xb0
->  [<c0392ab3>] SyS_ipc+0xa3/0x250
->  [<c0235426>] ? vm_munmap+0x46/0x60
->  [<c067c89a>] sysenter_do_call+0x12/0x32
-> 
+On 06/17/2013 03:12 AM, Geert Uytterhoeven wrote:
+> On Mon, Jun 17, 2013 at 9:07 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Sun, Jun 16, 2013 at 10:06 PM,  <ddaney.cavm@gmail.com> wrote:
+>>> From: David Daney <david.daney@cavium.com>
+>>>
+>>> We need to pick up the definition of raw_smp_processor_id() from
+>>> asm/smp.h.  For the !SMP case, we need to supply a definition of
+>>> raw_smp_processor_id().
+>> Thanks, this fixes the build!
+>>
+>>> Signed-off-by: David Daney <david.daney@cavium.com>
+>> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Sorry, I acked to soon. While SMP=n is fine (asb2303_defconfig),
+> there's a new regression with asb2364_defconfig, which has SMP=y:
+>
+>    CC      arch/mn10300/kernel/asm-offsets.s
+> In file included from
+> /scratch/geert/linux/linux/arch/mn10300/include/asm/irqflags.h:18:0,
+>                   from /scratch/geert/linux/linux/include/linux/irqflags.h:15,
+>                   from /scratch/geert/linux/linux/include/linux/spinlock.h:53,
+>                   from /scratch/geert/linux/linux/include/linux/seqlock.h:29,
+>                   from /scratch/geert/linux/linux/include/linux/time.h:5,
+>                   from /scratch/geert/linux/linux/include/uapi/linux/timex.h:56,
+>                   from /scratch/geert/linux/linux/include/linux/timex.h:56,
+>                   from /scratch/geert/linux/linux/include/linux/sched.h:17,
+>                   from
+> /scratch/geert/linux/linux/arch/mn10300/kernel/asm-offsets.c:7:
+> /scratch/geert/linux/linux/arch/mn10300/include/asm/smp.h:88:34:
+> error: unknown type name 'smp_call_func_t'
+> make[4]: *** [arch/mn10300/kernel/asm-offsets.s] Error 1
 
-This should already be fixed here:
-https://lkml.org/lkml/2013/6/11/705
+I am truly in Include Hell.  I will attempt a better fix...
 
-Thanks,
-Davidlohr
+David Daney
+
+
+
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
 
