@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab3FQXZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:25:30 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:36313 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab3FQXZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:25:28 -0400
-Date: Tue, 18 Jun 2013 01:24:35 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, juan.david.gonzalez.cobas@cern.ch,
-        cota@braap.org, siglesias@igalia.com, rob@landley.net,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/8] FMC: create drivers/fmc and toplevel Kconfig
- question
-Message-ID: <20130617232435.GA17053@mail.gnudd.com>
+	id S1753081Ab3FQX0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:26:19 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:64289 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3FQX0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 19:26:18 -0400
+Date: Tue, 18 Jun 2013 01:27:39 +0200
+From: Andi Shyti <andi.shyti@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andi Shyti <andi@etezian.org>, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        pc@asdf.org, oatilla@gmail.com
+Subject: Re: [PATCH 01/19] bh1770glc: added input device interface
+Message-ID: <20130617232739.GA4454@jack.whiskey>
+References: <cover.1371145891.git.andi@etezian.org>
+ <90a9ed312d038eda11648a6ed49bb968824bf875.1371145891.git.andi@etezian.org>
+ <20130617225241.GB21613@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20130617231732.GC12984@kroah.com>
-References: <20130617231732.GC12984@kroah.com>
-  <cover.1371018406.git.rubini@gnudd.com>
-  <8dd3427d60e01c3e7a6eceb7dfd72d5a896b5008.1371018406.git.rubini@gnudd.com>
+In-Reply-To: <20130617225241.GB21613@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nice job :)
+Hi Greg,
 
-thanks!
- 
-> Want me to take this through my char/misc git tree to get to Linus for
-> 3.11?
+> > The driver generates an event in /dev/input/ under the name
+> > 'bh1770'. It's a switch event where is reported '0' or '1'
+> > whenever the sensor detects something crossing the threshold.
+> > 
+> > Signed-off-by: Onur Atilla <oatilla@gmail.com>
+> > Signed-off-by: Phil Carmody <pc@asdf.org>
+> > Signed-off-by: Andi Shyti <andi@etezian.org>
+> > ---
+> >  drivers/misc/bh1770glc.c |   58 +++++++++++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 57 insertions(+), 1 deletion(-)
+> 
+> Doesn't this mean that this driver is now an "input" driver, so it
+> shouldn't be using the odd sysfs api, and should move to the
+> drivers/input/ directory tree?
 
-Would be great. As for the license issue, shall I send the two patches alone
-or the whole set?
+The driver has also lots of interfaces in
+sysfs that are used from userspace, like proximity value and
+ambient light value.
 
-thanks
-/alessandro
+What the input interface provides is just one of the features
+from the driver. Shall I move it anyway?
+
+Andi
