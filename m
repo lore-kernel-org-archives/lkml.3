@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3FQCzE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 22:55:04 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50972 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3FQCzD (ORCPT
+	id S1755616Ab3FQC4F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 22:56:05 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:45023 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab3FQC4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 22:55:03 -0400
-Message-ID: <51BE7A83.9060802@hitachi.com>
-Date: Mon, 17 Jun 2013 11:54:59 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 16 Jun 2013 22:56:03 -0400
+Date: Mon, 17 Jun 2013 11:57:05 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH/RFC] arm: arch_timer: Do not set C3STOP in case CPU_IDLE=n
+Message-ID: <20130617025704.GA27933@verge.net.au>
+References: <20130617002056.7646.54131.sendpatchset@w520>
+ <20130617021342.GJ15043@verge.net.au>
+ <CANqRtoTfiWFv0JWwJysi47gsSjJx9g3-FFMMzCYROWDPbndnYQ@mail.gmail.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base multibuffer
-References: <51BA7578.4080108@huawei.com> <51BB18EB.9080307@hitachi.com> <1371223918.9844.324.camel@gandalf.local.home> <20130614162112.GO5146@linux.vnet.ibm.com> <1371227607.9844.335.camel@gandalf.local.home> <20130614172516.GP5146@linux.vnet.ibm.com>
-In-Reply-To: <20130614172516.GP5146@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoTfiWFv0JWwJysi47gsSjJx9g3-FFMMzCYROWDPbndnYQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/15 2:25), Paul E. McKenney wrote:
-> On Fri, Jun 14, 2013 at 12:33:27PM -0400, Steven Rostedt wrote:
->> On Fri, 2013-06-14 at 09:21 -0700, Paul E. McKenney wrote:
->>
->>>>>> @@ -548,15 +556,35 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->>>>>>  /* uprobe handler */
->>>>>>  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->>>>>>  {
->>>>>> -	if (!is_ret_probe(tu))
->>>>>> -		uprobe_trace_print(tu, 0, regs);
->>>>>> +	struct ftrace_event_file **file;
->>>>>> +
->>>>>> +	if (is_ret_probe(tu))
->>>>>> +		return 0;
->>>>>> +
->>>>>> +	file = rcu_dereference_raw(tu->files);
->>>>
->>>> Why are you using rcu_dereference_raw() and not rcu_dereference(). The
->>>> _raw() is a bit special, and unless you know what you are doing with RCU
->>>> here, don't use it.
->>>>
->>>> As I see you using rcu_dereference_raw() all over this patch, along with
->>>> mutexes, I believe that you are not using RCU correctly here.
->>>
->>> If irqs and preempt are disabled, I suggest using rcu_dereference_sched().
->>> That is what it is there for.  ;-)
->>
->> I believe this just copied what kprobes did, where irqs and preemption
->> is disabled. I don't believe that these probes have that same luxury.
->>
->> But that begs the question. Should we convert the rcu_dereference_raw()
->> in the kprobe code to rcu_dereference_sched()?
+On Mon, Jun 17, 2013 at 11:47:11AM +0900, Magnus Damm wrote:
+> Hi Simon,
 > 
-> It makes a lot of sense to me, at least assuming no issues with the
-> interrupts being disabled, but the checks not spotting this.  Here
-> is the check:
+> On Mon, Jun 17, 2013 at 11:13 AM, Simon Horman <horms@verge.net.au> wrote:
+> > On Mon, Jun 17, 2013 at 09:20:56AM +0900, Magnus Damm wrote:
+> >> From: Magnus Damm <damm@opensource.se>
+> >>
+> >> Modify the ARM architected timer driver to not set C3STOP
+> >> in case CPU_IDLE is disabled. This is a short term fix that
+> >> allows use of high resolution timers even though no additional
+> >> clock event is registered.
+> >>
+> >> Not-really-Signed-off-by: Magnus Damm <damm@opensource.se>
+> >> ---
+> >>
+> >>  If someone cares about this case then perhaps it should be
+> >>  moved up to the clock event main code. The same issue should
+> >>  in theory trigger on all architectures, perhaps x86 people
+> >>  hunting for low latency may try to disable CPU_IDLE?
+> >>
+> >>  I propose carrying this patch locally to enable high resolution
+> >>  timers until CPU_IDLE and an additional clock event is supported.
+> >>
+> >>  Observed on r8a73a4 and APE6EVM.
+> >
+> > Hi Magnus,
+> >
+> > Is this patch intended to be picked up by me for the LTSI-3.4.25 based
+> > backports that live in my renesas-backports tree?
 > 
-> 	preempt_count() != 0 || irqs_disabled()
+> Yes, correct.
 > 
-> (With additional elaboration for if lockdep is enabled.)
+> The patch was mainly written to satisfy a feature request for your
+> backports, but I noticed that the same issue exists in upstream as
+> well.
+> 
+> Ideally I'd like to use the same code for the backport and upstream,
+> but I am not sure if anyone in upstream really cares. The more long
+> term solution is obviously to install a second clock event, perhaps
+> that's good enough.
+> 
+> > If so, could you  clearly state this (below the '---' is fine) and
+> > include a proper Sob line to indicate that it is fit to be merged
+> > even if that merge is not into mainline.
+> 
+> Sure, but  I'd like to hear opinions from other people before
+> resending. I will follow your recommendation in next version.
 
-OK, I see. So I'll convert all the rcu_dereference_raw() to
-rcu_dereference_sched() except kprobe handler, because in the
-kprobe handler above check always be true. :)
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks, I understand. I'll wait for discussion and a new version.
