@@ -1,147 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3FPXiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 19:38:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60815 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3FPXiX (ORCPT
+	id S1755610Ab3FQAIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 20:08:32 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36087 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750959Ab3FQAIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 19:38:23 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-d7-51be4c6d4e7f
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Paul Walmsley'" <paul@pwsan.com>,
-        "'Jean-Philippe Francois'" <jp.francois@cynove.com>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable] ARM: omap3: clock: fix wrong container_of in
- clock36xx.c
-Date: Mon, 17 Jun 2013 08:38:15 +0900
-Message-id: <008d01ce6aea$96291790$c27b46b0$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkhkJMAQebi3w
-Content-language: ko
-x-cr-hashedpuzzle: AW3l BTxr FRLp IIEb RQq6 SBpK WG1X bEmG b5cL fl10 gq6N g4pB
- jutd lNqj 0X5/
- 1c95;5;agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAagBwAC4AZgByAGEAbgBjAG8AaQBzAEAAYwB5AG4AbwB2AGUALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBwAGEAdQBsAEAAcAB3AHMAYQBuAC4AYwBvAG0AOwBzAHQAYQBiAGwAZQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{AFD91766-AE80-4A7E-BC1C-2E35126FF096};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Sun,
- 16 Jun 2013 23:37:38
- GMT;WwBQAEEAVABDAEgAIAAzAC4AOQAtAHMAdABhAGIAbABlAF0AIABBAFIATQA6ACAAbwBtAGEAcAAzADoAIABjAGwAbwBjAGsAOgAgAGYAaQB4ACAAdwByAG8AbgBnACAAYwBvAG4AdABhAGkAbgBlAHIAXwBvAGYAIABpAG4AIABjAGwAbwBjAGsAMwA2AHgAeAAuAGMA
-x-cr-puzzleid: {AFD91766-AE80-4A7E-BC1C-2E35126FF096}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zA91cn32BBts3ylssaea2WNx8gsni
-	8q45bBYfdvxltliw8RGjA6vHg9YZzB43fveye/RtWcXo8XmTXABLFJdNSmpOZllqkb5dAlfG
-	0V9L2QpmC1esnXGGsYHxL38XIyeHhICJxLfpR5ghbDGJC/fWs3UxcnEICSxjlDjVe4kZpmj/
-	t1PMEIlFjBJtN/qYIJy/jBJLns5gBaliE9CVOLZ+C5gtIuAtcWrKL7BuZoFCiV9XOxi7GDmA
-	GrglVjcHgYQ5BXgk1v3pBCsRFgiT2DqllR3EZhFQlXi9+xlYnFfATuLx4142CFtQ4sfkeywQ
-	I7Uk1u88zgRhy0tsXvOWGWS8hIC6xKO/uiCniQi0MEoc2PGfDaJGRGLfi3eMIAkJgR+sEmcn
-	dUN9Zirxels/G0TiI7vEtdPtbBBXCEh8m3yIBWKqrMSmA1D1khIHV9xgmcAoNQvJTbOQ3DQL
-	yU2zkOxewMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMkoifuYLx/wPoQYzLQ+onMUqLJ
-	+cCEkFcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkG
-	RpvqO+0KD3xEf827xlbc8H3+6Uv2L++uOhGtZeYp6Wr4evaVsweF+FeFrr1zuvNE8Uy+306H
-	H7TtOvJuy3SPP5lbNGam8m/omMz7ID/o/czt5sYezDk7Mk1emS174bWxOWBPjfqP26/k3C46
-	z764pmPa96pKTjX1ishVr49uiinmK1t4xDX05g8lluKMREMt5qLiRAAkBFY8/gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd1cn32BBo2fpCyWNHNbLG4+wWRx
-	edccNosPO/4yWyzY+IjRgdXjQesMZo8bv3vZPfq2rGL0+LxJLoAlqoHRJiM1MSW1SCE1Lzk/
-	JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdor5JCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsI4x4+ivpWwFs4Ur1s44w9jA+Je/i5GTQ0LARGL/t1PMELaY
-	xIV769m6GLk4hAQWMUq03ehjgnD+MkoseTqDFaSKTUBX4tj6LWC2iIC3xKkpv8C6mQUKJX5d
-	7WDsYuQAauCWWN0cBBLmFOCRWPenE6xEWCBMYuuUVnYQm0VAVeL17mdgcV4BO4nHj3vZIGxB
-	iR+T77FAjNSSWL/zOBOELS+xec1bZpDxEgLqEo/+6oKcJiLQwihxYMd/NogaEYl9L94xgiQk
-	BH6wSpyd1A31manE6239bBMYRWYh2TELyY5ZSHbMQjJrASPLKkbR1ILkguKk9FxDveLE3OLS
-	vHS95PzcTYzgdPFMagfjygaLQ4wCHIxKPLwSonsDhVgTy4orcw8xSnAwK4nwGi0DCvGmJFZW
-	pRblxxeV5qQWH2JMBgbBRGYp0eR8YCrLK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJ
-	anZqakFqEcwWJg5OqQZGEe5d0smcE4v95yzXeOXBn7vO531MQYjd0YVxzc9N5/Hzf88qrXfU
-	sJ8r0SfXuV2r3+jPPdUHudIevvoeGSarJpqr1C6XOm206Klop26cYrZ5guay3QdKPD1UuT8u
-	e2J9U3K+nH+5xKGHj332l8XKHtT4tLj/dl7256NXl9QKWam+uSRx7okSS3FGoqEWc1FxIgCj
-	CIomWwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 16 Jun 2013 20:08:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoMOAIJSvlF5LId//2dsb2JhbABagwmDELcOhSEEAYEBF3SCIwEBBAEnExwjBQsIAxgJJQ8FJQMhE4gIBbcwFo4UgR0Hg2ADl0CRRIMhKg
+Date: Mon, 17 Jun 2013 10:08:27 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        kyungmin.park@samsung.com, d.j.shin@samsung.com, sunae.seo@samsung.com
+Subject: Re: [PATCH] mm: vmscan: remove redundant querying to shrinker
+Message-ID: <20130617000827.GI29338@dastard>
+References: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371204471-13518-1-git-send-email-heesub.shin@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+On Fri, Jun 14, 2013 at 07:07:51PM +0900, Heesub Shin wrote:
+> shrink_slab() queries each slab cache to get the number of
+> elements in it. In most cases such queries are cheap but,
+> on some caches. For example, Android low-memory-killer,
+> which is operates as a slab shrinker, does relatively
+> long calculation once invoked and it is quite expensive.
 
-------------------
+As has already been pointed out, the low memory killer is a badly
+broken piece of code. I can't run a normal machine with it enabled
+because it randomly kills processes whenever memory pressure is
+generated. What it does is simply broken and hence arguing that it
+has too much overhead is not a convincing argument for changing core
+shrinker infrastructure.
 
-From: "Jean-Philippe Francois <jp.francois@cynove.com>"
+> This patch removes redundant queries to shrinker function
+> in the loop of shrink batch.
+> 
+> Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+> ---
+>  mm/vmscan.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index fa6a853..11b6695 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -282,9 +282,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>  					max_pass, delta, total_scan);
+>  
+>  		while (total_scan >= batch_size) {
+> -			int nr_before;
+> +			int nr_before = max_pass;
+>  
+> -			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+>  			shrink_ret = do_shrinker_shrink(shrinker, shrink,
+>  							batch_size);
+>  			if (shrink_ret == -1)
+> @@ -293,6 +292,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>  				ret += nr_before - shrink_ret;
+>  			count_vm_events(SLABS_SCANNED, batch_size);
+>  			total_scan -= batch_size;
+> +			max_pass = shrink_ret;
+>  
+>  			cond_resched();
+>  		}
 
-commit a93d8a1cea0899982993e9a93404c6f78b123697 upstream
+Shrinkers run concurrently on different CPUs, and so the state of
+the cache being shrunk can change significantly when cond_resched()
+actually yields the CPU.  Hence we need to recalculate the current
+state of the cache before we shrink again to get an accurate idea of
+how much work the current loop has done. If we get this badly wrong,
+the caller of shrink_slab() will get an incorrect idea of how much
+work was actually done by the shrinkers....
 
-omap36xx_pwrdn_clk_enable_with_hsdiv_restore expects the parent hw of
-the clock to be a clk_hw_omap. However, looking at cclock3xxx_data.c,
-all concerned clock have parent defined as clk_divider.  Fix the
-function to use clk_divider.  Tested with 3.9 on dm3730.
+This problem is fixed in mmtom by the change of shrinker API that
+results shrinker->scan_objects() returning the number of objects
+freed directly, and hence it isn't necessary to have a
+shrinker->count_objects() call in the scan loop anymore. i.e. the
+reworked scan loop ends up like:
 
-Signed-off-by: Jean-Philippe Francois <jp.francois@cynove.com>
-Cc: NeilBrown <neilb@suse.de>
-Cc: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- arch/arm/mach-omap2/clock36xx.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+	while (total_scan >= batch_size) {
+		unsigned long ret;
+		shrinkctl->nr_to_scan = batch_size;
+		ret = shrinker->scan_objects(shrinker, shrinkctl);
 
-diff --git a/arch/arm/mach-omap2/clock36xx.c
-b/arch/arm/mach-omap2/clock36xx.c
-index 8f3bf4e..bbd6a3f 100644
---- a/arch/arm/mach-omap2/clock36xx.c
-+++ b/arch/arm/mach-omap2/clock36xx.c
-@@ -20,11 +20,12 @@
- 
- #include <linux/kernel.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/io.h>
- 
- #include "clock.h"
- #include "clock36xx.h"
--
-+#define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
- 
- /**
-  * omap36xx_pwrdn_clk_enable_with_hsdiv_restore - enable clocks suffering
-@@ -39,29 +40,28 @@
-  */
- int omap36xx_pwrdn_clk_enable_with_hsdiv_restore(struct clk_hw *clk)
- {
--	struct clk_hw_omap *parent;
-+	struct clk_divider *parent;
- 	struct clk_hw *parent_hw;
--	u32 dummy_v, orig_v, clksel_shift;
-+	u32 dummy_v, orig_v;
- 	int ret;
- 
- 	/* Clear PWRDN bit of HSDIVIDER */
- 	ret = omap2_dflt_clk_enable(clk);
- 
- 	parent_hw = __clk_get_hw(__clk_get_parent(clk->clk));
--	parent = to_clk_hw_omap(parent_hw);
-+	parent = to_clk_divider(parent_hw);
- 
- 	/* Restore the dividers */
- 	if (!ret) {
--		clksel_shift = __ffs(parent->clksel_mask);
--		orig_v = __raw_readl(parent->clksel_reg);
-+		orig_v = __raw_readl(parent->reg);
- 		dummy_v = orig_v;
- 
- 		/* Write any other value different from the Read value */
--		dummy_v ^= (1 << clksel_shift);
--		__raw_writel(dummy_v, parent->clksel_reg);
-+		dummy_v ^= (1 << parent->shift);
-+		__raw_writel(dummy_v, parent->reg);
- 
- 		/* Write the original divider */
--		__raw_writel(orig_v, parent->clksel_reg);
-+		__raw_writel(orig_v, parent->reg);
- 	}
- 
- 	return ret;
+		if (ret == SHRINK_STOP)
+			break;
+		freed += ret;
+
+		count_vm_events(SLABS_SCANNED, batch_size);
+		total_scan -= batch_size;
+	}
+
+So we've already solved the problem you are concerned about....
+
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
