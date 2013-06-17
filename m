@@ -1,112 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3FQAsO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 20:48:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16775 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3FQAsM (ORCPT
+	id S1755688Ab3FQAuv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 20:50:51 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37050 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab3FQAuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 20:48:12 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-b3-51be5cca42cd
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Tony Lindgren'" <tony@atomide.com>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable] arm: omap2: fix AM33xx hwmod infos for UART2
-Date: Mon, 17 Jun 2013 09:48:09 +0900
-Message-id: <000301ce6af4$570edf40$052c9dc0$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkhkJMAQebi3wAAAo4zA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t8zA91TMfsCDc4e1bZY0sxtcXnXHDaL
-	BRsfMVo8fdDEZLH/ipcDq8e3r5NYPJ5susjo0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBkt
-	3+8wFdzjrWh9soGlgXEDdxcjJ4eEgInEnten2CBsMYkL99YD2VwcQgLLGCVudx9i7GLkACta
-	s5MTIr6IUeJAw3YmCOcvo8TOm6cZQbrZBHQljq3fwgpiiwh4S5ya8osZxGYWqJG4vPElC8gg
-	IQFuidXNQSBhTgEeiXV/OsFKhAU8JD40fAQbwyKgKjHtahfYQbwCdhKN/U1QtqDEj8n3WCBG
-	akms33mcCcKWl9i85i0zxJ3qEo/+6kJc0MMosX6qG0SJiMS+F+8YQU6WELjELtF+azoLxC4B
-	iW+TD7FA9MpKbDrADAkHSYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi4z1
-	ihNzi0vz0vWS83M3MUIis38H490D1ocYk4HWT2SWEk3OB0Z2Xkm8obGZkYWpiamxkbmlGWnC
-	SuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYRZ7s5Nm11ulNH9sClXXSubvy8h8q
-	S2u8dF4V7vTLJD/6etHxjbfO65cwzr9uf0O0bp3IuhfLp3ZwLjohH1XjNU1Q5Nu3mRXONb8X
-	cl6pPs/j/JunL47F/SHfIS62KeX1USl54rfCZietLJ+7OthU4c3quBPhaxS57i18wnXuR0/t
-	zxuMbp84lViKMxINtZiLihMByxCmS+ICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jAd1TMfsCDZ7vUrdY0sxtcXnXHDaL
-	BRsfMVo8fdDEZLH/ipcDq8e3r5NYPJ5susjo0bdlFaPH501yASxRDYw2GamJKalFCql5yfkp
-	mXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBrlRTKEnNKgUIBicXFSvp2mCaE
-	hrjpWsA0Ruj6hgTB9RgZoIGEdYwZLd/vMBXc461ofbKBpYFxA3cXIweHhICJxJqdnF2MnECm
-	mMSFe+vZuhi5OIQEFjFKHGjYzgTh/GWU2HnzNCNIFZuArsSx9VtYQWwRAW+JU1N+MYPYzAI1
-	Epc3vmQBGSokwC2xujkIJMwpwCOx7k8nWImwgIfEh4aPYGNYBFQlpl3tYgOxeQXsJBr7m6Bs
-	QYkfk++xQIzUkli/8zgThC0vsXnNW2aIm9UlHv3Vhbigh1Fi/VQ3iBIRiX0v3jFOYBSahWTS
-	LCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwXH/THoH46oGi0OMAhyM
-	Sjy8EqJ7A4VYE8uKK3MPMUpwMCuJ8J6O2BcoxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnA
-	lJRXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYxCaqv/LgvT
-	tL5QVcR06+av1gtPevq6EwzfZ26t4QjwW7zM9bO82Zc9Xx3Ez+RVLtjiu09CuEyt4EHwz22l
-	c1oey9zIWLLvk+/L6+e23OZnEhFxuL1IYWl73zWHyW0Xpm3TD/y469qRtwq69242eqT+f/DS
-	+vtq5qWGbP+uyipcSFqu+X2BnttHJZbijERDLeai4kQADdAAdD8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 16 Jun 2013 20:50:50 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC] arm: Remove sa1111 special case from arm_mm_memblock_reserve()
+Date: Mon, 17 Jun 2013 01:43:19 +0100
+Message-Id: <1371429799-7128-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+The machine desc structure has a hook for doing machine-specific
+memblock code, but the SA1111 still has a platform-specific hook in the
+generic code. This patch merely moves the needed memblock_reserve()
+into a callback.
 
-------------------
+This still leaves a special case in mem_init() to call
+free_reserved_area() on the same region, but there isn't a suitable hook
+in mdesc for making that call so the change is left to another patch.
 
-From: "Thomas Petazzoni <thomas.petazzoni@free-electrons.com>"
+Compile tested only.
 
-commit 768dc16397fb18c9de209cbcb84d890b8279faa7 upstream
-
-The UART2 hwmod structure is pointing to the EDMA channels of UART1,
-which doesn't look right. This patch fixes this by making the UART2
-hwmod structure to a new structure that lists the EDMA channels to be
-used by the UART2.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Vaibhav Hiremath <hvaibhav@ti.com>
-[paul@pwsan.com: updated to apply]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/mach-sa1100/assabet.c    |  1 +
+ arch/arm/mach-sa1100/badge4.c     |  1 +
+ arch/arm/mach-sa1100/generic.c    | 12 ++++++++++++
+ arch/arm/mach-sa1100/generic.h    |  1 +
+ arch/arm/mach-sa1100/jornada720.c |  1 +
+ arch/arm/mm/mmu.c                 |  8 --------
+ 6 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-index 26eee4a..6a57150 100644
---- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-@@ -1979,6 +1979,13 @@ static struct omap_hwmod am33xx_uart1_hwmod = {
- 	},
+diff --git a/arch/arm/mach-sa1100/assabet.c b/arch/arm/mach-sa1100/assabet.c
+index e838ba2..aab247a 100644
+--- a/arch/arm/mach-sa1100/assabet.c
++++ b/arch/arm/mach-sa1100/assabet.c
+@@ -621,6 +621,7 @@ MACHINE_START(ASSABET, "Intel-Assabet")
+ 	.fixup		= fixup_assabet,
+ 	.map_io		= assabet_map_io,
+ 	.nr_irqs	= SA1100_NR_IRQS,
++	.reserve	= sa1100_reserve,
+ 	.init_irq	= sa1100_init_irq,
+ 	.init_time	= sa1100_timer_init,
+ 	.init_machine	= assabet_init,
+diff --git a/arch/arm/mach-sa1100/badge4.c b/arch/arm/mach-sa1100/badge4.c
+index 63361b6..9033d74 100644
+--- a/arch/arm/mach-sa1100/badge4.c
++++ b/arch/arm/mach-sa1100/badge4.c
+@@ -334,6 +334,7 @@ MACHINE_START(BADGE4, "Hewlett-Packard Laboratories BadgePAD 4")
+ 	.atag_offset	= 0x100,
+ 	.map_io		= badge4_map_io,
+ 	.nr_irqs	= SA1100_NR_IRQS,
++	.reserve	= sa1100_reserve,
+ 	.init_irq	= sa1100_init_irq,
+ 	.init_late	= sa11x0_init_late,
+ 	.init_time	= sa1100_timer_init,
+diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
+index 9db3e98..1e7164e 100644
+--- a/arch/arm/mach-sa1100/generic.c
++++ b/arch/arm/mach-sa1100/generic.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/dma-mapping.h>
++#include <linux/memblock.h>
+ #include <linux/pm.h>
+ #include <linux/cpufreq.h>
+ #include <linux/ioport.h>
+@@ -26,6 +27,7 @@
+ #include <asm/mach/map.h>
+ #include <asm/mach/flash.h>
+ #include <asm/irq.h>
++#include <asm/pgtable.h>
+ #include <asm/system_misc.h>
+ 
+ #include <mach/hardware.h>
+@@ -351,6 +353,16 @@ static struct platform_device *sa11x0_devices[] __initdata = {
+ 	&sa11x0dma_device,
  };
  
-+/* uart2 */
-+static struct omap_hwmod_dma_info uart2_edma_reqs[] = {
-+	{ .name = "tx",	.dma_req = 28, },
-+	{ .name = "rx",	.dma_req = 29, },
-+	{ .dma_req = -1 }
-+};
++void __init sa1100_reserve(void)
++{
++	/*
++	 * Because of the SA1111 DMA bug, we want to preserve our
++	 * precious DMA-able memory...
++	 */
++	if (IS_ENABLED(CONFIG_SA1111))
++		memblock_reserve(PHYS_OFFSET, __pa(swapper_pg_dir) - PHYS_OFFSET);
++}
 +
- static struct omap_hwmod_irq_info am33xx_uart2_irqs[] = {
- 	{ .irq = 73 + OMAP_INTC_START, },
- 	{ .irq = -1 },
-@@ -1989,7 +1996,7 @@ static struct omap_hwmod am33xx_uart2_hwmod = {
- 	.class		= &uart_class,
- 	.clkdm_name	= "l4ls_clkdm",
- 	.mpu_irqs	= am33xx_uart2_irqs,
--	.sdma_reqs	= uart1_edma_reqs,
-+	.sdma_reqs	= uart2_edma_reqs,
- 	.main_clk	= "dpll_per_m2_div4_ck",
- 	.prcm		= {
- 		.omap4	= {
+ static int __init sa1100_init(void)
+ {
+ 	pm_power_off = sa1100_power_off;
+diff --git a/arch/arm/mach-sa1100/generic.h b/arch/arm/mach-sa1100/generic.h
+index 2abc6a1..5d8398c 100644
+--- a/arch/arm/mach-sa1100/generic.h
++++ b/arch/arm/mach-sa1100/generic.h
+@@ -5,6 +5,7 @@
+  */
+ 
+ extern void sa1100_timer_init(void);
++extern void sa1100_reserve(void);
+ extern void __init sa1100_map_io(void);
+ extern void __init sa1100_init_irq(void);
+ extern void __init sa1100_init_gpio(void);
+diff --git a/arch/arm/mach-sa1100/jornada720.c b/arch/arm/mach-sa1100/jornada720.c
+index c0b1f5b..d95961a 100644
+--- a/arch/arm/mach-sa1100/jornada720.c
++++ b/arch/arm/mach-sa1100/jornada720.c
+@@ -345,6 +345,7 @@ MACHINE_START(JORNADA720, "HP Jornada 720")
+ 	.atag_offset	= 0x100,
+ 	.map_io		= jornada720_map_io,
+ 	.nr_irqs	= SA1100_NR_IRQS,
++	.reserve	= sa1100_reserve,
+ 	.init_irq	= sa1100_init_irq,
+ 	.init_time	= sa1100_timer_init,
+ 	.init_machine	= jornada720_mach_init,
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index e0d8565..f281a24 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1147,14 +1147,6 @@ void __init arm_mm_memblock_reserve(void)
+ 	 * and can only be in node 0.
+ 	 */
+ 	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_PG_DIR_SIZE);
+-
+-#ifdef CONFIG_SA1111
+-	/*
+-	 * Because of the SA1111 DMA bug, we want to preserve our
+-	 * precious DMA-able memory...
+-	 */
+-	memblock_reserve(PHYS_OFFSET, __pa(swapper_pg_dir) - PHYS_OFFSET);
+-#endif
+ }
+ 
+ /*
 -- 
-1.7.9.5
+1.8.1.2
 
