@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3FQRee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:34:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50559 "EHLO
+	id S1754268Ab3FQRek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:34:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50567 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab3FQRec (ORCPT
+	with ESMTP id S1754064Ab3FQReh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:34:32 -0400
+	Mon, 17 Jun 2013 13:34:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: rmanohar@qca.qualcomm.com, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 65/84] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
-Date: Mon, 17 Jun 2013 10:31:09 -0700
-Message-Id: <1371490288-23167-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 69/84] Revert "ath9k_hw: Update rx gain initval to improve rx sensitivity"
+Date: Mon, 17 Jun 2013 10:31:13 -0700
+Message-Id: <1371490288-23167-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,73 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
+commit 96005931785238e1a24febf65ffb5016273e8225 upstream.
 
-In
+This reverts commit 68d9e1fa24d9c7c2e527f49df8d18fb8cf0ec943
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c
-Author: Egbert Eich <eich@suse.de>
-Date:   Tue Jun 4 17:13:21 2013 +0200
+This change reduces rx sensitivity with no apparent extra benefit.
+It looks like it was meant for testing in a specific scenario,
+but it was never properly validated.
 
-    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
-
-Egbert Eich fixed a long-standing bug where we simply used a
-non-working i2c controller to read the EDID for SDVO-LVDS panels.
-Unfortunately some machines seem to not be able to cope with the mode
-provided in the EDID. Specifically they seem to not be able to cope
-with a 4x pixel mutliplier instead of a 2x one, which seems to have
-been worked around by slightly changing the panels native mode in the
-VBT so that the dotclock is just barely above 50MHz.
-
-Since it took forever to notice the breakage it's fairly safe to
-assume that at least for SDVO-LVDS panels the VBT contains fairly sane
-data. So just switch around the order and use VBT modes first.
-
-v2: Also add EDID modes just in case, and spell Egbert correctly.
-
-v3: Elaborate a bit more about what's going on on Chris' machine.
-
-Cc: Egbert Eich <eich@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
-Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: rmanohar@qca.qualcomm.com
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 601dc05..75da731 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1746,10 +1746,13 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
- 	 * arranged in priority order.
- 	 */
- 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
--	if (list_empty(&connector->probed_modes) == false)
--		goto end;
- 
--	/* Fetch modes from VBT */
-+	/*
-+	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
-+	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
-+	 * drm_mode_probed_add adds the mode at the head of the list we add it
-+	 * last.
-+	 */
- 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
- 		newmode = drm_mode_duplicate(connector->dev,
- 					     dev_priv->sdvo_lvds_vbt_mode);
-@@ -1761,7 +1764,6 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
- 		}
- 	}
- 
--end:
- 	list_for_each_entry(newmode, &connector->probed_modes, head) {
- 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
- 			intel_sdvo->sdvo_lvds_fixed_mode =
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+index 262e1e0..9269d28 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -778,11 +778,11 @@ static const u32 ar9300Common_rx_gain_table_2p2[][2] = {
+ 	{0x0000a074, 0x00000000},
+ 	{0x0000a078, 0x00000000},
+ 	{0x0000a07c, 0x00000000},
+-	{0x0000a080, 0x1a1a1a1a},
+-	{0x0000a084, 0x1a1a1a1a},
+-	{0x0000a088, 0x1a1a1a1a},
+-	{0x0000a08c, 0x1a1a1a1a},
+-	{0x0000a090, 0x171a1a1a},
++	{0x0000a080, 0x22222229},
++	{0x0000a084, 0x1d1d1d1d},
++	{0x0000a088, 0x1d1d1d1d},
++	{0x0000a08c, 0x1d1d1d1d},
++	{0x0000a090, 0x171d1d1d},
+ 	{0x0000a094, 0x11111717},
+ 	{0x0000a098, 0x00030311},
+ 	{0x0000a09c, 0x00000000},
 -- 
 1.8.1.2
 
