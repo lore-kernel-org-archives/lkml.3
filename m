@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab3FQPaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:30:23 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42765 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3FQPaU (ORCPT
+	id S1752210Ab3FQPcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:32:10 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57809 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab3FQPcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:30:20 -0400
+	Mon, 17 Jun 2013 11:32:08 -0400
+Message-ID: <51BF2BF0.6000100@samsung.com>
+Date: Tue, 18 Jun 2013 00:32:00 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <1371094554.10688.42.camel@deadeye.wl.decadent.org.uk>
-References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
-	<1371094554.10688.42.camel@deadeye.wl.decadent.org.uk>
-Date: Mon, 17 Jun 2013 17:30:19 +0200
-X-Google-Sender-Auth: eiuCgz3OTSILyPgtREgJI3cuuzM
-Message-ID: <CAAxaTiOO36zX6STUUihshZW8+=YE85T9tPryreaaB6ZpJWWQ6g@mail.gmail.com>
-Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Lotfi Manseur <lotfi.manseur@gmail.com>, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
-        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        Tushar Behera <tushar.behera@linaro.org>
+Subject: Re: [PATCH] ARM: dts: Enable RTC node for exynos5250-snow
+References: <1371481572-926-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1371481572-926-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jun 13, 2013 at 5:35 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Fri, 2013-06-07 at 15:14 +0200, Lotfi Manseur wrote:
->> Handle null termios in ftdi_set_termios(), introduced in
->> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
->> This has been corrected in the mainline by
->> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
->> a816e3113b63753c330ca4751ea1d208e93e3015.
->>
->> This is to be fixed in longterm 2.6.32.60 and 3.4.47.
->> This bug has been found with coccinelle.
->>
->> Signed-off-by: Lotfi Manseur <lotfi.manseur@imag.fr>
->> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+On 06/18/13 00:06, Doug Anderson wrote:
+> By default the exynos RTC is disabled.  Enable it for snow.  There's
+> also an external RTC on the max77686 PMIC but we haven't yet enabled
+> that.
 >
-> I've queued up those changes for 3.2.  This backported version seems
-> nicer, but we generally prefer to use patches that are as close as
-> possible to those in mainline.
-
-Thank you all for your comments.
-We will be more careful for upcoming reports and patches
-about the stable branches, and we will privilege mainline
-patches next time.
-
-Regards.
-
+> Signed-off-by: Doug Anderson<dianders@chromium.org>
+> ---
+>   arch/arm/boot/dts/exynos5250-snow.dts | 4 ++++
+>   1 file changed, 4 insertions(+)
 >
-> Ben.
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> index d449feb..05244f1 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -171,6 +171,10 @@
+>   		};
+>   	};
 >
->> ---
->>  drivers/usb/serial/ftdi_sio.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
->> index c374beb..615bd9e 100644
->> --- a/drivers/usb/serial/ftdi_sio.c
->> +++ b/drivers/usb/serial/ftdi_sio.c
->> @@ -2364,7 +2364,8 @@ static void ftdi_set_termios(struct tty_struct *tty,
->>
->>       cflag = termios->c_cflag;
->>
->> -     if (old_termios->c_cflag == termios->c_cflag
->> +     if (old_termios
->> +         && old_termios->c_cflag == termios->c_cflag
->>           && old_termios->c_ispeed == termios->c_ispeed
->>           && old_termios->c_ospeed == termios->c_ospeed)
->>               goto no_c_cflag_changes;
->> @@ -2373,7 +2374,8 @@ static void ftdi_set_termios(struct tty_struct *tty,
->>          ftdi_sio_read_bulk_callback  - need to examine what this means -
->>          don't see any problems yet */
->>
->> -     if ((old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
->> +     if (old_termios &&
->> +         (old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
->>           (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
->>               goto no_data_parity_stop_changes;
->>
->
-> --
-> Ben Hutchings
-> friends: People who know you well, but like you anyway.
+> +	rtc {
+> +		status = "okay";
+> +	};
+> +
+>   	/*
+>   	 * On Snow we've got SIP WiFi and so can keep drive strengths low to
+>   	 * reduce EMI.
 
+OK, applied.
 
-
---
-Nicolas Palix
-Tel: +33 4 76 51 46 27
-http://membres-liglab.imag.fr/palix/
+Thanks,
+- Kukjin
