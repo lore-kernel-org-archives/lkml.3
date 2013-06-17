@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab3FQUbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:31:52 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:65203 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab3FQUbt (ORCPT
+	id S1753374Ab3FQUcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:32:18 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34442 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751486Ab3FQUcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:31:49 -0400
+	Mon, 17 Jun 2013 16:32:17 -0400
+Message-ID: <51BF724A.505@hurleysoftware.com>
+Date: Mon, 17 Jun 2013 16:32:10 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130617202624.GA23915@codeaurora.org>
-References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
-	<1371232615-30731-4-git-send-email-davidb@codeaurora.org>
-	<20130615012617.GU18124@quad.lixom.net>
-	<20130617202624.GA23915@codeaurora.org>
-Date: Mon, 17 Jun 2013 13:31:49 -0700
-Message-ID: <CAOesGMhthDb3rsm=GyAy=4F=mNYukYt70BpeS7fwBORkhAJ8sA@mail.gmail.com>
-Subject: Re: [GIT PULL 2/3] msm fixes for 3.11
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH v4 00/24] lockless n_tty receive path
+References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com> <1371302076-4688-1-git-send-email-peter@hurleysoftware.com> <20130617200138.GA8199@kroah.com>
+In-Reply-To: <20130617200138.GA8199@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 1:26 PM, David Brown <davidb@codeaurora.org> wrote:
-> On Fri, Jun 14, 2013 at 06:26:17PM -0700, Olof Johansson wrote:
->
->>> Stephen Boyd (3):
->>>       ARM: dts: msm: Fix bad register addresses
+On 06/17/2013 04:01 PM, Greg Kroah-Hartman wrote:
+> On Sat, Jun 15, 2013 at 09:14:12AM -0400, Peter Hurley wrote:
+>> Greg,
 >>
+>> As before, this patchset is dependent on the 'ldsem patchset'.
+>> The reason is that this series abandons tty->receive_room as
+>> a flow control mechanism (because that requires locking),
+>> and the TIOCSETD ioctl _without ldsem_ uses tty->receive_room
+>> to shutoff i/o.
 >>
->> Hmm. I see that the msm-hsuart device nodes completely lack reg entries.
->> That's
->> considerably more important to fix than the cosmetic unit address that's
->> not
->> even needed unless two nodes happen to have the same name.
+>> It is also dependent on 'n_tty fixes' which I recently resent
+>> to you.
 >
->
-> I'm not seeing the missing reg entries in anyone's tree.
+> Thanks for rebasing all of this, and resending it.  It's late in the
+> 3.11 development cycle, so I'm going to wait unto 3.11-rc1 is out to
+> queue it up for 3.12, to get it lots of testing in linux-next.
 
-Me neither. Hm. I wonder what I was looking at when I said that. Nevermind.
+Thanks Greg. I actually meant to suggest these be held until after
+the merge window but I got distracted by the VT1 deallocation bug
+report.
 
-> However, it appears that both of us resolved the merge conflict
-> differently, and both did it incorrectly.
->
-> How would you like this to be fixed?  Should I just send you a patch
-> based off of the current soc tree?
-
-Yes, just send a patch, not a pull request.
-
-
--Olof
+Regards,
+Peter Hurley
