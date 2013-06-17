@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3FQPdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 11:33:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48689 "EHLO mx2.suse.de"
+	id S1752097Ab3FQPeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 11:34:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46108 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab3FQPdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 11:33:04 -0400
-Date: Mon, 17 Jun 2013 17:33:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130617153302.GI5018@dhcp22.suse.cz>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
+	id S1751220Ab3FQPeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 11:34:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="354950727"
+Date: Mon, 17 Jun 2013 08:34:05 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Jubin Mehta <jubin.mehta@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dan Williams <djbw@fb.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [PATCH] dmatest: masking tests for channel capabilities
+Message-ID: <20130617153404.GA21232@jonmason-lab>
+References: <20130613172408.GA5561@intel.com>
+ <CAHp75Ved4kJ6vZPvCcNcZxJgCJKUb-ZCrCNXFJ84DzK095iDPA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130617151403.GA25172@localhost.localdomain>
+In-Reply-To: <CAHp75Ved4kJ6vZPvCcNcZxJgCJKUb-ZCrCNXFJ84DzK095iDPA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-06-13 19:14:12, Glauber Costa wrote:
-> On Mon, Jun 17, 2013 at 04:18:22PM +0200, Michal Hocko wrote:
-> > Hi,
+On Mon, Jun 17, 2013 at 11:59:00AM +0300, Andy Shevchenko wrote:
+> On Thu, Jun 13, 2013 at 8:24 PM, Jubin Mehta <jubin.mehta@intel.com> wrote:
+> > The current dmatest module tests all the hardware capabilities (MEMCPY, XOR
+> > and PQ) supported by a particular DMA channel and these tests are performed
+> > concurrently by default. This patch allows the user to enable or disable the
+> > test performed for any particular capability. The mask bits for enabling the
+> > tests are set using the debugfs.
 > 
-> Hi,
-> 
-> > I managed to trigger:
-> > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > on top. 
-> > 
-> > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > [...]
-> > ffffffff81122d9c:       0f 0b                   ud2
-> > 
-> > RAX is -1UL.
->
-> Yes, fearing those kind of imbalances, we decided to leave the counter
-> as a signed quantity and BUG, instead of an unsigned quantity.
-> 
-> > I assume that the current backtrace is of no use and it would most
-> > probably be some shrinker which doesn't behave.
-> > 
-> There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> Assuming you are not using xfs, we are left with dentries and inodes.
-> 
-> The first thing to do is to find which one of them is misbehaving. You
-> can try finding this out by the address of the list_lru, and where it
-> lays in the superblock.
+> This approach I like better.
+> Dan, Vinod, what is your opinion?
 
-I am not sure I understand. Care to prepare a debugging patch for me?
- 
-> Once we know each of them is misbehaving, then we'll have to figure
-> out why.
+I withdraw my path in favor of this one.
+
+Thanks,
+Jon
+
+> I have couple of comments below.
 > 
-> Any special filesystem workload ?
-
-This is two parallel kernel builds with separate kernel trees running
-under 2 hard unlimitted groups (with 0 soft limit) followed by rm -rf
-source trees + drop caches. Sometimes I have to repeat this multiple
-times. I can also see some timer specific crashes which are most
-probably not related so I am getting back to my mm tree and will hope
-the tree is healthy.
-
-I have seen some other traces as well (mentioning ext3 dput paths) but I
-cannot reproduce them anymore.
-
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+> > +++ b/Documentation/dmatest.txt
+> 
+> > +Method to enable the capabilities:
+> > +
+> > +PATH = /sys/kernel/debug/dmatest/cap_mask
+> > +(DEFAULT) echo 0x07 > $PATH     // Set Bits 0,1,2 for MEMCPY, XOR and PQ
+> > +          echo 0x01 > $PATH     // Set bit 0 to enable MEMCPY
+> > +          echo 0x02 > $PATH     // Set bit 1 to enable XOR
+> > +          echo 0x04 > $PATH     // Set bit 2 to enable PQ
+> 
+> What if we make examples  followed by # and comments?
+> And move (DEFAULT) to the commentary.
+> 
+> > +++ b/drivers/dma/dmatest.c
+> 
+> > +/*
+> > + * Capability Mask Bits.The bits in the cap_mask denote the masking of
+> > + * the hardware capabilities of the dma channel.
+> > + *
+> > + * DMA_CAP_MEMCPY:  Bit 0 for enabling DMA_MEMCPY capability
+> > + * DMA_CAP_XOR:     Bit 1 for enabling DMA_XOR capabilit
+> > + * DMA_CAP_PQ:      Bit 2 for enabling DMA_PQ capability
+> > + * DMA_CAP_ALL:     Enable all the capabilities of the channel
+> > + */
+> > +#define DMA_CAP_MEMCPY         (1 << 0)
+> > +#define DMA_CAP_XOR            (1 << 1)
+> > +#define DMA_CAP_PQ             (1 << 2)
+> 
+> Can we reuse DMA_MEMCPY and so on from enum dma_transaction_type?
+> 
+> --
+> With Best Regards,
+> Andy Shevchenko
