@@ -1,107 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab3FQQSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:18:48 -0400
-Received: from forward2h.mail.yandex.net ([84.201.187.147]:46376 "EHLO
-	forward2h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3FQQSq (ORCPT
+	id S1752287Ab3FQQUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:20:32 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:39495 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3FQQUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:18:46 -0400
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jun 2013 12:18:46 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <1371479342.18733.14.camel@gandalf.local.home>
-References: <353211371220851@web23d.yandex.ru> <1371479342.18733.14.camel@gandalf.local.home>
-Subject: Re: [PATCH] sched: schedule_raw_spin_unlock() and schedule_spin_unlock()
+	Mon, 17 Jun 2013 12:20:30 -0400
+Message-ID: <1371486020.2086.27.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>,
+        <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Date: Mon, 17 Jun 2013 17:20:20 +0100
+In-Reply-To: <87wqptplhw.fsf@rustcorp.com.au>
+References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
+	 <1360207111.28557.47.camel@edumazet-glaptop>
+	 <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
+	 <20130207.131420.1211188723341167971.davem@davemloft.net>
+	 <20130610070710.GA673@redhat.com>
+	 <1371048996.1894.15.camel@bwh-desktop.uk.level5networks.com>
+	 <20130612190033.GB3462@redhat.com> <87wqptplhw.fsf@rustcorp.com.au>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Message-Id: <575111371485546@web20h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Mon, 17 Jun 2013 20:12:26 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19948.004
+X-TM-AS-Result: No--51.292400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-06-17 at 11:05 +0930, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > On Wed, Jun 12, 2013 at 03:56:36PM +0100, Ben Hutchings wrote:
+> >> On Mon, 2013-06-10 at 10:07 +0300, Michael S. Tsirkin wrote:
+> >> > On Thu, Feb 07, 2013 at 01:14:20PM -0500, David Miller wrote:
+> >> > > From: Ben Hutchings <bhutchings@solarflare.com>
+> >> > > Date: Thu, 7 Feb 2013 16:20:46 +0000
+> >> > > 
+> >> > > > If the consensus is still that we must preserve packets exactly (aside
+> >> > > > from the usual modifications by IP routers) then LRO should be disabled
+> >> > > > on all devices for which forwarding is enabled.
+> >> > > 
+> >> > > I believe this is still undoubtedly the consensus.
+> >> > 
+> >> > With virtio we are getting packets from a linux host,
+> >> > so we could thinkably preserve packets exactly
+> >> > even with LRO. I am guessing other hardware could be
+> >> > doing this as well.
+> >> > 
+> >> > I am not sure what information would need to be preserved -
+> >> > could someone help clarify please?
+> >> 
+> >> Some LRO implementations may not preserve:
+> >> 
+> >> - Packet boundaries
+> >>   - TSO/GSO produces packets all the same size, except possibly for the
+> >>     last one.  GRO therefore flushes a flow after merging a packet with
+> >>     a different segment size.
+> >> - IPv4 TTL, IPv6 hop-limit, TCP timestamp
+> >>   - TSO/GSO will put the same values in all packets.  GRO flushes a flow
+> >>     if they change.
+> >> - IPv4 fragment ID
+> >>   - TSO/GSO produces consecutive fragment IDs.  GRO flushes a flow
+> >>     if it sees a non-consecutive fragment ID.
+> >> - MAC header, IPv4 TOS, IPv6 traffic class
+> >>   - Should be the same for all packets in a flow.  GRO actually checks
+> >>     and flushes a flow if they change.
+> >> 
+> >> Ben.
+> >
+> > Thanks!
+> >
+> > Okay so since LRO in virtio is actually running on top
+> > of GRO/TSO in linux, looks like the only things worth preserving
+> > that we don't preserve at the moment are the packet
+> > boundaries, for which it's enough to report
+> > the first segment size to guest - we have the total length,
+> > from that we can calculate the last segment size.
+> 
+> Isn't this reflected in virtio_net_hdr->gso_size?
+> 
+> But the bigger point here is that we shouldn't be feeding guests LRO
+> packets which don't meet the stricter GRO requirements, as we don't know
+> what the guest is doing with them.  It might be forwarding them itself.
+> 
+> I thought LRO was deprecated and GRO was the new hotness, but I haven't
+> been following.  Do we still care about LRO?
 
+The old software LRO implementation, inet_lro, is deprecated in favour
+of GRO and is now only used by one or two drivers.  Hardware/firmware
+implementations of LRO are still in use and not deprecated, but we try
+to disable them on devices for which forwarding is enabled because of
+this information loss.
 
-17.06.2013, 18:29, "Steven Rostedt" <rostedt@goodmis.org>:
-> On Fri, 2013-06-14 at 18:40 +0400, Kirill Tkhai wrote:
->
->> šdiff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> šindex 58453b8..381e493 100644
->> š--- a/kernel/sched/core.c
->> š+++ b/kernel/sched/core.c
->> š@@ -3125,6 +3125,30 @@ asmlinkage void __sched preempt_schedule_irq(void)
->> ššššššššššexception_exit(prev_state);
->> šš}
->>
->> š+/*
->> š+ * schedule_raw_spin_unlock - unlock raw_spinlock and call schedule()
->> š+ *
->> š+ * Should be used instead of the constructions
->> š+ * šš1) raw_spin_unlock_irq(lock);
->> š+ * šššššschedule();
->> š+ * ššor
->> š+ * šš2) raw_spin_unlock_irqrestore(lock, flags);
->> š+ * šššššschedule();
->
-> Is there a place that does #2? If interrupts were disabled, the flags
-> would keep them disabled and that would not be good when calling
-> schedule.
+The problem I was talking about is this: you can put macvlan on top of a
+device that has LRO enabled, and then if the macvtap/macvlan device is
+used for forwarding the output packets might not look the same as those
+originally received.  So LRO should be disabled on the underlying device
+whenever forwarding is enabled on the macvtap/macvlan device; however we
+can't necessarily tell when that happens as the forwarding might be done
+inside a VM.  Maybe this is just too obscure a use case to worry much
+about getting it right automatically.
 
-Some drivers use _irqsave even if they are certainly enabled, I was thinking
-about them. This is mistake, but people use.
+Ben.
 
-Now I'm agree with you, I'll remove advice #2 to not multiply this errors.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
->> š+ * where they have to be.
->> š+ *
->> š+ * It helps to prevent excess preempt_schedule() during the unlocking,
->> š+ * which can be called on preemptible kernel.
->> š+ * Returns with irqs enabled.
->> š+ */
->> š+void __sched schedule_raw_spin_unlock(raw_spinlock_t *lock)
->> š+{
->
-> I agree with the idea of adding this, but I don't like this
-> implementation. Also, if this is to enable interrupts, the name must
-> represent that:
->
-> ššschedule_raw_spin_unlock_irq()
->
-> You can't just enable them if they were not disabled. That will break
-> things like lockdep.
-
-Ok, and in addition may be useful schedule_raw_spin_unlock() for
-use in cases like this happens in fs/*
-
->> š+ preempt_disable();
->> š+ raw_spin_unlock_irq(lock);
->> š+ sched_preempt_enable_no_resched();
->
-> This is the easy way of implementing this, but it does add a slight
-> overhead here. Adding and subtracting preempt count just to prevent the
-> disable does add a bit more computation. I've done this in the tracing
-> code, but its within the tracing and in an unlikely path. The overhead
-> is not common. But I can see this being in a fast path and not something
-> that we want to add overhead to.
->
-> The ideal solution is not the easy one. It is to introduce a real
-> schedule_raw_spin_unlock() that is a copy of raw_spin_unlock() that does
-> not call preempt_enable, but calls preempt_enable_no_resched() instead,
-> and then does the schedule.
-
-Ok
-
-> -- Steve
->
->> š+ schedule();
->> š+}
->> š+EXPORT_SYMBOL(schedule_raw_spin_unlock);
->> š+
->> šš#endif /* CONFIG_PREEMPT */
->>
->> ššint default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
