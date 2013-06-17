@@ -1,95 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3FQEVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 00:21:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54912 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab3FQEVf (ORCPT
+	id S1755723Ab3FQEdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 00:33:44 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48403 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab3FQEdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 00:21:35 -0400
-Date: Mon, 17 Jun 2013 14:21:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Dave Airlie <airlied@linux.ie>
-Subject: linux-next: manual merge of the fbdev tree with the drm tree
-Message-Id: <20130617142120.b42dafb967974d3906a43fc9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Jun_2013_14_21_20_+1000_9P_cQyBS7OvTq7WB"
+	Mon, 17 Jun 2013 00:33:43 -0400
+Message-ID: <51BE91A4.6020003@hitachi.com>
+Date: Mon, 17 Jun 2013 13:33:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tracing/kprobes: Avoid perf_trace_buf_*() if ->perf_events
+ is empty
+References: <20130616172146.GA8533@redhat.com>
+In-Reply-To: <20130616172146.GA8533@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Jun_2013_14_21_20_+1000_9P_cQyBS7OvTq7WB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/06/17 2:21), Oleg Nesterov wrote:
+> perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
+> if this task/CPU has no active counters. Change kprobe_perf_func()
+> and kretprobe_perf_func() to check call->perf_events beforehand
+> and return if this list is empty.
+> 
+> For example, "perf record -e some_probe -p1". Only /sbin/init will
+> report, all other threads which hit the same probe will do
+> perf_trace_buf_prepare/perf_trace_buf_submit just to realize that
+> nobody wants perf_swevent_event().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Hi all,
+Looks good :) Thank you!
 
-Today's linux-next merge of the fbdev tree got a conflict in
-drivers/video/of_display_timing.c between commit f583662347c6 ("video:
-display_timing: make parameter const") from the drm tree and commits
-fcf7e6e5bd84 ("videomode: don't allocate mem in of_get_display_timing()")
-and ffa3fd21de8a ("videomode: implement public of_get_display_timing()")
-from the fbdev tree.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> ---
+>  kernel/trace/trace_kprobe.c |   12 ++++++++----
+>  1 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 9f46e98..c0af476 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1157,6 +1157,10 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+>  	int size, __size, dsize;
+>  	int rctx;
+>  
+> +	head = this_cpu_ptr(call->perf_events);
+> +	if (hlist_empty(head))
+> +		return;
+> +
+>  	dsize = __get_data_size(tp, regs);
+>  	__size = sizeof(*entry) + tp->size + dsize;
+>  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+> @@ -1172,8 +1176,6 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+>  	entry->ip = (unsigned long)tp->rp.kp.addr;
+>  	memset(&entry[1], 0, dsize);
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+> -
+> -	head = this_cpu_ptr(call->perf_events);
+>  	perf_trace_buf_submit(entry, size, rctx,
+>  					entry->ip, 1, regs, head, NULL);
+>  }
+> @@ -1189,6 +1191,10 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  	int size, __size, dsize;
+>  	int rctx;
+>  
+> +	head = this_cpu_ptr(call->perf_events);
+> +	if (hlist_empty(head))
+> +		return;
+> +
+>  	dsize = __get_data_size(tp, regs);
+>  	__size = sizeof(*entry) + tp->size + dsize;
+>  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+> @@ -1204,8 +1210,6 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  	entry->func = (unsigned long)tp->rp.kp.addr;
+>  	entry->ret_ip = (unsigned long)ri->ret_addr;
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+> -
+> -	head = this_cpu_ptr(call->perf_events);
+>  	perf_trace_buf_submit(entry, size, rctx,
+>  					entry->ret_ip, 1, regs, head, NULL);
+>  }
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/video/of_display_timing.c
-index 2894e03,9c0f17b..0000000
---- a/drivers/video/of_display_timing.c
-+++ b/drivers/video/of_display_timing.c
-@@@ -53,13 -53,12 +53,12 @@@ static int parse_timing_property(const=20
-  }
- =20
-  /**
--  * of_get_display_timing - parse display_timing entry from device_node
-+  * of_parse_display_timing - parse display_timing entry from device_node
-   * @np: device_node with the properties
-   **/
-- static struct display_timing *of_get_display_timing(const struct device_n=
-ode
-- 						    *np)
- -static int of_parse_display_timing(struct device_node *np,
-++static int of_parse_display_timing(const struct device_node *np,
-+ 		struct display_timing *dt)
-  {
-- 	struct display_timing *dt;
-  	u32 val =3D 0;
-  	int ret =3D 0;
- =20
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---Signature=_Mon__17_Jun_2013_14_21_20_+1000_9P_cQyBS7OvTq7WB
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRvo7FAAoJEECxmPOUX5FE5mcP+wWfcT4MuB4zIGJej3CBOQrV
-gs3/6LNB5TDIr9fAeDsINBjeYY2K+NhWYxp6G+nf1lWFDXi1k7TNAph5uJOzUbNc
-LQZz5beM2XYJgYqJYfd1P2UHwPXd7EHmcawOV+B42Wkbyn5ayfouKf1rxtZyQjxT
-EwIxeGq4aZ3FkI0wVzYWITTyCuXp/v8XLk7mKPTV1LqYuQevbUUcQT+g+Xv8+sVD
-Zxji8NzhrZtAlrvrlYOQnhilHRKASGA4nnwydZ/fC6/NqH54Dn2pT39w3/I6zP8h
-mwZN7bMbhsClpUUQU7KH5AJGIf8rtp06QwO4U8y6MfdOqUNTkN0Su7R9E8ERXFMn
-7MjwVgogJXjUX74QPKtKv8N4bXnG0dYU2G9FRI0wfzMUIKIx0jnZR6Wktpq8nQFF
-SKsNJWUhECipknsB/Do6ofL6m+g+TTJJ4PTtKYPP4fhaWLgIvlsoKs+KYWgHVuWC
-cK7SrIdgS1LFs2LNqzBcL2XIhdKOjVPau1NtP5AR03bBxONAG3V5VcZYUYqKbE12
-QegHgnsbHxj0D0zZ4pL7/d5fFK7uqlzoP4G8glo/hTCY30JGYYjIepzs8h5O56Mo
-pB4HmfsVOfkI8do0dL4hKhmYXDy5ztoI4L9i78XAVkrdSJi466YjcWEfreO9g3Iv
-oacwjSo27LXNB4L9/0uG
-=X2Oz
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Jun_2013_14_21_20_+1000_9P_cQyBS7OvTq7WB--
