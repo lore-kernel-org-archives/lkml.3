@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab3FQKzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:55:22 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:63957 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab3FQKzV (ORCPT
+	id S932704Ab3FQKzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:55:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42723 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab3FQKzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:55:21 -0400
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-To: namhyung@kernel.org, acme@ghostprotocols.net
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-Subject: [PATCH] perf: fix bench numa compilation
-Date: Mon, 17 Jun 2013 12:54:59 +0200
-Message-Id: <1371466499-28291-1-git-send-email-riccardo.magliocchetti@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <8761xd2k1c.fsf@sejong.aot.lge.com>
-References: <8761xd2k1c.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 17 Jun 2013 06:55:44 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com, patches@linaro.org, sachin.kamat@linaro.org,
+        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH V3 12/15] ASoC: spear: Convert to use devm_ioremap_resource
+Date: Mon, 17 Jun 2013 16:10:57 +0530
+Message-Id: <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130617102000.GB1403@sirena.org.uk>
+References: <20130617102000.GB1403@sirena.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following errors on gcc 4.8.1 / x86:
+Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+introduced devm_ioremap_resource() and deprecated the use of
+devm_request_and_ioremap().
 
-bench/numa.c: In function ‘worker_thread’:
-bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-    if (diff.tv_sec >= g->p.nr_secs) {
-                    ^
-bench/numa.c:1161:6: error: format ‘%lx’ expects argument of type ‘long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format=]
-      process_nr, thread_nr, runtime_ns_max / bytes_done, val);
-      ^
+devm_request_mem_region is called in devm_ioremap_resource(). Hence that
+part can also be removed.
 
-Signed-off-by: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+Since devm_ioremap_resource prints error message on failure, there is
+no need to print an explicit warning message.
+
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+CC: alsa-devel@alsa-project.org
+CC: Liam Girdwood <lgirdwood@gmail.com>
+CC: Mark Brown <broonie@kernel.org>
 ---
- tools/perf/bench/numa.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Changes for V3:
+* Rebased on for-next branch of sound/soc git tree
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
 
-changes from v1:
-- make it actually work on 64bit too as reported by Namhyung Kim
+Changes for V2:
+* Removed redundant print of error message from devm_ioremap_resource
+exit path
+* Call to devm_request_mem_region is removed.
 
-diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
-index 30d1c32..bd501454 100644
---- a/tools/perf/bench/numa.c
-+++ b/tools/perf/bench/numa.c
-@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
- 		/* Check whether our max runtime timed out: */
- 		if (g->p.nr_secs) {
- 			timersub(&stop, &start0, &diff);
--			if (diff.tv_sec >= g->p.nr_secs) {
-+			if (diff.tv_sec >= (long int)g->p.nr_secs) {
- 				g->stop_work = true;
- 				break;
- 			}
-@@ -1157,8 +1157,8 @@ static void *worker_thread(void *__tdata)
- 			runtime_ns_max += diff.tv_usec * 1000;
+ sound/soc/spear/spdif_out.c |   19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
+
+diff --git a/sound/soc/spear/spdif_out.c b/sound/soc/spear/spdif_out.c
+index a4a8748..2fdf68c 100644
+--- a/sound/soc/spear/spdif_out.c
++++ b/sound/soc/spear/spdif_out.c
+@@ -282,27 +282,16 @@ static int spdif_out_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int ret;
  
- 			if (details >= 0) {
--				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
--					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
-+				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016llx]\n",
-+					process_nr, thread_nr, runtime_ns_max / bytes_done, (unsigned long long)val);
- 			}
- 			fflush(stdout);
- 		}
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -EINVAL;
+-
+-	if (!devm_request_mem_region(&pdev->dev, res->start,
+-				resource_size(res), pdev->name)) {
+-		dev_warn(&pdev->dev, "Failed to get memory resourse\n");
+-		return -ENOENT;
+-	}
+-
+ 	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
+ 	if (!host) {
+ 		dev_warn(&pdev->dev, "kzalloc fail\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	host->io_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!host->io_base) {
+-		dev_warn(&pdev->dev, "ioremap failed\n");
+-		return -ENOMEM;
+-	}
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	host->io_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(host->io_base))
++		return PTR_ERR(host->io_base);
+ 
+ 	host->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(host->clk))
 -- 
-1.8.3.1
+1.7.9.5
 
