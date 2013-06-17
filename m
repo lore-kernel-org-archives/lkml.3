@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab3FQXLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:11:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40206 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3FQXLw (ORCPT
+	id S1752520Ab3FQXPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:15:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42166 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3FQXPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:11:52 -0400
-Date: Mon, 17 Jun 2013 16:11:51 -0700 (PDT)
-Message-Id: <20130617.161151.1327615665309510068.davem@davemloft.net>
-To: linux@roeck-us.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frank.Li@freescale.com, jim_baxter@mentor.com
-Subject: Re: [PATCH] net: fec: Fix build for MCF5272
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371500179-4733-1-git-send-email-linux@roeck-us.net>
-References: <1371500179-4733-1-git-send-email-linux@roeck-us.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 19:15:03 -0400
+Date: Mon, 17 Jun 2013 16:15:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org,
+        Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
+        "Emilio G. Cota" <cota@braap.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 3/8] FMC: add core bus driver
+Message-ID: <20130617231502.GA12984@kroah.com>
+References: <cover.1371018406.git.rubini@gnudd.com>
+ <3e9f6b2fb7cd202da9bbb6371b27ff302ca8b860.1371018406.git.rubini@gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3e9f6b2fb7cd202da9bbb6371b27ff302ca8b860.1371018406.git.rubini@gnudd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
-Date: Mon, 17 Jun 2013 13:16:19 -0700
+On Wed, Jun 12, 2013 at 09:13:47AM +0200, Alessandro Rubini wrote:
+> +static void fmc_release(struct device *dev)
+> +{
+> +	struct fmc_device *fmc = container_of(dev, struct fmc_device, dev);
+> +
+> +	kfree(fmc);
+> +}
 
-> Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
-> baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
-> network) introduced functionality into the FEC driver which is not
-> supported on MCF5272. As result, building images for MCF5272 fails,
-> complaining about several undefined symbols.
-> 
-> Disabled the added functionality for MCF5272 builds.
-> 
-> Cc: Frank Li <Frank.Li@freescale.com>
-> Cc: Jim Baxter <jim_baxter@mentor.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> Sorry for the added ifdefs. If anyone has a better idea on how to fix
-> the problems, let me know.
-> 
-> This problem exists in 3.9 as well.
+I read so many people who write new bus / device code that get this
+wrong, that I'm so overjoyed when it is written correctly, that I'm
+almost willing to just blindly accept this whole patchset.
 
-Does the M5272 not have these registers, or have you simply not added
-defines for where there offsets are in that silicon instance?
+Almost :)
 
-I'd much rather you add the register offset defines than pepper the
-entire driver with ifdefs.
+Seriously, very nice job on the whole driver model integration for this
+code.
+
+thanks,
+
+greg k-h
