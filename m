@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab3FQQUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:20:32 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:39495 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab3FQQUa (ORCPT
+	id S1752636Ab3FQQUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:20:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52596 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3FQQUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:20:30 -0400
-Message-ID: <1371486020.2086.27.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>,
-        <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>
-Date: Mon, 17 Jun 2013 17:20:20 +0100
-In-Reply-To: <87wqptplhw.fsf@rustcorp.com.au>
-References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
-	 <1360207111.28557.47.camel@edumazet-glaptop>
-	 <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
-	 <20130207.131420.1211188723341167971.davem@davemloft.net>
-	 <20130610070710.GA673@redhat.com>
-	 <1371048996.1894.15.camel@bwh-desktop.uk.level5networks.com>
-	 <20130612190033.GB3462@redhat.com> <87wqptplhw.fsf@rustcorp.com.au>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 17 Jun 2013 12:20:33 -0400
+Date: Mon, 17 Jun 2013 17:20:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        sachin.kamat@linaro.org, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130617162010.GJ1403@sirena.org.uk>
+References: <20130617102000.GB1403@sirena.org.uk>
+ <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19948.004
-X-TM-AS-Result: No--51.292400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A6/RaK8Cbiy3x9M4"
+Content-Disposition: inline
+In-Reply-To: <1371465657-22981-1-git-send-email-tushar.behera@linaro.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V3 12/15] ASoC: spear: Convert to use
+ devm_ioremap_resource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 11:05 +0930, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > On Wed, Jun 12, 2013 at 03:56:36PM +0100, Ben Hutchings wrote:
-> >> On Mon, 2013-06-10 at 10:07 +0300, Michael S. Tsirkin wrote:
-> >> > On Thu, Feb 07, 2013 at 01:14:20PM -0500, David Miller wrote:
-> >> > > From: Ben Hutchings <bhutchings@solarflare.com>
-> >> > > Date: Thu, 7 Feb 2013 16:20:46 +0000
-> >> > > 
-> >> > > > If the consensus is still that we must preserve packets exactly (aside
-> >> > > > from the usual modifications by IP routers) then LRO should be disabled
-> >> > > > on all devices for which forwarding is enabled.
-> >> > > 
-> >> > > I believe this is still undoubtedly the consensus.
-> >> > 
-> >> > With virtio we are getting packets from a linux host,
-> >> > so we could thinkably preserve packets exactly
-> >> > even with LRO. I am guessing other hardware could be
-> >> > doing this as well.
-> >> > 
-> >> > I am not sure what information would need to be preserved -
-> >> > could someone help clarify please?
-> >> 
-> >> Some LRO implementations may not preserve:
-> >> 
-> >> - Packet boundaries
-> >>   - TSO/GSO produces packets all the same size, except possibly for the
-> >>     last one.  GRO therefore flushes a flow after merging a packet with
-> >>     a different segment size.
-> >> - IPv4 TTL, IPv6 hop-limit, TCP timestamp
-> >>   - TSO/GSO will put the same values in all packets.  GRO flushes a flow
-> >>     if they change.
-> >> - IPv4 fragment ID
-> >>   - TSO/GSO produces consecutive fragment IDs.  GRO flushes a flow
-> >>     if it sees a non-consecutive fragment ID.
-> >> - MAC header, IPv4 TOS, IPv6 traffic class
-> >>   - Should be the same for all packets in a flow.  GRO actually checks
-> >>     and flushes a flow if they change.
-> >> 
-> >> Ben.
-> >
-> > Thanks!
-> >
-> > Okay so since LRO in virtio is actually running on top
-> > of GRO/TSO in linux, looks like the only things worth preserving
-> > that we don't preserve at the moment are the packet
-> > boundaries, for which it's enough to report
-> > the first segment size to guest - we have the total length,
-> > from that we can calculate the last segment size.
-> 
-> Isn't this reflected in virtio_net_hdr->gso_size?
-> 
-> But the bigger point here is that we shouldn't be feeding guests LRO
-> packets which don't meet the stricter GRO requirements, as we don't know
-> what the guest is doing with them.  It might be forwarding them itself.
-> 
-> I thought LRO was deprecated and GRO was the new hotness, but I haven't
-> been following.  Do we still care about LRO?
 
-The old software LRO implementation, inet_lro, is deprecated in favour
-of GRO and is now only used by one or two drivers.  Hardware/firmware
-implementations of LRO are still in use and not deprecated, but we try
-to disable them on devices for which forwarding is enabled because of
-this information loss.
+--A6/RaK8Cbiy3x9M4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The problem I was talking about is this: you can put macvlan on top of a
-device that has LRO enabled, and then if the macvtap/macvlan device is
-used for forwarding the output packets might not look the same as those
-originally received.  So LRO should be disabled on the underlying device
-whenever forwarding is enabled on the macvtap/macvlan device; however we
-can't necessarily tell when that happens as the forwarding might be done
-inside a VM.  Maybe this is just too obscure a use case to worry much
-about getting it right automatically.
+On Mon, Jun 17, 2013 at 04:10:57PM +0530, Tushar Behera wrote:
+> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> introduced devm_ioremap_resource() and deprecated the use of
+> devm_request_and_ioremap().
 
-Ben.
+Applied, thanks.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+--A6/RaK8Cbiy3x9M4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRvzc3AAoJELSic+t+oim9e0EP/0UhBdVI8dyz8+Avw6xsx6G+
+NvByUFwaLyw4qWx3PvREyAFuwI+VYFa3eG6LGJtFOTXT92B08BX5phYKa/EEH+6/
+lfuHLiuD88ksJDFiCCtRYoYD++7P5DHhR2trz3qgSMNWTUQRowKWyYjMhZhtrdcJ
+ScG1djObnBeHsAHAtYvICfcQgbaCjSzbnvtieNsnBpnwpz5Th0jMwxq5BoZDJKUi
+cpcpEcGJkxJwWaJcd8+T//OrbFHamNbBQ+fWibU3+wCqtDlNyKu+hSIA9Pgt5H7l
+ltVYCwZfzVytUUk7FMtkRc+4UDr8oXIQj9Z/SyZQZWRCAFRqAHDRt5u+gWPgkNmY
+nPeODbTCBJtoK2Keoysa+bnle4oxOJPx+8MPRSQ5S0Vgym7fohAJhgitdEMGIWDM
++prJmN9sfT/s+2qMali/eARk5gkXWbxN4SJCjRPeNhPXkG/F5EqmeLOaIMjhJfx7
+rHRNXXheUvUsEciUFWFpXSlT1R/bMAavXXYegbeAmSR+CHxju7GOfiMTZRuNCyHb
+llzaELdm9fhOqSprCsghex+zcEyEJdGnfPaPbPrjpZrepIU0z2yyEgI81EE7qbi3
+dpae+OqDGbhtHi9ybEUXQUbkMXUzO5UDHNCRAzpAmeD7guo1iDXISsWZRO2xvPBt
+1DAW/An9QYnlzDdW81Gx
+=yL2B
+-----END PGP SIGNATURE-----
+
+--A6/RaK8Cbiy3x9M4--
