@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab3FQRd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:33:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50525 "EHLO
+	id S1753948Ab3FQRde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:33:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50502 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab3FQRdm (ORCPT
+	with ESMTP id S1753926Ab3FQRda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:33:42 -0400
+	Mon, 17 Jun 2013 13:33:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Hung <alex.hung@canonical.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 38/84] ACPI / video: ignore BIOS initial backlight value for HP m4
-Date: Mon, 17 Jun 2013 10:30:42 -0700
-Message-Id: <1371490288-23167-39-git-send-email-kamal@canonical.com>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 34/84] dmaengine: ste_dma40: fix pm runtime ref counting
+Date: Mon, 17 Jun 2013 10:30:38 -0700
+Message-Id: <1371490288-23167-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371490288-23167-1-git-send-email-kamal@canonical.com>
 References: <1371490288-23167-1-git-send-email-kamal@canonical.com>
@@ -28,41 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Hung <alex.hung@canonical.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-commit fedbe9bc6fd3e14b1ffbb3dac407777ac4a3650c upstream.
+commit 9ecb41bd8cf002fd8f3e063db4df81647ddd623c upstream.
 
-On HP m4 lapops, BIOS reports minimum backlight on boot and
-causes backlight to dim completely. This ignores the initial backlight
-values and set to max brightness.
+The pm runtime reference counting of the driver is broken for the case
+when there is more than one transfer queued, leading to the device being
+runtime suspend while active.  Fix it.
 
-References: https://bugs.launchpad.net/bugs/1184501
-Signed-off-by: Alex Hung <alex.hung@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/video.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/dma/ste_dma40.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index a6e1a4d..afc2a8d 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -463,6 +463,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
- 		DMI_MATCH(DMI_PRODUCT_NAME, "HP 1000 Notebook PC"),
- 		},
- 	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion m4",
-+	 .matches = {
-+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion m4 Notebook PC"),
-+		},
-+	},
- 	{}
- };
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 23c5573..17459ad 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1392,10 +1392,12 @@ static void dma_tc_handle(struct d40_chan *d40c)
+ 			return;
+ 		}
  
+-		if (d40_queue_start(d40c) == NULL)
++		if (d40_queue_start(d40c) == NULL) {
+ 			d40c->busy = false;
+-		pm_runtime_mark_last_busy(d40c->base->dev);
+-		pm_runtime_put_autosuspend(d40c->base->dev);
++
++			pm_runtime_mark_last_busy(d40c->base->dev);
++			pm_runtime_put_autosuspend(d40c->base->dev);
++		}
+ 	}
+ 
+ 	d40c->pending_tx++;
 -- 
 1.8.1.2
 
