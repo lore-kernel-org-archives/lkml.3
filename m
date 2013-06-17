@@ -1,16 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab3FQOBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 10:01:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44805 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab3FQOBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 10:01:18 -0400
-Date: Mon, 17 Jun 2013 16:01:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
+	id S1756338Ab3FQOBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 10:01:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8624 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756229Ab3FQOBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 10:01:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,881,1363158000"; 
+   d="scan'208";a="351081013"
+Message-ID: <51BF16C6.7070009@intel.com>
+Date: Mon, 17 Jun 2013 22:01:42 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
 To: Paul Turner <pjt@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
@@ -24,28 +29,30 @@ Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
         Michael Wang <wangyun@linux.vnet.ibm.com>,
         Jason Low <jason.low2@hp.com>,
         Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch v8 9/9] sched/tg: remove blocked_load_avg in balance
-Message-ID: <20130617140100.GZ3204@twins.programming.kicks-ass.net>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
- <1370589652-24549-10-git-send-email-alex.shi@intel.com>
- <CAPM31RJ_0xgymfN+5FzQCSrv-qgpT+42EOmWke1rOGy7GfHcYg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31RJ_0xgymfN+5FzQCSrv-qgpT+42EOmWke1rOGy7GfHcYg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [patch v8 8/9] sched: consider runnable load average in move_tasks
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-9-git-send-email-alex.shi@intel.com> <CAPM31RJs=A+j5NtSr4TXzQ8sAHMSkz+cNoZjOhsmc2p2HksZNg@mail.gmail.com>
+In-Reply-To: <CAPM31RJs=A+j5NtSr4TXzQ8sAHMSkz+cNoZjOhsmc2p2HksZNg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 05:20:46AM -0700, Paul Turner wrote:
-> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
-> > blocked_load_avg sometime is too heavy and far bigger than runnable load
-> > avg, that make balance make wrong decision. So remove it.
+On 06/17/2013 06:58 PM, Paul Turner wrote:
+>> > +               unsigned long tmp_rla;
+>> > +               tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
+>> > +
+>> >                 load = tg->parent->cfs_rq[cpu]->h_load;
+>> > -               load *= tg->se[cpu]->load.weight;
+>> > -               load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
+>> > +               load *= tg->se[cpu]->avg.load_avg_contrib;
+>> > +               load /= tmp_rla;
+> Why do we need the temporary here?
 > 
-> Ok so this is  going to have terrible effects on the correctness of
-> shares distribution; I'm fairly opposed to it in its present form.
 
-Should someone take a look at the LTP cgroup tests to make sure they
-cover this properly?
+you'r right. tmp_rla is not necessary here.
+
+-- 
+Thanks
+    Alex
