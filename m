@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab3FQTUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 15:20:36 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:45638 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3FQTUf (ORCPT
+	id S1753127Ab3FQTUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 15:20:55 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:45305 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750929Ab3FQTUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 15:20:35 -0400
-Date: Mon, 17 Jun 2013 21:19:51 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Build regressions/improvements in v3.10-rc6
-In-Reply-To: <alpine.DEB.2.00.1306172114580.17108@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1306172115300.17174@ayla.of.borg>
-References: <alpine.DEB.2.00.1306172114580.17108@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 17 Jun 2013 15:20:53 -0400
+From: Lorenz Haspel <lorenz@badgers.com>
+To: devel@linuxdriverproject.org
+Cc: gregkh@linuxfoundation.org, puff65537@bansheeslibrary.com,
+        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de, lorenz@badgers.com
+Subject: [PATCH 4/4 v2] silicom: checkpatch: errors caused by macros
+Date: Mon, 17 Jun 2013 21:20:14 +0200
+Message-Id: <1371496814-26104-1-git-send-email-lorenz@badgers.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371486386-8043-4-git-send-email-lorenz@badgers.com>
+References: <1371486386-8043-4-git-send-email-lorenz@badgers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.10-rc6 to v3.10-rc5[3], the summaries are:
->   - build errors: +16/-36
+fixed checkpatch error:
+added parenthesis around complex macro.
 
-  + arch/mn10300/include/asm/irqflags.h: error: implicit declaration of function 'raw_smp_processor_id' [-Werror=implicit-function-declaration]:  => 71:2
-  + include/linux/smp.h: error: implicit declaration of function 'local_irq_restore' [-Werror=implicit-function-declaration]:  => 150:2
-  + include/linux/smp.h: error: implicit declaration of function 'local_irq_save' [-Werror=implicit-function-declaration]:  => 148:2
+Macro with return was only used once in the code,
+so I expandet it in-place.
 
-am33_2.0/asb2303_defconfig and am33_2.0/asb2364_defconfig
-Known, fix available
+Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
+---
+v2: expanded macro in-place
+---
+ drivers/staging/silicom/bpctl_mod.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-  + arch/powerpc/include/asm/mmu-hash64.h: error: control reaches end of non-void function [-Werror=return-type]:  => 180:1
-  + arch/powerpc/kvm/book3s_hv.c: error: 'vcpus_to_update[need_vpa_update]' may be used uninitialized in this function [-Werror=uninitialized]:  => 1187:22
-  + arch/powerpc/platforms/cell/beat_iommu.c: error: 'dma_base' may be used uninitialized in this function [-Werror=uninitialized]:  => 69:11
-  + arch/powerpc/platforms/cell/beat_iommu.c: error: 'dma_size' may be used uninitialized in this function [-Werror=uninitialized]:  => 68:2
-  + arch/powerpc/platforms/cell/beat_iommu.c: error: 'io_page_size' may be used uninitialized in this function [-Werror=uninitialized]:  => 68:54
-  + arch/powerpc/platforms/cell/beat_wrapper.h: error: 'io_space_id' may be used uninitialized in this function [-Werror=uninitialized]:  => 249:2
-  + arch/powerpc/platforms/cell/beat_wrapper.h: error: 'ioid' may be used uninitialized in this function [-Werror=uninitialized]:  => 249:2
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 5511f5e..d2b8004 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -43,11 +43,6 @@ MODULE_DESCRIPTION(BP_MOD_DESCR);
+ MODULE_VERSION(BP_MOD_VER);
+ spinlock_t bpvm_lock;
+ 
+-#define lock_bpctl()					\
+-if (down_interruptible(&bpctl_sema)) {			\
+-	return -ERESTARTSYS;				\
+-}							\
+-
+ #define unlock_bpctl()					\
+ 	up(&bpctl_sema);
+ 
+@@ -5452,7 +5447,8 @@ static long device_ioctl(struct file *file,	/* see include/linux/fs.h */
+ 	static bpctl_dev_t *pbpctl_dev;
+ 
+ 	/* lock_kernel(); */
+-	lock_bpctl();
++	if (down_interruptible(&bpctl_sema))
++		return -ERESTARTSYS;
+ 	/* local_irq_save(flags); */
+ 	/* if(!spin_trylock_irqsave(&bpvm_lock)){
+ 	   local_irq_restore(flags);
+@@ -7911,7 +7907,8 @@ int bypass_proc_create_dev_sd(bpctl_dev_t *pbp_device_block)
+ 	}
+ 	current_pfs->bypass_entry = procfs_dir;
+ 
+-#define ENTRY(x) ret |= procfs_add(#x, &x##_ops, pbp_device_block)
++#define ENTRY(x) (ret |= procfs_add(#x, &x##_ops, pbp_device_block))
++
+ 	ENTRY(bypass_info);
+ 	if (pbp_device_block->bp_caps & SW_CTL_CAP) {
+ 		/* Create set param proc's */
+-- 
+1.7.10.4
 
-powerpc-randconfig
-
-We need more randconfig builds to divert attention from powerpc ;-)
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6325/ (86 out of 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6308/ (all 120 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
