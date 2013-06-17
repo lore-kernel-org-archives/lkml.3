@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3FQC4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 22:56:05 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:45023 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab3FQC4D (ORCPT
+	id S1755643Ab3FQC6S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 22:58:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33432 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab3FQC6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 22:56:03 -0400
-Date: Mon, 17 Jun 2013 11:57:05 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH/RFC] arm: arch_timer: Do not set C3STOP in case CPU_IDLE=n
-Message-ID: <20130617025704.GA27933@verge.net.au>
-References: <20130617002056.7646.54131.sendpatchset@w520>
- <20130617021342.GJ15043@verge.net.au>
- <CANqRtoTfiWFv0JWwJysi47gsSjJx9g3-FFMMzCYROWDPbndnYQ@mail.gmail.com>
+	Sun, 16 Jun 2013 22:58:17 -0400
+Date: Sun, 16 Jun 2013 19:58:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andi Shyti <andi@etezian.org>
+Cc: arnd@arndb.de, rob@landley.net, oatilla@gmail.com, szsolt@gmail.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 0/2] etzkx accelerometer support
+Message-ID: <20130617025854.GB12522@kroah.com>
+References: <cover.1371418586.git.andi@etezian.org>
+ <20130616215110.GA10834@kroah.com>
+ <20130616222648.GE4385@jack.whiskey>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANqRtoTfiWFv0JWwJysi47gsSjJx9g3-FFMMzCYROWDPbndnYQ@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20130616222648.GE4385@jack.whiskey>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 11:47:11AM +0900, Magnus Damm wrote:
-> Hi Simon,
+On Mon, Jun 17, 2013 at 12:26:48AM +0200, Andi Shyti wrote:
+> > > these two patches provide the etzkx device driver which supports
+> > > the following accelerometers:
+> > > 
+> > >  - Kionix kxcnl
+> > >  - Kionix kxtnk
+> > >  - ST lisn3dsh
+> > > 
+> > > Support for ST lis3dsh accelerometer is still in progress.
+> > > 
+> > > The etzkx accelerometers are a kind of devices that are able to
+> > > do gesture recognition directly on the device. It uses two slots
+> > > of 16 steps (bytes) each for loading algorithms which perform
+> > > gesture recognition.
+> > > 
+> > > The second patch contains the documentation of the device driver.
+> > > 
+> > > On http://www.etezian.org/etzkx/etzkx/ is possible to find more
+> > > informations about the accelerometer.
+> > 
+> > Why isn't this a drivers/iio/accel/ driver instead of a misc driver?
+> > Please make this an iio driver, then you will be using the correct
+> > user/kernel api to talk to your device.
 > 
-> On Mon, Jun 17, 2013 at 11:13 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Mon, Jun 17, 2013 at 09:20:56AM +0900, Magnus Damm wrote:
-> >> From: Magnus Damm <damm@opensource.se>
-> >>
-> >> Modify the ARM architected timer driver to not set C3STOP
-> >> in case CPU_IDLE is disabled. This is a short term fix that
-> >> allows use of high resolution timers even though no additional
-> >> clock event is registered.
-> >>
-> >> Not-really-Signed-off-by: Magnus Damm <damm@opensource.se>
-> >> ---
-> >>
-> >>  If someone cares about this case then perhaps it should be
-> >>  moved up to the clock event main code. The same issue should
-> >>  in theory trigger on all architectures, perhaps x86 people
-> >>  hunting for low latency may try to disable CPU_IDLE?
-> >>
-> >>  I propose carrying this patch locally to enable high resolution
-> >>  timers until CPU_IDLE and an additional clock event is supported.
-> >>
-> >>  Observed on r8a73a4 and APE6EVM.
-> >
-> > Hi Magnus,
-> >
-> > Is this patch intended to be picked up by me for the LTSI-3.4.25 based
-> > backports that live in my renesas-backports tree?
+> I was thinking it may be an issue, but it's not iio because the
+> time I developed the driver, iio was in the first staging period
+> and mainly because the on the board I'm using I cannot update the
+> Kernel to use the latest iio.
 > 
-> Yes, correct.
-> 
-> The patch was mainly written to satisfy a feature request for your
-> backports, but I noticed that the same issue exists in upstream as
-> well.
-> 
-> Ideally I'd like to use the same code for the backport and upstream,
-> but I am not sure if anyone in upstream really cares. The more long
-> term solution is obviously to install a second clock event, perhaps
-> that's good enough.
-> 
-> > If so, could you  clearly state this (below the '---' is fine) and
-> > include a proper Sob line to indicate that it is fit to be merged
-> > even if that merge is not into mainline.
-> 
-> Sure, but  I'd like to hear opinions from other people before
-> resending. I will follow your recommendation in next version.
+> I guess you don't like the promise "I can do it later" once the
+> supplier sends me a development board (which is planned) :)
 
-Thanks, I understand. I'll wait for discussion and a new version.
+Sure, I'll gladly accept "I can do it later" from anyone, as long as you
+don't mind my, "I will merge it later" as well :)
+
+Sorry, I can't accept a driver now, that is known to going to be
+changing the kernel/user api in the future.  So please, rewrite it to
+use IIO, that's what that interface / subsystem is there for.
+
+thanks,
+
+greg k-h
