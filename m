@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab3FQXUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:20:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59611 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733Ab3FQXUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753119Ab3FQXUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:20:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42201 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab3FQXUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Jun 2013 19:20:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
-   d="scan'208";a="331162690"
-Message-ID: <51BF99B0.4040509@intel.com>
-Date: Tue, 18 Jun 2013 07:20:16 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+Date: Mon, 17 Jun 2013 16:20:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org,
+        Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
+        "Emilio G. Cota" <cota@braap.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 6/8] FMC: add a software mezzanine driver
+Message-ID: <20130617232019.GE12984@kroah.com>
+References: <cover.1371018406.git.rubini@gnudd.com>
+ <7be26b13f841e433176a5d77ca9de1dd964b153a.1371018406.git.rubini@gnudd.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Performance regression from switching lock to rw-sem for anon-vma
- tree
-References: <1371165333.27102.568.camel@schen9-DESK>  <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>  <51BD8A77.2080201@intel.com> <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7be26b13f841e433176a5d77ca9de1dd964b153a.1371018406.git.rubini@gnudd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 12:22 AM, Davidlohr Bueso wrote:
-> After a lot of benchmarking, I finally got the ideal results for aim7,
-> so far: this patch + optimistic spinning with preemption disabled. Just
-> like optimistic spinning, this patch by itself makes little to no
-> difference, yet combined is where we actually outperform 3.10-rc5. In
-> addition, I noticed extra throughput when disabling preemption in
-> try_optimistic_spin().
-> 
-> With i_mmap as a rwsem and these changes I could see performance
-> benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-> (+5%), shared (+15%) and short (+4%), most of them after around 500
-> users, for fewer users, it made little to no difference.
+On Wed, Jun 12, 2013 at 09:14:20AM +0200, Alessandro Rubini wrote:
+> +++ b/drivers/fmc/fmc-trivial.c
+> @@ -0,0 +1,101 @@
+> +/*
+> + * Copyright (C) 2012 CERN (www.cern.ch)
+> + * Author: Alessandro Rubini <rubini@gnudd.com>
+> + *
+> + * Released to the public domain, as example to be reused
 
-A pretty good number. what's the cpu number in your machine? :)
+Same license issue, sorry.
 
--- 
-Thanks
-    Alex
+greg k-h
