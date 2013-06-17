@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3FQNwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 09:52:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50704 "EHLO mx1.redhat.com"
+	id S932075Ab3FQNwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 09:52:50 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:53930 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754832Ab3FQNwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 09:52:34 -0400
-Date: Mon, 17 Jun 2013 15:48:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tracing/kprobes: Avoid perf_trace_buf_*() if
-	->perf_events is empty
-Message-ID: <20130617134805.GA29246@redhat.com>
-References: <20130616172146.GA8533@redhat.com> <51BE857A.1080505@huawei.com>
+	id S1756279Ab3FQNwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 09:52:49 -0400
+Message-ID: <51BF1378.2060707@schinagl.nl>
+Date: Mon, 17 Jun 2013 15:47:36 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BE857A.1080505@huawei.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tomasz Figa <t.figa@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        linux@arm.linux.org.uk, arnd@arndb.de,
+        Oliver Schinagl <oliver@schinagl.nl>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        andy.shevchenko@gmail.com, maxime.ripard@free-electrons.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+References: <1371251781-17167-1-git-send-email-oliver+list@schinagl.nl> <1894396.Y9rMOhn2P3@amdc1227> <51BF0AD7.1070101@schinagl.nl> <2650626.N0ZZQX0iR6@amdc1227>
+In-Reply-To: <2650626.N0ZZQX0iR6@amdc1227>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17, zhangwei(Jovi) wrote:
+On 17-06-13 15:23, Tomasz Figa wrote:
+> On Monday 17 of June 2013 15:10:47 Oliver Schinagl wrote:
+>> On 17-06-13 14:51, Tomasz Figa wrote:
+>>> On Monday 17 of June 2013 12:36:47 Oliver Schinagl wrote:
+>>>> On 15-06-13 12:28, Tomasz Figa wrote:
+<snip>
+>> Now we pass this array to add_randomness(array, 16). So add_randomness
+>> sees 16 ints in an array. So while there will be a lot of extra zero's,
+>> there still be 16 elements copied/processed, no?
 >
-> On 2013/6/17 1:21, Oleg Nesterov wrote:
-> > perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
-> > if this task/CPU has no active counters. Change kprobe_perf_func()
-> > and kretprobe_perf_func() to check call->perf_events beforehand
-> > and return if this list is empty.
-> >
-> > For example, "perf record -e some_probe -p1". Only /sbin/init will
-> > report, all other threads which hit the same probe will do
-> > perf_trace_buf_prepare/perf_trace_buf_submit just to realize that
-> > nobody wants perf_swevent_event().
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> The second argument of add_randomness is number of bytes, not number of
+> elements in array, as far as I can tell.
+Oh wow, very good catch. I had to dig a little into the source where it
+said 'nbytes'. I guess the function prototype would have been nicer if it
+said nbytes instead of size.
+
+Anyway, with using an array of u8 this is nicely handled.
+
+> Best regards,
+> Tomasz
 >
-> Good point, I think we also need to change other places in below patch.
->
-> After applied the patch, perf_tp_event() function call reduced a lots
-> when using task based perf tracing.
-
-Yes, I was going to do this, but this is not that simple.
-
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -659,6 +659,10 @@ perf_trace_##call(void *__data, proto)					\
->  	int __data_size;						\
->  	int rctx;							\
->  									\
-> +	head = this_cpu_ptr(event_call->perf_events);			\
-> +	if (hlist_empty(head))						\
-> +		return;							\
-> +									\
-
-This is not right. Please note __perf_task() and
-"if (task && task != current)" in perf_tp_event().
-
-Oleg.
-
+oliver
