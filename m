@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3FQD11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:27:27 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53241 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556Ab3FQD10 (ORCPT
+	id S1755768Ab3FQD15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:27:57 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:65341 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab3FQD14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:27:26 -0400
-Message-ID: <51BE8213.4000701@linux.vnet.ibm.com>
-Date: Mon, 17 Jun 2013 11:27:15 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sun, 16 Jun 2013 23:27:56 -0400
 MIME-Version: 1.0
-To: Lei Wen <leiwen@marvell.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: add heuristic logic to pick idle peers
-References: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
-In-Reply-To: <1371435692-18831-1-git-send-email-leiwen@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061703-9264-0000-0000-000003F4CEBA
+In-Reply-To: <51BDF705.5090904@gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
+	<CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com>
+	<51BDF705.5090904@gmail.com>
+Date: Mon, 17 Jun 2013 09:27:55 +0600
+Message-ID: <CAN_LGv0yXhQi82ck3mvTbwuZv2dhnYB7Xnk9P4=5XVoAaAAeZQ@mail.gmail.com>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Lei
+2013/6/16 Jiang Liu <liuj97@gmail.com>:
+> On 06/15/2013 02:42 PM, Alexander E. Patrakov wrote:
 
-On 06/17/2013 10:21 AM, Lei Wen wrote:
-> nr_busy_cpus in sched_group_power structure cannot present the purpose
-> for judging below statement:
-> "this cpu's scheduler group has multiple busy cpu's exceeding
->  the group's power."
-> 
-> But only could tell how many cpus is doing their jobs for currently.
+>> Both cases work, and exhibit similar backtraces in dmesg. So I am
+>> attaching a dmesg only from the first testcase. Please look for "INFO:
+>> trying to register non-static key" and for "*ERROR* Memory manager not
+>> clean. Delaying takedown". I understand that the second trace is
+>> unrelated to this patchset, but would like you to fix the first.
+> Hi Alexander,
+>         Great thanks for your testing!
+>         I have investigated the first issue but still have no idea about it.
+> According to source code, everything should be OK.
+> The r8169 driver has invoked INIT_WORK(&tp->wk.work, rtl_task) to
+> initialize the work item, so it shouldn't trigger the warning.
+> Have you found this issue in other test cases?
 
-AFAIK, this nr_busy_cpus presents how many cpus in local group are not
-idle, the logical here in nohz_kick_needed() is:
+I am not 100% sure that the static key backtrace is the same in all
+cases. However, I do remember that it does appear both in the
+non-hotplug and hotplug cases.
 
-	if domain cpus share resources and at least 2 cpus in
-	local group are not idle, prefer to do balance.
+I will retest this after work, i.e. in ~12 hours.
 
-And the idea behind is, we catch the timing when there are idle-cpu and
-busy-group and task-moving may cost low.
-
-Your change will remove this timing for balance, I think you may need
-some test to prove that this patch will make things better.
-
-Regards,
-Michael Wang
-
-> 
-> However, the original purpose to add this logic still looks good.
-> So we move this kind of logic to find_new_ilb, so that we could pick
-> out peer from our sharing resource domain whenever possible.
-> 
-> Signed-off-by: Lei Wen <leiwen@marvell.com>
-> ---
->  kernel/sched/fair.c |   28 ++++++++++++++++++++++------
->  1 file changed, 22 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c61a614..64f9120 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5368,10 +5368,31 @@ static struct {
->  	unsigned long next_balance;     /* in jiffy units */
->  } nohz ____cacheline_aligned;
-> 
-> +/*
-> + * Add the heuristic logic to try waking up idle cpu from
-> + * those peers who share resources with us, so that the
-> + * cost would be brought to minimum.
-> + */
->  static inline int find_new_ilb(int call_cpu)
->  {
-> -	int ilb = cpumask_first(nohz.idle_cpus_mask);
-> +	int ilb = nr_cpu_ids;
-> +	struct sched_domain *sd;
-> +
-> +	rcu_read_lock();
-> +	for_each_domain(call_cpu, sd) {
-> +		/* We loop till sched_domain no longer share resource */
-> +		if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
-> +			ilb = cpumask_first(nohz.idle_cpus_mask);
-> +			break;
-> +		}
-> 
-> +		/* else, we would try to pick the idle cpu from peers first */
-> +		ilb = cpumask_first_and(nohz.idle_cpus_mask,
-> +				sched_domain_span(sd));
-> +		if (ilb < nr_cpu_ids)
-> +			break;
-> +	}
-> +	rcu_read_unlock();
->  	if (ilb < nr_cpu_ids && idle_cpu(ilb))
->  		return ilb;
-> 
-> @@ -5620,8 +5641,6 @@ end:
->   * Current heuristic for kicking the idle load balancer in the presence
->   * of an idle cpu is the system.
->   *   - This rq has more than one task.
-> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
-> - *     busy cpu's exceeding the group's power.
->   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->   *     domain span are idle.
->   */
-> @@ -5659,9 +5678,6 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->  		struct sched_group_power *sgp = sg->sgp;
->  		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
-> 
-> -		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
-> -			goto need_kick_unlock;
-> -
->  		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->  		    && (cpumask_first_and(nohz.idle_cpus_mask,
->  					  sched_domain_span(sd)) < cpu))
-> 
-
+-- 
+Alexander E. Patrakov
