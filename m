@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab3FQJCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 05:02:36 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:27256 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089Ab3FQJCf convert rfc822-to-8bit (ORCPT
+	id S932169Ab3FQJD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 05:03:57 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:60523 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3FQJDz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 05:02:35 -0400
-Date: Mon, 17 Jun 2013 11:01:33 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] i2c: designware: fix race between subsequent xfers
-Message-ID: <20130617090131.GC19380@ab42.lan>
-References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
- <1370595083-801-1-git-send-email-christian.ruppert@abilis.com>
- <20130614143740.GD2929@katana>
- <20130617081931.GB19380@ab42.lan>
- <20130617103336.354022c2@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	Mon, 17 Jun 2013 05:03:55 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Joe Perches <joe@perches.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Vineet Gupta" <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v4] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v4] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHOagXe8tugec+MDUSro7F/hI5nuQ==
+Date: Mon, 17 Jun 2013 09:03:50 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5EC000@DE02WEMBXB.internal.synopsys.com>
+References: <1371327652-9368-1-git-send-email-abrodkin@synopsys.com>
+	 <1371328671.2117.6.camel@joe-AO722>
+	 <4881796E12491D4BB15146FE0209CE643F5E7779@DE02WEMBXB.internal.synopsys.com>
+ <1371368491.2116.0.camel@joe-AO722>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.121.8.32]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130617103336.354022c2@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 10:33:36AM +0200, Jean Delvare wrote:
-> On Mon, 17 Jun 2013 10:19:33 +0200, Christian Ruppert wrote:
-> > On Fri, Jun 14, 2013 at 04:37:41PM +0200, Wolfram Sang wrote:
-> > > BTW since I am currently here: i2c-designware-core should be in the
-> > > 'algos' directory, no?
-> > 
-> > At the risk of passing for a complete moron: What exactly is the
-> > difference between I2C algos and I2C bus drivers?
-> 
-> The i2c/algos directory contains abstracted code which is common to
-> multiple hardware implementations. The most popular of these is
-> i2c-algo-bit which implements software-only I2C over virtually any pair
-> of controllable pins (parallel port, GPIOs, etc.)
-> 
-> As a general rule, i2c/algos should only contain reusable, architecture
-> and platform independent code. All the actual hardware access should be
-> delegated to the bus drivers, through callbacks. If this can't be done
-> easily then i2c/algos is not the right place.
+On 06/16/2013 11:41 AM, Joe Perches wrote:
+> On Sat, 2013-06-15 at 20:47 +0000, Alexey Brodkin wrote:
+>> On 06/16/2013 12:37 AM, Joe Perches wrote:
+>>> On Sun, 2013-06-16 at 00:20 +0400, Alexey Brodkin wrote:
+> []
+>>>> +static int arc_emac_rx(struct net_device *ndev, int budget)
+>>> []
+>>>> +		/* Prepare the BD for next cycle */
+>>>> +		rx_buff->skb = netdev_alloc_skb_ip_align(ndev, buflen);
+>>>> +		if (unlikely(!rx_buff->skb)) {
+>>>> +			if (net_ratelimit())
+>>>> +				netdev_err(ndev, "cannot allocate skb\n");
+>>>
+>>> Unnecessary OOM message, might as well remove it.
+>>> rx_dropped gives the same info.
+>>
+>> With all those error messages I wanted to make life easier (especially
+>> for me) if errors appear. User will immediately know where problem
+>> happened. Indeed "rx_dropped" (when it is used only once in driver) may
+>> show where issue happened, but if later at some point "rx_dropped" will
+>> be incremented in other locations then user won't understand immediately
+>> where error happened.
+>
+> Alloc errors emit a dump_stack() already so this is redundant.
 
-In this case, busses is the right place for the i2c-designware-core. This
-file contains the actual driver implementation (i.e. register access,
-interrupt handling etc.) for a dedicated I2C bus driver hardware block
-used in SOCs.
+Makes sense. Will remove this comment.
 
-Greetings,
-  Christian
-
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+-Alexey
