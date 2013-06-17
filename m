@@ -1,142 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3FQUQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:16:40 -0400
-Received: from nm7.access.bullet.mail.mud.yahoo.com ([66.94.237.208]:27140
-	"EHLO nm7.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752397Ab3FQUQg (ORCPT
+	id S1753126Ab3FQUSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:18:09 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:48188 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab3FQUSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:16:36 -0400
-X-Yahoo-Newman-Id: 979051.33293.bm@smtp116.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: .o8A5NkVM1nWKdKKd6h_w.YiPE809NikTogE7fgJhetxmFX
- hVGYkGmwuswkP0sNGk6EhfPa.jhLoGmUK_LTMBj7iVumjwSOHbof3M5r7w4l
- wxmLAFFACnv3gv5HTJS6rVoJmMjZDaWY7.KVIJeF2kYnU7i0C0eKx3ibBZXz
- ghIdO56YPRYH3SrtPt9ccKXk1JFItMPnCnr5I7x8tcyvqwc852wg7Py_tzRU
- CeQMdPUf_UxVY4okrnvzgWyRFZTy6otq5YksH38lYkTODNuJQAMlZw5uKQlQ
- wDP7_gcE__Dc0LwaZX2IY.wQVosBI5ZdOLDTEK3Ld7JQ_qP86EnEmtXQ68Py
- gaojXHZDiisQAfEuQUQuXDvEzfkvAVtJBlEqJCyqlmB30IVft5Sltrc_5eOT
- L5CgfNqeO2Fx6wxy01utRWgOaAib5lKK5lnJNdgg6cO3k.G5nGo.Idg8vtc7
- 1ZBCDygXXbU0QIitgwuPdqMW3MBiEcuF02J1MWGmtk18RqShEBt95VHRQ8Y9
- IEVkUiLOd9Kjcc127Xbo-
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp116.sbc.mail.ne1.yahoo.com with SMTP; 17 Jun 2013 20:16:34 +0000 UTC
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Frank Li <Frank.Li@freescale.com>,
-        Jim Baxter <jim_baxter@mentor.com>
-Subject: [PATCH] net: fec: Fix build for MCF5272
-Date: Mon, 17 Jun 2013 13:16:19 -0700
-Message-Id: <1371500179-4733-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 17 Jun 2013 16:18:07 -0400
+Date: Mon, 17 Jun 2013 14:18:02 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH v3, part2 15/20] PCI, EDAC: use hotplug-safe PCI bus
+ iterators to walk PCI buses
+Message-ID: <20130617201802.GB7877@google.com>
+References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
+ <1369583597-3801-16-git-send-email-jiang.liu@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369583597-3801-16-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
-baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
-network) introduced functionality into the FEC driver which is not
-supported on MCF5272. As result, building images for MCF5272 fails,
-complaining about several undefined symbols.
+On Sun, May 26, 2013 at 11:53:12PM +0800, Jiang Liu wrote:
+> Enhance EDAC drviers to use hotplug-safe iterators to walk PCI buses.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Doug Thompson <dougthompson@xmission.com>
+> Cc: linux-edac@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/edac/i7core_edac.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+> index 0ec3e95..7146e10 100644
+> --- a/drivers/edac/i7core_edac.c
+> +++ b/drivers/edac/i7core_edac.c
+> @@ -1296,7 +1296,7 @@ static unsigned i7core_pci_lastbus(void)
+>  	int last_bus = 0, bus;
+>  	struct pci_bus *b = NULL;
+>  
+> -	while ((b = pci_find_next_bus(b)) != NULL) {
+> +	for_each_pci_root_bus(b) {
 
-Disabled the added functionality for MCF5272 builds.
+This doesn't look equivalent.  Previously, we iterated over all PCI
+buses, so we returned the highest bus number seen anywhere.  Now we
+only look at root buses, so we return the highest bus number of any
+root bus.  But if that root bus has a bridge on it, obviously the
+bus on the other side has a higher number.
 
-Cc: Frank Li <Frank.Li@freescale.com>
-Cc: Jim Baxter <jim_baxter@mentor.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Sorry for the added ifdefs. If anyone has a better idea on how to fix
-the problems, let me know.
+Even with that fix, a hot-add at the same time i7core_probe() runs
+could mean an incorrect result.  This is all very i7 topology-dependent,
+so I don't think the PCI core can do anything more than avoid oopses
+from traversing lists incorrectly.
 
-This problem exists in 3.9 as well.
+Bjorn
 
- drivers/net/ethernet/freescale/fec_main.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index a667015..d48099f 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -516,6 +516,7 @@ fec_restart(struct net_device *ndev, int duplex)
- 	/* Set MII speed */
- 	writel(fep->phy_speed, fep->hwp + FEC_MII_SPEED);
- 
-+#if !defined(CONFIG_M5272)
- 	/* set RX checksum */
- 	val = readl(fep->hwp + FEC_RACC);
- 	if (fep->csum_flags & FLAG_RX_CSUM_ENABLED)
-@@ -523,6 +524,7 @@ fec_restart(struct net_device *ndev, int duplex)
- 	else
- 		val &= ~FEC_RACC_OPTIONS;
- 	writel(val, fep->hwp + FEC_RACC);
-+#endif
- 
- 	/*
- 	 * The phy interface and speed need to get configured
-@@ -575,6 +577,7 @@ fec_restart(struct net_device *ndev, int duplex)
- #endif
- 	}
- 
-+#if !defined(CONFIG_M5272)
- 	/* enable pause frame*/
- 	if ((fep->pause_flag & FEC_PAUSE_FLAG_ENABLE) ||
- 	    ((fep->pause_flag & FEC_PAUSE_FLAG_AUTONEG) &&
-@@ -592,6 +595,7 @@ fec_restart(struct net_device *ndev, int duplex)
- 	} else {
- 		rcntl &= ~FEC_ENET_FCE;
- 	}
-+#endif /* !defined(CONFIG_M5272) */
- 
- 	writel(rcntl, fep->hwp + FEC_R_CNTRL);
- 
-@@ -1205,7 +1209,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 	/* mask with MAC supported features */
- 	if (id_entry->driver_data & FEC_QUIRK_HAS_GBIT) {
- 		phy_dev->supported &= PHY_GBIT_FEATURES;
-+#if !defined(CONFIG_M5272)
- 		phy_dev->supported |= SUPPORTED_Pause;
-+#endif
- 	}
- 	else
- 		phy_dev->supported &= PHY_BASIC_FEATURES;
-@@ -1390,6 +1396,8 @@ static int fec_enet_get_ts_info(struct net_device *ndev,
- 	}
- }
- 
-+#if !defined(CONFIG_M5272)
-+
- static void fec_enet_get_pauseparam(struct net_device *ndev,
- 				    struct ethtool_pauseparam *pause)
- {
-@@ -1436,9 +1444,13 @@ static int fec_enet_set_pauseparam(struct net_device *ndev,
- 	return 0;
- }
- 
-+#endif /* !defined(CONFIG_M5272) */
-+
- static const struct ethtool_ops fec_enet_ethtool_ops = {
-+#if !defined(CONFIG_M5272)
- 	.get_pauseparam		= fec_enet_get_pauseparam,
- 	.set_pauseparam		= fec_enet_set_pauseparam,
-+#endif
- 	.get_settings		= fec_enet_get_settings,
- 	.set_settings		= fec_enet_set_settings,
- 	.get_drvinfo		= fec_enet_get_drvinfo,
-@@ -1874,10 +1886,12 @@ fec_probe(struct platform_device *pdev)
- 	/* setup board info structure */
- 	fep = netdev_priv(ndev);
- 
-+#if !defined(CONFIG_M5272)
- 	/* default enable pause frame auto negotiation */
- 	if (pdev->id_entry &&
- 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
- 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
-+#endif
- 
- 	fep->hwp = devm_request_and_ioremap(&pdev->dev, r);
- 	fep->pdev = pdev;
--- 
-1.7.9.7
-
+>  		bus = b->number;
+>  		edac_dbg(0, "Found bus %d\n", bus);
+>  		if (bus > last_bus)
+> -- 
+> 1.8.1.2
+> 
