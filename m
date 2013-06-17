@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3FQX2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 19:28:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32152 "EHLO mga14.intel.com"
+	id S1753142Ab3FQX3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 19:29:53 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:36323 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab3FQX2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 19:28:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
-   d="scan'208";a="318511963"
-Message-ID: <1371511724.22538.1.camel@rzhang1-mobl4>
-Subject: Re: [PATCH -next v3] thermal:  fix x86_pkg_temp_thermal.c build and
- Kconfig
-From: Zhang Rui <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Date: Tue, 18 Jun 2013 07:28:44 +0800
-In-Reply-To: <20130617194524.GD8197@pd.tnic>
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au>
-	 <51BF4159.1000004@infradead.org> <51BF46C3.3090900@linux.intel.com>
-	 <51BF4DA2.40601@infradead.org> <51BF50E3.9000806@linux.intel.com>
-	 <51BF5174.805@infradead.org> <20130617181702.GA7217@pd.tnic>
-	 <51BF6315.9020501@infradead.org> <20130617194524.GD8197@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751361Ab3FQX3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 19:29:51 -0400
+Date: Tue, 18 Jun 2013 01:29:02 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, juan.david.gonzalez.cobas@cern.ch,
+        cota@braap.org, siglesias@igalia.com, rob@landley.net,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/8] FMC: add needed headers
+Message-ID: <20130617232902.GA17234@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20130617232120.GF12984@kroah.com>
+References: <20130617232120.GF12984@kroah.com>
+  <cover.1371018406.git.rubini@gnudd.com>
+  <1d3aedf8636f4bed4ffda25e13acd853bf8e08fb.1371018406.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 21:45 +0200, Borislav Petkov wrote:
-> On Mon, Jun 17, 2013 at 12:27:17PM -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <rdunlap@infradead.org>
-> > 
-> > Fix build error in x86_pkg_temp_thermal.c.  It requires that
-> > X86_MCE & X86_THERMAL_VECTOR be enabled, so depend on the latter symbol,
-> > since it depends on X86_MCE (indirectly).
-> > 
-> > Also, X86_PKG_TEMP_THERMAL is already inside an "if THERMAL" block,
-> > so remove that duplicated dependency.
-> > 
-> > ERROR: "platform_thermal_package_rate_control" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
-> > ERROR: "platform_thermal_package_notify" [drivers/thermal/x86_pkg_temp_thermal.ko] undefined!
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> > ---
-> >  drivers/thermal/Kconfig |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> > 
-> > --- linux-next-20130617.orig/drivers/thermal/Kconfig
-> > +++ linux-next-20130617/drivers/thermal/Kconfig
-> > @@ -171,8 +171,7 @@ config INTEL_POWERCLAMP
-> >  
-> >  config X86_PKG_TEMP_THERMAL
-> >  	tristate "X86 package temperature thermal driver"
-> > -	depends on THERMAL
-> > -	depends on X86
-> > +	depends on X86_THERMAL_VECTOR
-> >  	select THERMAL_GOV_USER_SPACE
-> >  	default m
-> >  	help
-> 
-> Acked-by: Borislav Petkov <bp@suse.de>
-> 
-applied to thermal -next.
+> Any way you can use MODULE_DEVICE_TABLE() for these devices to get
+> proper module auto-loading for your drivers?
 
-thanks,
-rui
+It's the next step.
 
+We are not doing that in our installations because it is not a trivial
+addition to running kernels -- we are plugging FMC devices in
+already-deployed kernel versions, sometimes even 2.6.24.
+
+/alessandro
