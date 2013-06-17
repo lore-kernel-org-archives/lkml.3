@@ -1,395 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3FQCmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 22:42:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13310 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754680Ab3FQCmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 22:42:22 -0400
-X-IronPort-AV: E=Sophos;i="4.87,877,1363104000"; 
-   d="scan'208";a="7571242"
-Message-ID: <51BE76DD.2090604@cn.fujitsu.com>
-Date: Mon, 17 Jun 2013 10:39:25 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: Re: [PATCH 1/2] f2fs: add remount_fs callback support
-References: <1371343728-2676-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1371343728-2676-1-git-send-email-linkinjeon@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/17 10:40:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/17 10:40:19,
-	Serialize complete at 2013/06/17 10:40:19
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755500Ab3FQCor (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 22:44:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56801 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755007Ab3FQCop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jun 2013 22:44:45 -0400
+Date: Mon, 17 Jun 2013 12:44:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antonio Quartulli <ordex@autistici.org>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <simon@open-mesh.com>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20130617124441.e2e93d3a9e48952d685afa6b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Jun_2013_12_44_41_+1000_8Hlngt7fx_6iMMlb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2013 08:48 AM, Namjae Jeon wrote:
+--Signature=_Mon__17_Jun_2013_12_44_41_+1000_8Hlngt7fx_6iMMlb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> Add the f2fs_remount function call which will be used
-> during the filesystem remounting. This function
-> will help us to change the mount options specific to
-> f2fs.
-> 
-> Also modify the f2fs background_gc mount option, which
-> will allow the user to dynamically trun on/off the
-> garbage collection in f2fs based on the background_gc
-> value. If background_gc=on, Garbage collection will
-> be turned off & if background_gc=off, Garbage collection
-> will be truned on.
-> 
-> By default the garbage collection is on in f2fs.
-> 
-> Change Log:
-> v2: Incorporated the review comments by Gu Zheng.
->     Removing the restore part for VFS flags
->     Updating comments with proper flag conditions
->     Display GC background option as ON/OFF
->     Revised conditions to stop GC in case of remount
-> 
-> v1: Initial changes for adding remount_fs callback
-> support.
-> 
-> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+Hi all,
 
+Today's linux-next merge of the net-next tree got a conflict in
+net/batman-adv/bat_iv_ogm.c between commit 7c24bbbeab41 ("batman-adv:
+forward late OGMs from best next hop") from Linus' tree and commit
+24a5deeb8a19 ("batman-adv: move ring_buffer helper functions in
+bat_iv_ogm") from the net-next tree.
 
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+I fixed it up (as specified in your email (thanks) - see below) and can
+carry the fix as necessary (no action is required).
 
-Thanks,
-Gu
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->  Documentation/filesystems/f2fs.txt |    9 +-
->  fs/f2fs/super.c                    |  235 +++++++++++++++++++++++-------------
->  2 files changed, 160 insertions(+), 84 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-> index bd3c56c..b91e2f2 100644
-> --- a/Documentation/filesystems/f2fs.txt
-> +++ b/Documentation/filesystems/f2fs.txt
-> @@ -98,8 +98,13 @@ Cleaning Overhead
->  MOUNT OPTIONS
->  ================================================================================
->  
-> -background_gc_off      Turn off cleaning operations, namely garbage collection,
-> -		       triggered in background when I/O subsystem is idle.
-> +background_gc=%s       Turn on/off cleaning operations, namely garbage
-> +                       collection, triggered in background when I/O subsystem is
-> +                       idle. If background_gc=on, it will turn on the garbage
-> +                       collection and if background_gc=off, garbage collection
-> +                       will be truned off.
-> +                       Default value for this option is on. So garbage
-> +                       collection is on by default.
->  disable_roll_forward   Disable the roll-forward recovery routine
->  discard                Issue discard/TRIM commands when a segment is cleaned.
->  no_heap                Disable heap-style segment allocation which finds free
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index ba56549..5a11484 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -34,7 +34,7 @@
->  static struct kmem_cache *f2fs_inode_cachep;
->  
->  enum {
-> -	Opt_gc_background_off,
-> +	Opt_gc_background,
->  	Opt_disable_roll_forward,
->  	Opt_discard,
->  	Opt_noheap,
-> @@ -46,7 +46,7 @@ enum {
->  };
->  
->  static match_table_t f2fs_tokens = {
-> -	{Opt_gc_background_off, "background_gc_off"},
-> +	{Opt_gc_background, "background_gc=%s"},
->  	{Opt_disable_roll_forward, "disable_roll_forward"},
->  	{Opt_discard, "discard"},
->  	{Opt_noheap, "no_heap"},
-> @@ -76,6 +76,91 @@ static void init_once(void *foo)
->  	inode_init_once(&fi->vfs_inode);
->  }
->  
-> +static int parse_options(struct super_block *sb, char *options)
-> +{
-> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-> +	substring_t args[MAX_OPT_ARGS];
-> +	char *p, *name;
-> +	int arg = 0;
-> +
-> +	if (!options)
-> +		return 0;
-> +
-> +	while ((p = strsep(&options, ",")) != NULL) {
-> +		int token;
-> +		if (!*p)
-> +			continue;
-> +		/*
-> +		 * Initialize args struct so we know whether arg was
-> +		 * found; some options take optional arguments.
-> +		 */
-> +		args[0].to = args[0].from = NULL;
-> +		token = match_token(p, f2fs_tokens, args);
-> +
-> +		switch (token) {
-> +		case Opt_gc_background:
-> +			name = match_strdup(&args[0]);
-> +
-> +			if (!name)
-> +				return -ENOMEM;
-> +			if (!strncmp(name, "on", 2))
-> +				set_opt(sbi, BG_GC);
-> +			else if (!strncmp(name, "off", 3))
-> +				clear_opt(sbi, BG_GC);
-> +			else {
-> +				kfree(name);
-> +				return -EINVAL;
-> +			}
-> +			kfree(name);
-> +			break;
-> +		case Opt_disable_roll_forward:
-> +			set_opt(sbi, DISABLE_ROLL_FORWARD);
-> +			break;
-> +		case Opt_discard:
-> +			set_opt(sbi, DISCARD);
-> +			break;
-> +		case Opt_noheap:
-> +			set_opt(sbi, NOHEAP);
-> +			break;
-> +#ifdef CONFIG_F2FS_FS_XATTR
-> +		case Opt_nouser_xattr:
-> +			clear_opt(sbi, XATTR_USER);
-> +			break;
-> +#else
-> +		case Opt_nouser_xattr:
-> +			f2fs_msg(sb, KERN_INFO,
-> +				"nouser_xattr options not supported");
-> +			break;
-> +#endif
-> +#ifdef CONFIG_F2FS_FS_POSIX_ACL
-> +		case Opt_noacl:
-> +			clear_opt(sbi, POSIX_ACL);
-> +			break;
-> +#else
-> +		case Opt_noacl:
-> +			f2fs_msg(sb, KERN_INFO, "noacl options not supported");
-> +			break;
-> +#endif
-> +		case Opt_active_logs:
-> +			if (args->from && match_int(args, &arg))
-> +				return -EINVAL;
-> +			if (arg != 2 && arg != 4 && arg != NR_CURSEG_TYPE)
-> +				return -EINVAL;
-> +			sbi->active_logs = arg;
-> +			break;
-> +		case Opt_disable_ext_identify:
-> +			set_opt(sbi, DISABLE_EXT_IDENTIFY);
-> +			break;
-> +		default:
-> +			f2fs_msg(sb, KERN_ERR,
-> +				"Unrecognized mount option \"%s\" or missing value",
-> +				p);
-> +			return -EINVAL;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
->  static struct inode *f2fs_alloc_inode(struct super_block *sb)
->  {
->  	struct f2fs_inode_info *fi;
-> @@ -225,10 +310,10 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
->  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(root->d_sb);
->  
-> -	if (test_opt(sbi, BG_GC))
-> -		seq_puts(seq, ",background_gc_on");
-> +	if (!(root->d_sb->s_flags & MS_RDONLY) && test_opt(sbi, BG_GC))
-> +		seq_printf(seq, ",background_gc=%s", "on");
->  	else
-> -		seq_puts(seq, ",background_gc_off");
-> +		seq_printf(seq, ",background_gc=%s", "off");
->  	if (test_opt(sbi, DISABLE_ROLL_FORWARD))
->  		seq_puts(seq, ",disable_roll_forward");
->  	if (test_opt(sbi, DISCARD))
-> @@ -255,6 +340,58 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
->  	return 0;
->  }
->  
-> +static int f2fs_remount(struct super_block *sb, int *flags, char *data)
-> +{
-> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-> +	struct f2fs_mount_info org_mount_opt;
-> +	int err, active_logs;
-> +
-> +	/**
-> +	 * Save the old mount options in case we
-> +	 * need to restore them.
-> +	 */
-> +	org_mount_opt = sbi->mount_opt;
-> +	active_logs = sbi->active_logs;
-> +
-> +	/* parse mount options */
-> +	err = parse_options(sb, data);
-> +	if (err)
-> +		goto restore_opts;
-> +
-> +	/**
-> +	 * Previous and new state of filesystem is RO,
-> +	 * so no point in checking GC conditions.
-> +	 */
-> +	if ((sb->s_flags & MS_RDONLY) && (*flags & MS_RDONLY))
-> +		goto skip;
-> +
-> +	/**
-> +	 * We stop the GC thread if FS is mounted as RO
-> +	 * or if background_gc = off is passed in mount
-> +	 * option. Also sync the filesystem.
-> +	 */
-> +	if ((*flags & MS_RDONLY) || !test_opt(sbi, BG_GC)) {
-> +		if (sbi->gc_thread) {
-> +			stop_gc_thread(sbi);
-> +			f2fs_sync_fs(sb, 1);
-> +		}
-> +	} else if (test_opt(sbi, BG_GC) && !sbi->gc_thread) {
-> +		err = start_gc_thread(sbi);
-> +		if (err)
-> +			goto restore_opts;
-> +	}
-> +skip:
-> +	/* Update the POSIXACL Flag */
-> +	 sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
-> +		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
-> +	return 0;
-> +
-> +restore_opts:
-> +	sbi->mount_opt = org_mount_opt;
-> +	sbi->active_logs = active_logs;
-> +	return err;
-> +}
-> +
->  static struct super_operations f2fs_sops = {
->  	.alloc_inode	= f2fs_alloc_inode,
->  	.drop_inode	= f2fs_drop_inode,
-> @@ -268,6 +405,7 @@ static struct super_operations f2fs_sops = {
->  	.freeze_fs	= f2fs_freeze,
->  	.unfreeze_fs	= f2fs_unfreeze,
->  	.statfs		= f2fs_statfs,
-> +	.remount_fs	= f2fs_remount,
->  };
->  
->  static struct inode *f2fs_nfs_get_inode(struct super_block *sb,
-> @@ -315,79 +453,6 @@ static const struct export_operations f2fs_export_ops = {
->  	.get_parent = f2fs_get_parent,
->  };
->  
-> -static int parse_options(struct super_block *sb, char *options)
-> -{
-> -	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-> -	substring_t args[MAX_OPT_ARGS];
-> -	char *p;
-> -	int arg = 0;
-> -
-> -	if (!options)
-> -		return 0;
-> -
-> -	while ((p = strsep(&options, ",")) != NULL) {
-> -		int token;
-> -		if (!*p)
-> -			continue;
-> -		/*
-> -		 * Initialize args struct so we know whether arg was
-> -		 * found; some options take optional arguments.
-> -		 */
-> -		args[0].to = args[0].from = NULL;
-> -		token = match_token(p, f2fs_tokens, args);
-> -
-> -		switch (token) {
-> -		case Opt_gc_background_off:
-> -			clear_opt(sbi, BG_GC);
-> -			break;
-> -		case Opt_disable_roll_forward:
-> -			set_opt(sbi, DISABLE_ROLL_FORWARD);
-> -			break;
-> -		case Opt_discard:
-> -			set_opt(sbi, DISCARD);
-> -			break;
-> -		case Opt_noheap:
-> -			set_opt(sbi, NOHEAP);
-> -			break;
-> -#ifdef CONFIG_F2FS_FS_XATTR
-> -		case Opt_nouser_xattr:
-> -			clear_opt(sbi, XATTR_USER);
-> -			break;
-> -#else
-> -		case Opt_nouser_xattr:
-> -			f2fs_msg(sb, KERN_INFO,
-> -				"nouser_xattr options not supported");
-> -			break;
-> -#endif
-> -#ifdef CONFIG_F2FS_FS_POSIX_ACL
-> -		case Opt_noacl:
-> -			clear_opt(sbi, POSIX_ACL);
-> -			break;
-> -#else
-> -		case Opt_noacl:
-> -			f2fs_msg(sb, KERN_INFO, "noacl options not supported");
-> -			break;
-> -#endif
-> -		case Opt_active_logs:
-> -			if (args->from && match_int(args, &arg))
-> -				return -EINVAL;
-> -			if (arg != 2 && arg != 4 && arg != NR_CURSEG_TYPE)
-> -				return -EINVAL;
-> -			sbi->active_logs = arg;
-> -			break;
-> -		case Opt_disable_ext_identify:
-> -			set_opt(sbi, DISABLE_EXT_IDENTIFY);
-> -			break;
-> -		default:
-> -			f2fs_msg(sb, KERN_ERR,
-> -				"Unrecognized mount option \"%s\" or missing value",
-> -				p);
-> -			return -EINVAL;
-> -		}
-> -	}
-> -	return 0;
-> -}
-> -
->  static loff_t max_file_size(unsigned bits)
->  {
->  	loff_t result = ADDRS_PER_INODE;
-> @@ -686,10 +751,16 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
->  				"Cannot recover all fsync data errno=%ld", err);
->  	}
->  
-> -	/* After POR, we can run background GC thread */
-> -	err = start_gc_thread(sbi);
-> -	if (err)
-> -		goto fail;
-> +	/**
-> +	 * If filesystem is not mounted as read-only then
-> +	 * do start the gc_thread.
-> +	 */
-> +	if (!(sb->s_flags & MS_RDONLY)) {
-> +		/* After POR, we can run background GC thread.*/
-> +		err = start_gc_thread(sbi);
-> +		if (err)
-> +			goto fail;
-> +	}
->  
->  	err = f2fs_build_stats(sbi);
->  	if (err)
+diff --cc net/batman-adv/bat_iv_ogm.c
+index f680ee1,d07323b..0000000
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@@ -30,20 -29,47 +29,63 @@@
+  #include "network-coding.h"
+ =20
+  /**
+ + * batadv_dup_status - duplicate status
+ + * @BATADV_NO_DUP: the packet is a duplicate
+ + * @BATADV_ORIG_DUP: OGM is a duplicate in the originator (but not for the
+ + *  neighbor)
+ + * @BATADV_NEIGH_DUP: OGM is a duplicate for the neighbor
+ + * @BATADV_PROTECTED: originator is currently protected (after reboot)
+ + */
+ +enum batadv_dup_status {
+ +	BATADV_NO_DUP =3D 0,
+ +	BATADV_ORIG_DUP,
+ +	BATADV_NEIGH_DUP,
+ +	BATADV_PROTECTED,
+ +};
+ +
+++/**
++  * batadv_ring_buffer_set - update the ring buffer with the given value
++  * @lq_recv: pointer to the ring buffer
++  * @lq_index: index to store the value at
++  * @value: value to store in the ring buffer
++  */
++ static void batadv_ring_buffer_set(uint8_t lq_recv[], uint8_t *lq_index,
++ 				   uint8_t value)
++ {
++ 	lq_recv[*lq_index] =3D value;
++ 	*lq_index =3D (*lq_index + 1) % BATADV_TQ_GLOBAL_WINDOW_SIZE;
++ }
++=20
++ /**
++  * batadv_ring_buffer_set - compute the average of all non-zero values st=
+ored
++  * in the given ring buffer
++  * @lq_recv: pointer to the ring buffer
++  *
++  * Returns computed average value.
++  */
++ static uint8_t batadv_ring_buffer_avg(const uint8_t lq_recv[])
++ {
++ 	const uint8_t *ptr;
++ 	uint16_t count =3D 0, i =3D 0, sum =3D 0;
++=20
++ 	ptr =3D lq_recv;
++=20
++ 	while (i < BATADV_TQ_GLOBAL_WINDOW_SIZE) {
++ 		if (*ptr !=3D 0) {
++ 			count++;
++ 			sum +=3D *ptr;
++ 		}
++=20
++ 		i++;
++ 		ptr++;
++ 	}
++=20
++ 	if (count =3D=3D 0)
++ 		return 0;
++=20
++ 	return (uint8_t)(sum / count);
++ }
+++
+  static struct batadv_neigh_node *
+  batadv_iv_ogm_neigh_new(struct batadv_hard_iface *hard_iface,
+  			const uint8_t *neigh_addr,
+@@@ -1013,11 -1062,10 +1085,11 @@@ static void batadv_iv_ogm_process(cons
+  	struct batadv_neigh_node *orig_neigh_router =3D NULL;
+  	int has_directlink_flag;
+  	int is_my_addr =3D 0, is_my_orig =3D 0, is_my_oldorig =3D 0;
+- 	int is_broadcast =3D 0, is_bidirect;
++ 	int is_bidirect;
+  	bool is_single_hop_neigh =3D false;
+  	bool is_from_best_next_hop =3D false;
+ -	int is_duplicate, sameseq, simlar_ttl;
+ +	int sameseq, similar_ttl;
+ +	enum batadv_dup_status dup_status;
+  	uint32_t if_incoming_seqno;
+  	uint8_t *prev_sender;
+ =20
 
+--Signature=_Mon__17_Jun_2013_12_44_41_+1000_8Hlngt7fx_6iMMlb
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRvngZAAoJEECxmPOUX5FEGWIP/AkJDmPSXtODqVmeV4hX5hSz
+sn1BNzv01g/kG+im4V49lOFFr99wgaWc7Fv7YeFIblL0d5oZwtXA5JypdeViLPkf
+jl/xkaMa8pzCa3ZQ2y+vG77b1RAmE5Gb2pYtjvAzRAoppytuRYtyPWoJV6oz+LnA
+v5jo1bwgCr72thFTkgWl7s7Y5szK7fl6OLR25ypBrbS4bIAe1yBe5A9UwWPjVfQa
+NGiLxoeCCcojqZw2L7bbbnB+eas1sU3HqDUOP6HvdBsuB1Lduzxj5Du6eMvLDluA
+qJjkwKG/BdLnaKGs1wj8DaJvUiC99M0O/80BuH9c2vIAEow4RGQvGcC2Gzbcp+Hp
+yB60CO4rZoZYyx9biLoekgEy4fdMPO/2ffLB3NAc+2g9U+291CVe6z9UhosKzWz2
+JgJjRwFx925Vh28RfqFdsYjcEyWyBtjV0A3L8dsNf8dH5v4h+23hqr6xROqhQOhv
+aqNFICS57F7I+Qjmyza98cZvJeXyOYAenflAnzfBFDZLA9eCdZZ2zcSkoGpfz7F5
+OGNTQ0t2iJAesPN2zvsCI2+zJImYWWjuQaoy77KSP/Yr69dWuaJoHXjx+1I4cg0e
++iFBMfvLqTlYCWXyaz95wBjTWa6pAUXnB7yeqQwTsdo9THxcFjMTAWxyirfqgOcF
+/PNS631pylZcbD5TlX64
+=VzFl
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Jun_2013_12_44_41_+1000_8Hlngt7fx_6iMMlb--
