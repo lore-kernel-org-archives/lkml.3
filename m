@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab3FQEju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 00:39:50 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:34780 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750863Ab3FQEjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 00:39:48 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [uclinux-dist-devel] [PATCH 01/11] cpufreq: blackfin: enable driver for CONFIG_BFIN_CPU_FREQ
-Date: Mon, 17 Jun 2013 00:39:49 -0400
-User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, patches@linaro.org, Liviu.Dudau@arm.com,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, arvind.chauhan@arm.com,
-        charles.garcia-tobin@arm.com
-References: <cover.1371022830.git.viresh.kumar@linaro.org> <257a5d42e71bcec9fa9c8d09e1ad2c781db7c083.1371022830.git.viresh.kumar@linaro.org>
-In-Reply-To: <257a5d42e71bcec9fa9c8d09e1ad2c781db7c083.1371022830.git.viresh.kumar@linaro.org>
+	id S932070Ab3FQEuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 00:50:54 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64589 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab3FQEuw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 00:50:52 -0400
+Message-ID: <51BE95A5.5090509@linaro.org>
+Date: Mon, 17 Jun 2013 10:20:45 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6294892.iTiYXKjeEt";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
+        swarren@wwwdotorg.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
+References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <2070978.AjQD2isvSl@flatron> <51B54B4F.3000503@linaro.org> <3226068.I7g6oVyl1p@flatron>
+In-Reply-To: <3226068.I7g6oVyl1p@flatron>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306170039.53657.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6294892.iTiYXKjeEt
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+On 06/11/2013 12:23 AM, Tomasz Figa wrote:
+> On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
+>> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
+>>> On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
 
-On Wednesday 12 June 2013 04:15:08 Viresh Kumar wrote:
-> By mistake blackfin's cpufreq driver is enabled when CONFIG_BLACKFIN was
-> present, whereas it should have been enabled only when CONFIG_BFIN_CPU_FREQ
-> is present.
+[ ... ]
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+>>>>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
+>>>>
+>>>> -			SRC_CPU, 16, 1, "mout_core"),
+>>>> +			SRC_CPU, 16, 1, "moutcore"),
+>>>
+>>> IMHO those typo corrections are not part of this patch.
+>>
+>> But the older drivers (before migration to CCF) were using the clock
+>> "moutcore" (not "mout_core").
+> 
+> I mean, this should be placed in a separate patch, as this change is not 
+> "adding alias for cpufreq related clocks", but rather fixing a typo.
+> 
 
---nextPart6294892.iTiYXKjeEt
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Is it ok if I split this patch into 2, one adding clock alias
+'mout_apll' and another one fixing the alias names 'mout_mpll',
+'moutcore' and 'armclk'?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+[ ... ]
 
-iQIcBAABAgAGBQJRvpMZAAoJEEFjO5/oN/WBbVQP+QGgKzpUkDvr/gsrjSiocnck
-uCaumylrvo6mngMe4wrgFWDge19/v4CLwOrNRI9QbVE4Wyy4u+dw93+il1tltrmu
-PpA0SyB1kL91kFCDr4gknnsqS39VotWY4CHXgxYOYBeg9Xrx8zO1thkhLtxNZTrU
-PB+FlEUQsCUnLkhQpjAtT6jr6KRQen9w8i0s7NECku+UOBwWBIvMFN4pMkngiMUV
-kShZ6TUgTLo3Z2JarMnrPwqvKioT5ha7gNHpqD75BLCaLmC7kv7I3c1+l43L2l6f
-VAVxohMxGJr+QupBmS0AicnO0HuWGebT0Zb3hb5XCwNG/SE9XZ5K0K5es7ItSRAY
-28MBy9gbcdgO+0YoycvwqrrThH/JTxuV8PaoAgwYDBNVRiJeGjgwYwMrtl+1eFH9
-2Zv4OJLbQtT97SiZutTyDN83nVwlCDMlf7sI6mPo+i/yuNThrXEnOUvDHOlYUUWc
-8+m++JzgWYeDkblE4yiqvZEDmbA0CDuePsmwElvCYrPQsqGZ0Z+39rT0FX71/evS
-yRRNAPQy3dHSezhT1EMSZD5mqecm08DALNoN8qfEmwJWIpIsljjwrMpGIZbWGjHA
-iuRSB8Uch9Jk3Ln9AcJXtY8Klp7rAFoxLp/KPeUfPsAGjOfspoe9GldLj407P1uu
-z/MxN5Vqk57vJSf/4JG2
-=sp2j
------END PGP SIGNATURE-----
+>>> Basically I don't like the idea of those global aliases, which IMHO
+>>> should be completely dropped. Someone might not like it, but I'd go
+>>> with the conversion of our cpufreq drivers to platform drivers
+>>> instead, which could receive things like clocks and regulators using
+>>> DT-based lookups.
+>> I agree. Migration of exynos-cpufreq driver as a platform driver is the
+>> best solution. But unless someone picks up that work, cpufreq support
+>> for EXYNOS4 based systems is broken because of the incorrect clock
+>> aliases.
+> 
+> We have patches for this in our internal tree. I will clean them up a bit 
+> and submit soon.
+> 
 
---nextPart6294892.iTiYXKjeEt--
+If you are going to submit the cpufreq driver patches for v3.11, then we
+can ignore this patchset. Otherwise, I would prefer to get these patches
+merged for v3.11 to get cpufreq working. Once the driver changes are
+incorporated, we can very well modify these later.
+
+Thanks.
+-- 
+Tushar Behera
