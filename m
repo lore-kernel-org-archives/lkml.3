@@ -1,188 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3FQQm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:42:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13349 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab3FQQm6 (ORCPT
+	id S1752874Ab3FQQon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:44:43 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:47351 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3FQQom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:42:58 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=7-PjsdLTLNQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=J6gUkW1Kw00A:10 a=TX9lcSHa5KnpbiHz2XIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371487375.18733.18.camel@gandalf.local.home>
-Subject: [RFC][PATCH] tracing: Disable tracing on warning
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 17 Jun 2013 12:42:55 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 12:44:42 -0400
+Date: Mon, 17 Jun 2013 18:44:27 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org, sibyte-users@bitmover.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/7] MIPS: sibyte: Add missing sched.h header
+Message-ID: <20130617164427.GE10408@linux-mips.org>
+References: <1371477641-7989-1-git-send-email-markos.chandras@imgtec.com>
+ <1371477641-7989-4-git-send-email-markos.chandras@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371477641-7989-4-git-send-email-markos.chandras@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a traceoff_on_warning option in both the kernel command line as well
-as a sysctl option. When set, any WARN*() function that is hit will cause
-the tracing_on variable to be cleared, which disables writing to the
-ring buffer.
+On Mon, Jun 17, 2013 at 03:00:37PM +0100, Markos Chandras wrote:
 
-This is useful especially when tracing a bug with function tracing. When
-a warning is hit, the print caused by the warning can flood the trace with
-the functions that producing the output for the warning. This can make the
-resulting trace useless by either hiding where the bug happened, or worse,
-by overflowing the buffer and losing the trace of the bug totally.
+> It's needed for the TASK_INTERRUPTIBLE definition.
+> 
+> Fixes the following build problem:
+> arch/mips/sibyte/common/sb_tbprof.c:235:4: error: 'TASK_INTERRUPTIBLE'
+> undeclared (first use in this function)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- Documentation/kernel-parameters.txt |   13 +++++++++++++
- include/linux/ftrace.h              |    5 +++++
- kernel/panic.c                      |    3 +++
- kernel/sysctl.c                     |    7 +++++++
- kernel/trace/trace.c                |   17 +++++++++++++++++
- 5 files changed, 45 insertions(+), 0 deletions(-)
+Ideally sched.h should be included into the actual user of
+TASK_INTERRUPTIBLE, the wake_up_interruptible macro in <linux/wait.h> but
+that seems way too risky that close to a release.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6e3b18a..729d0b9 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3069,6 +3069,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			See also Documentation/trace/ftrace.txt "trace options"
- 			section.
- 
-+	traceoff_on_warning
-+			[FTRACE] enable this option to disable tracing when a
-+			warning is hit. This turns off "tracing_on". Tracing can
-+			be enabled again by echoing '1' into the "tracing_on"
-+			file located in /sys/kernel/debug/tracing/
-+
-+			This option is useful, as it disables the trace before
-+			the WARNING dump is called, which prevents the trace to
-+			be filled with content caused by the warning output.
-+
-+			This option can also be set at run time via the sysctl
-+			option:  kernel/traceoff_on_warning
-+
- 	transparent_hugepage=
- 			[KNL]
- 			Format: [always|madvise|never]
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index e48ed1d..9f15c00 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -824,10 +824,15 @@ enum ftrace_dump_mode;
- 
- extern enum ftrace_dump_mode ftrace_dump_on_oops;
- 
-+extern void disable_trace_on_warning(void);
-+extern int __disable_trace_on_warning;
-+
- #ifdef CONFIG_PREEMPT
- #define INIT_TRACE_RECURSION		.trace_recursion = 0,
- #endif
- 
-+#else /* CONFIG_TRACING */
-+static inline void  disable_trace_on_warning(void) { }
- #endif /* CONFIG_TRACING */
- 
- #ifndef INIT_TRACE_RECURSION
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 167ec09..4cea6cc 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -15,6 +15,7 @@
- #include <linux/notifier.h>
- #include <linux/module.h>
- #include <linux/random.h>
-+#include <linux/ftrace.h>
- #include <linux/reboot.h>
- #include <linux/delay.h>
- #include <linux/kexec.h>
-@@ -399,6 +400,8 @@ struct slowpath_args {
- static void warn_slowpath_common(const char *file, int line, void *caller,
- 				 unsigned taint, struct slowpath_args *args)
- {
-+	disable_trace_on_warning();
-+
- 	printk(KERN_WARNING "------------[ cut here ]------------\n");
- 	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 9edcf45..5b0f18c 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -600,6 +600,13 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+	{
-+		.procname	= "traceoff_on_warning",
-+		.data		= &__disable_trace_on_warning,
-+		.maxlen		= sizeof(__disable_trace_on_warning),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- #endif
- #ifdef CONFIG_MODULES
- 	{
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5f4a09c..c4c9296 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -115,6 +115,9 @@ cpumask_var_t __read_mostly	tracing_buffer_mask;
- 
- enum ftrace_dump_mode ftrace_dump_on_oops;
- 
-+/* When set, tracing will stop when a WARN*() is hit */
-+int __disable_trace_on_warning;
-+
- static int tracing_set_tracer(const char *buf);
- 
- #define MAX_TRACER_SIZE		100
-@@ -149,6 +152,13 @@ static int __init set_ftrace_dump_on_oops(char *str)
- }
- __setup("ftrace_dump_on_oops", set_ftrace_dump_on_oops);
- 
-+static int __init stop_trace_on_warning(char *str)
-+{
-+	__disable_trace_on_warning = 1;
-+	return 1;
-+}
-+__setup("traceoff_on_warning=", stop_trace_on_warning);
-+
- static int __init boot_alloc_snapshot(char *str)
- {
- 	allocate_snapshot = true;
-@@ -170,6 +180,7 @@ static int __init set_trace_boot_options(char *str)
- }
- __setup("trace_options=", set_trace_boot_options);
- 
-+
- unsigned long long ns2usecs(cycle_t nsec)
- {
- 	nsec += 500;
-@@ -562,6 +573,12 @@ void tracing_off(void)
- }
- EXPORT_SYMBOL_GPL(tracing_off);
- 
-+void disable_trace_on_warning(void)
-+{
-+	if (__disable_trace_on_warning)
-+		tracing_off();
-+}
-+
- /**
-  * tracing_is_on - show state of ring buffers enabled
-  */
--- 
-1.7.3.4
-
-
-
+  Ralf
