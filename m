@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab3FQRHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 13:07:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3FQRHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 13:07:03 -0400
-Date: Mon, 17 Jun 2013 19:01:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] tracing: more list_empty(perf_events) checks
-Message-ID: <20130617170142.GA19780@redhat.com>
+	id S1751601Ab3FQRHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 13:07:11 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:47134 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab3FQRHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 13:07:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAN_LGv0yXhQi82ck3mvTbwuZv2dhnYB7Xnk9P4=5XVoAaAAeZQ@mail.gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
+	<CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com>
+	<51BDF705.5090904@gmail.com>
+	<CAN_LGv0yXhQi82ck3mvTbwuZv2dhnYB7Xnk9P4=5XVoAaAAeZQ@mail.gmail.com>
+Date: Mon, 17 Jun 2013 23:07:04 +0600
+Message-ID: <CAN_LGv2GTgMJB8NL7iPnyk9bMvbDKE9i6HP0UV5d_9CfytJ0pg@mail.gmail.com>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+2013/6/17 Alexander E. Patrakov <patrakov@gmail.com>:
+> I am not 100% sure that the static key backtrace is the same in all
+> cases. However, I do remember that it does appear both in the
+> non-hotplug and hotplug cases.
+>
+> I will retest this after work, i.e. in ~12 hours.
 
-Steven, we already discussed this a bit some time ago...
+Tried again, failed to reproduce this warning. Sorry :(
 
-DECLARE_EVENT_CLASS()->perf_trace_##call() is not trivial because
-of __perf_task(), but perhaps we can change other
-perf_trace_buf_submit(task => NULL) callers.
-
-
-And can't we factor out WARN_ONCE(size > PERF_MAX_TRACE_SIZE) ?
-See 3/3. I won't argue if you dislike it.
-
-Oleg.
-
- include/trace/ftrace.h          |    4 ----
- kernel/trace/trace_event_perf.c |   10 ++++++++--
- kernel/trace/trace_kprobe.c     |    6 ------
- kernel/trace/trace_syscalls.c   |   24 ++++++++----------------
- kernel/trace/trace_uprobe.c     |    2 --
- 5 files changed, 16 insertions(+), 30 deletions(-)
-
+--
+Alexander E. Patrakov
