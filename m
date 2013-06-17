@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab3FQDnk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jun 2013 23:43:40 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36915 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab3FQDnj (ORCPT
+	id S1755783Ab3FQDqo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jun 2013 23:46:44 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56342 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718Ab3FQDqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jun 2013 23:43:39 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAH9JG2VWwdJ4t1B6fx9rx9=RMSmjmUvGSA5Eqn=aMcQ-FFyO0g@mail.gmail.com>
-References: <1371143144-31764-1-git-send-email-dianders@chromium.org> <1371421068-28743-1-git-send-email-dianders@chromium.org> <CAH9JG2VWwdJ4t1B6fx9rx9=RMSmjmUvGSA5Eqn=aMcQ-FFyO0g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 1/2] MAINTAINERS: Add Samsung pinctrl entries
-From: Olof Johansson <olof@lixom.net>
-Date: Sun, 16 Jun 2013 20:43:25 -0700
-To: Kyungmin Park <kmpark@infradead.org>,
-        Doug Anderson <dianders@chromium.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org
-Message-ID: <4a2043ad-0fa6-44e6-8d46-2a0ef9f9073b@email.android.com>
+	Sun, 16 Jun 2013 23:46:42 -0400
+Date: Mon, 17 Jun 2013 13:46:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajeev Kumar <rajeev-dlh.kumar@st.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20130617134631.fd1f6107b353c2e331ff06df@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Jun_2013_13_46_31_+1000_vKz2wqzP2gcVCPYz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__17_Jun_2013_13_46_31_+1000_vKz2wqzP2gcVCPYz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-Kyungmin Park <kmpark@infradead.org> skrev:
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
->On Mon, Jun 17, 2013 at 7:17 AM, Doug Anderson <dianders@chromium.org>
->wrote:
->> It's convenient if get_maintainer suggests sending samsung/exynos
->> pinctrl changes to linux-samsung-soc and to Tomasz and Thomas.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+make[4]: *** No rule to make target `sound/soc/spear/spear_evb.o', needed b=
+y `sound/soc/spear/built-in.o'.  Stop.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Caused by commit e58070ee4fdf ("ASoC: Add Kconfig and Makefile to support
+SPEAr audio driver").
 
--- 
-Skickat från min Android-telefon med K-9 E-post. Ursäkta min fåordighet.
+I have used the version of the sound-asoc -tree from next-20130607 for
+today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__17_Jun_2013_13_46_31_+1000_vKz2wqzP2gcVCPYz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRvoacAAoJEECxmPOUX5FEhe4P+QG8ZGRX8IpRZPxH6UFrxy1m
+mZNugtKQNoU+pVbeZNW6eam32OWsMU4XFBk7Xi41ObxB+/i8QdUYw1B3weMuxznM
+i4rwSuXI8gzsThGEASVCPjF7R/ewayugFkzUnDs1gbMSpLaX4QTgKsBIIBozbJZ2
+M+s4i0e1Nl11hLt6UBP6dL0JTqg5WLifEEY+PDTD5W1ZVGLLj/ykDNlbNF7CijhI
+Ujp2yro0ZnKds9QZOyyGBJoCV69qb7DYzSFW0bGn7ha2+O0O6cHWtM7ZaAKDWRE0
+2cWmbTRzmeKv9sfKbVsbakO7/sfmZRCDSyzCkAEKSXw3JUqhMEKzMgLkvxUgDo2i
+GBPC8/la5rdQG+7zKYm5sbDyNnwi1DUVUpILIngXoI9wMVL68WoqhPGRENX1vTKy
+uEUalumLvLKTrIYBVCOvrTzExgujSn/mihoKoyL0D2lNxeVuZ3vm6fXKRxESxMPg
+ONvNhj2BWwFEXmMcoN1w9+iynD3zkTENc8JpCsIIjH0Q31uYO0+j3Ll0XBYhUZgP
+U8pBmwXuoYOc3suKDV5orYHYXrY3NVcejw0F4y4jx++Barkr/GtZJzovA9M0lhyX
+FZnOzOg9gtR57b9tlA3TXxvfye8EkcF/bQ4Byjcv8Cp/fvAKecUFIeWvYHKpY8IE
+aozDpgNxt0xtc7LzRcQO
+=JoJZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Jun_2013_13_46_31_+1000_vKz2wqzP2gcVCPYz--
