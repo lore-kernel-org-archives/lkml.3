@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3FQQEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 12:04:01 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:17733 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3FQQEA convert rfc822-to-8bit (ORCPT
+	id S1752958Ab3FQQEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 12:04:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53563 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3FQQEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 12:04:00 -0400
-Date: Mon, 17 Jun 2013 18:03:25 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
-Message-ID: <20130617160324.GA15853@ab42.lan>
-References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
- <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
- <51BA3BC1.3090109@wwwdotorg.org>
+	Mon, 17 Jun 2013 12:04:10 -0400
+Date: Mon, 17 Jun 2013 17:03:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Message-ID: <20130617160326.GE1403@sirena.org.uk>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+ <1370950268-7224-2-git-send-email-bigeasy@linutronix.de>
+ <20130611142336.GE29135@zurbaran>
+ <51B7358D.7000605@linutronix.de>
+ <20130614135358.GR1403@sirena.org.uk>
+ <51BEF5F4.4090600@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nFw2VRElW3V0Y7aQ"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <51BA3BC1.3090109@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <51BEF5F4.4090600@linutronix.de>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/22] mfd/ti_am335x_tscadc: remove regmap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 03:38:09PM -0600, Stephen Warren wrote:
-> On 06/13/2013 06:55 AM, Christian Ruppert wrote:
-> [...]
-> > diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
-> 
-> > +In addition, named groups of pins can be mapped to pin groups of a given
-> > +pin controller:
-> > +
-> > +	gpio_pio_g: gpio-controller@1480 {
-> > +		#gpio-cells = <2>;
-> > +		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
-> > +		reg = <0x1480 0x18>;
-> > +		gpio-controller;
-> > +		gpio-pingrps = <&pinctrl1 0>, <&pinctrl2 3>;
-> > +		gpio-pingrp-names = "pctl1_gpio_g", "pctl2_gpio_g";
-> 
-> A few thoughts here:
-> 
-> "gpio-pingrps" doesn't sound very similar to the existing "gpio-ranges".
-> Can we make their equivalent purpose more obvious by renaming this
-> "gpio-group-ranges"?
-> 
-> I'm not actually even sure we need a new property for this, except for
-> the string group names. We could fold the new gpio-pingrps into the
-> existing gpio-ranges, whose entries have the format:
-> 
-> <gpio-base> <pinctrl-base> <count>
-> 
-> ... by saying that if count==0, it means to use a group name instead of
-> a pinctrl-base value. We can insist that pinctrl-base==0 in this case
-> too. If we go made, count==0 could mean "special" and pinctrl-base==0
-> could mean "by pinctrl group name", and other values of pinctrl-base
-> could be added later to mean other things!
-> 
-> gpio-ranges =
-> 	<&pinctrl1 0 20 10>, /* Existing numeric style */
-> 	<&pinctrl2 10 0 0>,  /* Count==0, so group name style */
-> 	<&pinctrl1 0 20 10>, /* Existing numeric style */
-> gpio-ranges-group-names =
-> 	"",    /* No group name required for entry 0 */
-> 	"gr1", /* Group name for entry 1 */
-> 	"";    /* No group name required for entry 2 */
-> 
-> Does this seem better?
-> [...]
 
-In the follow-up a patch set based on this proposal. I have also
-included our drivers (and device tree updates) with this to see how this
-looks in a real (working) system. To me it does actually look quite nice
-and logical but take a look at it yourselves and tell me what you think.
+--nFw2VRElW3V0Y7aQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Greetings,
-  Christian
+On Mon, Jun 17, 2013 at 01:41:40PM +0200, Sebastian Andrzej Siewior wrote:
+> On 06/14/2013 03:53 PM, Mark Brown wrote:
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+> > It does give you tracepoints and debugfs.  If it's making things at
+> > all complicated we need to look at why that is and figure out how
+> > to fix that since it's probably an issue for other users.
+
+> debugfs are tracepoints is our offer? Let me check the price one more
+> time.
+
+OK...
+
+> This is a lot of for a simple mmio access. In terms of performance: If
+> I add a trace point to my read and write I have still less code which
+> is called and it can be disabled. This regmap overhead is always there
+> chasing pointers.
+
+Equally well what you're implementing here is support for something
+that's typically implemented with an I2C or SPI control interface so
+you're already going to be quite a way ahead of the norm.  This is part
+of what's confusing me, usually for this application things aren't that
+bad performance wise even on a massively slower bus.
+
+If all you're saying here is that there's some overhead that's fine if a
+bit surprising, but the way you're talking made it sound like there was
+some issue that made the API actually unusable.
+
+> As I said before: I doubt that you get this regmap access in an one GiB
+> network driver and in turn remove their trace points to register access.
+
+Well, of course for that sort of thing the general trick is not to talk
+to the hardware at all and do as much as possible with memory that the
+hardware can DMA - there's actually still non-trivial costs in talking
+over the buses.
+
+> Please don't get me wrong: It is still nice for slow buses and this ADC
+> driver isn't anything close to high performance like a 1GiB network
+> driver but it adds a lot of unwanted overhead which I prefer not to
+> have.
+
+OK, but equally well remember that from a subsystem maintainer point of
+view having things factored out is a win in itself; for example with the
+MFDs locking on the register I/O has been a persistent issue in the past.
+
+--nFw2VRElW3V0Y7aQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRvzNLAAoJELSic+t+oim9vmEP/j1XJ015WyfVwWwRJ+bfdNex
+qhxUYMGMTRXJi76ZgJtKWxnG+d2BeV6uSN5ov6reXOwA8OnDrcil+h3VyY/79bHt
+YU6D1uOJVO9O2XnwSboBDWrYv8zrFKrH5yLJ8j8h51xqO7RzZ84j0GtCdqYBARn9
+Hf0/gZZV3HFXzrLE+qHMoCG8UHxujf95MW6f2B48SaT17G/oDXSMwncKHImJicer
+pPpCuGO9JRH0PCr6JdnBkq8OG5qMr5X6Mi4JQkA30lN9AX6qypW76JuA/CANRsQo
+AOAqdtYrojocjM2FJhmp1EVrQXN2o9FUKjTtiCUrxsQsDXLEektZsdUQhuh1+fPz
+elI97Re6NJql4DUAWo71h/Gt6cHWusjjstAL2pg4/ayJeBqtGLQfUINx+fdKt6RP
+XS0qMDd3n+UONXb+VL4IpOYiTaV9rqi8So1JpG8DkbLBfLRYDCUeQI8gfD0HIeha
+VB1fMIxENJ86q5NA3rrYV59btyg3+dexcCp1bUcGs3/JkJQLfSgt+8kek9nNrOEC
+Z/9vQbs00haHftBWSAlXKOUaCkg4mQGZuQT3nEAuzDNORH3W+CVFc5rmSNmcZUFo
+SQOD7VmHT9uNOB1ZYZCE6eglKC6TmxN0F+eHg+HbhqR4goYKhOwbWDbfISVtx9k2
+0fcMLRGa659l+WWANP7u
+=gQTL
+-----END PGP SIGNATURE-----
+
+--nFw2VRElW3V0Y7aQ--
