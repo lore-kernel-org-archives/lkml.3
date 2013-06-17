@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3FQU02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:26:28 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53617 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3FQU00 (ORCPT
+	id S1753018Ab3FQU1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:27:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44009 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab3FQU1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:26:26 -0400
-Date: Mon, 17 Jun 2013 13:26:24 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL 2/3] msm fixes for 3.11
-Message-ID: <20130617202624.GA23915@codeaurora.org>
-References: <1371232615-30731-1-git-send-email-davidb@codeaurora.org>
- <1371232615-30731-4-git-send-email-davidb@codeaurora.org>
- <20130615012617.GU18124@quad.lixom.net>
+	Mon, 17 Jun 2013 16:27:13 -0400
+Date: Mon, 17 Jun 2013 13:27:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/7] mm/writeback: commit reason of
+ WB_REASON_FORKER_THREAD mismatch name
+Message-ID: <20130617202706.GM32663@mtj.dyndns.org>
+References: <1371345290-19588-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1371345290-19588-3-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130617083030.GE19194@dhcp22.suse.cz>
+ <51bed9eb.41e9420a.2725.ffff943cSMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130615012617.GU18124@quad.lixom.net>
+In-Reply-To: <51bed9eb.41e9420a.2725.ffff943cSMTPIN_ADDED_BROKEN@mx.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 06:26:17PM -0700, Olof Johansson wrote:
+On Mon, Jun 17, 2013 at 05:41:44PM +0800, Wanpeng Li wrote:
+> On Mon, Jun 17, 2013 at 10:30:30AM +0200, Michal Hocko wrote:
+> >On Sun 16-06-13 09:14:46, Wanpeng Li wrote:
+> >> After commit 839a8e86("writeback: replace custom worker pool implementation
+> >> with unbound workqueue"), there is no bdi forker thread any more. However,
+> >> WB_REASON_FORKER_THREAD is still used due to it is somewhat userland visible 
+> >
+> >What exactly "somewhat userland visible" means?
+> >Is this about trace events?
+> 
+> Thanks for the question, Tejun, could you explain this for us? ;-)
 
->> Stephen Boyd (3):
->>       ARM: dts: msm: Fix bad register addresses
->
->Hmm. I see that the msm-hsuart device nodes completely lack reg entries. That's
->considerably more important to fix than the cosmetic unit address that's not
->even needed unless two nodes happen to have the same name.
+Yeah, I was referring to the WB_REASON strings in
+include/trace/events/writeback.h.  We can rename the internal constant
+and leave the string alone too but I don't think it matters either
+way.
 
-I'm not seeing the missing reg entries in anyone's tree.
-
-However, it appears that both of us resolved the merge conflict
-differently, and both did it incorrectly.
-
-How would you like this to be fixed?  Should I just send you a patch
-based off of the current soc tree?
-
-Thanks,
-David
+Thanks.
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+tejun
