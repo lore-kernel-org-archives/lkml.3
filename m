@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab3FQKe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 06:34:58 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:61103 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412Ab3FQKe5 (ORCPT
+	id S932633Ab3FQKfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 06:35:19 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:53451 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932412Ab3FQKfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 06:34:57 -0400
-Message-ID: <51BEE64C.80608@linaro.org>
-Date: Mon, 17 Jun 2013 16:04:52 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH 11/15] regulator: ti-abb: Convert to use devm_ioremap_resource
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org> <1370864113-17895-12-git-send-email-tushar.behera@linaro.org> <51BED2F9.1020307@linaro.org> <20130617100525.GA1403@sirena.org.uk>
-In-Reply-To: <20130617100525.GA1403@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 06:35:17 -0400
+Message-ID: <1371465315.26299.17.camel@x61.thuisdomein>
+Subject: [PATCH] ioatdma: silence GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 17 Jun 2013 12:35:15 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 17 Jun 2013 10:35:15.0776 (UTC) FILETIME=[5AEE1C00:01CE6B46]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 03:35 PM, Mark Brown wrote:
-> On Mon, Jun 17, 2013 at 02:42:25PM +0530, Tushar Behera wrote:
->> On 06/10/2013 05:05 PM, Tushar Behera wrote:
->>> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
->>> introduced devm_ioremap_resource() and deprecated the use of
->>> devm_request_and_ioremap().
-> 
->> Ping.
-> 
-> Don't send contentless pings.  I seem to recall you already got some
-> review on this.
-> 
+Building dma_v3.o triggers two GCC warnings:
+    drivers/dma/ioat/dma_v3.c: In function ‘__ioat3_prep_pq16_lock’:
+    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
+    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
 
-The comment was on removal of the error message during
-devm_ioremap_resource() error check . Since there are a few other error
-messages in the driver (related to devm_ioremap_nocache) in the same
-format, I prefer to leave this error message right now.
+These warnings are caused by pq16_set_src(). It uses "int idx" as an
+index to an eight element array. Changing "idx" to unsigned int silences
+these warnings. Apparently GCC can then determine that "idx" will never
+be negative.
 
-There were no other comments.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested only.
 
+1) These warning were introduced in v3.10-rc1. That must have been
+through commit 7727eaa449 ("ioatdma: Adding support for 16 src PQ ops
+and super extended descriptors").
+
+ drivers/dma/ioat/dma_v3.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index ca6ea9b..b5102da 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
+ }
+ 
+ static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
+-			dma_addr_t addr, u32 offset, u8 coef, int idx)
++			dma_addr_t addr, u32 offset, u8 coef, unsigned int idx)
+ {
+ 	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
+ 	struct ioat_pq16a_descriptor *pq16 =
+@@ -1180,7 +1180,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
+ 	struct ioat_pq_descriptor *pq;
+ 	u32 offset = 0;
+ 	u8 op;
+-	int i, s, idx, num_descs;
++	int i, idx, num_descs;
+ 
+ 	/* this function only handles src_cnt 9 - 16 */
+ 	BUG_ON(src_cnt < 9);
+@@ -1206,6 +1206,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
+ 	do {
+ 		struct ioat_raw_descriptor *descs[4];
+ 		size_t xfer_size = min_t(size_t, len, 1 << ioat->xfercap_log);
++		unsigned int s;
+ 
+ 		desc = ioat2_get_ring_ent(ioat, idx + i);
+ 		pq = desc->pq;
 -- 
-Tushar Behera
+1.8.1.4
+
