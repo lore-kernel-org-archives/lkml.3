@@ -1,283 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab3FQUF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 16:05:27 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:46870 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3FQUFY (ORCPT
+	id S1752663Ab3FQUGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 16:06:45 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:55511 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab3FQUGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 16:05:24 -0400
-Message-ID: <51BF6BFF.7050705@suse.cz>
-Date: Mon, 17 Jun 2013 22:05:19 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Mon, 17 Jun 2013 16:06:43 -0400
+Date: Mon, 17 Jun 2013 14:06:39 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3, part2 01/20] PCI: introduce hotplug-safe PCI bus
+ iterators
+Message-ID: <20130617200639.GA7877@google.com>
+References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
+ <1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>,
-        Michal Marek <mmarek@suse.cz>, tomi.valkeinen@ti.com
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com>
-In-Reply-To: <519D8876.9050405@suse.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: multipart/mixed;
- boundary="------------090100040802040701030900"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090100040802040701030900
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 05/23/2013 05:09 AM, Jeff Mahoney wrote:
-> On 5/22/13 10:23 PM, Greg Kroah-Hartman wrote:
->> On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby wrote:
->>> Some drivers can be built on more platforms than they run on. This
->>> causes users and distributors packaging burden when they have to
->>> manually deselect some drivers from their allmodconfigs. Or sometimes
->>> it is even impossible to disable the drivers without patching the
->>> kernel.
->>>
->>> Introduce a new config option COMPILE_TEST and make all those drivers
->>> to depend on the platform they run on, or on the COMPILE_TEST option.
->>> Now, when users/distributors choose COMPILE_TEST=n they will not have
->>> the drivers in their allmodconfig setups, but developers still can
->>> compile-test them with COMPILE_TEST=y.
->>
->> I understand the urge, and it's getting hard for distros to handle these
->> drivers that just don't work on other architectures, but it's really
->> valuable to ensure that they build properly, for those of us that don't
->> have many/any cross compilers set up.
-
-But this is exactly what COMPILE_TEST will give us when set to "y", or
-am I missing something?
-
->>> Now the drivers where we use this new option:
->>> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
->>>   processors so it should depend on x86.
->>> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
->>> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
->>>   systems -- which do not actually support the hardware via that
->>>   method.
->>
->> This seems ripe to start to get really messy, really quickly.  Shouldn't
->> "default configs" handle if this "should" be enabled for a platform or
->> not, and let the rest of us just build them with no problems?
+On Sun, May 26, 2013 at 11:52:58PM +0800, Jiang Liu wrote:
+> Introduce hotplug-safe PCI bus iterators as below, which hold a
+> reference on the returned PCI bus object.
+> bool pci_bus_exists(int domain, int busnr);
+> struct pci_bus *pci_get_bus(int domain, int busnr);
+> struct pci_bus *pci_get_next_bus(struct pci_bus *from);
+> struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
+> #define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
+> #define for_each_pci_root_bus(b)  \
+> 		for (b = NULL; (b = pci_get_next_root_bus(b)); )
 > 
-> If every time a new Kconfig option is added, corresponding default
-> config updates come with it, sure. I just don't see that happening,
-> especially when it can be done much more clearly in the Kconfig while
-> the developer is writing the driver.
+> The long-term goal is to remove hotplug-unsafe pci_find_bus(),
+> pci_find_next_bus() and the global pci_root_buses list.
+
+I think you should mark the unsafe interfaces as __deprecated so
+users will get compile-time warnings.
+
+I don't think pci_bus_exists() is a safe interface, because the value
+it returns may be incorrect before the caller can look at it.  The
+only safe thing would be to make it so we try to create the bus
+and return failure if it already exists.  Then the mutex can be in
+the code that creates the bus.
+
+I don't see any uses of for_each_pci_bus(), so please remove that.
+
+It sounds like we don't have a consensus on how to iterate over
+PCI root buses.  If you separate that from the pci_get_bus()
+changes, maybe we can at least move forward on the pci_get_bus()
+stuff.
+
+Bjorn
+
+> These new interfaces may be a littler slower than existing interfaces,
+> but it should be acceptable because they are not used on hot paths.
 > 
->> What problems is this causing you?  Are you running out of space in
->> kernel packages with drivers that will never be actually used?
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/pci/pci.h    |   1 +
+>  drivers/pci/probe.c  |   2 +-
+>  drivers/pci/search.c | 159 +++++++++++++++++++++++++++++++++++++++++----------
+>  include/linux/pci.h  |  23 +++++++-
+>  4 files changed, 153 insertions(+), 32 deletions(-)
 > 
-> Wasted build resources. Wasted disk space on /every/ system the kernel
-> package is installed on. We're all trying to pare down the kernel
-> packages to eliminate wasted space and doing it manually means a bunch
-> of research, sometimes with incorrect assumptions about the results,
-> needs to be done by someone not usually associated with that code. That
-> research gets repeated by people maintaining kernel packages for pretty
-> much every distro.
-
-I second all the above.
-
->>> +config COMPILE_TEST
->>> +	bool "Compile also drivers which will not load" if EXPERT
->>
->> EXPERT is getting to be the "let's hide it here" option, isn't it...
->>
->> I don't know, if no one else strongly objects, I can be convinced that
->> this is needed, but so far, I don't see why it really is, or what this
->> is going to help with.
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 68678ed..8fe15f6 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -126,6 +126,7 @@ static inline void pci_remove_legacy_files(struct pci_bus *bus) { return; }
+>  
+>  /* Lock for read/write access to pci device and bus lists */
+>  extern struct rw_semaphore pci_bus_sem;
+> +extern struct class pcibus_class;
+>  
+>  extern raw_spinlock_t pci_lock;
+>  
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 2830070..1004a05 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -93,7 +93,7 @@ static void release_pcibus_dev(struct device *dev)
+>  	kfree(pci_bus);
+>  }
+>  
+> -static struct class pcibus_class = {
+> +struct class pcibus_class = {
+>  	.name		= "pci_bus",
+>  	.dev_release	= &release_pcibus_dev,
+>  	.dev_attrs	= pcibus_dev_attrs,
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index d0627fa..16ccaf8 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -52,20 +52,27 @@ pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
+>  	return tmp;
+>  }
+>  
+> -static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
+> +struct pci_bus_match_arg {
+> +	int domain;
+> +	int bus;
+> +};
+> +
+> +static int pci_match_bus(struct device *dev, const void *data)
+>  {
+> -	struct pci_bus* child;
+> -	struct list_head *tmp;
+> +	struct pci_bus *bus = to_pci_bus(dev);
+> +	const struct pci_bus_match_arg *arg = data;
+>  
+> -	if(bus->number == busnr)
+> -		return bus;
+> +	return (pci_domain_nr(bus) == arg->domain && bus->number == arg->bus);
+> +}
+>  
+> -	list_for_each(tmp, &bus->children) {
+> -		child = pci_do_find_bus(pci_bus_b(tmp), busnr);
+> -		if(child)
+> -			return child;
+> -	}
+> -	return NULL;
+> +static int pci_match_next_bus(struct device *dev, const void *data)
+> +{
+> +	return 1;
+> +}
+> +
+> +static int pci_match_next_root_bus(struct device *dev, const void *data)
+> +{
+> +	return pci_is_root_bus(to_pci_bus(dev));
+>  }
+>  
+>  /**
+> @@ -76,20 +83,19 @@ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
+>   * Given a PCI bus number and domain number, the desired PCI bus is located
+>   * in the global list of PCI buses.  If the bus is found, a pointer to its
+>   * data structure is returned.  If no bus is found, %NULL is returned.
+> + *
+> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
+> + * Please use pci_get_bus() instead which holds a reference on the returned
+> + * PCI bus.
+>   */
+> -struct pci_bus * pci_find_bus(int domain, int busnr)
+> +struct pci_bus *pci_find_bus(int domain, int busnr)
+>  {
+> -	struct pci_bus *bus = NULL;
+> -	struct pci_bus *tmp_bus;
+> +	struct pci_bus *bus;
+>  
+> -	while ((bus = pci_find_next_bus(bus)) != NULL)  {
+> -		if (pci_domain_nr(bus) != domain)
+> -			continue;
+> -		tmp_bus = pci_do_find_bus(bus, busnr);
+> -		if (tmp_bus)
+> -			return tmp_bus;
+> -	}
+> -	return NULL;
+> +	bus = pci_get_bus(domain, busnr);
+> +	pci_bus_put(bus);
+> +
+> +	return bus;
+>  }
+>  
+>  /**
+> @@ -100,21 +106,114 @@ struct pci_bus * pci_find_bus(int domain, int busnr)
+>   * initiated by passing %NULL as the @from argument.  Otherwise if
+>   * @from is not %NULL, searches continue from next device on the
+>   * global list.
+> + *
+> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
+> + * Please use pci_get_next_root_bus() instead which holds a reference
+> + * on the returned PCI root bus.
+>   */
+>  struct pci_bus * 
+>  pci_find_next_bus(const struct pci_bus *from)
+>  {
+> -	struct list_head *n;
+> -	struct pci_bus *b = NULL;
+> +	struct device *dev = from ? (struct device *)&from->dev : NULL;
+> +
+> +	dev = class_find_device(&pcibus_class, dev, NULL,
+> +				&pci_match_next_root_bus);
+> +	if (dev) {
+> +		put_device(dev);
+> +		return to_pci_bus(dev);
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +bool pci_bus_exists(int domain, int busnr)
+> +{
+> +	struct device *dev;
+> +	struct pci_bus_match_arg arg = { domain, busnr };
+>  
+>  	WARN_ON(in_interrupt());
+> -	down_read(&pci_bus_sem);
+> -	n = from ? from->node.next : pci_root_buses.next;
+> -	if (n != &pci_root_buses)
+> -		b = pci_bus_b(n);
+> -	up_read(&pci_bus_sem);
+> -	return b;
+> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
+> +	if (dev)
+> +		put_device(dev);
+> +
+> +	return dev != NULL;
+> +}
+> +EXPORT_SYMBOL(pci_bus_exists);
+> +
+> +/**
+> + * pci_get_bus - locate PCI bus from a given domain and bus number
+> + * @domain: number of PCI domain to search
+> + * @busnr: number of desired PCI bus
+> + *
+> + * Given a PCI bus number and domain number, the desired PCI bus is located.
+> + * If the bus is found, a pointer to its data structure is returned.
+> + * If no bus is found, %NULL is returned.
+> + * Caller needs to release the returned bus by calling pci_bus_put().
+> + */
+> +struct pci_bus *pci_get_bus(int domain, int busnr)
+> +{
+> +	struct device *dev;
+> +	struct pci_bus_match_arg arg = { domain, busnr };
+> +
+> +	WARN_ON(in_interrupt());
+> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
+> +	if (dev)
+> +		return to_pci_bus(dev);
+> +
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL(pci_get_bus);
+> +
+> +/**
+> + * pci_get_next_bus - begin or continue searching for a PCI bus
+> + * @from: Previous PCI bus found, or %NULL for new search.
+> + *
+> + * Iterates through the list of known PCI busses. If a PCI bus is found,
+> + * the reference count to the bus is incremented and a pointer to it is
+> + * returned. Otherwise, %NULL is returned. A new search is initiated by
+> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
+> + * searches continue from next bus on the global list. The reference count
+> + * for @from is always decremented if it is not %NULL.
+> + */
+> +struct pci_bus *pci_get_next_bus(struct pci_bus *from)
+> +{
+> +	struct device *dev = from ? &from->dev : NULL;
+> +
+> +	WARN_ON(in_interrupt());
+> +	dev = class_find_device(&pcibus_class, dev, NULL, &pci_match_next_bus);
+> +	pci_bus_put(from);
+> +	if (dev)
+> +		return to_pci_bus(dev);
+> +
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL(pci_get_next_bus);
+> +
+> +/**
+> + * pci_find_next_root_bus - begin or continue searching for a PCI root bus
+> + * @from: Previous PCI bus found, or %NULL for new search.
+> + *
+> + * Iterates through the list of known PCI root busses. If a PCI bus is found,
+> + * the reference count to the root bus is incremented and a pointer to it is
+> + * returned. Otherwise, %NULL is returned. A new search is initiated by
+> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
+> + * searches continue from next root bus on the global list. The reference
+> + * count for @from is always decremented if it is not %NULL.
+> + */
+> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
+> +{
+> +	struct device *dev = from ? &from->dev : NULL;
+> +
+> +	WARN_ON(in_interrupt());
+> +	dev = class_find_device(&pcibus_class, dev, NULL,
+> +				&pci_match_next_root_bus);
+> +	pci_bus_put(from);
+> +	if (dev)
+> +		return to_pci_bus(dev);
+> +
+> +	return NULL;
+>  }
+> +EXPORT_SYMBOL(pci_get_next_root_bus);
+>  
+>  /**
+>   * pci_get_slot - locate PCI device for a given PCI slot
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 7b23fa0..1e43423 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -454,6 +454,9 @@ struct pci_bus {
+>  
+>  #define pci_bus_b(n)	list_entry(n, struct pci_bus, node)
+>  #define to_pci_bus(n)	container_of(n, struct pci_bus, dev)
+> +#define for_each_pci_bus(b)	for (b = NULL; (b = pci_get_next_bus(b)); )
+> +#define for_each_pci_root_bus(b) \
+> +			for (b = NULL; (b = pci_get_next_root_bus(b)); )
+>  
+>  /*
+>   * Returns true if the pci bus is root (behind host-pci bridge),
+> @@ -718,7 +721,6 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+>  void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+>  			     struct pci_bus_region *region);
+>  void pcibios_scan_specific_bus(int busn);
+> -struct pci_bus *pci_find_bus(int domain, int busnr);
+>  void pci_bus_add_devices(const struct pci_bus *bus);
+>  struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
+>  			int bus, struct pci_ops *ops, void *sysdata);
+> @@ -778,8 +780,15 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap);
+>  int pci_find_next_ext_capability(struct pci_dev *dev, int pos, int cap);
+>  int pci_find_ht_capability(struct pci_dev *dev, int ht_cap);
+>  int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
+> +
+> +struct pci_bus *pci_find_bus(int domain, int busnr);
+>  struct pci_bus *pci_find_next_bus(const struct pci_bus *from);
+>  
+> +bool pci_bus_exists(int domain, int busnr);
+> +struct pci_bus *pci_get_bus(int domain, int busnr);
+> +struct pci_bus *pci_get_next_bus(struct pci_bus *from);
+> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
+> +
+>  struct pci_dev *pci_get_device(unsigned int vendor, unsigned int device,
+>  				struct pci_dev *from);
+>  struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+> @@ -1430,6 +1439,18 @@ static inline void pci_unblock_cfg_access(struct pci_dev *dev)
+>  static inline struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
+>  { return NULL; }
+>  
+> +static inline bool pci_bus_exists(int domain, int busnr)
+> +{ return false; }
+> +
+> +static inline struct pci_bus *pci_get_bus(int domain, int busnr)
+> +{ return NULL; }
+> +
+> +static inline struct pci_bus *pci_get_next_bus(struct pci_bus *from)
+> +{ return NULL; }
+> +
+> +static inline struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
+> +{ return NULL; }
+> +
+>  static inline struct pci_dev *pci_get_slot(struct pci_bus *bus,
+>  						unsigned int devfn)
+>  { return NULL; }
+> -- 
+> 1.8.1.2
 > 
-> I'm not convinced adding a || COMPILE_TEST option to every driver that
-> may be arch specific is the best way to go either. Perhaps adding a new
-> Kconfig verb called "archdepends on" or something that will evaluate as
-> true if COMPILE_TEST is enabled but will evaluate the conditional if
-> not. *waves hands*
-
-Sam Ravnborg (the kconfig ex-maintainer) once wrote that he doesn't want
-to extend the kconfig language for this purpose (which I support). That
-a config option is fine and sufficient in this case [1]. Except he
-called the config option "SHOW_ALL_DRIVERS". Adding the current
-maintainer to CCs ;).
-
-[1] http://comments.gmane.org/gmane.linux.kbuild.devel/9829
-
-The last point I inclined to the Greg's argument to remove the EXPERT
-dependency.
-
-So currently I have what is attached... Comments?
-
-thanks,
--- 
-js
-suse labs
-
---------------090100040802040701030900
-Content-Type: text/x-patch;
- name="0001-build-some-drivers-only-when-compile-testing.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-build-some-drivers-only-when-compile-testing.patch"
-
->From e818e90b4f901c8d949d08bd05735203c5e88530 Mon Sep 17 00:00:00 2001
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Wed, 22 May 2013 10:56:24 +0200
-Subject: [PATCH v2] build some drivers only when compile-testing
-
-Some drivers can be built on more platforms than they run on. This is
-a burden for users and distributors who package a kernel. They have to
-manually deselect some (for them useless) drivers when updating their
-configs via oldconfig. And yet, sometimes it is even impossible to
-disable the drivers without patching the kernel.
-
-Introduce a new config option COMPILE_TEST and make all those drivers
-to depend on the platform they run on, or on the COMPILE_TEST option.
-Now, when users/distributors choose COMPILE_TEST=n they will not have
-the drivers in their allmodconfig setups, but developers still can
-compile-test them with COMPILE_TEST=y.
-
-Now the drivers where we use this new option:
-* PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
-  processors so it should depend on x86.
-* FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
-* USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
-  systems -- which do not actually support the hardware via that
-  method.
-* INTEL_MID_PTI: It is specific to the Penwell type of Intel Atom
-  device.
-
-[v2]
-* remove EXPERT dependency
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-geode@lists.infradead.org
-Cc: linux-fbdev@vger.kernel.org
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: netdev@vger.kernel.org
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: "Keller, Jacob E" <jacob.e.keller@intel.com>
----
- drivers/misc/Kconfig          |  2 +-
- drivers/ptp/Kconfig           |  1 +
- drivers/usb/chipidea/Kconfig  |  6 ++++++
- drivers/usb/chipidea/Makefile |  4 +---
- drivers/video/geode/Kconfig   |  2 +-
- init/Kconfig                  | 14 ++++++++++++++
- 6 files changed, 24 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 80889d5..8dacd4c 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -135,7 +135,7 @@ config PHANTOM
- 
- config INTEL_MID_PTI
- 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
--	depends on PCI && TTY
-+	depends on PCI && TTY && (X86_INTEL_MID || COMPILE_TEST)
- 	default n
- 	help
- 	  The PTI (Parallel Trace Interface) driver directs
-diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
-index 1ea6f1d..5be73ba 100644
---- a/drivers/ptp/Kconfig
-+++ b/drivers/ptp/Kconfig
-@@ -72,6 +72,7 @@ config DP83640_PHY
- 
- config PTP_1588_CLOCK_PCH
- 	tristate "Intel PCH EG20T as PTP clock"
-+	depends on X86 || COMPILE_TEST
- 	select PTP_1588_CLOCK
- 	help
- 	  This driver adds support for using the PCH EG20T as a PTP
-diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
-index b2df442..3491d86 100644
---- a/drivers/usb/chipidea/Kconfig
-+++ b/drivers/usb/chipidea/Kconfig
-@@ -31,4 +31,10 @@ config USB_CHIPIDEA_DEBUG
- 	help
- 	  Say Y here to enable debugging output of the ChipIdea driver.
- 
-+config USB_CHIPIDEA_IMX
-+	bool "ChipIdea IMX support"
-+	depends on OF_DEVICE && (ARM || COMPILE_TEST)
-+	help
-+	  This option enables ChipIdea support on IMX.
-+
- endif
-diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-index 4113feb..76d66ff 100644
---- a/drivers/usb/chipidea/Makefile
-+++ b/drivers/usb/chipidea/Makefile
-@@ -16,6 +16,4 @@ ifneq ($(CONFIG_PCI),)
- 	obj-$(CONFIG_USB_CHIPIDEA)	+= ci13xxx_pci.o
- endif
- 
--ifneq ($(CONFIG_OF),)
--	obj-$(CONFIG_USB_CHIPIDEA)	+= ci13xxx_imx.o usbmisc_imx.o
--endif
-+obj-$(CONFIG_USB_CHIPIDEA_IMX)	+= ci13xxx_imx.o usbmisc_imx.o
-diff --git a/drivers/video/geode/Kconfig b/drivers/video/geode/Kconfig
-index 21e351a..1e85552 100644
---- a/drivers/video/geode/Kconfig
-+++ b/drivers/video/geode/Kconfig
-@@ -3,7 +3,7 @@
- #
- config FB_GEODE
- 	bool "AMD Geode family framebuffer support"
--	depends on FB && PCI && X86
-+	depends on FB && PCI && (X86_32 || (X86 && COMPILE_TEST))
- 	---help---
- 	  Say 'Y' here to allow you to select framebuffer drivers for
- 	  the AMD Geode family of processors.
-diff --git a/init/Kconfig b/init/Kconfig
-index fd0e436..e1854b2 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -53,6 +53,20 @@ config CROSS_COMPILE
- 	  need to set this unless you want the configured kernel build
- 	  directory to select the cross-compiler automatically.
- 
-+config COMPILE_TEST
-+	bool "Compile also drivers which will not load"
-+	default n
-+	help
-+	  Some drivers can be compiled on a different platform than they are
-+	  intended to be run on. Despite they cannot be loaded there (or even
-+	  when they load they cannot be used due to missing HW support),
-+	  developers still, opposing to distributors, might want to build such
-+	  drivers to compile-test them.
-+
-+	  If you are a developer and want to build everything available, say Y
-+	  here. If you are a user/distributor, say N here to exclude useless
-+	  drivers to be distributed.
-+
- config LOCALVERSION
- 	string "Local version - append to kernel release"
- 	help
--- 
-1.8.3
-
-
---------------090100040802040701030900--
