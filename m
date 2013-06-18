@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3FRK7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:59:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:55710 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3FRK7W (ORCPT
+	id S1754801Ab3FRLAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:00:36 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:52411 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3FRLAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:59:22 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-sh@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH] clocksource: sh_cmt: Use devm_* managed helpers
-Date: Tue, 18 Jun 2013 12:59:31 +0200
-Message-Id: <1371553171-23530-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
+	Tue, 18 Jun 2013 07:00:34 -0400
+Date: Tue, 18 Jun 2013 13:00:28 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/tegra: Include linux/types.h
+Message-ID: <20130618110027.GC6322@mithrandir>
+References: <1371470294.26299.21.camel@x61.thuisdomein>
+ <20130617203353.GC5265@mithrandir>
+ <1371503099.26299.27.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
+Content-Disposition: inline
+In-Reply-To: <1371503099.26299.27.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the main error path by getting rid of it.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/clocksource/sh_cmt.c | 40 ++++++++++++++--------------------------
- 1 file changed, 14 insertions(+), 26 deletions(-)
+--5G06lTa6Jq83wMTw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The patch is based on top of renesas-next-20130618 plus Magnus'
-"clocksource: sh_cmt: 32-bit control register support" patch.
+On Mon, Jun 17, 2013 at 11:04:59PM +0200, Paul Bolle wrote:
+> On Mon, 2013-06-17 at 22:33 +0200, Thierry Reding wrote:
+> > That has already been fixed in linux-next.
+>=20
+> This header was added in v3.10-rc1. The fix in linux-next will ship in
+> v3.11. Isn't that fix appropriate for (one of) the upcoming v3.10
+> release candidate(s)?
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 0965e98..7001e4d 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -681,20 +681,18 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
- 	struct resource *res, *res2;
- 	int irq, ret;
--	ret = -ENXIO;
- 
--	memset(p, 0, sizeof(*p));
- 	p->pdev = pdev;
- 
- 	if (!cfg) {
- 		dev_err(&p->pdev->dev, "missing platform data\n");
--		goto err0;
-+		return -ENXIO;
- 	}
- 
- 	res = platform_get_resource(p->pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&p->pdev->dev, "failed to get I/O memory\n");
--		goto err0;
-+		return -ENXIO;
- 	}
- 
- 	/* optional resource for the shared timer start/stop register */
-@@ -703,23 +701,23 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 	irq = platform_get_irq(p->pdev, 0);
- 	if (irq < 0) {
- 		dev_err(&p->pdev->dev, "failed to get irq\n");
--		goto err0;
-+		return -ENXIO;
- 	}
- 
- 	/* map memory, let mapbase point to our channel */
--	p->mapbase = ioremap_nocache(res->start, resource_size(res));
-+	p->mapbase = devm_ioremap_resource(&pdev->dev, res);
- 	if (p->mapbase == NULL) {
- 		dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
--		goto err0;
-+		return -ENXIO;
- 	}
- 
- 	/* map second resource for CMSTR */
--	p->mapbase_str = ioremap_nocache(res2 ? res2->start :
--					 res->start - cfg->channel_offset,
--					 res2 ? resource_size(res2) : 2);
-+	p->mapbase_str = devm_ioremap_nocache(&pdev->dev, res2 ? res2->start :
-+					      res->start - cfg->channel_offset,
-+					      res2 ? resource_size(res2) : 2);
- 	if (p->mapbase_str == NULL) {
- 		dev_err(&p->pdev->dev, "failed to remap I/O second memory\n");
--		goto err1;
-+		return -ENXIO;
- 	}
- 
- 	/* request irq using setup_irq() (too early for request_irq()) */
-@@ -730,11 +728,10 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
- 
- 	/* get hold of clock */
--	p->clk = clk_get(&p->pdev->dev, "cmt_fck");
-+	p->clk = devm_clk_get(&p->pdev->dev, "cmt_fck");
- 	if (IS_ERR(p->clk)) {
- 		dev_err(&p->pdev->dev, "cannot get clock\n");
--		ret = PTR_ERR(p->clk);
--		goto err2;
-+		return PTR_ERR(p->clk);
- 	}
- 
- 	if (res2 && (resource_size(res2) == 4)) {
-@@ -773,27 +770,19 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 			      cfg->clocksource_rating);
- 	if (ret) {
- 		dev_err(&p->pdev->dev, "registration failed\n");
--		goto err3;
-+		return ret;
- 	}
- 	p->cs_enabled = false;
- 
- 	ret = setup_irq(irq, &p->irqaction);
- 	if (ret) {
- 		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
--		goto err3;
-+		return ret;
- 	}
- 
- 	platform_set_drvdata(pdev, p);
- 
- 	return 0;
--err3:
--	clk_put(p->clk);
--err2:
--	iounmap(p->mapbase_str);
--err1:
--	iounmap(p->mapbase);
--err0:
--	return ret;
- }
- 
- static int sh_cmt_probe(struct platform_device *pdev)
-@@ -812,7 +801,7 @@ static int sh_cmt_probe(struct platform_device *pdev)
- 		goto out;
- 	}
- 
--	p = kmalloc(sizeof(*p), GFP_KERNEL);
-+	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
- 	if (p == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		return -ENOMEM;
-@@ -820,7 +809,6 @@ static int sh_cmt_probe(struct platform_device *pdev)
- 
- 	ret = sh_cmt_setup(p, pdev);
- 	if (ret) {
--		kfree(p);
- 		pm_runtime_idle(&pdev->dev);
- 		return ret;
- 	}
--- 
-Regards,
+It's not really a bug and it can easily be worked around by including
+linux/types.h explicitly. But you're right, there's still a chance of
+getting this in before the final release of 3.10 and I can prepare a
+pull request for Dave.
 
-Laurent Pinchart
+Thierry
 
+--5G06lTa6Jq83wMTw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwD3LAAoJEN0jrNd/PrOhl84QAKKHWEOIoKvdCDUg5JMXxmrD
+I9HGbk/xxtrzu7W9sPxIfxmg9PyzGbVHtNUp6uR+uP2SOU3yHf2z7zQKleR2PkEC
+BW+7CP4f5XEUzMgcRi9nHT6nn9dL8v+HL8HaCljBlj9LOHckWRL7wIX/O146jpOD
+GahVfSVDV+Na1hv/tQV0XIJI4j14KF54QJ1P5t/l6Q6fJspZ56B+YiKUMWJlfpZM
+Jl29Tsn7FLWRPGq8DBdYX6tBeDunWkgE48sEIHXD7GBIwF2yQO4hT1QTKR5d/jZP
+KALzVit42yLBAAV1+oNqFpSCStGDZE4purbShHdw7Y3H0ZHmjL04Ju13Peie7ePR
+0CqASG0S2gpENphexQA61iINw7mK8FaN3VrqVZghX6/78Ost0ko+OmwwxKooVrvP
+zZgLvog9hNR/mYzhAcfDzVdDccTa/N90X2Is/Pa0BfFxSVgzDvmqcMzxDNqQ53Ql
+SrG8Cn51M5r07Zp2TibU4EuSj96jmZ+XIqJ8iIyTPuNeZxk/KdDK7kb0MNJzamDn
+YyQIwohV/3O6YTE1jHW8puXlRdwBr0KKhKzqLxSjNOAbjwbiRXJmTiUa5IIS4Kag
+87QqIu9ogDLjanT9AyTzKRuDwaCBxKldnF2rbM6CkgNG1mrywfVHj7Zr8Y9kE2RG
+OEAoBuUyvmqMgda6M5N/
+=vVRb
+-----END PGP SIGNATURE-----
+
+--5G06lTa6Jq83wMTw--
