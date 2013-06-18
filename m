@@ -1,69 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933652Ab3FRSWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:22:52 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33602 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab3FRSWv (ORCPT
+	id S933656Ab3FRSYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:24:01 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61331 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab3FRSYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:22:51 -0400
-Message-ID: <51C0A560.2020702@ahsoftware.de>
-Date: Tue, 18 Jun 2013 20:22:24 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 14:24:00 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 18 Jun 2013 11:24:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v5] watchdog: Add Broadcom BCM2835 watchdog timer driver
+Message-ID: <20130618182400.GA3776@roeck-us.net>
+References: <51C09478.30909@wwwdotorg.org>
+ <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
 MIME-Version: 1.0
-To: rtc-linux@googlegroups.com
-CC: Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'John Stultz'" <john.stultz@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Subject: Re: [rtc-linux] Re: BUG: rtc: rtc_device_unregister() broken in 3.10-rcN
-References: <51BB50B1.7060308@ahsoftware.de> <51BF2DD8.5030004@ahsoftware.de> <002901ce6bc7$71d32510$55796f30$@samsung.com>
-In-Reply-To: <002901ce6bc7$71d32510$55796f30$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.06.2013 03:59, schrieb Jingoo Han:
-> On Tuesday, June 18, 2013 12:40 AM, Alexander Holler wrote:
->> Am 14.06.2013 19:19, schrieb Alexander Holler:
->>> Hello,
->>>
->>> I've just tested some things with 3.10-rc5+ and discovered that
->>> rtc_device_unregister is broken. This is most likely because of the
->>> switch to devm*. As 3.10 is already at -rc5, I'm posting this without
->
-> CC'ed Dmitry Torokhov, Sachin Kamat
->
->
-> Hi Alexander,
->
-> You are using 'drivers/rtc/rtc-hid-sensor-time.c', right?
-> If so, would you revert '479243b rtc: hid-sensor-time: use devm_rtc_device_register()',
-> and give the result?
->
->
-> Hi Dmitry, Sachin,
-> You can see the kernel debug message, when the problem happens.
-> (http://lists-archives.com/linux-kernel/27855385-bug-rtc-rtc_unregister_device-broken-in-3-10-rcn.html)
->
+On Tue, Jun 18, 2013 at 07:44:48PM +0200, Lubomir Rintel wrote:
+> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> used in Raspberry Pi and Roku 2 devices.
+> 
+> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: linux-rpi-kernel@lists.infradead.org
+> Cc: linux-watchdog@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
 
-I've found the problem. Somehow I managed it with a patch i posted 
-recently (3/9) to get the rtc_device_unregister() back into the 
-remove-function of rtc-hid-sensor-time. Might be happend when rebasing 
-the patch from 3.9.x to 3.10 or similiar, I don't know or remember.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-I haven't seen it, because the backtrace doesn't show it. So what 
-happend was likely:
-
-remove -> rtc_device_unregister() (ok)
-device remove -> devm -> rtc_device_unregister() (again) -> Crash.
-
-Sorry for the noise.
-
-Regards,
-
-Alexander Holler
+> ---
+> Changes for v2:
+>     - Use per-device structure instead of global variables for lock and memory base
+>     - Fix default timeout setting
+>     - Do not leak memory if probe fails
+>     - Style fixes
+>     - Split out defconfig into a separate commit
+>     - Meaningful commit message with credit
+> 
+> Changes for v3:
+>     - Add proper copyright notice to header
+>     - Drop status constants, we don't use them
+>     - Fix heartbeat parameter's type
+>     - Log driver initialization message once the device is probed
+> 
+> Changes for v4:
+>     - Drop an useless initializer
+>     - Add a signoff from downstream
+>     - Do not announce the driver to the log if we failed to probe
+>     - Set platform data earlier and do not explicitly unset it
+> 
+> Changes for v5:
+>     - Copyright clarification
+> 
+>  .../bindings/watchdog/brcm,bcm2835-pm-wdog.txt     |    5 +
+>  drivers/watchdog/Kconfig                           |   11 ++
+>  drivers/watchdog/Makefile                          |    1 +
+>  drivers/watchdog/bcm2835_wdt.c                     |  189 ++++++++++++++++++++
+>  4 files changed, 206 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/watchdog/bcm2835_wdt.c
+> 
+> diff --git a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
+> index d209366..f801d71 100644
+> --- a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
+> +++ b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
+> @@ -5,9 +5,14 @@ Required properties:
+>  - compatible : should be "brcm,bcm2835-pm-wdt"
+>  - reg : Specifies base physical address and size of the registers.
+>  
+> +Optional properties:
+> +
+> +- timeout-sec   : Contains the watchdog timeout in seconds
+> +
+>  Example:
+>  
+>  watchdog {
+>  	compatible = "brcm,bcm2835-pm-wdt";
+>  	reg = <0x7e100000 0x28>;
+> +	timeout-sec = <10>;
+>  };
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index e89fc31..c3d3b16 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1098,6 +1098,17 @@ config BCM63XX_WDT
+>  	  To compile this driver as a loadable module, choose M here.
+>  	  The module will be called bcm63xx_wdt.
+>  
+> +config BCM2835_WDT
+> +	tristate "Broadcom BCM2835 hardware watchdog"
+> +	depends on ARCH_BCM2835
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Watchdog driver for the built in watchdog hardware in Broadcom
+> +	  BCM2835 SoC.
+> +
+> +	  To compile this driver as a loadable module, choose M here.
+> +	  The module will be called bcm2835_wdt.
+> +
+>  config LANTIQ_WDT
+>  	tristate "Lantiq SoC watchdog"
+>  	depends on LANTIQ
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index a300b94..1bf5675 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -54,6 +54,7 @@ obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
+>  obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+>  obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+>  obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+> +obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+>  
+>  # AVR32 Architecture
+>  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
+> new file mode 100644
+> index 0000000..61566fc
+> --- /dev/null
+> +++ b/drivers/watchdog/bcm2835_wdt.c
+> @@ -0,0 +1,189 @@
+> +/*
+> + * Watchdog driver for Broadcom BCM2835
+> + *
+> + * "bcm2708_wdog" driver written by Luke Diamand that was obtained from
+> + * branch "rpi-3.6.y" of git://github.com/raspberrypi/linux.git was used
+> + * as a hardware reference for the Broadcom BCM2835 watchdog timer.
+> + *
+> + * Copyright (C) 2013 Lubomir Rintel <lkundrak@v3.sk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/types.h>
+> +#include <linux/module.h>
+> +#include <linux/io.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/of_address.h>
+> +#include <linux/miscdevice.h>
+> +
+> +#define PM_RSTC				0x1c
+> +#define PM_WDOG				0x24
+> +
+> +#define PM_PASSWORD			0x5a000000
+> +
+> +#define PM_WDOG_TIME_SET		0x000fffff
+> +#define PM_RSTC_WRCFG_CLR		0xffffffcf
+> +#define PM_RSTC_WRCFG_SET		0x00000030
+> +#define PM_RSTC_WRCFG_FULL_RESET	0x00000020
+> +#define PM_RSTC_RESET			0x00000102
+> +
+> +#define SECS_TO_WDOG_TICKS(x) ((x) << 16)
+> +#define WDOG_TICKS_TO_SECS(x) ((x) >> 16)
+> +
+> +struct bcm2835_wdt {
+> +	void __iomem		*base;
+> +	spinlock_t		lock;
+> +};
+> +
+> +static unsigned int heartbeat;
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +
+> +static int bcm2835_wdt_start(struct watchdog_device *wdog)
+> +{
+> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
+> +	uint32_t cur;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&wdt->lock, flags);
+> +
+> +	writel_relaxed(PM_PASSWORD | (SECS_TO_WDOG_TICKS(wdog->timeout) &
+> +				PM_WDOG_TIME_SET), wdt->base + PM_WDOG);
+> +	cur = readl_relaxed(wdt->base + PM_RSTC);
+> +	writel_relaxed(PM_PASSWORD | (cur & PM_RSTC_WRCFG_CLR) |
+> +		  PM_RSTC_WRCFG_FULL_RESET, wdt->base + PM_RSTC);
+> +
+> +	spin_unlock_irqrestore(&wdt->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static int bcm2835_wdt_stop(struct watchdog_device *wdog)
+> +{
+> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
+> +
+> +	writel_relaxed(PM_PASSWORD | PM_RSTC_RESET, wdt->base + PM_RSTC);
+> +	dev_info(wdog->dev, "Watchdog timer stopped");
+> +	return 0;
+> +}
+> +
+> +static int bcm2835_wdt_set_timeout(struct watchdog_device *wdog, unsigned int t)
+> +{
+> +	wdog->timeout = t;
+> +	return 0;
+> +}
+> +
+> +static unsigned int bcm2835_wdt_get_timeleft(struct watchdog_device *wdog)
+> +{
+> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
+> +
+> +	uint32_t ret = readl_relaxed(wdt->base + PM_WDOG);
+> +	return WDOG_TICKS_TO_SECS(ret & PM_WDOG_TIME_SET);
+> +}
+> +
+> +static struct watchdog_ops bcm2835_wdt_ops = {
+> +	.owner =	THIS_MODULE,
+> +	.start =	bcm2835_wdt_start,
+> +	.stop =		bcm2835_wdt_stop,
+> +	.set_timeout =	bcm2835_wdt_set_timeout,
+> +	.get_timeleft =	bcm2835_wdt_get_timeleft,
+> +};
+> +
+> +static struct watchdog_info bcm2835_wdt_info = {
+> +	.options =	WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
+> +			WDIOF_KEEPALIVEPING,
+> +	.identity =	"Broadcom BCM2835 Watchdog timer",
+> +};
+> +
+> +static struct watchdog_device bcm2835_wdt_wdd = {
+> +	.info =		&bcm2835_wdt_info,
+> +	.ops =		&bcm2835_wdt_ops,
+> +	.min_timeout =	1,
+> +	.max_timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
+> +	.timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
+> +};
+> +
+> +static int bcm2835_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *np = dev->of_node;
+> +	struct bcm2835_wdt *wdt;
+> +	int err;
+> +
+> +	wdt = devm_kzalloc(dev, sizeof(struct bcm2835_wdt), GFP_KERNEL);
+> +	if (!wdt) {
+> +		dev_err(dev, "Failed to allocate memory for watchdog device");
+> +		return -ENOMEM;
+> +	}
+> +	platform_set_drvdata(pdev, wdt);
+> +
+> +	spin_lock_init(&wdt->lock);
+> +
+> +	wdt->base = of_iomap(np, 0);
+> +	if (!wdt->base) {
+> +		dev_err(dev, "Failed to remap watchdog regs");
+> +		return -ENODEV;
+> +	}
+> +
+> +	watchdog_set_drvdata(&bcm2835_wdt_wdd, wdt);
+> +	watchdog_init_timeout(&bcm2835_wdt_wdd, heartbeat, dev);
+> +	watchdog_set_nowayout(&bcm2835_wdt_wdd, nowayout);
+> +	err = watchdog_register_device(&bcm2835_wdt_wdd);
+> +	if (err) {
+> +		dev_err(dev, "Failed to register watchdog device");
+> +		iounmap(wdt->base);
+> +		return err;
+> +	}
+> +
+> +	dev_info(dev, "Broadcom BCM2835 watchdog timer");
+> +	return 0;
+> +}
+> +
+> +static int bcm2835_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct bcm2835_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	watchdog_unregister_device(&bcm2835_wdt_wdd);
+> +	iounmap(wdt->base);
+> +
+> +	return 0;
+> +}
+> +
+> +static void bcm2835_wdt_shutdown(struct platform_device *pdev)
+> +{
+> +	bcm2835_wdt_stop(&bcm2835_wdt_wdd);
+> +}
+> +
+> +static const struct of_device_id bcm2835_wdt_of_match[] = {
+> +	{ .compatible = "brcm,bcm2835-pm-wdt", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, bcm2835_wdt_of_match);
+> +
+> +static struct platform_driver bcm2835_wdt_driver = {
+> +	.probe		= bcm2835_wdt_probe,
+> +	.remove		= bcm2835_wdt_remove,
+> +	.shutdown	= bcm2835_wdt_shutdown,
+> +	.driver = {
+> +		.name =		"bcm2835-wdt",
+> +		.owner =	THIS_MODULE,
+> +		.of_match_table = bcm2835_wdt_of_match,
+> +	},
+> +};
+> +module_platform_driver(bcm2835_wdt_driver);
+> +
+> +module_param(heartbeat, uint, 0);
+> +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
+> +MODULE_DESCRIPTION("Driver for Broadcom BCM2835 watchdog timer");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+> -- 
+> 1.7.1
+> 
+> 
