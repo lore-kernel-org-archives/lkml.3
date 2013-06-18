@@ -1,198 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3FRDcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 23:32:43 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49817 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab3FRDcl (ORCPT
+	id S1754173Ab3FRDeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 23:34:44 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:24000 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab3FRDel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 23:32:41 -0400
-From: Chad Williamson <chad@dahc.us>
-To: gregkh@linuxfoundation.org
-Cc: puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
-        tulinizer@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Chad Williamson <chad@dahc.us>
-Subject: [PATCH 4/4] Staging: silicom: move more assignments out of if conditions
-Date: Mon, 17 Jun 2013 22:32:05 -0500
-Message-Id: <1371526325-9821-5-git-send-email-chad@dahc.us>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371526325-9821-1-git-send-email-chad@dahc.us>
-References: <1371526325-9821-1-git-send-email-chad@dahc.us>
+	Mon, 17 Jun 2013 23:34:41 -0400
+X-Spam-Score: -100.8
+Message-ID: <51BFD51E.3040202@asianux.com>
+Date: Tue, 18 Jun 2013 11:33:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] arch/*/asm/include/bitops.h: api issue, find_*_bit()
+ defination are different with each other
+References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com> <51AE909D.9080006@asianux.com> <20130605071915.GK23140@pengutronix.de> <51AF225A.5020703@asianux.com> <51B05865.30305@asianux.com>
+In-Reply-To: <51B05865.30305@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove more assignments from if-statement conditions in bpctl_mod.c,
-resolving checkpatch.pl errors. Those that remain need more attention
-than I'm presently prepared to give them.
+Hello related Maintainers:
 
-Signed-off-by: Chad Williamson <chad@dahc.us>
----
- drivers/staging/silicom/bpctl_mod.c | 53 ++++++++++++++++++++++++-------------
- 1 file changed, 34 insertions(+), 19 deletions(-)
+Please help check this patch when you have time.
 
-diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-index 19a9239..91a6afd 100644
---- a/drivers/staging/silicom/bpctl_mod.c
-+++ b/drivers/staging/silicom/bpctl_mod.c
-@@ -4222,9 +4222,8 @@ void bypass_caps_init(bpctl_dev_t *pbpctl_dev)
- 
- int bypass_off_init(bpctl_dev_t *pbpctl_dev)
- {
--	int ret = 0;
--
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	int ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (INTEL_IF_SERIES(pbpctl_dev->subdevice))
- 		return dis_bypass_cap(pbpctl_dev);
-@@ -4409,7 +4408,8 @@ int set_bypass_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
- 
- 	if (!(pbpctl_dev->bp_caps & BP_CAP))
- 		return BP_NOT_CAP;
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (!bypass_mode)
- 		ret = bypass_off(pbpctl_dev);
-@@ -4441,7 +4441,8 @@ int set_dis_bypass_fn(bpctl_dev_t *pbpctl_dev, int dis_param)
- 
- 	if (!(pbpctl_dev->bp_caps & BP_DIS_CAP))
- 		return BP_NOT_CAP;
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (dis_param)
- 		ret = dis_bypass_cap(pbpctl_dev);
-@@ -4467,7 +4468,8 @@ int set_bypass_pwoff_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
- 
- 	if (!(pbpctl_dev->bp_caps & BP_PWOFF_CTL_CAP))
- 		return BP_NOT_CAP;
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (bypass_mode)
- 		ret = bypass_state_pwroff(pbpctl_dev);
-@@ -4493,7 +4495,8 @@ int set_bypass_pwup_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
- 
- 	if (!(pbpctl_dev->bp_caps & BP_PWUP_CTL_CAP))
- 		return BP_NOT_CAP;
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (bypass_mode)
- 		ret = bypass_state_pwron(pbpctl_dev);
-@@ -4520,7 +4523,8 @@ int set_bypass_wd_fn(bpctl_dev_t *pbpctl_dev, int timeout)
- 	if (!(pbpctl_dev->bp_caps & WD_CTL_CAP))
- 		return BP_NOT_CAP;
- 
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (!timeout)
- 		ret = wdt_off(pbpctl_dev);
-@@ -4589,7 +4593,8 @@ int set_std_nic_fn(bpctl_dev_t *pbpctl_dev, int nic_mode)
- 	if (!(pbpctl_dev->bp_caps & STD_NIC_CAP))
- 		return BP_NOT_CAP;
- 
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	if (nic_mode)
- 		ret = std_nic_on(pbpctl_dev);
-@@ -4655,7 +4660,8 @@ int get_tap_pwup_fn(bpctl_dev_t *pbpctl_dev)
- 	if (!pbpctl_dev)
- 		return -1;
- 
--	if ((ret = default_pwron_tap_status(pbpctl_dev)) < 0)
-+	ret = default_pwron_tap_status(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	return ((ret == 0) ? 1 : 0);
- }
-@@ -4830,7 +4836,8 @@ int get_disc_port_pwup_fn(bpctl_dev_t *pbpctl_dev)
- 	if (!pbpctl_dev)
- 		return -1;
- 
--	if ((ret = default_pwron_disc_port_status(pbpctl_dev)) < 0)
-+	ret = default_pwron_disc_port_status(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	return ((ret == 0) ? 1 : 0);
- }
-@@ -4857,7 +4864,8 @@ int reset_cont_fn(bpctl_dev_t *pbpctl_dev)
- 	if (!pbpctl_dev)
- 		return -1;
- 
--	if ((ret = cmnd_on(pbpctl_dev)) < 0)
-+	ret = cmnd_on(pbpctl_dev);
-+	if (ret < 0)
- 		return ret;
- 	return reset_cont(pbpctl_dev);
- }
-@@ -4873,8 +4881,10 @@ int set_tx_fn(bpctl_dev_t *pbpctl_dev, int tx_state)
- 	    (pbpctl_dev->bp_caps & SW_CTL_CAP)) {
- 		if ((pbpctl_dev->bp_tpl_flag))
- 			return BP_NOT_CAP;
--	} else if ((pbpctl_dev_b = get_master_port_fn(pbpctl_dev))) {
--		if ((pbpctl_dev_b->bp_caps & TPL_CAP) &&
-+	} else {
-+		pbpctl_dev_b = get_master_port_fn(pbpctl_dev);
-+		if (pbpctl_dev_b &&
-+		    (pbpctl_dev_b->bp_caps & TPL_CAP) &&
- 		    (pbpctl_dev_b->bp_tpl_flag))
- 			return BP_NOT_CAP;
- 	}
-@@ -4990,8 +5000,10 @@ int get_tx_fn(bpctl_dev_t *pbpctl_dev)
- 	    (pbpctl_dev->bp_caps & SW_CTL_CAP)) {
- 		if ((pbpctl_dev->bp_tpl_flag))
- 			return BP_NOT_CAP;
--	} else if ((pbpctl_dev_b = get_master_port_fn(pbpctl_dev))) {
--		if ((pbpctl_dev_b->bp_caps & TPL_CAP) &&
-+	} else {
-+		pbpctl_dev_b = get_master_port_fn(pbpctl_dev);
-+		if (pbpctl_dev_b &&
-+		    (pbpctl_dev_b->bp_caps & TPL_CAP) &&
- 		    (pbpctl_dev_b->bp_tpl_flag))
- 			return BP_NOT_CAP;
- 	}
-@@ -5030,7 +5042,8 @@ static void bp_tpl_timer_fn(unsigned long param)
- 	uint32_t link1, link2;
- 	bpctl_dev_t *pbpctl_dev_b = NULL;
- 
--	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
-+	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
-+	if (!pbpctl_dev_b)
- 		return;
- 
- 	if (!pbpctl_dev->bp_tpl_flag) {
-@@ -5130,7 +5143,8 @@ int set_tpl_fn(bpctl_dev_t *pbpctl_dev, int tpl_mode)
- 
- 	if (pbpctl_dev->bp_caps & TPL_CAP) {
- 		if (tpl_mode) {
--			if ((pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
-+			pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
-+			if (pbpctl_dev_b)
- 				set_tx(pbpctl_dev_b, 1);
- 			set_tx(pbpctl_dev, 1);
- 		}
-@@ -6710,7 +6724,8 @@ static int init_one(bpctl_dev_t *dev, bpmod_info_t *info, struct pci_dev *pdev1)
- 			reset_cont(dev);
- 	}
- #ifdef BP_SELF_TEST
--	if ((dev->bp_tx_data = kzalloc(BPTEST_DATA_LEN, GFP_KERNEL))) {
-+	dev->bp_tx_data = kzalloc(BPTEST_DATA_LEN, GFP_KERNEL);
-+	if (dev->bp_tx_data) {
- 		memset(dev->bp_tx_data, 0xff, 6);
- 		memset(dev->bp_tx_data + 6, 0x0, 1);
- 		memset(dev->bp_tx_data + 7, 0xaa, 5);
+Thanks.
+
+On 06/06/2013 05:37 PM, Chen Gang wrote:
+> 
+> For arm and m68k, they customize find_*_bit(), but the API is different
+> with 'generic'.
+> 
+> avr32, s390, and unicore32 also customize find_*_bit(), but the API is
+> the same with 'generic', and the left architectures all use 'generic'.
+> 
+> So need change arm and m68k related API to match the 'generic', then
+> all another modules can face same public API for various architectures.
+> 
+> Also beautify code and comments to pass "./scripts/checkpatch.pl"
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
+>  arch/arm/lib/findbit.S         |   14 ++++++++++----
+>  arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
+>  3 files changed, 42 insertions(+), 23 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index e691ec9..83e4d3a 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
+>  /*
+>   * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
+>   */
+> -extern int _find_first_zero_bit_le(const void * p, unsigned size);
+> -extern int _find_next_zero_bit_le(const void * p, int size, int offset);
+> -extern int _find_first_bit_le(const unsigned long *p, unsigned size);
+> -extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
+> +extern unsigned long _find_first_zero_bit_le(const void *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
+> +						unsigned long offset);
+> +extern unsigned long _find_first_bit_le(const unsigned long *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_bit_le(const unsigned long *p,
+> +						unsigned long size,
+> +						unsigned long offset);
+>  
+>  /*
+>   * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
+>   */
+> -extern int _find_first_zero_bit_be(const void * p, unsigned size);
+> -extern int _find_next_zero_bit_be(const void * p, int size, int offset);
+> -extern int _find_first_bit_be(const unsigned long *p, unsigned size);
+> -extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
+> +extern unsigned long _find_first_zero_bit_be(const void *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
+> +						unsigned long offset);
+> +extern unsigned long _find_first_bit_be(const unsigned long *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_bit_be(const unsigned long *p,
+> +						unsigned long size,
+> +						unsigned long offset);
+>  
+>  #ifndef CONFIG_SMP
+>  /*
+> diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+> index 64f6bc1..817dd70 100644
+> --- a/arch/arm/lib/findbit.S
+> +++ b/arch/arm/lib/findbit.S
+> @@ -19,7 +19,8 @@
+>  
+>  /*
+>   * Purpose  : Find a 'zero' bit
+> - * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
+> + * Prototype: unsigned long find_first_zero_bit(const void *p,
+> + *						unsigned long size);
+>   */
+>  ENTRY(_find_first_zero_bit_le)
+>  		teq	r1, #0	
+> @@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
+>  
+>  /*
+>   * Purpose  : Find next 'zero' bit
+> - * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
+> + * Prototype: unsigned long find_next_zero_bit(const void *p,
+> + *						unsigned long size,
+> + *						unsigned long offset);
+>   */
+>  ENTRY(_find_next_zero_bit_le)
+>  		teq	r1, #0
+> @@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
+>  
+>  /*
+>   * Purpose  : Find a 'one' bit
+> - * Prototype: int find_first_bit(const unsigned long *addr, unsigned int maxbit);
+> + * Prototype: unsigned long find_first_bit(const unsigned long *p,
+> + *					unsigned long size);
+>   */
+>  ENTRY(_find_first_bit_le)
+>  		teq	r1, #0	
+> @@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
+>  
+>  /*
+>   * Purpose  : Find next 'one' bit
+> - * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
+> + * Prototype: unsigned long find_next_bit(const unsigned long *p,
+> + *					unsigned long size,
+> + *					unsigned long offset);
+>   */
+>  ENTRY(_find_next_bit_le)
+>  		teq	r1, #0
+> diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
+> index c6baa91..b1d8752 100644
+> --- a/arch/m68k/include/asm/bitops.h
+> +++ b/arch/m68k/include/asm/bitops.h
+> @@ -320,11 +320,11 @@ static inline int bfchg_mem_test_and_change_bit(int nr,
+>  #include <asm-generic/bitops/ffz.h>
+>  #else
+>  
+> -static inline int find_first_zero_bit(const unsigned long *vaddr,
+> -				      unsigned size)
+> +static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
+> +				      unsigned long size)
+>  {
+>  	const unsigned long *p = vaddr;
+> -	int res = 32;
+> +	unsigned int res = 32;
+>  	unsigned int words;
+>  	unsigned long num;
+>  
+> @@ -346,11 +346,12 @@ out:
+>  }
+>  #define find_first_zero_bit find_first_zero_bit
+>  
+> -static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+> -				     int offset)
+> +static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
+> +						unsigned long size,
+> +						unsigned long offset)
+>  {
+>  	const unsigned long *p = vaddr + (offset >> 5);
+> -	int bit = offset & 31UL, res;
+> +	unsigned int bit = offset & 31UL, res;
+>  
+>  	if (offset >= size)
+>  		return size;
+> @@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+>  }
+>  #define find_next_zero_bit find_next_zero_bit
+>  
+> -static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
+> +static inline unsigned long find_first_bit(const unsigned long *vaddr,
+> +						unsigned long size)
+>  {
+>  	const unsigned long *p = vaddr;
+> -	int res = 32;
+> +	unsigned int res = 32;
+>  	unsigned int words;
+>  	unsigned long num;
+>  
+> @@ -401,11 +403,12 @@ out:
+>  }
+>  #define find_first_bit find_first_bit
+>  
+> -static inline int find_next_bit(const unsigned long *vaddr, int size,
+> -				int offset)
+> +static inline unsigned long find_next_bit(const unsigned long *vaddr,
+> +						unsigned long size,
+> +						unsigned long offset)
+>  {
+>  	const unsigned long *p = vaddr + (offset >> 5);
+> -	int bit = offset & 31UL, res;
+> +	unsigned int bit = offset & 31UL, res;
+>  
+>  	if (offset >= size)
+>  		return size;
+> 
+
+
 -- 
-1.8.1.4
+Chen Gang
 
+Asianux Corporation
