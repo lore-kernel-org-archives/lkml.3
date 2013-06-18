@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab3FROgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:36:43 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:39304 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab3FROgl (ORCPT
+	id S932213Ab3FROhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:37:34 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64944 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3FROhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:36:41 -0400
-Message-ID: <51C07077.3040600@cogentembedded.com>
-Date: Tue, 18 Jun 2013 18:36:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 10:37:32 -0400
+Date: Tue, 18 Jun 2013 07:37:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Imre Deak <imre.deak@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] lib/scatterlist: introduce sg_pcopy_from_buffer()
+ and sg_pcopy_to_buffer()
+Message-ID: <20130618143728.GE2767@htj.dyndns.org>
+References: <1371562294-13642-1-git-send-email-akinobu.mita@gmail.com>
+ <1371562294-13642-3-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-To: Bastian Hecht <hechtb@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the net-next
- tree
-References: <20130617163920.04523ba6de50bcc81563f33e@canb.auug.org.au> <51BF1461.8060401@cogentembedded.com> <CABYn4sx3PYBVMyio8uo-KhwprQnCmt_5k2EMaa9_EW2ud2q2nQ@mail.gmail.com>
-In-Reply-To: <CABYn4sx3PYBVMyio8uo-KhwprQnCmt_5k2EMaa9_EW2ud2q2nQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371562294-13642-3-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Jun 18, 2013 at 10:31:32PM +0900, Akinobu Mita wrote:
+>  /**
+> + * sg_miter_seek - reposition mapping iterator
+> + * @miter: sg mapping iter to be seeked
+> + * @offset: number of bytes to plus the current location
+> + *
+> + * Description:
+> + *   Sets the offset of @miter to its current location plus @offset bytes.
+> + *
+> + * Notes:
+> + *   This function must be called just after sg_miter_start() or sg_miter_stop()
 
-On 18-06-2013 12:33, Bastian Hecht wrote:
+It's not gonna be hard to make this function to handle any state,
+right?  Wouldn't it be better to do that?  It's a pretty generic
+feature after all.  Also, maybe a better name is sg_miter_skip()?
 
-> Sergei is completely right I think. He was sceptic about the commit in
-> a mail some days ago already. Unfortunately I recently haven't had
-> access to my development environment to check what's up with this
-> patch. I'm sorry that it ended up to you both to deal with it. I have
-> written some simple bindings for the sh-eth and wanted to use it for
-> our DT reference version for the Armadillo board but discarded it as I
-> saw Nobuhiro Iwamatsu, the author of the sh-eth driver, cooked up some
-> more mature version. I don't see them in the next branch of Simon, so
-> until they appear there we can delete commit 9e0b428f079d ("ARM:
+Thanks.
 
-    It won't appear there. I'll just NAK it, I think I've alredy told 
-Iwamatsu-san that the full blown device tree binding for this driver is 
-no-go. The best we can do is use OF_DEV_AUXDATA() to rename the DT 
-sourced platform device to a traditional one and assign to it the 
-platform data.
-
-> shmobile: r8a7740: Add interim sh-eth device name to clocks list")
-
-    Unfortunately, it's now too late to just delete it at this point. I 
-missed the patch unfortunately when it was just submitted.
-
-> that is only needed for sh-eth DT usage.
-
-> Thanks,
-
->   Bastian
-
-WBR, Sergei
-
+-- 
+tejun
