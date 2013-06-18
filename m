@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396Ab3FRQfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:35:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49319 "EHLO
+	id S933367Ab3FRQgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:36:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933039Ab3FRQOo (ORCPT
+	with ESMTP id S933033Ab3FRQOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:44 -0400
+	Tue, 18 Jun 2013 12:14:43 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@freemail.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 18/26] x86: Fix typo in kexec register clearing
-Date: Tue, 18 Jun 2013 09:14:58 -0700
-Message-Id: <20130618161236.820508651@linuxfoundation.org>
+        Alex Lyakas <alex@zadarastorage.com>, NeilBrown <neilb@suse.de>
+Subject: [ 16/26] md/raid1: consider WRITE as successful only if at least one non-Faulty and non-rebuilding drive completed it.
+Date: Tue, 18 Jun 2013 09:14:56 -0700
+Message-Id: <20130618161236.326706685@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -29,33 +28,88 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Alex Lyakas <alex@zadarastorage.com>
 
-commit c8a22d19dd238ede87aa0ac4f7dbea8da039b9c1 upstream.
+commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 upstream.
 
-Fixes a typo in register clearing code. Thanks to PaX Team for fixing
-this originally, and James Troup for pointing it out.
+Without that fix, the following scenario could happen:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Link: http://lkml.kernel.org/r/20130605184718.GA8396@www.outflux.net
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
+- Drive A fails
+- WRITE request arrives to the array. It is failed by drive A, so
+r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
+succeeds in writing it, so the same r1_bio is marked as
+R1BIO_Uptodate.
+- r1_bio arrives to handle_write_finished, badblocks are disabled,
+md_error()->error() does nothing because we don't fail the last drive
+of raid1
+- raid_end_bio_io()  calls call_bio_endio()
+- As a result, in call_bio_endio():
+        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
+                clear_bit(BIO_UPTODATE, &bio->bi_flags);
+this code doesn't clear the BIO_UPTODATE flag, and the whole master
+WRITE succeeds, back to the upper layer.
+
+So we returned success to the upper layer, even though we had written
+the data onto the rebuilding drive only. But when we want to read the
+data back, we would not read from the rebuilding drive, so this data
+is lost.
+
+[neilb - applied identical change to raid10 as well]
+
+This bug can result in lost data, so it is suitable for any
+-stable kernel.
+
+Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/relocate_kernel_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c  |   12 +++++++++++-
+ drivers/md/raid10.c |   12 +++++++++++-
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/relocate_kernel_64.S
-+++ b/arch/x86/kernel/relocate_kernel_64.S
-@@ -160,7 +160,7 @@ identity_mapped:
- 	xorq    %rbp, %rbp
- 	xorq	%r8,  %r8
- 	xorq	%r9,  %r9
--	xorq	%r10, %r9
-+	xorq	%r10, %r10
- 	xorq	%r11, %r11
- 	xorq	%r12, %r12
- 	xorq	%r13, %r13
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -413,7 +413,17 @@ static void raid1_end_write_request(stru
+ 
+ 		r1_bio->bios[mirror] = NULL;
+ 		to_put = bio;
+-		set_bit(R1BIO_Uptodate, &r1_bio->state);
++		/*
++		 * Do not set R1BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
++		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
++			set_bit(R1BIO_Uptodate, &r1_bio->state);
+ 
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(conf->mirrors[mirror].rdev,
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -452,7 +452,17 @@ static void raid10_end_write_request(str
+ 		sector_t first_bad;
+ 		int bad_sectors;
+ 
+-		set_bit(R10BIO_Uptodate, &r10_bio->state);
++		/*
++		 * Do not set R10BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &rdev->flags) &&
++		    !test_bit(Faulty, &rdev->flags))
++			set_bit(R10BIO_Uptodate, &r10_bio->state);
+ 
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(rdev,
 
 
