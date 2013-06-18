@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab3FRVsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 17:48:07 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:38205 "EHLO mail.gnudd.com"
+	id S933728Ab3FRVsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 17:48:18 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:38211 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933376Ab3FRVsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 17:48:01 -0400
-Date: Tue, 18 Jun 2013 23:47:13 +0200
+	id S933709Ab3FRVsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 17:48:12 -0400
+Date: Tue, 18 Jun 2013 23:47:24 +0200
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org,
         Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
         "Emilio G. Cota" <cota@braap.org>,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH V3 1/6] FMC: add core bus driver
-Message-ID: <dcef7ff52b7e93efee153b81da99fab119e51d06.1371591538.git.rubini@gnudd.com>
+Subject: [PATCH V3 2/6] FMC: add documentation for the core
+Message-ID: <2e59a83f63bec7c19a38270fcc8d72d61be24118.1371591538.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,921 +25,908 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This module offers registration services for both carriers
-(i.e. devices) and mezzanines (i.e. drivers). The matching for devices
-and drivers is performed according to the IPMI standard for FRU
-devices (Field Replaceable Units).
+This is selected sections of the current manual for fmc-bus, as
+developed outside of the kernel before submission.
 
-The code includes support for parsing an SDB tree if present in the FPGA,
-and dumping it for diagnostics. SDB is not mandatory.
-
-Files in this commit correspond to commit ab23167f in the master branch
-of the project hosted on ohwr.org.
+Like the other patches in this set, it corresponds to commit ab23167f of
+the repository at ohwr.org
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
 Acked-by: Emilio G. Cota <cota@braap.org>
 Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Acked-by: Rob Landley <rob@landley.net>
 ---
- drivers/fmc/Makefile    |    4 +
- drivers/fmc/fmc-core.c  |  274 ++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/fmc/fmc-dump.c  |  100 +++++++++++++++++
- drivers/fmc/fmc-match.c |  114 ++++++++++++++++++++
- drivers/fmc/fmc-sdb.c   |  265 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/fmc/fru-parse.c |   82 ++++++++++++++
- 6 files changed, 838 insertions(+), 1 deletions(-)
- create mode 100644 drivers/fmc/fmc-dump.c
- create mode 100644 drivers/fmc/fmc-match.c
- create mode 100644 drivers/fmc/fmc-sdb.c
- create mode 100644 drivers/fmc/fru-parse.c
+ Documentation/00-INDEX            |    2 +
+ Documentation/fmc/00-INDEX        |   26 +++
+ Documentation/fmc/API.txt         |   47 ++++++
+ Documentation/fmc/FMC-and-SDB.txt |   88 +++++++++++
+ Documentation/fmc/carrier.txt     |  311 +++++++++++++++++++++++++++++++++++++
+ Documentation/fmc/identifiers.txt |  168 ++++++++++++++++++++
+ Documentation/fmc/mezzanine.txt   |  123 +++++++++++++++
+ Documentation/fmc/parameters.txt  |   56 +++++++
+ 8 files changed, 821 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/fmc/00-INDEX
+ create mode 100644 Documentation/fmc/API.txt
+ create mode 100644 Documentation/fmc/FMC-and-SDB.txt
+ create mode 100644 Documentation/fmc/carrier.txt
+ create mode 100644 Documentation/fmc/identifiers.txt
+ create mode 100644 Documentation/fmc/mezzanine.txt
+ create mode 100644 Documentation/fmc/parameters.txt
 
-diff --git a/drivers/fmc/Makefile b/drivers/fmc/Makefile
-index a2784d8..df98939 100644
---- a/drivers/fmc/Makefile
-+++ b/drivers/fmc/Makefile
-@@ -2,3 +2,7 @@
- obj-$(CONFIG_FMC) += fmc.o
- 
- fmc-y = fmc-core.o
-+fmc-y += fmc-match.o
-+fmc-y += fmc-sdb.o
-+fmc-y += fru-parse.o
-+fmc-y += fmc-dump.o
-diff --git a/drivers/fmc/fmc-core.c b/drivers/fmc/fmc-core.c
-index fc3547f..f4c8801 100644
---- a/drivers/fmc/fmc-core.c
-+++ b/drivers/fmc/fmc-core.c
-@@ -1,13 +1,285 @@
--/* Temporary placeholder so the empty code can build */
-+/*
-+ * Copyright (C) 2012 CERN (www.cern.ch)
-+ * Author: Alessandro Rubini <rubini@gnudd.com>
-+ *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
-+ */
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/device.h>
-+#include <linux/fmc.h>
-+
-+static int fmc_check_version(unsigned long version, const char *name)
-+{
-+	if (__FMC_MAJOR(version) != FMC_MAJOR) {
-+		pr_err("%s: \"%s\" has wrong major (has %li, expected %i)\n",
-+		       __func__, name, __FMC_MAJOR(version), FMC_MAJOR);
-+		return -EINVAL;
-+	}
-+
-+	if (__FMC_MINOR(version) != FMC_MINOR)
-+		pr_info("%s: \"%s\" has wrong minor (has %li, expected %i)\n",
-+		       __func__, name, __FMC_MINOR(version), FMC_MINOR);
-+	return 0;
-+}
-+
-+static int fmc_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	/* struct fmc_device *fdev = to_fmc_device(dev); */
-+
-+	/* FIXME: The MODALIAS */
-+	add_uevent_var(env, "MODALIAS=%s", "fmc");
-+	return 0;
-+}
-+
-+static int fmc_probe(struct device *dev)
-+{
-+	struct fmc_driver *fdrv = to_fmc_driver(dev->driver);
-+	struct fmc_device *fdev = to_fmc_device(dev);
-+
-+	return fdrv->probe(fdev);
-+}
-+
-+static int fmc_remove(struct device *dev)
-+{
-+	struct fmc_driver *fdrv = to_fmc_driver(dev->driver);
-+	struct fmc_device *fdev = to_fmc_device(dev);
-+
-+	return fdrv->remove(fdev);
-+}
-+
-+static void fmc_shutdown(struct device *dev)
-+{
-+	/* not implemented but mandatory */
-+}
- 
- static struct bus_type fmc_bus_type = {
- 	.name = "fmc",
-+	.match = fmc_match,
-+	.uevent = fmc_uevent,
-+	.probe = fmc_probe,
-+	.remove = fmc_remove,
-+	.shutdown = fmc_shutdown,
- };
- 
-+static void fmc_release(struct device *dev)
-+{
-+	struct fmc_device *fmc = container_of(dev, struct fmc_device, dev);
-+
-+	kfree(fmc);
-+}
-+
-+/*
-+ * The eeprom is exported in sysfs, through a binary attribute
-+ */
-+
-+static ssize_t fmc_read_eeprom(struct file *file, struct kobject *kobj,
-+			   struct bin_attribute *bin_attr,
-+			   char *buf, loff_t off, size_t count)
-+{
-+	struct device *dev;
-+	struct fmc_device *fmc;
-+	int eelen;
-+
-+	dev = container_of(kobj, struct device, kobj);
-+	fmc = container_of(dev, struct fmc_device, dev);
-+	eelen = fmc->eeprom_len;
-+	if (off > eelen)
-+		return -ESPIPE;
-+	if (off == eelen)
-+		return 0; /* EOF */
-+	if (off + count > eelen)
-+		count = eelen - off;
-+	memcpy(buf, fmc->eeprom + off, count);
-+	return count;
-+}
-+
-+static struct bin_attribute fmc_eeprom_attr = {
-+	.attr = { .name = "eeprom", .mode = S_IRUGO, },
-+	.size = 8192, /* more or less standard */
-+	.read = fmc_read_eeprom,
-+};
-+
-+/*
-+ * Functions for client modules follow
-+ */
-+
-+int fmc_driver_register(struct fmc_driver *drv)
-+{
-+	if (fmc_check_version(drv->version, drv->driver.name))
-+		return -EINVAL;
-+	drv->driver.bus = &fmc_bus_type;
-+	return driver_register(&drv->driver);
-+}
-+EXPORT_SYMBOL(fmc_driver_register);
-+
-+void fmc_driver_unregister(struct fmc_driver *drv)
-+{
-+	driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL(fmc_driver_unregister);
-+
-+/*
-+ * When a device set is registered, all eeproms must be read
-+ * and all FRUs must be parsed
-+ */
-+int fmc_device_register_n(struct fmc_device **devs, int n)
-+{
-+	struct fmc_device *fmc, **devarray;
-+	uint32_t device_id;
-+	int i, ret = 0;
-+
-+	if (n < 1)
-+		return 0;
-+
-+	/* Check the version of the first data structure (function prints) */
-+	if (fmc_check_version(devs[0]->version, devs[0]->carrier_name))
-+		return -EINVAL;
-+
-+	devarray = kmemdup(devs, n * sizeof(*devs), GFP_KERNEL);
-+	if (!devarray)
-+		return -ENOMEM;
-+
-+	/* Make all other checks before continuing, for all devices */
-+	for (i = 0; i < n; i++) {
-+		fmc = devarray[i];
-+		if (!fmc->hwdev) {
-+			pr_err("%s: device nr. %i has no hwdev pointer\n",
-+			       __func__, i);
-+			ret = -EINVAL;
-+			break;
-+		}
-+		if (fmc->flags == FMC_DEVICE_NO_MEZZANINE) {
-+			dev_info(fmc->hwdev, "absent mezzanine in slot %d\n",
-+				 fmc->slot_id);
-+			continue;
-+		}
-+		if (!fmc->eeprom) {
-+			dev_err(fmc->hwdev, "no eeprom provided for slot %i\n",
-+				fmc->slot_id);
-+			ret = -EINVAL;
-+		}
-+		if (!fmc->eeprom_addr) {
-+			dev_err(fmc->hwdev, "no eeprom_addr for slot %i\n",
-+				fmc->slot_id);
-+			ret = -EINVAL;
-+		}
-+		if (!fmc->carrier_name || !fmc->carrier_data || \
-+		    !fmc->device_id) {
-+			dev_err(fmc->hwdev,
-+				"deivce nr %i: carrier name, "
-+				"data or dev_id not set\n", i);
-+			ret = -EINVAL;
-+		}
-+		if (ret)
-+			break;
-+
-+	}
-+	if (ret) {
-+		kfree(devarray);
-+		return ret;
-+	}
-+
-+	/* Validation is ok. Now init and register the devices */
-+	for (i = 0; i < n; i++) {
-+		fmc = devarray[i];
-+
-+		if (fmc->flags == FMC_DEVICE_NO_MEZZANINE)
-+			continue; /* dev_info already done above */
-+
-+		fmc->nr_slots = n; /* each slot must know how many are there */
-+		fmc->devarray = devarray;
-+
-+		device_initialize(&fmc->dev);
-+		fmc->dev.release = fmc_release;
-+		fmc->dev.parent = fmc->hwdev;
-+
-+		/* Fill the identification stuff (may fail) */
-+		fmc_fill_id_info(fmc);
-+
-+		fmc->dev.bus = &fmc_bus_type;
-+
-+		/* Name from mezzanine info or carrier info. Or 0,1,2.. */
-+		device_id = fmc->device_id;
-+		if (!fmc->mezzanine_name)
-+			dev_set_name(&fmc->dev, "fmc-%04x", device_id);
-+		else
-+			dev_set_name(&fmc->dev, "%s-%04x", fmc->mezzanine_name,
-+				     device_id);
-+		ret = device_add(&fmc->dev);
-+		if (ret < 0) {
-+			dev_err(fmc->hwdev, "Slot %i: Failed in registering "
-+				"\"%s\"\n", fmc->slot_id, fmc->dev.kobj.name);
-+			goto out;
-+		}
-+		ret = sysfs_create_bin_file(&fmc->dev.kobj, &fmc_eeprom_attr);
-+		if (ret < 0) {
-+			dev_err(&fmc->dev, "Failed in registering eeprom\n");
-+			goto out1;
-+		}
-+		/* This device went well, give information to the user */
-+		fmc_dump_eeprom(fmc);
-+		fmc_dump_sdb(fmc);
-+	}
-+	return 0;
-+
-+out1:
-+	device_del(&fmc->dev);
-+out:
-+	fmc_free_id_info(fmc);
-+	put_device(&fmc->dev);
-+
-+	kfree(devarray);
-+	for (i--; i >= 0; i--) {
-+		sysfs_remove_bin_file(&devs[i]->dev.kobj, &fmc_eeprom_attr);
-+		device_del(&devs[i]->dev);
-+		fmc_free_id_info(devs[i]);
-+		put_device(&devs[i]->dev);
-+	}
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL(fmc_device_register_n);
-+
-+int fmc_device_register(struct fmc_device *fmc)
-+{
-+	return fmc_device_register_n(&fmc, 1);
-+}
-+EXPORT_SYMBOL(fmc_device_register);
-+
-+void fmc_device_unregister_n(struct fmc_device **devs, int n)
-+{
-+	int i;
-+
-+	if (n < 1)
-+		return;
-+
-+	/* Free devarray first, not used by the later loop */
-+	kfree(devs[0]->devarray);
-+
-+	for (i = 0; i < n; i++) {
-+		if (devs[i]->flags == FMC_DEVICE_NO_MEZZANINE)
-+			continue;
-+		sysfs_remove_bin_file(&devs[i]->dev.kobj, &fmc_eeprom_attr);
-+		device_del(&devs[i]->dev);
-+		fmc_free_id_info(devs[i]);
-+		put_device(&devs[i]->dev);
-+	}
-+}
-+EXPORT_SYMBOL(fmc_device_unregister_n);
-+
-+void fmc_device_unregister(struct fmc_device *fmc)
-+{
-+	fmc_device_unregister_n(&fmc, 1);
-+}
-+EXPORT_SYMBOL(fmc_device_unregister);
-+
-+/* Init and exit are trivial */
- static int fmc_init(void)
- {
- 	return bus_register(&fmc_bus_type);
-diff --git a/drivers/fmc/fmc-dump.c b/drivers/fmc/fmc-dump.c
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 45b3df9..0c4cc68 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -187,6 +187,8 @@ firmware_class/
+ 	- request_firmware() hotplug interface info.
+ flexible-arrays.txt
+ 	- how to make use of flexible sized arrays in linux
++fmc/
++	- information about the FMC bus abstraction
+ frv/
+ 	- Fujitsu FR-V Linux documentation.
+ futex-requeue-pi.txt
+diff --git a/Documentation/fmc/00-INDEX b/Documentation/fmc/00-INDEX
 new file mode 100644
-index 0000000..c91afd6
+index 0000000..71304b7
 --- /dev/null
-+++ b/drivers/fmc/fmc-dump.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright (C) 2013 CERN (www.cern.ch)
-+ * Author: Alessandro Rubini <rubini@gnudd.com>
-+ *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include <linux/fmc.h>
-+#include <linux/fmc-sdb.h>
++++ b/Documentation/fmc/00-INDEX
+@@ -0,0 +1,26 @@
 +
-+static int fmc_must_dump_eeprom;
-+module_param_named(dump_eeprom, fmc_must_dump_eeprom, int, 0644);
-+static int fmc_must_dump_sdb;
-+module_param_named(dump_sdb, fmc_must_dump_sdb, int, 0644);
++Documentation in this directory comes from sections of the manual we
++wrote for the externally-developed fmc-bus package. The complete
++manual as of today (2013-02) is available in PDF format at
++http://www.ohwr.org/projects/fmc-bus/files
 +
-+#define LINELEN 16
++00-INDEX
++	- this file.
 +
-+/* Dumping 8k takes oh so much: avoid duplicate lines */
-+static const uint8_t *dump_line(int addr, const uint8_t *line,
-+				const uint8_t *prev)
-+{
-+	int i;
++FMC-and-SDB.txt
++	- What are FMC and SDB, basic concepts for this framework
 +
-+	if (!prev || memcmp(line, prev, LINELEN)) {
-+		pr_info("%04x: ", addr);
-+		for (i = 0; i < LINELEN; ) {
-+			printk(KERN_CONT "%02x", line[i]);
-+			i++;
-+			printk(i & 3 ? " " : i & (LINELEN - 1) ? "  " : "\n");
-+		}
-+		return line;
-+	}
-+	/* repeated line */
-+	if (line == prev + LINELEN)
-+		pr_info("[...]\n");
-+	return prev;
-+}
++API.txt
++	- The functions that are exported by the bus driver
 +
-+void fmc_dump_eeprom(const struct fmc_device *fmc)
-+{
-+	const uint8_t *line, *prev;
-+	int i;
++parameters.txt
++	- The module parameters
 +
-+	if (!fmc_must_dump_eeprom)
-+		return;
++carrier.txt
++	- writing a carrier (a device)
 +
-+	pr_info("FMC: %s (%s), slot %i, device %s\n", dev_name(fmc->hwdev),
-+		fmc->carrier_name, fmc->slot_id, dev_name(&fmc->dev));
-+	pr_info("FMC: dumping eeprom 0x%x (%i) bytes\n", fmc->eeprom_len,
-+	       fmc->eeprom_len);
++mezzanine.txt
++	- writing code for your mezzanine (a driver)
 +
-+	line = fmc->eeprom;
-+	prev = NULL;
-+	for (i = 0; i < fmc->eeprom_len; i += LINELEN, line += LINELEN)
-+		prev = dump_line(i, line, prev);
-+}
-+
-+void fmc_dump_sdb(const struct fmc_device *fmc)
-+{
-+	const uint8_t *line, *prev;
-+	int i, len;
-+
-+	if (!fmc->sdb)
-+		return;
-+	if (!fmc_must_dump_sdb)
-+		return;
-+
-+	/* If the argument is not-zero, do simple dump (== show) */
-+	if (fmc_must_dump_sdb > 0)
-+		fmc_show_sdb_tree(fmc);
-+
-+	if (fmc_must_dump_sdb == 1)
-+		return;
-+
-+	/* If bigger than 1, dump it seriously, to help debugging */
-+
-+	/*
-+	 * Here we should really use libsdbfs (which is designed to
-+	 * work in kernel space as well) , but it doesn't support
-+	 * directories yet, and it requires better intergration (it
-+	 * should be used instead of fmc-specific code).
-+	 *
-+	 * So, lazily, just dump the top-level array
-+	 */
-+	pr_info("FMC: %s (%s), slot %i, device %s\n", dev_name(fmc->hwdev),
-+		fmc->carrier_name, fmc->slot_id, dev_name(&fmc->dev));
-+	pr_info("FMC: poor dump of sdb first level:\n");
-+
-+	len = fmc->sdb->len * sizeof(union sdb_record);
-+	line = (void *)fmc->sdb->record;
-+	prev = NULL;
-+	for (i = 0; i < len; i += LINELEN, line += LINELEN)
-+		prev = dump_line(i, line, prev);
-+	return;
-+}
-diff --git a/drivers/fmc/fmc-match.c b/drivers/fmc/fmc-match.c
++identifiers.txt
++	- how identification and matching works
+diff --git a/Documentation/fmc/API.txt b/Documentation/fmc/API.txt
 new file mode 100644
-index 0000000..104a5ef
+index 0000000..06b06b92
 --- /dev/null
-+++ b/drivers/fmc/fmc-match.c
-@@ -0,0 +1,114 @@
-+/*
-+ * Copyright (C) 2012 CERN (www.cern.ch)
-+ * Author: Alessandro Rubini <rubini@gnudd.com>
-+ *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/fmc.h>
-+#include <linux/ipmi-fru.h>
++++ b/Documentation/fmc/API.txt
+@@ -0,0 +1,47 @@
++Functions Exported by fmc.ko
++****************************
 +
-+/* The fru parser is both user and kernel capable: it needs alloc */
-+void *fru_alloc(size_t size)
-+{
-+	return kzalloc(size, GFP_KERNEL);
-+}
++The FMC core exports the usual 4 functions that are needed for a bus to
++work, and a few more:
 +
-+/* The actual match function */
-+int fmc_match(struct device *dev, struct device_driver *drv)
-+{
-+	struct fmc_driver *fdrv = to_fmc_driver(drv);
-+	struct fmc_device *fdev = to_fmc_device(dev);
-+	struct fmc_fru_id *fid;
-+	int i, matched = 0;
++        int fmc_driver_register(struct fmc_driver *drv);
++        void fmc_driver_unregister(struct fmc_driver *drv);
++        int fmc_device_register(struct fmc_device *fmc);
++        void fmc_device_unregister(struct fmc_device *fmc);
 +
-+	/* This currently only matches the EEPROM (FRU id) */
-+	fid = fdrv->id_table.fru_id;
-+	if (!fid) {
-+		dev_warn(&fdev->dev, "Driver has no ID: matches all\n");
-+		matched = 1;
-+	} else {
-+		if (!fdev->id.manufacturer || !fdev->id.product_name)
-+			return 0; /* the device has no FRU information */
-+		for (i = 0; i < fdrv->id_table.fru_id_nr; i++, fid++) {
-+			if (fid->manufacturer &&
-+			    strcmp(fid->manufacturer, fdev->id.manufacturer))
-+				continue;
-+			if (fid->product_name &&
-+			    strcmp(fid->product_name, fdev->id.product_name))
-+				continue;
-+			matched = 1;
-+			break;
-+		}
-+	}
++        int fmc_device_register_n(struct fmc_device **fmc, int n);
++        void fmc_device_unregister_n(struct fmc_device **fmc, int n);
 +
-+	/* FIXME: match SDB contents */
-+	return matched;
-+}
++        uint32_t fmc_readl(struct fmc_device *fmc, int offset);
++        void fmc_writel(struct fmc_device *fmc, uint32_t val, int off);
++        void *fmc_get_drvdata(struct fmc_device *fmc);
++        void fmc_set_drvdata(struct fmc_device *fmc, void *data);
 +
-+/* This function creates ID info for a newly registered device */
-+int fmc_fill_id_info(struct fmc_device *fmc)
-+{
-+	struct fru_common_header *h;
-+	struct fru_board_info_area *bia;
-+	int ret, allocated = 0;
++        int fmc_reprogram(struct fmc_device *f, struct fmc_driver *d, char *gw,
++                          int sdb_entry);
 +
-+	/* If we know the eeprom length, try to read it off the device */
-+	if (fmc->eeprom_len && !fmc->eeprom) {
-+		fmc->eeprom = kzalloc(fmc->eeprom_len, GFP_KERNEL);
-+		if (!fmc->eeprom)
-+			return -ENOMEM;
-+		allocated = 1;
-+		ret = fmc->op->read_ee(fmc, 0, fmc->eeprom, fmc->eeprom_len);
-+		if (ret < 0)
-+			goto out;
-+	}
++The data structure that describe a device is detailed in *note FMC
++Device::, the one that describes a driver is detailed in *note FMC
++Driver::.  Please note that structures of type fmc_device must be
++allocated by the caller, but must not be released after unregistering.
++The fmc-bus itself takes care of releasing the structure when their use
++count reaches zero - actually, the device model does that in lieu of us.
 +
-+	/* If no eeprom, continue with other matches */
-+	if (!fmc->eeprom)
-+		return 0;
++The functions to register and unregister n devices are meant to be used
++by carriers that host more than one mezzanine. The devices must all be
++registered at the same time because if the FPGA is reprogrammed, all
++devices in the array are affected. Usually, the driver matching the
++first device will reprogram the FPGA, so other devices must know they
++are already driven by a reprogrammed FPGA.
 +
-+	dev_info(fmc->hwdev, "mezzanine %i\n", fmc->slot_id); /* header */
++If a carrier hosts slots that are driven by different FPGA devices, it
++should register as a group only mezzanines that are driven by the same
++FPGA, for the reason outlined above.
 +
-+	/* So we have the eeprom: parse the FRU part (if any) */
-+	h = (void *)fmc->eeprom;
-+	if (h->format != 1) {
-+		pr_info("      EEPROM has no FRU information\n");
-+		goto out;
-+	}
-+	if (!fru_header_cksum_ok(h)) {
-+		pr_info("      FRU: wrong header checksum\n");
-+		goto out;
-+	}
-+	bia = fru_get_board_area(h);
-+	if (!fru_bia_cksum_ok(bia)) {
-+		pr_info("      FRU: wrong board area checksum\n");
-+		goto out;
-+	}
-+	fmc->id.manufacturer = fru_get_board_manufacturer(h);
-+	fmc->id.product_name = fru_get_product_name(h);
-+	pr_info("      Manufacturer: %s\n", fmc->id.manufacturer);
-+	pr_info("      Product name: %s\n", fmc->id.product_name);
-+
-+	/* Create the short name (FIXME: look in sdb as well) */
-+	fmc->mezzanine_name = kstrdup(fmc->id.product_name, GFP_KERNEL);
-+
-+out:
-+	if (allocated) {
-+		kfree(fmc->eeprom);
-+		fmc->eeprom = NULL;
-+	}
-+	return 0; /* no error: let other identification work */
-+}
-+
-+/* Some ID data is allocated using fru_alloc() above, so release it */
-+void fmc_free_id_info(struct fmc_device *fmc)
-+{
-+	kfree(fmc->mezzanine_name);
-+	kfree(fmc->id.manufacturer);
-+	kfree(fmc->id.product_name);
-+}
-diff --git a/drivers/fmc/fmc-sdb.c b/drivers/fmc/fmc-sdb.c
++Finally, the fmc_reprogram function calls the reprogram method (see
++*note The API Offered by Carriers:: and also scans the memory area for
++an SDB tree. You can pass -1 as sdb_entry to disable such scan.
++Otherwise, the function fails if no tree is found at the specified
++entry point.  The function is meant to factorize common code, and by
++the time you read this it is already used by the spec-sw and fine-delay
++modules.
+diff --git a/Documentation/fmc/FMC-and-SDB.txt b/Documentation/fmc/FMC-and-SDB.txt
 new file mode 100644
-index 0000000..74fb326
+index 0000000..fa14e0b
 --- /dev/null
-+++ b/drivers/fmc/fmc-sdb.c
-@@ -0,0 +1,265 @@
-+/*
-+ * Copyright (C) 2012 CERN (www.cern.ch)
-+ * Author: Alessandro Rubini <rubini@gnudd.com>
-+ *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
-+ */
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/fmc.h>
-+#include <linux/sdb.h>
-+#include <linux/err.h>
-+#include <linux/fmc-sdb.h>
-+#include <asm/byteorder.h>
++++ b/Documentation/fmc/FMC-and-SDB.txt
+@@ -0,0 +1,88 @@
 +
-+static uint32_t __sdb_rd(struct fmc_device *fmc, unsigned long address,
-+			int convert)
-+{
-+	uint32_t res = fmc_readl(fmc, address);
-+	if (convert)
-+		return __be32_to_cpu(res);
-+	return res;
-+}
++FMC (FPGA Mezzanine Card) is the standard we use for our I/O devices,
++in the context of White Rabbit and related hardware.
 +
-+static struct sdb_array *__fmc_scan_sdb_tree(struct fmc_device *fmc,
-+					     unsigned long sdb_addr,
-+					     unsigned long reg_base, int level)
-+{
-+	uint32_t onew;
-+	int i, j, n, convert = 0;
-+	struct sdb_array *arr, *sub;
++In our I/O environments we need to write drivers for each mezzanine
++card, and such drivers must work regardless of the carrier being used.
++To achieve this, we abstract the FMC interface.
 +
-+	onew = fmc_readl(fmc, sdb_addr);
-+	if (onew == SDB_MAGIC) {
-+		/* Uh! If we are little-endian, we must convert */
-+		if (SDB_MAGIC != __be32_to_cpu(SDB_MAGIC))
-+			convert = 1;
-+	} else if (onew == __be32_to_cpu(SDB_MAGIC)) {
-+		/* ok, don't convert */
-+	} else {
-+		return ERR_PTR(-ENOENT);
-+	}
-+	/* So, the magic was there: get the count from offset 4*/
-+	onew = __sdb_rd(fmc, sdb_addr + 4, convert);
-+	n = __be16_to_cpu(*(uint16_t *)&onew);
-+	arr = kzalloc(sizeof(*arr), GFP_KERNEL);
-+	if (arr) {
-+		arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
-+		arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
-+	}
-+	if (!arr || !arr->record || !arr->subtree) {
-+		kfree(arr->record);
-+		kfree(arr->subtree);
-+		kfree(arr);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	arr->len = n;
-+	arr->level = level;
-+	arr->fmc = fmc;
-+	for (i = 0; i < n; i++) {
-+		union  sdb_record *r;
++We have a carrier for PCI-E called SPEC and one for VME called SVEC,
++but more are planned.  Also, we support stand-alone devices (usually
++plugged on a SPEC card), controlled through Etherbone, developed by GSI.
 +
-+		for (j = 0; j < sizeof(arr->record[0]); j += 4) {
-+			*(uint32_t *)((void *)(arr->record + i) + j) =
-+				__sdb_rd(fmc, sdb_addr + (i * 64) + j, convert);
-+		}
-+		r = &arr->record[i];
-+		arr->subtree[i] = ERR_PTR(-ENODEV);
-+		if (r->empty.record_type == sdb_type_bridge) {
-+			struct sdb_component *c = &r->bridge.sdb_component;
-+			uint64_t subaddr = __be64_to_cpu(r->bridge.sdb_child);
-+			uint64_t newbase = __be64_to_cpu(c->addr_first);
++Code and documentation for the FMC bus was born as part of the spec-sw
++project, but now it lives in its own project. Other projects, i.e.
++software support for the various carriers, should include this as a
++submodule.
 +
-+			subaddr += reg_base;
-+			newbase += reg_base;
-+			sub = __fmc_scan_sdb_tree(fmc, subaddr, newbase,
-+						  level + 1);
-+			arr->subtree[i] = sub; /* may be error */
-+			if (IS_ERR(sub))
-+				continue;
-+			sub->parent = arr;
-+			sub->baseaddr = newbase;
-+		}
-+	}
-+	return arr;
-+}
++The most up to date version of code and documentation is always
++available from the repository you can clone from:
 +
-+int fmc_scan_sdb_tree(struct fmc_device *fmc, unsigned long address)
-+{
-+	struct sdb_array *ret;
-+	if (fmc->sdb)
-+		return -EBUSY;
-+	ret = __fmc_scan_sdb_tree(fmc, address, 0 /* regs */, 0);
-+	if (IS_ERR(ret))
-+		return PTR_ERR(ret);
-+	fmc->sdb = ret;
-+	return 0;
-+}
-+EXPORT_SYMBOL(fmc_scan_sdb_tree);
++        git://ohwr.org/fmc-projects/fmc-bus.git (read-only)
++        git@ohwr.org:fmc-projects/fmc-bus.git (read-write for developers)
 +
-+static void __fmc_sdb_free(struct sdb_array *arr)
-+{
-+	int i, n;
++Selected versions of the documentation, as well as complete tar
++archives for selected revisions are placed to the Files section of the
++project: `http://www.ohwr.org/projects/fmc-bus/files'
 +
-+	if (!arr)
-+		return;
-+	n = arr->len;
-+	for (i = 0; i < n; i++) {
-+		if (IS_ERR(arr->subtree[i]))
-+			continue;
-+		__fmc_sdb_free(arr->subtree[i]);
-+	}
-+	kfree(arr->record);
-+	kfree(arr->subtree);
-+	kfree(arr);
-+}
 +
-+int fmc_free_sdb_tree(struct fmc_device *fmc)
-+{
-+	__fmc_sdb_free(fmc->sdb);
-+	fmc->sdb = NULL;
-+	return 0;
-+}
-+EXPORT_SYMBOL(fmc_free_sdb_tree);
++What is FMC
++***********
 +
-+/* This helper calls reprogram and inizialized sdb as well */
-+int fmc_reprogram(struct fmc_device *fmc, struct fmc_driver *d, char *gw,
-+			 int sdb_entry)
-+{
-+	int ret;
++FMC, as said, stands for "FPGA Mezzanine Card". It is a standard
++developed by the VME consortium called VITA (VMEbus International Trade
++Association and ratified by ANSI, the American National Standard
++Institute.  The official documentation is called "ANSI-VITA 57.1".
 +
-+	ret = fmc->op->reprogram(fmc, d, gw);
-+	if (ret < 0)
-+		return ret;
-+	if (sdb_entry < 0)
-+		return ret;
++The FMC card is an almost square PCB, around 70x75 millimeters, that is
++called mezzanine in this document.  It usually lives plugged into
++another PCB for power supply and control; such bigger circuit board is
++called carrier from now on, and a single carrier may host more than one
++mezzanine.
 +
-+	/* We are required to find SDB at a given offset */
-+	ret = fmc_scan_sdb_tree(fmc, sdb_entry);
-+	if (ret < 0) {
-+		dev_err(&fmc->dev, "Can't find SDB at address 0x%x\n",
-+			sdb_entry);
-+		return -ENODEV;
-+	}
-+	fmc_dump_sdb(fmc);
-+	return 0;
-+}
-+EXPORT_SYMBOL(fmc_reprogram);
++In the typical application the mezzanine is mostly analog while the
++carrier is mostly digital, and hosts an FPGA that must be configured to
++match the specific mezzanine and the desired application. Thus, you may
++need to load different FPGA images to drive different instances of the
++same mezzanine.
 +
-+static void __fmc_show_sdb_tree(const struct fmc_device *fmc,
-+				const struct sdb_array *arr)
-+{
-+	int i, j, n = arr->len, level = arr->level;
-+	const struct sdb_array *ap;
++FMC, as such, is not a bus in the usual meaning of the term, because
++most carriers have only one connector, and carriers with several
++connectors have completely separate electrical connections to them.
++This package, however, implements a bus as a software abstraction.
 +
-+	for (i = 0; i < n; i++) {
-+		unsigned long base;
-+		union  sdb_record *r;
-+		struct sdb_product *p;
-+		struct sdb_component *c;
-+		r = &arr->record[i];
-+		c = &r->dev.sdb_component;
-+		p = &c->product;
-+		base = 0;
-+		for (ap = arr; ap; ap = ap->parent)
-+			base += ap->baseaddr;
-+		dev_info(&fmc->dev, "SDB: ");
 +
-+		for (j = 0; j < level; j++)
-+			printk(KERN_CONT "   ");
-+		switch (r->empty.record_type) {
-+		case sdb_type_interconnect:
-+			printk(KERN_CONT "%08llx:%08x %.19s\n",
-+			       __be64_to_cpu(p->vendor_id),
-+			       __be32_to_cpu(p->device_id),
-+			       p->name);
-+			break;
-+		case sdb_type_device:
-+			printk(KERN_CONT "%08llx:%08x %.19s (%08llx-%08llx)\n",
-+			       __be64_to_cpu(p->vendor_id),
-+			       __be32_to_cpu(p->device_id),
-+			       p->name,
-+			       __be64_to_cpu(c->addr_first) + base,
-+			       __be64_to_cpu(c->addr_last) + base);
-+			break;
-+		case sdb_type_bridge:
-+			printk(KERN_CONT "%08llx:%08x %.19s (bridge: %08llx)\n",
-+			       __be64_to_cpu(p->vendor_id),
-+			       __be32_to_cpu(p->device_id),
-+			       p->name,
-+			       __be64_to_cpu(c->addr_first) + base);
-+			if (IS_ERR(arr->subtree[i])) {
-+				printk(KERN_CONT "(bridge error %li)\n",
-+				       PTR_ERR(arr->subtree[i]));
-+				break;
-+			}
-+			__fmc_show_sdb_tree(fmc, arr->subtree[i]);
-+			break;
-+		case sdb_type_integration:
-+			printk(KERN_CONT "integration\n");
-+			break;
-+		case sdb_type_repo_url:
-+			printk(KERN_CONT "repo-url\n");
-+			break;
-+		case sdb_type_synthesis:
-+			printk(KERN_CONT "synthesis-info\n");
-+			break;
-+		case sdb_type_empty:
-+			printk(KERN_CONT "empty\n");
-+			break;
-+		default:
-+			printk(KERN_CONT "UNKNOWN TYPE 0x%02x\n",
-+			       r->empty.record_type);
-+			break;
-+		}
-+	}
-+}
++What is SDB
++***********
 +
-+void fmc_show_sdb_tree(const struct fmc_device *fmc)
-+{
-+	if (!fmc->sdb)
-+		return;
-+	__fmc_show_sdb_tree(fmc, fmc->sdb);
-+}
-+EXPORT_SYMBOL(fmc_show_sdb_tree);
++SDB (Self Describing Bus) is a set of data structures that we use for
++enumerating the internal structure of an FPGA image. We also use it as
++a filesystem inside the FMC EEPROM.
 +
-+signed long fmc_find_sdb_device(struct sdb_array *tree,
-+				uint64_t vid, uint32_t did, unsigned long *sz)
-+{
-+	signed long res = -ENODEV;
-+	union  sdb_record *r;
-+	struct sdb_product *p;
-+	struct sdb_component *c;
-+	int i, n = tree->len;
-+	uint64_t last, first;
++SDB is not mandatory for use of this FMC kernel bus, but if you have SDB
++this package can make good use of it.  SDB itself is developed in the
++fpga-config-space OHWR project. The link to the repository is
++`git://ohwr.org/hdl-core-lib/fpga-config-space.git' and what is used in
++this project lives in the sdbfs subdirectory in there.
 +
-+	/* FIXME: what if the first interconnect is not at zero? */
-+	for (i = 0; i < n; i++) {
-+		r = &tree->record[i];
-+		c = &r->dev.sdb_component;
-+		p = &c->product;
++SDB support for FMC is described in *note FMC Identification:: and
++*note SDB Support::
 +
-+		if (!IS_ERR(tree->subtree[i]))
-+			res = fmc_find_sdb_device(tree->subtree[i],
-+						  vid, did, sz);
-+		if (res >= 0)
-+			return res + tree->baseaddr;
-+		if (r->empty.record_type != sdb_type_device)
-+			continue;
-+		if (__be64_to_cpu(p->vendor_id) != vid)
-+			continue;
-+		if (__be32_to_cpu(p->device_id) != did)
-+			continue;
-+		/* found */
-+		last = __be64_to_cpu(c->addr_last);
-+		first = __be64_to_cpu(c->addr_first);
-+		if (sz)
-+			*sz = (typeof(*sz))(last + 1 - first);
-+		return first + tree->baseaddr;
-+	}
-+	return res;
-+}
-+EXPORT_SYMBOL(fmc_find_sdb_device);
-diff --git a/drivers/fmc/fru-parse.c b/drivers/fmc/fru-parse.c
++
++SDB Support
++***********
++
++The fmc.ko bus driver exports a few functions to help drivers taking
++advantage of the SDB information that may be present in your own FPGA
++memory image.
++
++The module exports the following functions, in the special header
++<linux/fmc-sdb.h>. The linux/ prefix in the name is there because we
++plan to submit it upstream in the future, and don't want to force
++changes on our drivers if that happens.
++
++         int fmc_scan_sdb_tree(struct fmc_device *fmc, unsigned long address);
++         void fmc_show_sdb_tree(struct fmc_device *fmc);
++         signed long fmc_find_sdb_device(struct sdb_array *tree, uint64_t vendor,
++                                         uint32_t device, unsigned long *sz);
++         int fmc_free_sdb_tree(struct fmc_device *fmc);
+diff --git a/Documentation/fmc/carrier.txt b/Documentation/fmc/carrier.txt
 new file mode 100644
-index 0000000..cb46263
+index 0000000..173f6d6
 --- /dev/null
-+++ b/drivers/fmc/fru-parse.c
-@@ -0,0 +1,82 @@
-+/*
-+ * Copyright (C) 2012 CERN (www.cern.ch)
-+ * Author: Alessandro Rubini <rubini@gnudd.com>
-+ *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
-+ */
-+#include <linux/ipmi-fru.h>
++++ b/Documentation/fmc/carrier.txt
+@@ -0,0 +1,311 @@
++FMC Device
++**********
 +
-+/* Some internal helpers */
-+static struct fru_type_length *
-+__fru_get_board_tl(struct fru_common_header *header, int nr)
-+{
-+	struct fru_board_info_area *bia;
-+	struct fru_type_length *tl;
++Within the Linux bus framework, the FMC device is created and
++registered by the carrier driver. For example, the PCI driver for the
++SPEC card fills a data structure for each SPEC that it drives, and
++registers an associated FMC device for each card.  The SVEC driver can
++do exactly the same for the VME carrier (actually, it should do it
++twice, because the SVEC carries two FMC mezzanines).  Similarly, an
++Etherbone driver will be able to register its own FMC devices, offering
++communication primitives through frame exchange.
 +
-+	bia = fru_get_board_area(header);
-+	tl = bia->tl;
-+	while (nr > 0 && !fru_is_eof(tl)) {
-+		tl = fru_next_tl(tl);
-+		nr--;
-+	}
-+	if (fru_is_eof(tl))
-+		return NULL;
-+	return tl;
-+}
++The contents of the EEPROM within the FMC are used for identification
++purposes, i.e. for matching the device with its own driver. For this
++reason the device structure includes a complete copy of the EEPROM
++(actually, the carrier driver may choose whether or not to return it -
++for example we most likely won't have the whole EEPROM available for
++Etherbone devices.
 +
-+static char *__fru_alloc_get_tl(struct fru_common_header *header, int nr)
-+{
-+	struct fru_type_length *tl;
-+	char *res;
-+	int len;
++The following listing shows the current structure defining a device.
++Please note that all the machinery is in place but some details may
++still change in the future.  For this reason, there is a version field
++at the beginning of the structure.  As usual, the minor number will
++change for compatible changes (like a new flag) and the major number
++will increase when an incompatible change happens (for example, a
++change in layout of some fmc data structures).  Device writers should
++just set it to the value FMC_VERSION, and be ready to get back -EINVAL
++at registration time.
 +
-+	tl = __fru_get_board_tl(header, nr);
-+	if (!tl)
-+		return NULL;
-+	len = fru_strlen(tl);
-+	res = fru_alloc(fru_strlen(tl) + 1);
-+	if (!res)
-+		return NULL;
-+	return fru_strcpy(res, tl);
-+}
++     struct fmc_device {
++             unsigned long version;
++             unsigned long flags;
++             struct module *owner;           /* char device must pin it */
++             struct fmc_fru_id id;           /* for EEPROM-based match */
++             struct fmc_operations *op;      /* carrier-provided */
++             int irq;                        /* according to host bus. 0 == none */
++             int eeprom_len;                 /* Usually 8kB, may be less */
++             int eeprom_addr;                /* 0x50, 0x52 etc */
++             uint8_t *eeprom;                /* Full contents or leading part */
++             char *carrier_name;             /* "SPEC" or similar, for special use */
++             void *carrier_data;             /* "struct spec *" or equivalent */
++             __iomem void *fpga_base;        /* May be NULL (Etherbone) */
++             __iomem void *slot_base;        /* Set by the driver */
++             struct fmc_device **devarray;   /* Allocated by the bus */
++             int slot_id;                    /* Index in the slot array */
++             int nr_slots;                   /* Number of slots in this carrier */
++             unsigned long memlen;           /* Used for the char device */
++             struct device dev;              /* For Linux use */
++             struct device *hwdev;           /* The underlying hardware device */
++             unsigned long sdbfs_entry;
++             struct sdb_array *sdb;
++             uint32_t device_id;             /* Filled by the device */
++             char *mezzanine_name;           /* Defaults to ``fmc'' */
++             void *mezzanine_data;
++     };
 +
-+/* Public checksum verifiers */
-+int fru_header_cksum_ok(struct fru_common_header *header)
-+{
-+	uint8_t *ptr = (void *)header;
-+	int i, sum;
++The meaning of most fields is summarized in the code comment above.
 +
-+	for (i = sum = 0; i < sizeof(*header); i++)
-+		sum += ptr[i];
-+	return (sum & 0xff) == 0;
-+}
-+int fru_bia_cksum_ok(struct fru_board_info_area *bia)
-+{
-+	uint8_t *ptr = (void *)bia;
-+	int i, sum;
++The following fields must be filled by the carrier driver before
++registration:
 +
-+	for (i = sum = 0; i < 8 * bia->area_len; i++)
-+		sum += ptr[i];
-+	return (sum & 0xff) == 0;
-+}
++   * version: must be set to FMC_VERSION.
 +
-+/* Get various stuff, trivial */
-+char *fru_get_board_manufacturer(struct fru_common_header *header)
-+{
-+	return __fru_alloc_get_tl(header, 0);
-+}
-+char *fru_get_product_name(struct fru_common_header *header)
-+{
-+	return __fru_alloc_get_tl(header, 1);
-+}
-+char *fru_get_serial_number(struct fru_common_header *header)
-+{
-+	return __fru_alloc_get_tl(header, 2);
-+}
-+char *fru_get_part_number(struct fru_common_header *header)
-+{
-+	return __fru_alloc_get_tl(header, 3);
-+}
++   * owner: set to MODULE_OWNER.
++
++   * op: the operations to act on the device.
++
++   * irq: number for the mezzanine; may be zero.
++
++   * eeprom_len: length of the following array.
++
++   * eeprom_addr: 0x50 for first mezzanine and so on.
++
++   * eeprom: the full content of the I2C EEPROM.
++
++   * carrier_name.
++
++   * carrier_data: a unique pointer for the carrier.
++
++   * fpga_base: the I/O memory address (may be NULL).
++
++   * slot_id: the index of this slot (starting from zero).
++
++   * memlen: if fpga_base is valid, the length of I/O memory.
++
++   * hwdev: to be used in some dev_err() calls.
++
++   * device_id: a slot-specific unique integer number.
++
++
++Please note that the carrier should read its own EEPROM memory before
++registering the device, as well as fill all other fields listed above.
++
++The following fields should not be assigned, because they are filled
++later by either the bus or the device driver:
++
++   * flags.
++
++   * fru_id: filled by the bus, parsing the eeprom.
++
++   * slot_base: filled and used by the driver, if useful to it.
++
++   * devarray: an array og all mezzanines driven by a singe FPGA.
++
++   * nr_slots: set by the core at registration time.
++
++   * dev: used by Linux.
++
++   * sdb: FPGA contents, scanned according to driver's directions.
++
++   * sdbfs_entry: SDB entry point in EEPROM: autodetected.
++
++   * mezzanine_data: available for the driver.
++
++   * mezzanine_name: filled by fmc-bus during identification.
++
++
++Note: mezzanine_data may be redundant, because Linux offers the drvdata
++approach, so the field may be removed in later versions of this bus
++implementation.
++
++As I write this, she SPEC carrier is already completely functional in
++the fmc-bus environment, and is a good reference to look at.
++
++
++The API Offered by Carriers
++===========================
++
++The carrier provides a number of methods by means of the
++`fmc_operations' structure, which currently is defined like this
++(again, it is a moving target, please refer to the header rather than
++this document):
++
++     struct fmc_operations {
++             uint32_t (*readl)(struct fmc_device *fmc, int offset);
++             void (*writel)(struct fmc_device *fmc, uint32_t value, int offset);
++             int (*reprogram)(struct fmc_device *f, struct fmc_driver *d, char *gw);
++             int (*validate)(struct fmc_device *fmc, struct fmc_driver *drv);
++             int (*irq_request)(struct fmc_device *fmc, irq_handler_t h,
++                                char *name, int flags);
++             void (*irq_ack)(struct fmc_device *fmc);
++             int (*irq_free)(struct fmc_device *fmc);
++             int (*gpio_config)(struct fmc_device *fmc, struct fmc_gpio *gpio,
++                                int ngpio);
++             int (*read_ee)(struct fmc_device *fmc, int pos, void *d, int l);
++             int (*write_ee)(struct fmc_device *fmc, int pos, const void *d, int l);
++     };
++
++The individual methods perform the following tasks:
++
++`readl'
++`writel'
++     These functions access FPGA registers by whatever means the
++     carrier offers. They are not expected to fail, and most of the time
++     they will just make a memory access to the host bus. If the
++     carrier provides a fpga_base pointer, the driver may use direct
++     access through that pointer. For this reason the header offers the
++     inline functions fmc_readl and fmc_writel that access fpga_base if
++     the respective method is NULL. A driver that wants to be portable
++     and efficient should use fmc_readl and fmc_writel.  For Etherbone,
++     or other non-local carriers, error-management is still to be
++     defined.
++
++`validate'
++     Module parameters are used to manage different applications for
++     two or more boards of the same kind. Validation is based on the
++     busid module parameter, if provided, and returns the matching
++     index in the associated array. See *note Module Parameters:: in in
++     doubt. If no match is found, `-ENOENT' is returned; if the user
++     didn't pass `busid=', all devices will pass validation.  The value
++     returned by the validate method can be used as index into other
++     parameters (for example, some drivers use the `lm32=' parameter in
++     this way). Such "generic parameters" are documented in *note
++     Module Parameters::, below. The validate method is used by
++     `fmc-trivial.ko', described in *note fmc-trivial::.
++
++`reprogram'
++     The carrier enumerates FMC devices by loading a standard (or
++     golden) FPGA binary that allows EEPROM access. Each driver, then,
++     will need to reprogram the FPGA by calling this function.  If the
++     name argument is NULL, the carrier should reprogram the golden
++     binary. If the gateware name has been overridden through module
++     parameters (in a carrier-specific way) the file loaded will match
++     the parameters. Per-device gateware names can be specified using
++     the `gateware=' parameter, see *note Module Parameters::.  Note:
++     Clients should call rhe new helper, fmc_reprogram, which both
++     calls this method and parse the SDB tree of the FPGA.
++
++`irq_request'
++`irq_ack'
++`irq_free'
++     Interrupt management is carrier-specific, so it is abstracted as
++     operations. The interrupt number is listed in the device
++     structure, and for the mezzanine driver the number is only
++     informative.  The handler will receive the fmc pointer as dev_id;
++     the flags argument is passed to the Linux request_irq function,
++     but fmc-specific flags may be added in the future. You'll most
++     likely want to pass the `IRQF_SHARED' flag.
++
++`gpio_config'
++     The method allows to configure a GPIO pin in the carrier, and read
++     its current value if it is configured as input. See *note The GPIO
++     Abstraction:: for details.
++
++`read_ee'
++`write_ee'
++     Read or write the EEPROM. The functions are expected to be only
++     called before reprogramming and the carrier should refuse them
++     with `ENODEV' after reprogramming.  The offset is expected to be
++     within 8kB (the current size), but addresses up to 1MB are
++     reserved to fit bigger I2C devices in the future. Carriers may
++     offer access to other internal flash memories using these same
++     methods: for example the SPEC driver may define that its carrier
++     I2C memory is seen at offset 1M and the internal SPI flash is seen
++     at offset 16M.  This multiplexing of several flash memories in the
++     same address space is is carrier-specific and should only be used
++     by a driver that has verified the `carrier_name' field.
++
++
++
++The GPIO Abstraction
++====================
++
++Support for GPIO pins in the fmc-bus environment is not very
++straightforward and deserves special discussion.
++
++While the general idea of a carrier-independent driver seems to fly,
++configuration of specific signals within the carrier needs at least
++some knowledge of the carrier itself.  For this reason, the specific
++driver can request to configure carrier-specific GPIO pins, numbered
++from 0 to at most 4095.  Configuration is performed by passing a
++pointer to an array of struct fmc_gpio items, as well as the length of
++the array. This is the data structure:
++
++        struct fmc_gpio {
++                char *carrier_name;
++                int gpio;
++                int _gpio;      /* internal use by the carrier */
++                int mode;       /* GPIOF_DIR_OUT etc, from <linux/gpio.h> */
++                int irqmode;    /* IRQF_TRIGGER_LOW and so on */
++        };
++
++By specifying a carrier_name for each pin, the driver may access
++different pins in different carriers.  The gpio_config method is
++expected to return the number of pins successfully configured, ignoring
++requests for other carriers. However, if no pin is configured (because
++no structure at all refers to the current carrier_name), the operation
++returns an error so the caller will know that it is running under a
++yet-unsupported carrier.
++
++So, for example, a driver that has been developed and tested on both
++the SPEC and the SVEC may request configuration of two different GPIO
++pins, and expect one such configuration to succeed - if none succeeds
++it most likely means that the current carrier is a still-unknown one.
++
++If, however, your GPIO pin has a specific known role, you can pass a
++special number in the gpio field, using one of the following macros:
++
++        #define FMC_GPIO_RAW(x)         (x)             /* 4096 of them */
++        #define FMC_GPIO_IRQ(x)         ((x) + 0x1000)  /*  256 of them */
++        #define FMC_GPIO_LED(x)         ((x) + 0x1100)  /*  256 of them */
++        #define FMC_GPIO_KEY(x)         ((x) + 0x1200)  /*  256 of them */
++        #define FMC_GPIO_TP(x)          ((x) + 0x1300)  /*  256 of them */
++        #define FMC_GPIO_USER(x)        ((x) + 0x1400)  /*  256 of them */
++
++Use of virtual GPIO numbers (anything but FMC_GPIO_RAW) is allowed
++provided the carrier_name field in the data structure is left
++unspecified (NULL). Each carrier is responsible for providing a mapping
++between virtual and physical GPIO numbers. The carrier may then use the
++_gpio field to cache the result of this mapping.
++
++All carriers must map their I/O lines to the sets above starting from
++zero.  The SPEC, for example, maps interrupt pins 0 and 1, and test
++points 0 through 3 (even if the test points on the PCB are called
++5,6,7,8).
++
++If, for example, a driver requires a free LED and a test point (for a
++scope probe to be plugged at some point during development) it may ask
++for FMC_GPIO_LED(0) and FMC_GPIO_TP(0). Each carrier will provide
++suitable GPIO pins.  Clearly, the person running the drivers will know
++the order used by the specific carrier driver in assigning leds and
++testpoints, so to make a carrier-dependent use of the diagnostic tools.
++
++In theory, some form of autodetection should be possible: a driver like
++the wr-nic (which uses IRQ(1) on the SPEC card) should configure
++IRQ(0), make a test with software-generated interrupts and configure
++IRQ(1) if the test fails. This probing step should be used because even
++if the wr-nic gateware is known to use IRQ1 on the SPEC, the driver
++should be carrier-independent and thus use IRQ(0) as a first bet -
++actually, the knowledge that IRQ0 may fail is carrier-dependent
++information, but using it doesn't make the driver unsuitable for other
++carriers.
++
++The return value of gpio_config is defined as follows:
++
++   * If no pin in the array can be used by the carrier, `-ENODEV'.
++
++   * If at least one virtual GPIO number cannot be mapped, `-ENOENT'.
++
++   * On success, 0 or positive. The value returned is the number of
++     high input bits (if no input is configured, the value for success
++     is 0).
++
++While I admit the procedure is not completely straightforward, it
++allows configuration, input and output with a single carrier operation.
++Given the typical use case of FMC devices, GPIO operations are not
++expected to ever by in hot paths, and GPIO access so fare has only been
++used to configure the interrupt pin, mode and polarity. Especially
++reading inputs is not expected to be common. If your device has GPIO
++capabilities in the hot path, you should consider using the kernel's
++GPIO mechanisms.
+diff --git a/Documentation/fmc/identifiers.txt b/Documentation/fmc/identifiers.txt
+new file mode 100644
+index 0000000..3bb577f
+--- /dev/null
++++ b/Documentation/fmc/identifiers.txt
+@@ -0,0 +1,168 @@
++FMC Identification
++******************
++
++The FMC standard requires every compliant mezzanine to carry
++identification information in an I2C EEPROM.  The information must be
++laid out according to the "IPMI Platform Management FRU Information",
++where IPMI is a lie I'd better not expand, and FRU means "Field
++Replaceable Unit".
++
++The FRU information is an intricate unreadable binary blob that must
++live at offset 0 of the EEPROM, and typically extends for a few hundred
++bytes. The standard allows the application to use all the remaining
++storage area of the EEPROM as it wants.
++
++This chapter explains how to create your own EEPROM image and how to
++write it in your mezzanine, as well as how devices and drivers are
++paired at run time.  EEPROM programming uses tools that are part of this
++package and SDB (part of the fpga-config-space package).
++
++The first sections are only interesting for manufacturers who need to
++write the EEPROM. If you are just a software developer writing an FMC
++device or driver, you may jump straight to *note SDB Support::.
++
++
++Building the FRU Structure
++==========================
++
++If you want to know the internals of the FRU structure and despair, you
++can retrieve the document from
++`http://download.intel.com/design/servers/ipmi/FRU1011.pdf' .  The
++standard is awful and difficult without reason, so we only support the
++minimum mandatory subset - we create a simple structure and parse it
++back at run time, but we are not able to either generate or parse more
++arcane features like non-english languages and 6-bit text.  If you need
++more items of the FRU standard for your boards, please submit patches.
++
++This package includes the Python script that Matthieu Cattin wrote to
++generate the FRU binary blob, based on an helper libipmi by Manohar
++Vanga and Matthieu himself.  I changed the test script to receive
++parameters from the command line or from the environment (the command
++line takes precedence)
++
++To make a long story short, in order to build a standard-compliant
++binary file to be burned in your EEPROM, you need the following items:
++
++        Environment    Opt     Official Name          Default
++---------------------------------------------------------------------
++        FRU_VENDOR     -v      "Board Manufacturer"   fmc-example
++        FRU_NAME       -n      "Board Product Name"   mezzanine
++        FRU_SERIAL     -s      `Board Serial Number"  0001
++        FRU_PART       -p      "Board Part Number"    sample-part
++        FRU_OUTPUT     -o      not applicable         /dev/stdout
++
++The "Official Name" above is what you find in the FRU official
++documentation, chapter 11, page 7 ("Board Info Area Format").  The
++output option is used to save the generated binary to a specific file
++name instead of stdout.
++
++You can pass the items to the FRU generator either in the environment
++or on the command line.  This package has currently no support for
++specifying power consumption or such stuff, but I plan to add it as
++soon as I find some time for that.
++
++FIXME: consumption etc for FRU are here or in PTS?
++
++The following example creates a binary image for a specific board:
++
++        ./tools/fru-generator -v CERN -n FmcAdc100m14b4cha \
++               -s HCCFFIA___-CR000003 -p EDA-02063-V5-0 > eeprom.bin
++
++The following example shows a script that builds several binary EEPROM
++images for a series of boards, changing the serial number for each of
++them. The script uses a mix of environment variables and command line
++options, and uses the same string patterns shown above.
++
++        #!/bin/sh
++
++        export FRU_VENDOR="CERN"
++        export FRU_NAME="FmcAdc100m14b4cha"
++        export FRU_PART="EDA-02063-V5-0"
++
++        serial="HCCFFIA___-CR"
++
++        for number in $(seq 1 50); do
++           # build number-string "ns"
++           ns="$(printf %06d $number)"
++           ./fru-generator -s "${serial}${ns}" > eeprom-${ns}.bin
++        done
++
++
++Using SDB-FS in the EEPROM
++==========================
++
++If you want to use SDB as a filesystem in the EEPROM device within the
++mezzanine, you should create one such filesystem using gensdbfs, from
++the fpga-config-space package on OHWR.
++
++By using an SBD filesystem you can cluster several files in a single
++EEPROM, so both the host system and a soft-core running in the FPGA (if
++any) can access extra production-time information.
++
++We chose to use SDB as a storage filesystem because the format is very
++simple, and both the host system and the soft-core will likely already
++include support code for such format. The SDB library offered by the
++fpga-config-space is less than 1kB under LM32, so it proves quite up to
++the task.
++
++The SDB entry point (which acts as a directory listing) cannot live at
++offset zero in the flash device, because the FRU information must live
++there.  To avoid wasting precious storage space while still allowing
++for more-than-minimal FRU structures, the fmc.ko will look for the SDB
++record at address 256, 512 and 1024.
++
++In order to generate the complete EEPROM image you'll need a
++configuration file for gensdbfs: you tell the program where to place
++the sdb entry point, and you must force the FRU data file to be placed
++at the beginning of the storage device. If needed, you can also place
++other files at a special offset (we sometimes do it for backward
++compatibility with drivers we wrote before implementing SDB for flash
++memory).
++
++The directory tools/sdbfs of this package includes a well-commented
++example that you may want to use as a starting point (the comments are
++in the file called -SDB-CONFIG-).  Reading documentation for gensdbfs
++is a suggested first step anyways.
++
++This package (generic FMC bus support) only accesses two files in the
++EEPROM: the FRU information, at offset zero, with a suggested filename
++of IPMI-FRU and the short name for the mezzanine, in a file called
++name. The IPMI-FRU name is not mandatory, but a strongly suggested
++choice; the name filename is mandatory, because this is the preferred
++short name used by the FMC core.  For example, a name of "fdelay" may
++supplement a Product Name like "FmcDelay1ns4cha" - exactly as
++demonstrated in `tools/sdbfs'.
++
++Note: SDB access to flash memory is not yet supported, so the short
++name currently in use is just the "Product Name" FRU string.
++
++The example in tools/sdbfs includes an extra file, that is needed by
++the fine-delay driver, and must live at a known address of 0x1800.  By
++running gensdbfs on that directory you can output your binary EEPROM
++image (here below spusa$ is the shell prompt):
++
++        spusa$ ../fru-generator -v CERN -n FmcDelay1ns4cha -s proto-0 \
++                      -p EDA-02267-V3 > IPMI-FRU
++        spusa$ ls -l
++        total 16
++        -rw-rw-r-- 1 rubini staff 975 Nov 19 18:08 --SDB-CONFIG--
++        -rw-rw-r-- 1 rubini staff 216 Nov 19 18:13 IPMI-FRU
++        -rw-rw-r-- 1 rubini staff  11 Nov 19 18:04 fd-calib
++        -rw-rw-r-- 1 rubini staff   7 Nov 19 18:04 name
++        spusa$ sudo gensdbfs . /lib/firmware/fdelay-eeprom.bin
++        spusa$ sdb-read -l -e 0x100 /lib/firmware/fdelay-eeprom.bin
++        /home/rubini/wip/sdbfs/userspace/sdb-read: listing format is to be defined
++        46696c6544617461:2e202020  00000100-000018ff .
++        46696c6544617461:6e616d65  00000200-00000206 name
++        46696c6544617461:66642d63  00001800-000018ff fd-calib
++        46696c6544617461:49504d49  00000000-000000d7 IPMI-FRU
++        spusa$ ../fru-dump /lib/firmware/fdelay-eeprom.bin
++        /lib/firmware/fdelay-eeprom.bin: manufacturer: CERN
++        /lib/firmware/fdelay-eeprom.bin: product-name: FmcDelay1ns4cha
++        /lib/firmware/fdelay-eeprom.bin: serial-number: proto-0
++        /lib/firmware/fdelay-eeprom.bin: part-number: EDA-02267-V3
++
++As expected, the output file is both a proper sdbfs object and an IPMI
++FRU information blob. The fd-calib file lives at offset 0x1800 and is
++over-allocated to 256 bytes, according to the configuration file for
++gensdbfs.
+diff --git a/Documentation/fmc/mezzanine.txt b/Documentation/fmc/mezzanine.txt
+new file mode 100644
+index 0000000..87910db
+--- /dev/null
++++ b/Documentation/fmc/mezzanine.txt
+@@ -0,0 +1,123 @@
++FMC Driver
++**********
++
++An FMC driver is concerned with the specific mezzanine and associated
++gateware. As such, it is expected to be independent of the carrier
++being used: it will perform I/O accesses only by means of
++carrier-provided functions.
++
++The matching between device and driver is based on the content of the
++EEPROM (as mandated by the FMC standard) or by the actual cores
++configured in the FPGA; the latter technique is used when the FPGA is
++already programmed when the device is registered to the bus core.
++
++In some special cases it is possible for a driver to directly access
++FPGA registers, by means of the `fpga_base' field of the device
++structure. This may be needed for high-bandwidth peripherals like fast
++ADC cards. If the device module registered a remote device (for example
++by means of Etherbone), the `fpga_base' pointer will be NULL.
++Therefore, drivers must be ready to deal with NULL base pointers, and
++fail gracefully.  Most driver, however, are not expected to access the
++pointer directly but run fmc_readl and fmc_writel instead, which will
++work in any case.
++
++In even more special cases, the driver may access carrier-specific
++functionality: the `carrier_name' string allows the driver to check
++which is the current carrier and make use of the `carrier_data'
++pointer.  We chose to use carrier names rather than numeric identifiers
++for greater flexibility, but also to avoid a central registry within
++the `fmc.h' file - we hope other users will exploit our framework with
++their own carriers.  An example use of carrier names is in GPIO setup
++(see *note The GPIO Abstraction::), although the name match is not
++expected to be performed by the driver.  If you depend on specific
++carriers, please check the carrier name and fail gracefully if your
++driver finds it is running in a yet-unknown-to-it environment.
++
++
++ID Table
++========
++
++Like most other Linux drivers, and FMC driver must list all the devices
++which it is able to drive.  This is usually done by means of a device
++table, but in FMC we can match hardware based either on the contents of
++their EEPROM or on the actual FPGA cores that can be enumerated.
++Therefore, we have two tables of identifiers.
++
++Matching of FRU information depends on two names, the manufacturer (or
++vendor) and the device (see *note FMC Identification::); for
++flexibility during production (i.e. before writing to the EEPROM) the
++bus supports a catch-all driver that specifies NULL strings. For this
++reason, the table is specified as pointer-and-length, not a a
++null-terminated array - the entry with NULL names can be a valid entry.
++
++Matching on FPGA cores depends on two numeric fields: the 64-bit vendor
++number and the 32-bit device number. Support for matching based on
++class is not yet implemented.  Each device is expected to be uniquely
++identified by an array of cores (it matches if all of the cores are
++instantiated), and for consistency the list is passed as
++pointer-and-length.  Several similar devices can be driven by the same
++driver, and thus the driver specifies and array of such arrays.
++
++The complete set of involved data structures is thus the following:
++
++        struct fmc_fru_id { char *manufacturer; char *product_name; };
++        struct fmc_sdb_one_id { uint64_t vendor; uint32_t device; };
++        struct fmc_sdb_id { struct fmc_sdb_one_id *cores; int cores_nr; };
++
++        struct fmc_device_id {
++                struct fmc_fru_id *fru_id; int fru_id_nr;
++                struct fmc_sdb_id *sdb_id; int sdb_id_nr;
++        };
++
++A better reference, with full explanation, is the <linux/fmc.h> header.
++
++
++Module Parameters
++=================
++
++Most of the FMC drivers need the same set of kernel parameters. This
++package includes support to implement common parameters by means of
++fields in the `fmc_driver' structure and simple macro definitions.
++
++The parameters are carrier-specific, in that they rely on the busid
++concept, that varies among carriers. For the SPEC, the identifier is a
++PCI bus and devfn number, 16 bits wide in total; drivers for other
++carriers will most likely offer something similar but not identical,
++and some code duplication is unavoidable.
++
++This is the list of parameters that are common to several modules to
++see how they are actually used, please look at spec-trivial.c.
++
++`busid='
++     This is an array of integers, listing carrier-specific
++     identification numbers. For PIC, for example, `0x0400' represents
++     bus 4, slot 0.  If any such ID is specified, the driver will only
++     accept to drive cards that appear in the list (even if the FMC ID
++     matches). This is accomplished by the validate carrier method.
++
++`gateware='
++     The argument is an array of strings. If no busid= is specified,
++     the first string of gateware= is used for all cards; otherwise the
++     identifiers and gateware names are paired one by one, in the order
++     specified.
++
++`show_sdb='
++     For modules supporting it, this parameter asks to show the SDB
++     internal structure by means of kernel messages. It is disabled by
++     default because those lines tend to hide more important messages,
++     if you look at the system console while loading the drivers.
++     Note: the parameter is being obsoleted, because fmc.ko itself now
++     supports dump_sdb= that applies to every client driver.
++
++
++For example, if you are using the trivial driver to load two different
++gateware files to two different cards, you can use the following
++parameters to load different binaries to the cards, after looking up
++the PCI identifiers. This has been tested with a SPEC carrier.
++
++        insmod fmc-trivial.ko \
++                              busid=0x0200,0x0400 \
++                              gateware=fmc/fine-delay.bin,fmc/simple-dio.bin
++
++Please note that not all sub-modules support all of those parameters.
++You can use modinfo to check what is supported by each module.
+diff --git a/Documentation/fmc/parameters.txt b/Documentation/fmc/parameters.txt
+new file mode 100644
+index 0000000..59edf08
+--- /dev/null
++++ b/Documentation/fmc/parameters.txt
+@@ -0,0 +1,56 @@
++Module Parameters in fmc.ko
++***************************
++
++The core driver receives two module parameters, meant to help debugging
++client modules. Both parameters can be modified by writing to
++/sys/module/fmc/parameters/, because they are used when client drivers
++are devices are registered, not when fmc.ko is loaded.
++
++`dump_eeprom='
++     If not zero, the parameter asks the bus controller to dump the
++     EEPROM of any device that is registered, using printk.
++
++`dump_sdb='
++     If not zero, the parameter prints the SDB tree of every FPGA it is
++     loaded by fmc_reprogram(). If greater than one, it asks to dump
++     the binary content of SDB records.  This currently only dumps the
++     top-level SDB array, though.
++
++
++EEPROM dumping avoids repeating lines, since most of the contents is
++usually empty and all bits are one or zero. This is an example of the
++output:
++
++        [ 6625.850480] spec 0000:02:00.0: FPGA programming successful
++        [ 6626.139949] spec 0000:02:00.0: Manufacturer: CERN
++        [ 6626.144666] spec 0000:02:00.0: Product name: FmcDelay1ns4cha
++        [ 6626.150370] FMC: mezzanine 0: 0000:02:00.0 on SPEC
++        [ 6626.155179] FMC: dumping eeprom 0x2000 (8192) bytes
++        [ 6626.160087] 0000: 01 00 00 01  00 0b 00 f3  01 0a 00 a5  85 87 c4 43
++        [ 6626.167069] 0010: 45 52 4e cf  46 6d 63 44  65 6c 61 79  31 6e 73 34
++        [ 6626.174019] 0020: 63 68 61 c7  70 72 6f 74  6f 2d 30 cc  45 44 41 2d
++        [ 6626.180975] 0030: 30 32 32 36  37 2d 56 33  da 32 30 31  32 2d 31 31
++        [...]
++        [ 6626.371366] 0200: 66 64 65 6c  61 79 0a 00  00 00 00 00  00 00 00 00
++        [ 6626.378359] 0210: 00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00
++        [ 6626.385361] [...]
++        [ 6626.387308] 1800: 70 6c 61 63  65 68 6f 6c  64 65 72 ff  ff ff ff ff
++        [ 6626.394259] 1810: ff ff ff ff  ff ff ff ff  ff ff ff ff  ff ff ff ff
++        [ 6626.401250] [...]
++
++The dump of SDB looks like the following; the example shows the simple
++golden gateware for the SPEC card, removing the leading timestamps to
++fit the page:
++
++        spec 0000:02:00.0: SDB: 00000651:e6a542c9 WB4-Crossbar-GSI
++        spec 0000:02:00.0: SDB: 0000ce42:ff07fc47 WR-Periph-Syscon (00000000-000000ff)
++        FMC: mezzanine 0: 0000:02:00.0 on SPEC
++        FMC: poor dump of sdb first level:
++        0000: 53 44 42 2d  00 02 01 00  00 00 00 00  00 00 00 00
++        0010: 00 00 00 00  00 00 01 ff  00 00 00 00  00 00 06 51
++        0020: e6 a5 42 c9  00 00 00 02  20 12 05 11  57 42 34 2d
++        0030: 43 72 6f 73  73 62 61 72  2d 47 53 49  20 20 20 00
++        0040: 00 00 01 01  00 00 00 07  00 00 00 00  00 00 00 00
++        0050: 00 00 00 00  00 00 00 ff  00 00 00 00  00 00 ce 42
++        0060: ff 07 fc 47  00 00 00 01  20 12 03 05  57 52 2d 50
++        0070: 65 72 69 70  68 2d 53 79  73 63 6f 6e  20 20 20 01
 -- 
 1.7.7.2
