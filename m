@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3FRLn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:43:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55878 "EHLO
+	id S932147Ab3FRLoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:44:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55913 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319Ab3FRLnv (ORCPT
+	with ESMTP id S932080Ab3FRLn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:43:51 -0400
+	Tue, 18 Jun 2013 07:43:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>,
+Cc: George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 02/93] libata: make ata_exec_internal_sg honor DMADIR
-Date: Tue, 18 Jun 2013 12:42:10 +0100
-Message-Id: <1371555821-12820-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 09/93] usb: dwc3: gadget: free trb pool only from epnum 2
+Date: Tue, 18 Jun 2013 12:42:17 +0100
+Message-Id: <1371555821-12820-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,92 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Pelletier <plr.vincent@gmail.com>
+From: George Cherian <george.cherian@ti.com>
 
-commit e771451c0a831d96a7c14b0ca8a8ec671d98567b upstream.
+commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
 
-libata honors DMADIR for regular commands, but not for internal commands
-used (among other) during device initialisation.
+we never allocate a TRB pool for physical endpoints
+0 and 1 so trying to free it (a invalid TRB pool pointer)
+will lead us in a warning while removing dwc3.ko module.
 
-This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
-(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
-after a few tries.
+In order to fix the situation, all we have to do is skip
+dwc3_free_trb_pool() for physical endpoints 0 and 1 just
+as we while deleting endpoints from the endpoints list.
 
-Log output of the bridge being hot-plugged with an ATAPI drive:
-
-  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
-  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9631.212939] ata1: hard resetting link
-  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
-  [ 9632.106407] ata1.00: applying bridge limits
-  [ 9632.108151] ata1.00: configured for UDMA/33
-  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
-  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9637.105335] ata1: hard resetting link
-  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9638.047878] ata1.00: configured for UDMA/33
-  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
-  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
-  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
-  [ 9643.044979] ata1: hard resetting link
-  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9643.987471] ata1.00: configured for UDMA/33
-  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
-  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9648.984619] ata1.00: disabled
-  [ 9649.000593] ata1: hard resetting link
-  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9649.955864] ata1: EH complete
-
-With this patch, the drive enumerates correctly when libata is loaded with
-atapi_dmadir=1:
-
-  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
-  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9891.810900] ata1: hard resetting link
-  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
-  [ 9892.763558] ata1.00: applying bridge limits
-  [ 9892.765393] ata1.00: configured for UDMA/33
-  [ 9892.786063] ata1: EH complete
-  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
-  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
-  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
-  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
-
-Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
-http://marc.info/?l=linux-ide&m=136121147832295&w=2
-
-tj: minor formatting changes.
-
-Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ luis: backport to 3.5: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/dwc3/gadget.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 23f092d..9e47300 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -1599,6 +1599,12 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
- 	qc->tf = *tf;
- 	if (cdb)
- 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
-+
-+	/* some SATA bridges need us to indicate data xfer direction */
-+	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
-+	    dma_dir == DMA_FROM_DEVICE)
-+		qc->tf.feature |= ATAPI_DMADIR;
-+
- 	qc->flags |= ATA_QCFLAG_RESULT_TF;
- 	qc->dma_dir = dma_dir;
- 	if (dma_dir != DMA_NONE) {
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index fae7885..3530c2b 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1537,10 +1537,19 @@ static void dwc3_gadget_free_endpoints(struct dwc3 *dwc)
+ 
+ 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
+ 		dep = dwc->eps[epnum];
+-		dwc3_free_trb_pool(dep);
+-
+-		if (epnum != 0 && epnum != 1)
++		/*
++		 * Physical endpoints 0 and 1 are special; they form the
++		 * bi-directional USB endpoint 0.
++		 *
++		 * For those two physical endpoints, we don't allocate a TRB
++		 * pool nor do we add them the endpoints list. Due to that, we
++		 * shouldn't do these two operations otherwise we would end up
++		 * with all sorts of bugs when removing dwc3.ko.
++		 */
++		if (epnum != 0 && epnum != 1) {
++			dwc3_free_trb_pool(dep);
+ 			list_del(&dep->endpoint.ep_list);
++		}
+ 
+ 		kfree(dep);
+ 	}
 -- 
 1.8.1.2
 
