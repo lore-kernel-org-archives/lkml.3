@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3FROqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:46:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48454 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab3FROqh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:46:37 -0400
-Date: Tue, 18 Jun 2013 07:47:15 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Pavel Machek <pavel@denx.de>, dzu@denx.de, hjk@hansjkoch.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
- using command line option
-Message-ID: <20130618144715.GB26587@kroah.com>
-References: <20130412184335.GA5510@amd.pavel.ucw.cz>
- <20130617134741.GA15547@amd.pavel.ucw.cz>
- <20130617173738.GA14921@kroah.com>
- <CAK9yfHxMpzPuDP4D8EztaUxseuZCX7VEHFB7dBWtntDDjZJD6g@mail.gmail.com>
+	id S1755790Ab3FROrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab3FROrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:47:01 -0400
+Date: Tue, 18 Jun 2013 16:42:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] hw_breakpoint: Introduce "struct bp_cpuinfo"
+Message-ID: <20130618144225.GA26920@redhat.com>
+References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130602194912.GA3277@redhat.com> <20130602195057.GC3277@redhat.com> <20130618123741.GC17619@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK9yfHxMpzPuDP4D8EztaUxseuZCX7VEHFB7dBWtntDDjZJD6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130618123741.GC17619@somewhere.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:32:33AM +0530, Sachin Kamat wrote:
-> Hi Greg,
-> 
-> On 17 June 2013 23:07, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 17, 2013 at 03:47:41PM +0200, Pavel Machek wrote:
-> >> Hi!
-> >>
-> >> > This adds ability to bind uio driver to given open firmware device
-> >> > using command line option. Thus, userspace driver can be developed and
-> >> > used without modifying the kernel.
-> >> >
-> >> > Signed-off-by: Pavel Machek <pavel@denx.de>
-> >>
-> >> Ping? Greg, could you apply this patch? Or is there someone else I
-> >> should ask to apply it?
+On 06/18, Frederic Weisbecker wrote:
+>
+> On Sun, Jun 02, 2013 at 09:50:57PM +0200, Oleg Nesterov wrote:
+> > This patch simply moves all per-cpu variables into the new single
+> > per-cpu "struct bp_cpuinfo".
 > >
-> > Ugh, Hans seems to have dropped off of the net for a long time now, so I
-> > guess I'll start queueing up UIO patches again.  Care to resend this?
+> > To me this looks more logical and clean, but this can also simplify
+> > the further potential changes. In particular, I do not think this
+> > memory should be per-cpu, it is never used "locally". After this
+> > change it is trivial to turn it into, say, bootmem[nr_cpu_ids].
 > >
-> 
-> Even I have a couple of outstanding UIO patches [1-2]. Shall I resend
-> them as well?
-> 
-> [1] https://lkml.org/lkml/2013/3/14/154
-> [2] https://patchwork.kernel.org/patch/2268921/
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> I'm ok with the patch because it's indeed more logical and clean to pack the info
+> to a single struct.
 
-Yes, please do.
+Great,
 
-thanks,
+> But I'm not sure why you think using per-cpu is a problem. It's not only
+> deemed for optimized local uses,
 
-greg k-h
+But it is.
+
+Simplest example,
+
+	for_each_possible_cpu(cpu)
+		total_count = per_cpu(per_cpu_count, cpu);
+
+Every per_cpu() likely means the cache miss. Not to mention we need the
+additional math to calculate the address of the local counter.
+
+	for_each_possible_cpu(cpu)
+		total_count = bootmem_or_kmalloc_array[cpu];
+
+is much better in this respect.
+
+And note also that per_cpu_count above can share the cacheline with
+another "hot" per-cpu variable.
+
+> it's also convenient for allocations and
+> de-allocation, or static definitions.
+
+Yes, this is advantage. But afaics the only one.
+
+> I'm not sure why bootmem would make
+> more sense.
+
+Or kcalloc(nr_cpu_ids), I didn't really mean that alloc_bootmem() is
+necessarily the best option.
+
+> Other than this in the changelog, the patch is nice, thanks!
+>
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+Thanks ;)
+
+Oleg.
+
