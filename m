@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933515Ab3FRQdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:33:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49378 "EHLO
+	id S933529Ab3FRQdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:33:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933132Ab3FRQRk (ORCPT
+	with ESMTP id S933083Ab3FRQRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:40 -0400
+	Tue, 18 Jun 2013 12:17:39 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Schutt <jaschut@sandia.gov>, Alex Elder <elder@inktank.com>
-Subject: [ 05/48] ceph: add cpu_to_le32() calls when encoding a reconnect capability
-Date: Tue, 18 Jun 2013 09:17:31 -0700
-Message-Id: <20130618161726.669061235@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 04/48] libceph: must hold mutex for reset_changed_osds()
+Date: Tue, 18 Jun 2013 09:17:30 -0700
+Message-Id: <20130618161726.536925812@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,67 +28,55 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jim Schutt <jaschut@sandia.gov>
+From: Alex Elder <elder@inktank.com>
 
-commit c420276a532a10ef59849adc2681f45306166b89 upstream.
+commit 14d2f38df67fadee34625fcbd282ee22514c4846 upstream.
 
-In his review, Alex Elder mentioned that he hadn't checked that
-num_fcntl_locks and num_flock_locks were properly decoded on the
-server side, from a le32 over-the-wire type to a cpu type.
-I checked, and AFAICS it is done; those interested can consult
-    Locker::_do_cap_update()
-in src/mds/Locker.cc and src/include/encoding.h in the Ceph server
-code (git://github.com/ceph/ceph).
+An osd client has a red-black tree describing its osds, and
+occasionally we would get crashes due to one of these trees tree
+becoming corrupt somehow.
 
-I also checked the server side for flock_len decoding, and I believe
-that also happens correctly, by virtue of having been declared
-__le32 in struct ceph_mds_cap_reconnect, in src/include/ceph_fs.h.
+The problem turned out to be that reset_changed_osds() was being
+called without protection of the osd client request mutex.  That
+function would call __reset_osd() for any osd that had changed, and
+__reset_osd() would call __remove_osd() for any osd with no
+outstanding requests, and finally __remove_osd() would remove the
+corresponding entry from the red-black tree.  Thus, the tree was
+getting modified without having any lock protection, and was
+vulnerable to problems due to concurrent updates.
 
-Signed-off-by: Jim Schutt <jaschut@sandia.gov>
-Reviewed-by: Alex Elder <elder@inktank.com>
+This appears to be the only osd tree updating path that has this
+problem.  It can be fairly easily fixed by moving the call up
+a few lines, to just before the request mutex gets dropped
+in kick_requests().
+
+This resolves:
+    http://tracker.ceph.com/issues/5043
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/locks.c      |    7 +++++--
- fs/ceph/mds_client.c |    2 +-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ net/ceph/osd_client.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ceph/locks.c
-+++ b/fs/ceph/locks.c
-@@ -206,10 +206,12 @@ int ceph_encode_locks(struct inode *inod
- 	int err = 0;
- 	int seen_fcntl = 0;
- 	int seen_flock = 0;
-+	__le32 nlocks;
- 
- 	dout("encoding %d flock and %d fcntl locks", num_flock_locks,
- 	     num_fcntl_locks);
--	err = ceph_pagelist_append(pagelist, &num_fcntl_locks, sizeof(u32));
-+	nlocks = cpu_to_le32(num_fcntl_locks);
-+	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
- 	if (err)
- 		goto fail;
- 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
-@@ -229,7 +231,8 @@ int ceph_encode_locks(struct inode *inod
- 			goto fail;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1399,13 +1399,13 @@ static void kick_requests(struct ceph_os
+ 		__register_request(osdc, req);
+ 		__unregister_linger_request(osdc, req);
  	}
++	reset_changed_osds(osdc);
+ 	mutex_unlock(&osdc->request_mutex);
  
--	err = ceph_pagelist_append(pagelist, &num_flock_locks, sizeof(u32));
-+	nlocks = cpu_to_le32(num_flock_locks);
-+	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
- 	if (err)
- 		goto fail;
- 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -2481,7 +2481,7 @@ static int encode_caps_cb(struct inode *
- 			lock_flocks();
- 			ceph_count_locks(inode, &num_fcntl_locks,
- 					 &num_flock_locks);
--			rec.v2.flock_len = (2*sizeof(u32) +
-+			rec.v2.flock_len = cpu_to_le32(2*sizeof(u32) +
- 					    (num_fcntl_locks+num_flock_locks) *
- 					    sizeof(struct ceph_filelock));
- 			unlock_flocks();
+ 	if (needmap) {
+ 		dout("%d requests for down osds, need new map\n", needmap);
+ 		ceph_monc_request_next_osdmap(&osdc->client->monc);
+ 	}
+-	reset_changed_osds(osdc);
+ }
+ 
+ 
 
 
