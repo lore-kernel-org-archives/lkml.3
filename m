@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab3FRQOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:14:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49341 "EHLO
+	id S933101Ab3FRQOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:14:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068Ab3FRQOs (ORCPT
+	with ESMTP id S932886Ab3FRQOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:48 -0400
+	Tue, 18 Jun 2013 12:14:43 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 23/26] libceph: wrap auth methods in a mutex
-Date: Tue, 18 Jun 2013 09:15:03 -0700
-Message-Id: <20130618161238.131753669@linuxfoundation.org>
+        Rafael Aquini <aquini@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 15/26] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
+Date: Tue, 18 Jun 2013 09:14:55 -0700
+Message-Id: <20130618161236.027904002@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -28,231 +33,66 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Rafael Aquini <aquini@redhat.com>
 
-commit e9966076cdd952e19f2dd4854cd719be0d7cbebc upstream.
+commit cbab0e4eec299e9059199ebe6daf48730be46d2b upstream.
 
-The auth code is called from a variety of contexts, include the mon_client
-(protected by the monc's mutex) and the messenger callbacks (currently
-protected by nothing).  Avoid chaos by protecting all auth state with a
-mutex.  Nothing is blocking, so this should be simple and lightweight.
+read_swap_cache_async() can race against get_swap_page(), and stumble
+across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
+into the swapcache yet.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+This transient swap_map state is expected to be transitory, but the
+actual placement of discard at scan_swap_map() inserts a wait for I/O
+completion thus making the thread at read_swap_cache_async() to loop
+around its -EEXIST case, while the other end at get_swap_page() is
+scheduled away at scan_swap_map().  This can leave the system deadlocked
+if the I/O completion happens to be waiting on the CPU waitqueue where
+read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+
+This patch introduces a cond_resched() call to make the aforementioned
+read_swap_cache_async() busy loop condition to bail out when necessary,
+thus avoiding the subtle race window.
+
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Shaohua Li <shli@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ceph/auth.h |    2 +
- net/ceph/auth.c           |   78 +++++++++++++++++++++++++++++++++-------------
- 2 files changed, 58 insertions(+), 22 deletions(-)
+ mm/swap_state.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -78,6 +78,8 @@ struct ceph_auth_client {
- 	u64 global_id;          /* our unique id in system */
- 	const struct ceph_crypto_key *key;     /* our secret key */
- 	unsigned want_keys;     /* which services we want */
-+
-+	struct mutex mutex;
- };
- 
- extern struct ceph_auth_client *ceph_auth_init(const char *name,
---- a/net/ceph/auth.c
-+++ b/net/ceph/auth.c
-@@ -47,6 +47,7 @@ struct ceph_auth_client *ceph_auth_init(
- 	if (!ac)
- 		goto out;
- 
-+	mutex_init(&ac->mutex);
- 	ac->negotiating = true;
- 	if (name)
- 		ac->name = name;
-@@ -73,10 +74,12 @@ void ceph_auth_destroy(struct ceph_auth_
-  */
- void ceph_auth_reset(struct ceph_auth_client *ac)
- {
-+	mutex_lock(&ac->mutex);
- 	dout("auth_reset %p\n", ac);
- 	if (ac->ops && !ac->negotiating)
- 		ac->ops->reset(ac);
- 	ac->negotiating = true;
-+	mutex_unlock(&ac->mutex);
- }
- 
- int ceph_entity_name_encode(const char *name, void **p, void *end)
-@@ -102,6 +105,7 @@ int ceph_auth_build_hello(struct ceph_au
- 	int i, num;
- 	int ret;
- 
-+	mutex_lock(&ac->mutex);
- 	dout("auth_build_hello\n");
- 	monhdr->have_version = 0;
- 	monhdr->session_mon = cpu_to_le16(-1);
-@@ -122,15 +126,19 @@ int ceph_auth_build_hello(struct ceph_au
- 
- 	ret = ceph_entity_name_encode(ac->name, &p, end);
- 	if (ret < 0)
--		return ret;
-+		goto out;
- 	ceph_decode_need(&p, end, sizeof(u64), bad);
- 	ceph_encode_64(&p, ac->global_id);
- 
- 	ceph_encode_32(&lenp, p - lenp - sizeof(u32));
--	return p - buf;
-+	ret = p - buf;
-+out:
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- 
- bad:
--	return -ERANGE;
-+	ret = -ERANGE;
-+	goto out;
- }
- 
- static int ceph_build_auth_request(struct ceph_auth_client *ac,
-@@ -151,11 +159,13 @@ static int ceph_build_auth_request(struc
- 	if (ret < 0) {
- 		pr_err("error %d building auth method %s request\n", ret,
- 		       ac->ops->name);
--		return ret;
-+		goto out;
- 	}
- 	dout(" built request %d bytes\n", ret);
- 	ceph_encode_32(&p, ret);
--	return p + ret - msg_buf;
-+	ret = p + ret - msg_buf;
-+out:
-+	return ret;
- }
- 
- /*
-@@ -176,6 +186,7 @@ int ceph_handle_auth_reply(struct ceph_a
- 	int result_msg_len;
- 	int ret = -EINVAL;
- 
-+	mutex_lock(&ac->mutex);
- 	dout("handle_auth_reply %p %p\n", p, end);
- 	ceph_decode_need(&p, end, sizeof(u32) * 3 + sizeof(u64), bad);
- 	protocol = ceph_decode_32(&p);
-@@ -227,35 +238,44 @@ int ceph_handle_auth_reply(struct ceph_a
- 
- 	ret = ac->ops->handle_reply(ac, result, payload, payload_end);
- 	if (ret == -EAGAIN) {
--		return ceph_build_auth_request(ac, reply_buf, reply_len);
-+		ret = ceph_build_auth_request(ac, reply_buf, reply_len);
- 	} else if (ret) {
- 		pr_err("auth method '%s' error %d\n", ac->ops->name, ret);
--		return ret;
- 	}
--	return 0;
- 
--bad:
--	pr_err("failed to decode auth msg\n");
- out:
-+	mutex_unlock(&ac->mutex);
- 	return ret;
-+
-+bad:
-+	pr_err("failed to decode auth msg\n");
-+	ret = -EINVAL;
-+	goto out;
- }
- 
- int ceph_build_auth(struct ceph_auth_client *ac,
- 		    void *msg_buf, size_t msg_len)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (!ac->protocol)
--		return ceph_auth_build_hello(ac, msg_buf, msg_len);
--	BUG_ON(!ac->ops);
--	if (ac->ops->should_authenticate(ac))
--		return ceph_build_auth_request(ac, msg_buf, msg_len);
--	return 0;
-+		ret = ceph_auth_build_hello(ac, msg_buf, msg_len);
-+	else if (ac->ops->should_authenticate(ac))
-+		ret = ceph_build_auth_request(ac, msg_buf, msg_len);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- 
- int ceph_auth_is_authenticated(struct ceph_auth_client *ac)
- {
--	if (!ac->ops)
--		return 0;
--	return ac->ops->is_authenticated(ac);
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
-+	if (ac->ops)
-+		ret = ac->ops->is_authenticated(ac);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_is_authenticated);
- 
-@@ -263,17 +283,23 @@ int ceph_auth_create_authorizer(struct c
- 				int peer_type,
- 				struct ceph_auth_handshake *auth)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->create_authorizer)
--		return ac->ops->create_authorizer(ac, peer_type, auth);
--	return 0;
-+		ret = ac->ops->create_authorizer(ac, peer_type, auth);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_create_authorizer);
- 
- void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
- 				  struct ceph_authorizer *a)
- {
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->destroy_authorizer)
- 		ac->ops->destroy_authorizer(ac, a);
-+	mutex_unlock(&ac->mutex);
- }
- EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
- 
-@@ -283,8 +309,10 @@ int ceph_auth_update_authorizer(struct c
- {
- 	int ret = 0;
- 
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->update_authorizer)
- 		ret = ac->ops->update_authorizer(ac, peer_type, a);
-+	mutex_unlock(&ac->mutex);
- 	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_update_authorizer);
-@@ -292,15 +320,21 @@ EXPORT_SYMBOL(ceph_auth_update_authorize
- int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
- 				      struct ceph_authorizer *a, size_t len)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->verify_authorizer_reply)
--		return ac->ops->verify_authorizer_reply(ac, a, len);
--	return 0;
-+		ret = ac->ops->verify_authorizer_reply(ac, a, len);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
- 
- void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
- {
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->invalidate_authorizer)
- 		ac->ops->invalidate_authorizer(ac, peer_type);
-+	mutex_unlock(&ac->mutex);
- }
- EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -313,8 +313,24 @@ struct page *read_swap_cache_async(swp_e
+ 		 * Swap entry may have been freed since our caller observed it.
+ 		 */
+ 		err = swapcache_prepare(entry);
+-		if (err == -EEXIST) {	/* seems racy */
++		if (err == -EEXIST) {
+ 			radix_tree_preload_end();
++			/*
++			 * We might race against get_swap_page() and stumble
++			 * across a SWAP_HAS_CACHE swap_map entry whose page
++			 * has not been brought into the swapcache yet, while
++			 * the other end is scheduled away waiting on discard
++			 * I/O completion at scan_swap_map().
++			 *
++			 * In order to avoid turning this transitory state
++			 * into a permanent loop around this -EEXIST case
++			 * if !CONFIG_PREEMPT and the I/O completion happens
++			 * to be waiting on the CPU waitqueue where we are now
++			 * busy looping, we just conditionally invoke the
++			 * scheduler here, if there are some more important
++			 * tasks to run.
++			 */
++			cond_resched();
+ 			continue;
+ 		}
+ 		if (err) {		/* swp entry is obsolete ? */
 
 
