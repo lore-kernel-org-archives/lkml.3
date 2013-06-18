@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3FRIDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:03:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51656 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab3FRID1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:03:27 -0400
-Date: Tue, 18 Jun 2013 11:01:30 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Chao Xie <chao.xie@marvell.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <rogerq@ti.com>,
-        <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <xiechao.mail@gmail.com>
-Subject: Re: [PATCH] USB: initialize or shutdown PHY when add or remove host
- controller
-Message-ID: <20130618080130.GC5461@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1371539701-11441-1-git-send-email-chao.xie@marvell.com>
+	id S1753895Ab3FRIFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:05:39 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:22376 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3FRIFa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:05:30 -0400
+Message-ID: <51C014CA.7040700@atmel.com>
+Date: Tue, 18 Jun 2013 10:05:30 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
-Content-Disposition: inline
-In-Reply-To: <1371539701-11441-1-git-send-email-chao.xie@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Arnd Bergmann <arnd@arndb.de>, "balbi@ti.com" <balbi@ti.com>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Shen, Voice" <Voice.Shen@atmel.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "Linux Kernel list" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
+Subject: Re: RE : [GIT PULL] at91: Device Tree update for 3.11 #2
+References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com> <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com> <20130615015224.GA25585@quad.lixom.net> <EABCC4A72A203F4BA2E04297CF0282C427D1E112@hnombx01.corp.atmel.com> <CAOesGMjHTSB3y3+TxLqM=s06jg8Qx8XnEeW9c2dDcWnneZPVXA@mail.gmail.com>
+In-Reply-To: <CAOesGMjHTSB3y3+TxLqM=s06jg8Qx8XnEeW9c2dDcWnneZPVXA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tqI+Z3u+9OQ7kwn0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 17/06/2013 18:56, Olof Johansson :
+> On Mon, Jun 17, 2013 at 1:34 AM, Ferre, Nicolas <Nicolas.FERRE@atmel.com> wrote:
+>>
+>>> On Sat, Jun 15, 2013 at 12:47:47AM +0200, Nicolas Ferre wrote:
+>>>> Arnd, Olof,
+>>>>
+>>>> Additional pull-request for AT91 DT patches.
+>>>> It contains the remaining part of the USB gadget pull-request that I sent you
+>>>> last week. After having split it, here is the DT part.
+>>>> It also contains the update of DMA bindings: it is the AT91 part the should go
+>>>> through arm-soc. I have included the patch (ARM: at91: dt: add header to define
+>>>> at_hdmac configuration) so that we avoid build errors whichever git tree
+>>>> (slave-dma or arm-soc) is merged first.
+>>>> A SPI DT patch for at91sam9x5 is also added.
+>>>>
+>>>> Thanks, best regards,
+>>>>
+>>>> The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
+>>>>
+>>>>    ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
+>>>>
+>>>> are available in the git repository at:
+>>>>
+>>>>    git://github.com/at91linux/linux-at91.git tags/at91-dt
+>>>
+>>> Pulled, thanks.
+>>
+>> Hi,
+>>
+>> I do not see it appearing in arm-soc/at91/dt branch even though is it present in arm-soc/for-next: is it normal?
+>
+> I had missed to push that (and the driver branch) up. They are there
+> now, as at91/dt2 and at91/drivers. Fixed the bad branch name in
+> arm-soc-for-next-contents.txt as well.
 
-Hi,
+Nice, thanks.
 
-On Tue, Jun 18, 2013 at 03:15:01AM -0400, Chao Xie wrote:
-> Some controller need software to initialize PHY before add
-> host controller, and shut down PHY after remove host controller.
-> Add the generic code for these controllers so they do not need
-> do it in its own host controller driver.
->=20
-> Signed-off-by: Chao Xie <chao.xie@marvell.com>
-> ---
->  drivers/usb/core/hcd.c |   19 ++++++++++++++++++-
->  1 files changed, 18 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index d53547d..b26196b 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -43,6 +43,7 @@
-> =20
->  #include <linux/usb.h>
->  #include <linux/usb/hcd.h>
-> +#include <linux/usb/phy.h>
-> =20
->  #include "usb.h"
-> =20
-> @@ -2531,12 +2532,22 @@ int usb_add_hcd(struct usb_hcd *hcd,
->  	 */
->  	set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
-> =20
-> +	/* Initialize the PHY before other hardware operation. */
-> +	if (hcd->phy) {
-
-this looks wrong for two reasons:
-
-a) you're not grabbing the PHY here.
-
-	You can't just assume another entity grabbed your PHY for you.
-
-b) usb_get_phy() returns an error number
-
-	so the proper check would be !IS_ERR()
-
---=20
-balbi
-
---tqI+Z3u+9OQ7kwn0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwBPaAAoJEIaOsuA1yqREQKEP/R7KOSP/hWVy6fL+fXAmVA7y
-2OufaAwiuHj6hgpg7Nt/uqNqG8Vq7KVvWlXqnA3v4x5fjbXr2tEYPZWJjOVAwwy9
-t3WGaCmwJoxFqt1fP/qd1IpO5IgxNUewYo1R8xAWLf1DW+Tk66C7aA5rT6WvJ1og
-H9t5Vkv0Xu70fPPnw5E8kEUShbGCwA8YrHlennPY0rpZPdiXcUC9eaEjEGZPAUME
-nl4oCxvPKUiYDOKR2WrFyXfg3RcE5KHsU3q42K/Vt4O6OiziPGtYPmVO7oKROr7l
-RzuBlAxyj+xU+PmAAQvk3vrQQIlBVnMdSR45IkW5wB3URj9H2j1b6gySDoBrAAuI
-PK1Kfr+wdv9rHmDGtuNVNYmTXrSKMLAe7zzZRnLHeNfHEzHD2OqfYVNm9xayTGBB
-8DK7Tr2BFXoqyeVFjDlsfeuNHz1n6frdUswsQllPezflQPs2+hLPDwXN1essDtQ5
-wl9v8xg79NYMd3DwDWmYhulB6pizjIikUVHKyYW6ZBVSyTsEDD4xvLQW8qn5m6Rp
-9lmoaiNq3Zmr40DNfviOM/lZrleKFRdlIr/wnnbtpyz5pmOLXzoCxLltOY9iPVB8
-itQMssagI7RC2ir5nT7QT5Winu8NeTi6x7MzFDyohXGZ+wiuCkkFEq9hQfOXPXN7
-w5OXmPB+twLTmtwNQqlo
-=ALnt
------END PGP SIGNATURE-----
-
---tqI+Z3u+9OQ7kwn0--
+Bye,
+-- 
+Nicolas Ferre
