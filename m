@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3FRJFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:05:53 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:33606 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3FRJFv (ORCPT
+	id S1755454Ab3FRJIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:08:39 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:35996 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab3FRJIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:05:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <5220.1371518734@ale.ozlabs.ibm.com>
-References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
- <1371244086-9189-9-git-send-email-grant.likely@linaro.org>
- <4521.1371518445@ale.ozlabs.ibm.com> <5220.1371518734@ale.ozlabs.ibm.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 18 Jun 2013 10:05:31 +0100
-X-Google-Sender-Auth: wfS3_Yht7vq3qVUEfHAkMzKFlcQ
-Message-ID: <CACxGe6s+K0xF0pnLjKoKXtz_YNoeM2+erhr_g2dX4ONpddRNGA@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] irqdomain: Refactor irq_domain_associate_many()
-To: Michael Neuling <mikey@neuling.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 05:08:36 -0400
+Message-ID: <1371546510.3252.224.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 18 Jun 2013 02:08:30 -0700
+In-Reply-To: <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>
+	 <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 2:25 AM, Michael Neuling <mikey@neuling.org> wrote:
-> Michael Neuling <mikey@neuling.org> wrote:
->
->> Grant,
->>
->> In next-20130617 we are getting the below crash on POWER7.  Bisecting,
->> points to this patch (d39046ec72 in next)
->
-> Also, reverting just d39046ec72 fixes the crash in next-20130617.
+On Tue, 2013-06-18 at 11:58 +0300, Eliezer Tamir wrote:
+> select/poll busy-poll support.
+> 
 
-Odd. Of all the changes in that series, I would not have expected that
-one to cause any problems. I'm digging into it now...
 
-g.
+>   */
+> -static inline u64 ll_end_time(struct sock *sk)
+> +static inline u64 ll_sk_end_time(struct sock *sk)
+>  {
+> -	u64 end_time = ACCESS_ONCE(sk->sk_ll_usec);
+> -
+> -	/* we don't mind a ~2.5% imprecision
+> -	 * sk->sk_ll_usec is a u_int so this can't overflow
+> -	 */
+> -	end_time = (end_time << 10) + sched_clock();
+> +	return (ACCESS_ONCE(sk->sk_ll_usec) << 10) + sched_clock();
+> +}
+>  
+
+This is the fourth time you try to introduce an overflow in this code.
+
+(same for ll_end_time())
+
+
+
+
