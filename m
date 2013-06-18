@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3FROfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:35:12 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:42229 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab3FROfJ (ORCPT
+	id S932114Ab3FROfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:35:55 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:48750 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab3FROfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:35:09 -0400
-Date: Tue, 18 Jun 2013 07:35:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Imre Deak <imre.deak@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] lib/scatterlist: factor out
- sg_miter_get_next_page() from sg_miter_next()
-Message-ID: <20130618143505.GD2767@htj.dyndns.org>
-References: <1371562294-13642-1-git-send-email-akinobu.mita@gmail.com>
- <1371562294-13642-2-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371562294-13642-2-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Jun 2013 10:35:54 -0400
+Message-ID: <1371566148.3252.255.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 18 Jun 2013 07:35:48 -0700
+In-Reply-To: <51C05FC1.4000201@linux.intel.com>
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>
+	  <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
+	 <1371551139.3252.249.camel@edumazet-glaptop>
+	 <51C05FC1.4000201@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:31:31PM +0900, Akinobu Mita wrote:
-> This function is used to proceed page iterator to the next page if
-> necessary, and will be used to implement the variants of
-> sg_copy_{from,to}_buffer() later.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Imre Deak <imre.deak@intel.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-crypto@vger.kernel.org
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Douglas Gilbert <dgilbert@interlog.com>
-> Cc: linux-scsi@vger.kernel.org
+On Tue, 2013-06-18 at 16:25 +0300, Eliezer Tamir wrote:
 
-Acked-by: Tejun Heo <tj@kernel.org>
+> One other thing,
+> sock_poll() will only ll_poll if the flag was set _and_ the socket has a
+> none-zero value in sk->sk_ll_usec so you still only poll on sockets
+> that were enabled for LLS, not on every socket.
 
-Thanks.
+But sockets are default enabled for LLS.
 
--- 
-tejun
+sock_init_data()
+{
+	...
+	sk->sk_ll_usec      =   sysctl_net_ll_poll; 
+	...
+}
+
+
+
