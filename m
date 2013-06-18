@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3FRMxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:53:10 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41265 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab3FRMxJ (ORCPT
+	id S1755063Ab3FRMx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:53:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43980 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab3FRMx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:53:09 -0400
-Date: Tue, 18 Jun 2013 14:53:04 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: dzu@denx.de, hjk@hansjkoch.de, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] fix UIO with device tree but no assigned interrupt
-Message-ID: <20130618125304.GA15179@amd.pavel.ucw.cz>
-References: <20130617134957.GA15602@amd.pavel.ucw.cz>
- <20130617234635.GA4521@kroah.com>
+	Tue, 18 Jun 2013 08:53:57 -0400
+Date: Tue, 18 Jun 2013 14:53:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>, eranian@google.com
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130618125339.GC28407@twins.programming.kicks-ass.net>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+ <20130613131057.GA15997@somewhere>
+ <20130613140207.GW133453@redhat.com>
+ <20130618103632.GO3204@twins.programming.kicks-ass.net>
+ <20130618120436.GA17619@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130617234635.GA4521@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130618120436.GA17619@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-06-17 16:46:36, Greg KH wrote:
-> On Mon, Jun 17, 2013 at 03:49:57PM +0200, Pavel Machek wrote:
-> > If device is initialized from device tree, but has no interrupt assigned,
-> > uio will still try to request and interrupt old way, fails, and fails registration.
-> >    
-> > This is wrong; don't try initializing irq using platform data if device tree is
-> > available.
-> 
-> Doesn't apply cleanly to my tree, can you redo it against the
-> char-misc-next branch of my git tree?
+On Tue, Jun 18, 2013 at 02:04:38PM +0200, Frederic Weisbecker wrote:
+> I see. So what do you think, should I push my patch that deactivates
+> the watchdog to Ingo until this below patch gets ready? It would be nice to
+> have a solution for 3.11.
 
-Done. I also notice problems with leaking memory, fixed those, too.
+I don't care too much either way.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> If you prefer I can work on getting your below proposal into shape. I'm on
+> vacancies next week but I can try to get it ready until the next merge window
+> closes.
+
+Right, except for some 'fun' details the proposed patch isn't actually
+that hard. Enjoy your holidays.
