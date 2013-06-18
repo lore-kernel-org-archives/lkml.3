@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3FRIlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:41:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62427 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab3FRIlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:41:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
-   d="scan'208";a="355247535"
-Date: Tue, 18 Jun 2013 10:40:17 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lee.jones@linaro.org,
-        Miguel Aguilar <miguel.aguilar@ridgerun.com>
-Subject: Re: [PATCH Resend 1/1] mfd: davinci_voicecodec: Convert to use
- devm_* APIs
-Message-ID: <20130618084017.GA7161@zurbaran>
-References: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
+	id S1754878Ab3FRInF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:43:05 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:43269 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab3FRInD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:43:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130618154515.828365d615bbe6b93169e706@canb.auug.org.au>
+References: <20130618154515.828365d615bbe6b93169e706@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 18 Jun 2013 09:42:42 +0100
+X-Google-Sender-Auth: 2aFzzwjBIPgic_rVwOac8Qqx8-o
+Message-ID: <CACxGe6soHMDvt+bG=m+_A5qwxqXjcgr8jORoPJwMHeHAr8__ig@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the irqdomain tree with the tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+On Tue, Jun 18, 2013 at 6:45 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> Today's linux-next merge of the irqdomain tree got a conflict in
+> kernel/irq/irqdomain.c between commit c5cdc67a58a2 ("irqdomain: Remove
+> temporary MIPS workaround code") from the mips tree and commit
+> bd4641e31e90 ("irq: fix checkpatch error") from the irqdomain tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-On Wed, Jun 12, 2013 at 01:49:42PM +0530, Sachin Kamat wrote:
-> devm_* APIs are device managed and make code simpler.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
-> ---
-> CC'd Lee Jones
->  
-> Patch is based on mfd-next tree and compile tested.
-> This driver gives following compilation error (not introduced by this patch):
-> drivers/mfd/davinci_voicecodec.c:86:3: error: implicit declaration
-> of function ‘io_v2p’ [-Werror=implicit-function-declaration]
->    (dma_addr_t)(io_v2p(davinci_vc->base) + DAVINCI_VC_WFIFO);
-> 
-> In order to test my changes I added the following to davinci_voicecodec.h file:
-> +#define IO_OFFSET      0xfd000000 /* Virtual IO = 0xfec00000 */
-> +#define io_v2p(va)     ((va) - IO_OFFSET)
-> 
-> I am not sure if these changes are right fix for the above error.
-io_v2p is define in davinci's mach/hardware.h so I believe this is what
-you should include in davinci_voicecodec.h.
+Looks good, thanks Stephen.
 
-Cheers,
-Samuel.
+g.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc kernel/irq/irqdomain.c
+> index a341b3d,13f2654..0000000
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@@ -665,8 -475,20 +475,8 @@@ unsigned int irq_create_of_mapping(stru
+>
+>         domain = controller ? irq_find_host(controller) : irq_default_domain;
+>         if (!domain) {
+> -               pr_warning("no irq domain found for %s !\n",
+> -                          of_node_full_name(controller));
+>  -#ifdef CONFIG_MIPS
+>  -              /*
+>  -               * Workaround to avoid breaking interrupt controller drivers
+>  -               * that don't yet register an irq_domain.  This is temporary
+>  -               * code. ~~~gcl, Feb 24, 2012
+>  -               *
+>  -               * Scheduled for removal in Linux v3.6.  That should be enough
+>  -               * time.
+>  -               */
+>  -              if (intsize > 0)
+>  -                      return intspec[0];
+>  -#endif
+> +               pr_warn("no irq domain found for %s !\n",
+> +                       of_node_full_name(controller));
+>                 return 0;
+>         }
+>
