@@ -1,117 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3FRIzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:55:25 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:38571 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab3FRIzU convert rfc822-to-8bit (ORCPT
+	id S1755233Ab3FRI4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:56:40 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:56385 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3FRI4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:55:20 -0400
+	Tue, 18 Jun 2013 04:56:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <51BFCF53.9050302@linux.vnet.ibm.com>
-References: <1370825362-11145-1-git-send-email-grant.likely@linaro.org>
- <1370825362-11145-9-git-send-email-grant.likely@linaro.org> <51BFCF53.9050302@linux.vnet.ibm.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 18 Jun 2013 09:54:58 +0100
-X-Google-Sender-Auth: qczB4DpQ-Gw0Wmwhcj0olrLRX10
-Message-ID: <CACxGe6uTCL7jK4FDNfY0UdpiAQaXMJ8uwO=cWYE6iwQz94=4Ww@mail.gmail.com>
-Subject: Re: [RFC 08/10] irqdomain: Refactor irq_domain_associate_many()
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <51C01A97.5000903@linaro.org>
+References: <20130618071756.22598.51046.sendpatchset@w520>
+	<51C01A97.5000903@linaro.org>
+Date: Tue, 18 Jun 2013 17:56:32 +0900
+Message-ID: <CANqRtoS14fpHg=T0H3TzVVoB-Q0PnwJsUPkQ1PEOo2hkMkTjSw@mail.gmail.com>
+Subject: Re: [PATCH/RFC] clockevents: Ignore C3STOP when CPUIdle is disabled
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        John Stultz <john.stultz@linaro.org>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 4:09 AM, Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
-> 于 2013/6/10 8:49, Grant Likely 写道:
->
->> Originally, irq_domain_associate_many() was designed to unwind the
->> mapped irqs on a failure of any individual association. However, that
->> proved to be a problem with certain IRQ controllers. Some of them only
->> support a subset of irqs, and will fail when attempting to map a
->> reserved IRQ. In those cases we want to map as many IRQs as possible, so
->> instead it is better for irq_domain_associate_many() to make a
->> best-effort attempt to map irqs, but not fail if any or all of them
->> don't succeed. If a caller really cares about how many irqs got
->> associated, then it should instead go back and check that all of the
->> irqs is cares about were mapped.
->>
->> The original design open-coded the individual association code into the
->> body of irq_domain_associate_many(), but with no longer needing to
->> unwind associations, the code becomes simpler to split out
->> irq_domain_associate() to contain the bulk of the logic, and
->> irq_domain_associate_many() to be a simple loop wrapper.
->>
->> This patch also adds a new error check to the associate path to make
->> sure it isn't called for an irq larger than the controller can handle,
->> and adds locking so that the irq_domain_mutex is held while setting up a
->> new association.
->>
->> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-[...]
->> -int irq_domain_associate_many(struct irq_domain *domain, unsigned int
->> irq_base,
->> -                             irq_hw_number_t hwirq_base, int count)
->> +int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
->> +                        irq_hw_number_t hwirq)
->>   {
->> -       unsigned int virq = irq_base;
->> -       irq_hw_number_t hwirq = hwirq_base;
->> -       int i, ret;>> +       struct irq_data *irq_data = irq_get_irq_data(virq);
->> +       int ret;
->>
->> -       pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
->> -               of_node_full_name(domain->of_node), irq_base,
->> (int)hwirq_base, count);
->> +       if (WARN(hwirq >= domain->hwirq_max,
->> +                "error: hwirq 0x%x is too large for %s\n", (int)hwirq,
->> domain->name))
->> +               return -EINVAL;
->> +       if (WARN(!irq_data, "error: virq%i is not allocated", virq))
->> +               return -EINVAL;
->> +       if (WARN(irq_data->domain, "error: virq%i is already associated",
->> virq))
->> +               return -EINVAL;
->
->
-> Hi Grant,
->
-> I have a qestion here, assume that we have three hwirqs and alloc three
-> virqs, for first irq, it check irq_data
-> and irq_data->domain pass, but the second is failed, then this code do
-> nothing with failed( in
->
-> irq_domain_associate_many()) and continue to associated the third one.
->
->
-> This should be very dangours, even though I have no idea of when this could
-> happen.
+Hi Daniel,
 
-Define what you mean by "dangerous". You are correct that it is a bad
-situation, and the kernel will complain very loudly if it happens.
-However, the users of irq_domain_associate_many() are usually irq
-controllers using a legacy domain that needs to be set up during early
-boot. If the IRQ controller setup fails and gets unwound, then it is
-very likely that there will be no output at all from the kernel. This
-has actually been a problem on a number of platforms and it is a big
-part of why this irqdomain refactoring series wasn't merged 6 months
-ago.
+On Tue, Jun 18, 2013 at 5:30 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/18/2013 09:17 AM, Magnus Damm wrote:
+>> From: Magnus Damm <damm@opensource.se>
+>>
+>> Introduce the function tick_device_may_c3stop() that
+>> ignores the C3STOP flag in case CPUIdle is disabled.
+>>
+>> The C3STOP flag tells the system that a clock event
+>> device may be stopped during deep sleep, but if this
+>> will happen or not depends on things like if CPUIdle
+>> is enabled and if a CPUIdle driver is available.
+>>
+>> This patch assumes that if CPUIdle is disabled then
+>> the sleep mode triggering C3STOP will never be entered.
+>> So by ignoring C3STOP when CPUIdle is disabled then it
+>> becomes possible to use high resolution timers with only
+>> per-cpu local timers - regardless if they have the
+>> C3STOP flag set or not.
+>>
+>> Observed on the r8a73a4 SoC that at this point only uses
+>> ARM architected timers for clock event and clock sources.
+>>
+>> Without this patch high resolution timers are run time
+>> disabled on the r8a73a4 SoC - this regardless of CPUIdle
+>> is disabled or not.
+>>
+>> The less short term fix is to add support for more timers
+>> on the r8a73a4 SoC, but until CPUIdle support is enabled
+>> it must be possible to use high resoultion timers without
+>> additional timers.
+>>
+>> I'd like to hear some feedback and also test this on more
+>> systems before merging the code, see the non-SOB below.
+>>
+>> Not-Yet-Signed-off-by: Magnus Damm <damm@opensource.se>
+>> ---
+>>
+>>  An earlier ARM arch timer specific version of this patch was
+>>  posted yesterday as:
+>>  "[PATCH/RFC] arm: arch_timer: Do not set C3STOP in case CPU_IDLE=n"
+>>
+>>  Many thanks to Mark Rutland for his kind feedback.
+>>
+>>  kernel/time/tick-broadcast.c |    8 ++++----
+>>  kernel/time/tick-common.c    |    2 +-
+>>  kernel/time/tick-internal.h  |   11 +++++++++++
+>>  3 files changed, 16 insertions(+), 5 deletions(-)
+>>
+>> --- 0001/kernel/time/tick-broadcast.c
+>> +++ work/kernel/time/tick-broadcast.c 2013-06-18 15:36:21.000000000 +0900
+>> @@ -71,7 +71,7 @@ int tick_check_broadcast_device(struct c
+>>       if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+>>           (tick_broadcast_device.evtdev &&
+>>            tick_broadcast_device.evtdev->rating >= dev->rating) ||
+>> -          (dev->features & CLOCK_EVT_FEAT_C3STOP))
+>> +          tick_device_may_c3stop(dev))
+>>               return 0;
+>>
+>>       clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
+>> @@ -146,7 +146,7 @@ int tick_device_uses_broadcast(struct cl
+>>                * feature and the cpu is marked in the broadcast mask
+>>                * then clear the broadcast bit.
+>>                */
+>> -             if (!(dev->features & CLOCK_EVT_FEAT_C3STOP)) {
+>> +             if (!tick_device_may_c3stop(dev)) {
+>>                       int cpu = smp_processor_id();
+>>                       cpumask_clear_cpu(cpu, tick_broadcast_mask);
+>>                       tick_broadcast_clear_oneshot(cpu);
+>> @@ -270,7 +270,7 @@ static void tick_do_broadcast_on_off(uns
+>>       /*
+>>        * Is the device not affected by the powerstate ?
+>>        */
+>> -     if (!dev || !(dev->features & CLOCK_EVT_FEAT_C3STOP))
+>> +     if (!dev || !tick_device_may_c3stop(dev))
+>>               goto out;
+>>
+>>       if (!tick_device_is_functional(dev))
+>> @@ -568,7 +568,7 @@ void tick_broadcast_oneshot_control(unsi
+>>       td = &per_cpu(tick_cpu_device, cpu);
+>>       dev = td->evtdev;
+>>
+>> -     if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
+>> +     if (!tick_device_may_c3stop(dev))
+>>               return;
+>>
+>>       bc = tick_broadcast_device.evtdev;
+>> --- 0001/kernel/time/tick-common.c
+>> +++ work/kernel/time/tick-common.c    2013-06-18 15:36:29.000000000 +0900
+>> @@ -52,7 +52,7 @@ int tick_is_oneshot_available(void)
+>>
+>>       if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
+>>               return 0;
+>> -     if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
+>> +     if (!tick_device_may_c3stop(dev))
+>>               return 1;
+>>       return tick_broadcast_oneshot_available();
+>>  }
+>> --- 0001/kernel/time/tick-internal.h
+>> +++ work/kernel/time/tick-internal.h  2013-06-18 15:40:10.000000000 +0900
+>> @@ -141,6 +141,17 @@ static inline int tick_device_is_functio
+>>       return !(dev->features & CLOCK_EVT_FEAT_DUMMY);
+>>  }
+>>
+>> +/*
+>> + * Check, if the device has C3STOP behavior and CPU Idle is enabled
+>> + */
+>> +static inline bool tick_device_may_c3stop(struct clock_event_device *dev)
+>
+> I prefer tick_device_is_reliable(struct clock_event_device *dev).
 
-I think it is better to relax the behaviour of
-irq_domain_associate_many() so that if something fails, then at least
-it can limp along and try to get at least some of the irqs associated.
-That way we can find and fix problematic platforms rather than failing
-silently.
+Sure. I took the name from the flag, thought that made it easy to follow.
 
-Also, I don't see anything particularly dangerous about this behaviour
-other than having some of the hwirqs not being associated with a virq.
-The code protects against this path and if an irq controller receives
-an IRQ on a unassociated hwirq, then the kernel will also log that as
-an error.
+I wonder what the timekeeping maintainers prefer?
 
-g.
+>> +{
+>> +     /* The C3 sleep mode can only trigger when CPU Idle is enabled,
+>> +      * so if CPU Idle is disabled then the C3STOP flag can be ignored */
+>> +     return (IS_ENABLED(CONFIG_CPU_IDLE) &&
+>> +             (dev->features & CLOCK_EVT_FEAT_C3STOP));
+>> +}
+>
+> Preferably you may use the format:
+>
+> #ifdef CONFIG_CPU_IDLE
+> static inline bool tick_device_is_reliable(struct clock_event_device *dev)
+> {
+>         return dev->features & CLOCK_EVT_FEAT_C3STOP;
+> }
+> #else
+> static inline bool tick_device_is_reliable(struct clock_event_device *dev)
+> {
+>         return true;
+> }
+> #endif
+>
+> to conform the header style format already present in the file.
+
+I agree with  you about following the same style. Actually, I wrote
+the code to follow the code right above the function, but I decided to
+return bool instead of int. I don't mind so much in general though,
+except trying to keep the code at least half well-commented and
+relatively compact.
+
+So regarding stylistic things, sure, we can move around things.
+Question is just if this is acceptable or not. =)
+
+Thanks,
+
+/ magnus
