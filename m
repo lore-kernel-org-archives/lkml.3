@@ -1,89 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab3FRLyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:54:54 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:58763 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab3FRLyv (ORCPT
+	id S932511Ab3FRLzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:55:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56158 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab3FRLoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:54:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1531456.g1EpKAjrma@avalon>
-References: <20130617064052.3573.68839.sendpatchset@w520>
-	<1597172.lxipa1bjlr@avalon>
-	<CANqRtoSnBfr5sfSiYayKCmyw0EpY4+kq7pnQ1BJQt6wagTe8eQ@mail.gmail.com>
-	<1531456.g1EpKAjrma@avalon>
-Date: Tue, 18 Jun 2013 20:54:47 +0900
-Message-ID: <CANqRtoTRcpEH13GY4jvmX5POFEZf2B6+vu0-ZGCMCk+sAeF7Ww@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_cmt: 32-bit control register support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, john stultz <johnstul@us.ibm.com>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 07:44:55 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sage Weil <sage@inktank.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 59/93] libceph: wrap auth methods in a mutex
+Date: Tue, 18 Jun 2013 12:43:07 +0100
+Message-Id: <1371555821-12820-60-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jun 18, 2013 at 7:35 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> On Tuesday 18 June 2013 14:39:38 Magnus Damm wrote:
->> On Tue, Jun 18, 2013 at 3:37 AM, Laurent Pinchart wrote:
->> > On Monday 17 June 2013 15:40:52 Magnus Damm wrote:
->> >> From: Magnus Damm <damm@opensource.se>
->> >>
->> >> Add support for CMT hardware with 32-bit control and counter
->> >> registers, as found on r8a73a4 and r8a7790. To use the CMT
->> >> with 32-bit hardware a second I/O memory resource needs to
->> >> point out the CMSTR register and it needs to be 32 bit wide.
->> >
->> > Is a memory second resource required ? Can't we use a single resource that
->> > will contain all the registers ?
->>
->> The CMT hardware block comes with a shared timer start stop register
->> that historically has been left out of the resource. The location of
->> this register has so far been pointed out by the "channel offset"
->> platform data member, together with information about which bit that
->> happens to be assigned to the timer channel. This start stop register
->> has happened to be kept in the same page of I/O memory as the main
->> timer channel resource, so at this point we're sort of "lucky" that a
->> single ioremap() has covered all cases.
->>
->> With this patch it becomes optional to instead of platform data use a
->> second resource to point out the timer start/stop register. While we
->> do that we can also use the size of that resource to determine the I/O
->> access width, which happens to be something that is needed to enable
->> the driver on certain SoCs.
->
-> OK, I get it now. I've had a quick look at the documentation, and I'm
-> wondering whether we shouldn't register a single platform device that span all
-> the channels contained in the CMT, instead of registering one platform device
-> per channel.
+------------------
 
-I both agree with you and disagree because of the current state of
-timers in the linux kernel. I would have liked a single platform
-device with all channles if this would be a generic timer driver that
-from user space could be configured to associate channels with various
-subsystems like PWM, clocksource, clockevent.
+From: Sage Weil <sage@inktank.com>
 
-At this point the driver is doing clockevent and clocksource only, and
-no sane user wants 84 channels of equivalent hardware blocks for those
-two. So based on that I'd rather do it like today and let people write
-custom drivers for whatever applications they may use the other
-channels for.
+commit e9966076cdd952e19f2dd4854cd719be0d7cbebc upstream.
 
-So if you're in hacking mode, why don't you figure out some way timers
-can be configured from user space? =) If so then we can use DT to
-describe the actual hardware and let the software policy be decided
-via some configuration mechanism.
+The auth code is called from a variety of contexts, include the mon_client
+(protected by the monc's mutex) and the messenger callbacks (currently
+protected by nothing).  Avoid chaos by protecting all auth state with a
+mutex.  Nothing is blocking, so this should be simple and lightweight.
 
-Cheers,
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/linux/ceph/auth.h |  2 ++
+ net/ceph/auth.c           | 78 ++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 58 insertions(+), 22 deletions(-)
 
-/ magnus
+diff --git a/include/linux/ceph/auth.h b/include/linux/ceph/auth.h
+index c9c3b3a..5f33868 100644
+--- a/include/linux/ceph/auth.h
++++ b/include/linux/ceph/auth.h
+@@ -78,6 +78,8 @@ struct ceph_auth_client {
+ 	u64 global_id;          /* our unique id in system */
+ 	const struct ceph_crypto_key *key;     /* our secret key */
+ 	unsigned want_keys;     /* which services we want */
++
++	struct mutex mutex;
+ };
+ 
+ extern struct ceph_auth_client *ceph_auth_init(const char *name,
+diff --git a/net/ceph/auth.c b/net/ceph/auth.c
+index a22de54..6b923bc 100644
+--- a/net/ceph/auth.c
++++ b/net/ceph/auth.c
+@@ -47,6 +47,7 @@ struct ceph_auth_client *ceph_auth_init(const char *name, const struct ceph_cryp
+ 	if (!ac)
+ 		goto out;
+ 
++	mutex_init(&ac->mutex);
+ 	ac->negotiating = true;
+ 	if (name)
+ 		ac->name = name;
+@@ -73,10 +74,12 @@ void ceph_auth_destroy(struct ceph_auth_client *ac)
+  */
+ void ceph_auth_reset(struct ceph_auth_client *ac)
+ {
++	mutex_lock(&ac->mutex);
+ 	dout("auth_reset %p\n", ac);
+ 	if (ac->ops && !ac->negotiating)
+ 		ac->ops->reset(ac);
+ 	ac->negotiating = true;
++	mutex_unlock(&ac->mutex);
+ }
+ 
+ int ceph_entity_name_encode(const char *name, void **p, void *end)
+@@ -102,6 +105,7 @@ int ceph_auth_build_hello(struct ceph_auth_client *ac, void *buf, size_t len)
+ 	int i, num;
+ 	int ret;
+ 
++	mutex_lock(&ac->mutex);
+ 	dout("auth_build_hello\n");
+ 	monhdr->have_version = 0;
+ 	monhdr->session_mon = cpu_to_le16(-1);
+@@ -122,15 +126,19 @@ int ceph_auth_build_hello(struct ceph_auth_client *ac, void *buf, size_t len)
+ 
+ 	ret = ceph_entity_name_encode(ac->name, &p, end);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	ceph_decode_need(&p, end, sizeof(u64), bad);
+ 	ceph_encode_64(&p, ac->global_id);
+ 
+ 	ceph_encode_32(&lenp, p - lenp - sizeof(u32));
+-	return p - buf;
++	ret = p - buf;
++out:
++	mutex_unlock(&ac->mutex);
++	return ret;
+ 
+ bad:
+-	return -ERANGE;
++	ret = -ERANGE;
++	goto out;
+ }
+ 
+ static int ceph_build_auth_request(struct ceph_auth_client *ac,
+@@ -151,11 +159,13 @@ static int ceph_build_auth_request(struct ceph_auth_client *ac,
+ 	if (ret < 0) {
+ 		pr_err("error %d building auth method %s request\n", ret,
+ 		       ac->ops->name);
+-		return ret;
++		goto out;
+ 	}
+ 	dout(" built request %d bytes\n", ret);
+ 	ceph_encode_32(&p, ret);
+-	return p + ret - msg_buf;
++	ret = p + ret - msg_buf;
++out:
++	return ret;
+ }
+ 
+ /*
+@@ -176,6 +186,7 @@ int ceph_handle_auth_reply(struct ceph_auth_client *ac,
+ 	int result_msg_len;
+ 	int ret = -EINVAL;
+ 
++	mutex_lock(&ac->mutex);
+ 	dout("handle_auth_reply %p %p\n", p, end);
+ 	ceph_decode_need(&p, end, sizeof(u32) * 3 + sizeof(u64), bad);
+ 	protocol = ceph_decode_32(&p);
+@@ -227,35 +238,44 @@ int ceph_handle_auth_reply(struct ceph_auth_client *ac,
+ 
+ 	ret = ac->ops->handle_reply(ac, result, payload, payload_end);
+ 	if (ret == -EAGAIN) {
+-		return ceph_build_auth_request(ac, reply_buf, reply_len);
++		ret = ceph_build_auth_request(ac, reply_buf, reply_len);
+ 	} else if (ret) {
+ 		pr_err("auth method '%s' error %d\n", ac->ops->name, ret);
+-		return ret;
+ 	}
+-	return 0;
+ 
+-bad:
+-	pr_err("failed to decode auth msg\n");
+ out:
++	mutex_unlock(&ac->mutex);
+ 	return ret;
++
++bad:
++	pr_err("failed to decode auth msg\n");
++	ret = -EINVAL;
++	goto out;
+ }
+ 
+ int ceph_build_auth(struct ceph_auth_client *ac,
+ 		    void *msg_buf, size_t msg_len)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (!ac->protocol)
+-		return ceph_auth_build_hello(ac, msg_buf, msg_len);
+-	BUG_ON(!ac->ops);
+-	if (ac->ops->should_authenticate(ac))
+-		return ceph_build_auth_request(ac, msg_buf, msg_len);
+-	return 0;
++		ret = ceph_auth_build_hello(ac, msg_buf, msg_len);
++	else if (ac->ops->should_authenticate(ac))
++		ret = ceph_build_auth_request(ac, msg_buf, msg_len);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ 
+ int ceph_auth_is_authenticated(struct ceph_auth_client *ac)
+ {
+-	if (!ac->ops)
+-		return 0;
+-	return ac->ops->is_authenticated(ac);
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
++	if (ac->ops)
++		ret = ac->ops->is_authenticated(ac);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_is_authenticated);
+ 
+@@ -263,17 +283,23 @@ int ceph_auth_create_authorizer(struct ceph_auth_client *ac,
+ 				int peer_type,
+ 				struct ceph_auth_handshake *auth)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->create_authorizer)
+-		return ac->ops->create_authorizer(ac, peer_type, auth);
+-	return 0;
++		ret = ac->ops->create_authorizer(ac, peer_type, auth);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_create_authorizer);
+ 
+ void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
+ 				  struct ceph_authorizer *a)
+ {
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->destroy_authorizer)
+ 		ac->ops->destroy_authorizer(ac, a);
++	mutex_unlock(&ac->mutex);
+ }
+ EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
+ 
+@@ -283,8 +309,10 @@ int ceph_auth_update_authorizer(struct ceph_auth_client *ac,
+ {
+ 	int ret = 0;
+ 
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->update_authorizer)
+ 		ret = ac->ops->update_authorizer(ac, peer_type, a);
++	mutex_unlock(&ac->mutex);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_update_authorizer);
+@@ -292,15 +320,21 @@ EXPORT_SYMBOL(ceph_auth_update_authorizer);
+ int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 				      struct ceph_authorizer *a, size_t len)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->verify_authorizer_reply)
+-		return ac->ops->verify_authorizer_reply(ac, a, len);
+-	return 0;
++		ret = ac->ops->verify_authorizer_reply(ac, a, len);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
+ 
+ void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
+ {
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->invalidate_authorizer)
+ 		ac->ops->invalidate_authorizer(ac, peer_type);
++	mutex_unlock(&ac->mutex);
+ }
+ EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
+-- 
+1.8.1.2
+
