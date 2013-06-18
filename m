@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab3FRQbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:31:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49416 "EHLO
+	id S933531Ab3FRQbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:31:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933174Ab3FRQRp (ORCPT
+	with ESMTP id S933165Ab3FRQRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:45 -0400
+	Tue, 18 Jun 2013 12:17:44 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 12/48] Bluetooth: Fix mgmt handling of power on failures
-Date: Tue, 18 Jun 2013 09:17:38 -0700
-Message-Id: <20130618161727.641219864@linuxfoundation.org>
+Subject: [ 11/48] Bluetooth: Fix missing length checks for L2CAP signalling PDUs
+Date: Tue, 18 Jun 2013 09:17:37 -0700
+Message-Id: <20130618161727.498344365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -33,96 +32,242 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 96570ffcca0b872dc8626e97569d2697f374d868 upstream.
+commit cb3b3152b2f5939d67005cff841a1ca748b19888 upstream.
 
-If hci_dev_open fails we need to ensure that the corresponding
-mgmt_set_powered command gets an appropriate response. This patch fixes
-the missing response by adding a new mgmt_set_powered_failed function
-that's used to indicate a power on failure to mgmt. Since a situation
-with the device being rfkilled may require special handling in user
-space the patch uses a new dedicated mgmt status code for this.
+There has been code in place to check that the L2CAP length header
+matches the amount of data received, but many PDU handlers have not been
+checking that the data received actually matches that expected by the
+specific PDU. This patch adds passing the length header to the specific
+handler functions and ensures that those functions fail cleanly in the
+case of an incorrect amount of data.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/bluetooth/hci_core.h |    1 +
- include/net/bluetooth/mgmt.h     |    1 +
- net/bluetooth/hci_core.c         |    6 +++++-
- net/bluetooth/mgmt.c             |   21 +++++++++++++++++++++
- 4 files changed, 28 insertions(+), 1 deletion(-)
+ net/bluetooth/l2cap_core.c |   70 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 52 insertions(+), 18 deletions(-)
 
---- a/include/net/bluetooth/hci_core.h
-+++ b/include/net/bluetooth/hci_core.h
-@@ -1065,6 +1065,7 @@ void hci_sock_dev_event(struct hci_dev *
- int mgmt_control(struct sock *sk, struct msghdr *msg, size_t len);
- int mgmt_index_added(struct hci_dev *hdev);
- int mgmt_index_removed(struct hci_dev *hdev);
-+int mgmt_set_powered_failed(struct hci_dev *hdev, int err);
- int mgmt_powered(struct hci_dev *hdev, u8 powered);
- int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable);
- int mgmt_connectable(struct hci_dev *hdev, u8 connectable);
---- a/include/net/bluetooth/mgmt.h
-+++ b/include/net/bluetooth/mgmt.h
-@@ -42,6 +42,7 @@
- #define MGMT_STATUS_NOT_POWERED		0x0f
- #define MGMT_STATUS_CANCELLED		0x10
- #define MGMT_STATUS_INVALID_INDEX	0x11
-+#define MGMT_STATUS_RFKILLED		0x12
- 
- struct mgmt_hdr {
- 	__le16	opcode;
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1139,11 +1139,15 @@ static const struct rfkill_ops hci_rfkil
- static void hci_power_on(struct work_struct *work)
- {
- 	struct hci_dev *hdev = container_of(work, struct hci_dev, power_on);
-+	int err;
- 
- 	BT_DBG("%s", hdev->name);
- 
--	if (hci_dev_open(hdev->id) < 0)
-+	err = hci_dev_open(hdev->id);
-+	if (err < 0) {
-+		mgmt_set_powered_failed(hdev, err);
- 		return;
-+	}
- 
- 	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
- 		queue_delayed_work(hdev->req_workqueue, &hdev->power_off,
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -3124,6 +3124,27 @@ int mgmt_powered(struct hci_dev *hdev, u
- 	return err;
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -3568,10 +3568,14 @@ static void l2cap_conf_rfc_get(struct l2
  }
  
-+int mgmt_set_powered_failed(struct hci_dev *hdev, int err)
-+{
-+	struct pending_cmd *cmd;
-+	u8 status;
-+
-+	cmd = mgmt_pending_find(MGMT_OP_SET_POWERED, hdev);
-+	if (!cmd)
-+		return -ENOENT;
-+
-+	if (err == -ERFKILL)
-+		status = MGMT_STATUS_RFKILLED;
-+	else
-+		status = MGMT_STATUS_FAILED;
-+
-+	err = cmd_status(cmd->sk, hdev->id, MGMT_OP_SET_POWERED, status);
-+
-+	mgmt_pending_remove(cmd);
-+
-+	return err;
-+}
-+
- int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable)
+ static inline int l2cap_command_rej(struct l2cap_conn *conn,
+-				    struct l2cap_cmd_hdr *cmd, u8 *data)
++				    struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				    u8 *data)
  {
- 	struct cmd_lookup match = { NULL, hdev };
+ 	struct l2cap_cmd_rej_unk *rej = (struct l2cap_cmd_rej_unk *) data;
+ 
++	if (cmd_len < sizeof(*rej))
++		return -EPROTO;
++
+ 	if (rej->reason != L2CAP_REJ_NOT_UNDERSTOOD)
+ 		return 0;
+ 
+@@ -3720,11 +3724,14 @@ sendresp:
+ }
+ 
+ static int l2cap_connect_req(struct l2cap_conn *conn,
+-			     struct l2cap_cmd_hdr *cmd, u8 *data)
++			     struct l2cap_cmd_hdr *cmd, u16 cmd_len, u8 *data)
+ {
+ 	struct hci_dev *hdev = conn->hcon->hdev;
+ 	struct hci_conn *hcon = conn->hcon;
+ 
++	if (cmd_len < sizeof(struct l2cap_conn_req))
++		return -EPROTO;
++
+ 	hci_dev_lock(hdev);
+ 	if (test_bit(HCI_MGMT, &hdev->dev_flags) &&
+ 	    !test_and_set_bit(HCI_CONN_MGMT_CONNECTED, &hcon->flags))
+@@ -3738,7 +3745,8 @@ static int l2cap_connect_req(struct l2ca
+ }
+ 
+ static int l2cap_connect_create_rsp(struct l2cap_conn *conn,
+-				    struct l2cap_cmd_hdr *cmd, u8 *data)
++				    struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				    u8 *data)
+ {
+ 	struct l2cap_conn_rsp *rsp = (struct l2cap_conn_rsp *) data;
+ 	u16 scid, dcid, result, status;
+@@ -3746,6 +3754,9 @@ static int l2cap_connect_create_rsp(stru
+ 	u8 req[128];
+ 	int err;
+ 
++	if (cmd_len < sizeof(*rsp))
++		return -EPROTO;
++
+ 	scid   = __le16_to_cpu(rsp->scid);
+ 	dcid   = __le16_to_cpu(rsp->dcid);
+ 	result = __le16_to_cpu(rsp->result);
+@@ -3843,6 +3854,9 @@ static inline int l2cap_config_req(struc
+ 	struct l2cap_chan *chan;
+ 	int len, err = 0;
+ 
++	if (cmd_len < sizeof(*req))
++		return -EPROTO;
++
+ 	dcid  = __le16_to_cpu(req->dcid);
+ 	flags = __le16_to_cpu(req->flags);
+ 
+@@ -3866,7 +3880,7 @@ static inline int l2cap_config_req(struc
+ 
+ 	/* Reject if config buffer is too small. */
+ 	len = cmd_len - sizeof(*req);
+-	if (len < 0 || chan->conf_len + len > sizeof(chan->conf_req)) {
++	if (chan->conf_len + len > sizeof(chan->conf_req)) {
+ 		l2cap_send_cmd(conn, cmd->ident, L2CAP_CONF_RSP,
+ 			       l2cap_build_conf_rsp(chan, rsp,
+ 			       L2CAP_CONF_REJECT, flags), rsp);
+@@ -3944,14 +3958,18 @@ unlock:
+ }
+ 
+ static inline int l2cap_config_rsp(struct l2cap_conn *conn,
+-				   struct l2cap_cmd_hdr *cmd, u8 *data)
++				   struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				   u8 *data)
+ {
+ 	struct l2cap_conf_rsp *rsp = (struct l2cap_conf_rsp *)data;
+ 	u16 scid, flags, result;
+ 	struct l2cap_chan *chan;
+-	int len = le16_to_cpu(cmd->len) - sizeof(*rsp);
++	int len = cmd_len - sizeof(*rsp);
+ 	int err = 0;
+ 
++	if (cmd_len < sizeof(*rsp))
++		return -EPROTO;
++
+ 	scid   = __le16_to_cpu(rsp->scid);
+ 	flags  = __le16_to_cpu(rsp->flags);
+ 	result = __le16_to_cpu(rsp->result);
+@@ -4052,7 +4070,8 @@ done:
+ }
+ 
+ static inline int l2cap_disconnect_req(struct l2cap_conn *conn,
+-				       struct l2cap_cmd_hdr *cmd, u8 *data)
++				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				       u8 *data)
+ {
+ 	struct l2cap_disconn_req *req = (struct l2cap_disconn_req *) data;
+ 	struct l2cap_disconn_rsp rsp;
+@@ -4060,6 +4079,9 @@ static inline int l2cap_disconnect_req(s
+ 	struct l2cap_chan *chan;
+ 	struct sock *sk;
+ 
++	if (cmd_len != sizeof(*req))
++		return -EPROTO;
++
+ 	scid = __le16_to_cpu(req->scid);
+ 	dcid = __le16_to_cpu(req->dcid);
+ 
+@@ -4099,12 +4121,16 @@ static inline int l2cap_disconnect_req(s
+ }
+ 
+ static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn,
+-				       struct l2cap_cmd_hdr *cmd, u8 *data)
++				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				       u8 *data)
+ {
+ 	struct l2cap_disconn_rsp *rsp = (struct l2cap_disconn_rsp *) data;
+ 	u16 dcid, scid;
+ 	struct l2cap_chan *chan;
+ 
++	if (cmd_len != sizeof(*rsp))
++		return -EPROTO;
++
+ 	scid = __le16_to_cpu(rsp->scid);
+ 	dcid = __le16_to_cpu(rsp->dcid);
+ 
+@@ -4134,11 +4160,15 @@ static inline int l2cap_disconnect_rsp(s
+ }
+ 
+ static inline int l2cap_information_req(struct l2cap_conn *conn,
+-					struct l2cap_cmd_hdr *cmd, u8 *data)
++					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++					u8 *data)
+ {
+ 	struct l2cap_info_req *req = (struct l2cap_info_req *) data;
+ 	u16 type;
+ 
++	if (cmd_len != sizeof(*req))
++		return -EPROTO;
++
+ 	type = __le16_to_cpu(req->type);
+ 
+ 	BT_DBG("type 0x%4.4x", type);
+@@ -4185,11 +4215,15 @@ static inline int l2cap_information_req(
+ }
+ 
+ static inline int l2cap_information_rsp(struct l2cap_conn *conn,
+-					struct l2cap_cmd_hdr *cmd, u8 *data)
++					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++					u8 *data)
+ {
+ 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
+ 	u16 type, result;
+ 
++	if (cmd_len != sizeof(*rsp))
++		return -EPROTO;
++
+ 	type   = __le16_to_cpu(rsp->type);
+ 	result = __le16_to_cpu(rsp->result);
+ 
+@@ -5055,16 +5089,16 @@ static inline int l2cap_bredr_sig_cmd(st
+ 
+ 	switch (cmd->code) {
+ 	case L2CAP_COMMAND_REJ:
+-		l2cap_command_rej(conn, cmd, data);
++		l2cap_command_rej(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONN_REQ:
+-		err = l2cap_connect_req(conn, cmd, data);
++		err = l2cap_connect_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONN_RSP:
+ 	case L2CAP_CREATE_CHAN_RSP:
+-		err = l2cap_connect_create_rsp(conn, cmd, data);
++		err = l2cap_connect_create_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONF_REQ:
+@@ -5072,15 +5106,15 @@ static inline int l2cap_bredr_sig_cmd(st
+ 		break;
+ 
+ 	case L2CAP_CONF_RSP:
+-		err = l2cap_config_rsp(conn, cmd, data);
++		err = l2cap_config_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_DISCONN_REQ:
+-		err = l2cap_disconnect_req(conn, cmd, data);
++		err = l2cap_disconnect_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_DISCONN_RSP:
+-		err = l2cap_disconnect_rsp(conn, cmd, data);
++		err = l2cap_disconnect_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_ECHO_REQ:
+@@ -5091,11 +5125,11 @@ static inline int l2cap_bredr_sig_cmd(st
+ 		break;
+ 
+ 	case L2CAP_INFO_REQ:
+-		err = l2cap_information_req(conn, cmd, data);
++		err = l2cap_information_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_INFO_RSP:
+-		err = l2cap_information_rsp(conn, cmd, data);
++		err = l2cap_information_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CREATE_CHAN_REQ:
 
 
