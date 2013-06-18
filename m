@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459Ab3FRUQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 16:16:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50065 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932861Ab3FRUQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 16:16:57 -0400
-Message-ID: <51C0C014.2000402@ti.com>
-Date: Tue, 18 Jun 2013 16:16:20 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?B?QmVub8OudCBDb3Vz?= =?UTF-8?B?c29u?= <b-cousson@ti.com>
-CC: <tony@atomide.com>, <grant.likely@linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 4/6] arm: dts: add bandgap entry for OMAP4460 devices
-References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com> <1370637968-23299-5-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1370637968-23299-5-git-send-email-eduardo.valentin@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2EGWVGQWNWKXECIBWKDIG"
+	id S933513Ab3FRURM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 16:17:12 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59566 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab3FRURK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 16:17:10 -0400
+From: Joern Engel <joern@logfs.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joern Engel <joern@logfs.org>
+Subject: [PATCH 0/2] hugetlb fixes
+Date: Tue, 18 Jun 2013 14:47:03 -0400
+Message-Id: <1371581225-27535-1-git-send-email-joern@logfs.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2EGWVGQWNWKXECIBWKDIG
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+As everyone knows, hugetlbfs sucks.  But it is also necessary for
+large memory machines, so we should make it suck less.  Top of my list
+were lack of rss accounting and refusing mmap with MAP_HUGETLB when
+using hugetlbfs.  The latter generally created a know in every brain I
+explained this to.
 
-Benoit
+Test program below is failing before these two patches and passing
+after.
 
-On 07-06-2013 16:46, Eduardo Valentin wrote:
-> Include bandgap devices for OMAP4460 devices.
->=20
-> Cc: "Beno=C3=AEt Cousson" <b-cousson@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-omap@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
+Joern Engel (2):
+  hugetlb: properly account rss
+  mmap: allow MAP_HUGETLB for hugetlbfs files
 
-Could you please have a look on patch 3 and 4 of this series? I have
-changed this one accordingly to your recommendation on v2. If nothing
-else, please let me know if they can still be queued for 3.11.
+ mm/hugetlb.c |    4 ++++
+ mm/mmap.c    |   12 ++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-I would need to rebase patch 01 to refresh on top of the thermal tree.
+-- 
+1.7.10.4
 
-Thanks.
+#define _GNU_SOURCE
+#include <assert.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
->  arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
->  1 file changed, 9 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap44=
-60.dtsi
-> index 2cf227c..ea97201 100644
-> --- a/arch/arm/boot/dts/omap4460.dtsi
-> +++ b/arch/arm/boot/dts/omap4460.dtsi
-> @@ -29,4 +29,13 @@
->  			     <0 55 0x4>;
->  		ti,hwmods =3D "debugss";
->  	};
-> +
-> +	bandgap {
-> +		reg =3D <0x4a002260 0x4
-> +			0x4a00232C 0x4
-> +			0x4a002378 0x18>;
-> +		compatible =3D "ti,omap4460-bandgap";
-> +		interrupts =3D <0 126 4>; /* talert */
-> +		gpios =3D <&gpio3 22 0>; /* tshut */
-> +	};
->  };
->=20
+typedef unsigned long long u64;
 
+static size_t length = 1 << 24;
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+static u64 read_rss(void)
+{
+	char buf[4096], *s = buf;
+	int i, fd;
+	u64 rss;
 
-Eduardo Valentin
+	fd = open("/proc/self/statm", O_RDONLY);
+	assert(fd > 2);
+	memset(buf, 0, sizeof(buf));
+	read(fd, buf, sizeof(buf) - 1);
+	for (i = 0; i < 1; i++)
+		s = strchr(s, ' ') + 1;
+	rss = strtoull(s, NULL, 10);
+	return rss << 12; /* assumes 4k pagesize */
+}
 
+static void do_mmap(int fd, int extra_flags, int unmap)
+{
+	int *p;
+	int flags = MAP_PRIVATE | MAP_POPULATE | extra_flags;
+	u64 before, after;
 
-------enig2EGWVGQWNWKXECIBWKDIG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+	before = read_rss();
+	p = mmap(NULL, length, PROT_READ | PROT_WRITE, flags, fd, 0);
+	assert(p != MAP_FAILED ||
+			!"mmap returned an unexpected error");
+	after = read_rss();
+	assert(llabs(after - before - length) < 0x40000 ||
+			!"rss didn't grow as expected");
+	if (!unmap)
+		return;
+	munmap(p, length);
+	after = read_rss();
+	assert(llabs(after - before) < 0x40000 ||
+			!"rss didn't shrink as expected");
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+static int open_file(const char *path)
+{
+	int fd, err;
 
-iF4EAREIAAYFAlHAwBQACgkQCXcVR3XQvP0BJwD+Mx5tt0vnYlm2Bb08tk+iKoHn
-Q3seGGl2L1Ux6ExQh2ABAOB0gY8FbCOqomDjdGkSTlGRjliTdSTETdKSDlHDSHnn
-=LASY
------END PGP SIGNATURE-----
+	unlink(path);
+	fd = open(path, O_CREAT | O_RDWR | O_TRUNC | O_EXCL
+			| O_LARGEFILE | O_CLOEXEC, 0600);
+	assert(fd > 2);
+	unlink(path);
+	err = ftruncate(fd, length);
+	assert(!err);
+	return fd;
+}
 
-------enig2EGWVGQWNWKXECIBWKDIG--
+int main(void)
+{
+	int hugefd, fd;
+
+	fd = open_file("/dev/shm/hugetlbhog");
+	hugefd = open_file("/hugepages/hugetlbhog");
+
+	system("echo 100 > /proc/sys/vm/nr_hugepages");
+	do_mmap(-1, MAP_ANONYMOUS, 1);
+	do_mmap(fd, 0, 1);
+	do_mmap(-1, MAP_ANONYMOUS | MAP_HUGETLB, 1);
+	do_mmap(hugefd, 0, 1);
+	do_mmap(hugefd, MAP_HUGETLB, 1);
+	/* Leak the last one to test do_exit() */
+	do_mmap(-1, MAP_ANONYMOUS | MAP_HUGETLB, 0);
+	printf("oll korrekt.\n");
+	return 0;
+}
