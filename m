@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab3FRLph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:45:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56302 "EHLO
+	id S932789Ab3FRLrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:47:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932615Ab3FRLp0 (ORCPT
+	with ESMTP id S932653Ab3FRLpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:45:26 -0400
+	Tue, 18 Jun 2013 07:45:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Wei Liu <wei.liu2@citrix.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 85/93] USB: pl2303: fix device initialisation at open
-Date: Tue, 18 Jun 2013 12:43:33 +0100
-Message-Id: <1371555821-12820-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 91/93] xen-netfront: reduce gso_max_size to account for max TCP header
+Date: Tue, 18 Jun 2013 12:43:39 +0100
+Message-Id: <1371555821-12820-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,75 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit 2d8f4447b58bba5f8cb895c07690434c02307eaf upstream.
+commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
 
-Do not use uninitialised termios data to determine when to configure the
-device at open.
+The maximum packet including header that can be handled by netfront / netback
+wire format is 65535. Reduce gso_max_size accordingly.
 
-This also prevents stack data from leaking to userspace in the OOM error
-path.
+Drop skb and print warning when skb->len > 65535. This can 1) save the effort
+to send malformed packet to netback, 2) help spotting misconfiguration of
+netfront in the future.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5:
-  - adjusted context
-  - termios is a pointer, not a struct ]
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/pl2303.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/xen-netfront.c       | 17 +++++++++++++++--
+ include/xen/interface/io/netif.h |  1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 6fe8d0e..5150a27 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -258,7 +258,7 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	   serial settings even to the same values as before. Thus
- 	   we actually need to filter in this specific case */
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 526702d..b88afc7 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -36,7 +36,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/ethtool.h>
+ #include <linux/if_ether.h>
+-#include <linux/tcp.h>
++#include <net/tcp.h>
+ #include <linux/udp.h>
+ #include <linux/moduleparam.h>
+ #include <linux/mm.h>
+@@ -491,6 +491,16 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	unsigned int len = skb_headlen(skb);
+ 	unsigned long flags;
  
--	if (!tty_termios_hw_change(tty->termios, old_termios))
-+	if (old_termios && !tty_termios_hw_change(tty->termios, old_termios))
- 		return;
++	/* If skb->len is too big for wire format, drop skb and alert
++	 * user about misconfiguration.
++	 */
++	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
++		net_alert_ratelimited(
++			"xennet: skb->len = %u, too big for wire format\n",
++			skb->len);
++		goto drop;
++	}
++
+ 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
+ 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
+ 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
+@@ -1039,7 +1049,8 @@ err:
  
- 	cflag = tty->termios->c_cflag;
-@@ -267,7 +267,8 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	if (!buf) {
- 		dev_err(&port->dev, "%s - out of memory.\n", __func__);
- 		/* Report back no change occurred */
--		*tty->termios = *old_termios;
-+		if (old_termios)
-+			*tty->termios = *old_termios;
- 		return;
- 	}
- 
-@@ -407,7 +408,7 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	control = priv->line_control;
- 	if ((cflag & CBAUD) == B0)
- 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
--	else if ((old_termios->c_cflag & CBAUD) == B0)
-+	else if (old_termios && (old_termios->c_cflag & CBAUD) == B0)
- 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
- 	if (control != priv->line_control) {
- 		control = priv->line_control;
-@@ -466,7 +467,6 @@ static void pl2303_close(struct usb_serial_port *port)
- 
- static int pl2303_open(struct tty_struct *tty, struct usb_serial_port *port)
+ static int xennet_change_mtu(struct net_device *dev, int mtu)
  {
--	struct ktermios tmp_termios;
- 	struct usb_serial *serial = port->serial;
- 	struct pl2303_private *priv = usb_get_serial_port_data(port);
- 	int result;
-@@ -482,7 +482,7 @@ static int pl2303_open(struct tty_struct *tty, struct usb_serial_port *port)
+-	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
++	int max = xennet_can_sg(dev) ?
++		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
  
- 	/* Setup termios */
- 	if (tty)
--		pl2303_set_termios(tty, port, &tmp_termios);
-+		pl2303_set_termios(tty, port, NULL);
+ 	if (mtu > max)
+ 		return -EINVAL;
+@@ -1343,6 +1354,8 @@ static struct net_device * __devinit xennet_create_dev(struct xenbus_device *dev
+ 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
+ 	SET_NETDEV_DEV(netdev, &dev->dev);
  
- 	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
- 	if (result) {
++	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
++
+ 	np->netdev = netdev;
+ 
+ 	netif_carrier_off(netdev);
+diff --git a/include/xen/interface/io/netif.h b/include/xen/interface/io/netif.h
+index a36c87a..d4635cd 100644
+--- a/include/xen/interface/io/netif.h
++++ b/include/xen/interface/io/netif.h
+@@ -65,6 +65,7 @@
+ #define _XEN_NETTXF_extra_info		(3)
+ #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
+ 
++#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
+ struct xen_netif_tx_request {
+     grant_ref_t gref;      /* Reference to buffer page */
+     uint16_t offset;       /* Offset within buffer page */
 -- 
 1.8.1.2
 
