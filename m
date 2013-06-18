@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3FRLn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:43:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55888 "EHLO
+	id S1755842Ab3FRMKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:10:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55909 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755365Ab3FRLnx (ORCPT
+	with ESMTP id S1755336Ab3FRLn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:43:53 -0400
+	Tue, 18 Jun 2013 07:43:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Tejun Heo <tj@kernel.org>,
+Cc: Tony Camuso <tcamuso@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 01/93] ata_piix: add PCI IDs for Intel BayTail
-Date: Tue, 18 Jun 2013 12:42:09 +0100
-Message-Id: <1371555821-12820-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 06/93] xhci - correct comp_mode_recovery_timer on return from hibernate
+Date: Tue, 18 Jun 2013 12:42:14 +0100
+Message-Id: <1371555821-12820-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -29,67 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+From: Tony Camuso <tcamuso@redhat.com>
 
-commit fca8c90d519dedd4f4b19901d005c243f7f0bf2e upstream.
+commit 77df9e0b799b03e1d5d9c68062709af5f637e834 upstream.
 
-Adds IDE-mode SATA Device IDs for the Intel BayTrail platform.
+Commit 71c731a2 (usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
+Hardware) was a workaround for systems using the SN65LVPE502CP,
+controller, but it introduced a bug in resume from hibernate.
 
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ luis: backport to 3.5: adjust context ]
+The fix created a timer, comp_mode_recovery_timer, which is deleted from
+a timer list when xhci_suspend() is called. However, the hibernate image,
+including the timer list containing the comp_mode_recovery_timer, had
+already been saved before the timer was deleted.
+
+Upon resume from hibernate, the list containing the comp_mode_recovery_timer
+is restored from the image saved to disk, and xhci_resume(), assuming that
+the timer had been deleted by xhci_suspend(), makes a call to
+compliance_mode_recoery_timer_init(), which creates a new instance of the
+comp_mode_recovery_timer and attempts to place it into the same list in which
+it is already active, thus corrupting the list during the list_add() call.
+
+At this point, a call trace is emitted indicating the list corruption.
+Soon afterward, the system locks up, the watchdog times out, and the
+ensuing NMI crashes the system.
+
+The problem did not occur when resuming from suspend. In suspend, the
+image in RAM remains exactly as it was when xhci_suspend() deleted the
+comp_mode_recovery_timer, so there is no problem when xhci_resume()
+creates a new instance of this timer and places it in the still empty
+list.
+
+This patch avoids the problem by deleting the timer in xhci_resume()
+when resuming from hibernate. Now xhci_resume() can safely make the
+call to create a new instance of this timer, whether returning from
+suspend or hibernate.
+
+Thanks to Alan Stern for his help with understanding the problem.
+
+[Sarah reworked this patch to cover the case where the xHCI restore
+register operation fails, and (temp & STS_SRE) is true (and we re-init
+the host, including re-init for the compliance mode), but hibernate is
+false.  The original patch would have caused list corruption in this
+case.]
+
+This patch should be backported to kernels as old as 3.2, that
+contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
+xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+
+Signed-off-by: Tony Camuso <tcamuso@redhat.com>
+Tested-by: Tony Camuso <tcamuso@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ata_piix.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/usb/host/xhci.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index a382b7c..624a948 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -151,6 +151,7 @@ enum piix_controller_ids {
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
- 	ich8_2port_sata_snb,
-+	ich8_2port_sata_byt,
- };
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 23a0091..bd96077 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -947,6 +947,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	struct usb_hcd		*secondary_hcd;
+ 	int			retval = 0;
++	bool			comp_timer_running = false;
  
- struct piix_map_db {
-@@ -356,6 +357,9 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (BayTrail) */
-+	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
-+	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	/* Wait a bit if either of the roothubs need to settle from the
+ 	 * transition into bus suspend.
+@@ -984,6 +985,13 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
  
- 	{ }	/* terminate list */
- };
-@@ -521,6 +525,7 @@ static const struct piix_map_db *piix_map_db_table[] = {
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
- 	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
-+	[ich8_2port_sata_byt]	= &ich8_2port_map_db,
- };
- 
- static struct ata_port_info piix_port_info[] = {
-@@ -671,6 +676,15 @@ static struct ata_port_info piix_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &piix_sata_ops,
- 	},
+ 	/* If restore operation fails, re-initialize the HC during resume */
+ 	if ((temp & STS_SRE) || hibernated) {
 +
-+	[ich8_2port_sata_byt] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
- };
++		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
++				!(xhci_all_ports_seen_u0(xhci))) {
++			del_timer_sync(&xhci->comp_mode_recovery_timer);
++			xhci_dbg(xhci, "Compliance Mode Recovery Timer deleted!\n");
++		}
++
+ 		/* Let the USB core know _both_ roothubs lost power. */
+ 		usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
+ 		usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
+@@ -1026,6 +1034,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 		retval = xhci_init(hcd->primary_hcd);
+ 		if (retval)
+ 			return retval;
++		comp_timer_running = true;
++
+ 		xhci_dbg(xhci, "Start the primary HCD\n");
+ 		retval = xhci_run(hcd->primary_hcd);
+ 		if (!retval) {
+@@ -1067,7 +1077,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	 * to suffer the Compliance Mode issue again. It doesn't matter if
+ 	 * ports have entered previously to U0 before system's suspension.
+ 	 */
+-	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
++	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && !comp_timer_running)
+ 		compliance_mode_recovery_timer_init(xhci);
  
- static struct pci_bits piix_enable_bits[] = {
+ 	/* Re-enable port polling. */
 -- 
 1.8.1.2
 
