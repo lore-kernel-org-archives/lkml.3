@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab3FRLoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56083 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab3FRLoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932318Ab3FRLoh (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Jun 2013 07:44:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56057 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab3FRLoa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 07:44:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
+        Dave Airlie <airlied@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 43/93] drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC.
-Date: Tue, 18 Jun 2013 12:42:51 +0100
-Message-Id: <1371555821-12820-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 37/93] drm: fix a use-after-free when GPU acceleration disabled
+Date: Tue, 18 Jun 2013 12:42:45 +0100
+Message-Id: <1371555821-12820-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c upstream.
+commit b7ea85a4fed37835eec78a7be3039c8dc22b8178 upstream.
 
-In intel_sdvo_get_lvds_modes() the wrong i2c adapter record is used
-for DDC. Thus the code will always have to rely on a LVDS panel
-mode supplied by VBT.
-In most cases this succeeds, so this didn't get detected for quite
-a while.
+When GPU acceleration is disabled, drm_vblank_cleanup() will free the
+vblank-related data, such as vblank_refcount, vblank_inmodeset, etc.
+But we found that drm_vblank_post_modeset() may be called after the
+cleanup, which use vblank_refcount and vblank_inmodeset. And this will
+cause a kernel panic.
 
-This regression seems to have been introduced in
+Fix this by return immediately if dev->num_crtcs is zero. This is the
+same thing that drm_vblank_pre_modeset() does.
 
-commit f899fc64cda8569d0529452aafc0da31c042df2e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Jul 20 15:44:45 2010 -0700
+Call trace of a drm_vblank_post_modeset() after drm_vblank_cleanup():
+[   62.628906] [<ffffffff804868d0>] drm_vblank_post_modeset+0x34/0xb4
+[   62.628906] [<ffffffff804c7008>] atombios_crtc_dpms+0xb4/0x174
+[   62.628906] [<ffffffff804c70e0>] atombios_crtc_commit+0x18/0x38
+[   62.628906] [<ffffffff8047f038>] drm_crtc_helper_set_mode+0x304/0x3cc
+[   62.628906] [<ffffffff8047f92c>] drm_crtc_helper_set_config+0x6d8/0x988
+[   62.628906] [<ffffffff8047dd40>] drm_fb_helper_set_par+0x94/0x104
+[   62.628906] [<ffffffff80439d14>] fbcon_init+0x424/0x57c
+[   62.628906] [<ffffffff8046a638>] visual_init+0xb8/0x118
+[   62.628906] [<ffffffff8046b9f8>] take_over_console+0x238/0x384
+[   62.628906] [<ffffffff80436df8>] fbcon_takeover+0x7c/0xdc
+[   62.628906] [<ffffffff8024fa20>] notifier_call_chain+0x44/0x94
+[   62.628906] [<ffffffff8024fcbc>] __blocking_notifier_call_chain+0x48/0x68
+[   62.628906] [<ffffffff8042d990>] register_framebuffer+0x228/0x260
+[   62.628906] [<ffffffff8047e010>] drm_fb_helper_single_fb_probe+0x260/0x314
+[   62.628906] [<ffffffff8047e2c4>] drm_fb_helper_initial_config+0x200/0x234
+[   62.628906] [<ffffffff804e5560>] radeon_fbdev_init+0xd4/0xf4
+[   62.628906] [<ffffffff804e0e08>] radeon_modeset_init+0x9bc/0xa18
+[   62.628906] [<ffffffff804bfc14>] radeon_driver_load_kms+0xdc/0x12c
+[   62.628906] [<ffffffff8048b548>] drm_get_pci_dev+0x148/0x238
+[   62.628906] [<ffffffff80423564>] local_pci_probe+0x5c/0xd0
+[   62.628906] [<ffffffff80241ac4>] work_for_cpu_fn+0x1c/0x30
+[   62.628906] [<ffffffff802427c8>] process_one_work+0x274/0x3bc
+[   62.628906] [<ffffffff80242934>] process_scheduled_works+0x24/0x44
+[   62.628906] [<ffffffff8024515c>] worker_thread+0x31c/0x3f4
+[   62.628906] [<ffffffff802497a8>] kthread+0x88/0x90
+[   62.628906] [<ffffffff80206794>] kernel_thread_helper+0x10/0x18
 
-    drm/i915: use GMBUS to manage i2c links
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Add note about which commit likely introduced this issue.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/drm_irq.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 1af5db5..63b53d2 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1595,7 +1595,7 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
- 	 * Assume that the preferred modes are
- 	 * arranged in priority order.
- 	 */
--	intel_ddc_get_modes(connector, intel_sdvo->i2c);
-+	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
- 	if (list_empty(&connector->probed_modes) == false)
- 		goto end;
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index c798eea..c7a1348 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -981,7 +981,7 @@ EXPORT_SYMBOL(drm_vblank_off);
+  */
+ void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
+ {
+-	/* vblank is not initialized (IRQ not installed ?) */
++	/* vblank is not initialized (IRQ not installed ?), or has been freed */
+ 	if (!dev->num_crtcs)
+ 		return;
+ 	/*
+@@ -1003,6 +1003,10 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
+ {
+ 	unsigned long irqflags;
  
++	/* vblank is not initialized (IRQ not installed ?), or has been freed */
++	if (!dev->num_crtcs)
++		return;
++
+ 	if (dev->vblank_inmodeset[crtc]) {
+ 		spin_lock_irqsave(&dev->vbl_lock, irqflags);
+ 		dev->vblank_disable_allowed = 1;
 -- 
 1.8.1.2
 
