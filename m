@@ -1,66 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3FRPSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:18:05 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:40148 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab3FRPSD (ORCPT
+	id S932602Ab3FRPSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:18:12 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.149]:28992 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932076Ab3FRPSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:18:03 -0400
+	Tue, 18 Jun 2013 11:18:08 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-11.tower-180.messagelabs.com!1371568686!21938096!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Tue, 18 Jun 2013 17:18:06 +0200
+Date: Tue, 18 Jun 2013 17:21:29 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: <wim@iguana.be>
+CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
+Subject: [PATCH RESEND v10 2/2] watchdog: Sysfs interface for MEN A21 watchdog
+Message-ID: <20130618152119.GA23399@jtlinux>
+References: <20130618151939.GA23296@jtlinux>
 MIME-Version: 1.0
-In-Reply-To: <20130618142744.GG17619@somewhere.redhat.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com> <20130618142744.GG17619@somewhere.redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 18 Jun 2013 11:17:41 -0400
-Message-ID: <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
-Subject: Re: [PATCH 6/8] sched: task_sched_runtime introduce micro optimization
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130618151939.GA23296@jtlinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 18 Jun 2013 15:18:05.0849 (UTC) FILETIME=[084B8090:01CE6C37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +#ifdef CONFIG_64BIT
->> +     /*
->> +      * 64-bit doesn't need locks to atomically read a 64bit value. So we
->> +      * have two optimization chances, 1) when caller doesn't need
->> +      * delta_exec and 2) when the task's delta_exec is 0. The former is
->> +      * obvious. The latter is complicated. reading ->on_cpu is racy, but
->> +      * this is ok. If we race with it leaving cpu, we'll take a lock. So
->> +      * we're correct. If we race with it entering cpu, unaccounted time
->> +      * is 0. This is indistinguishable from the read occurring a few
->> +      * cycles earlier.
->> +      */
->> +     if (!add_delta || !p->on_cpu)
->> +             return p->se.sum_exec_runtime;
->
-> I'm not sure this is correct from an smp ordering POV. p->on_cpu may appear
-> to be 0 whereas the task is actually running for a while and p->se.sum_exec_runtime
-> can then be past the actual value on the remote CPU.
+This patch adds a sysfs interface for the watchdog
+device found on MEN A21 Boards.
 
-Quate form Paul's last e-mail
+The newly generated files are:
+* rebootcause:
+Can be one of:
+Power on Reset,
+CPU Reset Request,
+Push Button,
+FPGA Reset Request,
+Watchdog,
+Local Power Bad,
+Invalid or
+BDI
+and shows the reason of the boards last reboot.
 
->Stronger:
->
->+#ifdef CONFIG_64BIT
->+       if (!p->on_cpu)
->+               return p->se.sum_exec_runtime;
->+#endif
->
->[ Or !p->on_cpu || !add_delta ].
->
->We can take the racy read versus p->on_cpu since:
->  If we race with it leaving cpu: we take lock, we're correct
->  If we race with it entering cpu: unaccounted time ---> 0, this is
->indistinguishable from the read occurring a few cycles earlier.
+* active:
+Shows if the watchdog CPLD is actually running
 
-That said, even though we got slightly inaccurate current time, we
-have no way to
-know this is inaccurate. E.g. cpu clock saving feature bring us more
-inaccuracy, but
-we already live in such world.
+* allow_disable:
+Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
+
+* fastmode:
+Shows if the CPLD is running in fast mode (1s timeout), once it is in
+fastmode it can't be switched back to slow mode (30s timeout) until the
+next reboot.
+
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+
+ Revision 2:
+ * Re-worked sysfs patch to apply on re-worked base
+
+ Revision 3:
+ * Re-worked sysfs patch to apply on re-worked base
+
+ drivers/watchdog/mena21_wdt.c |   89 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+
+diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
+index 96dbba9..91cc90b 100644
+--- a/drivers/watchdog/mena21_wdt.c
++++ b/drivers/watchdog/mena21_wdt.c
+@@ -22,6 +22,17 @@
+
+ #define NUM_GPIOS 6
+
++static char *reset_causes[] = {
++	"Power On Reset",
++	"CPU Reset Request",
++	"Push Button",
++	"FPGA Reset Request",
++	"Watchdog",
++	"Local Power Bad",
++	"Invalid",
++	"BDI",
++};
++
+ enum a21_wdt_gpios {
+ 	GPIO_WD_ENAB,
+ 	GPIO_WD_FAST,
+@@ -53,6 +64,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
+ 	return reset;
+ }
+
++static ssize_t rebootcause_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++	unsigned int reset = 0;
++
++	reset = a21_wdt_get_bootstatus(drv);
++
++	return sprintf(buf, "%s\n", reset_causes[reset]);
++}
++static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
++
++static ssize_t active_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
++}
++static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
++
++static ssize_t allow_disable_show(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	return sprintf(buf, "%d\n", !nowayout);
++}
++static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
++
++static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
++}
++static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
++
++static int a21_wdt_create_files(struct watchdog_device *wdev)
++{
++	int ret;
++
++	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_active);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static void a21_wdt_remove_files(struct watchdog_device *wdev)
++{
++	device_remove_file(wdev->dev, &dev_attr_rebootcause);
++	device_remove_file(wdev->dev, &dev_attr_active);
++	device_remove_file(wdev->dev, &dev_attr_allow_disable);
++	device_remove_file(wdev->dev, &dev_attr_fastmode);
++}
++
+ static int a21_wdt_start(struct watchdog_device *wdt)
+ {
+ 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+@@ -215,11 +293,20 @@ static int a21_wdt_probe(struct platform_device *pdev)
+ 	}
+
+ 	dev_set_drvdata(&pdev->dev, drv);
++	dev_set_drvdata(a21_wdt.dev, drv);
++
++	ret = a21_wdt_create_files(&a21_wdt);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
++		goto err_create_sysfs;
++	}
+
+ 	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
+
+ 	return 0;
+
++err_create_sysfs:
++	watchdog_unregister_device(&drv->wdt);
+ err_register_wd:
+ 	mutex_destroy(&drv->lock);
+
+@@ -233,6 +320,8 @@ static int a21_wdt_remove(struct platform_device *pdev)
+ 	dev_warn(&pdev->dev,
+ 		"Unregistering A21 watchdog driver, board may reboot\n");
+
++	a21_wdt_remove_files(&drv->wdt);
++
+ 	watchdog_unregister_device(&drv->wdt);
+
+ 	mutex_destroy(&drv->lock);
+--
+1.7.9.5
+
