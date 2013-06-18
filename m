@@ -1,140 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab3FRRHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:07:06 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45957 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107Ab3FRRHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:07:05 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com, linux@arm.linux.org.uk,
-        catalin.marinas@arm.com, will.deacon@arm.com, mark.rutland@arm.com,
-        marc.zyngier@arm.com, tglx@linutronix.de,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: [PATCH 1/4] drivers: clocksource: configure event stream for ARM arch timer
-Date: Tue, 18 Jun 2013 18:07:00 +0100
-Message-Id: <1371575223-21702-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 18 Jun 2013 17:07:01.0185 (UTC) FILETIME=[3FA8A310:01CE6C46]
-X-MC-Unique: 113061818070206901
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S933609Ab3FRRIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:08:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52096 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933339Ab3FRRIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:08:53 -0400
+Date: Tue, 18 Jun 2013 19:08:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Subject: Re: [x86][v2] only print out DR registers if they are not power-on
+ defaults.
+Message-ID: <20130618170848.GD13114@pd.tnic>
+References: <20130618041132.GA23492@redhat.com>
+ <20130618084356.GA13123@pd.tnic>
+ <20130618140730.GA1313@redhat.com>
+ <20130618155919.GC13123@pd.tnic>
+ <20130618160911.GA24487@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130618160911.GA24487@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r5IH8sFH002387
 
-From: Will Deacon <will.deacon@arm.com>
+On Tue, Jun 18, 2013 at 12:09:11PM -0400, Dave Jones wrote:
+> The DR registers are rarely useful when decoding oopses.
+> With screen real estate during oopses at a premium, we can save two lines
+> by only printing out these registers when they are set to something other
+> than they power-on state.
+> 
+> [v2: incorporate D6 change suggested by Borislav Petkov <bp@alien8.de>]
+> 
+> Signed-off-by: Dave Jones <davej@redhat.com>
 
-The ARM architected timer can generate events (used for waking up
-CPUs executing the wfe instruction) at a frequency represented as a
-power-of-2 divisor of the clock rate.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-This patch configures the event stream, aiming for a period of 100us
-between events. This can be used to implement wfe-based timeouts for
-userspace locking implementations.
-
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
----
- arch/arm/include/asm/arch_timer.h    | 5 +++--
- arch/arm64/include/asm/arch_timer.h  | 6 +++---
- drivers/clocksource/arm_arch_timer.c | 9 ++++++++-
- include/clocksource/arm_arch_timer.h | 2 ++
- 4 files changed, 16 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index accefe0..75c8ec3 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -89,14 +89,15 @@ static inline u64 arch_counter_get_cntvct(void)
- 	return cval;
- }
- 
--static inline void __cpuinit arch_counter_set_user_access(void)
-+static inline void __cpuinit arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
- 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
- 
- 	/* disable user access to everything */
--	cntkctl &= ~((3 << 8) | (7 << 0));
-+	cntkctl &= ~((3 << 8) | (0xf << 4) | (3 << 0));
-+	cntkctl |= (divider << 4) | (1 << 2);
- 
- 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
- }
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index d56ed11..5fcaa6f 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -97,16 +97,16 @@ static inline u32 arch_timer_get_cntfrq(void)
- 	return val;
- }
- 
--static inline void __cpuinit arch_counter_set_user_access(void)
-+static inline void __cpuinit arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
- 	/* Disable user access to the timers and the physical counter. */
- 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
--	cntkctl &= ~((3 << 8) | (1 << 0));
-+	cntkctl &= ~((3 << 8) | (0xf << 4) | (1 << 0));
- 
- 	/* Enable user access to the virtual counter and frequency. */
--	cntkctl |= (1 << 1);
-+	cntkctl |= (divider << 4) | (1 << 2) | (1 << 1);
- 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
- }
- 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 053d846..11aaf06 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -125,6 +125,8 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
- 
- static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
- {
-+	int evt_stream_div, pos;
-+
- 	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
- 	clk->name = "arch_sys_timer";
- 	clk->rating = 450;
-@@ -153,7 +155,12 @@ static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
- 			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
- 	}
- 
--	arch_counter_set_user_access();
-+	/* Find the closest power of two to the divisor */
-+	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
-+	pos = fls(evt_stream_div);
-+	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
-+		pos--;
-+	arch_counter_set_user_access(min(pos, 15));
- 
- 	return 0;
- }
-diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
-index c463ce9..24dc140 100644
---- a/include/clocksource/arm_arch_timer.h
-+++ b/include/clocksource/arm_arch_timer.h
-@@ -29,6 +29,8 @@
- #define ARCH_TIMER_PHYS_ACCESS		0
- #define ARCH_TIMER_VIRT_ACCESS		1
- 
-+#define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
-+
- #ifdef CONFIG_ARM_ARCH_TIMER
- 
- extern u32 arch_timer_get_rate(void);
 -- 
-1.8.1.2
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
