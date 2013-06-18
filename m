@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab3FRGLu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:11:50 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:60934 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3FRGLs (ORCPT
+	id S1752656Ab3FRGMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:12:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57809 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3FRGMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:11:48 -0400
-Date: Tue, 18 Jun 2013 10:09:35 +0400
-From: Andrew Vagin <avagin@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] [RFC] mnt: restrict a number of "struct mnt"
-Message-ID: <20130618060935.GA28077@gmail.com>
-References: <1371457498-27241-1-git-send-email-avagin@openvz.org>
- <878v284iif.fsf@xmission.com>
- <20130617155614.f0c5b9458d4ff9372a05eaa0@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <20130617155614.f0c5b9458d4ff9372a05eaa0@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Jun 2013 02:12:50 -0400
+Date: Tue, 18 Jun 2013 16:12:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>, Greg KH <greg@kroah.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: linux-next: manual merge of the arm-soc tree with the usb tree
+Message-Id: <20130618161239.5ce92432180d9418831d2514@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 03:56:14PM -0700, Andrew Morton wrote:
-> On Mon, 17 Jun 2013 12:58:00 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
-> 
-> > > I found that a few processes can eat all host memory and nobody can kill them.
-> > > $ mount -t tmpfs xxx /mnt
-> > > $ mount --make-shared /mnt
-> > > $ for i in `seq 30`; do mount --bind /mnt `mktemp -d /mnt/test.XXXXXX` & done
-> > >
-> > > All this processes are unkillable, because they took i_mutex and waits
-> > > namespace_lock.
-> > >
-> > > ...
-> > > 21715 pts/0 ______D __________0:00 __________________\_ mount --bind /mnt /mnt/test.ht6jzO
-> > > 21716 pts/0 ______D __________0:00 __________________\_ mount --bind /mnt /mnt/test.97K4mI
-> > > 21717 pts/0 ______R __________0:01 __________________\_ mount --bind /mnt /mnt/test.gO2CD9
-> > > ...
-> > >
-> > > Each of this process doubles a number of mounts, so at the end we will
-> > > have about 2^32 mounts and the size of struct mnt is 256 bytes, so we
-> > > need about 1TB of RAM.
-> > >
-> > > Another problem is that ___umount___ of a big tree is very hard operation
-> > > and it requires a lot of time.
-> > > E.g.:
-> > > 16411
-> > > umount("/tmp/xxx", MNT_DETACH) __________________= 0 <7.852066> (7.8 sec)
-> > > 32795
-> > > umount("/tmp/xxx", MNT_DETACH) __________________= 0 <34.485501> ( 34 sec)
-> > >
-> > > For all this time sys_umoun takes namespace_sem and vfsmount_lock...
-> > >
-> > > Due to all this reasons I suggest to restrict a number of mounts.
-> > > Probably we can optimize this code in a future, but now this restriction
-> > > can help.
-> > 
-> > So for anyone seriously worried about this kind of thing in general we
-> > already have the memory control group, which is quite capable of
-> > limiting this kind of thing, and it limits all memory allocations not
-> > just mount.
-> 
-> What is the exposure here?  By what means can a non-CAP_SYS_ADMIN user
-> run sys_mount() under the namespace system?
-> 
-> IOW, what does the sysadmin have to do to permit this?  Is that a
-> typical thing to do, or did the sysadmin make a mistake?
+--Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's a problem for Linux Containers. Because usually the root user in
-container should have enough rights to mount something (tmpfs,
-bindmounts, etc).  Our target is to make containers completely isolated.
+Hi all,
 
-A container is isolated with help of namespaces. The user namespace
-creates a new sets of capabilities and users.
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/usb/phy/phy-rcar-usb.c between commit 56a9a6de2a87 ("usb: phy:
+rcar-usb: Fix comment w.r.t. devm_ioremap_resource") from the usb tree
+and commit 725bf9dcafe1 ("phy-rcar-usb: correct base address") from the
+arm-soc tree.
 
+I fixed it up (The latter removed the comment corrected by the former)
+and can carry the fix as necessary (no action is required).
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRv/pcAAoJEECxmPOUX5FEIZoP/RMe+ZEtb3M8K/ITjKHlySWZ
+UBdNQ2aVPhVWerTWWwuVO5S+lDnp3jUchiYFSIyQXgh5rY5kTcWBXHnI8s/psne3
+XIx5fro6UF9a0QqaPeGa4Glqq8+TnNrR5TFq6tiNhPB/dpjhxinPb7vJO91LyD2C
+cAKzd4a8aM52NLasKW8lG5S5P1mse+JatNWb/8rH5HVctaEv6ZObPaTpkMqoJcj1
++0S4LXQ8k+KTh5sLbiYSsNtPx8T9rz0X99xm/J1l+Sa8E+hcHTuS0e3MJjaNdxlD
+7JZVF+pc2C1InFqcFspzJQBMzaj0sIX8/zPsZLPiCinEpUnpO3YGyOt2oGKSCETr
+QuqVt6BSGoDxewVtL8m3m3CPxCNZNb7s0ieow7BRuapMUaIFEi7ApbRH1W7QDKJC
+uNy0a55u62zjYnlfZcXpBCXsEiQ040pQXG96h6SsEIulbgrkibNivw13UbJ44cW3
+n/aAx2nZriPiTOi/oSyZbR9JwLA5fPJIXyd8JZlZJVPcs8CzLHxQaWvJyd132wfN
+xQ/vSGIANWLZh1Y0vC6+HwGtgyje+Rf5LHoAsABB6BS5WPr8ZH1j1llSlX5jJDwV
+slz5RTbNLSNu8Sj+39tEBSdxwF5hPdrsKR3n3gFVk87BJbq9v1J1Dupau4EOUcJ1
+KuNnlzUOMOQyCpVpw0TN
+=z4B9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL--
