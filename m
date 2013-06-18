@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3FRLAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:00:36 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:52411 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3FRLAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:00:34 -0400
-Date: Tue, 18 Jun 2013 13:00:28 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Airlie <airlied@linux.ie>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/tegra: Include linux/types.h
-Message-ID: <20130618110027.GC6322@mithrandir>
-References: <1371470294.26299.21.camel@x61.thuisdomein>
- <20130617203353.GC5265@mithrandir>
- <1371503099.26299.27.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
-Content-Disposition: inline
-In-Reply-To: <1371503099.26299.27.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754869Ab3FRLE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:04:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:54027 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752411Ab3FRLE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 07:04:57 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Grant Likely <grant.likely@linaro.org>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2 08/11] irqdomain: Refactor irq_domain_associate_many()
+In-reply-to: <20130618094617.9BFA93E0D88@localhost>
+References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org> <1371244086-9189-9-git-send-email-grant.likely@linaro.org> <4521.1371518445@ale.ozlabs.ibm.com> <5220.1371518734@ale.ozlabs.ibm.com> <CACxGe6s+K0xF0pnLjKoKXtz_YNoeM2+erhr_g2dX4ONpddRNGA@mail.gmail.com> <20130618094617.9BFA93E0D88@localhost>
+Comments: In-reply-to Grant Likely <grant.likely@linaro.org>
+   message dated "Tue, 18 Jun 2013 10:46:17 +0100."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Tue, 18 Jun 2013 21:04:55 +1000
+Message-ID: <32351.1371553495@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Grant Likely <grant.likely@linaro.org> wrote:
 
---5G06lTa6Jq83wMTw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Tue, 18 Jun 2013 10:05:31 +0100, Grant Likely <grant.likely@linaro.org> wrote:
+> > On Tue, Jun 18, 2013 at 2:25 AM, Michael Neuling <mikey@neuling.org> wrote:
+> > > Michael Neuling <mikey@neuling.org> wrote:
+> > >
+> > >> Grant,
+> > >>
+> > >> In next-20130617 we are getting the below crash on POWER7.  Bisecting,
+> > >> points to this patch (d39046ec72 in next)
+> > >
+> > > Also, reverting just d39046ec72 fixes the crash in next-20130617.
+> > 
+> > Odd. Of all the changes in that series, I would not have expected that
+> > one to cause any problems. I'm digging into it now...
+> 
+> Ugh. I flubbed the commit. Try this patch. It should solve the problem:
+> 
 
-On Mon, Jun 17, 2013 at 11:04:59PM +0200, Paul Bolle wrote:
-> On Mon, 2013-06-17 at 22:33 +0200, Thierry Reding wrote:
-> > That has already been fixed in linux-next.
->=20
-> This header was added in v3.10-rc1. The fix in linux-next will ship in
-> v3.11. Isn't that fix appropriate for (one of) the upcoming v3.10
-> release candidate(s)?
+Yep, it fixes it.  Thanks.
 
-It's not really a bug and it can easily be worked around by including
-linux/types.h explicitly. But you're right, there's still a chance of
-getting this in before the final release of 3.10 and I can prepare a
-pull request for Dave.
+Mikey
 
-Thierry
-
---5G06lTa6Jq83wMTw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwD3LAAoJEN0jrNd/PrOhl84QAKKHWEOIoKvdCDUg5JMXxmrD
-I9HGbk/xxtrzu7W9sPxIfxmg9PyzGbVHtNUp6uR+uP2SOU3yHf2z7zQKleR2PkEC
-BW+7CP4f5XEUzMgcRi9nHT6nn9dL8v+HL8HaCljBlj9LOHckWRL7wIX/O146jpOD
-GahVfSVDV+Na1hv/tQV0XIJI4j14KF54QJ1P5t/l6Q6fJspZ56B+YiKUMWJlfpZM
-Jl29Tsn7FLWRPGq8DBdYX6tBeDunWkgE48sEIHXD7GBIwF2yQO4hT1QTKR5d/jZP
-KALzVit42yLBAAV1+oNqFpSCStGDZE4purbShHdw7Y3H0ZHmjL04Ju13Peie7ePR
-0CqASG0S2gpENphexQA61iINw7mK8FaN3VrqVZghX6/78Ost0ko+OmwwxKooVrvP
-zZgLvog9hNR/mYzhAcfDzVdDccTa/N90X2Is/Pa0BfFxSVgzDvmqcMzxDNqQ53Ql
-SrG8Cn51M5r07Zp2TibU4EuSj96jmZ+XIqJ8iIyTPuNeZxk/KdDK7kb0MNJzamDn
-YyQIwohV/3O6YTE1jHW8puXlRdwBr0KKhKzqLxSjNOAbjwbiRXJmTiUa5IIS4Kag
-87QqIu9ogDLjanT9AyTzKRuDwaCBxKldnF2rbM6CkgNG1mrywfVHj7Zr8Y9kE2RG
-OEAoBuUyvmqMgda6M5N/
-=vVRb
------END PGP SIGNATURE-----
-
---5G06lTa6Jq83wMTw--
+> From b7ba09c29ed36eda8e16453646b55faea7f9c25f Mon Sep 17 00:00:00 2001
+> From: Grant Likely <grant.likely@linaro.org>
+> Date: Tue, 18 Jun 2013 10:15:19 +0100
+> Subject: [PATCH] irqdomain: Fix flubbed irq_domain_associate_many refactoring
+> 
+> commit d39046ec72, "irqdomain: Refactor irq_domain_associate_many()" was
+> missing the following hunk which causes a boot failure on anything using
+> irq_domain_add_tree() to allocate an irq domain.
+> 
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Michael Neuling <mikey@neuling.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+> Cc: Thomas Gleixner <tglx@linutronix.de>,
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  include/linux/irqdomain.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+> index 02f7658..c983ed1 100644
+> --- a/include/linux/irqdomain.h
+> +++ b/include/linux/irqdomain.h
+> @@ -162,7 +162,7 @@ static inline struct irq_domain *irq_domain_add_tree(struct device_node *of_node
+>  					 const struct irq_domain_ops *ops,
+>  					 void *host_data)
+>  {
+> -	return irq_domain_add_linear(of_node, 0, ops, host_data);
+> +	return __irq_domain_add(of_node, 0, ~0, 0, ops, host_data);
+>  }
+>  
+>  extern void irq_domain_remove(struct irq_domain *host);
+> -- 
+> 1.8.1.2
+> 
