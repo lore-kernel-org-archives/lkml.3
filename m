@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933842Ab3FRWpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 18:45:40 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:38584 "EHLO
+	id S1756415Ab3FRWqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 18:46:16 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:59227 "EHLO
 	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482Ab3FRWp2 (ORCPT
+	with ESMTP id S933741Ab3FRWpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 18:45:28 -0400
+	Tue, 18 Jun 2013 18:45:39 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Dirk Gouders <dirk@gouders.net>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 06/14] nconf: use function calls instead of ncurses' variables LINES and COLS
-Date: Wed, 19 Jun 2013 00:45:02 +0200
-Message-Id: <e0b42605e685a0833303e1d4dde277c99d9e17b5.1371595499.git.yann.morin.1998@free.fr>
+Subject: [PATCH 13/14] kconfig: loop as long as we changed some symbols in randconfig
+Date: Wed, 19 Jun 2013 00:45:09 +0200
+Message-Id: <6990fad0c8b4bf8be87b3d4736f4a9dd1b4421ee.1371595499.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
 References: <cover.1371595499.git.yann.morin.1998@free.fr>
@@ -24,165 +23,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Gouders <dirk@gouders.net>
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-According to the documentation [1], LINES and COLS are initialized by
-initscr(); it does not say anything about the behavior when windows are
-resized.
+Because of choice-in-a-choice constructs, it can happen that not all
+symbols are assigned a value during randconfig, leading in rare cases
+to this situation:
 
-Do not rely on the current implementation of ncurses that updates
-these variables on resize, but use the propper function calls or macros
-to get window dimensions.
+    ---8<--- choice-in-choice.in
+    choice
+        bool "A/B/C"
+    config A
+        bool "A"
 
-The use of the variables in main() was OK, but for the sake of
-consistency it was modified to use the macro getmaxyx().
+    config B
+        bool "B"
+    if B
+    choice
+        bool "E/F"
+    config E
+        bool "E"
+    config F
+        bool "F"
+    endchoice
+    endif # B
 
-[1] ncurses(3X)
+    config C
+        bool "C"
+    endchoice
+    ---8<---
 
-Signed-off-by: Dirk Gouders <dirk@gouders.net>
-Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-[yann.morin.1998@free.fr: declare 'lines' and 'columns' on a single line]
-Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
+    $ ./scripts/kconfig/conf --randconfig choice-in-choice.in
+    [--SNIP--]
+    $ ./scripts/kconfig/conf --silentoldconfig choice-in-choice.in </dev/null
+    [--SNIP--]
+    A/B/C
+      1. A (A)
+    > 2. B (B)
+      3. C (C)
+    choice[1-3]: 2
+      E/F
+      > 1. E (E) (NEW)
+        2. F (F) (NEW)
+      choice[1-2]: aborted!
+
+    Console input/output is redirected. Run 'make oldconfig' to update
+    configuration.
+
+Fix this by looping in randconfig for as long as some symbol gets assigned
+a value.
+
+Note: this was spotted with the USB EHCI Debug Device Gadget (USB_G_DBGP),
+which uses this choice-in-a-choice construct, and exhibits this problem.
+The example above is just a stripped-down minimalist test-case.
+
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 ---
- scripts/kconfig/nconf.c     | 21 ++++++++++++++-------
- scripts/kconfig/nconf.gui.c | 20 +++++++++++---------
- 2 files changed, 25 insertions(+), 16 deletions(-)
+ scripts/kconfig/conf.c     |  3 ++-
+ scripts/kconfig/confdata.c | 18 ++++++++++++++----
+ scripts/kconfig/lkc.h      |  2 +-
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index dbf31ed..aac85d3 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -365,15 +365,16 @@ static void print_function_line(void)
- 	int i;
- 	int offset = 1;
- 	const int skip = 1;
-+	int lines = getmaxy(stdscr);
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 38616c1..d19944f 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -654,7 +654,8 @@ int main(int ac, char **av)
+ 		conf_set_all_new_symbols(def_default);
+ 		break;
+ 	case randconfig:
+-		conf_set_all_new_symbols(def_random);
++		/* Really nothing to do in this loop */
++		while (conf_set_all_new_symbols(def_random)) ;
+ 		break;
+ 	case defconfig:
+ 		conf_set_all_new_symbols(def_default);
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index d36bc1f..c55c227 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -1040,7 +1040,7 @@ void conf_set_changed_callback(void (*fn)(void))
+ 	conf_changed_callback = fn;
+ }
  
- 	for (i = 0; i < function_keys_num; i++) {
- 		(void) wattrset(main_window, attributes[FUNCTION_HIGHLIGHT]);
--		mvwprintw(main_window, LINES-3, offset,
-+		mvwprintw(main_window, lines-3, offset,
- 				"%s",
- 				function_keys[i].key_str);
- 		(void) wattrset(main_window, attributes[FUNCTION_TEXT]);
- 		offset += strlen(function_keys[i].key_str);
--		mvwprintw(main_window, LINES-3,
-+		mvwprintw(main_window, lines-3,
- 				offset, "%s",
- 				function_keys[i].func);
- 		offset += strlen(function_keys[i].func) + skip;
-@@ -954,7 +955,7 @@ static void show_menu(const char *prompt, const char *instructions,
- 
- 	clear();
- 	(void) wattrset(main_window, attributes[NORMAL]);
--	print_in_middle(stdscr, 1, 0, COLS,
-+	print_in_middle(stdscr, 1, 0, getmaxx(stdscr),
- 			menu_backtitle,
- 			attributes[MAIN_HEADING]);
- 
-@@ -1455,14 +1456,18 @@ static void conf_save(void)
- 
- void setup_windows(void)
+-static void randomize_choice_values(struct symbol *csym)
++static bool randomize_choice_values(struct symbol *csym)
  {
-+	int lines, columns;
+ 	struct property *prop;
+ 	struct symbol *sym;
+@@ -1053,7 +1053,7 @@ static void randomize_choice_values(struct symbol *csym)
+ 	 * In both cases stop.
+ 	 */
+ 	if (csym->curr.tri != yes)
+-		return;
++		return false;
+ 
+ 	prop = sym_get_choice_prop(csym);
+ 
+@@ -1084,6 +1084,8 @@ static void randomize_choice_values(struct symbol *csym)
+ 	csym->flags |= SYMBOL_DEF_USER;
+ 	/* clear VALID to get value calculated */
+ 	csym->flags &= ~(SYMBOL_VALID);
 +
-+	getmaxyx(stdscr, lines, columns);
-+
- 	if (main_window != NULL)
- 		delwin(main_window);
++	return true;
+ }
  
- 	/* set up the menu and menu window */
--	main_window = newwin(LINES-2, COLS-2, 2, 1);
-+	main_window = newwin(lines-2, columns-2, 2, 1);
- 	keypad(main_window, TRUE);
--	mwin_max_lines = LINES-7;
--	mwin_max_cols = COLS-6;
-+	mwin_max_lines = lines-7;
-+	mwin_max_cols = columns-6;
+ void set_all_choice_values(struct symbol *csym)
+@@ -1106,7 +1108,7 @@ void set_all_choice_values(struct symbol *csym)
+ 	csym->flags &= ~(SYMBOL_VALID | SYMBOL_NEED_SET_CHOICE_VALUES);
+ }
  
- 	/* panels order is from bottom to top */
- 	new_panel(main_window);
-@@ -1470,6 +1475,7 @@ void setup_windows(void)
- 
- int main(int ac, char **av)
+-void conf_set_all_new_symbols(enum conf_def_mode mode)
++bool conf_set_all_new_symbols(enum conf_def_mode mode)
  {
-+	int lines, columns;
- 	char *mode;
+ 	struct symbol *sym, *csym;
+ 	int i, cnt, pby, pty, ptm;	/* pby: probability of boolean  = y
+@@ -1154,6 +1156,7 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 			exit( 1 );
+ 		}
+ 	}
++	bool has_changed = false;
  
- 	setlocale(LC_ALL, "");
-@@ -1495,7 +1501,8 @@ int main(int ac, char **av)
- 	keypad(stdscr, TRUE);
- 	curs_set(0);
+ 	for_all_symbols(i, sym) {
+ 		if (sym_has_value(sym) || (sym->flags & SYMBOL_VALID))
+@@ -1161,6 +1164,7 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 		switch (sym_get_type(sym)) {
+ 		case S_BOOLEAN:
+ 		case S_TRISTATE:
++			has_changed = true;
+ 			switch (mode) {
+ 			case def_yes:
+ 				sym->def[S_DEF_USER].tri = yes;
+@@ -1219,6 +1223,12 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
  
--	if (COLS < 75 || LINES < 20) {
-+	getmaxyx(stdscr, lines, columns);
-+	if (columns < 75 || lines < 20) {
- 		endwin();
- 		printf("Your terminal should have at "
- 			"least 20 lines and 75 columns\n");
-diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
-index 9f8c44e..8275f0e5 100644
---- a/scripts/kconfig/nconf.gui.c
-+++ b/scripts/kconfig/nconf.gui.c
-@@ -276,8 +276,8 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
- 
- 	total_width = max(msg_width, btns_width);
- 	/* place dialog in middle of screen */
--	y = (LINES-(msg_lines+4))/2;
--	x = (COLS-(total_width+4))/2;
-+	y = (getmaxy(stdscr)-(msg_lines+4))/2;
-+	x = (getmaxx(stdscr)-(total_width+4))/2;
- 
- 
- 	/* create the windows */
-@@ -387,8 +387,8 @@ int dialog_inputbox(WINDOW *main_window,
- 		prompt_width = max(prompt_width, strlen(title));
- 
- 	/* place dialog in middle of screen */
--	y = (LINES-(prompt_lines+4))/2;
--	x = (COLS-(prompt_width+4))/2;
-+	y = (getmaxy(stdscr)-(prompt_lines+4))/2;
-+	x = (getmaxx(stdscr)-(prompt_width+4))/2;
- 
- 	strncpy(result, init, *result_len);
- 
-@@ -545,7 +545,7 @@ void show_scroll_win(WINDOW *main_window,
- {
- 	int res;
- 	int total_lines = get_line_no(text);
--	int x, y;
-+	int x, y, lines, columns;
- 	int start_x = 0, start_y = 0;
- 	int text_lines = 0, text_cols = 0;
- 	int total_cols = 0;
-@@ -556,6 +556,8 @@ void show_scroll_win(WINDOW *main_window,
- 	WINDOW *pad;
- 	PANEL *panel;
- 
-+	getmaxyx(stdscr, lines, columns);
+ 		sym_calc_value(csym);
+ 		if (mode == def_random)
+-			randomize_choice_values(csym);
++			has_changed = randomize_choice_values(csym);
++		else {
++			set_all_choice_values(csym);
++			has_changed = true;
++		}
+ 	}
 +
- 	/* find the widest line of msg: */
- 	total_lines = get_line_no(text);
- 	for (i = 0; i < total_lines; i++) {
-@@ -569,14 +571,14 @@ void show_scroll_win(WINDOW *main_window,
- 	(void) wattrset(pad, attributes[SCROLLWIN_TEXT]);
- 	fill_window(pad, text);
++	return has_changed;
+ }
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index 0c8d419..09f4edf 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -86,7 +86,7 @@ const char *conf_get_autoconfig_name(void);
+ char *conf_get_default_confname(void);
+ void sym_set_change_count(int count);
+ void sym_add_change_count(int count);
+-void conf_set_all_new_symbols(enum conf_def_mode mode);
++bool conf_set_all_new_symbols(enum conf_def_mode mode);
+ void set_all_choice_values(struct symbol *csym);
  
--	win_lines = min(total_lines+4, LINES-2);
--	win_cols = min(total_cols+2, COLS-2);
-+	win_lines = min(total_lines+4, lines-2);
-+	win_cols = min(total_cols+2, columns-2);
- 	text_lines = max(win_lines-4, 0);
- 	text_cols = max(win_cols-2, 0);
- 
- 	/* place window in middle of screen */
--	y = (LINES-win_lines)/2;
--	x = (COLS-win_cols)/2;
-+	y = (lines-win_lines)/2;
-+	x = (columns-win_cols)/2;
- 
- 	win = newwin(win_lines, win_cols, y, x);
- 	keypad(win, TRUE);
+ struct conf_printer {
 -- 
 1.8.1.2
 
