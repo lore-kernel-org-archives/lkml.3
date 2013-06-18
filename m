@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab3FRPMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:12:39 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:41665 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab3FRPMh (ORCPT
+	id S932502Ab3FRPNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:13:21 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:33031 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab3FRPNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:12:37 -0400
+	Tue, 18 Jun 2013 11:13:19 -0400
+Message-ID: <51C07909.9030508@gmail.com>
+Date: Tue, 18 Jun 2013 23:13:13 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130618142050.GF17619@somewhere.redhat.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-6-git-send-email-kosaki.motohiro@gmail.com> <20130618142050.GF17619@somewhere.redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 18 Jun 2013 11:12:17 -0400
-Message-ID: <CAHGf_=pzYT9-BLfgX-+0jE2H4CbKChxwp45SwqERC6wu_wSzGw@mail.gmail.com>
-Subject: Re: [PATCH 3/8] posix-cpu-timers: fix wrong timer initialization
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com> <51BDF705.5090904@gmail.com> <CAN_LGv0yXhQi82ck3mvTbwuZv2dhnYB7Xnk9P4=5XVoAaAAeZQ@mail.gmail.com> <CAN_LGv2GTgMJB8NL7iPnyk9bMvbDKE9i6HP0UV5d_9CfytJ0pg@mail.gmail.com>
+In-Reply-To: <CAN_LGv2GTgMJB8NL7iPnyk9bMvbDKE9i6HP0UV5d_9CfytJ0pg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:20 AM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Sun, May 26, 2013 at 05:35:44PM -0400, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On 06/18/2013 01:07 AM, Alexander E. Patrakov wrote:
+> 2013/6/17 Alexander E. Patrakov <patrakov@gmail.com>:
+>> I am not 100% sure that the static key backtrace is the same in all
+>> cases. However, I do remember that it does appear both in the
+>> non-hotplug and hotplug cases.
 >>
->> Currently glibc's rt/tst-cputimer1 testcase sporadically fails because
->> a timer created by timer_create() may fire earlier than specified.
->>
->> posix_cpu_timer_set() uses "val" as current time for three purpose. 1)
->> initialize sig->cputimer. 2) calculation "old" val. 3) calculations an
->> expires.
->>
->> (1) and (2) should only use committed time (i.e. without delta_exec)
->> because run_posix_cpu_timers() don't care of delta_exec and we need
->> consistency, but (3) need exact current time (aka cpu clock time) because
->> an expires should be "now + timeout" by definition.
->>
->> This patch distinguishes between two kinds of "now".
->>
->> Cc: Olivier Langlois <olivier@trillion01.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Acked-by: Peter Zijlstra <peterz@infradead.org>
->> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> ---
->>  include/linux/kernel_stat.h |    5 -----
->>  kernel/posix-cpu-timers.c   |   14 ++++++++++++--
->>  kernel/sched/core.c         |   13 -------------
->>  3 files changed, 12 insertions(+), 20 deletions(-)
->>
->> diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
->> index ed5f6ed..f5d4fdf 100644
->> --- a/include/linux/kernel_stat.h
->> +++ b/include/linux/kernel_stat.h
->> @@ -117,11 +117,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
->>       return kstat_cpu(cpu).irqs_sum;
->>  }
->>
->> -/*
->> - * Lock/unlock the current runqueue - to extract task statistics:
->> - */
->> -extern unsigned long long task_delta_exec(struct task_struct *);
->> -
->>  extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
->>  extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
->>  extern void account_steal_time(cputime_t);
->> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
->> index 25447c5..d068808 100644
->> --- a/kernel/posix-cpu-timers.c
->> +++ b/kernel/posix-cpu-timers.c
->> @@ -652,7 +652,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
->>               cpu->cpu = cputime.utime;
->>               break;
->>       case CPUCLOCK_SCHED:
->> -             cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
->> +             cpu->sched = cputime.sum_exec_runtime;
->
-> Are you sure that all callers of cpu_timer_sample_group() are fine with that change?
+>> I will retest this after work, i.e. in ~12 hours.
+> 
+> Tried again, failed to reproduce this warning. Sorry :(
+Sounds like another memory corruption caused by race conditions:(
 
-Now, cpu_timer_sample_group() is used from following four points.
+> 
+> --
+> Alexander E. Patrakov
+> 
 
-posix_cpu_timer_set(): for timer initialization
-posix_cpu_timer_get(): for timer_gettime(2)
-posix_cpu_timer_schedule(): timer firing
-set_process_cpu_timer(): for itimer
-
-I think all of them are safe because, the point is, timer firing
-procedure (check_thread_timers and check_process_timers) don't care
-uncommitted delta. Then, other timer functions need to use the same
-timer tick. Otherwise the inconsistency leak to userland sooner or
-later.
-
-The another solution is, check_{thread/process}_timers take plenty rq
-locks and use accurate time. However, of course, it may make lots
-performance hit. So, I don't want
-to take this way.
-
-
-> Looking at set_process_cpu_timer() it seems we want the committed time as well to
-> be added on newval. For the same reasons we use cpu_clock_sample_group() in (3) here.
-
-Sorry, I haven't caught your point. Could you elaborate more?
