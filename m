@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab3FRQgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:36:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49303 "EHLO
+	id S933557Ab3FRQhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:37:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49296 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab3FRQOm (ORCPT
+	with ESMTP id S933019Ab3FRQOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:42 -0400
+	Tue, 18 Jun 2013 12:14:41 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 14/26] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
-Date: Tue, 18 Jun 2013 09:14:54 -0700
-Message-Id: <20130618161235.772969602@linuxfoundation.org>
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 05/26] drivers/rtc/rtc-twl.c: fix missing device_init_wakeup() when booted with device tree
+Date: Tue, 18 Jun 2013 09:14:45 -0700
+Message-Id: <20130618161232.309241489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -28,70 +32,43 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Tony Lindgren <tony@atomide.com>
 
-commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
+commit 24b8256a1fb28d357bc6fa09184ba29b4255ba5c upstream.
 
-In
+When booted in legacy mode device_init_wakeup() gets called by
+drivers/mfd/twl-core.c when the children are initialized.  However, when
+booted using device tree, the children are created with
+of_platform_populate() instead add_children().
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c
-Author: Egbert Eich <eich@suse.de>
-Date:   Tue Jun 4 17:13:21 2013 +0200
+This means that the RTC driver will not have device_init_wakeup() set,
+and we need to call it from the driver probe like RTC drivers typically
+do.
 
-    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
+Without this we cannot test PM wake-up events on omaps for cases where
+there may not be any physical wake-up event.
 
-Egbert Eich fixed a long-standing bug where we simply used a
-non-working i2c controller to read the EDID for SDVO-LVDS panels.
-Unfortunately some machines seem to not be able to cope with the mode
-provided in the EDID. Specifically they seem to not be able to cope
-with a 4x pixel mutliplier instead of a 2x one, which seems to have
-been worked around by slightly changing the panels native mode in the
-VBT so that the dotclock is just barely above 50MHz.
-
-Since it took forever to notice the breakage it's fairly safe to
-assume that at least for SDVO-LVDS panels the VBT contains fairly sane
-data. So just switch around the order and use VBT modes first.
-
-v2: Also add EDID modes just in case, and spell Egbert correctly.
-
-v3: Elaborate a bit more about what's going on on Chris' machine.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
-Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Egbert Eich <eich@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Kevin Hilman <khilman@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-twl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1582,10 +1582,13 @@ static void intel_sdvo_get_lvds_modes(st
- 	 * arranged in priority order.
- 	 */
- 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
--	if (list_empty(&connector->probed_modes) == false)
--		goto end;
- 
--	/* Fetch modes from VBT */
-+	/*
-+	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
-+	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
-+	 * drm_mode_probed_add adds the mode at the head of the list we add it
-+	 * last.
-+	 */
- 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
- 		newmode = drm_mode_duplicate(connector->dev,
- 					     dev_priv->sdvo_lvds_vbt_mode);
-@@ -1597,7 +1600,6 @@ static void intel_sdvo_get_lvds_modes(st
- 		}
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -523,6 +523,7 @@ static int __devinit twl_rtc_probe(struc
  	}
  
--end:
- 	list_for_each_entry(newmode, &connector->probed_modes, head) {
- 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
- 			intel_sdvo->sdvo_lvds_fixed_mode =
+ 	platform_set_drvdata(pdev, rtc);
++	device_init_wakeup(&pdev->dev, 1);
+ 	return 0;
+ 
+ out2:
 
 
