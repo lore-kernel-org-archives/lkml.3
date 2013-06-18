@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab3FRIVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:21:37 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:26398 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab3FRIVe (ORCPT
+	id S1754493Ab3FRIVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:21:45 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:56773 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3FRIVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:21:34 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        <iss_storagedev@hp.com>, <linux-scsi@vger.kernel.org>
-Subject: [PATCH 6/9] hpsa: rework pci pm related code for simplification
-Date: Tue, 18 Jun 2013 16:21:13 +0800
-Message-ID: <1371543673-9692-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Tue, 18 Jun 2013 04:21:41 -0400
+Date: Tue, 18 Jun 2013 12:21:33 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130618082132.GC20528@localhost.localdomain>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+ <20130618081931.GB13677@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618081931.GB13677@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pci core pm interface to simplify code.
+On Tue, Jun 18, 2013 at 10:19:31AM +0200, Michal Hocko wrote:
+> On Tue 18-06-13 02:30:05, Glauber Costa wrote:
+> > On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
+> [...]
+> > > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
+> > > it's inodes?
+> > > 
+> > Assuming there is no memory corruption of any sort going on , let's
+> > check the code. nr_item is only manipulated in 3 places:
+> > 
+> > 1) list_lru_add, where it is increased
+> > 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
+> >    element from the list
+> > 3) list_lru_walk_node, where an element is removing during shrink.
+> > 
+> > All three excerpts seem to be correctly locked, so something like this
+> > indicates an imbalance.  Either the element was never added to the
+> > list, or it was added, removed, and we didn't notice it. (Again, your
+> > backing storage is not XFS, is it? If it is , we have another user to
+> > look for)
+> 
+> No this is ext3. But I can try to test with xfs as well if it helps.
+> [...]
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: iss_storagedev@hp.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/hpsa.c |   16 +++-------------
- 1 files changed, 3 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 7f4f790..f5ba6d4 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3753,9 +3753,6 @@ static int hpsa_message(struct pci_dev *pdev, unsigned char opcode,
- static int hpsa_controller_hard_reset(struct pci_dev *pdev,
- 	void * __iomem vaddr, u32 use_doorbell)
- {
--	u16 pmcsr;
--	int pos;
--
- 	if (use_doorbell) {
- 		/* For everything after the P600, the PCI power state method
- 		 * of resetting the controller doesn't work, so we have this
-@@ -3773,8 +3770,7 @@ static int hpsa_controller_hard_reset(struct pci_dev *pdev,
- 		 * this causes a secondary PCI reset which will reset the
- 		 * controller." */
- 
--		pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
--		if (pos == 0) {
-+		if (!pdev->pm_cap) {
- 			dev_err(&pdev->dev,
- 				"hpsa_reset_controller: "
- 				"PCI PM not supported\n");
-@@ -3782,18 +3778,12 @@ static int hpsa_controller_hard_reset(struct pci_dev *pdev,
- 		}
- 		dev_info(&pdev->dev, "using PCI PM to reset controller\n");
- 		/* enter the D3hot power management state */
--		pci_read_config_word(pdev, pos + PCI_PM_CTRL, &pmcsr);
--		pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
--		pmcsr |= PCI_D3hot;
--		pci_write_config_word(pdev, pos + PCI_PM_CTRL, pmcsr);
-+		pci_set_power_state(pdev, PCI_D3hot);
- 
- 		msleep(500);
- 
- 		/* enter the D0 power management state */
--		pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
--		pmcsr |= PCI_D0;
--		pci_write_config_word(pdev, pos + PCI_PM_CTRL, pmcsr);
--
-+		pci_set_power_state(pdev, PCI_D0);
- 		/*
- 		 * The P600 requires a small delay when changing states.
- 		 * Otherwise we may think the board did not reset and we bail.
--- 
-1.7.1
-
-
+XFS won't help this, on the contrary. The reason I asked is because XFS
+uses list_lru for its internal structures as well. So it is actually preferred
+if you are reproducing this without it, so we can at least isolate that part.
