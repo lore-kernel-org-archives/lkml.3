@@ -1,168 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab3FRRoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:44:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21193 "EHLO mx1.redhat.com"
+	id S932802Ab3FRRpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:45:02 -0400
+Received: from shell.v3.sk ([195.168.3.45]:33724 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932631Ab3FRRoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:44:19 -0400
-Date: Tue, 18 Jun 2013 13:43:46 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: Re: [PATCH v3 06/13] locks: protect most of the file_lock handling
- with i_lock
-Message-ID: <20130618134346.79edf0a7@tlielax.poochiereds.net>
-In-Reply-To: <20130617114938.447a8d81@tlielax.poochiereds.net>
-References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
-	<1371482036-15958-7-git-send-email-jlayton@redhat.com>
-	<20130617114609.708a336b@tlielax.poochiereds.net>
-	<20130617114938.447a8d81@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932631Ab3FRRo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:44:59 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: linux-kernel@vger.kernel.org
+Cc: Wim Van Sebroeck <wim@iguana.be>, Lubomir Rintel <lkundrak@v3.sk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v5] watchdog: Add Broadcom BCM2835 watchdog timer driver
+Date: Tue, 18 Jun 2013 19:44:48 +0200
+Message-Id: <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <51C09478.30909@wwwdotorg.org>
+References: <51C09478.30909@wwwdotorg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 11:49:38 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+used in Raspberry Pi and Roku 2 devices.
 
-> On Mon, 17 Jun 2013 11:46:09 -0400
-> Jeff Layton <jlayton@redhat.com> wrote:
-> 
-> > On Mon, 17 Jun 2013 11:13:49 -0400
-> > Jeff Layton <jlayton@redhat.com> wrote:
-> > 
-> > > Having a global lock that protects all of this code is a clear
-> > > scalability problem. Instead of doing that, move most of the code to be
-> > > protected by the i_lock instead. The exceptions are the global lists
-> > > that the ->fl_link sits on, and the ->fl_block list.
-> > > 
-> > > ->fl_link is what connects these structures to the
-> > > global lists, so we must ensure that we hold those locks when iterating
-> > > over or updating these lists.
-> > > 
-> > > Furthermore, sound deadlock detection requires that we hold the
-> > > blocked_list state steady while checking for loops. We also must ensure
-> > > that the search and update to the list are atomic.
-> > > 
-> > > For the checking and insertion side of the blocked_list, push the
-> > > acquisition of the global lock into __posix_lock_file and ensure that
-> > > checking and update of the  blocked_list is done without dropping the
-> > > lock in between.
-> > > 
-> > > On the removal side, when waking up blocked lock waiters, take the
-> > > global lock before walking the blocked list and dequeue the waiters from
-> > > the global list prior to removal from the fl_block list.
-> > > 
-> > > With this, deadlock detection should be race free while we minimize
-> > > excessive file_lock_lock thrashing.
-> > > 
-> > > Finally, in order to avoid a lock inversion problem when handling
-> > > /proc/locks output we must ensure that manipulations of the fl_block
-> > > list are also protected by the file_lock_lock.
-> > > 
-> > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > > ---
-> > >  Documentation/filesystems/Locking |   21 ++++--
-> > >  fs/afs/flock.c                    |    5 +-
-> > >  fs/ceph/locks.c                   |    2 +-
-> > >  fs/ceph/mds_client.c              |    8 +-
-> > >  fs/cifs/cifsfs.c                  |    2 +-
-> > >  fs/cifs/file.c                    |   13 ++--
-> > >  fs/gfs2/file.c                    |    2 +-
-> > >  fs/lockd/svcsubs.c                |   12 ++--
-> > >  fs/locks.c                        |  151 ++++++++++++++++++++++---------------
-> > >  fs/nfs/delegation.c               |   10 +-
-> > >  fs/nfs/nfs4state.c                |    8 +-
-> > >  fs/nfsd/nfs4state.c               |    8 +-
-> > >  include/linux/fs.h                |   11 ---
-> > >  13 files changed, 140 insertions(+), 113 deletions(-)
-> > > 
-> > 
-> > [...]
-> > 
-> > > @@ -1231,7 +1254,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
-> > >  	if (IS_ERR(new_fl))
-> > >  		return PTR_ERR(new_fl);
-> > >  
-> > > -	lock_flocks();
-> > > +	spin_lock(&inode->i_lock);
-> > >  
-> > >  	time_out_leases(inode);
-> > >  
-> > > @@ -1281,11 +1304,11 @@ restart:
-> > >  			break_time++;
-> > >  	}
-> > >  	locks_insert_block(flock, new_fl);
-> > > -	unlock_flocks();
-> > > +	spin_unlock(&inode->i_lock);
-> > >  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
-> > >  						!new_fl->fl_next, break_time);
-> > > -	lock_flocks();
-> > > -	__locks_delete_block(new_fl);
-> > > +	spin_lock(&inode->i_lock);
-> > > +	locks_delete_block(new_fl);
-> > 
-> > Doh -- bug here. This should not have been changed to
-> > locks_delete_block(). My apologies.
-> > 
-> > >  	if (error >= 0) {
-> > >  		if (error == 0)
-> > >  			time_out_leases(inode);
-> > 
-> > [...]
-> > 
-> > >  posix_unblock_lock(struct file *filp, struct file_lock *waiter)
-> > >  {
-> > > +	struct inode *inode = file_inode(filp);
-> > >  	int status = 0;
-> > >  
-> > > -	lock_flocks();
-> > > +	spin_lock(&inode->i_lock);
-> > >  	if (waiter->fl_next)
-> > > -		__locks_delete_block(waiter);
-> > > +		locks_delete_block(waiter);
-> > 
-> > 
-> > Ditto here...
-> > 
-> > >  	else
-> > >  		status = -ENOENT;
-> > > -	unlock_flocks();
-> > > +	spin_unlock(&inode->i_lock);
-> > >  	return status;
-> > >  }
-> > >  
-> > 
-> 
-> Bah, scratch that -- this patch is actually fine. We hold the i_lock
-> here and locks_delete_block takes the file_lock_lock, which is correct.
-> There is a potential race in patch 7 though. I'll reply to that patch
-> to point it out in a minute.
-> 
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-rpi-kernel@lists.infradead.org
+Cc: linux-watchdog@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+---
+Changes for v2:
+    - Use per-device structure instead of global variables for lock and memory base
+    - Fix default timeout setting
+    - Do not leak memory if probe fails
+    - Style fixes
+    - Split out defconfig into a separate commit
+    - Meaningful commit message with credit
 
-...and scratch that again...
+Changes for v3:
+    - Add proper copyright notice to header
+    - Drop status constants, we don't use them
+    - Fix heartbeat parameter's type
+    - Log driver initialization message once the device is probed
 
-There is a bug in the posix_unblock_lock delta above. We don't need to
-hold the i_lock there, but we should probably be taking the
-file_lock_lock before checking fl_next.
+Changes for v4:
+    - Drop an useless initializer
+    - Add a signoff from downstream
+    - Do not announce the driver to the log if we failed to probe
+    - Set platform data earlier and do not explicitly unset it
 
-In truth, I have a hard time seeing how that race would manifest itself
-in practice, but that's how the existing code works so it's probably
-best to preserve that as closely as possible.
+Changes for v5:
+    - Copyright clarification
 
-Fixed in my git repo and the next spin of this set will have it.
+ .../bindings/watchdog/brcm,bcm2835-pm-wdog.txt     |    5 +
+ drivers/watchdog/Kconfig                           |   11 ++
+ drivers/watchdog/Makefile                          |    1 +
+ drivers/watchdog/bcm2835_wdt.c                     |  189 ++++++++++++++++++++
+ 4 files changed, 206 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/watchdog/bcm2835_wdt.c
 
-Sorry again for the noise... ;)
-
+diff --git a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
+index d209366..f801d71 100644
+--- a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
++++ b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
+@@ -5,9 +5,14 @@ Required properties:
+ - compatible : should be "brcm,bcm2835-pm-wdt"
+ - reg : Specifies base physical address and size of the registers.
+ 
++Optional properties:
++
++- timeout-sec   : Contains the watchdog timeout in seconds
++
+ Example:
+ 
+ watchdog {
+ 	compatible = "brcm,bcm2835-pm-wdt";
+ 	reg = <0x7e100000 0x28>;
++	timeout-sec = <10>;
+ };
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index e89fc31..c3d3b16 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1098,6 +1098,17 @@ config BCM63XX_WDT
+ 	  To compile this driver as a loadable module, choose M here.
+ 	  The module will be called bcm63xx_wdt.
+ 
++config BCM2835_WDT
++	tristate "Broadcom BCM2835 hardware watchdog"
++	depends on ARCH_BCM2835
++	select WATCHDOG_CORE
++	help
++	  Watchdog driver for the built in watchdog hardware in Broadcom
++	  BCM2835 SoC.
++
++	  To compile this driver as a loadable module, choose M here.
++	  The module will be called bcm2835_wdt.
++
+ config LANTIQ_WDT
+ 	tristate "Lantiq SoC watchdog"
+ 	depends on LANTIQ
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index a300b94..1bf5675 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
+ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+ obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
++obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+ 
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
+new file mode 100644
+index 0000000..61566fc
+--- /dev/null
++++ b/drivers/watchdog/bcm2835_wdt.c
+@@ -0,0 +1,189 @@
++/*
++ * Watchdog driver for Broadcom BCM2835
++ *
++ * "bcm2708_wdog" driver written by Luke Diamand that was obtained from
++ * branch "rpi-3.6.y" of git://github.com/raspberrypi/linux.git was used
++ * as a hardware reference for the Broadcom BCM2835 watchdog timer.
++ *
++ * Copyright (C) 2013 Lubomir Rintel <lkundrak@v3.sk>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/watchdog.h>
++#include <linux/platform_device.h>
++#include <linux/of_address.h>
++#include <linux/miscdevice.h>
++
++#define PM_RSTC				0x1c
++#define PM_WDOG				0x24
++
++#define PM_PASSWORD			0x5a000000
++
++#define PM_WDOG_TIME_SET		0x000fffff
++#define PM_RSTC_WRCFG_CLR		0xffffffcf
++#define PM_RSTC_WRCFG_SET		0x00000030
++#define PM_RSTC_WRCFG_FULL_RESET	0x00000020
++#define PM_RSTC_RESET			0x00000102
++
++#define SECS_TO_WDOG_TICKS(x) ((x) << 16)
++#define WDOG_TICKS_TO_SECS(x) ((x) >> 16)
++
++struct bcm2835_wdt {
++	void __iomem		*base;
++	spinlock_t		lock;
++};
++
++static unsigned int heartbeat;
++static bool nowayout = WATCHDOG_NOWAYOUT;
++
++static int bcm2835_wdt_start(struct watchdog_device *wdog)
++{
++	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
++	uint32_t cur;
++	unsigned long flags;
++
++	spin_lock_irqsave(&wdt->lock, flags);
++
++	writel_relaxed(PM_PASSWORD | (SECS_TO_WDOG_TICKS(wdog->timeout) &
++				PM_WDOG_TIME_SET), wdt->base + PM_WDOG);
++	cur = readl_relaxed(wdt->base + PM_RSTC);
++	writel_relaxed(PM_PASSWORD | (cur & PM_RSTC_WRCFG_CLR) |
++		  PM_RSTC_WRCFG_FULL_RESET, wdt->base + PM_RSTC);
++
++	spin_unlock_irqrestore(&wdt->lock, flags);
++
++	return 0;
++}
++
++static int bcm2835_wdt_stop(struct watchdog_device *wdog)
++{
++	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	writel_relaxed(PM_PASSWORD | PM_RSTC_RESET, wdt->base + PM_RSTC);
++	dev_info(wdog->dev, "Watchdog timer stopped");
++	return 0;
++}
++
++static int bcm2835_wdt_set_timeout(struct watchdog_device *wdog, unsigned int t)
++{
++	wdog->timeout = t;
++	return 0;
++}
++
++static unsigned int bcm2835_wdt_get_timeleft(struct watchdog_device *wdog)
++{
++	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	uint32_t ret = readl_relaxed(wdt->base + PM_WDOG);
++	return WDOG_TICKS_TO_SECS(ret & PM_WDOG_TIME_SET);
++}
++
++static struct watchdog_ops bcm2835_wdt_ops = {
++	.owner =	THIS_MODULE,
++	.start =	bcm2835_wdt_start,
++	.stop =		bcm2835_wdt_stop,
++	.set_timeout =	bcm2835_wdt_set_timeout,
++	.get_timeleft =	bcm2835_wdt_get_timeleft,
++};
++
++static struct watchdog_info bcm2835_wdt_info = {
++	.options =	WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
++			WDIOF_KEEPALIVEPING,
++	.identity =	"Broadcom BCM2835 Watchdog timer",
++};
++
++static struct watchdog_device bcm2835_wdt_wdd = {
++	.info =		&bcm2835_wdt_info,
++	.ops =		&bcm2835_wdt_ops,
++	.min_timeout =	1,
++	.max_timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
++	.timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
++};
++
++static int bcm2835_wdt_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	struct bcm2835_wdt *wdt;
++	int err;
++
++	wdt = devm_kzalloc(dev, sizeof(struct bcm2835_wdt), GFP_KERNEL);
++	if (!wdt) {
++		dev_err(dev, "Failed to allocate memory for watchdog device");
++		return -ENOMEM;
++	}
++	platform_set_drvdata(pdev, wdt);
++
++	spin_lock_init(&wdt->lock);
++
++	wdt->base = of_iomap(np, 0);
++	if (!wdt->base) {
++		dev_err(dev, "Failed to remap watchdog regs");
++		return -ENODEV;
++	}
++
++	watchdog_set_drvdata(&bcm2835_wdt_wdd, wdt);
++	watchdog_init_timeout(&bcm2835_wdt_wdd, heartbeat, dev);
++	watchdog_set_nowayout(&bcm2835_wdt_wdd, nowayout);
++	err = watchdog_register_device(&bcm2835_wdt_wdd);
++	if (err) {
++		dev_err(dev, "Failed to register watchdog device");
++		iounmap(wdt->base);
++		return err;
++	}
++
++	dev_info(dev, "Broadcom BCM2835 watchdog timer");
++	return 0;
++}
++
++static int bcm2835_wdt_remove(struct platform_device *pdev)
++{
++	struct bcm2835_wdt *wdt = platform_get_drvdata(pdev);
++
++	watchdog_unregister_device(&bcm2835_wdt_wdd);
++	iounmap(wdt->base);
++
++	return 0;
++}
++
++static void bcm2835_wdt_shutdown(struct platform_device *pdev)
++{
++	bcm2835_wdt_stop(&bcm2835_wdt_wdd);
++}
++
++static const struct of_device_id bcm2835_wdt_of_match[] = {
++	{ .compatible = "brcm,bcm2835-pm-wdt", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, bcm2835_wdt_of_match);
++
++static struct platform_driver bcm2835_wdt_driver = {
++	.probe		= bcm2835_wdt_probe,
++	.remove		= bcm2835_wdt_remove,
++	.shutdown	= bcm2835_wdt_shutdown,
++	.driver = {
++		.name =		"bcm2835-wdt",
++		.owner =	THIS_MODULE,
++		.of_match_table = bcm2835_wdt_of_match,
++	},
++};
++module_platform_driver(bcm2835_wdt_driver);
++
++module_param(heartbeat, uint, 0);
++MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
++
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
++				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
++MODULE_DESCRIPTION("Driver for Broadcom BCM2835 watchdog timer");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.1
+
