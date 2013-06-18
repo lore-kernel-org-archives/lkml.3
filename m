@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab3FRFlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:41:42 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:36013 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3FRFll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:41:41 -0400
+	id S1754052Ab3FRFoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:44:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65298 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab3FRFoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 01:44:19 -0400
+X-IronPort-AV: E=Sophos;i="4.87,886,1363104000"; 
+   d="scan'208";a="7585652"
+Message-ID: <51BFF464.809@cn.fujitsu.com>
+Date: Tue, 18 Jun 2013 13:47:16 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
-References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
-	<1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
-Date: Tue, 18 Jun 2013 08:41:41 +0300
-Message-ID: <CAHp75VdQXyRtfkNbnOyz36sADA_3tx=i4C+Ga5AevpMfo48XFQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "maxime.ripard" <maxime.ripard@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-sunxi@googlegroups.com,
-        Oliver Schinagl <oliver@schinagl.nl>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org>
+In-Reply-To: <20130618020357.GZ32663@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/18 13:42:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/18 13:42:14,
+	Serialize complete at 2013/06/18 13:42:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 11:59 PM, Oliver Schinagl
-<oliver+list@schinagl.nl> wrote:
-> From: Oliver Schinagl <oliver@schinagl.nl>
+Hi tj,
+
+On 06/18/2013 10:03 AM, Tejun Heo wrote:
+......
 >
-> Allwinner has electric fuses (efuse) on their line of chips. This driver
-> reads those fuses, seeds the kernel entropy and exports them as a sysfs node.
+> So, can you please explain why you're doing the above?  What are you
+> trying to achieve in the end and why is this the best approach?  This
+> is all for memory hotplug, right?
+
+Yes, this is all for memory hotplug.
+
+[why]
+At early boot time (before parsing SRAT), memblock will allocate memory
+for kernel to use. But the memory could be hotpluggable memory because
+at such an early time, we don't know which memory is hotpluggable. This
+will cause hotpluggable memory un-hotpluggable. What we are trying to
+do is to prevent memblock from allocating hotpluggable memory.
+
+[approach]
+Parse SRAT earlier before memblock starts to work, because there is a
+bit in SRAT specifying which memory is hotpluggable.
+
+I'm not saying this is the best approach. I can also see that this
+patch-set touches a lot of boot code. But i think parsing SRAT earlier
+is reasonable because this is the only way for now to know which memory
+is hotpluggable from firmware.
+
 >
-> These fuses are most likly to be programmed at the factory, encoding
-> things like Chip ID, some sort of serial number etc and appear to be
-> reasonable unique.
-> While in theory, these should be writeable by the user, it will probably
-> be inconvinient to do so. Allwinner recommends that a certain input pin,
-> labeled 'efuse_vddq', be connected to GND. To write these fuses, 2.5 V
-> needs to be applied to this pin.
+> I can understand the part where you're move NUMA discovery before
+> initializations which will get allocated permanent addresses in the
+> wrong nodes, but trying to do the same with memblock itself is making
+> the code extremely fragile.  It's nasty because there's nothing
+> apparent which seems to necessitate such ordering.  The ordering looks
+> rather arbitrary but changing the orders will subtly break memory
+> hotplug support, which is a really bad way to structure the code.
 >
-> Even so, they can still be used to generate a board-unique mac from, board
-> unique RSA key and seed the kernel RNG.
->
+> Can't you just move memblock arrays after NUMA init is complete?
+> That'd be a lot simpler and way more robust than the proposed changes,
+> no?
 
-> +++ b/drivers/misc/eeprom/sunxi_sid.c
-> @@ -0,0 +1,147 @@
+Sorry, I don't quite understand the approach you are suggesting. If we
+move memblock arrays, we need to update all the pointers pointing to
+the moved memory. How can we do this ?
 
-> +#include <linux/compiler.h>
-
-I don't think you have to use this header explicitly.
-
-> +#define DRV_NAME "sunxi-sid"
-
-> +       if (size > (SID_SIZE - pos))
-
-Useless internal braces.
-
-> +static int sunxi_sid_remove(struct platform_device *pdev)
-> +{
-> +       device_remove_bin_file(&pdev->dev, &sid_bin_attr);
-> +       dev_dbg(&pdev->dev, "%s driver unloaded\n", DRV_NAME);
-
-It's useless to use DRV_NAME in conjunction with dev_* macros. dev_*
-will print driver name as a prefix.
-
---
-With Best Regards,
-Andy Shevchenko
+Thanks. :)
