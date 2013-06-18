@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3FRMBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:01:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56071 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab3FRLoe (ORCPT
+	id S932371Ab3FRMBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:01:48 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:60773 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932298Ab3FRMBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:34 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 41/93] drm/radeon: don't allow audio on DCE6
-Date: Tue, 18 Jun 2013 12:42:49 +0100
-Message-Id: <1371555821-12820-42-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 18 Jun 2013 08:01:45 -0400
+Message-ID: <51C04C23.4090807@gmail.com>
+Date: Tue, 18 Jun 2013 14:01:39 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 02/10] pinctrl: mvebu: dove pinctrl driver
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-3-git-send-email-sebastian.hesselbarth@gmail.com> <20130618113606.GA26763@n2100.arm.linux.org.uk>
+In-Reply-To: <20130618113606.GA26763@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
+On 06/18/13 13:36, Russell King - ARM Linux wrote:
+> On Thu, Sep 13, 2012 at 05:41:44PM +0200, Sebastian Hesselbarth wrote:
+>> +#define DOVE_GLOBAL_CONFIG_1		(DOVE_SB_REGS_VIRT_BASE | 0xe802C)
+>> +#define  DOVE_TWSI_ENABLE_OPTION1	BIT(7)
+>> +#define DOVE_GLOBAL_CONFIG_2		(DOVE_SB_REGS_VIRT_BASE | 0xe8030)
+>> +#define  DOVE_TWSI_ENABLE_OPTION2	BIT(20)
+>> +#define  DOVE_TWSI_ENABLE_OPTION3	BIT(21)
+>> +#define  DOVE_TWSI_OPTION3_GPIO		BIT(22)
+> ...
 
-------------------
+Russell,
 
-From: Alex Deucher <alexander.deucher@amd.com>
+the above absolute addresses already made me think of cleaning up dove
+pinctrl a while ago. I also had in mind that below function exclusively
+request ownership of global config registers.
 
-commit 1cbcca302a318499f20a512847c5d6a510c08c35 upstream.
+>> +static int dove_twsi_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
+>> +				unsigned long config)
+>> +{
+>> +	unsigned long gcfg1 = readl(DOVE_GLOBAL_CONFIG_1);
+>> +	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
+>> +
+>> +	gcfg1 &= ~DOVE_TWSI_ENABLE_OPTION1;
+>> +	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION2);
+>> +
+>> +	switch (config) {
+>> +	case 1:
+>> +		gcfg1 |= DOVE_TWSI_ENABLE_OPTION1;
+>> +		break;
+>> +	case 2:
+>> +		gcfg2 |= DOVE_TWSI_ENABLE_OPTION2;
+>> +		break;
+>> +	case 3:
+>> +		gcfg2 |= DOVE_TWSI_ENABLE_OPTION3;
+>> +		break;
+>> +	}
+>> +
+>> +	writel(gcfg1, DOVE_GLOBAL_CONFIG_1);
+>> +	writel(gcfg2, DOVE_GLOBAL_CONFIG_2);
+>> +
+>> +	return 0;
+>> +}
+>
+> So, I've just been thinking about the LCD clocking on the Armada 510,
+> and found that there's dividers for the internal LCD clocks in the
+> global config 1/2 registers.  So I grepped the kernel source for
+> references to these, expecting to find something in drivers/clk, but
+> found the above.
 
-It's not supported yet.  Fixes display issues when
-users force it on.
+We have no peripheral clock handling for Dove, yet. Just core clocks and
+clock gates are implemented. And I guess they are DT only anyway.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/atombios_encoders.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+> However, todays kernel is sometimes SMP, commonly with kernel preemption
+> enabled, maybe even RT.  This makes things like the above sequence a
+> problem where a multifunction register is read, modified and then
+> written back.
+>
+> Consider two threads doing this, and a preemption event happening in the
+> middle of this sequence to another thread also doing a read-modify-write
+> of the same register.  Which one wins depends on the preemption sequence,
+> but ultimately one loses out.
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 74cc710..66ecc38 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -396,6 +396,8 @@ atombios_digital_setup(struct drm_encoder *encoder, int action)
- int
- atombios_get_encoder_mode(struct drm_encoder *encoder)
- {
-+	struct drm_device *dev = encoder->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector;
-@@ -421,7 +423,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 	case DRM_MODE_CONNECTOR_DVII:
- 	case DRM_MODE_CONNECTOR_HDMIB: /* HDMI-B is basically DL-DVI; analog works fine */
- 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--		    radeon_audio)
-+		    radeon_audio &&
-+		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else if (radeon_connector->use_digital)
- 			return ATOM_ENCODER_MODE_DVI;
-@@ -432,7 +435,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 	case DRM_MODE_CONNECTOR_HDMIA:
- 	default:
- 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--		    radeon_audio)
-+		    radeon_audio &&
-+		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else
- 			return ATOM_ENCODER_MODE_DVI;
-@@ -446,7 +450,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP))
- 			return ATOM_ENCODER_MODE_DP;
- 		else if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--			 radeon_audio)
-+			 radeon_audio &&
-+			 !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else
- 			return ATOM_ENCODER_MODE_DVI;
--- 
-1.8.1.2
+Yeah, sure. We have the same issue with watchdog driver messing with
+timer registers. There I exported a function to _clrset TIMER_CTRL
+register safely. Just went into irqchip (tip for-next).
 
+> Any access to such registers needs careful thought, and protection in some
+> manner.
+>
+> Maybe what we need is something like this:
+>
+> static DEFINE_SPINLOCK(io_lock);
+> static void modifyl(u32 new, u32 mask, void __iomem *reg)
+> {
+> 	unsigned long flags;
+> 	u32 val;
+>
+> 	spin_lock_irqsave(&io_lock, flags);
+> 	val = readl(reg) & ~mask;
+> 	val |= new | mask;
+> 	writel(val, reg);
+> 	spin_unlock_irqrestore(&io_lock, flags);
+> }
+>
+> in order to provide arbitrated access to these kinds of multifunction
+> registers in a safe, platform agnostic way.
+
+I am fine with a generic modify function with a single lock. Most cases
+should be fine with a single lock even for non-related register
+accesses, e.g. watchdog will access TIMER_CTRL only once to enable
+itself. If you think you need a special lock because you have a lot of
+writes to shared registers, you can still have your own modify lock.
+
+Sebastian
