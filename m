@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab3FROIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:08:24 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:49617 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab3FROIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:08:23 -0400
+	id S932902Ab3FROJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:09:04 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:44868 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932859Ab3FROJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:09:03 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH] genirq: irqchip: document gcflags arg of irq_alloc_domain_generic_chips
+Date: Tue, 18 Jun 2013 15:08:33 +0100
+Message-ID: <1371564513-4327-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <20130618125235.GA15122@amd.pavel.ucw.cz>
-References: <20130617134957.GA15602@amd.pavel.ucw.cz> <CACxGe6sO6Tes8en905cyJwP69w82PHjwKV9+XxxXhAPMRyGYkA@mail.gmail.com>
- <20130618125235.GA15122@amd.pavel.ucw.cz>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 18 Jun 2013 15:08:02 +0100
-X-Google-Sender-Auth: tfAdqjqwLW2kGDgaJMvMJT4-Gvg
-Message-ID: <CACxGe6tLPfJ3KS6+4aO8s8emq8=ajuc+gmBtaEDqd60m4_vx6w@mail.gmail.com>
-Subject: Re: [PATCH] fix UIO with device tree but no assigned interrupt
-To: Pavel Machek <pavel@denx.de>
-Cc: Detlev Zundel <dzu@denx.de>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        trivial <trivial@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_18_15_09_02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 1:52 PM, Pavel Machek <pavel@denx.de> wrote:
->
-> If device is initialized from device tree, but has no interrupt
-> assigned, uio will still try to request and interrupt old way, fails,
-> and fails registration.
->
-> This is wrong; don't try initializing irq using platform data if
-> device tree is available.
->
-> Simplified code based on suggestion by Grant Likely.
->
-> Fixed memory leak in "irq can not be registered" error path.
->
-> Signed-off-by: Pavel Machek <pavel@denx.de>
-> Reported-by: Detlev Zundel <dzu@denx.de>
->
-> ---
->
-> Also redone against char-misc-next.
->
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index c122bca..a27fd50 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -103,24 +103,16 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->         int i;
->
->         if (pdev->dev.of_node) {
-> -               int irq;
-> -
->                 /* alloc uioinfo for one device */
->                 uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
->                 if (!uioinfo) {
->                         ret = -ENOMEM;
->                         dev_err(&pdev->dev, "unable to kmalloc\n");
-> -                       goto bad2;
-> +                       return ret;
->                 }
->                 uioinfo->name = pdev->dev.of_node->name;
->                 uioinfo->version = "devicetree";
-> -
->                 /* Multiple IRQs are not supported */
-> -               irq = platform_get_irq(pdev, 0);
-> -               if (irq == -ENXIO)
-> -                       uioinfo->irq = UIO_IRQ_NONE;
-> -               else
-> -                       uioinfo->irq = irq;
->         }
->
->         if (!uioinfo || !uioinfo->name || !uioinfo->version) {
-> @@ -146,14 +138,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->         priv->flags = 0; /* interrupt is enabled to begin with */
->         priv->pdev = pdev;
->
-> -       if (!uioinfo->irq) {
-> -               ret = platform_get_irq(pdev, 0);
-> -               if (ret < 0) {
-> -                       dev_err(&pdev->dev, "failed to get IRQ\n");
-> -                       goto bad0;
-> -               }
-> -               uioinfo->irq = ret;
-> +       ret = platform_get_irq(pdev, 0);
-> +       uioinfo->irq = ret;
-> +       if (ret == -ENXIO && pdev->dev.of_node)
-> +               uioinfo->irq = UIO_IRQ_NONE;
+Commit 088f40b7b027dad6519712ff224a5798dd62a204 ("genirq: Generic chip:
+Add linear irq domain support") missed kerneldoc for the gcflags
+argument of irq_alloc_domain_generic_chips(). Add it now.
 
-This short-circuits the platform data use case where uioinfo->irq is
-already set. The if (!uioinfo->irq) test is still needed. The original
-code looks like it already handles it correctly for both the
-platform_data and DT use cases because in the DT case the uioinfo
-structure is zeroed by kzalloc().
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/generic-chip.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-As an aside, switching to devm_kzalloc() would simplify the unwind path.
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 95575d8..a746a8f 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -251,12 +251,13 @@ irq_gc_init_mask_cache(struct irq_chip_generic *gc, enum irq_gc_flags flags)
+  * @irqs_per_chip:	Number of interrupts each chip handles
+  * @num_ct:		Number of irq_chip_type instances associated with this
+  * @name:		Name of the irq chip
+  * @handler:		Default flow handler associated with these chips
+  * @clr:		IRQ_* bits to clear in the mapping function
+  * @set:		IRQ_* bits to set in the mapping function
++ * @gcflags:		Generic chip specific setup flags
+  */
+ int irq_alloc_domain_generic_chips(struct irq_domain *d, int irqs_per_chip,
+ 				   int num_ct, const char *name,
+ 				   irq_flow_handler_t handler,
+ 				   unsigned int clr, unsigned int set,
+ 				   enum irq_gc_flags gcflags)
+-- 
+1.8.1.2
 
-> +       else if (ret < 0) {
-> +               dev_err(&pdev->dev, "failed to get IRQ\n");
-> +               goto bad1;
->         }
-> +
->         uiomem = &uioinfo->mem[0];
->
->         for (i = 0; i < pdev->num_resources; ++i) {
-> @@ -206,19 +199,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->         ret = uio_register_device(&pdev->dev, priv->uioinfo);
->         if (ret) {
->                 dev_err(&pdev->dev, "unable to register uio device\n");
-> -               goto bad1;
-> +               goto bad2;
->         }
->
->         platform_set_drvdata(pdev, priv);
->         return 0;
-> + bad2:
-> +       pm_runtime_disable(&pdev->dev);
->   bad1:
->         kfree(priv);
-> -       pm_runtime_disable(&pdev->dev);
->   bad0:
->         /* kfree uioinfo for OF */
->         if (pdev->dev.of_node)
->                 kfree(uioinfo);
-> - bad2:
->         return ret;
->  }
->
->
->
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
