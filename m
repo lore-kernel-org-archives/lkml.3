@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3FRJzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:55:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39629 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab3FRJzl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:55:41 -0400
-Date: Tue, 18 Jun 2013 11:55:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Question regarding put_prev_task in preempted condition
-Message-ID: <20130618095533.GI3204@twins.programming.kicks-ass.net>
-References: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
+	id S1755877Ab3FRJ5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:57:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58129 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825Ab3FRJ5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:57:19 -0400
+Message-ID: <51C02EC7.7060908@ti.com>
+Date: Tue, 18 Jun 2013 15:26:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: <balbi@ti.com>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
+        <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>
+Subject: Re: [PATCH v7 2/9] usb: phy: omap-usb2: use the new generic PHY framework
+References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-3-git-send-email-kishon@ti.com> <20130618094058.GQ5461@arwen.pp.htv.fi> <51C02D0F.6010302@ti.com> <20130618095040.GZ5461@arwen.pp.htv.fi>
+In-Reply-To: <20130618095040.GZ5461@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 11:59:36PM +0800, Lei Wen wrote:
-> Hi Peter,
-> 
-> While I am checking the preempt related code, I find a interesting part.
-> That is when preempt_schedule is called, for its preempt_count be added
-> PREEMPT_ACTIVE, so in __schedule() it could not be dequeued from rq
-> by deactivate_task.
-> 
-> Thus in put_prev_task, which is called a little later in __schedule(), it
-> would call put_prev_task_fair, which finally calls put_prev_entity.
-> For current task is not dequeued from rq, so in this function, it would
-> enqueue it again to the rq by __enqueue_entity.
-> 
-> Is there any reason to do like this, since entity already is over rq,
-> why need to queue it again?
+Hi,
 
-Because we keep the current running task outside of the actual queue
-structure. This is because every time we update the runtime
-(__update_curr) the key on which the tree is sorted (vruntime) is
-changed and we'd need to dequeue + enqueue to keep the tree in sync.
+On Tuesday 18 June 2013 03:20 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Tue, Jun 18, 2013 at 03:19:03PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Tuesday 18 June 2013 03:10 PM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Thu, Jun 13, 2013 at 02:13:52PM +0530, Kishon Vijay Abraham I wrote:
+>>>> @@ -159,6 +191,12 @@ static int omap_usb2_probe(struct platform_device *pdev)
+>>>>   	otg->start_srp		= omap_usb_start_srp;
+>>>>   	otg->phy		= &phy->phy;
+>>>>
+>>>> +	pm_runtime_enable(phy->dev);
+>>>
+>>> enabling pm_runtime here has the potential to cause a real big problem.
+>>> How have you tested this patch ?
+>>
+>> performed boot and enumeration testing. What issue do you expect here?
+>
+> hint: look at drvdata usage around the driver. Where is it initialized ?
+> Where is it used ?
 
-By not having the actively running task in the tree we can avoid this;
-at the cost of having to dequeue on switching to the task and enqueue
-when switching from the task.
+hmm.. since runtime_get calls weren't made very early, I think I dint 
+see any issues. Thanks for pointing this.
 
-> And if current rq's vruntime distribution like below, and vruntime with 8
-> is the task that would be get preempted. So in __enqueue_entity,
-> its rb_left/rb_right would be set as NULL and reinserted into this RB tree.
-> Then seems to me now, the entity with vruntime of 3 would be disappeared
-> from the RB tree.
->             13
->            /  \
->          8    19
->         /  \
->       3    11
-> 
-> I am not sure whether I understand the whole process correctly...
-> Would the example as above happen in our real life?
-
-No, the RB tree code will ensure we'll not loose 3. I suppose you're
-confused by rb_link_node() which does indeed clear the left and right
-node of the entity we're about to link.
-
-However, we link the previously unlinked entity as a leaf node. So your
-example is flawed; before insertion the tree would look something like:
-
-
-         13
-	/  \
-       11  19
-      /
-     3
-
-Then the lookup in __enqueue_entity would find the place to insert 8 and
-would select the right sibling of 3:
-
-         13
-	/  \
-       11  19
-      / 
-     3  
-      \
-       (8)
-
-We'd then link 8 as a child leaf of 3; which will indeed have NULL
-leafs. rb_insert_color() will then fix up the tree so we conform to the
-RB constraints. Please read lib/rbtree.c:__rb_insert() the code is quite
-readable.
- 
+Thanks
+Kishon
