@@ -1,78 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab3FRNsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 09:48:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49031 "EHLO mga09.intel.com"
+	id S932828Ab3FRNua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 09:50:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42691 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932561Ab3FRNst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 09:48:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,889,1363158000"; 
-   d="scan'208";a="331522425"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI / LPSS: override SDIO device's private register space size
-Date: Tue, 18 Jun 2013 16:51:35 +0300
-Message-Id: <1371563495-7325-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S932679Ab3FRNu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 09:50:29 -0400
+Date: Tue, 18 Jun 2013 15:50:25 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130618135025.GK13677@dhcp22.suse.cz>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+ <20130618024623.GP29338@dastard>
+ <20130618063104.GB20528@localhost.localdomain>
+ <20130618082414.GC13677@dhcp22.suse.cz>
+ <20130618104443.GH13677@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618104443.GH13677@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SDIO device in Lynxpoint has its LTR registers allocated for a WiFi
-device (a child of the SDIO device) instead in ACPI namespace even though
-they physically belong to the SDIO device. In order to be able to access
-the LTR registers from the ACPI LPSS driver for diagnostic purposes we need
-to enlarge size of this private register space.
+And again, another hang. It looks like the inode deletion never
+finishes. The good thing is that I do not see any LRU related BUG_ONs
+anymore. I am going to test with the other patch in the thread.
 
-Work around this by adding a possibility to override size of the private
-register space in the ACPI LPSS driver and set correct size for the SDIO
-device.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-Applies on top of https://patchwork.kernel.org/patch/2742521/ (ACPI / LPSS:
-Power up LPSS devices during enumeration)
-
- drivers/acpi/acpi_lpss.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index a14d997..539aeae 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -44,6 +44,7 @@ struct lpss_device_desc {
- 	const char *clkdev_name;
- 	bool ltr_required;
- 	unsigned int prv_offset;
-+	size_t prv_size_override;
- 	bool clk_gate;
- 	struct lpss_shared_clock *shared_clock;
- };
-@@ -69,6 +70,7 @@ static struct lpss_device_desc lpt_dev_desc = {
- 
- static struct lpss_device_desc lpt_sdio_dev_desc = {
- 	.prv_offset = 0x1000,
-+	.prv_size_override = 0x1018,
- 	.ltr_required = true,
- };
- 
-@@ -226,7 +228,10 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
- 
- 	list_for_each_entry(rentry, &resource_list, node)
- 		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
--			pdata->mmio_size = resource_size(&rentry->res);
-+			if (dev_desc->prv_size_override)
-+				pdata->mmio_size = dev_desc->prv_size_override;
-+			else
-+				pdata->mmio_size = resource_size(&rentry->res);
- 			pdata->mmio_base = ioremap(rentry->res.start,
- 						   pdata->mmio_size);
- 			pdata->dev_desc = dev_desc;
+2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118525f>] iget_locked+0x4f/0x180
+[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81177e25>] lookup_open+0x175/0x1d0
+[<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+11214 [<ffffffff81178144>] do_last+0x2c4/0x780			<<< blocked on i_mutex
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+11217 [<ffffffff81178144>] do_last+0x2c4/0x780			<<< blocked on i_mutex
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+11288 [<ffffffff81178144>] do_last+0x2c4/0x780			<<< blocked on i_mutex
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+11453 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118525f>] iget_locked+0x4f/0x180
+[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81177e25>] lookup_open+0x175/0x1d0
+[<ffffffff8117815e>] do_last+0x2de/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+12439 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118525f>] iget_locked+0x4f/0x180
+[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81175254>] __lookup_hash+0x34/0x40
+[<ffffffff81179872>] path_lookupat+0x7a2/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+12542 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+12588 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+12589 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+13098 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118525f>] iget_locked+0x4f/0x180
+[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81177e25>] lookup_open+0x175/0x1d0
+[<ffffffff8117815e>] do_last+0x2de/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+19091 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+19092 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
 -- 
-1.8.3.1
-
+Michal Hocko
+SUSE Labs
