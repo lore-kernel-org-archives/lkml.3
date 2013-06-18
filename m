@@ -1,129 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3FRDpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 23:45:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37037 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803Ab3FRDpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 23:45:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,886,1363158000"; 
-   d="scan'208";a="331251478"
-Message-ID: <51BFD787.5020708@intel.com>
-Date: Tue, 18 Jun 2013 11:44:07 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <CAPM31RKwNUh+nNcsEftD4pyP+gdwXhRK7wCRNWa8Y0sE0hf-DQ@mail.gmail.com> <CAPM31R+DBFt1wr10GCGEHDW_J_-79imdTCYEBF7YiKdFc1V7iQ@mail.gmail.com> <51BF15C4.1090906@intel.com> <CAPM31RKHtEYsNV+kzxFpH=55dLaFn1jcQcWD4qYAdHrW_xN+8A@mail.gmail.com>
-In-Reply-To: <CAPM31RKHtEYsNV+kzxFpH=55dLaFn1jcQcWD4qYAdHrW_xN+8A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754209Ab3FRDxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 23:53:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57905 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3FRDw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 23:52:57 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-53-51bfd996052b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com>
+ <3539874.V7zkhbMg0b@wuerfel> <005e01ce6b3f$74e3c940$5eab5bc0$@samsung.com>
+ <7174350.I5qK0sQfHM@wuerfel>
+In-reply-to: <7174350.I5qK0sQfHM@wuerfel>
+Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
+Date: Tue, 18 Jun 2013 12:52:54 +0900
+Message-id: <000001ce6bd7$50146e60$f03d4b20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIepNJd3UbA8CoBBJYQqRm0XD6uiAGZ59abAj0gpLoBCv0r45hzUbJQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t8zY93pN/cHGnR/k7Jo/r+d1eLvpGPs
+	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
+	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
+	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8ATxWWTkpqTWZZapG+XwJXxaL5+wUa9
+	ikuvexkbGI8odTFyckgImEj8vXWBEcIWk7hwbz1bFyMXh5DAMkaJtnmzWGCKbpw8yg6RmM4o
+	sbelixnC+cUocev1FiaQKjYBNYkvXw6zg9giAp4SZ04uAOtmFpjFKnFwnx5Ew1JGif3zDoHt
+	4xTQlOi7vxisWVjAWeLCtyVsIDaLgKrErVu3gAZxcPAKWEoc/BkHEuYVEJT4Mfke1EwtifU7
+	jzNB2PISm9e8ZYa4VEFix9nXjBA3uElsa9jFCFEjIrHvxTtGkBskBB5wSKxd8YQVYpeAxLfJ
+	h1hAdkkIyEpsOgA1R1Li4IobLBMYJWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CITveLE
+	3OLSvHS95PzcTYyQ9DJhB+O9A9aHGJOB1k9klhJNzgemp7ySeENjMyMLUxNTYyNzSzPShJXE
+	edVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MLbcn9D63plfkLOt4pKyXqJFYmbRHflb
+	YmmZKl/ZnZ3P8O9wtmK/cFrpTNe+CL2NbjVbfZd3dSt0NVu1rciP2SW0Zvp9Qd9ZUj9b91VZ
+	3QgRXhX0bv47Rq5bu+2XXmFzNZj8NkXofoc7x+pP/qYSO0s1Cie3f95ye6EmS3T/35hL+iq/
+	kriuKrEUZyQaajEXFScCAHF7SPpFAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnk+LIzCtJLcpLzFFi42I5/e+xoO60m/sDDV59Mrdo/r+d1eLvpGPs
+	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
+	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
+	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8AT1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQP0l5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
+	xghd35AguB4jAzSQsI4x49F8/YKNehWXXvcyNjAeUepi5OSQEDCRuHHyKDuELSZx4d56ti5G
+	Lg4hgemMEntbupghnF+MErdeb2ECqWITUJP48uUwWIeIgKfEmZMLWEBsZoFZrBIH9+lBNCxl
+	lNg/7xAjSIJTQFOi7/5isGZhAWeJC9+WsIHYLAKqErdu3QIaxMHBK2ApcfBnHEiYV0BQ4sfk
+	e1AztSTW7zzOBGHLS2xe85YZ4lIFiR1nXzNC3OAmsa1hFyNEjYjEvhfvGCcwCs1CMmoWklGz
+	kIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg5PVMagfjygaLQ4wCHIxKPLwJ
+	YvsDhVgTy4orcw8xSnAwK4nwlpwBCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MLHmlcQb
+	GpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAPj+cMmmzR0vQ8avXPZ
+	rB73ySWnvSS1JUur97FPkez1P04SEY/Fj+4zabE/4Dp70042gVKtz16H16Qb/xd7sveZz7RZ
+	PYuPhRvoL3FW+37nefx6l1BF1c4DWTuPxJxlv7UwRSfJRmBlatLs6e3nN6wydBPfcqtmIecH
+	t7rZSZekQ1lnsrwp2D9diaU4I9FQi7moOBEAZZho7qIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 07:00 AM, Paul Turner wrote:
-> On Mon, Jun 17, 2013 at 6:57 AM, Alex Shi <alex.shi@intel.com> wrote:
->> > On 06/17/2013 08:17 PM, Paul Turner wrote:
->>> >> On Mon, Jun 17, 2013 at 3:51 AM, Paul Turner <pjt@google.com> wrote:
->>>> >>> On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
->>>>> >>>> They are the base values in load balance, update them with rq runnable
->>>>> >>>> load average, then the load balance will consider runnable load avg
->>>>> >>>> naturally.
->>>>> >>>>
->>>>> >>>> We also try to include the blocked_load_avg as cpu load in balancing,
->>>>> >>>> but that cause kbuild performance drop 6% on every Intel machine, and
->>>>> >>>> aim7/oltp drop on some of 4 CPU sockets machines.
->>>>> >>>>
->>>> >>>
->>>> >>> This looks fine.
->>>> >>>
->>>> >>> Did you try including blocked_load_avg in only get_rq_runnable_load()
->>>> >>> [ and not weighted_cpuload() which is called by new-idle ]?
->>> >>
->>> >> Looking at this more this feels less correct since you're taking
->>> >> averages of averages.
->>> >>
->>> >> This was previously discussed at:
->>> >>   https://lkml.org/lkml/2013/5/6/109
->>> >>
->>> >> And  you later replied suggesting this didn't seem to hurt; what's the
->>> >> current status there?
->> >
->> > Yes, your example show the blocked_load_avg value.
->> > So I had given a patch for review at that time before do detailed
->> > testing. https://lkml.org/lkml/2013/5/7/66
->> >
->> > But in detailed testing, the patch cause a big performance regression.
->> > When I look into for details. I found some cpu in kbuild just had a big
->> > blocked_load_avg, with a very small runnable_load_avg value.
->> >
->> > Seems accumulating current blocked_load_avg into cpu load isn't a good
->> > idea. Because:
-> So I think this describes an alternate implementation to the one suggested in:
->   https://lkml.org/lkml/2013/5/7/66
+On Monday, June 17, 2013 9:45 PM, Arnd Bergmann wrote:
+> On Monday 17 June 2013 18:45:52 Jingoo Han wrote:
+> > On Friday, June 14, 2013 9:54 PM, Arnd Bergmann wrote:
+> > >
+> > > Please look up the documentation about inbound viewport and describe
+> > > in a code comment what it does. I /assume/ that this is how DMA accesses
+> > > from the bus get translated into AXI bus transactions. If so, you have
+> > > to let the window translate addresses from RAM. If it's something else,
+> > > then you should document what it is and how it needs to be set up.
+> >
+> > One of our hardware engineer confirmed it.
+> > He said that these inbound functions are unnecessary.
+> > Also, I checked that PCIe works properly without these functions.
+> > So, I will remove these inbound functions.
 > 
-> Specifically, we _don't_ want to accumulate into cpu-load.  Taking an
-> "average of the average" loses the mobility that the new
-> representation allows.
-> 
->> > 1, The blocked_load_avg is decayed same as runnable load, sometime is
->> > far bigger than runnable load, that drive tasks to other idle or slight
->> > load cpu, than cause both performance and power issue. But if the
->> > blocked load is decayed too fast, it lose its effect.
-> This is why the idea would be to use an instantaneous load in
-> weighted_cpuload() and one that incorporated averages on (wants a
-> rename) get_rq_runnable_load().
-> 
-> For non-instaneous load-indexes we're pulling for stability.
+> Ok, good. So DMA just gets translated 1:1 independent of the
+> inbound viewport? Have you tested this with PCI device using
+> DMA?
 
-Paul, could I summary your point here:
-keep current weighted_cpu_load, but add blocked load avg in
-get_rq_runnable_load?
+According to our hardware engineer,
+He said that
+"That's correct. We tested it by doing a memory write from the device.
+A device DMA is a series of memory r/w so I expect it to work same way."
 
-I will test this change.
-> 
->> > 2, Another issue of blocked load is that when waking up task, we can not
->> > know blocked load proportion of the task on rq. So, the blocked load is
->> > meaningless in wake affine decision.
-> I think this is confusing two things:
-> 
-> (a) A wake-idle wake-up
-> (b) A wake-affine wake-up
+Also, he thought that I already tested too, since it works after removing
+the functions.
 
-what's I mean the wake affine is (b). Anyway, blocked load is no help on
-the scenario.
 > 
-> In (a) we do not care about the blocked load proportion, only whether
-> a cpu is idle.
+> > static int exynos_pcie_setup(int nr, struct pci_sys_data *sys)
+> > {
+> > 	struct pcie_port *pp;
+> >
+> > 	pp = sys_to_pcie(sys);
+> >
+> > 	if (!pp)
+> > 		return 0;
+> >
+> > 	if (global_io_offset < SZ_1M && pp->config.io_size > 0) {
+> > 		sys->io_offset = global_io_offset - pp->config.io_bus_addr; /* normally 0 */
+> > 		pci_ioremap_io(sys->io_offset, pp->io.start);
+> > 		global_io_offset += SZ_64K;
+> > 	}
+> >
+> > 	sys->mem_offset = pp->mem.start - pp->config.mem_bus_addr; /* normally 0 */
+> >
+> > 	pci_add_resource_offset(&sys->resources, &pp->io, sys->io_offset);
+> > 	pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
+> >
+> >         return 1;
+> > }
 > 
-> But once (a) has failed we should absolutely care how much load is
-> blocked in (b) as:
-> - We know we're going to queue for bandwidth on the cpu [ otherwise
-> we'd be in (a) ]
-> - Blocked load predicts how much _other_ work is expected to also
-> share the queue with us during the quantum
+> This is what I meant, yes.
 > 
+> > In this case, boot message is as below:
+> >
+> > PCI host bridge to bus 0000:00
+> > pci_bus 0000:00: root bus resource [io  0x40001000-0x40010fff]
+> > pci_bus 0000:00: root bus resource [mem 0x40011000-0x5fffffff]
+> > pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]
+> > pci 0000:00:00.0: [144d:a549] type 01 class 0x060400
+> > [.....]
+> > PCI host bridge to bus 0001:00
+> > pci_bus 0001:00: root bus resource [io  0x60001000-0x60010fff] (bus address [0x5fff1000-0x6000
+> > 0fff])
+> > pci_bus 0001:00: root bus resource [mem 0x60011000-0x7fffffff]
+> > pci_bus 0001:00: No busn resource found for root bus, will use [bus 00-ff]
+> > pci 0001:00:00.0: [144d:a549] type 01 class 0x060400
+> 
+> The io resources here look wrong. I would have expected
+> 
+> pci_bus 0000:00: root bus resource [io  0x001000-0x00ffff]
+> pci_bus 0001:00: root bus resource [io  0x010000-0x01ffff] (bus address [0x000000-0x00ffff])
+> 
+> Please have a look at the pci-mvebu driver and how it calculates its
+> 'realio' resource.
+
+I looked at the pci-mvebu driver,
+Then I fixed it as the pci-mvebu driver did.
+Also, I added 'global_io_offset'.
+
+@@ -909,6 +909,12 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
+                if (restype == IORESOURCE_IO) {
+                        of_pci_range_to_resource(&range, np, &pp->io);
+                        pp->io.name = "I/O";
++                       pp->io.start = max_t(resource_size_t,
++                                               PCIBIOS_MIN_IO,
++                                               range.pci_addr + global_io_offset);
++                       pp->io.end = min_t(resource_size_t,
++                                               IO_SPACE_LIMIT,
++                                               range.pci_addr + range.size + global_io_offset);
+                        pp->config.io_size = resource_size(&pp->io);
+                        pp->config.io_bus_addr = range.pci_addr;
+
+In this case, boot message is as below:
+
+PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [io  0x1000-0x10000]
+pci_bus 0000:00: root bus resource [mem 0x40011000-0x5fffffff]
+[.....]
+PCI host bridge to bus 0001:00
+pci_bus 0001:00: root bus resource [io  0x10000-0x20000] (bus address [0x0000-0x10000])
+pci_bus 0001:00: root bus resource [mem 0x60011000-0x7fffffff]
 
 
--- 
-Thanks
-    Alex
+
+> 
+> > > > > > +static int __exit exynos_pcie_remove(struct platform_device *pdev)
+> > > > > > +{
+> > > > > > +	struct pcie_port *pp = platform_get_drvdata(pdev);
+> > > > > > +
+> > > > > > +	clk_disable_unprepare(pp->bus_clk);
+> > > > > > +	clk_disable_unprepare(pp->clk);
+> > > > > > +
+> > > > > > +	return 0;
+> > > > > > +}
+> > > > >
+> > > > > You also don't remove the PCI devices here, as mentioned in an earlier
+> > > > > review.
+> > > >
+> > > > I reviewed Marvell PCIe driver and Tegra PCIe driver; however,
+> > > > I cannot know what you mean.
+> > > >
+> > > > Could let me know which additional functions are needed?
+> > >
+> > > The mvebu driver does not allow module unload. I haven't looked at the
+> > > tegra driver. If you allow unloading the driver and provide a 'remove'
+> > > callback, that callback needs to clean up the entire bus and remove
+> > > all child devices that were added as well as undo everything the
+> > > probe function did. I think it would be great if you can do that, although
+> > > it might not be easy. The simplest solution would be to not support
+> > > unloading though.
+> >
+> > As the mvebu driver uses platform_driver_probe(), the Exynos driver uses
+> > platform_driver_probe(). Thus, I will not provide a 'remove' callback.
+> 
+> Well, the important part is not to provide a module_exit() function, which
+> will ensure the driver cannot be unloaded.
+
+I will remove a 'remove' callback. Is it OK?
+Or what should I do?
+
+
+Thank you for your comment. :)
+
+Best regards,
+Jingoo Han
+
+> 
+> 	Arnd
+
