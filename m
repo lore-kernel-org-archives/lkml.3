@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933356Ab3FRQST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:18:19 -0400
+	id S933343Ab3FRQSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:18:17 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:49554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933271Ab3FRQSH (ORCPT
+	with ESMTP id S933220Ab3FRQSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:18:07 -0400
+	Tue, 18 Jun 2013 12:18:04 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 42/48] powerpc: Fix missing/delayed calls to irq_work
-Date: Tue, 18 Jun 2013 09:18:08 -0700
-Message-Id: <20130618161732.041320108@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 35/48] libceph: fix authorizer invalidation
+Date: Tue, 18 Jun 2013 09:18:01 -0700
+Message-Id: <20130618161730.999702312@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -29,40 +28,43 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Sage Weil <sage@inktank.com>
 
-commit 230b3034793247f61e6a0b08c44cf415f6d92981 upstream.
+commit 4b8e8b5d78b8322351d44487c1b76f7e9d3412bc upstream.
 
-When replaying interrupts (as a result of the interrupt occurring
-while soft-disabled), in the case of the decrementer, we are exclusively
-testing for a pending timer target. However we also use decrementer
-interrupts to trigger the new "irq_work", which in this case would
-be missed.
+We were invalidating the authorizer by removing the ticket handler
+entirely.  This was effective in inducing us to request a new authorizer,
+but in the meantime it mean that any authorizer we generated would get a
+new and initialized handler with secret_id=0, which would always be
+rejected by the server side with a confusing error message:
 
-This change the logic to force a replay in both cases of a timer
-boundary reached and a decrementer interrupt having actually occurred
-while disabled. The former test is still useful to catch cases where
-a CPU having been hard-disabled for a long time completely misses the
-interrupt due to a decrementer rollover.
+ auth: could not find secret_id=0
+ cephx: verify_authorizer could not get service secret for service osd secret_id=0
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Instead, simply clear the validity field.  This will still induce the auth
+code to request a new secret, but will let us continue to use the old
+ticket in the meantime.  The messenger code will probably continue to fail,
+but the exponential backoff will kick in, and eventually the we will get a
+new (hopefully more valid) ticket from the mon and be able to continue.
+
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/irq.c |    2 +-
+ net/ceph/auth_x.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -162,7 +162,7 @@ notrace unsigned int __check_irq_replay(
- 	 * in case we also had a rollover while hard disabled
- 	 */
- 	local_paca->irq_happened &= ~PACA_IRQ_DEC;
--	if (decrementer_check_overflow())
-+	if ((happened & PACA_IRQ_DEC) || decrementer_check_overflow())
- 		return 0x900;
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -630,7 +630,7 @@ static void ceph_x_invalidate_authorizer
  
- 	/* Finally check if an external interrupt happened */
+ 	th = get_ticket_handler(ac, peer_type);
+ 	if (!IS_ERR(th))
+-		remove_ticket_handler(ac, th);
++		memset(&th->validity, 0, sizeof(th->validity));
+ }
+ 
+ 
 
 
