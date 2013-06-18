@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab3FRQOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:14:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49266 "EHLO
+	id S933571Ab3FRQhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:37:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932886Ab3FRQOj (ORCPT
+	with ESMTP id S1756312Ab3FRQOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:39 -0400
+	Tue, 18 Jun 2013 12:14:41 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/26] ath9k: Use minstrel rate control by default
-Date: Tue, 18 Jun 2013 09:14:50 -0700
-Message-Id: <20130618161233.301286007@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Jens Axboe <axboe@kernel.dk>, Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/26] cciss: fix broken mutex usage in ioctl
+Date: Tue, 18 Jun 2013 09:14:53 -0700
+Message-Id: <20130618161235.546425531@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -31,90 +31,179 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 5efac94999ff218e0101f67a059e44abb4b0b523 upstream.
+commit 03f47e888daf56c8e9046c674719a0bcc644eed5 upstream.
 
-The ath9k rate control algorithm has various architectural
-issues that make it a poor fit in scenarios like congested
-environments etc.
+If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
+(as is normal with the Array Configuration Utility) the process will
+hang as below.  It attempts to acquire the same mutex twice, once in
+do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
+the mutex isn't.
 
-An example: https://bugzilla.redhat.com/show_bug.cgi?id=927191
+  Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
+  [...]
+  acu             D 0000000000000001     0  3246   3191 0x00000080
+  Call Trace:
+    schedule+0x29/0x70
+    schedule_preempt_disabled+0xe/0x10
+    __mutex_lock_slowpath+0x17b/0x220
+    mutex_lock+0x2b/0x50
+    cciss_unlocked_open+0x2f/0x110 [cciss]
+    __blkdev_get+0xd3/0x470
+    blkdev_get+0x5c/0x1e0
+    register_disk+0x182/0x1a0
+    add_disk+0x17c/0x310
+    cciss_add_disk+0x13a/0x170 [cciss]
+    cciss_update_drive_info+0x39b/0x480 [cciss]
+    rebuild_lun_table+0x258/0x370 [cciss]
+    cciss_ioctl+0x34f/0x470 [cciss]
+    do_ioctl+0x49/0x70 [cciss]
+    __blkdev_driver_ioctl+0x28/0x30
+    blkdev_ioctl+0x200/0x7b0
+    block_ioctl+0x3c/0x40
+    do_vfs_ioctl+0x89/0x350
+    SyS_ioctl+0xa1/0xb0
+    system_call_fastpath+0x16/0x1b
 
-Change the default to minstrel which is more robust in such cases.
-The ath9k RC code is left in the driver for now, maybe it can
-be removed altogether later on.
+This mutex usage was added into the ioctl path when the big kernel lock
+was removed.  As it turns out, these paths are all thread safe anyway
+(or can easily be made so) and we don't want ioctl() to be single
+threaded in any case.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Cc: Jouni Malinen <jouni@qca.qualcomm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/Kconfig  |   10 +++++++---
- drivers/net/wireless/ath/ath9k/Makefile |    2 +-
- drivers/net/wireless/ath/ath9k/init.c   |    4 ----
- drivers/net/wireless/ath/ath9k/rc.h     |    2 +-
- 4 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/block/cciss.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/Kconfig
-+++ b/drivers/net/wireless/ath/ath9k/Kconfig
-@@ -89,13 +89,17 @@ config ATH9K_MAC_DEBUG
- 	  This option enables collection of statistics for Rx/Tx status
- 	  data and some other MAC related statistics
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -161,8 +161,6 @@ static irqreturn_t do_cciss_msix_intr(in
+ static int cciss_open(struct block_device *bdev, fmode_t mode);
+ static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
+ static int cciss_release(struct gendisk *disk, fmode_t mode);
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned int cmd, unsigned long arg);
+ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 		       unsigned int cmd, unsigned long arg);
+ static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
+@@ -229,7 +227,7 @@ static const struct block_device_operati
+ 	.owner = THIS_MODULE,
+ 	.open = cciss_unlocked_open,
+ 	.release = cciss_release,
+-	.ioctl = do_ioctl,
++	.ioctl = cciss_ioctl,
+ 	.getgeo = cciss_getgeo,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = cciss_compat_ioctl,
+@@ -1140,16 +1138,6 @@ static int cciss_release(struct gendisk
+ 	return 0;
+ }
  
--config ATH9K_RATE_CONTROL
-+config ATH9K_LEGACY_RATE_CONTROL
- 	bool "Atheros ath9k rate control"
- 	depends on ATH9K
--	default y
-+	default n
- 	---help---
- 	  Say Y, if you want to use the ath9k specific rate control
--	  module instead of minstrel_ht.
-+	  module instead of minstrel_ht. Be warned that there are various
-+	  issues with the ath9k RC and minstrel is a more robust algorithm.
-+	  Note that even if this option is selected, "ath9k_rate_control"
-+	  has to be passed to mac80211 using the module parameter,
-+	  ieee80211_default_rc_algo.
- 
- config ATH9K_HTC
-        tristate "Atheros HTC based wireless cards support"
---- a/drivers/net/wireless/ath/ath9k/Makefile
-+++ b/drivers/net/wireless/ath/ath9k/Makefile
-@@ -6,7 +6,7 @@ ath9k-y +=	beacon.o \
- 		xmit.o
- 
- ath9k-$(CONFIG_ATH9K_BTCOEX_SUPPORT) += mci.o
--ath9k-$(CONFIG_ATH9K_RATE_CONTROL) += rc.o
-+ath9k-$(CONFIG_ATH9K_LEGACY_RATE_CONTROL) += rc.o
- ath9k-$(CONFIG_ATH9K_PCI) += pci.o
- ath9k-$(CONFIG_ATH9K_AHB) += ahb.o
- ath9k-$(CONFIG_ATH9K_DEBUGFS) += debug.o
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -694,10 +694,6 @@ void ath9k_set_hw_capab(struct ath_softc
- 	sc->ant_rx = hw->wiphy->available_antennas_rx;
- 	sc->ant_tx = hw->wiphy->available_antennas_tx;
- 
--#ifdef CONFIG_ATH9K_RATE_CONTROL
--	hw->rate_control_algorithm = "ath9k_rate_control";
--#endif
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned cmd, unsigned long arg)
+-{
+-	int ret;
+-	mutex_lock(&cciss_mutex);
+-	ret = cciss_ioctl(bdev, mode, cmd, arg);
+-	mutex_unlock(&cciss_mutex);
+-	return ret;
+-}
 -
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_2GHZ)
- 		hw->wiphy->bands[IEEE80211_BAND_2GHZ] =
- 			&sc->sbands[IEEE80211_BAND_2GHZ];
---- a/drivers/net/wireless/ath/ath9k/rc.h
-+++ b/drivers/net/wireless/ath/ath9k/rc.h
-@@ -219,7 +219,7 @@ struct ath_rate_priv {
- 	struct ath_rc_stats rcstats[RATE_TABLE_SIZE];
- };
+ #ifdef CONFIG_COMPAT
  
--#ifdef CONFIG_ATH9K_RATE_CONTROL
-+#ifdef CONFIG_ATH9K_LEGACY_RATE_CONTROL
- int ath_rate_control_register(void);
- void ath_rate_control_unregister(void);
- #else
+ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+@@ -1176,7 +1164,7 @@ static int cciss_compat_ioctl(struct blo
+ 	case CCISS_REGNEWD:
+ 	case CCISS_RESCANDISK:
+ 	case CCISS_GETLUNINFO:
+-		return do_ioctl(bdev, mode, cmd, arg);
++		return cciss_ioctl(bdev, mode, cmd, arg);
+ 
+ 	case CCISS_PASSTHRU32:
+ 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
+@@ -1216,7 +1204,7 @@ static int cciss_ioctl32_passthru(struct
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1258,7 +1246,7 @@ static int cciss_ioctl32_big_passthru(st
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1308,11 +1296,14 @@ static int cciss_getpciinfo(ctlr_info_t
+ static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
+ {
+ 	cciss_coalint_struct intinfo;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
+ 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user
+ 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
+ 		return -EFAULT;
+@@ -1353,12 +1344,15 @@ static int cciss_setintinfo(ctlr_info_t
+ static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
+ {
+ 	NodeName_type NodeName;
++	unsigned long flags;
+ 	int i;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	for (i = 0; i < 16; i++)
+ 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1395,10 +1389,13 @@ static int cciss_setnodename(ctlr_info_t
+ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
+ {
+ 	Heartbeat_type heartbeat;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	heartbeat = readl(&h->cfgtable->HeartBeat);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1407,10 +1404,13 @@ static int cciss_getheartbeat(ctlr_info_
+ static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
+ {
+ 	BusTypes_type BusTypes;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	BusTypes = readl(&h->cfgtable->BusTypes);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
+ 		return -EFAULT;
+ 	return 0;
 
 
