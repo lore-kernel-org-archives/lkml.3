@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3FRIN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:13:28 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52641 "EHLO
+	id S1754125Ab3FRIPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:15:53 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:54932 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3FRINZ (ORCPT
+	with ESMTP id S1752306Ab3FRIPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:13:25 -0400
+	Tue, 18 Jun 2013 04:15:50 -0400
 From: Yijing Wang <wangyijing@huawei.com>
-To: "David S. Miller" <davem@davemloft.net>
+To: Paul Mackerras <paulus@samba.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
 CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
         <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        Michael Chan <mchan@broadcom.com>, <netdev@vger.kernel.org>
-Subject: [PATCH 4/9] bnx2: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-Date: Tue, 18 Jun 2013 16:12:37 +0800
-Message-ID: <1371543157-14968-1-git-send-email-wangyijing@huawei.com>
+        <linux-fbdev@vger.kernel.org>
+Subject: [PATCH 3/9] aty128fb: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+Date: Tue, 18 Jun 2013 16:15:07 +0800
+Message-ID: <1371543307-14360-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -29,26 +31,27 @@ in init path. So we can use pdev->pm_cap instead of using
 pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Michael Chan <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org
 ---
- drivers/net/ethernet/broadcom/bnx2.c |    2 +-
+ drivers/video/aty/aty128fb.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2.c b/drivers/net/ethernet/broadcom/bnx2.c
-index 5d20449..324709e 100644
---- a/drivers/net/ethernet/broadcom/bnx2.c
-+++ b/drivers/net/ethernet/broadcom/bnx2.c
-@@ -8104,7 +8104,7 @@ bnx2_init_board(struct pci_dev *pdev, struct net_device *dev)
+diff --git a/drivers/video/aty/aty128fb.c b/drivers/video/aty/aty128fb.c
+index 8c55011..a4dfe8c 100644
+--- a/drivers/video/aty/aty128fb.c
++++ b/drivers/video/aty/aty128fb.c
+@@ -2016,7 +2016,7 @@ static int aty128_init(struct pci_dev *pdev, const struct pci_device_id *ent)
  
- 	pci_set_master(pdev);
+ 	aty128_init_engine(par);
  
--	bp->pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM);
-+	bp->pm_cap = pdev->pm_cap;
- 	if (bp->pm_cap == 0) {
- 		dev_err(&pdev->dev,
- 			"Cannot find power management capability, aborting\n");
+-	par->pm_reg = pci_find_capability(pdev, PCI_CAP_ID_PM);
++	par->pm_reg = pdev->pm_cap;
+ 	par->pdev = pdev;
+ 	par->asleep = 0;
+ 	par->lock_blank = 0;
 -- 
 1.7.1
 
