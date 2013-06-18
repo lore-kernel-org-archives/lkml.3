@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab3FRPLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:11:37 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:39110 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab3FRPLg (ORCPT
+	id S932525Ab3FRPLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:11:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43389 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932457Ab3FRPLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:11:36 -0400
-Date: Tue, 18 Jun 2013 08:11:35 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Yehuda Sadeh <yehuda@inktank.com>, Alex Elder <elder@inktank.com>,
-        ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: remove RBD_DEBUG
-In-Reply-To: <1371464151.26299.12.camel@x61.thuisdomein>
-Message-ID: <alpine.DEB.2.00.1306180811000.23632@cobra.newdream.net>
-References: <1371464151.26299.12.camel@x61.thuisdomein>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 18 Jun 2013 11:11:41 -0400
+Date: Tue, 18 Jun 2013 16:11:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 02/10] pinctrl: mvebu: dove pinctrl driver
+Message-ID: <20130618151116.GZ2718@n2100.arm.linux.org.uk>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-3-git-send-email-sebastian.hesselbarth@gmail.com> <20130618113606.GA26763@n2100.arm.linux.org.uk> <CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013, Paul Bolle wrote:
-> The RBD_DEBUG macro is always defined, so it serves no purpose.
-> Removing it has the benefit that readers of the code won't be tricked
-> into thinking that rbd_assert() will compile away because they didn't
-> define RBD_DEBUG themselves.
+On Tue, Jun 18, 2013 at 05:02:49PM +0200, Linus Walleij wrote:
+> Nowadays I would do the above with regmap_update_bits().
+> 
+> Mutual exclusion for read-modify-write of individual bits in a
+> register is one of those cases where doing a regmap over
+> a memory-mapped register range makes a lot of sense.
+> (drivers/mfd/syscon.c being a nice example)
 
-In the future we likely will disable the #define.  We may as well leave it 
-there for now...
+So, for that solution we need to have some kind of global regmap per
+register or somesuch.  Then you run into regmap needing a struct
+device - well, with a shared register, which struct device do you
+use, or do you have to invent one?
 
-
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Compile tested only.
-> 
->  drivers/block/rbd.c | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> index b8a58178..d3869b4 100644
-> --- a/drivers/block/rbd.c
-> +++ b/drivers/block/rbd.c
-> @@ -44,8 +44,6 @@
->  
->  #include "rbd_types.h"
->  
-> -#define RBD_DEBUG	/* Activate rbd_assert() calls */
-> -
->  /*
->   * The basic unit of block I/O is a sector.  It is interpreted in a
->   * number of contexts in Linux (blk, bio, genhd), but the default is
-> @@ -444,7 +442,6 @@ void rbd_warn(struct rbd_device *rbd_dev, const char *fmt, ...)
->  	va_end(args);
->  }
->  
-> -#ifdef RBD_DEBUG
->  #define rbd_assert(expr)						\
->  		if (unlikely(!(expr))) {				\
->  			printk(KERN_ERR "\nAssertion failure in %s() "	\
-> @@ -453,9 +450,6 @@ void rbd_warn(struct rbd_device *rbd_dev, const char *fmt, ...)
->  					__func__, __LINE__, #expr);	\
->  			BUG();						\
->  		}
-> -#else /* !RBD_DEBUG */
-> -#  define rbd_assert(expr)	((void) 0)
-> -#endif /* !RBD_DEBUG */
->  
->  static int rbd_img_obj_request_submit(struct rbd_obj_request *obj_request);
->  static void rbd_img_parent_read(struct rbd_obj_request *obj_request);
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+That sounds more heavy-weight than is really necessary.
