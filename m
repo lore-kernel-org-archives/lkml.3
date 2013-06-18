@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3FRD3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 23:29:36 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:61045 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab3FRD3f (ORCPT
+	id S1754149Ab3FRDaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 23:30:07 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:45665 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752576Ab3FRDaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 23:29:35 -0400
-X-Spam-Score: -100.8
-Message-ID: <51BFD3EC.7010201@asianux.com>
-Date: Tue, 18 Jun 2013 11:28:44 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 17 Jun 2013 23:30:05 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 1/3] sched: reduce calculation effort in fix_small_imbalance
+Date: Tue, 18 Jun 2013 11:18:04 +0800
+Message-ID: <1371525486-11270-2-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
+References: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: timer: looping issue, need reset variable 'found'
-References: <51B4A408.4050909@asianux.com> <alpine.LFD.2.02.1306101501160.22970@ionos> <51B93EFC.9060008@asianux.com>
-In-Reply-To: <51B93EFC.9060008@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Actually all below item could be repalced by scaled_busy_load_per_task
+	(sds->busiest_load_per_task * SCHED_POWER_SCALE)
+		/sds->busiest->sgp->power;
 
-Sorry again for replying late, and now I can focus on this patch, I will
-see the related details again.
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-
-Thanks.
-
-On 06/13/2013 11:39 AM, Chen Gang wrote:
-> 
-> Sorry for replying late during these days, firstly.
-> 
-> 
-> On 06/10/2013 10:12 PM, Thomas Gleixner wrote:
->> On Sun, 9 Jun 2013, Chen Gang wrote:
->>
->>>>
->>>> According to __internal_add_timer(), in _next_timer_interrupt(), when
->>>> 'tv1.vec' find one, but need 'cascade bucket(s)', we still need find
->>>> each slot of 'tv*.vec'.
->> No, we do not. We only need to scan the first cascade array after the
->> enqueued timer. If there is nothing in tv2 which might come before the
->> found timer, then any timer in tv3 will be later than the one we found
->> in the primary wheel.
->>
-> 
-> OK, thanks, I should read details to confirm it (at least now, I still
-> not quite be sure about it).
-> 
-> 
->>>> So need reset variable 'found', so can fully scan ''do {...} while()''
->>>> for 'tv*.vec'.
->> And thereby lose the information, that we already found a timer in the
->> scan of the primary array.
-> 
-> Hmm..., I should read details.
-> 
-> 
-> And excuse me, I also have to do another things during these days, so
-> maybe reply late.
-> 
-> 
-> Thanks.
-> 
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c61a614..28052fa 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4727,20 +4727,17 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	pwr_now /= SCHED_POWER_SCALE;
+ 
+ 	/* Amount of load we'd subtract */
+-	tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+-		sds->busiest->sgp->power;
+-	if (sds->max_load > tmp)
++	if (sds->max_load > scaled_busy_load_per_task) {
+ 		pwr_move += sds->busiest->sgp->power *
+-			min(sds->busiest_load_per_task, sds->max_load - tmp);
+-
+-	/* Amount of load we'd add */
+-	if (sds->max_load * sds->busiest->sgp->power <
+-		sds->busiest_load_per_task * SCHED_POWER_SCALE)
+-		tmp = (sds->max_load * sds->busiest->sgp->power) /
+-			sds->this->sgp->power;
+-	else
++			min(sds->busiest_load_per_task,
++				sds->max_load - scaled_busy_load_per_task);
+ 		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+ 			sds->this->sgp->power;
++	} else
++		tmp = (sds->max_load * sds->busiest->sgp->power) /
++			sds->this->sgp->power;
++
++	/* Amount of load we'd add */
+ 	pwr_move += sds->this->sgp->power *
+ 			min(sds->this_load_per_task, sds->this_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
 -- 
-Chen Gang
+1.7.10.4
 
-Asianux Corporation
