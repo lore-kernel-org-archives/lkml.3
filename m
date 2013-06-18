@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab3FRPRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:17:14 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:39323 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab3FRPRN (ORCPT
+	id S1756260Ab3FRPSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:18:05 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:40148 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756006Ab3FRPSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:17:13 -0400
+	Tue, 18 Jun 2013 11:18:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>
-	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>
-Date: Tue, 18 Jun 2013 17:17:12 +0200
-Message-ID: <CACRpkdb2M-TBHbZf=hQE_0ihc4L5amdoFw5QQg2OSFXaMrH8mA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130618142744.GG17619@somewhere.redhat.com>
+References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com> <20130618142744.GG17619@somewhere.redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 18 Jun 2013 11:17:41 -0400
+Message-ID: <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
+Subject: Re: [PATCH 6/8] sched: task_sched_runtime introduce micro optimization
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 1:33 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-
-> Add support for gpio on Intel BayTrail platforms. BayTrail supports 3 banks
-> of gpios called SCORE, NCORE ans SUS with 102, 28 and 44 gpio pins.
-> Supports gpio interrupts and ACPI gpio events
+>> +#ifdef CONFIG_64BIT
+>> +     /*
+>> +      * 64-bit doesn't need locks to atomically read a 64bit value. So we
+>> +      * have two optimization chances, 1) when caller doesn't need
+>> +      * delta_exec and 2) when the task's delta_exec is 0. The former is
+>> +      * obvious. The latter is complicated. reading ->on_cpu is racy, but
+>> +      * this is ok. If we race with it leaving cpu, we'll take a lock. So
+>> +      * we're correct. If we race with it entering cpu, unaccounted time
+>> +      * is 0. This is indistinguishable from the read occurring a few
+>> +      * cycles earlier.
+>> +      */
+>> +     if (!add_delta || !p->on_cpu)
+>> +             return p->se.sum_exec_runtime;
 >
-> Pins may be muxed to alternate function instead of gpio by firmware.
-> This driver does not touch the pin muxing and expect firmare
-> to set pin muxing and pullup/down properties properly.
+> I'm not sure this is correct from an smp ordering POV. p->on_cpu may appear
+> to be 0 whereas the task is actually running for a while and p->se.sum_exec_runtime
+> can then be past the actual value on the remote CPU.
+
+Quate form Paul's last e-mail
+
+>Stronger:
 >
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+>+#ifdef CONFIG_64BIT
+>+       if (!p->on_cpu)
+>+               return p->se.sum_exec_runtime;
+>+#endif
+>
+>[ Or !p->on_cpu || !add_delta ].
+>
+>We can take the racy read versus p->on_cpu since:
+>  If we race with it leaving cpu: we take lock, we're correct
+>  If we race with it entering cpu: unaccounted time ---> 0, this is
+>indistinguishable from the read occurring a few cycles earlier.
 
-I have a feeling this driver will evolve quite a bit and eventually
-register a pure pinctrl interface as well (currently it's only using
-the ranges as some data container...)
-
-Anyway, it's a good starting point and obviously (I guess?)
-gets your hardware up an ticking, so let's take this as a
-starting point.
-
-So patch applied.
-
-This thing only seems to use gpiolib-acpi.c for the basic
-device matching and IRQ handling backend, is that correct?
-
-What I'm thinking of moving forward is that I have seen
-ACPI fragments with things like "PullUp" etc, which is pinctrl
-domain, so we may come to need some generic ACPI helpers
-inside drivers/pinctrl as well sooner or later.
-
-Yours,
-Linus Walleij
+That said, even though we got slightly inaccurate current time, we
+have no way to
+know this is inaccurate. E.g. cpu clock saving feature bring us more
+inaccuracy, but
+we already live in such world.
