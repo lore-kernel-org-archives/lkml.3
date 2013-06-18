@@ -1,140 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3FRL4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:56:48 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:36259 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab3FRL4p (ORCPT
+	id S932571Ab3FRL4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:56:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56138 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756022Ab3FRLou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:56:45 -0400
-Message-ID: <51C04AFE.3010201@imag.fr>
-Date: Tue, 18 Jun 2013 13:56:46 +0200
-From: Nicolas Palix <nicolas.palix@imag.fr>
-Organization: UJF Polytech / LIG
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>, linux-doc@vger.kernel.org,
-        cocci@systeme.lip6.fr, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] coccicheck: span checks across CPUs
-References: <20130617230655.GA21273@www.outflux.net>
-In-Reply-To: <20130617230655.GA21273@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Tue, 18 Jun 2013 07:44:50 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 54/93] tg3: Add read dma workaround for 5720
+Date: Tue, 18 Jun 2013 12:43:02 +0100
+Message-Id: <1371555821-12820-55-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-This is indeed something that was on my TO-DO list! :)
-Thank you a lot.
+------------------
 
-Could you consider merging with the following or
-something equivalent for handling running spatch processes
-when make is interrupted ?
+From: Nithin Sujir <nsujir@broadcom.com>
 
-For the resubmission, please add Michal Marek (in CC)
-who will apply it to the misc branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git
+commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
 
-Regards,
+Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
+DMA workaround" added a workaround for TX DMA stall on the 5719. This
+workaround needs to be applied to the 5720 as well.
 
-diff --git a/scripts/coccicheck b/scripts/coccicheck
-index a222e92..907f11e 100755
---- a/scripts/coccicheck
-+++ b/scripts/coccicheck
-@@ -2,6 +2,17 @@
+Reported-by: Roland Dreier <roland@purestorage.com>
+Tested-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backport to 3.5:
+  - use GET_ASIC_REV() macro instead of tg3_asic_rev() ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/ethernet/broadcom/tg3.c | 21 +++++++++++++++------
+ drivers/net/ethernet/broadcom/tg3.h |  5 +++--
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
- SPATCH="`which ${SPATCH:=spatch}`"
-
-+trap kill_running SIGTERM SIGINT
-+declare -a SPATCH_RUN
-+
-+kill_running() {
-+       for i in $(seq 0 $(( NPROC - 1)) ); do
-+               if [ $V -eq 2 ] ; then echo "Killing ${SPATCH_RUN[$i]}" ; fi
-+               kill ${SPATCH_RUN[$i]}
-+       done
-+       wait
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 8f2b8aa..4cb0916 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8572,6 +8572,14 @@ static void tg3_rss_write_indir_tbl(struct tg3 *tp)
+ 	}
+ }
+ 
++static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
++{
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
++	else
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
 +}
 +
- # The verbosity may be set by the environmental parameter V=
- # as for example with 'make V=1 coccicheck'
-
-@@ -80,7 +91,9 @@ run_cmd() {
-                echo "Running ($NPROC in parallel): $@"
-        fi
-        for i in $(seq 0 $(( NPROC - 1)) ); do
--               eval $@ -max $NPROC -index $i &
-+               eval "$@ -max $NPROC -index $i &"
-+               SPATCH_RUN[$i]=$!
-+               if [ $V -eq 2 ] ; then echo "${SPATCH_RUN[$i]} running" ; fi
-        done
-        wait
- }
-
-Le 6/18/13 1:06 AM, Kees Cook a écrit :
-> This adds parallelism by default to the "coccicheck" target using
-> spatch's "-max" and "-index" arguments.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  Documentation/coccinelle.txt |    5 +++++
->  scripts/coccicheck           |   14 ++++++++++++--
->  2 files changed, 17 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-> index 18de785..408439d 100644
-> --- a/Documentation/coccinelle.txt
-> +++ b/Documentation/coccinelle.txt
-> @@ -91,6 +91,11 @@ To enable verbose messages set the V= variable, for example:
->  
->     make coccicheck MODE=report V=1
->  
-> +By default, coccicheck tries to run as parallel as possible. To change
-> +the parallelism, set the J= variable. For example, to run across 4 CPUs:
-> +
-> +   make coccicheck MODE=report J=4
-> +
->  
->   Using Coccinelle with a single semantic patch
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index 06fcb33..077e5b2 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -11,6 +11,12 @@ else
->  	VERBOSE=0
->  fi
->  
-> +if [ -z "$J" ]; then
-> +	NPROC=$(getconf _NPROCESSORS_ONLN)
-> +else
-> +	NPROC="$J"
-> +fi
-> +
->  FLAGS="$SPFLAGS -very_quiet"
->  
->  # spatch only allows include directories with the syntax "-I include"
-> @@ -61,10 +67,14 @@ if [ "$ONLINE" = "0" ] ; then
->  fi
->  
->  run_cmd() {
-> +	local i
->  	if [ $VERBOSE -ne 0 ] ; then
-> -		echo "Running: $@"
-> +		echo "Running ($NPROC in parallel): $@"
->  	fi
-> -	eval $@
-> +	for i in $(seq 0 $(( NPROC - 1)) ); do
-> +		eval $@ -max $NPROC -index $i &
-> +	done
-> +	wait
->  }
->  
->  
-> 
+ /* tp->lock is held. */
+ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+ {
+@@ -9208,16 +9216,17 @@ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+ 	tw32_f(RDMAC_MODE, rdmac_mode);
+ 	udelay(40);
+ 
+-	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
++	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
++	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
+ 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
+ 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
+ 				break;
+ 		}
+ 		if (i < TG3_NUM_RDMA_CHANNELS) {
+ 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
++			val |= tg3_lso_rd_dma_workaround_bit(tp);
+ 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-			tg3_flag_set(tp, 5719_RDMA_BUG);
++			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
+ 		}
+ 	}
+ 
+@@ -9476,15 +9485,15 @@ static void tg3_periodic_fetch_stats(struct tg3 *tp)
+ 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
+ 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
+ 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
+-	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
++	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
+ 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
+ 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
+ 		u32 val;
+ 
+ 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
++		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
+ 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-		tg3_flag_clear(tp, 5719_RDMA_BUG);
++		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
+ 	}
+ 
+ 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
+diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
+index 024c9c9..622bbaf 100644
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -1376,7 +1376,8 @@
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
+-#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
+ /* 0x4914 --> 0x4be0 unused */
+ 
+ #define TG3_NUM_RDMA_CHANNELS		4
+@@ -2924,7 +2925,7 @@ enum TG3_FLAGS {
+ 	TG3_FLAG_L1PLLPD_EN,
+ 	TG3_FLAG_APE_HAS_NCSI,
+ 	TG3_FLAG_4K_FIFO_LIMIT,
+-	TG3_FLAG_5719_RDMA_BUG,
++	TG3_FLAG_5719_5720_RDMA_BUG,
+ 	TG3_FLAG_RESET_TASK_PENDING,
+ 	TG3_FLAG_5705_PLUS,
+ 	TG3_FLAG_IS_5788,
+-- 
+1.8.1.2
 
