@@ -1,258 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933336Ab3FRQZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:25:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49514 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933252Ab3FRQR5 (ORCPT
+	id S933332Ab3FRQZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:25:37 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:47136 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab3FRQZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:57 -0400
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 38/48] libceph: wrap auth methods in a mutex
-Date: Tue, 18 Jun 2013 09:18:04 -0700
-Message-Id: <20130618161731.418173078@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
-References: <20130618161725.912524266@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 18 Jun 2013 12:25:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1371154622-8929-2-git-send-email-yinghai@kernel.org>
+References: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
+	<1371154622-8929-2-git-send-email-yinghai@kernel.org>
+Date: Tue, 18 Jun 2013 12:25:09 -0400
+Message-ID: <CA+5PVA4by9=gaXz7nuiQE4RT4LKvDzYUDS__uNx0KXmLWHDJFw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] x86, mtrr: Fix original mtrr range get for mtrr_cleanup
+From: Josh Boyer <jwboyer@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Joshua Covington <joshuacov@googlemail.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Thu, Jun 13, 2013 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
+> during add range) broke mtrr cleanup on his setup in 3.9.5.
+> corresponding commit in upstream is fbe06b7bae7c.
+>
+>   *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=59491
+>
+> So it rejects new var mtrr layout.
+>
+> It turns out we have some problem with initial mtrr range retrievel.
+> current sequence is:
+>         x86_get_mtrr_mem_range
+>                 ==> bunchs of add_range_with_merge
+>                 ==> bunchs of subract_range
+>                 ==> clean_sort_range
+>         add_range_with_merge for [0,1M)
+>         sort_range()
+>
+> add_range_with_merge could have blank slots, so we can not just
+> sort only, that will have final result have extra blank slot in head.
+>
+> So move that calling add_range_with_merge for [0,1M), with that we
+> could avoid extra clean_sort_range calling.
+>
+> Reported-by: Joshua Covington <joshuacov@googlemail.com>
+> Tested-by: Joshua Covington <joshuacov@googlemail.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: <stable@vger.kernel.org> v3.9
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+We're at -rc6 now and this and it's companion aren't in Linus' tree,
+which means the broken 3.9.y stable series doesn't have them either.
+It's been posted for a while now, and v3 was really a minor cleanup.
+Is there some reason this is still not merged?  We've been carrying v2
+in Fedora for a bit now and it's cleared up the issue for a number of
+people.
 
-------------------
-
-From: Sage Weil <sage@inktank.com>
-
-commit e9966076cdd952e19f2dd4854cd719be0d7cbebc upstream.
-
-The auth code is called from a variety of contexts, include the mon_client
-(protected by the monc's mutex) and the messenger callbacks (currently
-protected by nothing).  Avoid chaos by protecting all auth state with a
-mutex.  Nothing is blocking, so this should be simple and lightweight.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/ceph/auth.h |    2 +
- net/ceph/auth.c           |   78 +++++++++++++++++++++++++++++++++-------------
- 2 files changed, 58 insertions(+), 22 deletions(-)
-
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -78,6 +78,8 @@ struct ceph_auth_client {
- 	u64 global_id;          /* our unique id in system */
- 	const struct ceph_crypto_key *key;     /* our secret key */
- 	unsigned want_keys;     /* which services we want */
-+
-+	struct mutex mutex;
- };
- 
- extern struct ceph_auth_client *ceph_auth_init(const char *name,
---- a/net/ceph/auth.c
-+++ b/net/ceph/auth.c
-@@ -47,6 +47,7 @@ struct ceph_auth_client *ceph_auth_init(
- 	if (!ac)
- 		goto out;
- 
-+	mutex_init(&ac->mutex);
- 	ac->negotiating = true;
- 	if (name)
- 		ac->name = name;
-@@ -73,10 +74,12 @@ void ceph_auth_destroy(struct ceph_auth_
-  */
- void ceph_auth_reset(struct ceph_auth_client *ac)
- {
-+	mutex_lock(&ac->mutex);
- 	dout("auth_reset %p\n", ac);
- 	if (ac->ops && !ac->negotiating)
- 		ac->ops->reset(ac);
- 	ac->negotiating = true;
-+	mutex_unlock(&ac->mutex);
- }
- 
- int ceph_entity_name_encode(const char *name, void **p, void *end)
-@@ -102,6 +105,7 @@ int ceph_auth_build_hello(struct ceph_au
- 	int i, num;
- 	int ret;
- 
-+	mutex_lock(&ac->mutex);
- 	dout("auth_build_hello\n");
- 	monhdr->have_version = 0;
- 	monhdr->session_mon = cpu_to_le16(-1);
-@@ -122,15 +126,19 @@ int ceph_auth_build_hello(struct ceph_au
- 
- 	ret = ceph_entity_name_encode(ac->name, &p, end);
- 	if (ret < 0)
--		return ret;
-+		goto out;
- 	ceph_decode_need(&p, end, sizeof(u64), bad);
- 	ceph_encode_64(&p, ac->global_id);
- 
- 	ceph_encode_32(&lenp, p - lenp - sizeof(u32));
--	return p - buf;
-+	ret = p - buf;
-+out:
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- 
- bad:
--	return -ERANGE;
-+	ret = -ERANGE;
-+	goto out;
- }
- 
- static int ceph_build_auth_request(struct ceph_auth_client *ac,
-@@ -151,11 +159,13 @@ static int ceph_build_auth_request(struc
- 	if (ret < 0) {
- 		pr_err("error %d building auth method %s request\n", ret,
- 		       ac->ops->name);
--		return ret;
-+		goto out;
- 	}
- 	dout(" built request %d bytes\n", ret);
- 	ceph_encode_32(&p, ret);
--	return p + ret - msg_buf;
-+	ret = p + ret - msg_buf;
-+out:
-+	return ret;
- }
- 
- /*
-@@ -176,6 +186,7 @@ int ceph_handle_auth_reply(struct ceph_a
- 	int result_msg_len;
- 	int ret = -EINVAL;
- 
-+	mutex_lock(&ac->mutex);
- 	dout("handle_auth_reply %p %p\n", p, end);
- 	ceph_decode_need(&p, end, sizeof(u32) * 3 + sizeof(u64), bad);
- 	protocol = ceph_decode_32(&p);
-@@ -227,35 +238,44 @@ int ceph_handle_auth_reply(struct ceph_a
- 
- 	ret = ac->ops->handle_reply(ac, result, payload, payload_end);
- 	if (ret == -EAGAIN) {
--		return ceph_build_auth_request(ac, reply_buf, reply_len);
-+		ret = ceph_build_auth_request(ac, reply_buf, reply_len);
- 	} else if (ret) {
- 		pr_err("auth method '%s' error %d\n", ac->ops->name, ret);
--		return ret;
- 	}
--	return 0;
- 
--bad:
--	pr_err("failed to decode auth msg\n");
- out:
-+	mutex_unlock(&ac->mutex);
- 	return ret;
-+
-+bad:
-+	pr_err("failed to decode auth msg\n");
-+	ret = -EINVAL;
-+	goto out;
- }
- 
- int ceph_build_auth(struct ceph_auth_client *ac,
- 		    void *msg_buf, size_t msg_len)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (!ac->protocol)
--		return ceph_auth_build_hello(ac, msg_buf, msg_len);
--	BUG_ON(!ac->ops);
--	if (ac->ops->should_authenticate(ac))
--		return ceph_build_auth_request(ac, msg_buf, msg_len);
--	return 0;
-+		ret = ceph_auth_build_hello(ac, msg_buf, msg_len);
-+	else if (ac->ops->should_authenticate(ac))
-+		ret = ceph_build_auth_request(ac, msg_buf, msg_len);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- 
- int ceph_auth_is_authenticated(struct ceph_auth_client *ac)
- {
--	if (!ac->ops)
--		return 0;
--	return ac->ops->is_authenticated(ac);
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
-+	if (ac->ops)
-+		ret = ac->ops->is_authenticated(ac);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_is_authenticated);
- 
-@@ -263,17 +283,23 @@ int ceph_auth_create_authorizer(struct c
- 				int peer_type,
- 				struct ceph_auth_handshake *auth)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->create_authorizer)
--		return ac->ops->create_authorizer(ac, peer_type, auth);
--	return 0;
-+		ret = ac->ops->create_authorizer(ac, peer_type, auth);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_create_authorizer);
- 
- void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
- 				  struct ceph_authorizer *a)
- {
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->destroy_authorizer)
- 		ac->ops->destroy_authorizer(ac, a);
-+	mutex_unlock(&ac->mutex);
- }
- EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
- 
-@@ -283,8 +309,10 @@ int ceph_auth_update_authorizer(struct c
- {
- 	int ret = 0;
- 
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->update_authorizer)
- 		ret = ac->ops->update_authorizer(ac, peer_type, a);
-+	mutex_unlock(&ac->mutex);
- 	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_update_authorizer);
-@@ -292,15 +320,21 @@ EXPORT_SYMBOL(ceph_auth_update_authorize
- int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
- 				      struct ceph_authorizer *a, size_t len)
- {
-+	int ret = 0;
-+
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->verify_authorizer_reply)
--		return ac->ops->verify_authorizer_reply(ac, a, len);
--	return 0;
-+		ret = ac->ops->verify_authorizer_reply(ac, a, len);
-+	mutex_unlock(&ac->mutex);
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
- 
- void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
- {
-+	mutex_lock(&ac->mutex);
- 	if (ac->ops && ac->ops->invalidate_authorizer)
- 		ac->ops->invalidate_authorizer(ac, peer_type);
-+	mutex_unlock(&ac->mutex);
- }
- EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
-
-
+josh
