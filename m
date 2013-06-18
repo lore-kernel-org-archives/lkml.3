@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab3FROGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:06:06 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39799 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822Ab3FROGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:06:03 -0400
-To: "Linux Kernel" <linux-kernel@vger.kernel.org>
+	id S932889Ab3FROIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:08:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932859Ab3FROIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:08:01 -0400
+Date: Tue, 18 Jun 2013 10:07:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [x86] only print out DR registers if they are not power-on
+ defaults.
+Message-ID: <20130618140730.GA1313@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+References: <20130618041132.GA23492@redhat.com>
+ <20130618084356.GA13123@pd.tnic>
 MIME-Version: 1.0
-Subject: 3.10.0-RC6 compile failure in lpfc_vport
-X-KeepSent: BE3EAFB0:E0D6FDC6-87257B8E:004B6880;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3FP4 SHF39 May 13, 2013
-Message-ID: <OFBE3EAFB0.E0D6FDC6-ON87257B8E.004B6880-86257B8E.004BF5CF@us.ibm.com>
-From: Christopher T Vogan <cvogan@us.ibm.com>
-Date: Tue, 18 Jun 2013 08:49:43 -0500
-X-MIMETrack: Serialize by Router on D03NM116/03/M/IBM(Release 8.5.3FP2 ZX853FP2HF5|February, 2013) at
- 06/18/2013 07:49:43,
-	Serialize complete at 06/18/2013 07:49:43
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061813-3620-0000-0000-0000032B08C8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618084356.GA13123@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hit a compile issue when compiling the 3.10.0-RC6 kernel.  Did not see 
-this problem on the RC5 kernel. Used the same .config.
+On Tue, Jun 18, 2013 at 10:43:56AM +0200, Borislav Petkov wrote:
+ > On Tue, Jun 18, 2013 at 12:11:32AM -0400, Dave Jones wrote:
+ > > The DR registers are rarely useful when decoding oopses.
+ > > With screen real estate during oopses at a premium, we can save two lines
+ > > by only printing out these registers when they are set to something other
+ > > than they power-on state.
+ > 
+ > Makes sense, except...
+ > 
+ > > 
+ > > Signed-off-by: Dave Jones <davej@redhat.com>
+ > > 
+ > > diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c linux-dj/arch/x86/kernel/process_64.c
+ > > --- /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c	2013-05-01 10:02:52.064151923 -0400
+ > > +++ linux-dj/arch/x86/kernel/process_64.c	2013-05-06 20:35:09.219868881 -0400
+ > > @@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, i
+ > >  	get_debugreg(d0, 0);
+ > >  	get_debugreg(d1, 1);
+ > >  	get_debugreg(d2, 2);
+ > > -	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
+ > >  	get_debugreg(d3, 3);
+ > >  	get_debugreg(d6, 6);
+ > >  	get_debugreg(d7, 7);
+ > > +
+ > > +	/* Only print out debug registers if they are in their non-default state. */
+ > > +	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
+ > > +	    (d6 & ~DR6_RESERVED) && (d7 == 0x400))
+ > 
+ > ... I'm not sure about %dr6. So we're not dumping %dr6 when, a.o.
+ > any of the bits in the bit slices [3:0], [15:13] are set (bit 12
+ > is Read-As-Zero). Now those mean stuff like Breakpoint-Condition
+ > Detected or Debug-Register-Access Detected and so on and I think this is
+ > meaningful information.
+ > 
+ > So actually, we wouldn't want to dump %dr6 when its contents are its
+ > default contents, i.e, 0xffff0ff0, i.e. the test should be:
+ > 
+ > 	(d6 == DR6_RESERVED)
+ > 
+ > no?
 
-  CC [M]  drivers/scsi/lpfc/lpfc_attr.o
-  CC [M]  drivers/scsi/lpfc/lpfc_vport.o
-{standard input}: Assembler messages:
-{standard input}:67920: Error: symbol definition loop encountered at `#\'
-gcc: Internal error: Segmentation fault (program as)
-Please submit a full bug report.
-See <http://bugzilla.redhat.com/bugzilla> for instructions.
-make[3]: *** [drivers/scsi/lpfc/lpfc_vport.o] Error 1
-make[2]: *** [drivers/scsi/lpfc] Error 2
-make[1]: *** [drivers/scsi] Error 2
-make: *** [drivers] Error 2
+My intent here was to ignore cases where the reserved bits haven't been set.
+I occasionally see DR6: 00000000fffe0ff0 for eg.
 
+But maybe you're right, and that is a clue and is worth printing ?
+I can't personally recall ever diagnosing a bug using those register dumps
+in the last 15 years.
 
-Christopher Vogan
-Dept. W98 NFS Development & Test
+	Dave
 
