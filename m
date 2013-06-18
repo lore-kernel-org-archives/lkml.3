@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab3FRLp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:45:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56262 "EHLO
+	id S932720Ab3FRLpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:45:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56307 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525Ab3FRLpU (ORCPT
+	with ESMTP id S932525Ab3FRLp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:45:20 -0400
+	Tue, 18 Jun 2013 07:45:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>,
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 80/93] ceph: fix statvfs fr_size
-Date: Tue, 18 Jun 2013 12:43:28 +0100
-Message-Id: <1371555821-12820-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 86/93] tg3: Wait for boot code to finish after power on
+Date: Tue, 18 Jun 2013 12:43:34 +0100
+Message-Id: <1371555821-12820-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -27,66 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 92a49fb0f79f3300e6e50ddf56238e70678e4202 upstream.
+commit df465abfe06f7dc4f33f4a96d17f096e9e8ac917 upstream.
 
-Different versions of glibc are broken in different ways, but the short of
-it is that for the time being, frsize should == bsize, and be used as the
-multiple for the blocks, free, and available fields.  This mirrors what is
-done for NFS.  The previous reporting of the page size for frsize meant
-that newer glibc and df would report a very small value for the fs size.
+Some systems that don't need wake-on-lan may choose to power down the
+chip on system standby. Upon resume, the power on causes the boot code
+to startup and initialize the hardware. On one new platform, this is
+causing the device to go into a bad state due to a race between the
+driver and boot code, once every several hundred resumes. The same race
+exists on open since we come up from a power on.
 
-Fixes http://tracker.ceph.com/issues/3793.
+This patch adds a wait for boot code signature at the beginning of
+tg3_init_hw() which is common to both cases. If there has not been a
+power-off or the boot code has already completed, the signature will be
+present and poll_fw() returns immediately. Also return immediately if
+the device does not have firmware.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Greg Farnum <greg@inktank.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ceph/super.c | 7 ++++++-
- fs/ceph/super.h | 2 +-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index 1e67dd7..a7a70ee 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -70,8 +70,14 @@ static int ceph_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	/*
- 	 * express utilization in terms of large blocks to avoid
- 	 * overflow on 32-bit machines.
-+	 *
-+	 * NOTE: for the time being, we make bsize == frsize to humor
-+	 * not-yet-ancient versions of glibc that are broken.
-+	 * Someday, we will probably want to report a real block
-+	 * size...  whatever that may mean for a network file system!
- 	 */
- 	buf->f_bsize = 1 << CEPH_BLOCK_SHIFT;
-+	buf->f_frsize = 1 << CEPH_BLOCK_SHIFT;
- 	buf->f_blocks = le64_to_cpu(st.kb) >> (CEPH_BLOCK_SHIFT-10);
- 	buf->f_bfree = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
- 	buf->f_bavail = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
-@@ -79,7 +85,6 @@ static int ceph_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	buf->f_files = le64_to_cpu(st.num_objects);
- 	buf->f_ffree = -1;
- 	buf->f_namelen = NAME_MAX;
--	buf->f_frsize = PAGE_CACHE_SIZE;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 4cb0916..8a0b948 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -1631,6 +1631,9 @@ static int tg3_poll_fw(struct tg3 *tp)
+ 	int i;
+ 	u32 val;
  
- 	/* leave fsid little-endian, regardless of host endianness */
- 	fsid = *(u64 *)(&monmap->fsid) ^ *((u64 *)&monmap->fsid + 1);
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index 1b85b76..d2e01a6 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -21,7 +21,7 @@
++	if (tg3_flag(tp, NO_FWARE_REPORTED))
++		return 0;
++
+ 	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906) {
+ 		/* Wait up to 20ms for init done. */
+ 		for (i = 0; i < 200; i++) {
+@@ -9451,6 +9454,13 @@ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+  */
+ static int tg3_init_hw(struct tg3 *tp, int reset_phy)
+ {
++	/* Chip may have been just powered on. If so, the boot code may still
++	 * be running initialization. Wait for it to finish to avoid races in
++	 * accessing the hardware.
++	 */
++	tg3_enable_register_access(tp);
++	tg3_poll_fw(tp);
++
+ 	tg3_switch_clocks(tp);
  
- /* large granularity for statfs utilization stats to facilitate
-  * large volume sizes on 32-bit machines. */
--#define CEPH_BLOCK_SHIFT   20  /* 1 MB */
-+#define CEPH_BLOCK_SHIFT   22  /* 4 MB */
- #define CEPH_BLOCK         (1 << CEPH_BLOCK_SHIFT)
- 
- #define CEPH_MOUNT_OPT_DIRSTAT         (1<<4) /* `cat dirname` for stats */
+ 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
 -- 
 1.8.1.2
 
