@@ -1,60 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933625Ab3FRR6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:58:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50492 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932872Ab3FRR6k (ORCPT
+	id S933249Ab3FRSAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:00:06 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:37849 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933157Ab3FRSAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:58:40 -0400
-Date: Tue, 18 Jun 2013 10:58:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pavel Machek <pavel@denx.de>
-Cc: dzu@denx.de, hjk@hansjkoch.de, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
- using command line option
-Message-ID: <20130618175839.GC8386@kroah.com>
-References: <20130412184335.GA5510@amd.pavel.ucw.cz>
- <20130617134741.GA15547@amd.pavel.ucw.cz>
- <20130617173738.GA14921@kroah.com>
- <20130618130216.GB15122@amd.pavel.ucw.cz>
- <20130618143043.GC17361@amd.pavel.ucw.cz>
+	Tue, 18 Jun 2013 14:00:03 -0400
+Message-ID: <51C0A01E.5020206@samsung.com>
+Date: Wed, 19 Jun 2013 02:59:58 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618143043.GC17361@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        arnd@arndb.de, olof@lixom.net
+Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_* registers
+References: <1371569191-2364-1-git-send-email-t.figa@samsung.com> <4951987.HiKYku7923@flatron>
+In-Reply-To: <4951987.HiKYku7923@flatron>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 04:30:43PM +0200, Pavel Machek wrote:
-> On Tue 2013-06-18 15:02:16, Pavel Machek wrote:
-> > On Mon 2013-06-17 10:37:38, Greg KH wrote:
-> > > On Mon, Jun 17, 2013 at 03:47:41PM +0200, Pavel Machek wrote:
-> > > > Hi!
-> > > > 
-> > > > > This adds ability to bind uio driver to given open firmware device
-> > > > > using command line option. Thus, userspace driver can be developed and
-> > > > > used without modifying the kernel.
-> > > > > 
-> > > > > Signed-off-by: Pavel Machek <pavel@denx.de> 
-> > > > 
-> > > > Ping? Greg, could you apply this patch? Or is there someone else I
-> > > > should ask to apply it?
-> > > 
-> > > Ugh, Hans seems to have dropped off of the net for a long time now, so I
-> > > guess I'll start queueing up UIO patches again.  Care to resend this?
-> > 
-> > Here you go. It still applies to your -next tree.
-> 
-> And here's version that removes "const" that is no longer true. I
-> missed the compile warning before. Sorry,
-> 								Pavel
-> 
-> -(cut here)-
+On 06/19/13 02:45, Tomasz Figa wrote:
+> Ccing Arnd and Olof, because I forgot to add them to git send-email...
+>
+> Sorry for the noise.
+>
+> On Tuesday 18 of June 2013 17:26:31 Tomasz Figa wrote:
+>> S5P_ARM_CORE1_* registers affect only core 1. To control further cores
+>> properly another registers must be used.
+>>
+>> This patch replaces S5P_ARM_CORE1_* register definitions with
+>> S5P_ARM_CORE_*(x) macro which return addresses of registers for
+>> specified core.
+>>
+>> This fixes CPU hotplug on quad core Exynos SoCs on which currently
+>> offlining CPUs 2 or 3 caused CPU 1 to be turned off.
+>
+> Obviously this doesn't happen currently because of the if (cpu == 1), but
 
-Please resend in a format that I don't have to edit by hand.
+Yes, not happened...and just note exynos5440 doesn't support hotplug :) 
+so this is available on exynos4412 and added 5420.
 
-greg k-h
+> if logical cpu1 turned out not to be physical cpu1, then it would crash.
+>
+> Best regards,
+> Tomasz
+>
+>> In addition,
+>> bring-up of CPU 2 and 3 is fixed on boards where bootloader powers off
+>> secondary cores by default.
+>>
+I need to test on board about above...
+
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/hotplug.c               |  9 +++++----
+>>   arch/arm/mach-exynos/include/mach/regs-pmu.h | 10 +++++++---
+>>   arch/arm/mach-exynos/platsmp.c               |  9 +++++----
+>>   3 files changed, 17 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/hotplug.c
+>> b/arch/arm/mach-exynos/hotplug.c index af90cfa..c089943 100644
+>> --- a/arch/arm/mach-exynos/hotplug.c
+>> +++ b/arch/arm/mach-exynos/hotplug.c
+>> @@ -93,10 +93,11 @@ static inline void cpu_leave_lowpower(void)
+>>   static inline void platform_do_lowpower(unsigned int cpu, int
+>> *spurious) {
+>>   	for (;;) {
+>> +		void __iomem *reg_base;
+>> +		unsigned int phys_cpu = cpu_logical_map(cpu);
+>>
+>> -		/* make cpu1 to be turned off at next WFI command */
+>> -		if (cpu == 1)
+>> -			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
+>> +		reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
+>> +		__raw_writel(0, reg_base);
+>>
+>>   		/*
+>>   		 * here's the WFI
+>> @@ -106,7 +107,7 @@ static inline void platform_do_lowpower(unsigned int
+>> cpu, int *spurious)
+>>   		    : "memory", "cc");
+>>
+>> -		if (pen_release == cpu_logical_map(cpu)) {
+>> +		if (pen_release == phys_cpu) {
+>>   			/*
+>>   			 * OK, proper wakeup, we're done
+>>   			 */
+>> diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+>> b/arch/arm/mach-exynos/include/mach/regs-pmu.h index 57344b7..cf40b86
+>> 100644
+>> --- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+>> +++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+>> @@ -125,10 +125,14 @@
+>>   #define S5P_GPS_ALIVE_LOWPWR			S5P_PMUREG(0x13A0)
+>>
+>>   #define S5P_ARM_CORE0_CONFIGURATION		S5P_PMUREG(0x2000)
+>> +#define S5P_ARM_CORE0_STATUS			S5P_PMUREG(0x2004)
+>>   #define S5P_ARM_CORE0_OPTION			S5P_PMUREG(0x2008)
+>> -#define S5P_ARM_CORE1_CONFIGURATION		S5P_PMUREG(0x2080)
+>> -#define S5P_ARM_CORE1_STATUS			S5P_PMUREG(0x2084)
+>> -#define S5P_ARM_CORE1_OPTION			S5P_PMUREG(0x2088)
+>> +#define S5P_ARM_CORE_CONFIGURATION(_nr)		\
+>> +		(S5P_ARM_CORE0_CONFIGURATION + ((_nr) * 0x80))
+>> +#define S5P_ARM_CORE_STATUS(_nr)		\
+>> +		(S5P_ARM_CORE0_STATUS + ((_nr) * 0x80))
+>> +#define S5P_ARM_CORE_OPTION(_nr)		\
+>> +		(S5P_ARM_CORE0_OPTION + ((_nr) * 0x80))
+>>
+>>   #define S5P_ARM_COMMON_OPTION			S5P_PMUREG(0x2408)
+>>   #define S5P_TOP_PWR_OPTION			S5P_PMUREG(0x2C48)
+>> diff --git a/arch/arm/mach-exynos/platsmp.c
+>> b/arch/arm/mach-exynos/platsmp.c index d9c6d0a..2cbabc8 100644
+>> --- a/arch/arm/mach-exynos/platsmp.c
+>> +++ b/arch/arm/mach-exynos/platsmp.c
+>> @@ -109,14 +109,15 @@ static int __cpuinit
+>> exynos_boot_secondary(unsigned int cpu, struct task_struct */
+>>   	write_pen_release(phys_cpu);
+>>
+>> -	if (!(__raw_readl(S5P_ARM_CORE1_STATUS)&  S5P_CORE_LOCAL_PWR_EN))
+> {
+>> +	if (!(__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
+>> +	&  S5P_CORE_LOCAL_PWR_EN)) {
+>>   		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+>> -			     S5P_ARM_CORE1_CONFIGURATION);
+>> +			     S5P_ARM_CORE_CONFIGURATION(phys_cpu));
+>>
+>>   		timeout = 10;
+>>
+>>   		/* wait max 10 ms until cpu1 is on */
+>> -		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+>> +		while ((__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
+>>   			&  S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN)
+> {
+>>   			if (timeout-- == 0)
+>>   				break;
+>> @@ -125,7 +126,7 @@ static int __cpuinit exynos_boot_secondary(unsigned
+>> int cpu, struct task_struct }
+>>
+>>   		if (timeout == 0) {
+>> -			printk(KERN_ERR "cpu1 power enable failed");
+>> +			printk(KERN_ERR "cpu%u power enable failed", cpu);
+>>   			spin_unlock(&boot_lock);
+>>   			return -ETIMEDOUT;
+>>   		}
+> --
