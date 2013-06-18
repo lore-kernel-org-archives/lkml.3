@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab3FRQSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:18:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49553 "EHLO
+	id S933317Ab3FRQSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:18:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49555 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab3FRQSG (ORCPT
+	with ESMTP id S933267Ab3FRQSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:18:06 -0400
+	Tue, 18 Jun 2013 12:18:04 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 41/48] powerpc: Fix emulation of illegal instructions on PowerNV platform
-Date: Tue, 18 Jun 2013 09:18:07 -0700
-Message-Id: <20130618161731.858661016@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 36/48] libceph: add update_authorizer auth method
+Date: Tue, 18 Jun 2013 09:18:02 -0700
+Message-Id: <20130618161731.136912537@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -29,61 +28,135 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Sage Weil <sage@inktank.com>
 
-commit bf593907f7236e95698a76b7c7a2bbf8b1165327 upstream.
+commit 0bed9b5c523d577378b6f83eab5835fe30c27208 upstream.
 
-Normally, the kernel emulates a few instructions that are unimplemented
-on some processors (e.g. the old dcba instruction), or privileged (e.g.
-mfpvr).  The emulation of unimplemented instructions is currently not
-working on the PowerNV platform.  The reason is that on these machines,
-unimplemented and illegal instructions cause a hypervisor emulation
-assist interrupt, rather than a program interrupt as on older CPUs.
-Our vector for the emulation assist interrupt just calls
-program_check_exception() directly, without setting the bit in SRR1
-that indicates an illegal instruction interrupt.  This fixes it by
-making the emulation assist interrupt set that bit before calling
-program_check_interrupt().  With this, old programs that use no-longer
-implemented instructions such as dcba now work again.
+Currently the messenger calls out to a get_authorizer con op, which will
+create a new authorizer if it doesn't yet have one.  In the meantime, when
+we rotate our service keys, the authorizer doesn't get updated.  Eventually
+it will be rejected by the server on a new connection attempt and get
+invalidated, and we will then rebuild a new authorizer, but this is not
+ideal.
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Instead, if we do have an authorizer, call a new update_authorizer op that
+will verify that the current authorizer is using the latest secret.  If it
+is not, we will build a new one that does.  This avoids the transient
+failure.
+
+This fixes one of the sorry sequence of events for bug
+
+	http://tracker.ceph.com/issues/4282
+
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |    2 +-
- arch/powerpc/kernel/traps.c          |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ fs/ceph/mds_client.c      |    7 ++++++-
+ include/linux/ceph/auth.h |    3 +++
+ net/ceph/auth_x.c         |   23 +++++++++++++++++++++++
+ net/ceph/auth_x.h         |    1 +
+ net/ceph/osd_client.c     |    5 +++++
+ 5 files changed, 38 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -707,7 +707,7 @@ machine_check_common:
- 	STD_EXCEPTION_COMMON(0xb00, trap_0b, .unknown_exception)
- 	STD_EXCEPTION_COMMON(0xd00, single_step, .single_step_exception)
- 	STD_EXCEPTION_COMMON(0xe00, trap_0e, .unknown_exception)
--	STD_EXCEPTION_COMMON(0xe40, emulation_assist, .program_check_exception)
-+	STD_EXCEPTION_COMMON(0xe40, emulation_assist, .emulation_assist_interrupt)
- 	STD_EXCEPTION_COMMON(0xe60, hmi_exception, .unknown_exception)
- #ifdef CONFIG_PPC_DOORBELL
- 	STD_EXCEPTION_COMMON_ASYNC(0xe80, h_doorbell, .doorbell_exception)
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1142,6 +1142,16 @@ void __kprobes program_check_exception(s
- 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -3444,7 +3444,12 @@ static struct ceph_auth_handshake *get_a
+ 	}
+ 	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+ 		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
+-							auth);
++						     auth);
++		if (ret)
++			return ERR_PTR(ret);
++	} else if (ac->ops && ac->ops_update_authorizer) {
++		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
++						     auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+ 	}
+--- a/include/linux/ceph/auth.h
++++ b/include/linux/ceph/auth.h
+@@ -52,6 +52,9 @@ struct ceph_auth_client_ops {
+ 	 */
+ 	int (*create_authorizer)(struct ceph_auth_client *ac, int peer_type,
+ 				 struct ceph_auth_handshake *auth);
++	/* ensure that an existing authorizer is up to date */
++	int (*update_authorizer)(struct ceph_auth_client *ac, int peer_type,
++				 struct ceph_auth_handshake *auth);
+ 	int (*verify_authorizer_reply)(struct ceph_auth_client *ac,
+ 				       struct ceph_authorizer *a, size_t len);
+ 	void (*destroy_authorizer)(struct ceph_auth_client *ac,
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -298,6 +298,7 @@ static int ceph_x_build_authorizer(struc
+ 			return -ENOMEM;
+ 	}
+ 	au->service = th->service;
++	au->secret_id = th->secret_id;
+ 
+ 	msg_a = au->buf->vec.iov_base;
+ 	msg_a->struct_v = 1;
+@@ -555,6 +556,27 @@ static int ceph_x_create_authorizer(
+ 	return 0;
  }
  
-+/*
-+ * This occurs when running in hypervisor mode on POWER6 or later
-+ * and an illegal instruction is encountered.
-+ */
-+void __kprobes emulation_assist_interrupt(struct pt_regs *regs)
++static int ceph_x_update_authorizer(
++	struct ceph_auth_client *ac, int peer_type,
++	struct ceph_auth_handshake *auth)
 +{
-+	regs->msr |= REASON_ILLEGAL;
-+	program_check_exception(regs);
++	struct ceph_x_authorizer *au;
++	struct ceph_x_ticket_handler *th;
++	int ret;
++
++	th = get_ticket_handler(ac, peer_type);
++	if (IS_ERR(th))
++		return PTR_ERR(th);
++
++	au = (struct ceph_x_authorizer *)auth->authorizer;
++	if (au->secret_id < th->secret_id) {
++		dout("ceph_x_update_authorizer service %u secret %llu < %llu\n",
++		     au->service, au->secret_id, th->secret_id);
++		return ceph_x_build_authorizer(ac, th, au);
++	}
++	return 0;
 +}
 +
- void alignment_exception(struct pt_regs *regs)
+ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 					  struct ceph_authorizer *a, size_t len)
  {
- 	int sig, code, fixed = 0;
+@@ -641,6 +663,7 @@ static const struct ceph_auth_client_ops
+ 	.build_request = ceph_x_build_request,
+ 	.handle_reply = ceph_x_handle_reply,
+ 	.create_authorizer = ceph_x_create_authorizer,
++	.update_authorizer = ceph_x_update_authorizer,
+ 	.verify_authorizer_reply = ceph_x_verify_authorizer_reply,
+ 	.destroy_authorizer = ceph_x_destroy_authorizer,
+ 	.invalidate_authorizer = ceph_x_invalidate_authorizer,
+--- a/net/ceph/auth_x.h
++++ b/net/ceph/auth_x.h
+@@ -29,6 +29,7 @@ struct ceph_x_authorizer {
+ 	struct ceph_buffer *buf;
+ 	unsigned int service;
+ 	u64 nonce;
++	u64 secret_id;
+ 	char reply_buf[128];  /* big enough for encrypted blob */
+ };
+ 
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2177,6 +2177,11 @@ static struct ceph_auth_handshake *get_a
+ 							auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
++	} else if (ac->ops && ac->ops->update_authorizer) {
++		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
++						     auth);
++		if (ret)
++			return ERR_PTR(ret);
+ 	}
+ 	*proto = ac->protocol;
+ 
 
 
