@@ -1,155 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab3FRKUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:20:34 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:47359 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab3FRKUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:20:31 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org,
-        Miguel Aguilar <miguel.aguilar@ridgerun.com>
-Subject: [PATCH 2/2] mfd: davinci_voicecodec: Convert to use devm_* APIs
-Date: Tue, 18 Jun 2013 15:35:40 +0530
-Message-Id: <1371549940-18834-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371549940-18834-1-git-send-email-sachin.kamat@linaro.org>
-References: <1371549940-18834-1-git-send-email-sachin.kamat@linaro.org>
+	id S1756031Ab3FRKVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:21:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40405 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754437Ab3FRKVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:21:05 -0400
+Message-ID: <51C0344F.6010709@ti.com>
+Date: Tue, 18 Jun 2013 15:49:59 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Joel A Fernandes <joelagnel@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v11 3/8] ARM: edma: Add EDMA crossbar event mux support
+References: <1371537499-12970-1-git-send-email-joelagnel@ti.com> <1371537499-12970-4-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1371537499-12970-4-git-send-email-joelagnel@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_* APIs are device managed and make code simpler.
+On 6/18/2013 12:08 PM, Joel A Fernandes wrote:
+> From: Matt Porter <mporter@ti.com>
+> 
+> Changes by Joel:
+> * Split EDMA xbar support out of original EDMA DT parsing patch
+> to keep it easier for review.
+> * Rewrite shift and offset calculation.
+> 
+> Suggested-by: Sekhar Nori <nsekhar@ti.com>
+> Suggested by: Andy Shevchenko <andy.shevchenko@gmail.com>
+> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+> 
+> Reference:
+> [1] https://patchwork.kernel.org/patch/2226991/
+> ---
+>  arch/arm/common/edma.c             |   59 ++++++++++++++++++++++++++++++++++++
+>  include/linux/platform_data/edma.h |    1 +
+>  2 files changed, 60 insertions(+)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index 9823b79..1c2fb15 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -1410,6 +1410,52 @@ static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+>  	return 0;
+>  }
+>  
+> +static int edma_xbar_event_map(struct device *dev,
+> +			       struct device_node *node,
+> +			       struct edma_soc_info *pdata, int len)
+> +{
+> +	int ret = 0;
+> +	int i;
+> +	struct resource res;
+> +	void *xbar;
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
----
- drivers/mfd/davinci_voicecodec.c       |   48 +++++++-------------------------
- include/linux/mfd/davinci_voicecodec.h |    2 --
- 2 files changed, 10 insertions(+), 40 deletions(-)
+void __iomem *xbar;
 
-diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
-index b6e2973..fb64398 100644
---- a/drivers/mfd/davinci_voicecodec.c
-+++ b/drivers/mfd/davinci_voicecodec.c
-@@ -46,7 +46,7 @@ void davinci_vc_write(struct davinci_vc *davinci_vc,
- static int __init davinci_vc_probe(struct platform_device *pdev)
- {
- 	struct davinci_vc *davinci_vc;
--	struct resource *res, *mem;
-+	struct resource *res;
- 	struct mfd_cell *cell = NULL;
- 	int ret;
- 
-@@ -58,7 +58,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	davinci_vc->clk = clk_get(&pdev->dev, NULL);
-+	davinci_vc->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(davinci_vc->clk)) {
- 		dev_dbg(&pdev->dev,
- 			    "could not get the clock for voice codec\n");
-@@ -67,35 +67,18 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 	clk_enable(davinci_vc->clk);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "no mem resource\n");
--		ret = -ENODEV;
--		goto fail2;
--	}
--
--	davinci_vc->pbase = res->start;
--	davinci_vc->base_size = resource_size(res);
- 
--	mem = request_mem_region(davinci_vc->pbase, davinci_vc->base_size,
--				 pdev->name);
--	if (!mem) {
--		dev_err(&pdev->dev, "VCIF region already claimed\n");
--		ret = -EBUSY;
--		goto fail2;
--	}
--
--	davinci_vc->base = ioremap(davinci_vc->pbase, davinci_vc->base_size);
--	if (!davinci_vc->base) {
--		dev_err(&pdev->dev, "can't ioremap mem resource.\n");
--		ret = -ENOMEM;
--		goto fail3;
-+	davinci_vc->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(davinci_vc->base)) {
-+		ret = PTR_ERR(davinci_vc->base);
-+		goto fail;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
- 		ret = -ENXIO;
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	davinci_vc->davinci_vcif.dma_tx_channel = res->start;
-@@ -106,7 +89,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
- 		ret = -ENXIO;
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	davinci_vc->davinci_vcif.dma_rx_channel = res->start;
-@@ -132,19 +115,13 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
- 			      DAVINCI_VC_CELLS, NULL, 0, NULL);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "fail to register client devices\n");
--		goto fail4;
-+		goto fail;
- 	}
- 
- 	return 0;
- 
--fail4:
--	iounmap(davinci_vc->base);
--fail3:
--	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
--fail2:
-+fail:
- 	clk_disable(davinci_vc->clk);
--	clk_put(davinci_vc->clk);
--	davinci_vc->clk = NULL;
- 
- 	return ret;
- }
-@@ -155,12 +132,7 @@ static int davinci_vc_remove(struct platform_device *pdev)
- 
- 	mfd_remove_devices(&pdev->dev);
- 
--	iounmap(davinci_vc->base);
--	release_mem_region(davinci_vc->pbase, davinci_vc->base_size);
--
- 	clk_disable(davinci_vc->clk);
--	clk_put(davinci_vc->clk);
--	davinci_vc->clk = NULL;
- 
- 	return 0;
- }
-diff --git a/include/linux/mfd/davinci_voicecodec.h b/include/linux/mfd/davinci_voicecodec.h
-index 6b0e974..810aee7 100644
---- a/include/linux/mfd/davinci_voicecodec.h
-+++ b/include/linux/mfd/davinci_voicecodec.h
-@@ -113,8 +113,6 @@ struct davinci_vc {
- 
- 	/* Memory resources */
- 	void __iomem *base;
--	resource_size_t pbase;
--	size_t base_size;
- 
- 	/* MFD cells */
- 	struct mfd_cell cells[DAVINCI_VC_CELLS];
--- 
-1.7.9.5
+> +	const s16 (*xbar_chans)[2];
+> +	u32 shift, offset, mux;
+> +
+> +	xbar_chans = devm_kzalloc(dev,
+> +				  len/sizeof(s16) + 2*sizeof(s16),
+> +				  GFP_KERNEL);
+> +	if (!xbar_chans)
+> +		return -ENOMEM;
+> +
+> +	ret = of_address_to_resource(node, 1, &res);
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	xbar = devm_ioremap(dev, res.start, resource_size(&res));
+> +	if (!xbar)
+> +		return -ENOMEM;
+> +
+> +	ret = edma_of_read_u32_to_s16_array(node,
+> +					    "ti,edma-xbar-event-map",
+> +					    (s16 *)xbar_chans,
+> +					    len/sizeof(u32));
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	for (i = 0; xbar_chans[i][0] != -1; i++) {
+> +		shift = (xbar_chans[i][1] & 0x03) << 3;
+> +		offset = xbar_chans[i][1] & 0xfffffffc;
+> +		mux = readl((void *)((u32)xbar + offset));
 
+Please drop unnecessary casting. Simply:
+
+	mux = readl(xbar + offset);
+
+> +		mux &= ~(0xff << shift);
+> +		mux |= xbar_chans[i][0] << shift;
+> +		writel(mux, (void *)((u32)xbar + offset));
+
+Fix the writel likewise.
+
+> +	}
+> +
+> +	pdata->xbar_chans = xbar_chans;
+> +
+> +	return 0;
+> +}
+> +
+>  static int edma_of_parse_dt(struct device *dev,
+>  			    struct device_node *node,
+>  			    struct edma_soc_info *pdata)
+> @@ -1470,6 +1516,9 @@ static int edma_of_parse_dt(struct device *dev,
+>  
+>  	pdata->default_queue = 0;
+>  
+> +	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
+> +	if (prop)
+> +		ret = edma_xbar_event_map(dev, node, pdata, sz);
+>  
+>  	return ret;
+>  }
+> @@ -1489,6 +1538,7 @@ static int edma_probe(struct platform_device *pdev)
+>  	int			status = -1;
+>  	const s16		(*rsv_chans)[2];
+>  	const s16		(*rsv_slots)[2];
+> +	const s16		(*xbar_chans)[2];
+>  	int			irq[EDMA_MAX_CC] = {0, 0};
+>  	int			err_irq[EDMA_MAX_CC] = {0, 0};
+>  	struct resource		*r[EDMA_MAX_CC] = {NULL, NULL};
+> @@ -1617,6 +1667,15 @@ static int edma_probe(struct platform_device *pdev)
+>  			}
+>  		}
+>  
+> +		/* Clear the xbar mapped channels in unused list */
+> +		xbar_chans = info[j]->xbar_chans;
+> +		if (xbar_chans) {
+> +			for (i = 0; xbar_chans[i][1] != -1; i++) {
+> +				off = xbar_chans[i][1];
+> +				clear_bits(off, 1,
+> +					edma_cc[j]->edma_unused);
+
+Please fix the alignment here.
+
+Thanks,
+Sekhar
