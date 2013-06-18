@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3FRJT1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:19:27 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45043 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab3FRJTW (ORCPT
+	id S1755761Ab3FRJTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:19:44 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:65265 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705Ab3FRJT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:19:22 -0400
+	Tue, 18 Jun 2013 05:19:26 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/4] pinctrl: spear/plgpio: Staticize spear310_o2p
-Date: Tue, 18 Jun 2013 14:34:26 +0530
-Message-Id: <1371546267-22093-3-git-send-email-sachin.kamat@linaro.org>
+        Patrice Chotard <patrice.chotard@st.com>
+Subject: [PATCH 4/4] pinctrl: Staticize local symbols
+Date: Tue, 18 Jun 2013 14:34:27 +0530
+Message-Id: <1371546267-22093-4-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371546267-22093-1-git-send-email-sachin.kamat@linaro.org>
 References: <1371546267-22093-1-git-send-email-sachin.kamat@linaro.org>
@@ -21,27 +21,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'spear310_o2p' is referenced only in this file.
+Symbols referenced only in this file are made static.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Patrice Chotard <patrice.chotard@st.com>
 ---
- drivers/pinctrl/spear/pinctrl-plgpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
-index 6b090be..0a7f0bdb 100644
---- a/drivers/pinctrl/spear/pinctrl-plgpio.c
-+++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
-@@ -441,7 +441,7 @@ static int spear310_p2o(int pin)
- 	return offset;
- }
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 32eb7e2..86b5370 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -41,13 +41,13 @@
+ static bool pinctrl_dummy_state;
  
--int spear310_o2p(int offset)
-+static int spear310_o2p(int offset)
- {
- 	if (offset <= 3)
- 		return 101 - offset;
+ /* Mutex taken to protect pinctrl_list */
+-DEFINE_MUTEX(pinctrl_list_mutex);
++static DEFINE_MUTEX(pinctrl_list_mutex);
+ 
+ /* Mutex taken to protect pinctrl_maps */
+ DEFINE_MUTEX(pinctrl_maps_mutex);
+ 
+ /* Mutex taken to protect pinctrldev_list */
+-DEFINE_MUTEX(pinctrldev_list_mutex);
++static DEFINE_MUTEX(pinctrldev_list_mutex);
+ 
+ /* Global list of pin control devices (struct pinctrl_dev) */
+ static LIST_HEAD(pinctrldev_list);
 -- 
 1.7.9.5
 
