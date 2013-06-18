@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab3FRBKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 21:10:04 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:33165 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab3FRBKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 21:10:01 -0400
+	id S1752877Ab3FRBMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 21:12:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751763Ab3FRBL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 21:11:59 -0400
+Date: Mon, 17 Jun 2013 21:11:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: mchehab@redhat.com, norsk5@xmission.com
+Subject: EDAC BUG: key ee78135c not in .data!
+Message-ID: <20130618011145.GB2200@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, mchehab@redhat.com,
+	norsk5@xmission.com
 MIME-Version: 1.0
-In-Reply-To: <3957298.MQ5NXOY1oH@dtor-d630.eng.vmware.com>
-References: <1367809448-9437-1-git-send-email-chao.xie@marvell.com>
-	<1367809448-9437-5-git-send-email-chao.xie@marvell.com>
-	<5701258.F0sLjHKir2@wuerfel>
-	<3957298.MQ5NXOY1oH@dtor-d630.eng.vmware.com>
-Date: Tue, 18 Jun 2013 09:10:00 +0800
-Message-ID: <CADApbeiiTU3gMUhS_U=o0q0S_iA50ab7GX0B1JS+6dp5reUtkw@mail.gmail.com>
-Subject: Re: [PATCH V2 4/5] input: pxa27x-keypad: remove the unused members at
- platform data
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Chao Xie <chao.xie@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, Haojian Zhuang <haojian.zhuang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 1:07 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Monday, June 17, 2013 03:10:27 PM Arnd Bergmann wrote:
->> On Sunday 05 May 2013 23:04:07 Chao Xie wrote:
->> > Now pxa27x-keypad make use matrix_keymap for matrix keyes, so
->> > remove the unused members in platform data.
->> >
->> > Signed-off-by: Chao Xie <chao.xie@marvell.com>
->> > ---
->> >
->> >  include/linux/platform_data/keypad-pxa27x.h |    2 --
->> >  1 files changed, 0 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/include/linux/platform_data/keypad-pxa27x.h
->> > b/include/linux/platform_data/keypad-pxa27x.h index 0db423b..2462556
->> > 100644
->> > --- a/include/linux/platform_data/keypad-pxa27x.h
->> > +++ b/include/linux/platform_data/keypad-pxa27x.h
->> > @@ -39,8 +39,6 @@ struct pxa27x_keypad_platform_data {
->> >
->> >         const struct matrix_keymap_data *matrix_keymap_data;
->> >         unsigned int    matrix_key_rows;
->> >         unsigned int    matrix_key_cols;
->> >
->> > -       unsigned int    *matrix_key_map;
->> > -       int             matrix_key_map_size;
->> >
->> >         /* direct keys */
->> >         int             direct_key_num;
->>
->> This just broke a number of configurations:
->>
->> em_x270_defconfig
->> ezx_defconfig
->> palmz72_defconfig
->> pxa3xx_defconfig
->>
->> You have to make sure that all these board files get converted:
->>
->> arch/arm/mach-pxa/em-x270.c
->> arch/arm/mach-pxa/ezx.c
->> arch/arm/mach-pxa/littleton.c
->> arch/arm/mach-pxa/mainstone.c
->> arch/arm/mach-pxa/mioa701.c
->> arch/arm/mach-pxa/palmld.c
->> arch/arm/mach-pxa/palmt5.c
->> arch/arm/mach-pxa/palmtreo.c
->> arch/arm/mach-pxa/palmtx.c
->> arch/arm/mach-pxa/palmz72.c
->> arch/arm/mach-pxa/tavorevb.c
->> arch/arm/mach-pxa/z2.c
->> arch/arm/mach-pxa/zylonite.c
->>
->> or leave the code to interpret that platform data in place.
->
-> Sorry about this, I'll drop the patch until it gets sorted out.
->
-> Thanks.
->
-I am sorry that i forget mach-pxa, i only changes mach-mmp.
-I will do the samething for mach-pxa, and reset the patch.
+I see this during boot-up:
 
-> --
-> Dmitry
+
+i5k_amb: probe of i5k_amb.0 failed with error -16
+EDAC MC: Ver: 3.0.0
+BUG: key ee78135c not in .data!
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x34f/0x37c()
+DEBUG_LOCKS_WARN_ON(1)
+Modules linked in:
+ i5000_edac(+) edac_core i5k_amb shpchp parport_pc(+) floppy(+) parport xfs libcrc32c raid0
+CPU: 0 PID: 303 Comm: systemd-udevd Not tainted 3.10.0-rc6+ #1 
+Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+ c173f15a e4d39bc8 e4d39b90 c15a3cec e4d39bb8 c1038f25 c1739e2c e4d39be4
+ 00000bab c109b81c c109b81c e4d8d0c4 ee78135c ee78135c e4d39bd0 c1038f6f
+ 00000009 e4d39bc8 c1739e2c e4d39be4 e4d39bfc c109b81c c173f15a 00000bab
+Call Trace:
+ [<c15a3cec>] dump_stack+0x16/0x18
+ [<c1038f25>] warn_slowpath_common+0x5e/0x75
+ [<c109b81c>] ? lockdep_init_map+0x34f/0x37c
+ [<c109b81c>] ? lockdep_init_map+0x34f/0x37c
+ [<c1038f6f>] warn_slowpath_fmt+0x33/0x35
+ [<c109b81c>] lockdep_init_map+0x34f/0x37c
+ [<c109a5ab>] debug_mutex_init+0x2d/0x42
+ [<c106233c>] __mutex_init+0x44/0x49
+ [<c137f9d7>] bus_register+0x120/0x2b9
+ [<f84a411b>] edac_create_sysfs_mci_device+0x4f/0x50a [edac_core]
+ [<f84a2388>] edac_mc_add_mc+0xe9/0x226 [edac_core]
+ [<f84540df>] i5000_init_one+0x775/0x96e [i5000_edac]
+ [<c109d8b2>] ? trace_hardirqs_on_caller+0xea/0x1b4
+ [<c12c302c>] pci_device_probe+0x6c/0xb0
+ [<c1380a28>] driver_probe_device+0x7f/0x354
+ [<c1380da3>] __driver_attach+0x73/0x75
+ [<c1380d30>] ? __device_attach+0x33/0x33
+ [<c137ef36>] bus_for_each_dev+0x49/0x74
+ [<c138056c>] driver_attach+0x1e/0x20
+ [<c1380d30>] ? __device_attach+0x33/0x33
+ [<c13801d0>] bus_add_driver+0x1d0/0x27c
+ [<c12c2c42>] ? pci_pm_suspend+0x111/0x111
+ [<c12c2c42>] ? pci_pm_suspend+0x111/0x111
+ [<c13812d7>] driver_register+0x6a/0x123
+ [<c12abc4d>] ? __raw_spin_lock_init+0x2d/0x4e
+ [<f8449000>] ? 0xf8448fff
+ [<c12c2073>] __pci_register_driver+0x4a/0x4d
+ [<f844902a>] i5000_init+0x2a/0x1000 [i5000_edac]
+ [<c1000173>] do_one_initcall+0xa3/0x160
+ [<c15a0cc7>] ? set_section_ro_nx+0x54/0x59
+ [<c10ab997>] load_module+0x1c27/0x24fd
+ [<c10a7bcf>] ? copy_module_from_fd.isra.48+0x34/0x139
+ [<c10ac3c1>] SyS_finit_module+0x73/0xac
+ [<c10642ab>] ? up_write+0x1b/0x30
+ [<c112792c>] ? vm_mmap_pgoff+0x7a/0x97
+ [<c15b19c1>] sysenter_do_call+0x12/0x32
+---[ end trace 63d11a09ce743ee7 ]---
+
