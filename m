@@ -1,67 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab3FRIXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:23:55 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27485 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab3FRIXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:23:53 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        <xjtuwjp@gmail.com>, <lindar_liu@usish.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: [PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-Date: Tue, 18 Jun 2013 16:23:36 +0800
-Message-ID: <1371543816-15192-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	id S1754510Ab3FRIYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:24:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51956 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754445Ab3FRIYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:24:15 -0400
+Date: Tue, 18 Jun 2013 10:24:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130618082414.GC13677@dhcp22.suse.cz>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+ <20130618024623.GP29338@dastard>
+ <20130618063104.GB20528@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618063104.GB20528@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
-in init path. So we can use pdev->pm_cap instead of using
-pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
+On Tue 18-06-13 10:31:05, Glauber Costa wrote:
+> On Tue, Jun 18, 2013 at 12:46:23PM +1000, Dave Chinner wrote:
+> > On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
+> > > On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
+> > > > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
+> > > > 
+> > > > > > I managed to trigger:
+> > > > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> > > > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> > > > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> > > > > > on top. 
+> > > > > > 
+> > > > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
+> > > > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> > > > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> > > > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> > > > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> > > > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> > > > > > [...]
+> > > > > > ffffffff81122d9c:       0f 0b                   ud2
+> > > > > > 
+> > > > > > RAX is -1UL.
+> > > > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
+> > > > > and BUG, instead of an unsigned quantity.
+> > > > > 
+> > > > > > 
+> > > > > > I assume that the current backtrace is of no use and it would most
+> > > > > > probably be some shrinker which doesn't behave.
+> > > > > > 
+> > > > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+> > > > > Assuming you are not using xfs, we are left with dentries and inodes.
+> > > > > 
+> > > > > The first thing to do is to find which one of them is misbehaving. You can try finding
+> > > > > this out by the address of the list_lru, and where it lays in the superblock.
+> > > > > 
+> > > > > Once we know each of them is misbehaving, then we'll have to figure out why.
+> > > > 
+> > > > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
+> > > > it's inodes?
+> > > > 
+> > > Assuming there is no memory corruption of any sort going on , let's check the code.
+> > > nr_item is only manipulated in 3 places:
+> > > 
+> > > 1) list_lru_add, where it is increased
+> > > 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
+> > >    element from the list
+> > > 3) list_lru_walk_node, where an element is removing during shrink.
+> > > 
+> > > All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
+> > 
+> > inode_lru_isolate() looks suspicious to me:
+> > 
+> >         WARN_ON(inode->i_state & I_NEW);
+> >         inode->i_state |= I_FREEING;
+> >         spin_unlock(&inode->i_lock);
+> > 
+> >         list_move(&inode->i_lru, freeable);
+> >         this_cpu_dec(nr_unused);
+> > 	return LRU_REMOVED;
+> > }
+> > 
+> > All the other cases where I_FREEING is set and the inode is removed
+> > from the LRU are completely done under the inode->i_lock. i.e. from
+> > an external POV, the state change to I_FREEING and removal from LRU
+> > are supposed to be atomic, but they are not here.
+> > 
+> > I'm not sure this is the source of the problem, but it definitely
+> > needs fixing.
+> > 
+> Yes, I missed that yesterday, but that does look suspicious to me as well.
+> 
+> Michal, if you can manually move this one inside the lock as well and see
+> if it fixes your problem as well... Otherwise I can send you a patch as well
+> so we don't get lost on what is patched and what is not.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: xjtuwjp@gmail.com
-Cc: lindar_liu@usish.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/pm8001/pm8001_init.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+OK, I am testing with this now:
+diff --git a/fs/inode.c b/fs/inode.c
+index 604c15e..95e598c 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -733,9 +733,9 @@ inode_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
+ 
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
++	list_move(&inode->i_lru, freeable);
+ 	spin_unlock(&inode->i_lock);
+ 
+-	list_move(&inode->i_lru, freeable);
+ 	this_cpu_dec(nr_unused);
+ 	return LRU_REMOVED;
+ }
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index e4b9bc7..3861aa1 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
- 	struct pm8001_hba_info *pm8001_ha;
--	int i , pos;
-+	int i;
- 	u32 device_state;
- 	pm8001_ha = sha->lldd_ha;
- 	flush_workqueue(pm8001_wq);
- 	scsi_block_requests(pm8001_ha->shost);
--	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
--	if (pos == 0) {
--		printk(KERN_ERR " PCI PM not supported\n");
-+	if (!pdev->pm_cap) {
-+		dev_err(&pdev->dev, " PCI PM not supported\n");
- 		return -ENODEV;
- 	}
- 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
+> Let us at least know if this is the problem.
+> 
+> > > callers:
+> > > iput_final, evict_inodes, invalidate_inodes.
+> > > Both evict_inodes and invalidate_inodes will do the following pattern:
+> > > 
+> > >                 inode->i_state |= I_FREEING;                                            
+> > >                 inode_lru_list_del(inode);
+> > >                 spin_unlock(&inode->i_lock);
+> > >                 list_add(&inode->i_lru, &dispose);
+> > > 
+> > > IOW, they will remove the element from the LRU, and add it to the dispose list.
+> > > Both of them will also bail out if they see I_FREEING already set, so they are safe
+> > > against each other - because the flag is manipulated inside the lock.
+> > > 
+> > > But how about iput_final? It seems to me that if we are calling iput_final at the
+> > > same time as the other two, this *could* happen (maybe there is some extra protection
+> > > that can be seen from Australia but not from here. Dave?)
+> > 
+> > If I_FREEING is set before we enter iput_final(), then something
+> > else is screwed up. I_FREEING is only set once the last reference
+> > has gone away and we are killing the inode. All the other callers
+> > that set I_FREEING check that the reference count on the inode is
+> > zero before they set I_FREEING. Hence I_FREEING cannot be set on the
+> > transition of i_count from 1 to 0 when iput_final() is called. So
+> > the patch won't do anything to avoid the problem being seen.
+> > 
+> Yes, but isn't things like evict_inodes and invalidate_inodes called at
+> umount time, for instance?
+
+JFYI No unmount is going on in my test case.
 -- 
-1.7.1
-
-
+Michal Hocko
+SUSE Labs
