@@ -1,89 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab3FRJ6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:58:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39697 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3FRJ63 (ORCPT
+	id S1755048Ab3FRKAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:00:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61586 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab3FRKAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:58:29 -0400
-Date: Tue, 18 Jun 2013 11:58:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com,
-        mingo@kernel.org
-Subject: Re: Another RCU trace. (3.10-rc5)
-Message-ID: <20130618095821.GJ3204@twins.programming.kicks-ass.net>
-References: <20130610195145.GA26068@redhat.com>
- <20130610203355.GO5146@linux.vnet.ibm.com>
- <20130610210123.GA27154@redhat.com>
- <1370899008.9844.126.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370899008.9844.126.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 18 Jun 2013 06:00:02 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, tglx@linutronix.de,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] ARM: irqchip: add support for MOXA ART SoCs
+Date: Tue, 18 Jun 2013 11:59:44 +0200
+Message-Id: <1371549584-7169-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:16:48PM -0400, Steven Rostedt wrote:
-> On Mon, 2013-06-10 at 17:01 -0400, Dave Jones wrote:
-> > On Mon, Jun 10, 2013 at 01:33:55PM -0700, Paul E. McKenney wrote:
-> >  
-> >  > > I saw some of Steven's patches get merged on Friday, is there anything else
-> >  > > outstanding that didn't make it in yet that I could test ?
-> >  > > Or is this another new bug ?
-> >  > 
-> >  > I have three fixes queued up at:
-> >  > 
-> >  > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
-> >  > 
-> >  > Kind of hard to tell whether they are relevant given the interleaved
-> >  > stack traces, but can't hurt to try them out.
-> >  
-> > Here's another. Looks different.
-> > 
-> > [ 2739.921649] ===============================
-> > [ 2739.923894] [ INFO: suspicious RCU usage. ]
-> > [ 2739.926144] 3.10.0-rc5+ #6 Not tainted
-> > [ 2739.928397] -------------------------------
-> > [ 2739.930670] include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
-> > [ 2739.933826] 
-> > other info that might help us debug this:
-> > 
-> > [ 2739.939663] 
-> > RCU used illegally from idle CPU!
-> > rcu_scheduler_active = 1, debug_locks = 0
-> > [ 2739.946345] RCU used illegally from extended quiescent state!
-> > [ 2739.949123] 2 locks held by trinity-child1/4385:
-> > [ 2739.951537]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816ea16f>] __schedule+0xef/0x9c0
-> > [ 2739.955316]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810a5625>] cpuacct_charge+0x5/0x1f0
-> > [ 2739.959101] 
-> > stack backtrace:
-> > [ 2739.962529] CPU: 1 PID: 4385 Comm: trinity-child1 Not tainted 3.10.0-rc5+ #6
-> > [ 2739.970870]  0000000000000000 ffff8802247e3cf8 ffffffff816e39db ffff8802247e3d28
-> > [ 2739.974556]  ffffffff810b5987 ffff880200f02568 000000000032585b ffff880200f02520
-> > [ 2739.978353]  0000000000000001 ffff8802247e3d60 ffffffff810a57a5 ffffffff810a5625
-> > [ 2739.982052] Call Trace:
-> > [ 2739.984098]  [<ffffffff816e39db>] dump_stack+0x19/0x1b
-> > [ 2739.986996]  [<ffffffff810b5987>] lockdep_rcu_suspicious+0xe7/0x120
-> > [ 2739.990080]  [<ffffffff810a57a5>] cpuacct_charge+0x185/0x1f0
-> > [ 2739.992971]  [<ffffffff810a5625>] ? cpuacct_charge+0x5/0x1f0
-> > [ 2739.994716]  [<ffffffff8109609c>] update_curr+0xec/0x250
-> > [ 2739.995873]  [<ffffffff810975c8>] put_prev_task_fair+0x228/0x480
-> > [ 2739.997036]  [<ffffffff816ea1e6>] __schedule+0x166/0x9c0
-> > [ 2739.998192]  [<ffffffff816eaf60>] ? __cond_resched_softirq+0x60/0x60
-> > [ 2739.999344]  [<ffffffff816eae94>] preempt_schedule+0x44/0x60
-> 
-> Yeah, this one is fixed by a patch I sent out earlier, and I believe
-> Peter Zijlstra is going to push it. It wasn't part of my queue.
-> 
-> Peter, Are you going to take the preempt_schedule_context() patch?
+This patch adds an irqchip driver for the main interrupt controller found
+on MOXA ART SoCs.
 
-I have it queued, I just seem to have some problems locating Ingo to
-stuff patches into -tip :/
+Applies to 3.10-rc1 and arm-soc/for-next (2013-06-15)
 
-Will continue prodding.. Ingo if you're reading! :-)
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
+ drivers/irqchip/Makefile     |    1 +
+ drivers/irqchip/irq-moxart.c |  163 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 164 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/irqchip/irq-moxart.c
+
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index cda4cb5..956d129 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
+ obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+ obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
++obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
+diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+new file mode 100644
+index 0000000..8606089
+--- /dev/null
++++ b/drivers/irqchip/irq-moxart.c
+@@ -0,0 +1,163 @@
++/*
++ * MOXA ART SoCs IRQ chip driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/irqdomain.h>
++
++#include <asm/exception.h>
++
++#include "irqchip.h"
++
++#define IRQ_SOURCE_REG      0
++#define IRQ_MASK_REG        0x04
++#define IRQ_CLEAR_REG       0x08
++#define IRQ_MODE_REG        0x0c
++#define IRQ_LEVEL_REG       0x10
++#define IRQ_STATUS_REG      0x14
++
++#define FIQ_SOURCE_REG      0x20
++#define FIQ_MASK_REG        0x24
++#define FIQ_CLEAR_REG       0x28
++#define FIQ_MODE_REG        0x2c
++#define FIQ_LEVEL_REG       0x30
++#define FIQ_STATUS_REG      0x34
++
++#define IRQ_SOURCE(base_addr)   (base_addr + 0x00)
++#define IRQ_MASK(base_addr)     (base_addr + 0x04)
++#define IRQ_CLEAR(base_addr)    (base_addr + 0x08)
++#define IRQ_TMODE(base_addr)    (base_addr + 0x0C)
++#define IRQ_TLEVEL(base_addr)   (base_addr + 0x10)
++#define IRQ_STATUS(base_addr)   (base_addr + 0x14)
++#define FIQ_SOURCE(base_addr)   (base_addr + 0x20)
++#define FIQ_MASK(base_addr)     (base_addr + 0x24)
++#define FIQ_CLEAR(base_addr)    (base_addr + 0x28)
++#define FIQ_TMODE(base_addr)    (base_addr + 0x2C)
++#define FIQ_TLEVEL(base_addr)   (base_addr + 0x30)
++#define FIQ_STATUS(base_addr)   (base_addr + 0x34)
++
++static void __iomem *moxart_irq_base;
++static struct irq_domain *moxart_irq_domain;
++static unsigned int interrupt_mask;
++
++asmlinkage void __exception_irq_entry moxart_handle_irq(struct pt_regs *regs);
++
++void moxart_irq_ack(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++
++	writel(1 << irq, IRQ_CLEAR(moxart_irq_base));
++}
++
++static void moxart_irq_mask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int mask;
++
++	mask = readl(IRQ_MASK(moxart_irq_base));
++	mask &= ~(1 << irq);
++	writel(mask, IRQ_MASK(moxart_irq_base));
++}
++
++static void moxart_irq_unmask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int mask;
++
++	mask = readl(IRQ_MASK(moxart_irq_base));
++	mask |= (1 << irq);
++	writel(mask, IRQ_MASK(moxart_irq_base));
++}
++
++static struct irq_chip moxart_irq_chip = {
++	.name		= "moxart_irq",
++	.irq_ack	= moxart_irq_ack,
++	.irq_mask	= moxart_irq_mask,
++	.irq_unmask	= moxart_irq_unmask,
++	.irq_set_wake = NULL,
++};
++
++static int moxart_irq_map(struct irq_domain *d, unsigned int virq,
++			 irq_hw_number_t hw)
++{
++	if ((1 << hw) && interrupt_mask) {
++		irq_set_chip_and_handler(virq, &moxart_irq_chip,
++			handle_edge_irq);
++		pr_info("%s: irq_set_chip_and_handler edge virq=%d hw=%d\n",
++			__func__, virq, (unsigned int) hw);
++	} else {
++		irq_set_chip_and_handler(virq, &moxart_irq_chip,
++			handle_level_irq);
++		pr_info("%s: irq_set_chip_and_handler level virq=%d hw=%d\n",
++			__func__, virq, (unsigned int) hw);
++	}
++
++	set_irq_flags(virq, IRQF_VALID);
++
++	return 0;
++}
++
++static struct irq_domain_ops moxart_irq_ops = {
++	.map = moxart_irq_map,
++	.xlate = irq_domain_xlate_twocell,
++};
++
++static int __init moxart_of_init(struct device_node *node,
++				struct device_node *parent)
++{
++	interrupt_mask = be32_to_cpup(of_get_property(node,
++		"interrupt-mask", NULL));
++	pr_debug("%s: interrupt-mask=%x\n", node->full_name, interrupt_mask);
++
++	moxart_irq_base = of_iomap(node, 0);
++	if (!moxart_irq_base)
++		panic("%s: unable to map IC registers\n", node->full_name);
++
++	moxart_irq_domain = irq_domain_add_linear(node,
++		32, &moxart_irq_ops, NULL);
++
++	if (!moxart_irq_domain)
++		panic("%s: unable to create IRQ domain\n", node->full_name);
++
++	writel(0, IRQ_MASK(moxart_irq_base));
++	writel(0xffffffff, IRQ_CLEAR(moxart_irq_base));
++
++	writel(interrupt_mask, IRQ_TMODE(moxart_irq_base));
++	writel(interrupt_mask, IRQ_TLEVEL(moxart_irq_base));
++
++	set_handle_irq(moxart_handle_irq);
++
++	pr_info("%s: %s finished\n", node->full_name, __func__);
++
++	return 0;
++}
++IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-interrupt-controller",
++	moxart_of_init);
++
++asmlinkage void __exception_irq_entry moxart_handle_irq(struct pt_regs *regs)
++{
++	u32 irqstat;
++	int hwirq;
++
++	irqstat = readl(moxart_irq_base + IRQ_STATUS_REG);
++
++	while (irqstat) {
++		hwirq = ffs(irqstat) - 1;
++		handle_IRQ(irq_find_mapping(moxart_irq_domain, hwirq), regs);
++		irqstat &= ~(1 << hwirq);
++	}
++}
++
++
+-- 
+1.7.2.5
+
