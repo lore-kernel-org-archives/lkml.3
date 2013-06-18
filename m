@@ -1,56 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab3FRRmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:42:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50334 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab3FRRmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:42:36 -0400
-Date: Tue, 18 Jun 2013 10:42:35 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [ 13/48] s390/pci: Implement IRQ functions if !PCI
-Message-ID: <20130618174235.GA32610@kroah.com>
-References: <20130618161725.912524266@linuxfoundation.org>
- <20130618161727.767561192@linuxfoundation.org>
- <20130618173540.GP4752@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618173540.GP4752@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933229Ab3FRRoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:44:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932631Ab3FRRoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:44:19 -0400
+Date: Tue, 18 Jun 2013 13:43:46 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
+        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
+        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: Re: [PATCH v3 06/13] locks: protect most of the file_lock handling
+ with i_lock
+Message-ID: <20130618134346.79edf0a7@tlielax.poochiereds.net>
+In-Reply-To: <20130617114938.447a8d81@tlielax.poochiereds.net>
+References: <1371482036-15958-1-git-send-email-jlayton@redhat.com>
+	<1371482036-15958-7-git-send-email-jlayton@redhat.com>
+	<20130617114609.708a336b@tlielax.poochiereds.net>
+	<20130617114938.447a8d81@tlielax.poochiereds.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 06:35:40PM +0100, Ben Hutchings wrote:
-> On Tue, Jun 18, 2013 at 09:17:39AM -0700, Greg Kroah-Hartman wrote:
-> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > 3.9-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Ben Hutchings <ben@decadent.org.uk>
-> > 
-> > commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
-> > 
-> > All architectures must implement IRQ functions.  Since various
-> > dependencies on !S390 were removed, there are various drivers that can
-> > be selected but will fail to link.  Provide a dummy implementation of
-> > these functions for the !PCI case.
-> [...]
+On Mon, 17 Jun 2013 11:49:38 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
+
+> On Mon, 17 Jun 2013 11:46:09 -0400
+> Jeff Layton <jlayton@redhat.com> wrote:
 > 
-> This breaks !SMP builds, so it's probably best to defer this until the
-> following fix is in mainline.
+> > On Mon, 17 Jun 2013 11:13:49 -0400
+> > Jeff Layton <jlayton@redhat.com> wrote:
+> > 
+> > > Having a global lock that protects all of this code is a clear
+> > > scalability problem. Instead of doing that, move most of the code to be
+> > > protected by the i_lock instead. The exceptions are the global lists
+> > > that the ->fl_link sits on, and the ->fl_block list.
+> > > 
+> > > ->fl_link is what connects these structures to the
+> > > global lists, so we must ensure that we hold those locks when iterating
+> > > over or updating these lists.
+> > > 
+> > > Furthermore, sound deadlock detection requires that we hold the
+> > > blocked_list state steady while checking for loops. We also must ensure
+> > > that the search and update to the list are atomic.
+> > > 
+> > > For the checking and insertion side of the blocked_list, push the
+> > > acquisition of the global lock into __posix_lock_file and ensure that
+> > > checking and update of the  blocked_list is done without dropping the
+> > > lock in between.
+> > > 
+> > > On the removal side, when waking up blocked lock waiters, take the
+> > > global lock before walking the blocked list and dequeue the waiters from
+> > > the global list prior to removal from the fl_block list.
+> > > 
+> > > With this, deadlock detection should be race free while we minimize
+> > > excessive file_lock_lock thrashing.
+> > > 
+> > > Finally, in order to avoid a lock inversion problem when handling
+> > > /proc/locks output we must ensure that manipulations of the fl_block
+> > > list are also protected by the file_lock_lock.
+> > > 
+> > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > > ---
+> > >  Documentation/filesystems/Locking |   21 ++++--
+> > >  fs/afs/flock.c                    |    5 +-
+> > >  fs/ceph/locks.c                   |    2 +-
+> > >  fs/ceph/mds_client.c              |    8 +-
+> > >  fs/cifs/cifsfs.c                  |    2 +-
+> > >  fs/cifs/file.c                    |   13 ++--
+> > >  fs/gfs2/file.c                    |    2 +-
+> > >  fs/lockd/svcsubs.c                |   12 ++--
+> > >  fs/locks.c                        |  151 ++++++++++++++++++++++---------------
+> > >  fs/nfs/delegation.c               |   10 +-
+> > >  fs/nfs/nfs4state.c                |    8 +-
+> > >  fs/nfsd/nfs4state.c               |    8 +-
+> > >  include/linux/fs.h                |   11 ---
+> > >  13 files changed, 140 insertions(+), 113 deletions(-)
+> > > 
+> > 
+> > [...]
+> > 
+> > > @@ -1231,7 +1254,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
+> > >  	if (IS_ERR(new_fl))
+> > >  		return PTR_ERR(new_fl);
+> > >  
+> > > -	lock_flocks();
+> > > +	spin_lock(&inode->i_lock);
+> > >  
+> > >  	time_out_leases(inode);
+> > >  
+> > > @@ -1281,11 +1304,11 @@ restart:
+> > >  			break_time++;
+> > >  	}
+> > >  	locks_insert_block(flock, new_fl);
+> > > -	unlock_flocks();
+> > > +	spin_unlock(&inode->i_lock);
+> > >  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+> > >  						!new_fl->fl_next, break_time);
+> > > -	lock_flocks();
+> > > -	__locks_delete_block(new_fl);
+> > > +	spin_lock(&inode->i_lock);
+> > > +	locks_delete_block(new_fl);
+> > 
+> > Doh -- bug here. This should not have been changed to
+> > locks_delete_block(). My apologies.
+> > 
+> > >  	if (error >= 0) {
+> > >  		if (error == 0)
+> > >  			time_out_leases(inode);
+> > 
+> > [...]
+> > 
+> > >  posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+> > >  {
+> > > +	struct inode *inode = file_inode(filp);
+> > >  	int status = 0;
+> > >  
+> > > -	lock_flocks();
+> > > +	spin_lock(&inode->i_lock);
+> > >  	if (waiter->fl_next)
+> > > -		__locks_delete_block(waiter);
+> > > +		locks_delete_block(waiter);
+> > 
+> > 
+> > Ditto here...
+> > 
+> > >  	else
+> > >  		status = -ENOENT;
+> > > -	unlock_flocks();
+> > > +	spin_unlock(&inode->i_lock);
+> > >  	return status;
+> > >  }
+> > >  
+> > 
+> 
+> Bah, scratch that -- this patch is actually fine. We hold the i_lock
+> here and locks_delete_block takes the file_lock_lock, which is correct.
+> There is a potential race in patch 7 though. I'll reply to that patch
+> to point it out in a minute.
+> 
 
-Can you resend the needed git ids to me when they both go in, otherwise
-I'm going to forget about this.
+...and scratch that again...
 
-thanks,
+There is a bug in the posix_unblock_lock delta above. We don't need to
+hold the i_lock there, but we should probably be taking the
+file_lock_lock before checking fl_next.
 
-greg k-h
+In truth, I have a hard time seeing how that race would manifest itself
+in practice, but that's how the existing code works so it's probably
+best to preserve that as closely as possible.
+
+Fixed in my git repo and the next spin of this set will have it.
+
+Sorry again for the noise... ;)
+
+-- 
+Jeff Layton <jlayton@redhat.com>
