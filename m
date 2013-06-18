@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3FRCEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:04:07 -0400
-Received: from mail-ye0-f170.google.com ([209.85.213.170]:44231 "EHLO
-	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab3FRCEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:04:05 -0400
-Date: Mon, 17 Jun 2013 19:03:57 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-Message-ID: <20130618020357.GZ32663@mtj.dyndns.org>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+	id S1753827Ab3FRCFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:05:37 -0400
+Received: from mail.bluecom.vn ([210.245.89.12]:53674 "EHLO mail.bluecom.vn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211Ab3FRCFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 22:05:36 -0400
+To: linux-kernel@vger.kernel.org
+Subject: =?UTF-8?Q?Kh=C3=B4ng_mu=E1=BB=91n_nh=E1=BA=ADn_email_b=E1=BA=A3n_tin!?=
+X-PHP-Originating-Script: 504:class.phpmailer.php
+Date: Tue, 18 Jun 2013 09:05:33 +0700
+From: PHPList <noreply@chiliti.vn>
+Message-ID: <4bf7b349a7ffb52326d289f03eb7cf93@bluecom.vn>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.19
+X-MessageID: systemmessage
+X-ListMember: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Không nhận thư bản tin!.
 
-On Thu, Jun 13, 2013 at 09:02:47PM +0800, Tang Chen wrote:
-> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
-> 
-> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-> | Author: Tang Chen <tangchen@cn.fujitsu.com>
-> | Date:   Fri Feb 22 16:33:44 2013 -0800
-> |
-> |    acpi, memory-hotplug: parse SRAT before memblock is ready
-> 
-> It broke several things, like acpi override and fall back path etc.
-> 
-> This patchset is clean implementation that will parse numa info early.
-> 1. keep the acpi table initrd override working by split finding with copying.
->    finding is done at head_32.S and head64.c stage,
->         in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
->         in head64.c, initrd is accessed via kernel low mapping address
->         with help of #PF set page table.
->    copying is done with early_ioremap just after memblock is setup.
-> 2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
->    seperate initmem_init to two stages.
->    early_initmem_init will only extract numa info early into numa_meminfo.
->    initmem_init will keep slit and emulation handling.
-> 3. keep other old code flow untouched like relocate_initrd and initmem_init.
->    early_initmem_init will take old init_mem_mapping position.
->    it call early_x86_numa_init and init_mem_mapping for every nodes.
->    For 64bit, we avoid having size limit on initrd, as relocate_initrd
->    is still after init_mem_mapping for all memory.
-> 4. last patch will try to put page table on local node, so that memory
->    hotplug will be happy.
-> 
-> In short, early_initmem_init will parse numa info early and call
-> init_mem_mapping to set page table for every nodes's mem.
+  Bạn đã bỏ đăng ký nhận tin từ chúng tôi thành công.
 
-So, can you please explain why you're doing the above?  What are you
-trying to achieve in the end and why is this the best approach?  This
-is all for memory hotplug, right?
+  Đây là email cuối cùng bạn sẽ nhận được từ chúng
+tôi. Chúng tôi đã thêm bạn vào danh sách "không gửi email
+bản tin", có nghĩa là hệ thống bản tin của chúng tôi,không
+gửi cho bạn bất kỳ tin nhắn hơn nữa, mà không có sự can
+thiệp của hướng dẫn sử dụng bởi người quản trị của
+chúng tôi.
 
-I can understand the part where you're move NUMA discovery before
-initializations which will get allocated permanent addresses in the
-wrong nodes, but trying to do the same with memblock itself is making
-the code extremely fragile.  It's nasty because there's nothing
-apparent which seems to necessitate such ordering.  The ordering looks
-rather arbitrary but changing the orders will subtly break memory
-hotplug support, which is a really bad way to structure the code.
+  Nếu có một lỗi trong thông tin này, bạn có thể tái
+đăng ký: Bỏ khỏi danh sách gửi bản tin
+https://bluecom.vn/mkt/?p=subscribe và làm theo các bước hướng
+dẫn.
 
-Can't you just move memblock arrays after NUMA init is complete?
-That'd be a lot simpler and way more robust than the proposed changes,
-no?
+  Cảm ơn bạn
 
-Thanks.
-
--- 
-tejun
