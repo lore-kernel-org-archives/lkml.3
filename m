@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab3FRLoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56011 "EHLO
+	id S932305Ab3FRMD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:03:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192Ab3FRLoV (ORCPT
+	with ESMTP id S932205Ab3FRLoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:21 -0400
+	Tue, 18 Jun 2013 07:44:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, Matthew Garrett <mjg@redhat.com>,
-        Shuduo Sang <shuduo.sang@canonical.com>,
+Cc: "wang, biao" <biao.wang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 29/93] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
-Date: Tue, 18 Jun 2013 12:42:37 +0100
-Message-Id: <1371555821-12820-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 30/93] klist: del waiter from klist_remove_waiters before wakeup waitting process
+Date: Tue, 18 Jun 2013 12:42:38 +0100
+Message-Id: <1371555821-12820-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,82 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: "wang, biao" <biao.wang@intel.com>
 
-commit a4f46bb9fa84642e356898ee44b670989622f8bb upstream.
+commit ac5a2962b02f57dea76d314ef2521a2170b28ab6 upstream.
 
-In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-the string Lenovo or Thinkpad, but is set to the model number, this
-causes the thinkpad_acpi module to fail to load. Recognize laptop
-as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
+There is a race between klist_remove and klist_release. klist_remove
+uses a local var waiter saved on stack. When klist_release calls
+wake_up_process(waiter->process) to wake up the waiter, waiter might run
+immediately and reuse the stack. Then, klist_release calls
+list_del(&waiter->list) to change previous
+wait data and cause prior waiter thread corrupt.
 
-Test on V490u
-=============
-== After the patch ==
+The patch fixes it against kernel 3.9.
 
-[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
-[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
-[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
-[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
-[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
-[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[ 1350.307082] Registered led device: tpacpi::thinklight
-[ 1350.307215] Registered led device: tpacpi::power
-[ 1350.307255] Registered led device: tpacpi::standby
-[ 1350.307294] Registered led device: tpacpi::thinkvantage
-[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
-
-== Before the patch ==
-sudo modprobe thinkpad_acpi
-FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
-
-Test on B485
-=============
-This patch was also test in a B485 where the thinkpad_acpi module does not
-have any issues loading. But, I tested it to make sure this patch does not
-break on already functioning models of Lenovo products.
-
-[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
-[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
-[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
-[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[13486.752883] Registered led device: tpacpi::thinklight
-[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Shuduo Sang <shuduo.sang@canonical.com>
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/platform/x86/thinkpad_acpi.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ lib/klist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 8b5610d..aa232de 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8662,6 +8662,13 @@ static int __must_check __init get_thinkpad_model_data(
- 		tp->model_str = kstrdup(s, GFP_KERNEL);
- 		if (!tp->model_str)
- 			return -ENOMEM;
-+	} else {
-+		s = dmi_get_system_info(DMI_BIOS_VENDOR);
-+		if (s && !(strnicmp(s, "Lenovo", 6))) {
-+			tp->model_str = kstrdup(s, GFP_KERNEL);
-+			if (!tp->model_str)
-+				return -ENOMEM;
-+		}
- 	}
+diff --git a/lib/klist.c b/lib/klist.c
+index 0874e41..358a368 100644
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -193,10 +193,10 @@ static void klist_release(struct kref *kref)
+ 		if (waiter->node != n)
+ 			continue;
  
- 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
++		list_del(&waiter->list);
+ 		waiter->woken = 1;
+ 		mb();
+ 		wake_up_process(waiter->process);
+-		list_del(&waiter->list);
+ 	}
+ 	spin_unlock(&klist_remove_lock);
+ 	knode_set_klist(n, NULL);
 -- 
 1.8.1.2
 
