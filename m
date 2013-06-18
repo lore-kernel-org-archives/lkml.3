@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3FRKMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:12:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58889 "EHLO arroyo.ext.ti.com"
+	id S1755707Ab3FRKOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:14:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44530 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755971Ab3FRKMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:12:43 -0400
+	id S1754505Ab3FRKOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:14:01 -0400
 From: J Keerthy <j-keerthy@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <broonie@kernel.org>, <j-keerthy@ti.com>, <ldewangan@nvidia.com>,
         <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
         <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <gg@slimlogic.co.uk>
-Subject: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists and then only request irq
-Date: Tue, 18 Jun 2013 15:31:29 +0530
-Message-ID: <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH v2 2/4] MFD: Palmas: Add SMPS10_BOOST feature
+Date: Tue, 18 Jun 2013 15:33:14 +0530
+Message-ID: <1371549794-7406-1-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
-References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check if interrupts property exists and then only request irq.
-On some boards INT line might not be connected to a valid
-irq line on the application processor. Hence keeping a check
-before requesting irq.
-
-Boot tested on OMAP5-UEVM board.
+The SMPS10 regulator is not presesnt in all the variants
+of the PALMAS PMIC family. Hence adding a feature to distingush
+between them.
 
 Signed-off-by: J Keerthy <j-keerthy@ti.com>
 ---
- drivers/mfd/palmas.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ drivers/mfd/palmas.c                 |   28 +++++++++++++++++++++-------
+ drivers/regulator/palmas-regulator.c |    3 +++
+ include/linux/mfd/palmas.h           |   14 ++++++++++++++
+ 3 files changed, 38 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index 62fa728..69c4e62 100644
+index 69c4e62..f9630b1 100644
 --- a/drivers/mfd/palmas.c
 +++ b/drivers/mfd/palmas.c
-@@ -236,6 +236,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+@@ -231,6 +231,16 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+ 		palmas_set_pdata_irq_flag(i2c, pdata);
+ }
+ 
++static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
++
++static const struct of_device_id of_palmas_match_tbl[] = {
++	{
++		.compatible = "ti,palmas",
++		.data = &palmas_features,
++	},
++	{ },
++};
++
+ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
  {
- 	struct palmas *palmas;
- 	struct palmas_platform_data *pdata;
-+	struct device_node *regnode = NULL;
+@@ -239,8 +249,9 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 	struct device_node *regnode = NULL;
  	struct device_node *node = i2c->dev.of_node;
  	int ret = 0, i;
- 	unsigned int reg, addr;
-@@ -262,7 +263,6 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+-	unsigned int reg, addr;
++	unsigned int reg, addr, *features;
+ 	int slave;
++	const struct of_device_id *match;
+ 
+ 	pdata = dev_get_platdata(&i2c->dev);
+ 
+@@ -262,7 +273,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 
  	i2c_set_clientdata(i2c, palmas);
  	palmas->dev = &i2c->dev;
- 	palmas->id = id->driver_data;
--	palmas->irq = i2c->irq;
+-	palmas->id = id->driver_data;
++
++	match = of_match_device(of_match_ptr(of_palmas_match_tbl), &i2c->dev);
++
++	if (match) {
++		features = (unsigned int *)match->data;
++		palmas->features = *features;
++	} else {
++		return -ENODATA;
++	}
  
  	for (i = 0; i < PALMAS_NUM_CLIENTS; i++) {
  		if (i == 0)
-@@ -290,6 +290,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+@@ -437,11 +456,6 @@ static const struct i2c_device_id palmas_i2c_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, palmas_i2c_id);
+ 
+-static struct of_device_id of_palmas_match_tbl[] = {
+-	{ .compatible = "ti,palmas", },
+-	{ /* end */ }
+-};
+-
+ static struct i2c_driver palmas_i2c_driver = {
+ 	.driver = {
+ 		   .name = "palmas",
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 3ae44ac..1ae1e83 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -838,6 +838,9 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 				continue;
+ 			ramp_delay_support = true;
+ 			break;
++		case PALMAS_REG_SMPS10:
++			if (!PALMAS_PMIC_HAS(palmas, SMPS10_BOOST))
++				continue;
  		}
- 	}
  
-+	regnode = of_parse_phandle(node, "interrupts", 0);
-+
-+	if (!regnode) {
-+		dev_warn(palmas->dev, "IRQ missing: skipping irq request\n");
-+		goto no_irq;
-+	} else {
-+		palmas->irq = i2c->irq;
-+	}
-+
- 	/* Change interrupt line output polarity */
- 	if (pdata->irq_flags & IRQ_TYPE_LEVEL_HIGH)
- 		reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
-@@ -316,6 +325,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err;
+ 		if ((id == PALMAS_REG_SMPS6) || (id == PALMAS_REG_SMPS8))
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 8f21daf..98058ca 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -32,6 +32,19 @@
+ 			((a) == PALMAS_CHIP_ID))
+ #define is_palmas_charger(a) ((a) == PALMAS_CHIP_CHARGER_ID)
  
-+no_irq:
- 	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
- 	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
- 			PALMAS_PRIMARY_SECONDARY_PAD1);
++/**
++ * Palmas PMIC feature types
++ *
++ * PALMAS_PMIC_FEATURE_SMPS10_BOOST - used when the PMIC provides SMPS10_BOOST
++ *	regulator.
++ *
++ * PALMAS_PMIC_HAS(b, f) - macro to check if a bandgap device is capable of a
++ *	specific feature (above) or not. Return non-zero, if yes.
++ */
++#define PALMAS_PMIC_FEATURE_SMPS10_BOOST	BIT(0)
++#define PALMAS_PMIC_HAS(b, f)			\
++			((b)->features & PALMAS_PMIC_FEATURE_ ## f)
++
+ struct palmas_pmic;
+ struct palmas_gpadc;
+ struct palmas_resource;
+@@ -46,6 +59,7 @@ struct palmas {
+ 	/* Stored chip id */
+ 	int id;
+ 
++	unsigned int features;
+ 	/* IRQ Data */
+ 	int irq;
+ 	u32 irq_mask;
 -- 
 1.7.5.4
 
