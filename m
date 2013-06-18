@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab3FRMOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:14:05 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:35059 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab3FRMOD (ORCPT
+	id S1756040Ab3FRMOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:14:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55882 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755329Ab3FRLnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:14:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <32351.1371553495@ale.ozlabs.ibm.com>
-References: <1371244086-9189-1-git-send-email-grant.likely@linaro.org>
- <1371244086-9189-9-git-send-email-grant.likely@linaro.org>
- <4521.1371518445@ale.ozlabs.ibm.com> <5220.1371518734@ale.ozlabs.ibm.com>
- <CACxGe6s+K0xF0pnLjKoKXtz_YNoeM2+erhr_g2dX4ONpddRNGA@mail.gmail.com>
- <20130618094617.9BFA93E0D88@localhost> <32351.1371553495@ale.ozlabs.ibm.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 18 Jun 2013 13:13:42 +0100
-X-Google-Sender-Auth: DP-xfONz1dYXbOkuzKAJXeX2lu4
-Message-ID: <CACxGe6spx0wP2ceVcP1AqZwOUE+Ki9Ug1ksfRQG3DMWxpfiG8A@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] irqdomain: Refactor irq_domain_associate_many()
-To: Michael Neuling <mikey@neuling.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 07:43:52 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 03/93] cfg80211: check wdev->netdev in connection work
+Date: Tue, 18 Jun 2013 12:42:11 +0100
+Message-Id: <1371555821-12820-4-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 12:04 PM, Michael Neuling <mikey@neuling.org> wrote:
-> Grant Likely <grant.likely@linaro.org> wrote:
->
->> On Tue, 18 Jun 2013 10:05:31 +0100, Grant Likely <grant.likely@linaro.org> wrote:
->> > On Tue, Jun 18, 2013 at 2:25 AM, Michael Neuling <mikey@neuling.org> wrote:
->> > > Michael Neuling <mikey@neuling.org> wrote:
->> > >
->> > >> Grant,
->> > >>
->> > >> In next-20130617 we are getting the below crash on POWER7.  Bisecting,
->> > >> points to this patch (d39046ec72 in next)
->> > >
->> > > Also, reverting just d39046ec72 fixes the crash in next-20130617.
->> >
->> > Odd. Of all the changes in that series, I would not have expected that
->> > one to cause any problems. I'm digging into it now...
->>
->> Ugh. I flubbed the commit. Try this patch. It should solve the problem:
->>
->
-> Yep, it fixes it.  Thanks.
+3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Excellent, thanks for testing.
+------------------
 
-g.
+From: Johannes Berg <johannes.berg@intel.com>
+
+commit c815797663b72e3ac1736f1886538152bc48e4af upstream.
+
+If a P2P-Device is present and another virtual interface triggers
+the connection work, the system crash because it tries to check
+if the P2P-Device's netdev (which doesn't exist) is up. Skip any
+wdevs that have no netdev to fix this.
+
+Reported-by: YanBo <dreamfly281@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: backport to 3.5: adjust context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/wireless/sme.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net/wireless/sme.c b/net/wireless/sme.c
+index f7e937f..3fd50a1 100644
+--- a/net/wireless/sme.c
++++ b/net/wireless/sme.c
+@@ -222,6 +222,9 @@ void cfg80211_conn_work(struct work_struct *work)
+ 	mutex_lock(&rdev->devlist_mtx);
+ 
+ 	list_for_each_entry(wdev, &rdev->netdev_list, list) {
++		if (!wdev->netdev)
++			continue;
++
+ 		wdev_lock(wdev);
+ 		if (!netif_running(wdev->netdev)) {
+ 			wdev_unlock(wdev);
+-- 
+1.8.1.2
+
