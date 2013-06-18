@@ -1,88 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab3FRL4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:56:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56134 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3FRLou (ORCPT
+	id S1756158Ab3FRL4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:56:48 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:36259 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3FRL4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:50 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 50/93] powerpc/eeh: Don't check RTAS token to get PE addr
-Date: Tue, 18 Jun 2013 12:42:58 +0100
-Message-Id: <1371555821-12820-51-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 18 Jun 2013 07:56:45 -0400
+Message-ID: <51C04AFE.3010201@imag.fr>
+Date: Tue, 18 Jun 2013 13:56:46 +0200
+From: Nicolas Palix <nicolas.palix@imag.fr>
+Organization: UJF Polytech / LIG
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, linux-doc@vger.kernel.org,
+        cocci@systeme.lip6.fr, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] coccicheck: span checks across CPUs
+References: <20130617230655.GA21273@www.outflux.net>
+In-Reply-To: <20130617230655.GA21273@www.outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
+Hi Kees,
 
-------------------
+This is indeed something that was on my TO-DO list! :)
+Thank you a lot.
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+Could you consider merging with the following or
+something equivalent for handling running spatch processes
+when make is interrupted ?
 
-commit b8b3de224f194005ad87ede6fd022fcc2bef3b1a upstream.
+For the resubmission, please add Michal Marek (in CC)
+who will apply it to the misc branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git
 
-RTAS token "ibm,get-config-addr-info" or ibm,get-config-addr-info2"
-are used to retrieve the PE address according to PCI address, which
-made up of domain/bus/slot/function. If we don't have those 2 tokens,
-the domain/bus/slot/function would be used as the address for EEH
-RTAS operations. Some older f/w might not have those 2 tokens and
-that blocks the EEH functionality to be initialized. It was introduced
-by commit e2af155c ("powerpc/eeh: pseries platform EEH initialization").
+Regards,
 
-The patch skips the check on those 2 tokens so we can bring up EEH
-functionality successfully. And domain/bus/slot/function will be
-used as address for EEH RTAS operations.
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index a222e92..907f11e 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -2,6 +2,17 @@
 
-Reported-by: Robert Knight <knight@princeton.edu>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Tested-by: Robert Knight <knight@princeton.edu>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/powerpc/platforms/pseries/eeh_pseries.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ SPATCH="`which ${SPATCH:=spatch}`"
 
-diff --git a/arch/powerpc/platforms/pseries/eeh_pseries.c b/arch/powerpc/platforms/pseries/eeh_pseries.c
-index 8752f79..8a811d9 100644
---- a/arch/powerpc/platforms/pseries/eeh_pseries.c
-+++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
-@@ -83,7 +83,11 @@ static int pseries_eeh_init(void)
- 	ibm_configure_pe		= rtas_token("ibm,configure-pe");
- 	ibm_configure_bridge		= rtas_token ("ibm,configure-bridge");
- 
--	/* necessary sanity check */
-+	/*
-+	 * Necessary sanity check. We needn't check "get-config-addr-info"
-+	 * and its variant since the old firmware probably support address
-+	 * of domain/bus/slot/function for EEH RTAS operations.
-+	 */
- 	if (ibm_set_eeh_option == RTAS_UNKNOWN_SERVICE) {
- 		pr_warning("%s: RTAS service <ibm,set-eeh-option> invalid\n",
- 			__func__);
-@@ -102,12 +106,6 @@ static int pseries_eeh_init(void)
- 		pr_warning("%s: RTAS service <ibm,slot-error-detail> invalid\n",
- 			__func__);
- 		return -EINVAL;
--	} else if (ibm_get_config_addr_info2 == RTAS_UNKNOWN_SERVICE &&
--		   ibm_get_config_addr_info == RTAS_UNKNOWN_SERVICE) {
--		pr_warning("%s: RTAS service <ibm,get-config-addr-info2> and "
--			"<ibm,get-config-addr-info> invalid\n",
--			__func__);
--		return -EINVAL;
- 	} else if (ibm_configure_pe == RTAS_UNKNOWN_SERVICE &&
- 		   ibm_configure_bridge == RTAS_UNKNOWN_SERVICE) {
- 		pr_warning("%s: RTAS service <ibm,configure-pe> and "
--- 
-1.8.1.2
++trap kill_running SIGTERM SIGINT
++declare -a SPATCH_RUN
++
++kill_running() {
++       for i in $(seq 0 $(( NPROC - 1)) ); do
++               if [ $V -eq 2 ] ; then echo "Killing ${SPATCH_RUN[$i]}" ; fi
++               kill ${SPATCH_RUN[$i]}
++       done
++       wait
++}
++
+ # The verbosity may be set by the environmental parameter V=
+ # as for example with 'make V=1 coccicheck'
+
+@@ -80,7 +91,9 @@ run_cmd() {
+                echo "Running ($NPROC in parallel): $@"
+        fi
+        for i in $(seq 0 $(( NPROC - 1)) ); do
+-               eval $@ -max $NPROC -index $i &
++               eval "$@ -max $NPROC -index $i &"
++               SPATCH_RUN[$i]=$!
++               if [ $V -eq 2 ] ; then echo "${SPATCH_RUN[$i]} running" ; fi
+        done
+        wait
+ }
+
+Le 6/18/13 1:06 AM, Kees Cook a écrit :
+> This adds parallelism by default to the "coccicheck" target using
+> spatch's "-max" and "-index" arguments.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  Documentation/coccinelle.txt |    5 +++++
+>  scripts/coccicheck           |   14 ++++++++++++--
+>  2 files changed, 17 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
+> index 18de785..408439d 100644
+> --- a/Documentation/coccinelle.txt
+> +++ b/Documentation/coccinelle.txt
+> @@ -91,6 +91,11 @@ To enable verbose messages set the V= variable, for example:
+>  
+>     make coccicheck MODE=report V=1
+>  
+> +By default, coccicheck tries to run as parallel as possible. To change
+> +the parallelism, set the J= variable. For example, to run across 4 CPUs:
+> +
+> +   make coccicheck MODE=report J=4
+> +
+>  
+>   Using Coccinelle with a single semantic patch
+>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> diff --git a/scripts/coccicheck b/scripts/coccicheck
+> index 06fcb33..077e5b2 100755
+> --- a/scripts/coccicheck
+> +++ b/scripts/coccicheck
+> @@ -11,6 +11,12 @@ else
+>  	VERBOSE=0
+>  fi
+>  
+> +if [ -z "$J" ]; then
+> +	NPROC=$(getconf _NPROCESSORS_ONLN)
+> +else
+> +	NPROC="$J"
+> +fi
+> +
+>  FLAGS="$SPFLAGS -very_quiet"
+>  
+>  # spatch only allows include directories with the syntax "-I include"
+> @@ -61,10 +67,14 @@ if [ "$ONLINE" = "0" ] ; then
+>  fi
+>  
+>  run_cmd() {
+> +	local i
+>  	if [ $VERBOSE -ne 0 ] ; then
+> -		echo "Running: $@"
+> +		echo "Running ($NPROC in parallel): $@"
+>  	fi
+> -	eval $@
+> +	for i in $(seq 0 $(( NPROC - 1)) ); do
+> +		eval $@ -max $NPROC -index $i &
+> +	done
+> +	wait
+>  }
+>  
+>  
+> 
 
