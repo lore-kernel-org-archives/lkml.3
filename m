@@ -1,50 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3FREug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:50:36 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:51246 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3FREue (ORCPT
+	id S1753901Ab3FREv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:51:29 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:40333 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab3FREv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:50:34 -0400
+	Tue, 18 Jun 2013 00:51:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpon3Tc+dSycv-QeLg9vwjXijaZrtjzw0-tHVAqX6moBUjA@mail.gmail.com>
-References: <68ae523282b494da0e8f67536af1df874c326675.1370422554.git.viresh.kumar@linaro.org>
-	<1855098.3p2j9hWHoD@vostro.rjw.lan>
-	<CAKohpon3Tc+dSycv-QeLg9vwjXijaZrtjzw0-tHVAqX6moBUjA@mail.gmail.com>
-Date: Tue, 18 Jun 2013 10:20:33 +0530
-Message-ID: <CAKohpokwbLyCiL88i+6hKaLiKciZ0mZhOqenSzOJ7oBfgsCpZg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: userspace: Simplify governor
+In-Reply-To: <CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
+	<1354024039.6276.72.camel@gandalf.local.home>
+	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
+	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
+	<CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
+	<CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
+	<alpine.LFD.2.02.1305131223470.2863@ionos>
+	<CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
+	<CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
+Date: Tue, 18 Jun 2013 10:21:25 +0530
+Message-ID: <CAKohpon0dC6O_QBXnbyxUOO0DcrRxTzFkZSJNh6VrNL5kzT66Q@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        chenxg.marvell@gmail.com
+To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, John Stultz <john.stultz@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 June 2013 18:38, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> To be honest with the amount of experience I have now, my log was
-> poor :(
+On 31 May 2013 16:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 22 May 2013 14:04, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> Sorry for being late in replying to your queries.
+>>
+>> On 13 May 2013 16:05, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>> Which mechanism is migrating the timer away?
+>>
+>> It will be the same: get_nohz_timer_target() which will decide target
+>> cpu for migration.
+>>
+>>> I have no objections to the functionality per se, but the proposed
+>>> solution is not going to fly.
+>>>
+>>> Aside of bloating the data structure you're changing the semantics of
+>>> __mod_timer(). No __mod_timer() caller can deal with -EBUSY. So you'd
+>>> break the world and some more.
+>>
+>> Ahh.. That idea was dropped already.
+>>
+>>> Here is a list of questions:
+>>>
+>>>       - Which mechanism migrates timers?
+>>>
+>>>       - How is that mechanism triggered?
+>>
+>> The mechanism remains the same as is for non-rearmed timers.
+>> i.e. get_nohz_timer_target()..
+>>
+>> We are just trying to give a approach with which we can migrate
+>> running timers. i.e. those which re-arm themselves from their
+>> handlers.
+>>
+>>>       - How does that deal with CPU bound timers?
+>>
+>> We will still check 'Pinned' for this timer as is done for any other
+>> normal timer. So, we don't migrate them.
+>>
+>> So, this is the clean draft for the idea I had.. (Naming is poor for
+>> now):
+>>
+>> diff --git a/include/linux/timer.h b/include/linux/timer.h
+>> index 8c5a197..ad00ebe 100644
+>> --- a/include/linux/timer.h
+>> +++ b/include/linux/timer.h
+>> @@ -20,6 +20,7 @@ struct timer_list {
+>>
+>>         void (*function)(unsigned long);
+>>         unsigned long data;
+>> +       int wait_for_migration_to_complete;
+>>
+>>         int slack;
+>>
+>> diff --git a/kernel/timer.c b/kernel/timer.c
+>> index a860bba..7791f28 100644
+>> --- a/kernel/timer.c
+>> +++ b/kernel/timer.c
+>> @@ -746,21 +746,15 @@ __mod_timer(struct timer_list *timer, unsigned
+>> long expires,
+>>         new_base = per_cpu(tvec_bases, cpu);
+>>
+>>         if (base != new_base) {
+>> -               /*
+>> -                * We are trying to schedule the timer on the local CPU.
+>> -                * However we can't change timer's base while it is running,
+>> -                * otherwise del_timer_sync() can't detect that the timer's
+>> -                * handler yet has not finished. This also guarantees that
+>> -                * the timer is serialized wrt itself.
+>> -                */
+>> -               if (likely(base->running_timer != timer)) {
+>> -                       /* See the comment in lock_timer_base() */
+>> -                       timer_set_base(timer, NULL);
+>> -                       spin_unlock(&base->lock);
+>> -                       base = new_base;
+>> -                       spin_lock(&base->lock);
+>> -                       timer_set_base(timer, base);
+>> -               }
+>> +               if (base->running_timer == timer)
+>> +                       timer->wait_for_migration_to_complete = 1;
+>> +
+>> +               /* See the comment in lock_timer_base() */
+>> +               timer_set_base(timer, NULL);
+>> +               spin_unlock(&base->lock);
+>> +               base = new_base;
+>> +               spin_lock(&base->lock);
+>> +               timer_set_base(timer, base);
+>>         }
+>>
+>>         timer->expires = expires;
+>> @@ -990,7 +984,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
+>>
+>>         base = lock_timer_base(timer, &flags);
+>>
+>> -       if (base->running_timer != timer) {
+>> +       if ((base->running_timer != timer) &&
+>> +                       !timer->wait_for_migration_to_complete) {
+>>                 timer_stats_timer_clear_start_info(timer);
+>>                 ret = detach_if_pending(timer, base, true);
+>>         }
+>> @@ -1183,6 +1178,8 @@ static inline void __run_timers(struct tvec_base *base)
+>>                                 call_timer_fn(timer, fn, data);
+>>                                 spin_lock_irq(&base->lock);
+>>                         }
+>> +                       if (timer->wait_for_migration_to_complete)
+>> +                               timer->wait_for_migration_to_complete = 0;
+>>                 }
+>>         }
+>>         base->running_timer = NULL;
+>>
+>>
+>> Please see if it a junk idea or has some light of hope :)
 >
-> I have used following log in the attached patch:
->
-> Subject: [PATCH] cpufreq: userspace: Simplify governor
->
-> Userspace governor has got more code than what it needs for its functioning.
-> Lets simplify it. Portions of code removed are:
-> - Extra header files which aren't required anymore (rearranged them as well)
-> - cpu_{max|min|cur|set}_freq, as they are always same as policy->{max|min|cur}
-> - userspace_cpufreq_notifier_block as we don't need to set cpu_cur_freq anymore
-> - cpus_using_userspace_governor as it was for notifier code
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Ping!!
 
-Hi Rafael,
-
-Are you happy with the log & description of this patch now?
+Ping!!
