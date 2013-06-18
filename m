@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab3FRAc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:32:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40784 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3FRAcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:32:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Bob Moore <robert.moore@intel.com>
-Subject: Re: [PATCH 2/3] ACPICA: Add interface for getting latest OS version requested via _OSI
-Date: Tue, 18 Jun 2013 02:42:13 +0200
-Message-ID: <10189900.qsvQBSpnvI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371508629.523.3.camel@x230>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <2212597.t9jOQU2YXi@vostro.rjw.lan> <1371508629.523.3.camel@x230>
+	id S1753547Ab3FRAdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:33:19 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:42165 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab3FRAdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 20:33:17 -0400
+Date: Mon, 17 Jun 2013 17:33:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Part1 PATCH v5 09/22] x86, ACPI: Find acpi tables in initrd
+ early from head_32.S/head64.c
+Message-ID: <20130618003308.GS32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1371128589-8953-10-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371128589-8953-10-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 17, 2013 10:37:10 PM Matthew Garrett wrote:
-> On Tue, 2013-06-18 at 00:31 +0200, Rafael J. Wysocki wrote:
-> > Hi Matthew,
-> > 
-> > On Sunday, June 09, 2013 07:01:38 PM Matthew Garrett wrote:
-> > > Drivers may need to make policy decisions based on the OS that the firmware
-> > > believes it's interacting with. ACPI firmware will make a series of _OSI
-> > > calls, starting from the oldest OS version they support and ending with the
-> > > most recent. Add a function to return the last successful call so that
-> > > drivers know what the firmware's expecting.
-> > > 
-> > > Based on a patch by Seth Forshee <seth.forshee@canonical.com>
-> > 
-> > Bob (CCed) would prefer us to access acpi_gbl_osi_data directly instead of
-> > adding the wrapper to ACPICA.  He also thinks that the symbol definitions
-> > should go into include/acpi/actypes.h rather than into acpixf.h.
-> > 
-> > Then, the only ACPICA change would be to move the symbols and we can
-> > add a Linux-specific patch on top of that adding the acpi_gbl_osi_data
-> > wrapper.
+On Thu, Jun 13, 2013 at 09:02:56PM +0800, Tang Chen wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+
+Ditto for the opening.  Probably not a must, I suppose, but would be
+very nice.
+
+> head64.c could use #PF handler setup page table to access initrd before
+> init mem mapping and initrd relocating.
 > 
-> That sounds good to me. Do you want to respin that, or should I send an
-> updated set?
+> head_32.S could use 32bit flat mode to access initrd before init mem
+> mapping initrd relocating.
+> 
+> This patch introduces x86_acpi_override_find(), which is called from
+> head_32.S/head64.c, to replace acpi_initrd_override_find(). So that we
+> can makes 32bit and 64 bit more consistent.
+> 
+> -v2: use inline function in header file instead according to tj.
+>      also still need to keep #idef head_32.S to avoid compiling error.
+> -v3: need to move down reserve_initrd() after acpi_initrd_override_copy(),
+>      to make sure we are using right address.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Jacob Shin <jacob.shin@amd.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Tested-by: Thomas Renninger <trenn@suse.de>
+> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-That one should be fine, no need to respin [1/3] and [3/3].
+Other than that,
 
-Thanks,
-Rafael
+ Acked-by: Tejun Heo <tj@kernel.org>
 
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
