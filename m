@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab3FRAYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:24:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42112 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab3FRAYP (ORCPT
+	id S1753504Ab3FRAYb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:24:31 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:42325 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468Ab3FRAY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:24:15 -0400
-Date: Tue, 18 Jun 2013 10:24:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: linux-next: Tree for Jun 17 (compat_binfmt_elf.c)
-Message-Id: <20130618102411.258693d302bad332e920fd63@canb.auug.org.au>
-In-Reply-To: <51BF4443.2040801@infradead.org>
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au>
-	<51BF4443.2040801@infradead.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	Mon, 17 Jun 2013 20:24:29 -0400
+Message-ID: <1371515047.13194.6.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 06/22] x86, ACPI: Split acpi_initrd_override to
+ find/copy two functions
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Renninger <trenn@suse.de>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Date: Mon, 17 Jun 2013 18:24:07 -0600
+In-Reply-To: <1371257800-11720-7-git-send-email-yinghai@kernel.org>
+References: <1371257800-11720-1-git-send-email-yinghai@kernel.org>
+	 <1371257800-11720-7-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Jun_2013_10_24_11_+1000_pDBtIm1WVGknsHP3"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Jun_2013_10_24_11_+1000_pDBtIm1WVGknsHP3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-06-14 at 17:56 -0700, Yinghai Lu wrote:
+> To parse srat early, we need to move acpi table probing early.
+> acpi_initrd_table_override is before acpi table probing. So we need to
+> move it early too.
+> 
+> Current code acpi_initrd_table_override is after init_mem_mapping and
+> relocate_initrd(), so it can scan initrd and copy acpi tables with kernel
+> virtual address of initrd.
+> Copying need to be after memblock is ready, because it need to allocate
+> buffer for new acpi tables.
+> 
+> So we have to split that function to find and copy two functions.
+> Find should be as early as possible. Copy should be after memblock is ready.
+> 
+> Finding could be done in head_32.S and head64.c, just like microcode
+> early scanning. In head_32.S, it is 32bit flat mode, we don't
+> need to set page table to access it. In head64.c, #PF set page table
+> could help us access initrd with kernel low mapping address.
+> 
+> Copying could be done just after memblock is ready and before probing
+> acpi tables, and we need to early_ioremap to access source and target
+> range, as init_mem_mapping is not called yet.
+> 
+> While a dummy version of acpi_initrd_override() was defined when
+> !CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version
+> were conditionalized inside CONFIG_ACPI.  This forced setup_arch() to
+> have its own #ifdefs around acpi_initrd_override() as otherwise build
+> would fail when !CONFIG_ACPI.  Move the prototypes and dummy
+> implementations of the newly split functions below CONFIG_ACPI block
+> in acpi.h so that we can do away with #ifdefs in its user.
+> 
+> -v2: Split one patch out according to tj.
+>      also don't pass table_nr around.
+> -v3: Add Tj's changelog about moving down to #idef in acpi.h to
+>      avoid #idef in setup.c
+> 
+> Signed-off-by: Yinghai <yinghai@kernel.org>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Jacob Shin <jacob.shin@amd.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Tested-by: Thomas Renninger <trenn@suse.de>
+> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-Hi Randy,
+Looks good to me.
 
-On Mon, 17 Jun 2013 10:15:47 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet direc=
-t dependencies (COMPAT && BINFMT_ELF)
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-See commit d812c0e1f90b ("powerpc: Make sure that we alays include
-CONFIG_BINFMT_ELF") for how I fixed that for PowerPC.  X86(_64) might want
-something similar.
+Thanks,
+-Toshi
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__18_Jun_2013_10_24_11_+1000_pDBtIm1WVGknsHP3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRv6irAAoJEECxmPOUX5FEzSQP/2cnhVkJfofVYMkZg1/md234
-2rdakQoU1zCBBWrcuBBfcNhc8D9gV4uFfFoa6qHC/8N12lGxAp0dz6LynpLws49s
-JBQDVlb1rhwdaPWmLIhUNKe6T+hs0jLxJU5AcH4M+ykJ8AmQD+Chnd0VkRc+v48g
-iyAcmUHzNZXG/QXe9LEZ9hfpGYmMO34jYvrTlvIweFJnLh11Zyexdw9D6mh5ZI0o
-1OnYPOHipTRURrSt3jCGaNquWtpfdwSGbwK9rNSyKOOVm62S9PIZwM1y1sDVG9if
-SwO/P+LCIh0tOF3coJQnfd3iqRUsp+lefAY3PdUd9d2oeUXWpkqKGD3cbSGJreQz
-sJbpuh+jA3jjKIcgCMPqFGbK4psYnUAZeyFQcKwhJobU5c1UzzZ3GkocwXhULMN/
-qoYGnVGpvKPAd9T8W/eDJm1YjUjS0Gibp+hnbIlmAB+Qb+6q5VTFE7JhG7UVfoaD
-8lTCoLGWqpArre5kvMCFs2oOeRLe+ZAAPvYWAZwalUdbIfkSyZc8WQKDeaMCicgr
-sSWza1QPWXI36qKklGQp8+rwIeMR5tEqQBGy/wbZdLtPwJTy8sXCobrpEQ7N4za4
-SS0obhbzvAn9mxT8IXhol0L4u1ptgLnmBCSXDoktSxTu1nwciGRB5W1gKi+7gobZ
-+vi8ZAsWRWZI/W02IMEP
-=9o1P
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Jun_2013_10_24_11_+1000_pDBtIm1WVGknsHP3--
