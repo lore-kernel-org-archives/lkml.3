@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab3FRRTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:19:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40324 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933106Ab3FRRTh convert rfc822-to-8bit (ORCPT
+	id S933407Ab3FRRVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:21:36 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:47853 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab3FRRVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:19:37 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
- and then only request irq
-Thread-Topic: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
- exists and then only request irq
-Thread-Index: AQHObAxY8SVidqm7fEWvMR88AcSmApk7GTuAgACV5XD//3+CgIAAhmbw
-Date: Tue, 18 Jun 2013 17:19:14 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EC5B4@DBDE04.ent.ti.com>
-References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
- <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
- <51C0820B.4020404@wwwdotorg.org>
- <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
- <51C093FF.6000204@wwwdotorg.org>
-In-Reply-To: <51C093FF.6000204@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Jun 2013 13:21:34 -0400
+Date: Tue, 18 Jun 2013 10:21:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+Message-ID: <20130618172129.GH2767@htj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130618020357.GZ32663@mtj.dyndns.org>
+ <51BFF464.809@cn.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BFF464.809@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey, Tang.
 
-
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Tuesday, June 18, 2013 10:38 PM
-> To: J, KEERTHY
-> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
-> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; gg@slimlogic.co.uk
-> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
-> exists and then only request irq
+On Tue, Jun 18, 2013 at 01:47:16PM +0800, Tang Chen wrote:
+> [approach]
+> Parse SRAT earlier before memblock starts to work, because there is a
+> bit in SRAT specifying which memory is hotpluggable.
 > 
-> On 06/18/2013 10:54 AM, J, KEERTHY wrote:
-> > Hi Stephen,
-> >
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Tuesday, June 18, 2013 9:22 PM
-> >> To: J, KEERTHY
-> >> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> >> ldewangan@nvidia.com; sameo@linux.intel.com;
-> >> grant.likely@secretlab.ca; swarren@nvidia.com;
-> >> linux-kernel@vger.kernel.org; linux- doc@vger.kernel.org;
-> >> gg@slimlogic.co.uk
-> >> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts
-> property
-> >> exists and then only request irq
-> >>
-> >> On 06/18/2013 04:01 AM, J Keerthy wrote:
-> >>> Check if interrupts property exists and then only request irq.
-> >>> On some boards INT line might not be connected to a valid irq line
-> >>> on the application processor. Hence keeping a check before
-> >>> requesting irq.
-> >>
-> >> When there is no interrupts property, surely i2c->irq == 0, which is
-> >> an invalid IRQ, and hence there's no need to check this before
-> >> copying the value?
-> >
-> > The intent here is NOT to request irq with 0 or Invalid IRQ.
-> 
-> Sure.
-> 
-> > The board File will not populate the interrupts entry if the INT line
-> > is not Connected.
-> 
-> Do you mean the interrupts DT property won't be present if there is no
-> interrupt. If so, sure.
+> I'm not saying this is the best approach. I can also see that this
+> patch-set touches a lot of boot code. But i think parsing SRAT earlier
+> is reasonable because this is the only way for now to know which memory
+> is hotpluggable from firmware.
 
-Yes.
+Touching a lot of code is not a problem but it feels like it's trying
+to boot strap itself while walking and achieves that by carefully
+sequencing all operations which may allocate from memblock before NUMA
+info is available without any way to enforce or verify that.
 
+> >Can't you just move memblock arrays after NUMA init is complete?
+> >That'd be a lot simpler and way more robust than the proposed changes,
+> >no?
 > 
-> > Hence the patch checks for the 'interrupts' property.
-> 
-> That shouldn't be necessary; IIRC, the I2C core has already parsed the
-> interrupts property if there was one, and if there wasn't, it has set
-> i2c->irq to some invalid value already.
-> 
-> So, you simply need to check the value in i2c->irq, and don't need to
-> look at the DT at all.
+> Sorry, I don't quite understand the approach you are suggesting. If we
+> move memblock arrays, we need to update all the pointers pointing to
+> the moved memory. How can we do this ?
 
-Instead of checking the Invalid irq value which most likely can be 0.
-I am not sure.
-I am explicitly checking if the interrupts property exists or not.
+So, there are two things involved here - memblock itself and consumers
+of memblock, right?  I get that the latter shouldn't allocate memory
+from memblock before NUMA info is entered into memblock, so please
+reorder as necessary *and* make sure memblock complains if something
+violates that.  Temporary memory areas which are return are fine.
+Just complain if there are memory regions remaining which are
+allocated before NUMA info is available after boot is complete.  No
+need to make booting more painful than it currently is.
 
-If not present then It throws out a warning. Either there is no
-Valid INT line connection or the DeviceTree was not populated fully.
+As for memblock itself, there's no need to walk carefully around it.
+Just let it do its thing and implement
+memblock_relocate_to_numa_node_0() or whatever after NUMA information
+is available.  memblock already does relocate itself whenever it's
+expanding the arrays anyway, so implementation should be trivial.
 
-This additional piece of information is good to have in the driver
-IMHO. Let me know if this is rational enough to have in the driver.
+Maybe I'm missing something but having a working memory allocator as
+soon as possible is *way* less painful than trying to bootstrap around
+it.  Allow boot path to allocate memory areas from memblock as soon as
+possible but just ensure that none of the ones which may violate the
+hotplug requirements is remaining once boot is complete.  Temporaray
+regions won't matter then and the few which need persistent areas can
+either be reordered to happen after NUMA init or they can allocate a
+new area and move to there after NUMA info is available.  Let's please
+minimize this walking-and-trying-to-tie-shoestrings-at-the-same-time
+thing.  It's painful and extremely fragile.
 
-Regards,
-Keerthy
+Thanks.
+
+-- 
+tejun
