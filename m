@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab3FRLuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:50:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56275 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3FRLpV (ORCPT
+	id S1756079Ab3FRLul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:50:41 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:63344 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab3FRLuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:45:21 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tony Lindgren <tony@atomide.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 77/93] drivers/rtc/rtc-twl.c: fix missing device_init_wakeup() when booted with device tree
-Date: Tue, 18 Jun 2013 12:43:25 +0100
-Message-Id: <1371555821-12820-78-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 18 Jun 2013 07:50:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130617160200.27bb5d82df09a26adb8efce5@linux-foundation.org>
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	<CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
+	<20130617160200.27bb5d82df09a26adb8efce5@linux-foundation.org>
+Date: Tue, 18 Jun 2013 19:50:37 +0800
+Message-ID: <CAA_GA1eqEUD+f-ZmXiBXS+UC5honi8kKtDTXV9dSTT=oj6S4Ag@mail.gmail.com>
+Subject: Re: [PATCHv13 3/4] zswap: add to mm/
+From: Bob Liu <lliubbo@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
+>
+> So the minor fault rate improved and everything else got worse?
 
-------------------
+I did the test again, in a new clean environment.
+I'm sure the config files are the same except enabled zswap.
 
-From: Tony Lindgren <tony@atomide.com>
+                                         v3.10-rc4                   v3.10-rc4
+                             2G-parallio-zswapbas         2G-parallio-nozswap
+Ops memcachetest-0M               819.00 (  0.00%)           1041.00 ( 27.11%)
+Ops memcachetest-198M             736.00 (  0.00%)            973.00 ( 32.20%)
+Ops memcachetest-430M             700.00 (  0.00%)            892.00 ( 27.43%)
+Ops memcachetest-661M             672.00 (  0.00%)            819.00 ( 21.88%)
+Ops memcachetest-893M             675.00 (  0.00%)            775.00 ( 14.81%)
+Ops memcachetest-1125M            665.00 (  0.00%)            764.00 ( 14.89%)
+Ops memcachetest-1356M            641.00 (  0.00%)            749.00 ( 16.85%)
+Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
+Ops io-duration-198M              111.00 (  0.00%)             21.00 ( 81.08%)
+Ops io-duration-430M              125.00 (  0.00%)             29.00 ( 76.80%)
+Ops io-duration-661M              153.00 (  0.00%)             34.00 ( 77.78%)
+Ops io-duration-893M              118.00 (  0.00%)             36.00 ( 69.49%)
+Ops io-duration-1125M             142.00 (  0.00%)             43.00 ( 69.72%)
+Ops io-duration-1356M             156.00 (  0.00%)             50.00 ( 67.95%)
+Ops swaptotal-0M               462237.00 (  0.00%)         469193.00 ( -1.50%)
+Ops swaptotal-198M             490462.00 (  0.00%)         496201.00 ( -1.17%)
+Ops swaptotal-430M             500469.00 (  0.00%)         520400.00 ( -3.98%)
+Ops swaptotal-661M             506038.00 (  0.00%)         538872.00 ( -6.49%)
+Ops swaptotal-893M             514930.00 (  0.00%)         522590.00 ( -1.49%)
+Ops swaptotal-1125M            521010.00 (  0.00%)         526934.00 ( -1.14%)
+Ops swaptotal-1356M            513128.00 (  0.00%)         525241.00 ( -2.36%)
+Ops swapin-0M                  246425.00 (  0.00%)         251226.00 ( -1.95%)
+Ops swapin-198M                266446.00 (  0.00%)         236126.00 ( 11.38%)
+Ops swapin-430M                271586.00 (  0.00%)         265193.00 (  2.35%)
+Ops swapin-661M                263404.00 (  0.00%)         280281.00 ( -6.41%)
+Ops swapin-893M                263958.00 (  0.00%)         263004.00 (  0.36%)
+Ops swapin-1125M               276149.00 (  0.00%)         261962.00 (  5.14%)
+Ops swapin-1356M               264214.00 (  0.00%)         262571.00 (  0.62%)
+Ops minorfaults-0M             629965.00 (  0.00%)         625759.00 (  0.67%)
+Ops minorfaults-198M           641320.00 (  0.00%)         769752.00 (-20.03%)
+Ops minorfaults-430M           635270.00 (  0.00%)         678590.00 ( -6.82%)
+Ops minorfaults-661M           625123.00 (  0.00%)         669308.00 ( -7.07%)
+Ops minorfaults-893M           625165.00 (  0.00%)         656343.00 ( -4.99%)
+Ops minorfaults-1125M          624358.00 (  0.00%)         657954.00 ( -5.38%)
+Ops minorfaults-1356M          619724.00 (  0.00%)         672035.00 ( -8.44%)
+Ops majorfaults-0M              57664.00 (  0.00%)          39395.00 ( 31.68%)
+Ops majorfaults-198M            59747.00 (  0.00%)          38758.00 ( 35.13%)
+Ops majorfaults-430M            63453.00 (  0.00%)          39819.00 ( 37.25%)
+Ops majorfaults-661M            61310.00 (  0.00%)          40171.00 ( 34.48%)
+Ops majorfaults-893M            62544.00 (  0.00%)          37576.00 ( 39.92%)
+Ops majorfaults-1125M           60866.00 (  0.00%)          36891.00 ( 39.39%)
+Ops majorfaults-1356M           66598.00 (  0.00%)          37123.00 ( 44.26%)
 
-commit 24b8256a1fb28d357bc6fa09184ba29b4255ba5c upstream.
+It shows clearly that swaptotal and minorfaults get improved a little
+if enabled zswap.
+But with the cost that the performance of everything else dropped a lot.
 
-When booted in legacy mode device_init_wakeup() gets called by
-drivers/mfd/twl-core.c when the children are initialized.  However, when
-booted using device tree, the children are created with
-of_platform_populate() instead add_children().
-
-This means that the RTC driver will not have device_init_wakeup() set,
-and we need to call it from the driver probe like RTC drivers typically
-do.
-
-Without this we cannot test PM wake-up events on omaps for cases where
-there may not be any physical wake-up event.
-
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/rtc/rtc-twl.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-index 9277d94..1789a25 100644
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -523,6 +523,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
- 	}
- 
- 	platform_set_drvdata(pdev, rtc);
-+	device_init_wakeup(&pdev->dev, 1);
- 	return 0;
- 
- out2:
--- 
-1.8.1.2
-
+--
+Regards,
+--Bob
