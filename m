@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3FRBbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 21:31:03 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:60776 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab3FRBbA convert rfc822-to-8bit (ORCPT
+	id S1753565Ab3FRBbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 21:31:42 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43053 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3FRBbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 21:31:00 -0400
-X-AuditID: cbfec37a-b7fc36d0000050de-c3-51bfb853f141
-From: Shuah Khan <shuah.kh@samsung.com>
-To: "rjw@sisk.pl" <rjw@sisk.pl>, "a.zummo@towertech.it" <a.zummo@towertech.it>
-Cc: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	Mon, 17 Jun 2013 21:31:41 -0400
+Message-ID: <51BFB878.10508@hitachi.com>
+Date: Tue, 18 Jun 2013 10:31:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: pm: System date and time set incorrectly after suspend/resume to disk
-Thread-topic: System date and time set incorrectly after suspend/resume to disk
-Thread-index: Ac5rw3sM8UdraAXMS3+tGCDERgjo2A==
-Date: Tue, 18 Jun 2013 01:30:57 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6172A070@sisaex02sj>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e+wn27wjv2BBlfOilksuXiV3eLyrjls
-	Fp97jzBa9C/sZbLY39nBaPH1p4MDm8fOWXfZPfZMPMnm8WhxC6PH9Hk/mTw+b5ILYI3isklJ
-	zcksSy3St0vgyth8eDF7wXO+isX3+BsY23m6GDk5JARMJB5POcsEYYtJXLi3nq2LkYtDSGAZ
-	o8Tms5dZQBJCAr1MEhfOyEEk5jNKzP73ghEkwSagLvH59Q52EFtEwE9i3aNbjCBFzAKdQA3v
-	P7KBJISBEgtX/mKDKPKXmDvvM5StJ3H26GKw1SwCqhK7T88GG8orYC8x48x9sM2MQCd9P7UG
-	rIZZQFyiufUmC8SpAhJL9pxnhrBFJV4+/sfaxcgBZCtKbF9tBVGuJbF+53GoVm2JJ+8usEKM
-	F5T4MfkeywRG0VlIps5C0jILScssJC0LGFlWMYqVFicXFCelp1YY6hUn5haX5qXrJefnbmKE
-	xFrVDsY7X20OMQpwMCrx8HKI7A8UYk0sK67MPcQowcGsJMIbO3FfoBBvSmJlVWpRfnxRaU5q
-	8SFGJg5OqQZGt+uP3z6/+qL5c3/X/mjZ2KNt29f8aS45yaSYV5Ehm61g6b/xmcfSYrlP5+ff
-	6Fap9VyscJLj+aGVk46tWx94/nn2loR27oeyLP4Fu9muKDP6LTSTMlot3FfamC29ulmQ3YS/
-	4kTZXDGjWzGd18oKLjRquR+JTbjv5TDPZN9+B8Ydwu8dNEuUWIozEg21mIuKEwHtGCk9kwIA	AA==
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base
+ multibuffer
+References: <51BA7578.4080108@huawei.com> <51BB18EB.9080307@hitachi.com>  <1371223918.9844.324.camel@gandalf.local.home>  <20130614162112.GO5146@linux.vnet.ibm.com>  <1371227607.9844.335.camel@gandalf.local.home>  <20130614172516.GP5146@linux.vnet.ibm.com> <51BE7A83.9060802@hitachi.com> <1371472393.18733.5.camel@gandalf.local.home>
+In-Reply-To: <1371472393.18733.5.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing a problem on my system after a suspend to disk in reboot or 
-shutdown mode. When pm_trace is 0 (which is the default), I can't 
-reproduce the problem easily. I have to run a few more suspend tests 
-before I see the problem. When pm_trace is disabled, the problem showed 
-up when I ran suspend in platform mode in a row. However when pm_ptrace 
-is enabled, problem happens on the very first spend to disk in reboot mode.
+(2013/06/17 21:33), Steven Rostedt wrote:
+> On Mon, 2013-06-17 at 11:54 +0900, Masami Hiramatsu wrote:
+> 
+>>> It makes a lot of sense to me, at least assuming no issues with the
+>>> interrupts being disabled, but the checks not spotting this.  Here
+>>> is the check:
+>>>
+>>> 	preempt_count() != 0 || irqs_disabled()
+>>>
+>>> (With additional elaboration for if lockdep is enabled.)
+>>
+>> OK, I see. So I'll convert all the rcu_dereference_raw() to
+>> rcu_dereference_sched() except kprobe handler, because in the
+>> kprobe handler above check always be true. :)
+> 
+> I would convert them all to rcu_dereference_sched(), the above check is
+> only when CONFIG_DEBUG_LOCK_ALLOC is set. It also annotates what is
+> protecting this variable. Please do not avoid a check because "it's
+> always true here". You also get people copying that code (like for
+> uprobes) and that will skip the check too.
+> 
+> The only reason ftrace function tracer uses the raw (and now
+> raw_notrace) version is because it is extremely invasive, and these
+> checks done at *every* function call can actually live lock the system.
+> But other places in tracing use the appropriate rcu_dereference_*()
+> functions. If they do not, then they need to be fixed too.
 
-Steps to run into the issue:
+Oh, I see.
+Anyway, it will be completely replaced by the Oleg's patch.
+Or should I fix that before his work?
 
-echo 1 > pm_print_times
-echo 1 > pm_trace
-echo reboot > disk
-echo disk > state
+Thank you,
 
-or
-
-echo 1 > pm_print_times
-echo 1 > pm_trace
-echo shutdown > disk
-echo disk > state
-
-When system comes back up, system time set to incorrect time.
-
-In this latest round of testing:
-
-time before suspend was Mon Jun 17 16:27 MDT 2013
-right after resume was Thu Oct 5 18:24:42 MDT 2028
-
-I have NTP enabled on my system and I have to disable/re-enable NTP from 
-Time and Date config menu.
-
-rtc class suspend routine rtc_suspend() does adjustments to account for 
-the time spent suspended. Is that the right one run in this case?
-
-rtc_suspend() doesn't run because has_persistent_clock() returns true. 
-rtc-cmos pnp driver suspend routines runs.
-
-It is a possible race condition that is triggered when the conditions 
-are right.
-
-I have the following enabled in my config
-
-CONFIG_RTC_CLASS=y
-CONFIG_RTC_HCTOSYS=y
-CONFIG_RTC_SYSTOHC=y
-CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
-
-Looking for tips on debugging the problem.
-
-thanks,
--- Shuah
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
