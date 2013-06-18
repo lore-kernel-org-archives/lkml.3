@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab3FRUQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 16:16:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33155 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932861Ab3FRUQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 16:16:19 -0400
-Date: Tue, 18 Jun 2013 23:12:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
-        David Lopo <dlopo@chipidea.mips.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: linux-next: Tree for Jun 18 usb/chipidea)
-Message-ID: <20130618201245.GB14784@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130618173030.16d73801ab72b7c611faccea@canb.auug.org.au>
- <51C0AC74.5050705@infradead.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
-Content-Disposition: inline
-In-Reply-To: <51C0AC74.5050705@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933547Ab3FRURV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 16:17:21 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59568 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933453Ab3FRURT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 16:17:19 -0400
+From: Joern Engel <joern@logfs.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joern Engel <joern@logfs.org>
+Subject: [PATCH 2/2] mmap: allow MAP_HUGETLB for hugetlbfs files
+Date: Tue, 18 Jun 2013 14:47:05 -0400
+Message-Id: <1371581225-27535-3-git-send-email-joern@logfs.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1371581225-27535-1-git-send-email-joern@logfs.org>
+References: <1371581225-27535-1-git-send-email-joern@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hHWLQfXTYDoKhP50
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is counterintuitive at best that mmap'ing a hugetlbfs file with
+MAP_HUGETLB fails, while mmap'ing it without will a) succeed and b)
+return huge pages.
 
-Hi,
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ mm/mmap.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-On Tue, Jun 18, 2013 at 11:52:36AM -0700, Randy Dunlap wrote:
-> On 06/18/13 00:30, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > Changes since 20130617:
-> >=20
->=20
->=20
-> on i386:
->=20
-> # CONFIG_USB_PHY is not set
->=20
-> drivers/built-in.o: In function `ci_hdrc_probe':
-> core.c:(.text+0x20446b): undefined reference to `of_usb_get_phy_mode'
->=20
->=20
-> chipidea needs to depend on or select some kind of USB_PHY support...?
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2a594246..76eb6df 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -33,6 +33,7 @@
+ #include <linux/uprobes.h>
+ #include <linux/rbtree_augmented.h>
+ #include <linux/sched/sysctl.h>
++#include <linux/magic.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+@@ -1313,6 +1314,11 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 	return addr;
+ }
+ 
++static inline int is_hugetlb_file(struct file *file)
++{
++	return file->f_inode->i_sb->s_magic == HUGETLBFS_MAGIC;
++}
++
+ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 		unsigned long, prot, unsigned long, flags,
+ 		unsigned long, fd, unsigned long, pgoff)
+@@ -1322,11 +1328,12 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 
+ 	if (!(flags & MAP_ANONYMOUS)) {
+ 		audit_mmap_fd(fd, flags);
+-		if (unlikely(flags & MAP_HUGETLB))
+-			return -EINVAL;
+ 		file = fget(fd);
+ 		if (!file)
+ 			goto out;
++		retval = -EINVAL;
++		if (unlikely(flags & MAP_HUGETLB && !is_hugetlb_file(file)))
++			goto out_fput;
+ 	} else if (flags & MAP_HUGETLB) {
+ 		struct user_struct *user = NULL;
+ 		/*
+@@ -1346,6 +1353,7 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+ 
+ 	retval = vm_mmap_pgoff(file, addr, len, prot, flags, pgoff);
++out_fput:
+ 	if (file)
+ 		fput(file);
+ out:
+-- 
+1.7.10.4
 
-hmm, looks like a missing stub to me. Alex ?
-
---=20
-balbi
-
---hHWLQfXTYDoKhP50
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwL89AAoJEIaOsuA1yqREdXAP/2II0v8MzNbMuM29NzDGnTi5
-F2LNBk1k7fr4B1plEPMo8VPD4ITIrfaNZKV1WvCTYvy7+zuqGXnFDchyeYnkRvZU
-D7z1dHLNaGjJWyAomVNH0GERbq1UcfPEQM728MejR2eMbPaZlG81leBkXkr242/S
-mqnZwuSGl9yKE/F3ZlKUwSBIo3i89DgIsKG4XrMTc5gpalANDV8Dn51rLycnn4sh
-Ai2GZU1j4tCXnY6Oyw0OzkyfONgPxE+p+yBXhJywSojUVdJKmINZuavpe6x8RXj6
-ZaILKnLVm72MmGG19bjyusL5g6jm3dkX5ZTQ6a7rFGXP1AoKcDgaClDPDHCWZMBI
-C8Do8x8Q2DHmJh/andiJKvJB4GeRm5gawC0kbgFPDO35bMTUguTyoCoaLg0L4Q7h
-afou96Ib5yQgSA4bqioPzRVCUXllCKrDRwmLRmBv95ehDqPYAXxSnuXEpu6ov+U8
-bcOkjLbHLjbxyEKF13OUoX+wqaHosAVfUdheDe4BhSLvOVfTRwmMAA8ofPhGgZgh
-xDRFeuYTQVl2rb9T96fTB+JhEqOok2NB2DYmkVFdoa9qNEpVvob0931i9RrsPum8
-KlFeJjkLoAqNPqPmE8t7pXXYMz4dE4U16SBF8KUJa3RA3c8YackzL9ZW2eu0I7IH
-zIP1gAZvRoerzSzN/NxR
-=uh9F
------END PGP SIGNATURE-----
-
---hHWLQfXTYDoKhP50--
