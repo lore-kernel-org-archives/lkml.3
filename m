@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab3FRQKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:10:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49196 "EHLO
+	id S932984Ab3FRQL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:11:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49221 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab3FRQKT (ORCPT
+	with ESMTP id S932872Ab3FRQKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:10:19 -0400
+	Tue, 18 Jun 2013 12:10:22 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 3/7] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
-Date: Tue, 18 Jun 2013 09:10:40 -0700
-Message-Id: <20130618160912.150691959@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Greg Farnum <greg@inktank.com>
+Subject: [ 7/7] ceph: fix statvfs fr_size
+Date: Tue, 18 Jun 2013 09:10:44 -0700
+Message-Id: <20130618160912.648351565@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618160911.721012782@linuxfoundation.org>
 References: <20130618160911.721012782@linuxfoundation.org>
@@ -28,70 +28,62 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Sage Weil <sage@inktank.com>
 
-commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
+commit 92a49fb0f79f3300e6e50ddf56238e70678e4202 upstream.
 
-In
+Different versions of glibc are broken in different ways, but the short of
+it is that for the time being, frsize should == bsize, and be used as the
+multiple for the blocks, free, and available fields.  This mirrors what is
+done for NFS.  The previous reporting of the page size for frsize meant
+that newer glibc and df would report a very small value for the fs size.
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c
-Author: Egbert Eich <eich@suse.de>
-Date:   Tue Jun 4 17:13:21 2013 +0200
+Fixes http://tracker.ceph.com/issues/3793.
 
-    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
-
-Egbert Eich fixed a long-standing bug where we simply used a
-non-working i2c controller to read the EDID for SDVO-LVDS panels.
-Unfortunately some machines seem to not be able to cope with the mode
-provided in the EDID. Specifically they seem to not be able to cope
-with a 4x pixel mutliplier instead of a 2x one, which seems to have
-been worked around by slightly changing the panels native mode in the
-VBT so that the dotclock is just barely above 50MHz.
-
-Since it took forever to notice the breakage it's fairly safe to
-assume that at least for SDVO-LVDS panels the VBT contains fairly sane
-data. So just switch around the order and use VBT modes first.
-
-v2: Also add EDID modes just in case, and spell Egbert correctly.
-
-v3: Elaborate a bit more about what's going on on Chris' machine.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
-Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Egbert Eich <eich@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Greg Farnum <greg@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/ceph/super.c |    7 ++++++-
+ fs/ceph/super.h |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1610,10 +1610,13 @@ static void intel_sdvo_get_lvds_modes(st
- 	 * arranged in priority order.
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -70,8 +70,14 @@ static int ceph_statfs(struct dentry *de
+ 	/*
+ 	 * express utilization in terms of large blocks to avoid
+ 	 * overflow on 32-bit machines.
++	 *
++	 * NOTE: for the time being, we make bsize == frsize to humor
++	 * not-yet-ancient versions of glibc that are broken.
++	 * Someday, we will probably want to report a real block
++	 * size...  whatever that may mean for a network file system!
  	 */
- 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
--	if (list_empty(&connector->probed_modes) == false)
--		goto end;
+ 	buf->f_bsize = 1 << CEPH_BLOCK_SHIFT;
++	buf->f_frsize = 1 << CEPH_BLOCK_SHIFT;
+ 	buf->f_blocks = le64_to_cpu(st.kb) >> (CEPH_BLOCK_SHIFT-10);
+ 	buf->f_bfree = (le64_to_cpu(st.kb) - le64_to_cpu(st.kb_used)) >>
+ 		(CEPH_BLOCK_SHIFT-10);
+@@ -80,7 +86,6 @@ static int ceph_statfs(struct dentry *de
+ 	buf->f_files = le64_to_cpu(st.num_objects);
+ 	buf->f_ffree = -1;
+ 	buf->f_namelen = NAME_MAX;
+-	buf->f_frsize = PAGE_CACHE_SIZE;
  
--	/* Fetch modes from VBT */
-+	/*
-+	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
-+	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
-+	 * drm_mode_probed_add adds the mode at the head of the list we add it
-+	 * last.
-+	 */
- 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
- 		newmode = drm_mode_duplicate(connector->dev,
- 					     dev_priv->sdvo_lvds_vbt_mode);
-@@ -1625,7 +1628,6 @@ static void intel_sdvo_get_lvds_modes(st
- 		}
- 	}
+ 	/* leave fsid little-endian, regardless of host endianness */
+ 	fsid = *(u64 *)(&monmap->fsid) ^ *((u64 *)&monmap->fsid + 1);
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -21,7 +21,7 @@
  
--end:
- 	list_for_each_entry(newmode, &connector->probed_modes, head) {
- 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
- 			intel_sdvo->sdvo_lvds_fixed_mode =
+ /* large granularity for statfs utilization stats to facilitate
+  * large volume sizes on 32-bit machines. */
+-#define CEPH_BLOCK_SHIFT   20  /* 1 MB */
++#define CEPH_BLOCK_SHIFT   22  /* 4 MB */
+ #define CEPH_BLOCK         (1 << CEPH_BLOCK_SHIFT)
+ 
+ #define CEPH_MOUNT_OPT_DIRSTAT         (1<<4) /* `cat dirname` for stats */
 
 
