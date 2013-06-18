@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab3FRQZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:25:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49510 "EHLO
+	id S933284Ab3FRQ0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:26:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49494 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933074Ab3FRQR5 (ORCPT
+	with ESMTP id S933237Ab3FRQRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:57 -0400
+	Tue, 18 Jun 2013 12:17:54 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/48] ath9k: Use minstrel rate control by default
-Date: Tue, 18 Jun 2013 09:17:42 -0700
-Message-Id: <20130618161728.233303254@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 23/48] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+Date: Tue, 18 Jun 2013 09:17:49 -0700
+Message-Id: <20130618161729.256731985@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -31,90 +28,70 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 5efac94999ff218e0101f67a059e44abb4b0b523 upstream.
+commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
 
-The ath9k rate control algorithm has various architectural
-issues that make it a poor fit in scenarios like congested
-environments etc.
+In
 
-An example: https://bugzilla.redhat.com/show_bug.cgi?id=927191
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c
+Author: Egbert Eich <eich@suse.de>
+Date:   Tue Jun 4 17:13:21 2013 +0200
 
-Change the default to minstrel which is more robust in such cases.
-The ath9k RC code is left in the driver for now, maybe it can
-be removed altogether later on.
+    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Cc: Jouni Malinen <jouni@qca.qualcomm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Egbert Eich fixed a long-standing bug where we simply used a
+non-working i2c controller to read the EDID for SDVO-LVDS panels.
+Unfortunately some machines seem to not be able to cope with the mode
+provided in the EDID. Specifically they seem to not be able to cope
+with a 4x pixel mutliplier instead of a 2x one, which seems to have
+been worked around by slightly changing the panels native mode in the
+VBT so that the dotclock is just barely above 50MHz.
+
+Since it took forever to notice the breakage it's fairly safe to
+assume that at least for SDVO-LVDS panels the VBT contains fairly sane
+data. So just switch around the order and use VBT modes first.
+
+v2: Also add EDID modes just in case, and spell Egbert correctly.
+
+v3: Elaborate a bit more about what's going on on Chris' machine.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
+Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Egbert Eich <eich@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/Kconfig  |   10 +++++++---
- drivers/net/wireless/ath/ath9k/Makefile |    2 +-
- drivers/net/wireless/ath/ath9k/init.c   |    4 ----
- drivers/net/wireless/ath/ath9k/rc.h     |    2 +-
- 4 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/Kconfig
-+++ b/drivers/net/wireless/ath/ath9k/Kconfig
-@@ -92,13 +92,17 @@ config ATH9K_MAC_DEBUG
- 	  This option enables collection of statistics for Rx/Tx status
- 	  data and some other MAC related statistics
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1771,10 +1771,13 @@ static void intel_sdvo_get_lvds_modes(st
+ 	 * arranged in priority order.
+ 	 */
+ 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+-	if (list_empty(&connector->probed_modes) == false)
+-		goto end;
  
--config ATH9K_RATE_CONTROL
-+config ATH9K_LEGACY_RATE_CONTROL
- 	bool "Atheros ath9k rate control"
- 	depends on ATH9K
--	default y
-+	default n
- 	---help---
- 	  Say Y, if you want to use the ath9k specific rate control
--	  module instead of minstrel_ht.
-+	  module instead of minstrel_ht. Be warned that there are various
-+	  issues with the ath9k RC and minstrel is a more robust algorithm.
-+	  Note that even if this option is selected, "ath9k_rate_control"
-+	  has to be passed to mac80211 using the module parameter,
-+	  ieee80211_default_rc_algo.
+-	/* Fetch modes from VBT */
++	/*
++	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
++	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
++	 * drm_mode_probed_add adds the mode at the head of the list we add it
++	 * last.
++	 */
+ 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
+ 		newmode = drm_mode_duplicate(connector->dev,
+ 					     dev_priv->sdvo_lvds_vbt_mode);
+@@ -1786,7 +1789,6 @@ static void intel_sdvo_get_lvds_modes(st
+ 		}
+ 	}
  
- config ATH9K_HTC
-        tristate "Atheros HTC based wireless cards support"
---- a/drivers/net/wireless/ath/ath9k/Makefile
-+++ b/drivers/net/wireless/ath/ath9k/Makefile
-@@ -8,7 +8,7 @@ ath9k-y +=	beacon.o \
- 		antenna.o
- 
- ath9k-$(CONFIG_ATH9K_BTCOEX_SUPPORT) += mci.o
--ath9k-$(CONFIG_ATH9K_RATE_CONTROL) += rc.o
-+ath9k-$(CONFIG_ATH9K_LEGACY_RATE_CONTROL) += rc.o
- ath9k-$(CONFIG_ATH9K_PCI) += pci.o
- ath9k-$(CONFIG_ATH9K_AHB) += ahb.o
- ath9k-$(CONFIG_ATH9K_DEBUGFS) += debug.o
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -808,10 +808,6 @@ void ath9k_set_hw_capab(struct ath_softc
- 	sc->ant_rx = hw->wiphy->available_antennas_rx;
- 	sc->ant_tx = hw->wiphy->available_antennas_tx;
- 
--#ifdef CONFIG_ATH9K_RATE_CONTROL
--	hw->rate_control_algorithm = "ath9k_rate_control";
--#endif
--
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_2GHZ)
- 		hw->wiphy->bands[IEEE80211_BAND_2GHZ] =
- 			&sc->sbands[IEEE80211_BAND_2GHZ];
---- a/drivers/net/wireless/ath/ath9k/rc.h
-+++ b/drivers/net/wireless/ath/ath9k/rc.h
-@@ -231,7 +231,7 @@ static inline void ath_debug_stat_retrie
- }
- #endif
- 
--#ifdef CONFIG_ATH9K_RATE_CONTROL
-+#ifdef CONFIG_ATH9K_LEGACY_RATE_CONTROL
- int ath_rate_control_register(void);
- void ath_rate_control_unregister(void);
- #else
+-end:
+ 	list_for_each_entry(newmode, &connector->probed_modes, head) {
+ 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
+ 			intel_sdvo->sdvo_lvds_fixed_mode =
 
 
