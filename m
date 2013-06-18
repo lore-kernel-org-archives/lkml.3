@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3FRKAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:00:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61586 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3FRKAC (ORCPT
+	id S1755931Ab3FRKAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:00:16 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:54949 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab3FRKAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:00:02 -0400
+	Tue, 18 Jun 2013 06:00:14 -0400
 From: Jonas Jensen <jonas.jensen@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, tglx@linutronix.de,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH] ARM: irqchip: add support for MOXA ART SoCs
-Date: Tue, 18 Jun 2013 11:59:44 +0200
-Message-Id: <1371549584-7169-1-git-send-email-jonas.jensen@gmail.com>
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, john.stultz@linaro.org,
+        tglx@linutronix.de, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] ARM: clocksource: add support for MOXA ART SoCs
+Date: Tue, 18 Jun 2013 12:00:04 +0200
+Message-Id: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an irqchip driver for the main interrupt controller found
+This patch adds an clocksource driver for the main timer found
 on MOXA ART SoCs.
 
 Applies to 3.10-rc1 and arm-soc/for-next (2013-06-15)
 
 Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
- drivers/irqchip/Makefile     |    1 +
- drivers/irqchip/irq-moxart.c |  163 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 164 insertions(+), 0 deletions(-)
- create mode 100644 drivers/irqchip/irq-moxart.c
+ drivers/clocksource/Makefile       |    1 +
+ drivers/clocksource/moxart_timer.c |  129 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 130 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clocksource/moxart_timer.c
 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index cda4cb5..956d129 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -16,3 +16,4 @@ obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
- obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
-+obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
-diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8d979c7..c93e1a8 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -29,3 +29,4 @@ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+ 
+ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+ obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
++obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+diff --git a/drivers/clocksource/moxart_timer.c b/drivers/clocksource/moxart_timer.c
 new file mode 100644
-index 0000000..8606089
+index 0000000..ce5a5a2
 --- /dev/null
-+++ b/drivers/irqchip/irq-moxart.c
-@@ -0,0 +1,163 @@
++++ b/drivers/clocksource/moxart_timer.c
+@@ -0,0 +1,129 @@
 +/*
-+ * MOXA ART SoCs IRQ chip driver.
++ * MOXA ART SoCs timer handling.
 + *
 + * Copyright (C) 2013 Jonas Jensen
 + *
@@ -58,156 +58,122 @@ index 0000000..8606089
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/io.h>
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
 +#include <linux/irq.h>
++#include <linux/irqreturn.h>
++#include <linux/io.h>
 +#include <linux/of.h>
 +#include <linux/of_address.h>
 +#include <linux/of_irq.h>
-+#include <linux/irqdomain.h>
++#include <linux/clocksource.h>
 +
-+#include <asm/exception.h>
++#include <asm/mach/time.h>
 +
-+#include "irqchip.h"
++#define APB_CLK 48000000
 +
-+#define IRQ_SOURCE_REG      0
-+#define IRQ_MASK_REG        0x04
-+#define IRQ_CLEAR_REG       0x08
-+#define IRQ_MODE_REG        0x0c
-+#define IRQ_LEVEL_REG       0x10
-+#define IRQ_STATUS_REG      0x14
++#define TIMER_1_COUNT(base_addr)        (base_addr + 0x00)
++#define TIMER_1_LOAD(base_addr)         (base_addr + 0x04)
++#define TIMER_1_MATCH1(base_addr)       (base_addr + 0x08)
++#define TIMER_1_MATCH2(base_addr)       (base_addr + 0x0C)
 +
-+#define FIQ_SOURCE_REG      0x20
-+#define FIQ_MASK_REG        0x24
-+#define FIQ_CLEAR_REG       0x28
-+#define FIQ_MODE_REG        0x2c
-+#define FIQ_LEVEL_REG       0x30
-+#define FIQ_STATUS_REG      0x34
++#define TIMER_2_COUNT(base_addr)        (base_addr + 0x10)
++#define TIMER_2_LOAD(base_addr)         (base_addr + 0x14)
++#define TIMER_2_MATCH1(base_addr)       (base_addr + 0x18)
++#define TIMER_2_MATCH2(base_addr)       (base_addr + 0x1C)
 +
-+#define IRQ_SOURCE(base_addr)   (base_addr + 0x00)
-+#define IRQ_MASK(base_addr)     (base_addr + 0x04)
-+#define IRQ_CLEAR(base_addr)    (base_addr + 0x08)
-+#define IRQ_TMODE(base_addr)    (base_addr + 0x0C)
-+#define IRQ_TLEVEL(base_addr)   (base_addr + 0x10)
-+#define IRQ_STATUS(base_addr)   (base_addr + 0x14)
-+#define FIQ_SOURCE(base_addr)   (base_addr + 0x20)
-+#define FIQ_MASK(base_addr)     (base_addr + 0x24)
-+#define FIQ_CLEAR(base_addr)    (base_addr + 0x28)
-+#define FIQ_TMODE(base_addr)    (base_addr + 0x2C)
-+#define FIQ_TLEVEL(base_addr)   (base_addr + 0x30)
-+#define FIQ_STATUS(base_addr)   (base_addr + 0x34)
++#define TIMER_3_COUNT(base_addr)        (base_addr + 0x20)
++#define TIMER_3_LOAD(base_addr)         (base_addr + 0x24)
++#define TIMER_3_MATCH1(base_addr)       (base_addr + 0x28)
++#define TIMER_3_MATCH2(base_addr)       (base_addr + 0x2C)
 +
-+static void __iomem *moxart_irq_base;
-+static struct irq_domain *moxart_irq_domain;
-+static unsigned int interrupt_mask;
++#define TIMER_CR(base_addr)             (base_addr + 0x30)
 +
-+asmlinkage void __exception_irq_entry moxart_handle_irq(struct pt_regs *regs);
++#define TIMER_1_CR_ENABLE(base_addr)    (base_addr + 0x30)
++#define TIMER_1_CR_EXTCLK(base_addr)    (base_addr + 0x34)
++#define TIMER_1_CR_FLOWIN(base_addr)    (base_addr + 0x38)
 +
-+void moxart_irq_ack(struct irq_data *irqd)
++#define TIMER_2_CR_ENABLE(base_addr)    (base_addr + 0x42)
++#define TIMER_2_CR_EXTCLK(base_addr)    (base_addr + 0x46)
++#define TIMER_2_CR_FLOWIN(base_addr)    (base_addr + 0x50)
++
++#define TIMER_3_CR_ENABLE(base_addr)    (base_addr + 0x54)
++#define TIMER_3_CR_EXTCLK(base_addr)    (base_addr + 0x58)
++#define TIMER_3_CR_FLOWIN(base_addr)    (base_addr + 0x62)
++
++#define TIMER_INTR_STATE(base_addr)     (base_addr + 0x34)
++
++#define TIMEREG_1_CR_ENABLE         (1 << 0)
++#define TIMEREG_1_CR_CLOCK          (1 << 1)
++#define TIMEREG_1_CR_INT            (1 << 2)
++#define TIMEREG_2_CR_ENABLE         (1 << 3)
++#define TIMEREG_2_CR_CLOCK          (1 << 4)
++#define TIMEREG_2_CR_INT            (1 << 5)
++#define TIMEREG_3_CR_ENABLE         (1 << 6)
++#define TIMEREG_3_CR_CLOCK          (1 << 7)
++#define TIMEREG_3_CR_INT            (1 << 8)
++#define TIMEREG_COUNT_UP            (1 << 9)
++#define TIMEREG_COUNT_DOWN          (0 << 9)
++
++#define MAX_TIMER   2
++#define USED_TIMER  1
++
++#define TIMER1_COUNT                0x0
++#define TIMER1_LOAD                 0x4
++#define TIMER1_MATCH1               0x8
++#define TIMER1_MATCH2               0xC
++#define TIMER2_COUNT                0x10
++#define TIMER2_LOAD                 0x14
++#define TIMER2_MATCH1               0x18
++#define TIMER2_MATCH2               0x1C
++#define TIMER3_COUNT                0x20
++#define TIMER3_LOAD                 0x24
++#define TIMER3_MATCH1               0x28
++#define TIMER3_MATCH2               0x2C
++#define TIMER_INTR_MASK     0x38
++
++static void __iomem *timer_base;
++
++static irqreturn_t moxart_timer_interrupt(int irq, void *dev_id)
 +{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+
-+	writel(1 << irq, IRQ_CLEAR(moxart_irq_base));
++	timer_tick();
++	return IRQ_HANDLED;
 +}
 +
-+static void moxart_irq_mask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int mask;
-+
-+	mask = readl(IRQ_MASK(moxart_irq_base));
-+	mask &= ~(1 << irq);
-+	writel(mask, IRQ_MASK(moxart_irq_base));
-+}
-+
-+static void moxart_irq_unmask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int mask;
-+
-+	mask = readl(IRQ_MASK(moxart_irq_base));
-+	mask |= (1 << irq);
-+	writel(mask, IRQ_MASK(moxart_irq_base));
-+}
-+
-+static struct irq_chip moxart_irq_chip = {
-+	.name		= "moxart_irq",
-+	.irq_ack	= moxart_irq_ack,
-+	.irq_mask	= moxart_irq_mask,
-+	.irq_unmask	= moxart_irq_unmask,
-+	.irq_set_wake = NULL,
++static struct irqaction moxart_timer_irq = {
++	.name = "moxart-timer",
++	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.handler = moxart_timer_interrupt,
 +};
 +
-+static int moxart_irq_map(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw)
++static void __init moxart_timer_init(struct device_node *node)
 +{
-+	if ((1 << hw) && interrupt_mask) {
-+		irq_set_chip_and_handler(virq, &moxart_irq_chip,
-+			handle_edge_irq);
-+		pr_info("%s: irq_set_chip_and_handler edge virq=%d hw=%d\n",
-+			__func__, virq, (unsigned int) hw);
-+	} else {
-+		irq_set_chip_and_handler(virq, &moxart_irq_chip,
-+			handle_level_irq);
-+		pr_info("%s: irq_set_chip_and_handler level virq=%d hw=%d\n",
-+			__func__, virq, (unsigned int) hw);
-+	}
++	int ret, irq;
 +
-+	set_irq_flags(virq, IRQF_VALID);
++	timer_base = of_iomap(node, 0);
++	if (!timer_base)
++		panic("%s: failed to map base\n", node->full_name);
 +
-+	return 0;
++	irq = irq_of_parse_and_map(node, 0);
++	if (irq <= 0)
++		panic("%s: can't parse IRQ\n", node->full_name);
++
++	ret = setup_irq(irq, &moxart_timer_irq);
++	if (ret)
++		pr_warn("%s: failed to setup IRQ %d\n", node->full_name, irq);
++
++
++	writel(APB_CLK / HZ, TIMER_1_COUNT(timer_base));
++	writel(APB_CLK / HZ, TIMER_1_LOAD(timer_base));
++
++	writel(1, TIMER_1_CR_ENABLE(timer_base));
++	writel(0, TIMER_1_CR_EXTCLK(timer_base));
++	writel(1, TIMER_1_CR_FLOWIN(timer_base));
++
++	pr_info("%s: count/load (APB_CLK=%d/HZ=%d) IRQ=%d\n",
++		node->full_name, APB_CLK, HZ, irq);
 +}
-+
-+static struct irq_domain_ops moxart_irq_ops = {
-+	.map = moxart_irq_map,
-+	.xlate = irq_domain_xlate_twocell,
-+};
-+
-+static int __init moxart_of_init(struct device_node *node,
-+				struct device_node *parent)
-+{
-+	interrupt_mask = be32_to_cpup(of_get_property(node,
-+		"interrupt-mask", NULL));
-+	pr_debug("%s: interrupt-mask=%x\n", node->full_name, interrupt_mask);
-+
-+	moxart_irq_base = of_iomap(node, 0);
-+	if (!moxart_irq_base)
-+		panic("%s: unable to map IC registers\n", node->full_name);
-+
-+	moxart_irq_domain = irq_domain_add_linear(node,
-+		32, &moxart_irq_ops, NULL);
-+
-+	if (!moxart_irq_domain)
-+		panic("%s: unable to create IRQ domain\n", node->full_name);
-+
-+	writel(0, IRQ_MASK(moxart_irq_base));
-+	writel(0xffffffff, IRQ_CLEAR(moxart_irq_base));
-+
-+	writel(interrupt_mask, IRQ_TMODE(moxart_irq_base));
-+	writel(interrupt_mask, IRQ_TLEVEL(moxart_irq_base));
-+
-+	set_handle_irq(moxart_handle_irq);
-+
-+	pr_info("%s: %s finished\n", node->full_name, __func__);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-interrupt-controller",
-+	moxart_of_init);
-+
-+asmlinkage void __exception_irq_entry moxart_handle_irq(struct pt_regs *regs)
-+{
-+	u32 irqstat;
-+	int hwirq;
-+
-+	irqstat = readl(moxart_irq_base + IRQ_STATUS_REG);
-+
-+	while (irqstat) {
-+		hwirq = ffs(irqstat) - 1;
-+		handle_IRQ(irq_find_mapping(moxart_irq_domain, hwirq), regs);
-+		irqstat &= ~(1 << hwirq);
-+	}
-+}
-+
++CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
 +
 -- 
 1.7.2.5
