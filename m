@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab3FRLoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56057 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab3FRLoa (ORCPT
+	id S932500Ab3FRLpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:45:04 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33151 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932431Ab3FRLo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:30 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
-        Dave Airlie <airlied@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 37/93] drm: fix a use-after-free when GPU acceleration disabled
-Date: Tue, 18 Jun 2013 12:42:45 +0100
-Message-Id: <1371555821-12820-38-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+	Tue, 18 Jun 2013 07:44:56 -0400
+Date: Tue, 18 Jun 2013 12:44:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: wsa@the-dreams.de, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linus.walleij@linaro.org
+Message-ID: <20130618114436.GM1403@sirena.org.uk>
+References: <1371551413-12346-1-git-send-email-mperttunen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xluWKNDh2/FEVhBx"
+Content-Disposition: inline
+In-Reply-To: <1371551413-12346-1-git-send-email-mperttunen@nvidia.com>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: tps51632: Get regulator name from i2c_client
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--xluWKNDh2/FEVhBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Huacai Chen <chenhc@lemote.com>
+On Tue, Jun 18, 2013 at 01:30:13PM +0300, Mikko Perttunen wrote:
+> Commit "i2c: core: make it possible to match a pure device tree driver"
+> changed semantics of the i2c probing for device tree devices.
+> Device tree probed devices now get a NULL i2c_device_id pointer.
+> This causes the regulator name to be set to NULL and the regulator
+> registration to fail.
 
-commit b7ea85a4fed37835eec78a7be3039c8dc22b8178 upstream.
+Applied, thanks.  Though it does seem like we should just be hard coding
+this string anyway...
 
-When GPU acceleration is disabled, drm_vblank_cleanup() will free the
-vblank-related data, such as vblank_refcount, vblank_inmodeset, etc.
-But we found that drm_vblank_post_modeset() may be called after the
-cleanup, which use vblank_refcount and vblank_inmodeset. And this will
-cause a kernel panic.
+--xluWKNDh2/FEVhBx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Fix this by return immediately if dev->num_crtcs is zero. This is the
-same thing that drm_vblank_pre_modeset() does.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Call trace of a drm_vblank_post_modeset() after drm_vblank_cleanup():
-[   62.628906] [<ffffffff804868d0>] drm_vblank_post_modeset+0x34/0xb4
-[   62.628906] [<ffffffff804c7008>] atombios_crtc_dpms+0xb4/0x174
-[   62.628906] [<ffffffff804c70e0>] atombios_crtc_commit+0x18/0x38
-[   62.628906] [<ffffffff8047f038>] drm_crtc_helper_set_mode+0x304/0x3cc
-[   62.628906] [<ffffffff8047f92c>] drm_crtc_helper_set_config+0x6d8/0x988
-[   62.628906] [<ffffffff8047dd40>] drm_fb_helper_set_par+0x94/0x104
-[   62.628906] [<ffffffff80439d14>] fbcon_init+0x424/0x57c
-[   62.628906] [<ffffffff8046a638>] visual_init+0xb8/0x118
-[   62.628906] [<ffffffff8046b9f8>] take_over_console+0x238/0x384
-[   62.628906] [<ffffffff80436df8>] fbcon_takeover+0x7c/0xdc
-[   62.628906] [<ffffffff8024fa20>] notifier_call_chain+0x44/0x94
-[   62.628906] [<ffffffff8024fcbc>] __blocking_notifier_call_chain+0x48/0x68
-[   62.628906] [<ffffffff8042d990>] register_framebuffer+0x228/0x260
-[   62.628906] [<ffffffff8047e010>] drm_fb_helper_single_fb_probe+0x260/0x314
-[   62.628906] [<ffffffff8047e2c4>] drm_fb_helper_initial_config+0x200/0x234
-[   62.628906] [<ffffffff804e5560>] radeon_fbdev_init+0xd4/0xf4
-[   62.628906] [<ffffffff804e0e08>] radeon_modeset_init+0x9bc/0xa18
-[   62.628906] [<ffffffff804bfc14>] radeon_driver_load_kms+0xdc/0x12c
-[   62.628906] [<ffffffff8048b548>] drm_get_pci_dev+0x148/0x238
-[   62.628906] [<ffffffff80423564>] local_pci_probe+0x5c/0xd0
-[   62.628906] [<ffffffff80241ac4>] work_for_cpu_fn+0x1c/0x30
-[   62.628906] [<ffffffff802427c8>] process_one_work+0x274/0x3bc
-[   62.628906] [<ffffffff80242934>] process_scheduled_works+0x24/0x44
-[   62.628906] [<ffffffff8024515c>] worker_thread+0x31c/0x3f4
-[   62.628906] [<ffffffff802497a8>] kthread+0x88/0x90
-[   62.628906] [<ffffffff80206794>] kernel_thread_helper+0x10/0x18
+iQIcBAEBAgAGBQJRwEghAAoJELSic+t+oim9AIcP/jhoJ+Y5sS9W6S4Q+fmhHNCS
+0vNN2LyEVmu9ktoWdQRbB9AV4tdbxPfRdOLgYbHLlef2NyliIYPexY+mOO5lL1gA
+UQfr9i5HMFcriaTsAQlM81ySY5yis5L6GuP6iNwTLoCt8ozzcX91tj5B29WN+Gi5
+Ta85fOG4TgtmqUVtp8wgqIfPh08JvEfZYUzh2mINt4F+BdHVt6P65FR6Mj1BtXU2
+DvjEKAgPqxWZTDBIcOuLRms2D20Y1qkdBw5WK/iF0MgmTYWj8RkGAZkqsK19D8Yp
+Zugrq4fx29+NsTfcnVJQ/wfpu/ZhPhhLy2Ix3cBGLZzx3pG1h+UkP5Uz6VVq6amM
+L1IsrY/UR7KnU3abAg02ULUWZqseYF46qXf+7jSwANCM9KvrOshGo1g+GqyMB1rP
+jc+OBFF0pNxCQ1ZBeoRh/9sKpKUAE+AD5p2gpEBnIWPeygRom1FIld3lBRgmbOot
+Vv81xemhvpJxamSV8Xe1zm1vbptbJXKOJMKHriVFf1N28y3Dgmnikmcc5L3PjJlk
+7pYfNE3t8kUpPG07O4gbT5sotnEGPtHcxbA7S8QTH+9n4xnBdgG92lv8wVnWmXRO
+eMfBMuEIeDcPSWNT3PjPp+geUXGFytpLKzVY9NPkRwPGBanKWUPyInX8nHDjVcUR
+WTkQr+ul/PJPWv4iCM0R
+=iqjm
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/drm_irq.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index c798eea..c7a1348 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -981,7 +981,7 @@ EXPORT_SYMBOL(drm_vblank_off);
-  */
- void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
- {
--	/* vblank is not initialized (IRQ not installed ?) */
-+	/* vblank is not initialized (IRQ not installed ?), or has been freed */
- 	if (!dev->num_crtcs)
- 		return;
- 	/*
-@@ -1003,6 +1003,10 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
- {
- 	unsigned long irqflags;
- 
-+	/* vblank is not initialized (IRQ not installed ?), or has been freed */
-+	if (!dev->num_crtcs)
-+		return;
-+
- 	if (dev->vblank_inmodeset[crtc]) {
- 		spin_lock_irqsave(&dev->vbl_lock, irqflags);
- 		dev->vblank_disable_allowed = 1;
--- 
-1.8.1.2
-
+--xluWKNDh2/FEVhBx--
