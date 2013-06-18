@@ -1,404 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab3FRDJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 23:09:37 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45458 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3FRDJg (ORCPT
+	id S1754043Ab3FRDVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 23:21:00 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:60281 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803Ab3FRDU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 23:09:36 -0400
-Message-ID: <51BFCF53.9050302@linux.vnet.ibm.com>
-Date: Tue, 18 Jun 2013 11:09:07 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 17 Jun 2013 23:20:59 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 2/3] sched: scale the busy and this queue's per-task load before compare
+Date: Tue, 18 Jun 2013 11:18:05 +0800
+Message-ID: <1371525486-11270-3-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
+References: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linuxppc-dev@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [RFC 08/10] irqdomain: Refactor irq_domain_associate_many()
-References: <1370825362-11145-1-git-send-email-grant.likely@linaro.org> <1370825362-11145-9-git-send-email-grant.likely@linaro.org>
-In-Reply-To: <1370825362-11145-9-git-send-email-grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061802-5490-0000-0000-000003AABF66
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/6/10 8:49, Grant Likely 写道:
-> Originally, irq_domain_associate_many() was designed to unwind the
-> mapped irqs on a failure of any individual association. However, that
-> proved to be a problem with certain IRQ controllers. Some of them only
-> support a subset of irqs, and will fail when attempting to map a
-> reserved IRQ. In those cases we want to map as many IRQs as possible, so
-> instead it is better for irq_domain_associate_many() to make a
-> best-effort attempt to map irqs, but not fail if any or all of them
-> don't succeed. If a caller really cares about how many irqs got
-> associated, then it should instead go back and check that all of the
-> irqs is cares about were mapped.
->
-> The original design open-coded the individual association code into the
-> body of irq_domain_associate_many(), but with no longer needing to
-> unwind associations, the code becomes simpler to split out
-> irq_domain_associate() to contain the bulk of the logic, and
-> irq_domain_associate_many() to be a simple loop wrapper.
->
-> This patch also adds a new error check to the associate path to make
-> sure it isn't called for an irq larger than the controller can handle,
-> and adds locking so that the irq_domain_mutex is held while setting up a
-> new association.
->
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> ---
->   include/linux/irqdomain.h |  22 +++---
->   kernel/irq/irqdomain.c    | 185 +++++++++++++++++++++++-----------------------
->   2 files changed, 101 insertions(+), 106 deletions(-)
->
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index fd4b26f..f9e8e06 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -103,6 +103,7 @@ struct irq_domain {
->   	struct irq_domain_chip_generic *gc;
->
->   	/* reverse map data. The linear map gets appended to the irq_domain */
-> +	irq_hw_number_t hwirq_max;
->   	unsigned int revmap_direct_max_irq;
->   	unsigned int revmap_size;
->   	struct radix_tree_root revmap_tree;
-> @@ -110,8 +111,8 @@ struct irq_domain {
->   };
->
->   #ifdef CONFIG_IRQ_DOMAIN
-> -struct irq_domain *__irq_domain_add(struct device_node *of_node,
-> -				    int size, int direct_max,
-> +struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
-> +				    irq_hw_number_t hwirq_max, int direct_max,
->   				    const struct irq_domain_ops *ops,
->   				    void *host_data);
->   struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-> @@ -140,14 +141,14 @@ static inline struct irq_domain *irq_domain_add_linear(struct device_node *of_no
->   					 const struct irq_domain_ops *ops,
->   					 void *host_data)
->   {
-> -	return __irq_domain_add(of_node, size, 0, ops, host_data);
-> +	return __irq_domain_add(of_node, size, size, 0, ops, host_data);
->   }
->   static inline struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
->   					 unsigned int max_irq,
->   					 const struct irq_domain_ops *ops,
->   					 void *host_data)
->   {
-> -	return __irq_domain_add(of_node, 0, max_irq, ops, host_data);
-> +	return __irq_domain_add(of_node, 0, max_irq, max_irq, ops, host_data);
->   }
->   static inline struct irq_domain *irq_domain_add_legacy_isa(
->   				struct device_node *of_node,
-> @@ -166,14 +167,11 @@ static inline struct irq_domain *irq_domain_add_tree(struct device_node *of_node
->
->   extern void irq_domain_remove(struct irq_domain *host);
->
-> -extern int irq_domain_associate_many(struct irq_domain *domain,
-> -				     unsigned int irq_base,
-> -				     irq_hw_number_t hwirq_base, int count);
-> -static inline int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
-> -					irq_hw_number_t hwirq)
-> -{
-> -	return irq_domain_associate_many(domain, irq, hwirq, 1);
-> -}
-> +extern int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
-> +					irq_hw_number_t hwirq);
-> +extern void irq_domain_associate_many(struct irq_domain *domain,
-> +				      unsigned int irq_base,
-> +				      irq_hw_number_t hwirq_base, int count);
->
->   extern unsigned int irq_create_mapping(struct irq_domain *host,
->   				       irq_hw_number_t hwirq);
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 280b804..80e9249 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -35,8 +35,8 @@ static struct irq_domain *irq_default_domain;
->    * register allocated irq_domain with irq_domain_register().  Returns pointer
->    * to IRQ domain, or NULL on failure.
->    */
-> -struct irq_domain *__irq_domain_add(struct device_node *of_node,
-> -				    int size, int direct_max,
-> +struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
-> +				    irq_hw_number_t hwirq_max, int direct_max,
->   				    const struct irq_domain_ops *ops,
->   				    void *host_data)
->   {
-> @@ -52,6 +52,7 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node,
->   	domain->ops = ops;
->   	domain->host_data = host_data;
->   	domain->of_node = of_node_get(of_node);
-> +	domain->hwirq_max = hwirq_max;
->   	domain->revmap_size = size;
->   	domain->revmap_direct_max_irq = direct_max;
->
-> @@ -126,7 +127,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
->   {
->   	struct irq_domain *domain;
->
-> -	domain = __irq_domain_add(of_node, size, 0, ops, host_data);
-> +	domain = __irq_domain_add(of_node, size, size, 0, ops, host_data);
->   	if (!domain)
->   		return NULL;
->
-> @@ -139,7 +140,7 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
->   				pr_info("Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
->   					first_irq);
->   		}
-> -		WARN_ON(irq_domain_associate_many(domain, first_irq, 0, size));
-> +		irq_domain_associate_many(domain, first_irq, 0, size);
->   	}
->
->   	return domain;
-> @@ -170,11 +171,12 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
->   {
->   	struct irq_domain *domain;
->
-> -	domain = __irq_domain_add(of_node, first_hwirq + size, 0, ops, host_data);
-> +	domain = __irq_domain_add(of_node, first_hwirq + size,
-> +				  first_hwirq + size, 0, ops, host_data);
->   	if (!domain)
->   		return NULL;
->
-> -	WARN_ON(irq_domain_associate_many(domain, first_irq, first_hwirq, size));
-> +	irq_domain_associate_many(domain, first_irq, first_hwirq, size);
->
->   	return domain;
->   }
-> @@ -228,109 +230,109 @@ void irq_set_default_host(struct irq_domain *domain)
->   }
->   EXPORT_SYMBOL_GPL(irq_set_default_host);
->
-> -static void irq_domain_disassociate_many(struct irq_domain *domain,
-> -					 unsigned int irq_base, int count)
-> +static void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
->   {
-> -	/*
-> -	 * disassociate in reverse order;
-> -	 * not strictly necessary, but nice for unwinding
-> -	 */
-> -	while (count--) {
-> -		int irq = irq_base + count;
-> -		struct irq_data *irq_data = irq_get_irq_data(irq);
-> -		irq_hw_number_t hwirq;
-> +	struct irq_data *irq_data = irq_get_irq_data(irq);
-> +	irq_hw_number_t hwirq;
->
-> -		if (WARN_ON(!irq_data || irq_data->domain != domain))
-> -			continue;
-> +	if (WARN(!irq_data || irq_data->domain != domain,
-> +		 "virq%i doesn't exist; cannot disassociate\n", irq))
-> +		return;
->
-> -		hwirq = irq_data->hwirq;
-> -		irq_set_status_flags(irq, IRQ_NOREQUEST);
-> +	hwirq = irq_data->hwirq;
-> +	irq_set_status_flags(irq, IRQ_NOREQUEST);
->
-> -		/* remove chip and handler */
-> -		irq_set_chip_and_handler(irq, NULL, NULL);
-> +	/* remove chip and handler */
-> +	irq_set_chip_and_handler(irq, NULL, NULL);
->
-> -		/* Make sure it's completed */
-> -		synchronize_irq(irq);
-> +	/* Make sure it's completed */
-> +	synchronize_irq(irq);
->
-> -		/* Tell the PIC about it */
-> -		if (domain->ops->unmap)
-> -			domain->ops->unmap(domain, irq);
-> -		smp_mb();
-> +	/* Tell the PIC about it */
-> +	if (domain->ops->unmap)
-> +		domain->ops->unmap(domain, irq);
-> +	smp_mb();
->
-> -		irq_data->domain = NULL;
-> -		irq_data->hwirq = 0;
-> +	irq_data->domain = NULL;
-> +	irq_data->hwirq = 0;
->
-> -		/* Clear reverse map for this hwirq */
-> -		if (hwirq < domain->revmap_size) {
-> -			domain->linear_revmap[hwirq] = 0;
-> -		} else {
-> -			mutex_lock(&revmap_trees_mutex);
-> -			radix_tree_delete(&domain->revmap_tree, hwirq);
-> -			mutex_unlock(&revmap_trees_mutex);
-> -		}
-> +	/* Clear reverse map for this hwirq */
-> +	if (hwirq < domain->revmap_size) {
-> +		domain->linear_revmap[hwirq] = 0;
-> +	} else {
-> +		mutex_lock(&revmap_trees_mutex);
-> +		radix_tree_delete(&domain->revmap_tree, hwirq);
-> +		mutex_unlock(&revmap_trees_mutex);
->   	}
->   }
->
-> -int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
-> -			      irq_hw_number_t hwirq_base, int count)
-> +int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
-> +			 irq_hw_number_t hwirq)
->   {
-> -	unsigned int virq = irq_base;
-> -	irq_hw_number_t hwirq = hwirq_base;
-> -	int i, ret;
-> +	struct irq_data *irq_data = irq_get_irq_data(virq);
-> +	int ret;
->
-> -	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
-> -		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
-> +	if (WARN(hwirq >= domain->hwirq_max,
-> +		 "error: hwirq 0x%x is too large for %s\n", (int)hwirq, domain->name))
-> +		return -EINVAL;
-> +	if (WARN(!irq_data, "error: virq%i is not allocated", virq))
-> +		return -EINVAL;
-> +	if (WARN(irq_data->domain, "error: virq%i is already associated", virq))
-> +		return -EINVAL;
+Since for max_load and this_load, they are the value that already be
+scaled. It is not reasonble to get a minimum value between the scaled
+and non-scaled value, like below example.
+	min(sds->busiest_load_per_task, sds->max_load);
 
-Hi Grant,
+Also add comment over in what condition, there would be cpu power gain
+in move the load.
 
-I have a qestion here, assume that we have three hwirqs and alloc three 
-virqs, for first irq, it check irq_data
-and irq_data->domain pass, but the second is failed, then this code do 
-nothing with failed( in
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |   38 +++++++++++++++++++++++++-------------
+ 1 file changed, 25 insertions(+), 13 deletions(-)
 
-irq_domain_associate_many()) and continue to associated the third one.
-
-
-This should be very dangours, even though I have no idea of when this 
-could happen.
-
-Thanks
-
-Mike
-> -	for (i = 0; i < count; i++) {
-> -		struct irq_data *irq_data = irq_get_irq_data(virq + i);
-> -
-> -		if (WARN(!irq_data, "error: irq_desc not allocated; "
-> -			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
-> -			return -EINVAL;
-> -		if (WARN(irq_data->domain, "error: irq_desc already associated; "
-> -			 "irq=%i hwirq=0x%x\n", virq + i, (int)hwirq + i))
-> -			return -EINVAL;
-> -	};
-> -
-> -	for (i = 0; i < count; i++, virq++, hwirq++) {
-> -		struct irq_data *irq_data = irq_get_irq_data(virq);
-> -
-> -		irq_data->hwirq = hwirq;
-> -		irq_data->domain = domain;
-> -		if (domain->ops->map) {
-> -			ret = domain->ops->map(domain, virq, hwirq);
-> -			if (ret != 0) {
-> -				/*
-> -				 * If map() returns -EPERM, this interrupt is protected
-> -				 * by the firmware or some other service and shall not
-> -				 * be mapped. Don't bother telling the user about it.
-> -				 */
-> -				if (ret != -EPERM) {
-> -					pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
-> -					       domain->name, hwirq, virq, ret);
-> -				}
-> -				irq_data->domain = NULL;
-> -				irq_data->hwirq = 0;
-> -				continue;
-> +	mutex_lock(&irq_domain_mutex);
-> +	irq_data->hwirq = hwirq;
-> +	irq_data->domain = domain;
-> +	if (domain->ops->map) {
-> +		ret = domain->ops->map(domain, virq, hwirq);
-> +		if (ret != 0) {
-> +			/*
-> +			 * If map() returns -EPERM, this interrupt is protected
-> +			 * by the firmware or some other service and shall not
-> +			 * be mapped. Don't bother telling the user about it.
-> +			 */
-> +			if (ret != -EPERM) {
-> +				pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
-> +				       domain->name, hwirq, virq, ret);
->   			}
-> -			/* If not already assigned, give the domain the chip's name */
-> -			if (!domain->name && irq_data->chip)
-> -				domain->name = irq_data->chip->name;
-> +			irq_data->domain = NULL;
-> +			irq_data->hwirq = 0;
-> +			mutex_unlock(&irq_domain_mutex);
-> +			return ret;
->   		}
->
-> -		if (hwirq < domain->revmap_size) {
-> -			domain->linear_revmap[hwirq] = virq;
-> -		} else {
-> -			mutex_lock(&revmap_trees_mutex);
-> -			radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
-> -			mutex_unlock(&revmap_trees_mutex);
-> -		}
-> +		/* If not already assigned, give the domain the chip's name */
-> +		if (!domain->name && irq_data->chip)
-> +			domain->name = irq_data->chip->name;
-> +	}
->
-> -		irq_clear_status_flags(virq, IRQ_NOREQUEST);
-> +	if (hwirq < domain->revmap_size) {
-> +		domain->linear_revmap[hwirq] = virq;
-> +	} else {
-> +		mutex_lock(&revmap_trees_mutex);
-> +		radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
-> +		mutex_unlock(&revmap_trees_mutex);
->   	}
-> +	mutex_unlock(&irq_domain_mutex);
-> +
-> +	irq_clear_status_flags(virq, IRQ_NOREQUEST);
->
->   	return 0;
->   }
-> +EXPORT_SYMBOL_GPL(irq_domain_associate);
-> +
-> +void irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
-> +			       irq_hw_number_t hwirq_base, int count)
-> +{
-> +	int i;
-> +
-> +	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
-> +		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
-> +
-> +	for (i = 0; i < count; i++) {
-> +		irq_domain_associate(domain, irq_base + i, hwirq_base + i);
-> +	}
-> +}
->   EXPORT_SYMBOL_GPL(irq_domain_associate_many);
->
->   /**
-> @@ -460,12 +462,7 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
->   	if (unlikely(ret < 0))
->   		return ret;
->
-> -	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
-> -	if (unlikely(ret < 0)) {
-> -		irq_free_descs(irq_base, count);
-> -		return ret;
-> -	}
-> -
-> +	irq_domain_associate_many(domain, irq_base, hwirq_base, count);
->   	return 0;
->   }
->   EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
-> @@ -535,7 +532,7 @@ void irq_dispose_mapping(unsigned int virq)
->   	if (WARN_ON(domain == NULL))
->   		return;
->
-> -	irq_domain_disassociate_many(domain, virq, 1);
-> +	irq_domain_disassociate(domain, virq);
->   	irq_free_desc(virq);
->   }
->   EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 28052fa..6173095 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4692,10 +4692,14 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ {
+ 	unsigned long tmp, pwr_now = 0, pwr_move = 0;
+ 	unsigned int imbn = 2;
+-	unsigned long scaled_busy_load_per_task;
+ 
+ 	if (sds->this_nr_running) {
+ 		sds->this_load_per_task /= sds->this_nr_running;
++
++		/* Scale this_load_per_task to local power not related */
++		sds->this_load_per_task <<= SCHED_POWER_SHIFT;
++		sds->this_load_per_task /= sds->this->sgp->power;
++
+ 		if (sds->busiest_load_per_task >
+ 				sds->this_load_per_task)
+ 			imbn = 1;
+@@ -4704,12 +4708,8 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 			cpu_avg_load_per_task(env->dst_cpu);
+ 	}
+ 
+-	scaled_busy_load_per_task = sds->busiest_load_per_task
+-					 * SCHED_POWER_SCALE;
+-	scaled_busy_load_per_task /= sds->busiest->sgp->power;
+-
+-	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+-			(scaled_busy_load_per_task * imbn)) {
++	if (sds->max_load - sds->this_load + sds->busiest_load_per_task >=
++			(sds->busiest_load_per_task * imbn)) {
+ 		env->imbalance = sds->busiest_load_per_task;
+ 		return;
+ 	}
+@@ -4727,22 +4727,29 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	pwr_now /= SCHED_POWER_SCALE;
+ 
+ 	/* Amount of load we'd subtract */
+-	if (sds->max_load > scaled_busy_load_per_task) {
++	if (sds->max_load > sds->busiest_load_per_task) {
+ 		pwr_move += sds->busiest->sgp->power *
+ 			min(sds->busiest_load_per_task,
+-				sds->max_load - scaled_busy_load_per_task);
+-		tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
+-			sds->this->sgp->power;
++				sds->max_load - sds->busiest_load_per_task);
++		tmp = sds->busiest_load_per_task;
+ 	} else
+-		tmp = (sds->max_load * sds->busiest->sgp->power) /
+-			sds->this->sgp->power;
++		tmp = sds->max_load;
+ 
++	/* Scale to this queue from busiest queue */
++	tmp = (tmp * sds->busiest->sgp->power) /
++		sds->this->sgp->power;
+ 	/* Amount of load we'd add */
+ 	pwr_move += sds->this->sgp->power *
+ 			min(sds->this_load_per_task, sds->this_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
+ 
+ 	/* Move if we gain throughput */
++	/*
++	 * The only possibilty for below statement be true, is:
++	 * sds->max_load is larger than sds->busiest_load_per_task, while,
++	 * sds->busiest_load_per_task is larger than sds->this_load plus by
++	 * the scaled sds->busiest_load_per_task moved into this queue
++	 */
+ 	if (pwr_move > pwr_now)
+ 		env->imbalance = sds->busiest_load_per_task;
+ }
+@@ -4758,6 +4765,11 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 	unsigned long max_pull, load_above_capacity = ~0UL;
+ 
+ 	sds->busiest_load_per_task /= sds->busiest_nr_running;
++
++	/* Scale busiest_load_per_task to local power not related */
++	sds->busiest_load_per_task <<= SCHED_POWER_SHIFT;
++	sds->busiest_load_per_task /= sds->busiest->sgp->power;
++
+ 	if (sds->group_imb) {
+ 		sds->busiest_load_per_task =
+ 			min(sds->busiest_load_per_task, sds->avg_load);
+-- 
+1.7.10.4
 
