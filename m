@@ -1,146 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab3FRNQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 09:16:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41441 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab3FRNQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 09:16:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
-Date: Tue, 18 Jun 2013 15:26:16 +0200
-Message-ID: <3258927.Qds4G9CTyG@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <20130617155156.4c729b5a@amdc308.digital.local> <CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
+	id S932202Ab3FRNRQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 09:17:16 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:50933 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932154Ab3FRNRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 09:17:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
+	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
+Date: Tue, 18 Jun 2013 15:17:09 +0200
+Message-ID: <CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Colin Cross <ccross@android.com>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 18, 2013 12:12:13 PM Viresh Kumar wrote:
-> On 17 June 2013 19:21, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > On Mon, 17 Jun 2013 18:40:50 +0530, Viresh Kumar wrote:
-> >> >> > The core acpi-cpufreq.c code hadn't been changed by me, so I
-> >> >> > assume that it will work as before.
-> >> >>
-> >> >> That should adapt your patch in your patchset.
-> >
-> > Could you explain what do you mean?
-> 
-> Update acpi-cpufreq to use your infrastructure.
-> 
-> >> >> From sysfs?? I thought we are going to have some automatic control
-> >> >> of this stuff from inside kernel.
-> >> >
-> >> > From sysfs I just enable the boost. I do not order from userpace the
-> >> > cpufreq to run with a particular (boosted) frequency.
-> >> >
-> >> > When I enable boost - I ask (politely) the cpufreq core to
-> >> > reevaluate policies and when applicable increase policy->max.
-> >> >
-> >> > Then governor can use this new frequencies for normal operation.
-> >>
-> >> So, with your current patchset in, ondemand or conservative governors
-> >> will start using boost frequencies. Which might burn your chip.
-> >
-> > Two scenarios:
-> > 1. Thermal framework is compiled in and enabled (for exynos/other SoC)
-> > -> trip point is reached -> boost is disabled -> frequency is reduced ->
-> > SoC is cooled down.
-> >
-> > I think, that thermal framework is a good "safe valve" here.
-> 
-> Even in this case boost shouldn't have been enabled by default.
-> Its not only about burning the chip but more than that.
-> 
-> According to my understanding, boost was important for power
-> saving. In case a high load can be managed by a single cpu with
-> boost freqs, then its better to use boost freqs rather than bringing
-> another cpu up.
+On 17 June 2013 20:33, Colin Cross <ccross@android.com> wrote:
+> On Mon, Jun 17, 2013 at 7:22 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> On 14 June 2013 22:52, Colin Cross <ccross@android.com> wrote:
+>>> On Fri, Jun 14, 2013 at 11:42 AM, Zoran Markovic
+>>> <zoran.markovic@linaro.org> wrote:
+>>>>> I am not sure I understand why this patch is needed. When a new card
+>>>>> is inserted/removed and the upper levels gets notification about the
+>>>>> new card, triggering the mounting/un-mounting of the file system, why
+>>>>> should it be the lowest layer (mmc) that prevents the platform from
+>>>>> enter suspend/sleep? Why do we need to prevent it at all?
+>>>>>
+>>>>> Note that notifier handling in mmc_pm_notify, was if I remember
+>>>>> correctly, not completely developed when the original version of this
+>>>>> patch was being discussed. mmc_pm_notify prevents cards from being
+>>>>> inserted/removed in the middle of suspend->resume sequence, is that
+>>>>> not enough?
+>>>>
+>>>> I will try to speak on behalf of the original implementers in a hope
+>>>> they would provide the original motivation for the patch.
+>>>>
+>>>> My understanding is that any preemption in the procedure could be an
+>>>> opportunity to suspend, as there may be a suspend request racing with
+>>>> this code. This is why the calls to __pm_stay_awake() and
+>>>> queue_delayed_work() are so tightly coupled. It would be up to the
+>>>> delayed work procedure (mmc_rescan()) to decide whether or not it is
+>>>> safe to suspend. If there are no changes in the MMC state or all
+>>>> changes can be handled by mmc_rescan(), it is safe to call
+>>>> __pm_relax(). Otherwise, userland may take over processing of this
+>>>> event, and this is why the awake state needs to be extended by 1/2
+>>>> second.
+>>>
+>>> The __pm_stay_awake() is required to prevent autosleep during the time
+>>> between the card detect interrupt and when the userspace process that
+>>> gets the notification runs.  The 1/2 second delay is used because it
+>>> is easier than trying to detect when the userspace process has
+>>> received the notification, at which time it should hold its own
+>>> wakelock and the mmc subsystem can call __pm_relax().
+>>
+>> Hi Colin,
+>>
+>> I don't have the in-depth knowledge about how the userspace deamons
+>> handles the event notifications, so please bare with me while I am
+>> trying to understand more here.
+>>
+>> First of all, are we trying to solve an  issue here or just improving
+>> some specific situation, that is not clear to me.
+>>
+>> I might have misunderstood this patch, but it seems like your concern
+>> is that you believe the event notification can get lost - if userspace
+>> are about to trigger a suspend while a card is being inserted/removed.
+>> If that is the case, could you elaborate on what level the
+>> notification can get lost?
+>>
+>> Kind regards
+>> Ulf Hansson
+>
+> This is a generic requirement for using a kernel with autosleep
+> enabled.  Autosleep will enter suspend whenever there is no wakeup
+> source/wakelock held.  Consider the following sequence:
+>
+> Kernel is suspended
+> Card is inserted, triggering a wakeup interrupt, which is an implicit
+> wakeup source until it is handled
 
-Do you mean the 'boost' sysfs attribute or the 'turbo frequencies' concept?
+I don't think a card insert/remove irq need to be configured as a
+wakeup interrupt. As you say, it will force a resume to detect the
+card, but for what reason?
+Instead, I think it it better to leave the card detection to be
+handled at the next resume, thus not resuming the system when not
+needed.
 
-> Normally boost freqs are not so useful if we talk about powersaving,
-> as their energy consumption is much higher with not so great impact
-> on performance.
+> Kernel starts resuming, resumes the mmc driver
+> The mmc driver enables its interrupt, which is immediately handled and
+> queues an event to be handled by userspace
+> At this point the wakeup interrupt is handled and gone, and no wakeup
+> sources are being held, so the kernel can choose to go back to
+> suspend, so userspace can't handle the insertion event until the
+> kernel wakes up for another reason.
 
-Er, er, please be careful here.  The impact on performance may be sufficient
-for deep C-states to become relevant in some cases.
+Is this a problem? From my point of view it should be perfectly
+acceptable to let userspace handle the event at the next resume/wakeup
+instead. Don't you think so?
 
-> That's why when this thread started we talked about boost only when
-> one cpu is operational. But with your patch all cores can use boost
-> freq and thermal will come into picture just to save the chip.
+>
+> In general, an event that is triggered by a wakeup interrupt that is
+> being passed from the kernel to userspace needs to have a wakeup
+> source held while the event is queued.
 
-Well, that's why on x86 turbo is controlled by hardware that takes care of
-keeping things within the chip's thermal limits.
+That's sounds reasonable. Would it then make sense to hold a generic
+wakeup source in the "suspend/resume core", once a wakeup interrupt is
+fetched?
 
-> That's wrong. This isn't why we invented boost here. Otherwise you
-> just don't need boost feature at all for your SoC. Just make these
-> freqs as available freqs and let thermal control policy->max/min
-> to save your chip.
-
-The 'boost' attribute added by acpi-cpufreq means "let the hardware use turbo
-frequencies".
-
-I'd recommend you both to read Documentation/cpu-freq/boost.txt now. :-)
-
-I think we can extend the meaning to "let turbo frequencies be used", but if
-we need software to play the role of the hardware's thermal control, we need
-to be very careful.
-
-> > 2. Thermal framework is disabled and user has enabled boost and used
-> > ondemand / conservative governor.
-> > Then execute gzip < /dev/urandom > /dev/null & (on all cores).
-> >
-> > Then yes, chip will hang/burn due to crossing operating point (or burn).
-> >
-> >
-> > What other means of control (despite of thermal) would you consider
-> > applicable?
-> >
-> > What comes to my mind is modifying governor logic to count how long the
-> > CPU run with boost enabled and then disable it.
-> 
-> Its not about how long.. One cpu type can work longer with boost freq
-> compared to other.
-> 
-> What we probably need is:
-> - Enabled boost from sysfs if required (now below steps will come into
->   picture)
-
-This has to be compatible with the existing stuff.
-
-> - See how many cpus are running, if only one then start using boost freqs
-> - Now thermal should be come into picture to save chip in case a single
-> cpu running at boost can burn it out.
-
-I'd say there needs to be a separate controller/monitor for that that will
-know what the chip's thermal limit is and how that relates to how fast the
-CPU core(s) may run and for how much time.  I'm not sure it is sufficient
-to "wait for thermal to kick in" here, because you may need to slow down
-things in advance (i.e. before thermal sensors tell you there's too much heat,
-because that may be too late already).
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kind regards
+Ulf Hansson
