@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab3FRRqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:46:20 -0400
-Received: from forward1h.mail.yandex.net ([84.201.187.146]:60056 "EHLO
-	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933015Ab3FRRqS (ORCPT
+	id S933213Ab3FRR6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:58:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54835 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932872Ab3FRR6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:46:18 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20130618172805.GC16094@twins.programming.kicks-ass.net>
-References: <1981131371569812@web20h.yandex.ru> <20130618172805.GC16094@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH 1/2] sched: Add schedule_(raw_)spin_unlock and schedule_(raw_)spin_unlock_irq
+	Tue, 18 Jun 2013 13:58:05 -0400
+Message-ID: <51C09FAF.3050207@arm.com>
+Date: Tue, 18 Jun 2013 18:58:07 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Message-Id: <15591371577574@web20h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 18 Jun 2013 21:46:14 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH 3/4] ARM/ARM64: arch_timer: remove __cpuinit attribute
+ for arch_counter_set_user_access
+References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1371575223-21702-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1371575223-21702-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 18 Jun 2013 17:58:00.0354 (UTC) FILETIME=[5F10C820:01CE6C4D]
+X-MC-Unique: 113061818580209801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18/06/13 18:07, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> We must not declare arch_counter_set_user_access as __cpuinit as we
+> need to use it in warm reset paths like CPU PM notifiers.
+> 
+This patch should be dropped as __cpuinit is removed completely by
+http://www.spinics.net/lists/arm-kernel/msg252410.html
+Just happen to see it now.
+
+Regards,
+Sudeep
 
 
-18.06.2013, 21:28, "Peter Zijlstra" <peterz@infradead.org>:
-> On Tue, Jun 18, 2013 at 07:36:52PM +0400, Kirill Tkhai wrote:
->
->> šHelpers for replacement repeating patterns:
->>
->> š1)spin_unlock(lock);
->> šššschedule();
->> š2)spin_unlock_irq(lock);
->> šššschedule();
->
-> I just noticed this; the existing schedule_preempt_disabled() is
-> equivalent to:
->
-> ššpreempt_enable()
-> ššschedule()
-> ššpreempt_disable()
->
-> So I somewhat expected these new primitives to be:
->
-> ššspin_unlock()
-> ššschedule()
-> ššspin_lock()
->
-> Now I haven't actually looked at the usage patch to see what the
-> converted sites look like (thanks for adding that one though!).
->
-> My OCD just triggered on the preemption and locked schedule calls having
-> different semantics.
 
-They have different semantic and different ending.
-
-Many places (as you can see from the second patch) need additional actions
-between schedule() and next spin_lock(). Several places don't do the second
-lock.
-
-Kirill
