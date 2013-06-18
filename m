@@ -1,167 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289Ab3FRTOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:14:04 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61109 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab3FRTNH (ORCPT
+	id S933113Ab3FRTPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:15:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42614 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932391Ab3FRTPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:13:07 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 4/5] MIPS: OCTEON: Remove custom serial setup code.
-Date: Tue, 18 Jun 2013 12:12:54 -0700
-Message-Id: <1371582775-12141-5-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com>
+	Tue, 18 Jun 2013 15:15:20 -0400
+Date: Tue, 18 Jun 2013 20:14:45 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>
+Subject: Re: [PATCH v6] arm: Preserve the user r/w register TPIDRURW on
+ context, switch and fork
+Message-ID: <20130618191445.GJ9321@mudshark.cambridge.arm.com>
+References: <51BF8A1C.5070403@dawncrow.de>
+ <20130618100715.GA3539@mudshark.cambridge.arm.com>
+ <51C0ADD3.7030102@dawncrow.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51C0ADD3.7030102@dawncrow.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Tue, Jun 18, 2013 at 07:58:27PM +0100, André Hentschel wrote:
+> On 18.06.2013 12:07, Will Deacon wrote:
+> > On Mon, Jun 17, 2013 at 11:13:48PM +0100, André Hentschel wrote:
+> >> From: André Hentschel <nerv@dawncrow.de>
+> >>
+> >> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+> >> prevent it from being used as a covert channel between two tasks.
+> >>
+> >> There are more and more applications coming to Windows RT,
+> >> Wine could support them, but mostly they expect to have
+> >> the thread environment block (TEB) in TPIDRURW.
+> >>
+> >> This patch preserves that register per thread instead of clearing it.
+> >> Unlike the TPIDRURO, which is already switched, the TPIDRURW
+> >> can be updated from userspace so needs careful treatment in the case that we
+> >> modify TPIDRURW and call fork(). To avoid this we must always read
+> >> TPIDRURW in copy_thread.
+> >>
+> >> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+> >> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> >> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com> 
+> >>
+> >> ---
+> >> This patch is against Linux 3.10-rc6 (7d132055814ef17a6c7b69f342244c410a5e000f)
+> >>
+> >> v2: rework and fixup of v1, based on a suggested patch by Will Deacon
+> >> v3: total rework and fixup of v2
+> >> v4: removed condition on assembler instruction,
+> >>     adapted my code to kernel-style, both based on comments by Will Deacon
+> >> v5: rebased v4 on 3.10-rc2 and adding this version history
+> >> v6: moved loading the TLS registers to the macros
+> >>     (fixing the "LDRD is not supported on all the CPUs we have" problem)
+> > 
+> > You've changed quite a lot with this version, including the way the macro
+> > parameters are passed. Why not just replace the problematic ldrd with two
+> > ldr instructions and be done with it? I don't think the simple build error
+> > warrants an overhaul of the code we already had.
+> 
+> Wantig that patch to be in 3.11 i thought i should do more now to push it.
 
-We will use 8250_dw instead.
+It's getting pretty late for 3.11, so generally you'd want to make the most
+minimal changes possible, rather than redesign core parts of the patch.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/cavium-octeon/Makefile |   2 +-
- arch/mips/cavium-octeon/serial.c | 109 ---------------------------------------
- 2 files changed, 1 insertion(+), 110 deletions(-)
- delete mode 100644 arch/mips/cavium-octeon/serial.c
+> I'm still not that familiar with the process, but i think Russell King would
+> have done this easy change himself when he would be happy with it.
 
-diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
-index e3fd50c..4e95204 100644
---- a/arch/mips/cavium-octeon/Makefile
-+++ b/arch/mips/cavium-octeon/Makefile
-@@ -12,7 +12,7 @@
- CFLAGS_octeon-platform.o = -I$(src)/../../../scripts/dtc/libfdt
- CFLAGS_setup.o = -I$(src)/../../../scripts/dtc/libfdt
- 
--obj-y := cpu.o setup.o serial.o octeon-platform.o octeon-irq.o csrc-octeon.o
-+obj-y := cpu.o setup.o octeon-platform.o octeon-irq.o csrc-octeon.o
- obj-y += dma-octeon.o
- obj-y += octeon-memcpy.o
- obj-y += executive/
-diff --git a/arch/mips/cavium-octeon/serial.c b/arch/mips/cavium-octeon/serial.c
-deleted file mode 100644
-index f393f65..0000000
---- a/arch/mips/cavium-octeon/serial.c
-+++ /dev/null
-@@ -1,109 +0,0 @@
--/*
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file "COPYING" in the main directory of this archive
-- * for more details.
-- *
-- * Copyright (C) 2004-2007 Cavium Networks
-- */
--#include <linux/console.h>
--#include <linux/module.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/serial.h>
--#include <linux/serial_8250.h>
--#include <linux/serial_reg.h>
--#include <linux/tty.h>
--#include <linux/irq.h>
--
--#include <asm/time.h>
--
--#include <asm/octeon/octeon.h>
--
--#define DEBUG_UART 1
--
--unsigned int octeon_serial_in(struct uart_port *up, int offset)
--{
--	int rv = cvmx_read_csr((uint64_t)(up->membase + (offset << 3)));
--	if (offset == UART_IIR && (rv & 0xf) == 7) {
--		/* Busy interrupt, read the USR (39) and try again. */
--		cvmx_read_csr((uint64_t)(up->membase + (39 << 3)));
--		rv = cvmx_read_csr((uint64_t)(up->membase + (offset << 3)));
--	}
--	return rv;
--}
--
--void octeon_serial_out(struct uart_port *up, int offset, int value)
--{
--	/*
--	 * If bits 6 or 7 of the OCTEON UART's LCR are set, it quits
--	 * working.
--	 */
--	if (offset == UART_LCR)
--		value &= 0x9f;
--	cvmx_write_csr((uint64_t)(up->membase + (offset << 3)), (u8)value);
--}
--
--static int octeon_serial_probe(struct platform_device *pdev)
--{
--	int irq, res;
--	struct resource *res_mem;
--	struct uart_8250_port up;
--
--	/* All adaptors have an irq.  */
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0)
--		return irq;
--
--	memset(&up, 0, sizeof(up));
--
--	up.port.flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
--	up.port.type = PORT_OCTEON;
--	up.port.iotype = UPIO_MEM;
--	up.port.regshift = 3;
--	up.port.dev = &pdev->dev;
--
--	if (octeon_is_simulation())
--		/* Make simulator output fast*/
--		up.port.uartclk = 115200 * 16;
--	else
--		up.port.uartclk = octeon_get_io_clock_rate();
--
--	up.port.serial_in = octeon_serial_in;
--	up.port.serial_out = octeon_serial_out;
--	up.port.irq = irq;
--
--	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res_mem == NULL) {
--		dev_err(&pdev->dev, "found no memory resource\n");
--		return -ENXIO;
--	}
--	up.port.mapbase = res_mem->start;
--	up.port.membase = ioremap(res_mem->start, resource_size(res_mem));
--
--	res = serial8250_register_8250_port(&up);
--
--	return res >= 0 ? 0 : res;
--}
--
--static struct of_device_id octeon_serial_match[] = {
--	{
--		.compatible = "cavium,octeon-3860-uart",
--	},
--	{},
--};
--MODULE_DEVICE_TABLE(of, octeon_serial_match);
--
--static struct platform_driver octeon_serial_driver = {
--	.probe		= octeon_serial_probe,
--	.driver		= {
--		.owner	= THIS_MODULE,
--		.name	= "octeon_serial",
--		.of_match_table = octeon_serial_match,
--	},
--};
--
--static int __init octeon_serial_init(void)
--{
--	return platform_driver_register(&octeon_serial_driver);
--}
--late_initcall(octeon_serial_init);
--- 
-1.7.11.7
+That's unlikely -- you're still the author on the patch so I wouldn't expect
+the gatekeeper to make any changes above merge conflicts.
 
+> Further this patch seems cleaner and much likely performing better.
+
+Well, it's not the approach that has been reviewed up until now and, without
+numbers backing up your claims, I'd be inclined simply to make the simple
+change of adding two ldr instructions.
+
+Will
