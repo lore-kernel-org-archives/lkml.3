@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3FRHwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 03:52:13 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:34325 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3FRHwL (ORCPT
+	id S1753705Ab3FRH46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 03:56:58 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:35271 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752776Ab3FRH45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 03:52:11 -0400
+	Tue, 18 Jun 2013 03:56:57 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: fix underflow when doing fix_small_imbalance
+Date: Tue, 18 Jun 2013 15:56:38 +0800
+Message-ID: <1371542198-29879-1-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
-Date: Tue, 18 Jun 2013 09:52:10 +0200
-Message-ID: <CACRpkdYOPtS5Phhcz5x39heo5Bwqdn==rmXPPoQPOOy1AooFtw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Fix kernel panics with certain I2C tps6* chips
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 7:47 PM, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+Since sds->max_load, sds->this_load, scaled_busy_load_per_task are all
+unsigned long type, so it make even sds->max_load less than
+sds->this_load, the statement as below would still be true.
 
-> Hi,
->
-> Latest linux-next head (next-20130617) seems to have some backwards-incompatible
-> changes to the i2c core, which breaks the tps* drivers in our boards and cause
-> panics on boot.
+	(sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+                       (scaled_busy_load_per_task * imbn)
 
-You should probably put Wolfram (the i2c maintainer) on the To: line.
+This would make load balance happen, even the busiest group's load is
+less than local group's load...
 
-> Tuomas Tynkkynen (2):
->   mfd: tps65910: Fix crash in i2c_driver .probe
->   regulator: tps62360: Fix crash in i2c_driver .probe
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Nice :-)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c61a614..8d11a69 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4693,6 +4693,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	unsigned long tmp, pwr_now = 0, pwr_move = 0;
+ 	unsigned int imbn = 2;
+ 	unsigned long scaled_busy_load_per_task;
++	int balance;
+ 
+ 	if (sds->this_nr_running) {
+ 		sds->this_load_per_task /= sds->this_nr_running;
+@@ -4708,8 +4709,9 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 					 * SCHED_POWER_SCALE;
+ 	scaled_busy_load_per_task /= sds->busiest->sgp->power;
+ 
+-	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
+-			(scaled_busy_load_per_task * imbn)) {
++	balance = sds->max_load - sds->this_load
++			+ scaled_busy_load_per_task * (1 - imbn);
++	if (balance >=0) {
+ 		env->imbalance = sds->busiest_load_per_task;
+ 		return;
+ 	}
+-- 
+1.7.10.4
 
-Yours,
-Linus Walleij
