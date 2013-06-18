@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485Ab3FRQ2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:28:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49437 "EHLO
+	id S933502Ab3FRQ3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:29:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933150Ab3FRQRs (ORCPT
+	with ESMTP id S933093Ab3FRQRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:48 -0400
+	Tue, 18 Jun 2013 12:17:47 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, NeilBrown <neilb@suse.de>
-Subject: [ 26/48] md/raid1,5,10: Disable WRITE SAME until a recovery strategy is in place
-Date: Tue, 18 Jun 2013 09:17:52 -0700
-Message-Id: <20130618161729.684144599@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>, rmanohar@qca.qualcomm.com
+Subject: [ 15/48] Revert "ath9k_hw: Update rx gain initval to improve rx sensitivity"
+Date: Tue, 18 Jun 2013 09:17:41 -0700
+Message-Id: <20130618161728.094935264@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,89 +29,43 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 5026d7a9b2f3eb1f9bda66c18ac6bc3036ec9020 upstream.
+commit 96005931785238e1a24febf65ffb5016273e8225 upstream.
 
-There are cases where the kernel will believe that the WRITE SAME
-command is supported by a block device which does not, in fact,
-support WRITE SAME.  This currently happens for SATA drivers behind a
-SAS controller, but there are probably a hundred other ways that can
-happen, including drive firmware bugs.
+This reverts commit 68d9e1fa24d9c7c2e527f49df8d18fb8cf0ec943
 
-After receiving an error for WRITE SAME the block layer will retry the
-request as a plain write of zeroes, but mdraid will consider the
-failure as fatal and consider the drive failed.  This has the effect
-that all the mirrors containing a specific set of data are each
-offlined in very rapid succession resulting in data loss.
+This change reduces rx sensitivity with no apparent extra benefit.
+It looks like it was meant for testing in a specific scenario,
+but it was never properly validated.
 
-However, just bouncing the request back up to the block layer isn't
-ideal either, because the whole initial request-retry sequence should
-be inside the write bitmap fence, which probably means that md needs
-to do its own conversion of WRITE SAME to write zero.
-
-Until the failure scenario has been sorted out, disable WRITE SAME for
-raid1, raid5, and raid10.
-
-[neilb: added raid5]
-
-This patch is appropriate for any -stable since 3.7 when write_same
-support was added.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Cc: rmanohar@qca.qualcomm.com
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |    4 ++--
- drivers/md/raid10.c |    3 +--
- drivers/md/raid5.c  |    4 +++-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2837,8 +2837,8 @@ static int run(struct mddev *mddev)
- 		return PTR_ERR(conf);
- 
- 	if (mddev->queue)
--		blk_queue_max_write_same_sectors(mddev->queue,
--						 mddev->chunk_sectors);
-+		blk_queue_max_write_same_sectors(mddev->queue, 0);
-+
- 	rdev_for_each(rdev, mddev) {
- 		if (!mddev->gendisk)
- 			continue;
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3635,8 +3635,7 @@ static int run(struct mddev *mddev)
- 	if (mddev->queue) {
- 		blk_queue_max_discard_sectors(mddev->queue,
- 					      mddev->chunk_sectors);
--		blk_queue_max_write_same_sectors(mddev->queue,
--						 mddev->chunk_sectors);
-+		blk_queue_max_write_same_sectors(mddev->queue, 0);
- 		blk_queue_io_min(mddev->queue, chunk_size);
- 		if (conf->geo.raid_disks % conf->geo.near_copies)
- 			blk_queue_io_opt(mddev->queue, chunk_size * conf->geo.raid_disks);
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -5457,7 +5457,7 @@ static int run(struct mddev *mddev)
- 		if (mddev->major_version == 0 &&
- 		    mddev->minor_version > 90)
- 			rdev->recovery_offset = reshape_offset;
--			
-+
- 		if (rdev->recovery_offset < reshape_offset) {
- 			/* We need to check old and new layout */
- 			if (!only_parity(rdev->raid_disk,
-@@ -5580,6 +5580,8 @@ static int run(struct mddev *mddev)
- 		 */
- 		mddev->queue->limits.discard_zeroes_data = 0;
- 
-+		blk_queue_max_write_same_sectors(mddev->queue, 0);
-+
- 		rdev_for_each(rdev, mddev) {
- 			disk_stack_limits(mddev->gendisk, rdev->bdev,
- 					  rdev->data_offset << 9);
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -958,11 +958,11 @@ static const u32 ar9300Common_rx_gain_ta
+ 	{0x0000a074, 0x00000000},
+ 	{0x0000a078, 0x00000000},
+ 	{0x0000a07c, 0x00000000},
+-	{0x0000a080, 0x1a1a1a1a},
+-	{0x0000a084, 0x1a1a1a1a},
+-	{0x0000a088, 0x1a1a1a1a},
+-	{0x0000a08c, 0x1a1a1a1a},
+-	{0x0000a090, 0x171a1a1a},
++	{0x0000a080, 0x22222229},
++	{0x0000a084, 0x1d1d1d1d},
++	{0x0000a088, 0x1d1d1d1d},
++	{0x0000a08c, 0x1d1d1d1d},
++	{0x0000a090, 0x171d1d1d},
+ 	{0x0000a094, 0x11111717},
+ 	{0x0000a098, 0x00030311},
+ 	{0x0000a09c, 0x00000000},
 
 
