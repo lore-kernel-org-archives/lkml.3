@@ -1,201 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3FRIqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:46:08 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:45729 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755136Ab3FRIqD (ORCPT
+	id S1755240Ab3FRIqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:46:12 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.14]:24184 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755136Ab3FRIqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:46:03 -0400
-From: Xiang Wang <wangxfdu@gmail.com>
-To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
-Subject: [PATCH V2] dma: mmp_pdma: support for getting residual bytes
-Date: Tue, 18 Jun 2013 16:41:20 +0800
-Message-ID: <1371544880-26782-1-git-send-email-wangxfdu@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 18 Jun 2013 04:46:09 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-8.tower-28.messagelabs.com!1371545166!24517812!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51C01E46.8040506@digi.com>
+Date: Tue, 18 Jun 2013 10:45:58 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+CC: <FlorianSchandinat@gmx.de>, <linux-fbdev@vger.kernel.org>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "brian@crystalfontz.com" <brian@crystalfontz.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>, <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH] video: mxsfb: fix color settings for 18bit data bus and
+ 32bpp
+References: <519E03B0.1080006@digi.com> <519F4435.5010703@digi.com> <201305241300.25461.jbe@pengutronix.de> <201305241533.19941.jbe@pengutronix.de> <20130607072103.GF14209@lukather> <51B18BA0.50506@digi.com> <20130607074200.GG14209@lukather> <51B1957F.40104@digi.com> <20130607090228.GI14209@lukather> <20130618083229.GC15037@lukather>
+In-Reply-To: <20130618083229.GC15037@lukather>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiang Wang <wangx@marvell.com>
+On 06/18/2013 10:32 AM, maxime.ripard@free-electrons.com wrote:
+> Hi Hector,
+>
+> On Fri, Jun 07, 2013 at 11:02:28AM +0200, maxime.ripard@free-electrons.com wrote:
+>> On Fri, Jun 07, 2013 at 10:10:39AM +0200, Hector Palacios wrote:
+>>> For a combination of 18bit LCD data bus width and a color
+>>> mode of 32bpp, the driver was setting the color mapping to
+>>> rgb666, which is wrong, as the color in memory realy has an
+>>> rgb888 layout.
+>>>
+>>> This patch also removes the setting of flag CTRL_DF24 that
+>>> makes the driver dimiss the upper 2 bits when handling 32/24bpp
+>>> colors in a diplay with 18bit data bus width. This flag made
+>>> true color images display wrong in such configurations.
+>>>
+>>> Finally, the color mapping rgb666 has also been removed as nobody
+>>> is using it and high level applications like Qt5 cannot work
+>>> with it either.
+>>>
+>>> Reference: https://lkml.org/lkml/2013/5/23/220
+>>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+>>> Acked-by: Juergen Beisert <jbe@pengutronix.de>
+>>
+>> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>>
+>> Please also note that fbdev is now maintained by Jean Christophe
+>> Plagniol-Villard (plagnioj@jcrosoft.com, in CC), and that he is away
+>> until the 10th of June, so maybe it should be safe to resend it to him
+>> after this date.
+>
+> It seems like Jean-Christophe is back online, maybe you should resend
+> him the patch now, it would be great to have it for 3.11.
 
-In some of our drivers (e.g. UART) we may stop a running DMA
-before it finishes. So we need APIs to know how many bytes
-have been transferred.
+I just resent it. Thanks for the reminder.
 
-Signed-off-by: Xiang Wang <wangx@marvell.com>
----
- drivers/dma/mmp_pdma.c |   88 +++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 80 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index c26699f..57cd047 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -104,7 +104,8 @@ struct mmp_pdma_chan {
- 	spinlock_t desc_lock;		/* Descriptor list lock */
- 	struct list_head chain_pending;	/* Link descriptors queue for pending */
- 	struct list_head chain_running;	/* Link descriptors queue for running */
--	bool idle;			/* channel statue machine */
-+	enum dma_status status; /* channel status machine */
-+	u32 bytes_residue;
- 
- 	struct dma_pool *desc_pool;	/* Descriptors pool */
- };
-@@ -270,7 +271,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
- 	struct mmp_pdma_desc_sw *desc;
- 
- 	/* still in running, irq will start the pending list */
--	if (!chan->idle) {
-+	if (chan->status == DMA_IN_PROGRESS) {
- 		dev_dbg(chan->dev, "DMA controller still busy\n");
- 		return;
- 	}
-@@ -307,7 +308,64 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
- 	 */
- 	set_desc(chan->phy, desc->async_tx.phys);
- 	enable_chan(chan->phy);
--	chan->idle = false;
-+	chan->status = DMA_IN_PROGRESS;
-+	chan->bytes_residue = 0;
-+}
-+
-+/*
-+ * Get the number of pending bytes. Should be called with desc_lock held
-+ * because we are accessing desc list.
-+ */
-+static u32 mmp_pdma_get_bytes_residue(struct mmp_pdma_chan *chan)
-+{
-+	u32 reg, orig_pos, cur_pos, ddadr, residue = 0;
-+	bool running_desc_found = false;
-+	struct mmp_pdma_desc_sw *desc_sw;
-+
-+	/*
-+	 * When a phy channel is unavailable, maybe it has been freed, return
-+	 * last stored value for safe.
-+	 */
-+	if (!chan->phy)
-+		return chan->bytes_residue;
-+
-+	reg = (chan->phy->idx << 4) + DDADR;
-+	ddadr = readl_relaxed(chan->phy->base + reg);
-+
-+	/* iterate over all descriptors to sum up the number of pending bytes */
-+	list_for_each_entry(desc_sw, &chan->chain_running, node) {
-+		/* for the case of a running descriptor */
-+		if (desc_sw->desc.ddadr == ddadr && !running_desc_found) {
-+			switch (chan->dir) {
-+			case DMA_DEV_TO_MEM:
-+			case DMA_MEM_TO_MEM:
-+				reg = (chan->phy->idx << 4) + DTADR;
-+				cur_pos = readl_relaxed(chan->phy->base + reg);
-+				orig_pos = desc_sw->desc.dtadr;
-+				break;
-+
-+			case DMA_MEM_TO_DEV:
-+				reg = (chan->phy->idx << 4) + DSADR;
-+				cur_pos = readl_relaxed(chan->phy->base + reg);
-+				orig_pos = desc_sw->desc.dsadr;
-+				break;
-+
-+			default:
-+				cur_pos = 0;
-+				orig_pos = 0;
-+			}
-+			residue = (u32)(desc_sw->desc.dcmd & DCMD_LENGTH)
-+					+ orig_pos - cur_pos;
-+			running_desc_found = true;
-+			continue;
-+		}
-+
-+		/* for the case of following un-started descriptors*/
-+		if (running_desc_found)
-+			residue += (u32)(desc_sw->desc.dcmd & DCMD_LENGTH);
-+	}
-+
-+	return residue;
- }
- 
- 
-@@ -381,7 +439,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
- 		chan->phy->vchan = NULL;
- 		chan->phy = NULL;
- 	}
--	chan->idle = true;
-+	chan->status = DMA_SUCCESS;
- 	chan->dev_addr = 0;
- 	return 1;
- }
-@@ -409,7 +467,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
- 
- 	dma_pool_destroy(chan->desc_pool);
- 	chan->desc_pool = NULL;
--	chan->idle = true;
-+	chan->status = DMA_SUCCESS;
- 	chan->dev_addr = 0;
- 	if (chan->phy) {
- 		chan->phy->vchan = NULL;
-@@ -588,9 +646,16 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
- 		spin_lock_irqsave(&chan->desc_lock, flags);
- 		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
- 		mmp_pdma_free_desc_list(chan, &chan->chain_running);
-+		chan->bytes_residue = 0;
- 		spin_unlock_irqrestore(&chan->desc_lock, flags);
--		chan->idle = true;
-+		chan->status = DMA_SUCCESS;
- 		break;
-+
-+	case DMA_PAUSE:
-+		disable_chan(chan->phy);
-+		chan->status = DMA_PAUSED;
-+		break;
-+
- 	case DMA_SLAVE_CONFIG:
- 		if (cfg->direction == DMA_DEV_TO_MEM) {
- 			chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
-@@ -637,7 +702,9 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&chan->desc_lock, flags);
--	ret = dma_cookie_status(dchan, cookie, txstate);
-+	chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
-+	dma_set_residue(txstate, chan->bytes_residue);
-+	ret = chan->status;
- 	spin_unlock_irqrestore(&chan->desc_lock, flags);
- 
- 	return ret;
-@@ -684,6 +751,8 @@ static void dma_do_tasklet(unsigned long data)
- 		dev_dbg(chan->dev, "completed_cookie=%d\n", cookie);
- 	}
- 
-+	/* update bytes_residue so that the user can query later on */
-+	chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
- 	/*
- 	 * move the descriptors to a temporary list so we can drop the lock
- 	 * during the entire cleanup operation
-@@ -691,7 +760,7 @@ static void dma_do_tasklet(unsigned long data)
- 	list_splice_tail_init(&chan->chain_running, &chain_cleanup);
- 
- 	/* the hardware is now idle and ready for more */
--	chan->idle = true;
-+	chan->status = DMA_SUCCESS;
- 
- 	/* Start any pending transactions automatically */
- 	start_pending_queue(chan);
-@@ -750,6 +819,9 @@ static int mmp_pdma_chan_init(struct mmp_pdma_device *pdev,
- 	INIT_LIST_HEAD(&chan->chain_pending);
- 	INIT_LIST_HEAD(&chan->chain_running);
- 
-+	chan->status = DMA_SUCCESS;
-+	chan->bytes_residue = 0;
-+
- 	/* register virt channel to dma engine */
- 	list_add_tail(&chan->chan.device_node,
- 			&pdev->device.channels);
 -- 
-1.7.5.4
+Héctor Palacios
 
+Best regards,
+--
+Hector Palacios
