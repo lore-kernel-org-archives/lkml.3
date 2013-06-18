@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab3FRQZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:25:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49507 "EHLO
+	id S933369Ab3FRQZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:25:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933248Ab3FRQR4 (ORCPT
+	with ESMTP id S933074Ab3FRQR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:56 -0400
+	Tue, 18 Jun 2013 12:17:57 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Lyakas <alex@zadarastorage.com>, NeilBrown <neilb@suse.de>
-Subject: [ 25/48] md/raid1: consider WRITE as successful only if at least one non-Faulty and non-rebuilding drive completed it.
-Date: Tue, 18 Jun 2013 09:17:51 -0700
-Message-Id: <20130618161729.541053291@linuxfoundation.org>
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 16/48] ath9k: Use minstrel rate control by default
+Date: Tue, 18 Jun 2013 09:17:42 -0700
+Message-Id: <20130618161728.233303254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,88 +31,90 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Lyakas <alex@zadarastorage.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 upstream.
+commit 5efac94999ff218e0101f67a059e44abb4b0b523 upstream.
 
-Without that fix, the following scenario could happen:
+The ath9k rate control algorithm has various architectural
+issues that make it a poor fit in scenarios like congested
+environments etc.
 
-- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
-- Drive A fails
-- WRITE request arrives to the array. It is failed by drive A, so
-r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
-succeeds in writing it, so the same r1_bio is marked as
-R1BIO_Uptodate.
-- r1_bio arrives to handle_write_finished, badblocks are disabled,
-md_error()->error() does nothing because we don't fail the last drive
-of raid1
-- raid_end_bio_io()  calls call_bio_endio()
-- As a result, in call_bio_endio():
-        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
-                clear_bit(BIO_UPTODATE, &bio->bi_flags);
-this code doesn't clear the BIO_UPTODATE flag, and the whole master
-WRITE succeeds, back to the upper layer.
+An example: https://bugzilla.redhat.com/show_bug.cgi?id=927191
 
-So we returned success to the upper layer, even though we had written
-the data onto the rebuilding drive only. But when we want to read the
-data back, we would not read from the rebuilding drive, so this data
-is lost.
+Change the default to minstrel which is more robust in such cases.
+The ath9k RC code is left in the driver for now, maybe it can
+be removed altogether later on.
 
-[neilb - applied identical change to raid10 as well]
-
-This bug can result in lost data, so it is suitable for any
--stable kernel.
-
-Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Cc: Jouni Malinen <jouni@qca.qualcomm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |   12 +++++++++++-
- drivers/md/raid10.c |   12 +++++++++++-
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/Kconfig  |   10 +++++++---
+ drivers/net/wireless/ath/ath9k/Makefile |    2 +-
+ drivers/net/wireless/ath/ath9k/init.c   |    4 ----
+ drivers/net/wireless/ath/ath9k/rc.h     |    2 +-
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -427,7 +427,17 @@ static void raid1_end_write_request(stru
+--- a/drivers/net/wireless/ath/ath9k/Kconfig
++++ b/drivers/net/wireless/ath/ath9k/Kconfig
+@@ -92,13 +92,17 @@ config ATH9K_MAC_DEBUG
+ 	  This option enables collection of statistics for Rx/Tx status
+ 	  data and some other MAC related statistics
  
- 		r1_bio->bios[mirror] = NULL;
- 		to_put = bio;
--		set_bit(R1BIO_Uptodate, &r1_bio->state);
-+		/*
-+		 * Do not set R1BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
-+		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
-+			set_bit(R1BIO_Uptodate, &r1_bio->state);
+-config ATH9K_RATE_CONTROL
++config ATH9K_LEGACY_RATE_CONTROL
+ 	bool "Atheros ath9k rate control"
+ 	depends on ATH9K
+-	default y
++	default n
+ 	---help---
+ 	  Say Y, if you want to use the ath9k specific rate control
+-	  module instead of minstrel_ht.
++	  module instead of minstrel_ht. Be warned that there are various
++	  issues with the ath9k RC and minstrel is a more robust algorithm.
++	  Note that even if this option is selected, "ath9k_rate_control"
++	  has to be passed to mac80211 using the module parameter,
++	  ieee80211_default_rc_algo.
  
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(conf->mirrors[mirror].rdev,
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -490,7 +490,17 @@ static void raid10_end_write_request(str
- 		sector_t first_bad;
- 		int bad_sectors;
+ config ATH9K_HTC
+        tristate "Atheros HTC based wireless cards support"
+--- a/drivers/net/wireless/ath/ath9k/Makefile
++++ b/drivers/net/wireless/ath/ath9k/Makefile
+@@ -8,7 +8,7 @@ ath9k-y +=	beacon.o \
+ 		antenna.o
  
--		set_bit(R10BIO_Uptodate, &r10_bio->state);
-+		/*
-+		 * Do not set R10BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &rdev->flags) &&
-+		    !test_bit(Faulty, &rdev->flags))
-+			set_bit(R10BIO_Uptodate, &r10_bio->state);
+ ath9k-$(CONFIG_ATH9K_BTCOEX_SUPPORT) += mci.o
+-ath9k-$(CONFIG_ATH9K_RATE_CONTROL) += rc.o
++ath9k-$(CONFIG_ATH9K_LEGACY_RATE_CONTROL) += rc.o
+ ath9k-$(CONFIG_ATH9K_PCI) += pci.o
+ ath9k-$(CONFIG_ATH9K_AHB) += ahb.o
+ ath9k-$(CONFIG_ATH9K_DEBUGFS) += debug.o
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -808,10 +808,6 @@ void ath9k_set_hw_capab(struct ath_softc
+ 	sc->ant_rx = hw->wiphy->available_antennas_rx;
+ 	sc->ant_tx = hw->wiphy->available_antennas_tx;
  
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(rdev,
+-#ifdef CONFIG_ATH9K_RATE_CONTROL
+-	hw->rate_control_algorithm = "ath9k_rate_control";
+-#endif
+-
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_2GHZ)
+ 		hw->wiphy->bands[IEEE80211_BAND_2GHZ] =
+ 			&sc->sbands[IEEE80211_BAND_2GHZ];
+--- a/drivers/net/wireless/ath/ath9k/rc.h
++++ b/drivers/net/wireless/ath/ath9k/rc.h
+@@ -231,7 +231,7 @@ static inline void ath_debug_stat_retrie
+ }
+ #endif
+ 
+-#ifdef CONFIG_ATH9K_RATE_CONTROL
++#ifdef CONFIG_ATH9K_LEGACY_RATE_CONTROL
+ int ath_rate_control_register(void);
+ void ath_rate_control_unregister(void);
+ #else
 
 
