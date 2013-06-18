@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab3FRAHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:07:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48870 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3FRAHK (ORCPT
+	id S1753217Ab3FRAHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:07:34 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:57301 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab3FRAHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:07:10 -0400
-Date: Tue, 18 Jun 2013 10:06:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jun 17
-Message-Id: <20130618100653.026e8d08af2f862b9b489893@canb.auug.org.au>
-In-Reply-To: <CAMuHMdVOYx0vtCiN26nWcTZOc-YH+K5A=BTnvhd7g_w7ALjSsg@mail.gmail.com>
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au>
-	<CAMuHMdVOYx0vtCiN26nWcTZOc-YH+K5A=BTnvhd7g_w7ALjSsg@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp"
+	Mon, 17 Jun 2013 20:07:31 -0400
+Date: Mon, 17 Jun 2013 17:07:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Part1 PATCH v5 08/22] x86, ACPI: Make acpi_initrd_override_find
+ work with 32bit flat mode
+Message-ID: <20130618000722.GR32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1371128589-8953-9-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371128589-8953-9-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 13, 2013 at 09:02:55PM +0800, Tang Chen wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+> 
+> For finding procedure, it would be easy to access initrd in 32bit flat
+> mode, as we don't need to setup page table. That is from head_32.S, and
+> microcode updating already use this trick.
 
-Hi Geert,
+It'd be really great if you can give a brief explanation of why this
+is happening at the beginning of the commit description so that when
+someone lands on this commit later on, [s]he can orient oneself.  It
+doesn't have to be long.  Open with something like,
 
-On Mon, 17 Jun 2013 12:04:18 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
->
-> On Mon, Jun 17, 2013 at 10:51 AM, Stephen Rothwell <sfr@canb.auug.org.au>=
- wrote:
-> > Changes since 20130607:
-> >
-> > New trees: arm-mpidr and arm64-hugepages
->=20
-> [long list of new conflicts deleted]
->=20
-> Good to see you're back!
-> Thanks a lot ;-)
+ To make NUMA info available early during boot for memory hotplug
+ support, acpi_initrd_override_find() needs to be used very early
+ during boot.
 
-Glad to be of service :-)
+and then continue to describe what's happening.  It'll make the commit
+a lot more approachable to people who just encountered it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> This patch does the following:
+> 
+> 1. Change acpi_initrd_override_find to use phys to access global variables.
+> 
+> 2. Pass a bool parameter "is_phys" to acpi_initrd_override_find() because
+>    we cannot tell if it is a pa or a va through the address itself with
+>    32bit. Boot loader could load initrd above max_low_pfn.
 
---Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp
-Content-Type: application/pgp-signature
+Do you mean "from 32bit address boundary"?  Maybe "from 4G boundary"
+is clearer?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> 
+> 3. Put table_sigs[] on stack, otherwise it is too messy to change string
+>    array to physaddr and still keep offset calculating correct. The size is
+>    about 36x4 bytes, and it is small to settle in stack.
+> 
+> 4. Also rewrite the MACRO INVALID_TABLE to be in a do {...} while(0) loop
+>    so that it is more readable.
 
-iQIcBAEBCAAGBQJRv6SiAAoJEECxmPOUX5FEb+EP/RCbGoY0qKsfbDiqGvThFXQ0
-sfLlu/s7fdjDum4RUmyUCpZTxVrkU6ZdLxjKrZkkEugMH188EwqGfnHgM+tDU2Pu
-7JslS2HV9hCCLIDbZFBfDJOMg6j8pC8sT2dv2Usq2lCan9pJKDAc+mFBX9Io7PzZ
-YkVMw7Dn7V5cbUFQpTtfrZJ+nzUGzM/xKAke+Po0vol4yS1UE0+BTKlK70wzt+nX
-SvYagmTuUeq8ct21m0q5frgSKfIGERjZERGEGRvi+IlFn/CKcXrurKvbnOROfm97
-kLGfzSneHWE9kpyRdcbZ0Xx3zhyAopIk2/ZIx+n4AeHH/K9LAh8gIaRaALdlDTT7
-+fzIEdZQ4eBtpeHXy4sL4W+ItyEkVydvAuDVl4SvoqApWzq4hWmkSZG9JB9QTK86
-POTxUymi+3ZEs5O0iwxP90x61Zs3avdpxnIPEdOmh1wOjFu1tERH8ko43pYbQZvx
-qbmlGTPizZ4RjWcRwikKKlwvc+rH4WyoBhD0lCksdA0SAbCaWzjOplivmbU/8Bkw
-XeHZ8l20tQnW58+XhYzgCRnnolyqHEt+RAoXxsEA/Mq5VyZicDKFqDOyqGVdML4+
-uef/xU+vCPe3UAEpkaob7JznjZQZOsa2lU/cKFxKUx1Pb+4t2mmJocKoQmSWs/1k
-x2t5GR+JZb+BmJIVSSQ4
-=3f0c
------END PGP SIGNATURE-----
+The important part is taking "continue" out of it, right?
 
---Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp--
+> +/*
+> + * acpi_initrd_override_find() is called from head_32.S and head64.c.
+> + * head_32.S calling path is with 32bit flat mode, so we can access
+
+When called from head_32.S, the CPU is in 32bit flat mode and the
+kernel virtual address space isn't available yet.
+
+> + * initrd early without setting pagetable or relocating initrd. For
+> + * global variables accessing, we need to use phys address instead of
+
+As initrd is in phys_addr, it can be accessed directly; however,
+global variables must be accessed by explicitly obtaining their
+physical addresses.
+
+> + * kernel virtual address, try to put table_sigs string array in stack,
+> + * so avoid switching for it.
+
+Note that table_sigs array is built on stack to avoid such address
+translations while accessing its members.
+
+> + * Also don't call printk as it uses global variables.
+> + */
+> +void __init acpi_initrd_override_find(void *data, size_t size, bool is_phys)
+
+Thanks.
+
+-- 
+tejun
