@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3FROn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:43:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45468 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752691Ab3FROn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:43:57 -0400
-Date: Tue, 18 Jun 2013 10:43:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Yuan-Hsin Chen <yuanlmm@gmail.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, Felipe Balbi <balbi@ti.com>,
-        <florian@openwrt.org>, USB list <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, ratbert <ratbert.chuang@gmail.com>,
-        =?UTF-8?B?Sm9obiBGZW5nLUhzaW4gQ2hpYW5nKOaxn+WzsOiIiCk=?= 
-	<john453@faraday-tech.com>
-Subject: Re: [PATCH] usb: host: Faraday fotg210-hcd driver
-In-Reply-To: <CADB-GoKACJnearpDL+kxxsW6ez=2cbP0UDgbZNL+uNN0bswDog@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1306181039440.1157-100000@iolanthe.rowland.org>
+	id S1755167Ab3FROpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:45:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8135 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab3FROpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:45:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,889,1363158000"; 
+   d="scan'208";a="256710293"
+Message-ID: <51C0728E.6060900@linux.intel.com>
+Date: Tue, 18 Jun 2013 17:45:34 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>   <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>  <1371551139.3252.249.camel@edumazet-glaptop>  <51C05FC1.4000201@linux.intel.com> <1371566148.3252.255.camel@edumazet-glaptop>
+In-Reply-To: <1371566148.3252.255.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jun 2013, Yuan-Hsin Chen wrote:
+On 18/06/2013 17:35, Eric Dumazet wrote:
+> On Tue, 2013-06-18 at 16:25 +0300, Eliezer Tamir wrote:
+>
+>> One other thing,
+>> sock_poll() will only ll_poll if the flag was set _and_ the socket has a
+>> none-zero value in sk->sk_ll_usec so you still only poll on sockets
+>> that were enabled for LLS, not on every socket.
+>
+> But sockets are default enabled for LLS.
+>
+> sock_init_data()
+> {
+> 	...
+> 	sk->sk_ll_usec      =   sysctl_net_ll_poll;
+> 	...
+> }
 
-> > In that case, no, you should be figuring out how to refactor and reuse
-> > the EHCI code instead of copying it straight into your driver.
-> 
-> I was trying to use ehci-platform.c, anonymous union/struct, and quirk
-> flags to avoid copying EHCI code.
-> But there are too big incompatibilities between fotg210/fusbh200
-> controller and EHCI.
-> That's why Alan agreed that I could create a stand-alone driver for
-> fusbh200 host controller.
-> Since fotg210 and fusbh200 have the same issue,  fotg210 hcd is
-> supposed to be stand-alone.
-> More details please refer to mail sequence
-> http://www.spinics.net/lists/linux-usb/msg83812.html
+Yes, if you want to globally enable.
 
-That's right.  The patch's description mentions some of the
-incompatibilities.  In short, the Faraday controllers are a _very_
-noncompliant EHCI variant.  The changes needed to make ehci-hcd work
-with them were too invasive IMO.
-
-It's a shame, because so much of the code is the same.  It makes you 
-want to go back and ask those Faraday engineers what they were thinking 
-of at the time.
-
-Alan Stern
-
+But now that we have the socket option, you can leave the global
+setting at 0 and only enable specific sockets via the socket option.
+(I have tested this with a modified sockperf and it works.)
