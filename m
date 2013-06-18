@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab3FRGjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:39:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42910 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3FRGjR (ORCPT
+	id S1753273Ab3FRGmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:42:06 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38000 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab3FRGmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:39:17 -0400
-From: Joel A Fernandes <joelagnel@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>
-CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v11 6/8] dmaengine: edma: enable build for AM33XX
-Date: Tue, 18 Jun 2013 01:38:17 -0500
-Message-ID: <1371537499-12970-7-git-send-email-joelagnel@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
-References: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
+	Tue, 18 Jun 2013 02:42:04 -0400
+Message-ID: <51C00116.2080301@parallels.com>
+Date: Tue, 18 Jun 2013 10:41:26 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH v2 2/4] SUNRPC: fix races on PipeFS MOUNT notifications
+References: <20130611143725.16046.17279.stgit@localhost.localdomain>  <20130611143917.16046.15791.stgit@localhost.localdomain> <1371493226.9595.5.camel@leira.trondhjem.org>
+In-Reply-To: <1371493226.9595.5.camel@leira.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mporter@ti.com>
+17.06.2013 22:20, Myklebust, Trond пишет:
+> On Tue, 2013-06-11 at 18:39 +0400, Stanislav Kinsbursky wrote:
+>> Below are races, when RPC client can be created without PiepFS dentries
+>>
+>> CPU#0					CPU#1
+>> -----------------------------		-----------------------------
+>> rpc_new_client				rpc_fill_super
+>> rpc_setup_pipedir
+>> mutex_lock(&sn->pipefs_sb_lock)
+>> rpc_get_sb_net == NULL
+>> (no per-net PipeFS superblock)
+>> 					sn->pipefs_sb = sb;
+>> 					notifier_call_chain(MOUNT)
+>> 					(client is not in the list)
+>> rpc_register_client
+>> (client without pipes dentries)
+>>
+>> To fix this patch:
+>> 1) makes PipeFS mount notification call with pipefs_sb_lock being held.
+>> 2) releases pipefs_sb_lock on new SUNRPC client creation only after
+>> registration.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> Cc: stable@vger.kernel.org
+>
+> Hi Stanislav,
+>
+> This isn't going to apply to the stable kernels without the cleanup
+> patch. Could you please reorganise this patch series so that the cleanup
+> comes last.
+>
+> Thanks,
+>    Trond
+>
+>
 
-Enable TI EDMA option on OMAP.
+Hello, Trond.
+Sure, will do.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
----
- drivers/dma/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index e992489..3215a3c 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -213,7 +213,7 @@ config SIRF_DMA
- 
- config TI_EDMA
- 	tristate "TI EDMA support"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 	default n
 -- 
-1.7.9.5
-
+Best regards,
+Stanislav Kinsbursky
