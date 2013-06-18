@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab3FRPlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:41:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28930 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab3FRPln (ORCPT
+	id S1756288Ab3FRPvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:51:40 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:43344 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab3FRPvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:41:43 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=jG05uceuGy4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5uFaiv9cfuIA:10 a=ayC55rCoAAAA:8 a=inHytyPPysN5Rfb2LDgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371570100.18733.30.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] tracing: more list_empty(perf_events) checks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Jun 2013 11:41:40 -0400
-In-Reply-To: <20130618144635.GB26920@redhat.com>
-References: <20130617170142.GA19780@redhat.com>
-	 <20130617201818.GA12349@redhat.com>
-	 <1371504473.18733.27.camel@gandalf.local.home>
-	 <20130618144635.GB26920@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jun 2013 11:51:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdZxpm_C8K2Rn3hV=kqAK2p0mip4f1Rx=B9+2g7NXpCd=w@mail.gmail.com>
+References: <1371546267-22093-1-git-send-email-sachin.kamat@linaro.org>
+	<1371546267-22093-4-git-send-email-sachin.kamat@linaro.org>
+	<CACRpkdZxpm_C8K2Rn3hV=kqAK2p0mip4f1Rx=B9+2g7NXpCd=w@mail.gmail.com>
+Date: Tue, 18 Jun 2013 21:21:38 +0530
+Message-ID: <CAK9yfHwYO=jZeL6QERWTXMY-bReveNKZCiZz1t60toFQoYr8bQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] pinctrl: Staticize local symbols
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrice Chotard <patrice.chotard@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 16:46 +0200, Oleg Nesterov wrote:
-> On 06/17, Steven Rostedt wrote:
-> >
-> > On Mon, 2013-06-17 at 22:18 +0200, Oleg Nesterov wrote:
-> > > On 06/17, Oleg Nesterov wrote:
-> > > >
-> > > > DECLARE_EVENT_CLASS()->perf_trace_##call() is not trivial because
-> > > > of __perf_task()
-> > >
-> > > Perhaps we can do something like below?
-> >
-> > Did this actually compile for you?
-> 
-> Why did you ask?
-> 
-> Perhaps you are trying to say that this patch needs more work...
-> 
-> Just because it can't be compiled? Pedant.
+On 18 June 2013 20:25, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Jun 18, 2013 at 11:04 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>
+>> Symbols referenced only in this file are made static.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Cc: Patrice Chotard <patrice.chotard@st.com>
+>
+> Excellent observation Sachin, patch applied.
 
-No, just because when I first looked at it, I didn't think it would, and
-didn't delete this when I took a deeper look.
-
-> 
-> > > @@ -659,13 +665,12 @@ perf_trace_##call(void *__data, proto)					\
-> > >  	int __data_size;						\
-> > >  	int rctx;							\
-> > >  									\
-> > > -	perf_fetch_caller_regs(&__regs);				\
-> > > -									\
-> > >  	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
-> >
-> > OK, so here the task gets assigned the val, and so does count.
-> >
-> > This may not be a bad approach, but instead of having TP_perf_arg() in
-> > events/sched.h, keep the TP_perf_task() and TP_perf_count(), and have
-> > whatever is put there assigned.
-> 
-> Or this, yes.
-> 
-> OK. Let me try to make something working. At least, something I believe
-> should work, I will mostly rely on your review anyway.
-
-Great,
-
--- Steve
+Thanks.
 
 
+
+
+-- 
+With warm regards,
+Sachin
