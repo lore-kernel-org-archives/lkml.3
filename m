@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab3FRQWd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:22:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49552 "EHLO
+	id S933323Ab3FRQWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:22:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49553 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137Ab3FRQSE (ORCPT
+	with ESMTP id S933187Ab3FRQSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 12:18:04 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 34/48] libceph: clear messenger auth_retry flag when we authenticate
-Date: Tue, 18 Jun 2013 09:18:00 -0700
-Message-Id: <20130618161730.833991919@linuxfoundation.org>
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 33/48] drm/nv50/kms: use dac loadval from vbios, where its available
+Date: Tue, 18 Jun 2013 09:17:59 -0700
+Message-Id: <20130618161730.688635361@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,45 +29,34 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 20e55c4cc758e4dccdfd92ae8e9588dd624b2cd7 upstream.
+commit d40ee48acde16894fb3b241d7e896d5fa84e0f10 upstream.
 
-We maintain a counter of failed auth attempts to allow us to retry once
-before failing.  However, if the second attempt succeeds, the flag isn't
-cleared, which makes us think auth failed again later when the connection
-resets for other reasons (like a socket error).
+Regression from merging the old nv50/nvd9 code together, and may be
+needed to fully fix fdo#64904.
 
-This is one part of the sorry sequence of events in bug
+The value is ignored completely by the hardware starting from nva3.
 
-	http://tracker.ceph.com/issues/4282
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Emil Velikov <emil.l.velikov@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 
 ---
- net/ceph/messenger.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/nv50_display.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -1597,7 +1597,6 @@ static int process_connect(struct ceph_c
- 			con->error_msg = "connect authorization failure";
- 			return -1;
- 		}
--		con->auth_retry = 1;
- 		con_out_kvec_reset(con);
- 		ret = prepare_write_connect(con);
- 		if (ret < 0)
-@@ -1682,7 +1681,7 @@ static int process_connect(struct ceph_c
+--- a/drivers/gpu/drm/nouveau/nv50_display.c
++++ b/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -1554,7 +1554,9 @@ nv50_dac_detect(struct drm_encoder *enco
+ {
+ 	struct nv50_disp *disp = nv50_disp(encoder->dev);
+ 	int ret, or = nouveau_encoder(encoder)->or;
+-	u32 load = 0;
++	u32 load = nouveau_drm(encoder->dev)->vbios.dactestval;
++	if (load == 0)
++		load = 340;
  
- 		WARN_ON(con->state != CON_STATE_NEGOTIATING);
- 		con->state = CON_STATE_OPEN;
--
-+		con->auth_retry = 0;    /* we authenticated; clear flag */
- 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
- 		con->connect_seq++;
- 		con->peer_features = server_feat;
+ 	ret = nv_exec(disp->core, NV50_DISP_DAC_LOAD + or, &load, sizeof(load));
+ 	if (ret || load != 7)
 
 
