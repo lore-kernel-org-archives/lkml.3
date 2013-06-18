@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab3FRQRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:17:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49330 "EHLO
+	id S933120Ab3FRQRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:17:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49335 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933053Ab3FRQOq (ORCPT
+	with ESMTP id S933059Ab3FRQOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 12:14:46 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/26] mm: migration: add migrate_entry_wait_huge()
-Date: Tue, 18 Jun 2013 09:14:57 -0700
-Message-Id: <20130618161236.586946659@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 21/26] libceph: add update_authorizer auth method
+Date: Tue, 18 Jun 2013 09:15:01 -0700
+Message-Id: <20130618161237.539679299@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -34,109 +28,135 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
+commit 0bed9b5c523d577378b6f83eab5835fe30c27208 upstream.
 
-When we have a page fault for the address which is backed by a hugepage
-under migration, the kernel can't wait correctly and do busy looping on
-hugepage fault until the migration finishes.  As a result, users who try
-to kick hugepage migration (via soft offlining, for example) occasionally
-experience long delay or soft lockup.
+Currently the messenger calls out to a get_authorizer con op, which will
+create a new authorizer if it doesn't yet have one.  In the meantime, when
+we rotate our service keys, the authorizer doesn't get updated.  Eventually
+it will be rejected by the server on a new connection attempt and get
+invalidated, and we will then rebuild a new authorizer, but this is not
+ideal.
 
-This is because pte_offset_map_lock() can't get a correct migration entry
-or a correct page table lock for hugepage.  This patch introduces
-migration_entry_wait_huge() to solve this.
+Instead, if we do have an authorizer, call a new update_authorizer op that
+will verify that the current authorizer is using the latest secret.  If it
+is not, we will build a new one that does.  This avoids the transient
+failure.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This fixes one of the sorry sequence of events for bug
+
+	http://tracker.ceph.com/issues/4282
+
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/swapops.h |    3 +++
- mm/hugetlb.c            |    2 +-
- mm/migrate.c            |   23 ++++++++++++++++++-----
- 3 files changed, 22 insertions(+), 6 deletions(-)
+ fs/ceph/mds_client.c      |    7 ++++++-
+ include/linux/ceph/auth.h |    3 +++
+ net/ceph/auth_x.c         |   23 +++++++++++++++++++++++
+ net/ceph/auth_x.h         |    1 +
+ net/ceph/osd_client.c     |    5 +++++
+ 5 files changed, 38 insertions(+), 1 deletion(-)
 
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -137,6 +137,7 @@ static inline void make_migration_entry_
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -3425,7 +3425,12 @@ static struct ceph_auth_handshake *get_a
+ 	}
+ 	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+ 		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
+-							auth);
++						     auth);
++		if (ret)
++			return ERR_PTR(ret);
++	} else if (ac->ops && ac->ops_update_authorizer) {
++		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
++						     auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+ 	}
+--- a/include/linux/ceph/auth.h
++++ b/include/linux/ceph/auth.h
+@@ -52,6 +52,9 @@ struct ceph_auth_client_ops {
+ 	 */
+ 	int (*create_authorizer)(struct ceph_auth_client *ac, int peer_type,
+ 				 struct ceph_auth_handshake *auth);
++	/* ensure that an existing authorizer is up to date */
++	int (*update_authorizer)(struct ceph_auth_client *ac, int peer_type,
++				 struct ceph_auth_handshake *auth);
+ 	int (*verify_authorizer_reply)(struct ceph_auth_client *ac,
+ 				       struct ceph_authorizer *a, size_t len);
+ 	void (*destroy_authorizer)(struct ceph_auth_client *ac,
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -298,6 +298,7 @@ static int ceph_x_build_authorizer(struc
+ 			return -ENOMEM;
+ 	}
+ 	au->service = th->service;
++	au->secret_id = th->secret_id;
  
- extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					unsigned long address);
-+extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
- #else
- 
- #define make_migration_entry(page, write) swp_entry(0, 0)
-@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp
- static inline void make_migration_entry_read(swp_entry_t *entryp) { }
- static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					 unsigned long address) { }
-+static inline void migration_entry_wait_huge(struct mm_struct *mm,
-+					pte_t *pte) { }
- static inline int is_write_migration_entry(swp_entry_t entry)
- {
+ 	msg_a = au->buf->vec.iov_base;
+ 	msg_a->struct_v = 1;
+@@ -555,6 +556,27 @@ static int ceph_x_create_authorizer(
  	return 0;
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2768,7 +2768,7 @@ int hugetlb_fault(struct mm_struct *mm,
- 	if (ptep) {
- 		entry = huge_ptep_get(ptep);
- 		if (unlikely(is_hugetlb_entry_migration(entry))) {
--			migration_entry_wait(mm, (pmd_t *)ptep, address);
-+			migration_entry_wait_huge(mm, ptep);
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -180,15 +180,14 @@ static void remove_migration_ptes(struct
-  * get to the page and wait until migration is finished.
-  * When we return from this function the fault will be retried.
-  */
--void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
--				unsigned long address)
-+static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
-+				spinlock_t *ptl)
- {
--	pte_t *ptep, pte;
--	spinlock_t *ptl;
-+	pte_t pte;
- 	swp_entry_t entry;
- 	struct page *page;
- 
--	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	spin_lock(ptl);
- 	pte = *ptep;
- 	if (!is_swap_pte(pte))
- 		goto out;
-@@ -216,6 +215,20 @@ out:
- 	pte_unmap_unlock(ptep, ptl);
  }
  
-+void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
-+				unsigned long address)
++static int ceph_x_update_authorizer(
++	struct ceph_auth_client *ac, int peer_type,
++	struct ceph_auth_handshake *auth)
 +{
-+	spinlock_t *ptl = pte_lockptr(mm, pmd);
-+	pte_t *ptep = pte_offset_map(pmd, address);
-+	__migration_entry_wait(mm, ptep, ptl);
++	struct ceph_x_authorizer *au;
++	struct ceph_x_ticket_handler *th;
++	int ret;
++
++	th = get_ticket_handler(ac, peer_type);
++	if (IS_ERR(th))
++		return PTR_ERR(th);
++
++	au = (struct ceph_x_authorizer *)auth->authorizer;
++	if (au->secret_id < th->secret_id) {
++		dout("ceph_x_update_authorizer service %u secret %llu < %llu\n",
++		     au->service, au->secret_id, th->secret_id);
++		return ceph_x_build_authorizer(ac, th, au);
++	}
++	return 0;
 +}
 +
-+void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
-+{
-+	spinlock_t *ptl = &(mm)->page_table_lock;
-+	__migration_entry_wait(mm, pte, ptl);
-+}
-+
- #ifdef CONFIG_BLOCK
- /* Returns true if all buffers are successfully locked */
- static bool buffer_migrate_lock_buffers(struct buffer_head *head,
+ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 					  struct ceph_authorizer *a, size_t len)
+ {
+@@ -641,6 +663,7 @@ static const struct ceph_auth_client_ops
+ 	.build_request = ceph_x_build_request,
+ 	.handle_reply = ceph_x_handle_reply,
+ 	.create_authorizer = ceph_x_create_authorizer,
++	.update_authorizer = ceph_x_update_authorizer,
+ 	.verify_authorizer_reply = ceph_x_verify_authorizer_reply,
+ 	.destroy_authorizer = ceph_x_destroy_authorizer,
+ 	.invalidate_authorizer = ceph_x_invalidate_authorizer,
+--- a/net/ceph/auth_x.h
++++ b/net/ceph/auth_x.h
+@@ -29,6 +29,7 @@ struct ceph_x_authorizer {
+ 	struct ceph_buffer *buf;
+ 	unsigned service;
+ 	u64 nonce;
++	u64 secret_id;
+ 	char reply_buf[128];  /* big enough for encrypted blob */
+ };
+ 
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2136,6 +2136,11 @@ static struct ceph_auth_handshake *get_a
+ 							auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
++	} else if (ac->ops && ac->ops->update_authorizer) {
++		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
++						     auth);
++		if (ret)
++			return ERR_PTR(ret);
+ 	}
+ 	*proto = ac->protocol;
+ 
 
 
