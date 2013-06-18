@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637Ab3FRXxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 19:53:38 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52274 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932479Ab3FRXxA (ORCPT
+	id S933482Ab3FRXxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 19:53:35 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47846 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932499Ab3FRXxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 19:53:00 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
@@ -16,46 +16,51 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v4 4/6] mm/page_alloc: fix doc for numa_zonelist_order
-Date: Wed, 19 Jun 2013 07:52:41 +0800
-Message-Id: <1371599563-6424-4-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v4 3/6] mm/writeback: commit reason of WB_REASON_FORKER_THREAD mismatch name
+Date: Wed, 19 Jun 2013 07:52:40 +0800
+Message-Id: <1371599563-6424-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371599563-6424-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371599563-6424-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061823-2000-0000-0000-00000C8C46DB
+x-cbid: 13061823-0260-0000-0000-0000032E3792
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Changelog:
- v2 - > v3:
-   * add Michal's Reviewed-by 
+ v3 - > v4:
+    * add Tejun's Reviewed-by
+	* explicitly point to the TPs rather than saying "somewhat" visible 
 
-The default zonelist order selecter will select "node" order if any node's
-DMA zone comprises greater than 70% of its local memory instead of 60%,
-according to default_zonelist_order::low_kmem_size > total * 70/100.
+After commit 839a8e86("writeback: replace custom worker pool implementation
+with unbound workqueue"), there is no bdi forker thread any more. However,
+WB_REASON_FORKER_THREAD is still used due to it is TPs userland visible
+and we won't be exposing exactly the same information with just a different
+name.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- Documentation/sysctl/vm.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/writeback.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index a5717c3..15d341a 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -531,7 +531,7 @@ Specify "[Dd]efault" to request automatic configuration.  Autoconfiguration
- will select "node" order in following case.
- (1) if the DMA zone does not exist or
- (2) if the DMA zone comprises greater than 50% of the available memory or
--(3) if any node's DMA zone comprises greater than 60% of its local memory and
-+(3) if any node's DMA zone comprises greater than 70% of its local memory and
-     the amount of local memory is big enough.
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 8b5cec4..ac73a9d 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -47,6 +47,11 @@ enum wb_reason {
+ 	WB_REASON_LAPTOP_TIMER,
+ 	WB_REASON_FREE_MORE_MEM,
+ 	WB_REASON_FS_FREE_SPACE,
++/*
++ * There is no bdi forker thread any more and works are done by emergency
++ * worker, however, this is TPs userland visible and we'll be exposing
++ * exactly the same information, so it has a mismatch name.
++ */
+ 	WB_REASON_FORKER_THREAD,
  
- Otherwise, "zone" order will be selected. Default order is recommended unless
+ 	WB_REASON_MAX,
 -- 
 1.7.5.4
 
