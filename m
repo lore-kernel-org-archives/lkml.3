@@ -1,318 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab3FRRpC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:45:02 -0400
-Received: from shell.v3.sk ([195.168.3.45]:33724 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932631Ab3FRRo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:44:59 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: linux-kernel@vger.kernel.org
-Cc: Wim Van Sebroeck <wim@iguana.be>, Lubomir Rintel <lkundrak@v3.sk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v5] watchdog: Add Broadcom BCM2835 watchdog timer driver
-Date: Tue, 18 Jun 2013 19:44:48 +0200
-Message-Id: <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <51C09478.30909@wwwdotorg.org>
-References: <51C09478.30909@wwwdotorg.org>
+	id S933519Ab3FRRpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:45:36 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:43134 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933206Ab3FRRpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:45:32 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        arnd@arndb.de, olof@lixom.net
+Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_* registers
+Date: Tue, 18 Jun 2013 19:45:27 +0200
+Message-ID: <4951987.HiKYku7923@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <1371569191-2364-1-git-send-email-t.figa@samsung.com>
+References: <1371569191-2364-1-git-send-email-t.figa@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-used in Raspberry Pi and Roku 2 devices.
+Ccing Arnd and Olof, because I forgot to add them to git send-email...
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-Tested-by: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-rpi-kernel@lists.infradead.org
-Cc: linux-watchdog@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
----
-Changes for v2:
-    - Use per-device structure instead of global variables for lock and memory base
-    - Fix default timeout setting
-    - Do not leak memory if probe fails
-    - Style fixes
-    - Split out defconfig into a separate commit
-    - Meaningful commit message with credit
+Sorry for the noise.
 
-Changes for v3:
-    - Add proper copyright notice to header
-    - Drop status constants, we don't use them
-    - Fix heartbeat parameter's type
-    - Log driver initialization message once the device is probed
+On Tuesday 18 of June 2013 17:26:31 Tomasz Figa wrote:
+> S5P_ARM_CORE1_* registers affect only core 1. To control further cores
+> properly another registers must be used.
+> 
+> This patch replaces S5P_ARM_CORE1_* register definitions with
+> S5P_ARM_CORE_*(x) macro which return addresses of registers for
+> specified core.
+> 
+> This fixes CPU hotplug on quad core Exynos SoCs on which currently
+> offlining CPUs 2 or 3 caused CPU 1 to be turned off.
 
-Changes for v4:
-    - Drop an useless initializer
-    - Add a signoff from downstream
-    - Do not announce the driver to the log if we failed to probe
-    - Set platform data earlier and do not explicitly unset it
+Obviously this doesn't happen currently because of the if (cpu == 1), but 
+if logical cpu1 turned out not to be physical cpu1, then it would crash.
 
-Changes for v5:
-    - Copyright clarification
+Best regards,
+Tomasz
 
- .../bindings/watchdog/brcm,bcm2835-pm-wdog.txt     |    5 +
- drivers/watchdog/Kconfig                           |   11 ++
- drivers/watchdog/Makefile                          |    1 +
- drivers/watchdog/bcm2835_wdt.c                     |  189 ++++++++++++++++++++
- 4 files changed, 206 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/bcm2835_wdt.c
-
-diff --git a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-index d209366..f801d71 100644
---- a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-+++ b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-@@ -5,9 +5,14 @@ Required properties:
- - compatible : should be "brcm,bcm2835-pm-wdt"
- - reg : Specifies base physical address and size of the registers.
- 
-+Optional properties:
-+
-+- timeout-sec   : Contains the watchdog timeout in seconds
-+
- Example:
- 
- watchdog {
- 	compatible = "brcm,bcm2835-pm-wdt";
- 	reg = <0x7e100000 0x28>;
-+	timeout-sec = <10>;
- };
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index e89fc31..c3d3b16 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1098,6 +1098,17 @@ config BCM63XX_WDT
- 	  To compile this driver as a loadable module, choose M here.
- 	  The module will be called bcm63xx_wdt.
- 
-+config BCM2835_WDT
-+	tristate "Broadcom BCM2835 hardware watchdog"
-+	depends on ARCH_BCM2835
-+	select WATCHDOG_CORE
-+	help
-+	  Watchdog driver for the built in watchdog hardware in Broadcom
-+	  BCM2835 SoC.
-+
-+	  To compile this driver as a loadable module, choose M here.
-+	  The module will be called bcm2835_wdt.
-+
- config LANTIQ_WDT
- 	tristate "Lantiq SoC watchdog"
- 	depends on LANTIQ
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..1bf5675 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
- obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
- obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
- obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
-+obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
- 
- # AVR32 Architecture
- obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
-new file mode 100644
-index 0000000..61566fc
---- /dev/null
-+++ b/drivers/watchdog/bcm2835_wdt.c
-@@ -0,0 +1,189 @@
-+/*
-+ * Watchdog driver for Broadcom BCM2835
-+ *
-+ * "bcm2708_wdog" driver written by Luke Diamand that was obtained from
-+ * branch "rpi-3.6.y" of git://github.com/raspberrypi/linux.git was used
-+ * as a hardware reference for the Broadcom BCM2835 watchdog timer.
-+ *
-+ * Copyright (C) 2013 Lubomir Rintel <lkundrak@v3.sk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/watchdog.h>
-+#include <linux/platform_device.h>
-+#include <linux/of_address.h>
-+#include <linux/miscdevice.h>
-+
-+#define PM_RSTC				0x1c
-+#define PM_WDOG				0x24
-+
-+#define PM_PASSWORD			0x5a000000
-+
-+#define PM_WDOG_TIME_SET		0x000fffff
-+#define PM_RSTC_WRCFG_CLR		0xffffffcf
-+#define PM_RSTC_WRCFG_SET		0x00000030
-+#define PM_RSTC_WRCFG_FULL_RESET	0x00000020
-+#define PM_RSTC_RESET			0x00000102
-+
-+#define SECS_TO_WDOG_TICKS(x) ((x) << 16)
-+#define WDOG_TICKS_TO_SECS(x) ((x) >> 16)
-+
-+struct bcm2835_wdt {
-+	void __iomem		*base;
-+	spinlock_t		lock;
-+};
-+
-+static unsigned int heartbeat;
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+
-+static int bcm2835_wdt_start(struct watchdog_device *wdog)
-+{
-+	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-+	uint32_t cur;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&wdt->lock, flags);
-+
-+	writel_relaxed(PM_PASSWORD | (SECS_TO_WDOG_TICKS(wdog->timeout) &
-+				PM_WDOG_TIME_SET), wdt->base + PM_WDOG);
-+	cur = readl_relaxed(wdt->base + PM_RSTC);
-+	writel_relaxed(PM_PASSWORD | (cur & PM_RSTC_WRCFG_CLR) |
-+		  PM_RSTC_WRCFG_FULL_RESET, wdt->base + PM_RSTC);
-+
-+	spin_unlock_irqrestore(&wdt->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int bcm2835_wdt_stop(struct watchdog_device *wdog)
-+{
-+	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-+
-+	writel_relaxed(PM_PASSWORD | PM_RSTC_RESET, wdt->base + PM_RSTC);
-+	dev_info(wdog->dev, "Watchdog timer stopped");
-+	return 0;
-+}
-+
-+static int bcm2835_wdt_set_timeout(struct watchdog_device *wdog, unsigned int t)
-+{
-+	wdog->timeout = t;
-+	return 0;
-+}
-+
-+static unsigned int bcm2835_wdt_get_timeleft(struct watchdog_device *wdog)
-+{
-+	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-+
-+	uint32_t ret = readl_relaxed(wdt->base + PM_WDOG);
-+	return WDOG_TICKS_TO_SECS(ret & PM_WDOG_TIME_SET);
-+}
-+
-+static struct watchdog_ops bcm2835_wdt_ops = {
-+	.owner =	THIS_MODULE,
-+	.start =	bcm2835_wdt_start,
-+	.stop =		bcm2835_wdt_stop,
-+	.set_timeout =	bcm2835_wdt_set_timeout,
-+	.get_timeleft =	bcm2835_wdt_get_timeleft,
-+};
-+
-+static struct watchdog_info bcm2835_wdt_info = {
-+	.options =	WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
-+			WDIOF_KEEPALIVEPING,
-+	.identity =	"Broadcom BCM2835 Watchdog timer",
-+};
-+
-+static struct watchdog_device bcm2835_wdt_wdd = {
-+	.info =		&bcm2835_wdt_info,
-+	.ops =		&bcm2835_wdt_ops,
-+	.min_timeout =	1,
-+	.max_timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
-+	.timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
-+};
-+
-+static int bcm2835_wdt_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+	struct bcm2835_wdt *wdt;
-+	int err;
-+
-+	wdt = devm_kzalloc(dev, sizeof(struct bcm2835_wdt), GFP_KERNEL);
-+	if (!wdt) {
-+		dev_err(dev, "Failed to allocate memory for watchdog device");
-+		return -ENOMEM;
-+	}
-+	platform_set_drvdata(pdev, wdt);
-+
-+	spin_lock_init(&wdt->lock);
-+
-+	wdt->base = of_iomap(np, 0);
-+	if (!wdt->base) {
-+		dev_err(dev, "Failed to remap watchdog regs");
-+		return -ENODEV;
-+	}
-+
-+	watchdog_set_drvdata(&bcm2835_wdt_wdd, wdt);
-+	watchdog_init_timeout(&bcm2835_wdt_wdd, heartbeat, dev);
-+	watchdog_set_nowayout(&bcm2835_wdt_wdd, nowayout);
-+	err = watchdog_register_device(&bcm2835_wdt_wdd);
-+	if (err) {
-+		dev_err(dev, "Failed to register watchdog device");
-+		iounmap(wdt->base);
-+		return err;
-+	}
-+
-+	dev_info(dev, "Broadcom BCM2835 watchdog timer");
-+	return 0;
-+}
-+
-+static int bcm2835_wdt_remove(struct platform_device *pdev)
-+{
-+	struct bcm2835_wdt *wdt = platform_get_drvdata(pdev);
-+
-+	watchdog_unregister_device(&bcm2835_wdt_wdd);
-+	iounmap(wdt->base);
-+
-+	return 0;
-+}
-+
-+static void bcm2835_wdt_shutdown(struct platform_device *pdev)
-+{
-+	bcm2835_wdt_stop(&bcm2835_wdt_wdd);
-+}
-+
-+static const struct of_device_id bcm2835_wdt_of_match[] = {
-+	{ .compatible = "brcm,bcm2835-pm-wdt", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, bcm2835_wdt_of_match);
-+
-+static struct platform_driver bcm2835_wdt_driver = {
-+	.probe		= bcm2835_wdt_probe,
-+	.remove		= bcm2835_wdt_remove,
-+	.shutdown	= bcm2835_wdt_shutdown,
-+	.driver = {
-+		.name =		"bcm2835-wdt",
-+		.owner =	THIS_MODULE,
-+		.of_match_table = bcm2835_wdt_of_match,
-+	},
-+};
-+module_platform_driver(bcm2835_wdt_driver);
-+
-+module_param(heartbeat, uint, 0);
-+MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
-+
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
-+MODULE_DESCRIPTION("Driver for Broadcom BCM2835 watchdog timer");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
--- 
-1.7.1
-
+> In addition,
+> bring-up of CPU 2 and 3 is fixed on boards where bootloader powers off
+> secondary cores by default.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos/hotplug.c               |  9 +++++----
+>  arch/arm/mach-exynos/include/mach/regs-pmu.h | 10 +++++++---
+>  arch/arm/mach-exynos/platsmp.c               |  9 +++++----
+>  3 files changed, 17 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/hotplug.c
+> b/arch/arm/mach-exynos/hotplug.c index af90cfa..c089943 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -93,10 +93,11 @@ static inline void cpu_leave_lowpower(void)
+>  static inline void platform_do_lowpower(unsigned int cpu, int
+> *spurious) {
+>  	for (;;) {
+> +		void __iomem *reg_base;
+> +		unsigned int phys_cpu = cpu_logical_map(cpu);
+> 
+> -		/* make cpu1 to be turned off at next WFI command */
+> -		if (cpu == 1)
+> -			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
+> +		reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
+> +		__raw_writel(0, reg_base);
+> 
+>  		/*
+>  		 * here's the WFI
+> @@ -106,7 +107,7 @@ static inline void platform_do_lowpower(unsigned int
+> cpu, int *spurious)
+>  		    : "memory", "cc");
+> 
+> -		if (pen_release == cpu_logical_map(cpu)) {
+> +		if (pen_release == phys_cpu) {
+>  			/*
+>  			 * OK, proper wakeup, we're done
+>  			 */
+> diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> b/arch/arm/mach-exynos/include/mach/regs-pmu.h index 57344b7..cf40b86
+> 100644
+> --- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> +++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+> @@ -125,10 +125,14 @@
+>  #define S5P_GPS_ALIVE_LOWPWR			S5P_PMUREG(0x13A0)
+> 
+>  #define S5P_ARM_CORE0_CONFIGURATION		S5P_PMUREG(0x2000)
+> +#define S5P_ARM_CORE0_STATUS			S5P_PMUREG(0x2004)
+>  #define S5P_ARM_CORE0_OPTION			S5P_PMUREG(0x2008)
+> -#define S5P_ARM_CORE1_CONFIGURATION		S5P_PMUREG(0x2080)
+> -#define S5P_ARM_CORE1_STATUS			S5P_PMUREG(0x2084)
+> -#define S5P_ARM_CORE1_OPTION			S5P_PMUREG(0x2088)
+> +#define S5P_ARM_CORE_CONFIGURATION(_nr)		\
+> +		(S5P_ARM_CORE0_CONFIGURATION + ((_nr) * 0x80))
+> +#define S5P_ARM_CORE_STATUS(_nr)		\
+> +		(S5P_ARM_CORE0_STATUS + ((_nr) * 0x80))
+> +#define S5P_ARM_CORE_OPTION(_nr)		\
+> +		(S5P_ARM_CORE0_OPTION + ((_nr) * 0x80))
+> 
+>  #define S5P_ARM_COMMON_OPTION			S5P_PMUREG(0x2408)
+>  #define S5P_TOP_PWR_OPTION			S5P_PMUREG(0x2C48)
+> diff --git a/arch/arm/mach-exynos/platsmp.c
+> b/arch/arm/mach-exynos/platsmp.c index d9c6d0a..2cbabc8 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -109,14 +109,15 @@ static int __cpuinit
+> exynos_boot_secondary(unsigned int cpu, struct task_struct */
+>  	write_pen_release(phys_cpu);
+> 
+> -	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) 
+{
+> +	if (!(__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
+> +	    & S5P_CORE_LOCAL_PWR_EN)) {
+>  		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+> -			     S5P_ARM_CORE1_CONFIGURATION);
+> +			     S5P_ARM_CORE_CONFIGURATION(phys_cpu));
+> 
+>  		timeout = 10;
+> 
+>  		/* wait max 10 ms until cpu1 is on */
+> -		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+> +		while ((__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
+>  			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) 
+{
+>  			if (timeout-- == 0)
+>  				break;
+> @@ -125,7 +126,7 @@ static int __cpuinit exynos_boot_secondary(unsigned
+> int cpu, struct task_struct }
+> 
+>  		if (timeout == 0) {
+> -			printk(KERN_ERR "cpu1 power enable failed");
+> +			printk(KERN_ERR "cpu%u power enable failed", cpu);
+>  			spin_unlock(&boot_lock);
+>  			return -ETIMEDOUT;
+>  		}
