@@ -1,53 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3FRPLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:11:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43389 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457Ab3FRPLl (ORCPT
+	id S932516Ab3FRPMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:12:39 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:41665 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932302Ab3FRPMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:11:41 -0400
-Date: Tue, 18 Jun 2013 16:11:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 02/10] pinctrl: mvebu: dove pinctrl driver
-Message-ID: <20130618151116.GZ2718@n2100.arm.linux.org.uk>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-3-git-send-email-sebastian.hesselbarth@gmail.com> <20130618113606.GA26763@n2100.arm.linux.org.uk> <CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
+	Tue, 18 Jun 2013 11:12:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130618142050.GF17619@somewhere.redhat.com>
+References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1369604149-13016-6-git-send-email-kosaki.motohiro@gmail.com> <20130618142050.GF17619@somewhere.redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 18 Jun 2013 11:12:17 -0400
+Message-ID: <CAHGf_=pzYT9-BLfgX-+0jE2H4CbKChxwp45SwqERC6wu_wSzGw@mail.gmail.com>
+Subject: Re: [PATCH 3/8] posix-cpu-timers: fix wrong timer initialization
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 05:02:49PM +0200, Linus Walleij wrote:
-> Nowadays I would do the above with regmap_update_bits().
-> 
-> Mutual exclusion for read-modify-write of individual bits in a
-> register is one of those cases where doing a regmap over
-> a memory-mapped register range makes a lot of sense.
-> (drivers/mfd/syscon.c being a nice example)
+On Tue, Jun 18, 2013 at 10:20 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Sun, May 26, 2013 at 05:35:44PM -0400, kosaki.motohiro@gmail.com wrote:
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>
+>> Currently glibc's rt/tst-cputimer1 testcase sporadically fails because
+>> a timer created by timer_create() may fire earlier than specified.
+>>
+>> posix_cpu_timer_set() uses "val" as current time for three purpose. 1)
+>> initialize sig->cputimer. 2) calculation "old" val. 3) calculations an
+>> expires.
+>>
+>> (1) and (2) should only use committed time (i.e. without delta_exec)
+>> because run_posix_cpu_timers() don't care of delta_exec and we need
+>> consistency, but (3) need exact current time (aka cpu clock time) because
+>> an expires should be "now + timeout" by definition.
+>>
+>> This patch distinguishes between two kinds of "now".
+>>
+>> Cc: Olivier Langlois <olivier@trillion01.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Acked-by: Peter Zijlstra <peterz@infradead.org>
+>> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> ---
+>>  include/linux/kernel_stat.h |    5 -----
+>>  kernel/posix-cpu-timers.c   |   14 ++++++++++++--
+>>  kernel/sched/core.c         |   13 -------------
+>>  3 files changed, 12 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+>> index ed5f6ed..f5d4fdf 100644
+>> --- a/include/linux/kernel_stat.h
+>> +++ b/include/linux/kernel_stat.h
+>> @@ -117,11 +117,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
+>>       return kstat_cpu(cpu).irqs_sum;
+>>  }
+>>
+>> -/*
+>> - * Lock/unlock the current runqueue - to extract task statistics:
+>> - */
+>> -extern unsigned long long task_delta_exec(struct task_struct *);
+>> -
+>>  extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
+>>  extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
+>>  extern void account_steal_time(cputime_t);
+>> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+>> index 25447c5..d068808 100644
+>> --- a/kernel/posix-cpu-timers.c
+>> +++ b/kernel/posix-cpu-timers.c
+>> @@ -652,7 +652,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
+>>               cpu->cpu = cputime.utime;
+>>               break;
+>>       case CPUCLOCK_SCHED:
+>> -             cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
+>> +             cpu->sched = cputime.sum_exec_runtime;
+>
+> Are you sure that all callers of cpu_timer_sample_group() are fine with that change?
 
-So, for that solution we need to have some kind of global regmap per
-register or somesuch.  Then you run into regmap needing a struct
-device - well, with a shared register, which struct device do you
-use, or do you have to invent one?
+Now, cpu_timer_sample_group() is used from following four points.
 
-That sounds more heavy-weight than is really necessary.
+posix_cpu_timer_set(): for timer initialization
+posix_cpu_timer_get(): for timer_gettime(2)
+posix_cpu_timer_schedule(): timer firing
+set_process_cpu_timer(): for itimer
+
+I think all of them are safe because, the point is, timer firing
+procedure (check_thread_timers and check_process_timers) don't care
+uncommitted delta. Then, other timer functions need to use the same
+timer tick. Otherwise the inconsistency leak to userland sooner or
+later.
+
+The another solution is, check_{thread/process}_timers take plenty rq
+locks and use accurate time. However, of course, it may make lots
+performance hit. So, I don't want
+to take this way.
+
+
+> Looking at set_process_cpu_timer() it seems we want the committed time as well to
+> be added on newval. For the same reasons we use cpu_clock_sample_group() in (3) here.
+
+Sorry, I haven't caught your point. Could you elaborate more?
