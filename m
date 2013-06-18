@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab3FRJtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:49:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43240 "EHLO comal.ext.ti.com"
+	id S1755574Ab3FRJuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:50:40 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:4600 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754614Ab3FRJtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:49:47 -0400
-Message-ID: <51C02D0F.6010302@ti.com>
-Date: Tue, 18 Jun 2013 15:19:03 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755346Ab3FRJuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:50:39 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH] pinctrl: fix pinconf_ops::pin_config_dbg_parse_modify kerneldoc
+Date: Tue, 18 Jun 2013 10:49:33 +0100
+Message-ID: <1371548973-7197-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
-        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
-        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <nsekhar@ti.com>
-Subject: Re: [PATCH v7 2/9] usb: phy: omap-usb2: use the new generic PHY framework
-References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-3-git-send-email-kishon@ti.com> <20130618094058.GQ5461@arwen.pp.htv.fi>
-In-Reply-To: <20130618094058.GQ5461@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_18_10_50_35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The kerneldoc comment for struct pinconf_ops was missing
+pin_config_dbg_parse_modify, and instead described
+pin_config_group_dbg_set (which is presumably an old name for the same
+function). Rename it in the kerneldoc comment so they match.
 
-On Tuesday 18 June 2013 03:10 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Thu, Jun 13, 2013 at 02:13:52PM +0530, Kishon Vijay Abraham I wrote:
->> @@ -159,6 +191,12 @@ static int omap_usb2_probe(struct platform_device *pdev)
->>   	otg->start_srp		= omap_usb_start_srp;
->>   	otg->phy		= &phy->phy;
->>
->> +	pm_runtime_enable(phy->dev);
->
-> enabling pm_runtime here has the potential to cause a real big problem.
-> How have you tested this patch ?
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/pinctrl/pinconf.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-performed boot and enumeration testing. What issue do you expect here?
+diff --git a/include/linux/pinctrl/pinconf.h b/include/linux/pinctrl/pinconf.h
+index 1ad4f31..f699869 100644
+--- a/include/linux/pinctrl/pinconf.h
++++ b/include/linux/pinctrl/pinconf.h
+@@ -30,7 +30,7 @@ struct seq_file;
+  * @pin_config_set: configure an individual pin
+  * @pin_config_group_get: get configurations for an entire pin group
+  * @pin_config_group_set: configure all pins in a group
+- * @pin_config_group_dbg_set: optional debugfs to modify a pin configuration
++ * @pin_config_dbg_parse_modify: optional debugfs to modify a pin configuration
+  * @pin_config_dbg_show: optional debugfs display hook that will provide
+  *	per-device info for a certain pin in debugfs
+  * @pin_config_group_dbg_show: optional debugfs display hook that will provide
+-- 
+1.8.1.2
 
-Thanks
-Kishon
+
