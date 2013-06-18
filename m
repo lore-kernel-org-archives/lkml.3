@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3FRJIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:08:39 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:35996 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3FRJIg (ORCPT
+	id S1755469Ab3FRJJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:09:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37987 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab3FRJJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:08:36 -0400
-Message-ID: <1371546510.3252.224.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 18 Jun 2013 02:08:30 -0700
-In-Reply-To: <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
-References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>
-	 <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 18 Jun 2013 05:09:15 -0400
+Date: Tue, 18 Jun 2013 11:09:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH] sched/rt: Simplify pull_rt_task() logic and remove
+ .leaf_rt_rq_list
+Message-ID: <20130618090909.GE3204@twins.programming.kicks-ass.net>
+References: <1370633863.9844.92.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370633863.9844.92.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 11:58 +0300, Eliezer Tamir wrote:
-> select/poll busy-poll support.
+On Fri, Jun 07, 2013 at 03:37:43PM -0400, Steven Rostedt wrote:
+> [ Peter, this is based off of some of my work, I ran it though a few 
+>   tests and it passed. I also reviewed it, and added my SOB as I am
+>   somewhat a co-author to it. ]
 > 
+> From: Kirill Tkhai <tkhai@yandex.ru>
+> 
+> Based on the patch by Steven Rostedt from previous year:
+> 
+> https://lkml.org/lkml/2012/4/18/517
+> 
+> 1)Simplify pull_rt_task() logic: search in pushable tasks of dest runqueue.
+> The only pullable tasks are the tasks which are pushable in their local rq,
+> and no others.
+> 
+> 2)Remove .leaf_rt_rq_list member of struct rt_rq and functions connected
+> with it: nobody uses it since now.
+> 
+> Link: http://lkml.kernel.org/r/287571370557898@web7d.yandex.ru
+> 
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-
->   */
-> -static inline u64 ll_end_time(struct sock *sk)
-> +static inline u64 ll_sk_end_time(struct sock *sk)
->  {
-> -	u64 end_time = ACCESS_ONCE(sk->sk_ll_usec);
-> -
-> -	/* we don't mind a ~2.5% imprecision
-> -	 * sk->sk_ll_usec is a u_int so this can't overflow
-> -	 */
-> -	end_time = (end_time << 10) + sched_clock();
-> +	return (ACCESS_ONCE(sk->sk_ll_usec) << 10) + sched_clock();
-> +}
->  
-
-This is the fourth time you try to introduce an overflow in this code.
-
-(same for ll_end_time())
-
-
-
-
+Thanks!
