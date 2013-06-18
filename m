@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122Ab3FRQP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:15:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49354 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089Ab3FRQOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933085Ab3FRQOu (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Jun 2013 12:14:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab3FRQOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:14:40 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 20/26] libceph: fix authorizer invalidation
-Date: Tue, 18 Jun 2013 09:15:00 -0700
-Message-Id: <20130618161237.331584512@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 12/26] reboot: rigrate shutdown/reboot to boot cpu
+Date: Tue, 18 Jun 2013 09:14:52 -0700
+Message-Id: <20130618161235.313519858@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -28,43 +35,100 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Robin Holt <holt@sgi.com>
 
-commit 4b8e8b5d78b8322351d44487c1b76f7e9d3412bc upstream.
+commit cf7df378aa4ff7da3a44769b7ff6e9eef1a9f3db upstream.
 
-We were invalidating the authorizer by removing the ticket handler
-entirely.  This was effective in inducing us to request a new authorizer,
-but in the meantime it mean that any authorizer we generated would get a
-new and initialized handler with secret_id=0, which would always be
-rejected by the server side with a confusing error message:
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f2dc63 ("kernel/sys.c: call disable_nonboot_cpus() in
+kernel_restart()").
 
- auth: could not find secret_id=0
- cephx: verify_authorizer could not get service secret for service osd secret_id=0
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+boot cpu and then continuing with shutdown/reboot.
 
-Instead, simply clear the validity field.  This will still induce the auth
-code to request a new secret, but will let us continue to use the old
-ticket in the meantime.  The messenger code will probably continue to fail,
-but the exponential backoff will kick in, and eventually the we will get a
-new (hopefully more valid) ticket from the mon and be able to continue.
+This also has the effect of not breaking x86's command line parameter
+for specifying the reboot cpu.  Note, this code was shamelessly copied
+from arch/x86/kernel/reboot.c with bits removed pertaining to the
+reboot_cpu command line parameter.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/auth_x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sys.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -630,7 +630,7 @@ static void ceph_x_invalidate_authorizer
- 
- 	th = get_ticket_handler(ac, peer_type);
- 	if (!IS_ERR(th))
--		remove_ticket_handler(ac, th);
-+		memset(&th->validity, 0, sizeof(th->validity));
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -353,6 +353,29 @@ int unregister_reboot_notifier(struct no
  }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
  
- 
++/* Add backwards compatibility for stable trees. */
++#ifndef PF_NO_SETAFFINITY
++#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
++#endif
++
++static void migrate_to_reboot_cpu(void)
++{
++	/* The boot cpu is always logical cpu 0 */
++	int cpu = 0;
++
++	cpu_hotplug_disable();
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(cpu))
++		cpu = cpumask_first(cpu_online_mask);
++
++	/* Prevent races with other tasks migrating this task */
++	current->flags |= PF_NO_SETAFFINITY;
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
++}
++
+ /**
+  *	kernel_restart - reboot the system
+  *	@cmd: pointer to buffer containing command to execute for restart
+@@ -364,7 +387,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+@@ -391,7 +414,7 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+@@ -410,7 +433,7 @@ void kernel_power_off(void)
+ 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
 
 
