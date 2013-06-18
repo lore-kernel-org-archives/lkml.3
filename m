@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab3FRFyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:54:24 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:50352 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3FRFyX (ORCPT
+	id S1752226Ab3FRF5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:57:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:36135 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3FRF5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:54:23 -0400
+	Tue, 18 Jun 2013 01:57:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130618030709.GJ20795@xanatos>
-References: <1370452543-19014-1-git-send-email-yhchen@faraday-tech.com>
-	<20130617203948.GA32731@kroah.com>
-	<CADB-GoK7Ntv0yM8hWLE7nrdiLq-fZymyHihGuu-78j4qiDCszA@mail.gmail.com>
-	<20130618030709.GJ20795@xanatos>
-Date: Tue, 18 Jun 2013 13:54:22 +0800
-Message-ID: <CADB-GoKACJnearpDL+kxxsW6ez=2cbP0UDgbZNL+uNN0bswDog@mail.gmail.com>
-Subject: Re: [PATCH] usb: host: Faraday fotg210-hcd driver
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        florian@openwrt.org, USB list <linux-usb@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, ratbert <ratbert.chuang@gmail.com>,
-        =?UTF-8?B?Sm9obiBGZW5nLUhzaW4gQ2hpYW5nKOaxn+WzsOiIiCk=?= 
-	<john453@faraday-tech.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAA9_cmdr7gjrbBN8tV9LAH2JXzFiegLzLPOAHVg-9sP8p9HRqg@mail.gmail.com>
+References: <20130613172408.GA5561@intel.com>
+	<CAA9_cmf5y_z_XeX7N2Jno9uvUkrFK83RN1XrxTwVqZJnbdfEWA@mail.gmail.com>
+	<CAA9_cmdr7gjrbBN8tV9LAH2JXzFiegLzLPOAHVg-9sP8p9HRqg@mail.gmail.com>
+Date: Tue, 18 Jun 2013 08:57:04 +0300
+Message-ID: <CAHp75VdxO_hpSHSu+KsHWo8s7MFb=QqdYXuihSNSLLUXU1ykyg@mail.gmail.com>
+Subject: Re: [PATCH] dmatest: masking tests for channel capabilities
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Jubin Mehta <jubin.mehta@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jun 18, 2013 at 11:07 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Tue, Jun 18, 2013 at 10:42:09AM +0800, Yuan-Hsin Chen wrote:
->> Hi,
+On Tue, Jun 18, 2013 at 12:12 AM, Dan Williams <djbw@fb.com> wrote:
+> On Mon, Jun 17, 2013 at 2:10 PM, Dan Williams <djbw@fb.com> wrote:
+>>> +Example to perform only MEMCPY and PQ mode tests (0x01 | 0x04 = 0x05):
+>>> +
+>>> +        % modprobe dmatest
+>>> +        % echo dma0chan0 > /sys/kernel/debug/dmatest/channel
+>>> +        % echo 5  > /sys/kernel/debug/dmatest/cap_mask
+>>> +        % echo 1 > /sys/kernel/debug/dmatest/iterations
+>>> +        % echo 1 > /sys/kernel/debug/dmatest/run
 >>
->> On Tue, Jun 18, 2013 at 4:39 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Wed, Jun 05, 2013 at 05:15:43PM +0000, Yuan-Hsin Chen wrote:
->> >> FOTG210 is an OTG controller which can be configured as an
->> >> USB2.0 host. FOTG210 host is an ehci-like controller with
->> >> some differences. First, register layout of FOTG210 is
->> >> incompatible with EHCI. Furthermore, FOTG210 is lack of
->> >> siTDs which means iTDs are used for both HS and FS ISO
->> >> transfer.
->> >>
->> >> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
->> >> ---
->> >>  drivers/usb/Makefile           |    1 +
->> >>  drivers/usb/host/Kconfig       |   12 +
->> >>  drivers/usb/host/Makefile      |    1 +
->> >>  drivers/usb/host/fotg210-hcd.c | 5967 ++++++++++++++++++++++++++++++++++++++++
->> >>  drivers/usb/host/fotg210.h     |  746 +++++
->> >>  5 files changed, 6727 insertions(+), 0 deletions(-)
->> >>  create mode 100644 drivers/usb/host/fotg210-hcd.c
->> >>  create mode 100644 drivers/usb/host/fotg210.h
->> >
->> > You obviously didn't even run this through checkpatch.pl, did you?
->> >
->> > $ ./scripts/checkpatch.pl --terse ../usb.mbox | tail -n 1
->> > total: 138 errors, 618 warnings, 6742 lines checked
->> >
->> > Please fix all of these if you wish us to at least start reviewing the
->> > patch.  Your internal Q/A should have caught this first, please be more
->> > careful in the future.
->> >
 >>
->> Actually I did run checkpatch.pl and found that almost all errors and
->> warnings are from ehci core (ehci-hcd.c, ehci-hub.c and so on) where
->> my driver borrowed most of code.
->>
->> $ ./scripts/checkpatch.pl --terse -f drivers/usb/host/ehci-hub.c | tail -n 1
->> total: 18 errors, 69 warnings, 1138 lines checked
->>
->> $ ./scripts/checkpatch.pl --terse -f drivers/usb/host/ehci-hcd.c | tail -n 1
->> total: 17 errors, 78 warnings, 1403 lines checked
->>
->> So you're saying that I should fix them, is that right?
->
-> In that case, no, you should be figuring out how to refactor and reuse
-> the EHCI code instead of copying it straight into your driver.
+>> Hmmm, I should have paid more attention when the debugfs support was
+>> initially proposed for dmatest.  As it is I see duplication and
+>> configuration parameters getting out of sync with their module parameter
+>> equivalents versus just having all configuration go through module
+>> parameters.  module_param_call() can be used for the more complex options.
+>> Debugfs at this point looks like overkill for what amounts to some simple
+>> configuration variables and a result line.
 
-I was trying to use ehci-platform.c, anonymous union/struct, and quirk
-flags to avoid copying EHCI code.
-But there are too big incompatibilities between fotg210/fusbh200
-controller and EHCI.
-That's why Alan agreed that I could create a stand-alone driver for
-fusbh200 host controller.
-Since fotg210 and fusbh200 have the same issue,  fotg210 hcd is
-supposed to be stand-alone.
-More details please refer to mail sequence
-http://www.spinics.net/lists/linux-usb/msg83812.html
+There two main issues we fight against:
+ - test automation, where we can collect results and use them later
+ - annoying modprobe / modprobe -r for each test case
 
-Thanks,
+The module parameters were left to support old behaviour of the module.
 
-Yuan-Hsin
-
->
-> Sarah Sharp
+--
+With Best Regards,
+Andy Shevchenko
