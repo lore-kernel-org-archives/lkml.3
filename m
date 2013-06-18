@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3FRBsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 21:48:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab3FRBsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 21:48:13 -0400
-Subject: [PATCH] amd_iommu: Fix leak in free_pagetable()
-To: joro@8bytes.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Jun 2013 19:48:08 -0600
-Message-ID: <20130618014459.20440.73844.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1753685Ab3FRBu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 21:50:29 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:54263 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab3FRBu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 21:50:28 -0400
+Date: Mon, 17 Jun 2013 21:49:27 -0400 (EDT)
+From: David Airlie <airlied@redhat.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, bskeggs@redhat.com,
+        dri-devel@lists.freedesktop.org
+Message-ID: <1257782958.19234314.1371520167209.JavaMail.root@redhat.com>
+In-Reply-To: <20130618013602.GC2200@redhat.com>
+References: <20130618013602.GC2200@redhat.com>
+Subject: Re: [3.10rc6] /proc/dri/0/vma broken on nouveau.
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_19234312_393872653.1371520167207"
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF19 (Linux)/8.0.3_GA_5664)
+Thread-Topic: /proc/dri/0/vma broken on nouveau.
+Thread-Index: OF92I/YgP1WHKj0AYXHAUkHHKWZsDw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD IOMMU initializes domains with a 3 level page table by default
-and will dynamically size it up to a 6 level page table.  Sadly,
-free_pagetable() ignores this feature and statically frees as if
-it's a 3 level page table.  Recurse through all the levels to
-free everything.
+------=_Part_19234312_393872653.1371520167207
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
----
 
-This is obviously a version rewritten to be recursive.  I'll also
-post a flat version, take your pick.
+> Reading /proc/dri/0/vma causes bad things to happen on a box with nouveau
+> loaded.
+> (Note, no X running on that box)
+> 
+> Trace below shows trinity, but I can reproduce it with just cat
+> /proc/dri/0/vma
 
- drivers/iommu/amd_iommu.c |   36 +++++++++++++++---------------------
- 1 file changed, 15 insertions(+), 21 deletions(-)
+How about this, lets just rip it all out.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 565c745..5496025 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1906,32 +1906,26 @@ static void domain_id_free(int id)
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
- }
- 
--static void free_pagetable(struct protection_domain *domain)
-+static void free_pagetable_level(int level, int max_level, u64 *pt)
- {
--	int i, j;
--	u64 *p1, *p2, *p3;
-+	if (level < max_level) {
-+		int i;
-+		for (i = 0; i < 512; ++i) {
-+			if (IOMMU_PTE_PRESENT(pt[i]))
-+				free_pagetable_level(level + 1, max_level,
-+						     IOMMU_PTE_PAGE(pt[i]));
-+		}
-+	}
- 
--	p1 = domain->pt_root;
-+	free_page((unsigned long)pt);
-+}
- 
--	if (!p1)
-+static void free_pagetable(struct protection_domain *domain)
-+{
-+	if (!domain->pt_root)
- 		return;
- 
--	for (i = 0; i < 512; ++i) {
--		if (!IOMMU_PTE_PRESENT(p1[i]))
--			continue;
--
--		p2 = IOMMU_PTE_PAGE(p1[i]);
--		for (j = 0; j < 512; ++j) {
--			if (!IOMMU_PTE_PRESENT(p2[j]))
--				continue;
--			p3 = IOMMU_PTE_PAGE(p2[j]);
--			free_page((unsigned long)p3);
--		}
--
--		free_page((unsigned long)p2);
--	}
--
--	free_page((unsigned long)p1);
-+	free_pagetable_level(PAGE_MODE_1_LEVEL, domain->mode, domain->pt_root);
- 
- 	domain->pt_root = NULL;
- }
+Dave.
+------=_Part_19234312_393872653.1371520167207
+Content-Type: text/x-patch; name=0001-drm-remove-vma-debug-code.patch
+Content-Disposition: attachment;
+ filename=0001-drm-remove-vma-debug-code.patch
+Content-Transfer-Encoding: base64
 
+RnJvbSA1NGY5NjA1NzM3NDM3MjcyZjQ0MGJiYzZjYzRhZGY4MDUzMzQ4ODRiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
+OiBUdWUsIDE4IEp1biAyMDEzIDExOjM4OjEwICsxMDAwClN1YmplY3Q6IFtQQVRDSF0gZHJtOiBy
+ZW1vdmUgdm1hIGRlYnVnIGNvZGUKClRoaXMgbGlzdHMgdm1hIGluIC9wcm9jIGFuZCBpcyBib3Ro
+IGNyYXNoIHByb25lIGFuZCBxdWl0ZSBwb3NzaWJsZSBob3JyaWJseQpyYWN5LiBKdXN0IG51a2Ug
+aXQgSSBkb24ndCB0aGluayBJJ3ZlIHVzZWQgaXQgaW4geWVhcnMgYW5kIHllYXJzLgoKU2lnbmVk
+LW9mZi1ieTogRGF2ZSBBaXJsaWUgPGFpcmxpZWRAcmVkaGF0LmNvbT4KLS0tCiBkcml2ZXJzL2dw
+dS9kcm0vZHJtX2RlYnVnZnMuYyB8ICAzIC0tLQogZHJpdmVycy9ncHUvZHJtL2RybV9pbmZvLmMg
+ICAgfCA1NCAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiBkcml2
+ZXJzL2dwdS9kcm0vZHJtX3Byb2MuYyAgICB8ICAzIC0tLQogaW5jbHVkZS9kcm0vZHJtUC5oICAg
+ICAgICAgICAgfCAgNCAtLS0tCiA0IGZpbGVzIGNoYW5nZWQsIDY0IGRlbGV0aW9ucygtKQoKZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9kcm1fZGVidWdmcy5jIGIvZHJpdmVycy9ncHUvZHJt
+L2RybV9kZWJ1Z2ZzLmMKaW5kZXggYTA1MDg3Yy4uNTk1YzhjMSAxMDA2NDQKLS0tIGEvZHJpdmVy
+cy9ncHUvZHJtL2RybV9kZWJ1Z2ZzLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL2RybV9kZWJ1Z2Zz
+LmMKQEAgLTQ4LDkgKzQ4LDYgQEAgc3RhdGljIHN0cnVjdCBkcm1faW5mb19saXN0IGRybV9kZWJ1
+Z2ZzX2xpc3RbXSA9IHsKIAl7ImNsaWVudHMiLCBkcm1fY2xpZW50c19pbmZvLCAwfSwKIAl7ImJ1
+ZnMiLCBkcm1fYnVmc19pbmZvLCAwfSwKIAl7ImdlbV9uYW1lcyIsIGRybV9nZW1fbmFtZV9pbmZv
+LCBEUklWRVJfR0VNfSwKLSNpZiBEUk1fREVCVUdfQ09ERQotCXsidm1hIiwgZHJtX3ZtYV9pbmZv
+LCAwfSwKLSNlbmRpZgogfTsKICNkZWZpbmUgRFJNX0RFQlVHRlNfRU5UUklFUyBBUlJBWV9TSVpF
+KGRybV9kZWJ1Z2ZzX2xpc3QpCiAKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9kcm1faW5m
+by5jIGIvZHJpdmVycy9ncHUvZHJtL2RybV9pbmZvLmMKaW5kZXggZDRiMjBjZS4uMGQyNWY4ZCAx
+MDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL2RybV9pbmZvLmMKKysrIGIvZHJpdmVycy9ncHUv
+ZHJtL2RybV9pbmZvLmMKQEAgLTIyMiw1NyArMjIyLDMgQEAgaW50IGRybV9nZW1fbmFtZV9pbmZv
+KHN0cnVjdCBzZXFfZmlsZSAqbSwgdm9pZCAqZGF0YSkKIAlyZXR1cm4gMDsKIH0KIAotI2lmIERS
+TV9ERUJVR19DT0RFCi0KLWludCBkcm1fdm1hX2luZm8oc3RydWN0IHNlcV9maWxlICptLCB2b2lk
+ICpkYXRhKQotewotCXN0cnVjdCBkcm1faW5mb19ub2RlICpub2RlID0gKHN0cnVjdCBkcm1faW5m
+b19ub2RlICopIG0tPnByaXZhdGU7Ci0Jc3RydWN0IGRybV9kZXZpY2UgKmRldiA9IG5vZGUtPm1p
+bm9yLT5kZXY7Ci0Jc3RydWN0IGRybV92bWFfZW50cnkgKnB0OwotCXN0cnVjdCB2bV9hcmVhX3N0
+cnVjdCAqdm1hOwotI2lmIGRlZmluZWQoX19pMzg2X18pCi0JdW5zaWduZWQgaW50IHBncHJvdDsK
+LSNlbmRpZgotCi0JbXV0ZXhfbG9jaygmZGV2LT5zdHJ1Y3RfbXV0ZXgpOwotCXNlcV9wcmludGYo
+bSwgInZtYSB1c2UgY291bnQ6ICVkLCBoaWdoX21lbW9yeSA9ICVwSywgMHglcEtcbiIsCi0JCSAg
+IGF0b21pY19yZWFkKCZkZXYtPnZtYV9jb3VudCksCi0JCSAgIGhpZ2hfbWVtb3J5LCAodm9pZCAq
+KSh1bnNpZ25lZCBsb25nKXZpcnRfdG9fcGh5cyhoaWdoX21lbW9yeSkpOwotCi0JbGlzdF9mb3Jf
+ZWFjaF9lbnRyeShwdCwgJmRldi0+dm1hbGlzdCwgaGVhZCkgewotCQl2bWEgPSBwdC0+dm1hOwot
+CQlpZiAoIXZtYSkKLQkJCWNvbnRpbnVlOwotCQlzZXFfcHJpbnRmKG0sCi0JCQkgICAiXG4lNWQg
+MHglcEstMHglcEsgJWMlYyVjJWMlYyVjIDB4JTA4bHgwMDAiLAotCQkJICAgcHQtPnBpZCwKLQkJ
+CSAgICh2b2lkICopdm1hLT52bV9zdGFydCwgKHZvaWQgKil2bWEtPnZtX2VuZCwKLQkJCSAgIHZt
+YS0+dm1fZmxhZ3MgJiBWTV9SRUFEID8gJ3InIDogJy0nLAotCQkJICAgdm1hLT52bV9mbGFncyAm
+IFZNX1dSSVRFID8gJ3cnIDogJy0nLAotCQkJICAgdm1hLT52bV9mbGFncyAmIFZNX0VYRUMgPyAn
+eCcgOiAnLScsCi0JCQkgICB2bWEtPnZtX2ZsYWdzICYgVk1fTUFZU0hBUkUgPyAncycgOiAncCcs
+Ci0JCQkgICB2bWEtPnZtX2ZsYWdzICYgVk1fTE9DS0VEID8gJ2wnIDogJy0nLAotCQkJICAgdm1h
+LT52bV9mbGFncyAmIFZNX0lPID8gJ2knIDogJy0nLAotCQkJICAgdm1hLT52bV9wZ29mZik7Ci0K
+LSNpZiBkZWZpbmVkKF9faTM4Nl9fKQotCQlwZ3Byb3QgPSBwZ3Byb3RfdmFsKHZtYS0+dm1fcGFn
+ZV9wcm90KTsKLQkJc2VxX3ByaW50ZihtLCAiICVjJWMlYyVjJWMlYyVjJWMlYyIsCi0JCQkgICBw
+Z3Byb3QgJiBfUEFHRV9QUkVTRU5UID8gJ3AnIDogJy0nLAotCQkJICAgcGdwcm90ICYgX1BBR0Vf
+UlcgPyAndycgOiAncicsCi0JCQkgICBwZ3Byb3QgJiBfUEFHRV9VU0VSID8gJ3UnIDogJ3MnLAot
+CQkJICAgcGdwcm90ICYgX1BBR0VfUFdUID8gJ3QnIDogJ2InLAotCQkJICAgcGdwcm90ICYgX1BB
+R0VfUENEID8gJ3UnIDogJ2MnLAotCQkJICAgcGdwcm90ICYgX1BBR0VfQUNDRVNTRUQgPyAnYScg
+OiAnLScsCi0JCQkgICBwZ3Byb3QgJiBfUEFHRV9ESVJUWSA/ICdkJyA6ICctJywKLQkJCSAgIHBn
+cHJvdCAmIF9QQUdFX1BTRSA/ICdtJyA6ICdrJywKLQkJCSAgIHBncHJvdCAmIF9QQUdFX0dMT0JB
+TCA/ICdnJyA6ICdsJyk7Ci0jZW5kaWYKLQkJc2VxX3ByaW50ZihtLCAiXG4iKTsKLQl9Ci0JbXV0
+ZXhfdW5sb2NrKCZkZXYtPnN0cnVjdF9tdXRleCk7Ci0JcmV0dXJuIDA7Ci19Ci0KLSNlbmRpZgot
+CmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vZHJtX3Byb2MuYyBiL2RyaXZlcnMvZ3B1L2Ry
+bS9kcm1fcHJvYy5jCmluZGV4IGQ3ZjIzMjQuLjkyZTlhYmQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+Z3B1L2RybS9kcm1fcHJvYy5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9kcm1fcHJvYy5jCkBAIC01
+NSw5ICs1NSw2IEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3QgZHJtX2luZm9fbGlzdCBkcm1fcHJvY19s
+aXN0W10gPSB7CiAJeyJjbGllbnRzIiwgZHJtX2NsaWVudHNfaW5mbywgMH0sCiAJeyJidWZzIiwg
+ZHJtX2J1ZnNfaW5mbywgMH0sCiAJeyJnZW1fbmFtZXMiLCBkcm1fZ2VtX25hbWVfaW5mbywgRFJJ
+VkVSX0dFTX0sCi0jaWYgRFJNX0RFQlVHX0NPREUKLQl7InZtYSIsIGRybV92bWFfaW5mbywgMH0s
+Ci0jZW5kaWYKIH07CiAjZGVmaW5lIERSTV9QUk9DX0VOVFJJRVMgQVJSQVlfU0laRShkcm1fcHJv
+Y19saXN0KQogCmRpZmYgLS1naXQgYS9pbmNsdWRlL2RybS9kcm1QLmggYi9pbmNsdWRlL2RybS9k
+cm1QLmgKaW5kZXggNjNkMTdlZS4uODQ5NTIzZCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9kcm0vZHJt
+UC5oCisrKyBiL2luY2x1ZGUvZHJtL2RybVAuaApAQCAtMTYwMCwxMCArMTYwMCw2IEBAIGludCBk
+cm1fcHJpbWVfYWRkX2RtYV9idWYoc3RydWN0IGRybV9kZXZpY2UgKmRldiwgc3RydWN0IGRybV9n
+ZW1fb2JqZWN0ICpvYmopOwogaW50IGRybV9wcmltZV9sb29rdXBfb2JqKHN0cnVjdCBkcm1fZGV2
+aWNlICpkZXYsIHN0cnVjdCBkbWFfYnVmICpidWYsCiAJCQkgc3RydWN0IGRybV9nZW1fb2JqZWN0
+ICoqb2JqKTsKIAotI2lmIERSTV9ERUJVR19DT0RFCi1leHRlcm4gaW50IGRybV92bWFfaW5mbyhz
+dHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQgKmRhdGEpOwotI2VuZGlmCi0KIAkJCQkvKiBTY2F0dGVy
+IEdhdGhlciBTdXBwb3J0IChkcm1fc2NhdHRlci5oKSAqLwogZXh0ZXJuIHZvaWQgZHJtX3NnX2Ns
+ZWFudXAoc3RydWN0IGRybV9zZ19tZW0gKiBlbnRyeSk7CiBleHRlcm4gaW50IGRybV9zZ19hbGxv
+Y19pb2N0bChzdHJ1Y3QgZHJtX2RldmljZSAqZGV2LCB2b2lkICpkYXRhLAotLSAKMS44LjEuMgoK
+
+------=_Part_19234312_393872653.1371520167207--
