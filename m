@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3FROJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:09:04 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:44868 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab3FROJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:09:03 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH] genirq: irqchip: document gcflags arg of irq_alloc_domain_generic_chips
-Date: Tue, 18 Jun 2013 15:08:33 +0100
-Message-ID: <1371564513-4327-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S932916Ab3FROMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:12:32 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:64508 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab3FROMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:12:31 -0400
+Message-ID: <51C06AC9.2010505@gmail.com>
+Date: Tue, 18 Jun 2013 22:12:25 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_06_18_15_09_02
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: Remove unused function __put_page
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 088f40b7b027dad6519712ff224a5798dd62a204 ("genirq: Generic chip:
-Add linear irq domain support") missed kerneldoc for the gcflags
-argument of irq_alloc_domain_generic_chips(). Add it now.
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+This function is nowhere used, and it has a confusing name with
+put_page in mm/swap.c. So better to remove it.
+
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- kernel/irq/generic-chip.c | 1 +
- 1 file changed, 1 insertion(+)
+ mm/internal.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 95575d8..a746a8f 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -251,12 +251,13 @@ irq_gc_init_mask_cache(struct irq_chip_generic *gc, enum irq_gc_flags flags)
-  * @irqs_per_chip:	Number of interrupts each chip handles
-  * @num_ct:		Number of irq_chip_type instances associated with this
-  * @name:		Name of the irq chip
-  * @handler:		Default flow handler associated with these chips
-  * @clr:		IRQ_* bits to clear in the mapping function
-  * @set:		IRQ_* bits to set in the mapping function
-+ * @gcflags:		Generic chip specific setup flags
-  */
- int irq_alloc_domain_generic_chips(struct irq_domain *d, int irqs_per_chip,
- 				   int num_ct, const char *name,
- 				   irq_flow_handler_t handler,
- 				   unsigned int clr, unsigned int set,
- 				   enum irq_gc_flags gcflags)
+diff --git a/mm/internal.h b/mm/internal.h
+index 8562de0..4390ac6 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -32,11 +32,6 @@ static inline void set_page_refcounted(struct page *page)
+ 	set_page_count(page, 1);
+ }
+ 
+-static inline void __put_page(struct page *page)
+-{
+-	atomic_dec(&page->_count);
+-}
+-
+ static inline void __get_page_tail_foll(struct page *page,
+ 					bool get_page_head)
+ {
 -- 
-1.8.1.2
-
-
+1.7.1
