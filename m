@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3FRQR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:17:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49499 "EHLO
+	id S933371Ab3FRQSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:18:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229Ab3FRQRz (ORCPT
+	with ESMTP id S933271Ab3FRQSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:55 -0400
+	Tue, 18 Jun 2013 12:18:20 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 24/48] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
-Date: Tue, 18 Jun 2013 09:17:50 -0700
-Message-Id: <20130618161729.398528080@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 44/48] USB: pl2303: fix device initialisation at open
+Date: Tue, 18 Jun 2013 09:18:10 -0700
+Message-Id: <20130618161732.336015317@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -33,66 +28,69 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Rafael Aquini <aquini@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit cbab0e4eec299e9059199ebe6daf48730be46d2b upstream.
+commit 2d8f4447b58bba5f8cb895c07690434c02307eaf upstream.
 
-read_swap_cache_async() can race against get_swap_page(), and stumble
-across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
-into the swapcache yet.
+Do not use uninitialised termios data to determine when to configure the
+device at open.
 
-This transient swap_map state is expected to be transitory, but the
-actual placement of discard at scan_swap_map() inserts a wait for I/O
-completion thus making the thread at read_swap_cache_async() to loop
-around its -EEXIST case, while the other end at get_swap_page() is
-scheduled away at scan_swap_map().  This can leave the system deadlocked
-if the I/O completion happens to be waiting on the CPU waitqueue where
-read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+This also prevents stack data from leaking to userspace in the OOM error
+path.
 
-This patch introduces a cond_resched() call to make the aforementioned
-read_swap_cache_async() busy loop condition to bail out when necessary,
-thus avoiding the subtle race window.
-
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/swap_state.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/usb/serial/pl2303.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -336,8 +336,24 @@ struct page *read_swap_cache_async(swp_e
- 		 * Swap entry may have been freed since our caller observed it.
- 		 */
- 		err = swapcache_prepare(entry);
--		if (err == -EEXIST) {	/* seems racy */
-+		if (err == -EEXIST) {
- 			radix_tree_preload_end();
-+			/*
-+			 * We might race against get_swap_page() and stumble
-+			 * across a SWAP_HAS_CACHE swap_map entry whose page
-+			 * has not been brought into the swapcache yet, while
-+			 * the other end is scheduled away waiting on discard
-+			 * I/O completion at scan_swap_map().
-+			 *
-+			 * In order to avoid turning this transitory state
-+			 * into a permanent loop around this -EEXIST case
-+			 * if !CONFIG_PREEMPT and the I/O completion happens
-+			 * to be waiting on the CPU waitqueue where we are now
-+			 * busy looping, we just conditionally invoke the
-+			 * scheduler here, if there are some more important
-+			 * tasks to run.
-+			 */
-+			cond_resched();
- 			continue;
- 		}
- 		if (err) {		/* swp entry is obsolete ? */
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -283,7 +283,7 @@ static void pl2303_set_termios(struct tt
+ 	   serial settings even to the same values as before. Thus
+ 	   we actually need to filter in this specific case */
+ 
+-	if (!tty_termios_hw_change(&tty->termios, old_termios))
++	if (old_termios && !tty_termios_hw_change(&tty->termios, old_termios))
+ 		return;
+ 
+ 	cflag = tty->termios.c_cflag;
+@@ -292,7 +292,8 @@ static void pl2303_set_termios(struct tt
+ 	if (!buf) {
+ 		dev_err(&port->dev, "%s - out of memory.\n", __func__);
+ 		/* Report back no change occurred */
+-		tty->termios = *old_termios;
++		if (old_termios)
++			tty->termios = *old_termios;
+ 		return;
+ 	}
+ 
+@@ -432,7 +433,7 @@ static void pl2303_set_termios(struct tt
+ 	control = priv->line_control;
+ 	if ((cflag & CBAUD) == B0)
+ 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
+-	else if ((old_termios->c_cflag & CBAUD) == B0)
++	else if (old_termios && (old_termios->c_cflag & CBAUD) == B0)
+ 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
+ 	if (control != priv->line_control) {
+ 		control = priv->line_control;
+@@ -491,7 +492,6 @@ static void pl2303_close(struct usb_seri
+ 
+ static int pl2303_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	struct ktermios tmp_termios;
+ 	struct usb_serial *serial = port->serial;
+ 	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
+ 	int result;
+@@ -507,7 +507,7 @@ static int pl2303_open(struct tty_struct
+ 
+ 	/* Setup termios */
+ 	if (tty)
+-		pl2303_set_termios(tty, port, &tmp_termios);
++		pl2303_set_termios(tty, port, NULL);
+ 
+ 	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+ 	if (result) {
 
 
