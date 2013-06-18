@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab3FROCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:02:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57187 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab3FROCe (ORCPT
+	id S932876Ab3FROGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:06:06 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39799 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822Ab3FROGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:02:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <chao.xie@marvell.com>
-Subject: Re: [PATCH V3 3/5] arm: pxa: use matrix_keymap for all boards
-Date: Tue, 18 Jun 2013 16:02:16 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: dmitry.torokhov@gmail.com, eric.y.miao@gmail.com, haojian.zhuang@gmail.com,
-        drwyrm@gmail.com, stefan@openezx.org, laforge@openezx.org,
-        robert.jarzmik@free.fr, marek.vasut@gmail.com, sleep_walker@suse.cz,
-        slapin@ossfans.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        xiechao.mail@gmail.com
-References: <1371527778-5236-1-git-send-email-chao.xie@marvell.com> <1371527778-5236-4-git-send-email-chao.xie@marvell.com>
-In-Reply-To: <1371527778-5236-4-git-send-email-chao.xie@marvell.com>
+	Tue, 18 Jun 2013 10:06:03 -0400
+To: "Linux Kernel" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306181602.16261.arnd@arndb.de>
-X-Provags-ID: V02:K0:Za6tRzElGrEFmmTP+04ZyoizeDCFwXusoHttsKlaWz5
- +C+jsVtEWOgGPeZNdw3+2IVpKvIivg+5SWouofiiMRtEfO7YB3
- vrdr3+rvzBJYNWuOT1/dLxQUZw1wEF5bUEOulbiRIon1jS39Zo
- 8nPd8Rb67SR1qjFVX/vuLbuJUlwcMlAmQNZQ9HahrGfT0nt7Ra
- AfAzxLXYG3wCstM4ZgM6L3tpx/k6WkOWbFPU9H0xvYwUu8wZlK
- G3WWQ2ub53dGWOJtzXgjcqS5I+0s7+0d6OGOu9SrdBQriYXz1+
- u4vOxqaOyDo4jFJhPPJNXUEs0H+ED/VtisTD944sM8DGDHEaUc
- iMApdqFseDYtxWFa0+Go=
+Subject: 3.10.0-RC6 compile failure in lpfc_vport
+X-KeepSent: BE3EAFB0:E0D6FDC6-87257B8E:004B6880;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3FP4 SHF39 May 13, 2013
+Message-ID: <OFBE3EAFB0.E0D6FDC6-ON87257B8E.004B6880-86257B8E.004BF5CF@us.ibm.com>
+From: Christopher T Vogan <cvogan@us.ibm.com>
+Date: Tue, 18 Jun 2013 08:49:43 -0500
+X-MIMETrack: Serialize by Router on D03NM116/03/M/IBM(Release 8.5.3FP2 ZX853FP2HF5|February, 2013) at
+ 06/18/2013 07:49:43,
+	Serialize complete at 06/18/2013 07:49:43
+Content-Type: text/plain; charset="US-ASCII"
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061813-3620-0000-0000-0000032B08C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 June 2013, Chao Xie wrote:
-> Compile passed for configurations
-> 
-> em_x270_defconfig
->   em_x270x.c(MACH_EM_X270, MACH_EXEDA)
-> 
-> ezx_defconfig
->   ezx.c(MACH_EZX_A780, MACH_EZX_E680, MACH_EZX_A1200,
->         MACH_EZX_A910, MACH_EZX_E6, MACH_EZX_E2)
-> 
-> palmz72_defconfig
->   palmld.c(MACH_PALMLD), palmtreo.c(PALM_TREO),
->   palmtx.c(MACH_PALMTX), palmz72.c(MACH_PALMZ72),
->   palmt5.c(MACH_PALMT5)
-> 
-> pxa3xx_defconfig
->   littleton.c(MACH_LITTLETON), tarvorevb.c(MACH_TAVOREVB),
->   zylonite.c(MACH_ZYLONITE320), mioa701.c(MACH_MIOA701),
->   z2.c(MACH_ZIPIT2)
-> 
-> mainstone_defconfig
->   maintone.c(MACH_MAINSTONE)
-> 
-> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+Hit a compile issue when compiling the 3.10.0-RC6 kernel.  Did not see 
+this problem on the RC5 kernel. Used the same .config.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+  CC [M]  drivers/scsi/lpfc/lpfc_attr.o
+  CC [M]  drivers/scsi/lpfc/lpfc_vport.o
+{standard input}: Assembler messages:
+{standard input}:67920: Error: symbol definition loop encountered at `#\'
+gcc: Internal error: Segmentation fault (program as)
+Please submit a full bug report.
+See <http://bugzilla.redhat.com/bugzilla> for instructions.
+make[3]: *** [drivers/scsi/lpfc/lpfc_vport.o] Error 1
+make[2]: *** [drivers/scsi/lpfc] Error 2
+make[1]: *** [drivers/scsi] Error 2
+make: *** [drivers] Error 2
 
-Thanks for the quick update.
+
+Christopher Vogan
+Dept. W98 NFS Development & Test
+
