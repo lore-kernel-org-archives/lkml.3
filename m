@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3FRJhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:37:36 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4074 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755820Ab3FRJhe convert rfc822-to-8bit (ORCPT
+	id S932134Ab3FRJjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:39:45 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:37529 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab3FRJjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:37:34 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Yuval Mintz" <yuvalmin@broadcom.com>
-To: "Yijing Wang" <wangyijing@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hanjun Guo" <guohanjun@huawei.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "Eilon Greenstein" <eilong@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 1/9] Bnx2x: remove redundant D0 power state set
-Thread-Topic: [PATCH 1/9] Bnx2x: remove redundant D0 power state set
-Thread-Index: AQHOa/rf18YMG1nGeUa0RHvOdk2sipk7NmNA
-Date: Tue, 18 Jun 2013 09:37:27 +0000
-Message-ID: <979A8436335E3744ADCD3A9F2A2B68A52AC8828E@SJEXCHMB10.corp.ad.broadcom.com>
-References: <1371542739-13552-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1371542739-13552-1-git-send-email-wangyijing@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	Tue, 18 Jun 2013 05:39:43 -0400
+X-Greylist: delayed 778 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jun 2013 05:39:42 EDT
+From: "lindar_liu" <lindar_liu@usish.com>
+To: "'Yijing Wang'" <wangyijing@huawei.com>,
+        "'James E.J. Bottomley'" <JBottomley@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, "'Hanjun Guo'" <guohanjun@huawei.com>,
+        <jiang.liu@huawei.com>, <xjtuwjp@gmail.com>,
+        <linux-scsi@vger.kernel.org>
+References: <1371543816-15192-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1371543816-15192-1-git-send-email-wangyijing@huawei.com>
+Subject: RE: [PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+Date: Tue, 18 Jun 2013 17:25:09 +0800
+Message-ID: <001401ce6c05$bd0ff920$372feb60$@com>
 MIME-Version: 1.0
-X-WSS-ID: 7DDEF6F131W38431114-01-01
 Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac5r/N8lE9JK0PzuRpKWtYFMksVK/wABqm4Q
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Pci_enable_device() will set device power state to D0,
-> so it's no need to do it again in bnx2x_init_dev().
-> Also remove redundant PM Cap find code, because pci core
-> has been saved the pci device pm cap value.
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: Eilon Greenstein <eilong@broadcom.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-[...]
+It works, thanks.
 
-Acked-by: Yuval Mintz <yuvalmin@broadcom.com>
+Lindar.
 
-Thanks,
-Yuval
+-----Original Message-----
+From: Yijing Wang [mailto:wangyijing@huawei.com] 
+Sent: Tuesday, June 18, 2013 4:24 PM
+To: James E.J. Bottomley
+Cc: linux-kernel@vger.kernel.org; Hanjun Guo; jiang.liu@huawei.com; Yijing
+Wang; xjtuwjp@gmail.com; lindar_liu@usish.com; linux-scsi@vger.kernel.org
+Subject: [PATCH 8/9] scsi/pm8001: use pdev->pm_cap instead of
+pci_find_capability(..,PCI_CAP_ID_PM)
+
+Pci core has been saved pm cap register offset by pdev->pm_cap in
+pci_pm_init() in init path. So we can use pdev->pm_cap instead of using
+pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and
+simplified code.
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: xjtuwjp@gmail.com
+Cc: lindar_liu@usish.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/pm8001/pm8001_init.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/scsi/pm8001/pm8001_init.c
+b/drivers/scsi/pm8001/pm8001_init.c
+index e4b9bc7..3861aa1 100644
+--- a/drivers/scsi/pm8001/pm8001_init.c
++++ b/drivers/scsi/pm8001/pm8001_init.c
+@@ -912,14 +912,13 @@ static int pm8001_pci_suspend(struct pci_dev *pdev,
+pm_message_t state)  {
+ 	struct sas_ha_struct *sha = pci_get_drvdata(pdev);
+ 	struct pm8001_hba_info *pm8001_ha;
+-	int i , pos;
++	int i;
+ 	u32 device_state;
+ 	pm8001_ha = sha->lldd_ha;
+ 	flush_workqueue(pm8001_wq);
+ 	scsi_block_requests(pm8001_ha->shost);
+-	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
+-	if (pos == 0) {
+-		printk(KERN_ERR " PCI PM not supported\n");
++	if (!pdev->pm_cap) {
++		dev_err(&pdev->dev, " PCI PM not supported\n");
+ 		return -ENODEV;
+ 	}
+ 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha, 0xFF);
+--
+1.7.1
 
