@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab3FRQFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:05:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46008 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab3FRQFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:05:11 -0400
-Date: Tue, 18 Jun 2013 09:05:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 1/3] cgroup: fix umount vs cgroup_cfs_commit() race
-Message-ID: <20130618160507.GG2767@htj.dyndns.org>
-References: <51C03913.5020008@huawei.com>
+	id S932768Ab3FRQFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:05:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59063 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756304Ab3FRQFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:05:17 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v2 0/4] ARM: OMAP2+: Panda USB Host support and DVI EDID fix
+Date: Tue, 18 Jun 2013 19:04:43 +0300
+Message-ID: <1371571487-14389-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C03913.5020008@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 06:40:19PM +0800, Li Zefan wrote:
-> cgroup_cfs_commit() uses dget() to keep cgroup alive after cgroup_mutex
-> is dropped, but dget() won't prevent cgroupfs from being umounted. When
-> the race happens, vfs will see some dentries with non-zero refcnt while
-> umount is in process.
-> 
-> Keep running this:
->   mount -t cgroup -o blkio xxx /cgroup
->   umount /cgroup
-> 
-> And this:
->   modprobe cfq-iosched
->   rmmod cfs-iosched
-> 
-> After a while, the BUG() in shrink_dcache_for_umount_subtree() may
-> be triggered:
-> 
->   BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Hi Benoit & Tony,
 
-Applied 1-3 to cgroup/for-3.11 w/ stable cc'd on 1 and 2.
+The first two patches make changes to dts files to get USB host support
+and DVI EDID to work on Panda.
 
-Thanks!
+The third patch should get USB host functional on uEVM.
+
+The fourth patch is a temporary workaround to create a clock alias to
+the USB PHY clock as it is not possible to define this via device tree.
+This patch is required for USB host to work on Panda and uEVM.
+
+The first 3 patches are for Benoit and the last one is for Tony.
+
+Changes in v2:
+- Fixed subject for patch 4
+- Added "regulator-always-on" for Panda's USB Hub regulator
+
+cheers,
+-roger
+
+Roger Quadros (4):
+  ARM: dts: omap4-panda: Add USB Host support
+  ARM: dts: omap4-panda: Fix DVI EDID reads
+  ARM: dts: omap5-uevm: Provide USB Host PHY clock frequency
+  ARM: OMAP2+: Provide alias to USB PHY clock
+
+ arch/arm/boot/dts/omap4-panda-common.dtsi |   69 +++++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap5-uevm.dts          |    7 +++
+ arch/arm/mach-omap2/board-generic.c       |   23 +++++++++-
+ 3 files changed, 98 insertions(+), 1 deletions(-)
 
 -- 
-tejun
+1.7.4.1
+
