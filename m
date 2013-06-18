@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3FRIxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:53:13 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:48015 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab3FRIwM (ORCPT
+	id S1755348Ab3FRIx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:53:27 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:46856 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab3FRIxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:52:12 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/3] ARM: ux500: Provide a AB8500 GPIO Device Tree node
-Date: Tue, 18 Jun 2013 09:51:57 +0100
-Message-Id: <1371545519-27119-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371545519-27119-1-git-send-email-lee.jones@linaro.org>
-References: <1371545519-27119-1-git-send-email-lee.jones@linaro.org>
+	Tue, 18 Jun 2013 04:53:21 -0400
+Date: Tue, 18 Jun 2013 10:53:16 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: ux500: set coherent_dma_mask for dma40
+Message-ID: <20130618085316.GA7239@balto.lan>
+References: <1371131763-6288-1-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkdYOP0xTJo3sLbRz5D=b4Vb1484a1qfE3aVAKRTM4+Y7QQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYOP0xTJo3sLbRz5D=b4Vb1484a1qfE3aVAKRTM4+Y7QQ@mail.gmail.com>
+X-Operating-System: Linux balto 3.10.0-rc6-00001-g8177a9d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we're adding a node for the AB8500 GPIO device. This will allow
-other DT:ed components to obtain GPIOs for use within their drivers.
+On Mon, Jun 17, 2013 at 05:42:48PM +0200, Linus Walleij wrote:
+> On Thu, Jun 13, 2013 at 3:56 PM, Fabio Baltieri
+> <fabio.baltieri@linaro.org> wrote:
+> 
+> > Set coherent_dma_mask to DMA_BIT_MASK(32) for dma40 platform_device, as
+> > without this DMA allocations were failing with the error:
+> >
+> > dma40 dma40.0: coherent DMA mask is unset
+> >
+> > when booting without device-tree.
+> >
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> > ---
+> >
+> > Hi Linus, Lee,
+> >
+> > I found this while removing the last hack I was keeping in my ASoC tree.
+> > I originally thought that I had to set this on the driver's pdata, but
+> > it turns out it's needed on the DMA controller one instead.
+> >
+> > When booting with device-tree enabled the mask seems to be set
+> > automatically.
+> >
+> > Would you consider applying this with the other dma40 patches?
+> 
+> Those are now upstream in the ARM SoC tree, you'd have to send it
+> to arm@kernel.org and ask Olof/Arnd to apply it directly to
+> the next/drivers branch (I think).
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+Ok I can resend it but I'd like to have Lee's Ack before doing that.
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index a082f0b..a152945 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -360,6 +360,11 @@
- 				interrupt-controller;
- 				#interrupt-cells = <2>;
- 
-+				ab8500_gpio: ab8500-gpio {
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+				};
-+
- 				ab8500-rtc {
- 					compatible = "stericsson,ab8500-rtc";
- 					interrupts = <17 IRQ_TYPE_LEVEL_HIGH
+Lee: have you had a chance to look at this patch?
+
+> I have also queued it on ux500-fixes so it won't be lost.
+
+That's nice!
+
+Thanks,
+Fabio
+
 -- 
-1.8.1.2
-
+Fabio Baltieri
