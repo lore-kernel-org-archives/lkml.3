@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3FRPNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:13:21 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33031 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab3FRPNT (ORCPT
+	id S1756224Ab3FRPOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:14:18 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:34828 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab3FRPOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:13:19 -0400
-Message-ID: <51C07909.9030508@gmail.com>
-Date: Tue, 18 Jun 2013 23:13:13 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com> <51BDF705.5090904@gmail.com> <CAN_LGv0yXhQi82ck3mvTbwuZv2dhnYB7Xnk9P4=5XVoAaAAeZQ@mail.gmail.com> <CAN_LGv2GTgMJB8NL7iPnyk9bMvbDKE9i6HP0UV5d_9CfytJ0pg@mail.gmail.com>
-In-Reply-To: <CAN_LGv2GTgMJB8NL7iPnyk9bMvbDKE9i6HP0UV5d_9CfytJ0pg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Jun 2013 11:14:17 -0400
+Date: Tue, 18 Jun 2013 17:14:09 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de, arm@kernel.org,
+        john.stultz@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: clocksource: add support for MOXA ART SoCs
+Message-ID: <20130618171409.0286fa2c@skate>
+In-Reply-To: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+References: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 01:07 AM, Alexander E. Patrakov wrote:
-> 2013/6/17 Alexander E. Patrakov <patrakov@gmail.com>:
->> I am not 100% sure that the static key backtrace is the same in all
->> cases. However, I do remember that it does appear both in the
->> non-hotplug and hotplug cases.
->>
->> I will retest this after work, i.e. in ~12 hours.
-> 
-> Tried again, failed to reproduce this warning. Sorry :(
-Sounds like another memory corruption caused by race conditions:(
+Dear Jonas Jensen,
 
-> 
-> --
-> Alexander E. Patrakov
-> 
+On Tue, 18 Jun 2013 12:00:04 +0200, Jonas Jensen wrote:
 
+> +static void __init moxart_timer_init(struct device_node *node)
+> +{
+> +	int ret, irq;
+> +
+> +	timer_base = of_iomap(node, 0);
+> +	if (!timer_base)
+> +		panic("%s: failed to map base\n", node->full_name);
+> +
+> +	irq = irq_of_parse_and_map(node, 0);
+> +	if (irq <= 0)
+> +		panic("%s: can't parse IRQ\n", node->full_name);
+> +
+> +	ret = setup_irq(irq, &moxart_timer_irq);
+> +	if (ret)
+> +		pr_warn("%s: failed to setup IRQ %d\n", node->full_name, irq);
+> +
+> +
+> +	writel(APB_CLK / HZ, TIMER_1_COUNT(timer_base));
+> +	writel(APB_CLK / HZ, TIMER_1_LOAD(timer_base));
+> +
+> +	writel(1, TIMER_1_CR_ENABLE(timer_base));
+> +	writel(0, TIMER_1_CR_EXTCLK(timer_base));
+> +	writel(1, TIMER_1_CR_FLOWIN(timer_base));
+> +
+> +	pr_info("%s: count/load (APB_CLK=%d/HZ=%d) IRQ=%d\n",
+> +		node->full_name, APB_CLK, HZ, irq);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
+
+Any reason to not use the clocksource and clockevents infrastructures?
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
