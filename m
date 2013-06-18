@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab3FRJyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:54:19 -0400
-Received: from smtp.chinaemail.cn ([218.5.74.238]:41678 "EHLO
-	smtp.chinaemail.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab3FRJyR (ORCPT
+	id S1755186Ab3FRJzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:55:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39629 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab3FRJzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:54:17 -0400
-Date: Tue, 18 Jun 2013 17:54:52 +0800
-From: "Coqozv" <sales5@feitengmetal.com>
-Reply-To: hzxh@xhindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: paper supplier
-Message-ID: <201306181754522033134@feitengmetal.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Tue, 18 Jun 2013 05:55:41 -0400
+Date: Tue, 18 Jun 2013 11:55:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: Question regarding put_prev_task in preempted condition
+Message-ID: <20130618095533.GI3204@twins.programming.kicks-ass.net>
+References: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-MID: 1995754587.1142572843.2.1371549244.416164.22590
-X-Rate: Yes
-X-Real-From: sales5@feitengmetal.com
-X-Rcpt: ,linux-kernel@vger.kernel.org,
-X-Mop-Send: ,hzft@feitengmetal.com,
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5I9sOOL030022
 
-Dear Purchasing manager:
-Nice time to you
+On Sun, Jun 09, 2013 at 11:59:36PM +0800, Lei Wen wrote:
+> Hi Peter,
+> 
+> While I am checking the preempt related code, I find a interesting part.
+> That is when preempt_schedule is called, for its preempt_count be added
+> PREEMPT_ACTIVE, so in __schedule() it could not be dequeued from rq
+> by deactivate_task.
+> 
+> Thus in put_prev_task, which is called a little later in __schedule(), it
+> would call put_prev_task_fair, which finally calls put_prev_entity.
+> For current task is not dequeued from rq, so in this function, it would
+> enqueue it again to the rq by __enqueue_entity.
+> 
+> Is there any reason to do like this, since entity already is over rq,
+> why need to queue it again?
 
-It is my big pleasure to hear you need A4 paper
-we are the leading supplier from China
-If you still need that pls tell me
+Because we keep the current running task outside of the actual queue
+structure. This is because every time we update the runtime
+(__update_curr) the key on which the tree is sorted (vruntime) is
+changed and we'd need to dequeue + enqueue to keep the tree in sync.
 
-Then i can send you our best price
-Best wishes
-Zara
+By not having the actively running task in the tree we can avoid this;
+at the cost of having to dequeue on switching to the task and enqueue
+when switching from the task.
 
-Zara Wang
+> And if current rq's vruntime distribution like below, and vruntime with 8
+> is the task that would be get preempted. So in __enqueue_entity,
+> its rb_left/rb_right would be set as NULL and reinserted into this RB tree.
+> Then seems to me now, the entity with vruntime of 3 would be disappeared
+> from the RB tree.
+>             13
+>            /  \
+>          8    19
+>         /  \
+>       3    11
+> 
+> I am not sure whether I understand the whole process correctly...
+> Would the example as above happen in our real life?
 
-SALES MANAGER
+No, the RB tree code will ensure we'll not loose 3. I suppose you're
+confused by rb_link_node() which does indeed clear the left and right
+node of the entity we're about to link.
 
-HANGZHOU XINHAO INDUSTRY CO., LIMITED 
+However, we link the previously unlinked entity as a leaf node. So your
+example is flawed; before insertion the tree would look something like:
 
-SKYPE: hzxinhao
 
-Email:hzxh@xhindustry.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+         13
+	/  \
+       11  19
+      /
+     3
+
+Then the lookup in __enqueue_entity would find the place to insert 8 and
+would select the right sibling of 3:
+
+         13
+	/  \
+       11  19
+      / 
+     3  
+      \
+       (8)
+
+We'd then link 8 as a child leaf of 3; which will indeed have NULL
+leafs. rb_insert_color() will then fix up the tree so we conform to the
+RB constraints. Please read lib/rbtree.c:__rb_insert() the code is quite
+readable.
+ 
