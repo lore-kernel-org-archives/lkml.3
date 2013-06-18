@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3FRKs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:48:59 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11767 "EHLO
+	id S1753691Ab3FRKzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:55:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:14346 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3FRKs4 (ORCPT
+	with ESMTP id S1752383Ab3FRKzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:48:56 -0400
-Message-ID: <51C03AF2.7050702@huawei.com>
-Date: Tue, 18 Jun 2013 18:48:18 +0800
+	Tue, 18 Jun 2013 06:55:11 -0400
+Message-ID: <51C03C41.2040704@huawei.com>
+Date: Tue, 18 Jun 2013 18:53:53 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 1/2] cgroup: make serial_nr_cursor available throughout cgroup.c
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 1/2][UPDATED] cgroup: make serial_nr_cursor available throughout
+ cgroup.c
+References: <51C03AF2.7050702@huawei.com>
+In-Reply-To: <51C03AF2.7050702@huawei.com>
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.68.215]
@@ -29,14 +32,14 @@ while we're iterating the cgroup hierarchy.
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
 
-These two patches are based on the fixes I just sent.
+forgot to remove the old comment in cgroup_create().
 
 ---
- kernel/cgroup.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ kernel/cgroup.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e8a40e3..b1d98f2 100644
+index e8a40e3..60383e8 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
 @@ -198,6 +198,15 @@ static DEFINE_IDR(cgroup_hierarchy_idr);
@@ -63,10 +66,16 @@ index e8a40e3..b1d98f2 100644
  	struct cgroup *cgrp;
  	struct cgroup_name *name;
  	struct cgroupfs_root *root = parent->root;
-@@ -4305,7 +4313,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	 * sorted in the ascending serial number order on the parent's
- 	 * ->children.
- 	 */
+@@ -4299,13 +4307,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		goto err_free_all;
+ 	lockdep_assert_held(&dentry->d_inode->i_mutex);
+ 
+-	/*
+-	 * Assign a monotonically increasing serial number.  With the list
+-	 * appending below, it guarantees that sibling cgroups are always
+-	 * sorted in the ascending serial number order on the parent's
+-	 * ->children.
+-	 */
 -	cgrp->serial_nr = atomic64_inc_return(&serial_nr_cursor);
 +	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
  
