@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3FRIHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:07:22 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51799 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab3FRIHQ (ORCPT
+	id S1754313Ab3FRIJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:09:52 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:40864 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab3FRIJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:07:16 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "David S. Miller" <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        Patrick McHardy <kaber@trash.net>, Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
-Subject: [PATCH 2/9] amd8111e: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-Date: Tue, 18 Jun 2013 16:06:37 +0800
-Message-ID: <1371542797-14964-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Tue, 18 Jun 2013 04:09:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1371485086-16016-1-git-send-email-christian.ruppert@abilis.com>
+References: <20130617160324.GA15853@ab42.lan>
+	<1371485086-16016-1-git-send-email-christian.ruppert@abilis.com>
+Date: Tue, 18 Jun 2013 10:09:47 +0200
+Message-ID: <CACRpkdYZ6QXsh_7fG=B_Ci5hqm2LQe=Hbf5dyZK+tjdnVaHF4A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
-in init path. So we can use pdev->pm_cap instead of using
-pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
+On Mon, Jun 17, 2013 at 6:04 PM, Christian Ruppert
+<christian.ruppert@abilis.com> wrote:
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Bill Pemberton <wfp5p@virginia.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
----
- drivers/net/ethernet/amd/amd8111e.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> This patch adds the infrastructure required to register non-linear gpio
+> ranges through gpiolib and the standard GPIO device tree bindings.
+>
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-index 8e6b665..e947fd7 100644
---- a/drivers/net/ethernet/amd/amd8111e.c
-+++ b/drivers/net/ethernet/amd/amd8111e.c
-@@ -1813,7 +1813,7 @@ static const struct net_device_ops amd8111e_netdev_ops = {
- static int amd8111e_probe_one(struct pci_dev *pdev,
- 				  const struct pci_device_id *ent)
- {
--	int err,i,pm_cap;
-+	int err, i;
- 	unsigned long reg_addr,reg_len;
- 	struct amd8111e_priv* lp;
- 	struct net_device* dev;
-@@ -1842,7 +1842,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 	pci_set_master(pdev);
- 
- 	/* Find power-management capability. */
--	if((pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM))==0){
-+	if (!pdev->pm_cap) {
- 		printk(KERN_ERR "amd8111e: No Power Management capability, "
- 		       "exiting.\n");
- 		err = -ENODEV;
-@@ -1875,7 +1875,7 @@ static int amd8111e_probe_one(struct pci_dev *pdev,
- 	lp = netdev_priv(dev);
- 	lp->pci_dev = pdev;
- 	lp->amd8111e_net_dev = dev;
--	lp->pm_cap = pm_cap;
-+	lp->pm_cap = pdev->pm_cap;
- 
- 	spin_lock_init(&lp->lock);
- 
--- 
-1.7.1
+>  Documentation/devicetree/bindings/gpio/gpio.txt |   44 ++++++++++++++++++
+>  arch/arc/boot/dts/abilis_tb100.dtsi             |   56 +++++++++++-----------
+>  arch/arc/boot/dts/abilis_tb101.dtsi             |   56 +++++++++++-----------
+>  arch/arc/boot/dts/abilis_tb10x.dtsi             |    3 +-
+>  drivers/gpio/gpiolib-of.c                       |   31 +++++++++---
+>  drivers/gpio/gpiolib.c                          |   47 +++++++++++++++++++
+>  drivers/pinctrl/core.c                          |   23 +++++++++
+>  include/asm-generic/gpio.h                      |   10 ++++
+>  include/linux/gpio.h                            |    9 ++++
+>  include/linux/pinctrl/pinctrl.h                 |    3 +
+>  10 files changed, 216 insertions(+), 66 deletions(-)
 
+Can you please split this patch in two?
 
+One altering drivers/* include/* and the Documentation/*
+
+And a separate patch to alter all the abilis trees?
+
+I do not maintain bisectability across device trees
+to the rest of the kernel, as these trees are supposed
+to be moved out of the kernel at some point.
+
+Yours,
+Linus Walleij
