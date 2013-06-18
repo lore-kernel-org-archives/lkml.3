@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab3FRHTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 03:19:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44161 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3FRHTo (ORCPT
+	id S1753225Ab3FRHUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 03:20:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60645 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab3FRHUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 03:19:44 -0400
-Date: Tue, 18 Jun 2013 00:19:43 -0700 (PDT)
-Message-Id: <20130618.001943.965348712833625569.davem@davemloft.net>
-To: linux@roeck-us.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frank.Li@freescale.com, jim_baxter@mentor.com
-Subject: Re: [PATCH] net: fec: Fix build for MCF5272
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130618040312.GA12181@roeck-us.net>
-References: <1371500179-4733-1-git-send-email-linux@roeck-us.net>
-	<20130617.161151.1327615665309510068.davem@davemloft.net>
-	<20130618040312.GA12181@roeck-us.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 18 Jun 2013 03:20:10 -0400
+Date: Tue, 18 Jun 2013 17:19:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chao Xie <chao.xie@marvell.com>, Yi Zhang <yizhang@marvell.com>
+Subject: linux-next: build failure after merge of the final tree (mfd tree
+ related)
+Message-Id: <20130618171957.9d8fbcf376243d1d5f1d92b0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Jun_2013_17_19_57_+1000_LAo0.u9TLvKdulc/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
-Date: Mon, 17 Jun 2013 21:03:12 -0700
+--Signature=_Tue__18_Jun_2013_17_19_57_+1000_LAo0.u9TLvKdulc/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, Jun 17, 2013 at 04:11:51PM -0700, David Miller wrote:
->> From: Guenter Roeck <linux@roeck-us.net>
->> Date: Mon, 17 Jun 2013 13:16:19 -0700
->> 
->> > Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
->> > baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
->> > network) introduced functionality into the FEC driver which is not
->> > supported on MCF5272. As result, building images for MCF5272 fails,
->> > complaining about several undefined symbols.
->> > 
->> > Disabled the added functionality for MCF5272 builds.
->> > 
->> > Cc: Frank Li <Frank.Li@freescale.com>
->> > Cc: Jim Baxter <jim_baxter@mentor.com>
->> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> > ---
->> > Sorry for the added ifdefs. If anyone has a better idea on how to fix
->> > the problems, let me know.
->> > 
->> > This problem exists in 3.9 as well.
->> 
->> Does the M5272 not have these registers, or have you simply not added
->> defines for where there offsets are in that silicon instance?
->> 
->> I'd much rather you add the register offset defines than pepper the
->> entire driver with ifdefs.
->> 
-> I agree, and that would have been my preferred solution as well.
-> Unfortunately, according to the user manual (MCF5272 ColdFire
-> Integrated Microprocessor User's Manual), the registers do not exist
-> on this chip.
+Hi all,
 
-Please explain this in your commit message instead of leaving it as
-a mystery for the next person who look at this change.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/mfd/88pm800.c: In function 'pm800_pages_init':
+drivers/mfd/88pm800.c:434:2: error: implicit declaration of function 'IS_ER=
+R' [-Werror=3Dimplicit-function-declaration]
+  if (IS_ERR(subchip->regmap_power)) {
+  ^
+drivers/mfd/88pm800.c:435:3: error: implicit declaration of function 'PTR_E=
+RR' [-Werror=3Dimplicit-function-declaration]
+   ret =3D PTR_ERR(subchip->regmap_power);
+   ^
+
+Caused by commit f8ca616f67f7 ("mfd: 88pm800: Enhance error handling for
+sub pages probe/remove") from the mfd tree.  Forgot to include
+linux/err.h (see Rule 1 in Documentation/SubmitChecklist).
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__18_Jun_2013_17_19_57_+1000_LAo0.u9TLvKdulc/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRwAojAAoJEECxmPOUX5FEFckP/RA0KFSzRI6uvB8OICH6utiW
+YKunCkSciSj56tzzvAk/wol7zQDjG1TubsLvaaJQKNU+Aicao/2tHdUoqBte7emV
+Irk263U+xlaa07x8fvIbq8QOiEECNM1CWZZmfq5NQpRX7vqmKbXqELXERRKx0xUO
+KEvXoEA+oi/BTNFBlpSMuWeL1OIoB5WjDoHtWGqTqyK3bl371bWsPOlbREsIMhx4
+kcUzvPPYj4LtCOA1dS2Hc6DiMP1OGd3sHhGRU2XG7KXA/BcfdY4I45kxZaSIjxgE
+wAhshGhsuIudooiSk6qV5oP2PEiRHJCinE7RbcSDnwflqVdt76z+jTwxv9ZwSabf
+HenQduU2UDFaAtt1IxLIr2TfrbPg5CDe/eS9SI1tWPoYMHCq3e6JB8v89iYln0Kf
+AlN7McgW6EBZsxr8Vk5d7k6VXd3ENG5qGvzDiVYe7BA/BfpOVu//smh3qNZf4D7O
+puArAbRYgkWYHVorMgOq0TtLLEb3L00jYsOuN2ulQvgLZ/+Vmd+ljFf3dPu9JTOI
+/c6q+rkpl/uEU66RjzDu3iv3/yqzP10pIglzI4rVdz2fU/Mav2c1UPUKSw1H7Fb5
+0EUI41mMDahxldgWCZXmeg59XFzQoq7cZ/EekKuOqK9wPrnmrcXlbEY8mNLljGy8
+vkYHbQVjMD7NSxz3eUMt
+=BdfY
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Jun_2013_17_19_57_+1000_LAo0.u9TLvKdulc/--
