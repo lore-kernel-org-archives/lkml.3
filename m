@@ -1,150 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3FREv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:51:29 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:40333 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3FREv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:51:26 -0400
+	id S1754040Ab3FREvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:51:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44595 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753447Ab3FREvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 00:51:38 -0400
+Message-ID: <51BFE754.5080301@suse.cz>
+Date: Tue, 18 Jun 2013 06:51:32 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
-	<1354024039.6276.72.camel@gandalf.local.home>
-	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
-	<CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
-	<CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
-	<alpine.LFD.2.02.1305131223470.2863@ionos>
-	<CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
-	<CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
-Date: Tue, 18 Jun 2013 10:21:25 +0530
-Message-ID: <CAKohpon0dC6O_QBXnbyxUOO0DcrRxTzFkZSJNh6VrNL5kzT66Q@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jeff Mahoney <jeffm@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
+Subject: Re: [PATCH] build some drivers only when compile-testing
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz>
+In-Reply-To: <51BF6BFF.7050705@suse.cz>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2013 16:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 22 May 2013 14:04, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> Sorry for being late in replying to your queries.
->>
->> On 13 May 2013 16:05, Thomas Gleixner <tglx@linutronix.de> wrote:
->>> Which mechanism is migrating the timer away?
->>
->> It will be the same: get_nohz_timer_target() which will decide target
->> cpu for migration.
->>
->>> I have no objections to the functionality per se, but the proposed
->>> solution is not going to fly.
+Dne 17.6.2013 22:05, Jiri Slaby napsal(a):
+> On 05/23/2013 05:09 AM, Jeff Mahoney wrote:
+>> On 5/22/13 10:23 PM, Greg Kroah-Hartman wrote:
+>>> On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby wrote:
+>>>> Some drivers can be built on more platforms than they run on. This
+>>>> causes users and distributors packaging burden when they have to
+>>>> manually deselect some drivers from their allmodconfigs. Or sometimes
+>>>> it is even impossible to disable the drivers without patching the
+>>>> kernel.
+>>>>
+>>>> Introduce a new config option COMPILE_TEST and make all those drivers
+>>>> to depend on the platform they run on, or on the COMPILE_TEST option.
+>>>> Now, when users/distributors choose COMPILE_TEST=n they will not have
+>>>> the drivers in their allmodconfig setups, but developers still can
+>>>> compile-test them with COMPILE_TEST=y.
 >>>
->>> Aside of bloating the data structure you're changing the semantics of
->>> __mod_timer(). No __mod_timer() caller can deal with -EBUSY. So you'd
->>> break the world and some more.
->>
->> Ahh.. That idea was dropped already.
->>
->>> Here is a list of questions:
+>>> I understand the urge, and it's getting hard for distros to handle these
+>>> drivers that just don't work on other architectures, but it's really
+>>> valuable to ensure that they build properly, for those of us that don't
+>>> have many/any cross compilers set up.
+> 
+> But this is exactly what COMPILE_TEST will give us when set to "y", or
+> am I missing something?
+> 
+>>>> Now the drivers where we use this new option:
+>>>> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
+>>>>   processors so it should depend on x86.
+>>>> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
+>>>> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
+>>>>   systems -- which do not actually support the hardware via that
+>>>>   method.
 >>>
->>>       - Which mechanism migrates timers?
+>>> This seems ripe to start to get really messy, really quickly.  Shouldn't
+>>> "default configs" handle if this "should" be enabled for a platform or
+>>> not, and let the rest of us just build them with no problems?
+>>
+>> If every time a new Kconfig option is added, corresponding default
+>> config updates come with it, sure. I just don't see that happening,
+>> especially when it can be done much more clearly in the Kconfig while
+>> the developer is writing the driver.
+>>
+>>> What problems is this causing you?  Are you running out of space in
+>>> kernel packages with drivers that will never be actually used?
+>>
+>> Wasted build resources. Wasted disk space on /every/ system the kernel
+>> package is installed on. We're all trying to pare down the kernel
+>> packages to eliminate wasted space and doing it manually means a bunch
+>> of research, sometimes with incorrect assumptions about the results,
+>> needs to be done by someone not usually associated with that code. That
+>> research gets repeated by people maintaining kernel packages for pretty
+>> much every distro.
+> 
+> I second all the above.
+> 
+>>>> +config COMPILE_TEST
+>>>> +	bool "Compile also drivers which will not load" if EXPERT
 >>>
->>>       - How is that mechanism triggered?
+>>> EXPERT is getting to be the "let's hide it here" option, isn't it...
+>>>
+>>> I don't know, if no one else strongly objects, I can be convinced that
+>>> this is needed, but so far, I don't see why it really is, or what this
+>>> is going to help with.
 >>
->> The mechanism remains the same as is for non-rearmed timers.
->> i.e. get_nohz_timer_target()..
->>
->> We are just trying to give a approach with which we can migrate
->> running timers. i.e. those which re-arm themselves from their
->> handlers.
->>
->>>       - How does that deal with CPU bound timers?
->>
->> We will still check 'Pinned' for this timer as is done for any other
->> normal timer. So, we don't migrate them.
->>
->> So, this is the clean draft for the idea I had.. (Naming is poor for
->> now):
->>
->> diff --git a/include/linux/timer.h b/include/linux/timer.h
->> index 8c5a197..ad00ebe 100644
->> --- a/include/linux/timer.h
->> +++ b/include/linux/timer.h
->> @@ -20,6 +20,7 @@ struct timer_list {
->>
->>         void (*function)(unsigned long);
->>         unsigned long data;
->> +       int wait_for_migration_to_complete;
->>
->>         int slack;
->>
->> diff --git a/kernel/timer.c b/kernel/timer.c
->> index a860bba..7791f28 100644
->> --- a/kernel/timer.c
->> +++ b/kernel/timer.c
->> @@ -746,21 +746,15 @@ __mod_timer(struct timer_list *timer, unsigned
->> long expires,
->>         new_base = per_cpu(tvec_bases, cpu);
->>
->>         if (base != new_base) {
->> -               /*
->> -                * We are trying to schedule the timer on the local CPU.
->> -                * However we can't change timer's base while it is running,
->> -                * otherwise del_timer_sync() can't detect that the timer's
->> -                * handler yet has not finished. This also guarantees that
->> -                * the timer is serialized wrt itself.
->> -                */
->> -               if (likely(base->running_timer != timer)) {
->> -                       /* See the comment in lock_timer_base() */
->> -                       timer_set_base(timer, NULL);
->> -                       spin_unlock(&base->lock);
->> -                       base = new_base;
->> -                       spin_lock(&base->lock);
->> -                       timer_set_base(timer, base);
->> -               }
->> +               if (base->running_timer == timer)
->> +                       timer->wait_for_migration_to_complete = 1;
->> +
->> +               /* See the comment in lock_timer_base() */
->> +               timer_set_base(timer, NULL);
->> +               spin_unlock(&base->lock);
->> +               base = new_base;
->> +               spin_lock(&base->lock);
->> +               timer_set_base(timer, base);
->>         }
->>
->>         timer->expires = expires;
->> @@ -990,7 +984,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
->>
->>         base = lock_timer_base(timer, &flags);
->>
->> -       if (base->running_timer != timer) {
->> +       if ((base->running_timer != timer) &&
->> +                       !timer->wait_for_migration_to_complete) {
->>                 timer_stats_timer_clear_start_info(timer);
->>                 ret = detach_if_pending(timer, base, true);
->>         }
->> @@ -1183,6 +1178,8 @@ static inline void __run_timers(struct tvec_base *base)
->>                                 call_timer_fn(timer, fn, data);
->>                                 spin_lock_irq(&base->lock);
->>                         }
->> +                       if (timer->wait_for_migration_to_complete)
->> +                               timer->wait_for_migration_to_complete = 0;
->>                 }
->>         }
->>         base->running_timer = NULL;
->>
->>
->> Please see if it a junk idea or has some light of hope :)
->
-> Ping!!
+>> I'm not convinced adding a || COMPILE_TEST option to every driver that
+>> may be arch specific is the best way to go either. Perhaps adding a new
+>> Kconfig verb called "archdepends on" or something that will evaluate as
+>> true if COMPILE_TEST is enabled but will evaluate the conditional if
+>> not. *waves hands*
+> 
+> Sam Ravnborg (the kconfig ex-maintainer) once wrote that he doesn't want
+> to extend the kconfig language for this purpose (which I support). That
+> a config option is fine and sufficient in this case [1]. Except he
+> called the config option "SHOW_ALL_DRIVERS". Adding the current
+> maintainer to CCs ;).
 
-Ping!!
+I agree with Sam. 'depends on XY || COMPILE_TEST' is quite
+self-explanatory. And even if it's not, you can look up the help text
+for COMPILE_TEST. With "archdepends on" or "available on", you need to
+know what to look for to override the dependency.
+
+Michal
