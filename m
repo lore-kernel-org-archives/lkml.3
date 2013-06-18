@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859Ab3FRWpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 18:45:42 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52462 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933822Ab3FRWpi (ORCPT
+	id S933874Ab3FRWpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 18:45:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42962 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933482Ab3FRWpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 18:45:38 -0400
+	Tue, 18 Jun 2013 18:45:41 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Jean Delvare <jdelvare@suse.de>,
-        Roland Eggner <edvx1@systemanalysen.net>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [PATCH 12/14] kconfig: sort found symbols by relevance
-Date: Wed, 19 Jun 2013 00:45:08 +0200
-Message-Id: <3e2346029e33ef9405b87d72a32d96d0aafb524a.1371595499.git.yann.morin.1998@free.fr>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 14/14] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+Date: Wed, 19 Jun 2013 00:45:10 +0200
+Message-Id: <b4e0ac8385fecde0363a2499323f81b4a91e8430.1371595499.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
 References: <cover.1371595499.git.yann.morin.1998@free.fr>
@@ -28,181 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-When searching for symbols, return the symbols sorted by relevance.
+Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
+is specified.
 
-Sorting is done as thus:
-  - first, symbols with a prompt,   [1]
-  - then, smallest offset,          [2]
-  - then, shortest match,           [3]
-  - then, highest relative match,   [4]
-  - finally, alphabetical sort      [5]
+For example, given those two files (Thomas' test-case):
 
-So, searching (eg.) for 'P.*CI' :
+    ---8<--- Config.test.in
+    config OPTIONA
+        bool "Option A"
 
-[1] Symbols of interest are probably those with a prompt, as they can be
-    changed, while symbols with no prompt are only for info. Thus:
-        PCIEASPM comes before PCI_ATS
+    choice
+        prompt "This is a choice"
 
-[2] Symbols that match earlier in the name are to be preferred over
-    symbols which match later. Thus:
-        PCI_MSI comes before WDTPCI
+    config CHOICE_OPTIONA
+        bool "Choice Option A"
 
-[3] The shortest match is (IMHO) more interesting than a longer one.
-    Thus:
-        PCI comes before PCMCIA
+    config CHOICE_OPTIONB
+        bool "Choice Option B"
 
-[4] The relative match is the ratio of the length of the match against
-    the length of the symbol. The more of a symbol name we match, the
-    more instersting that symbol is. Thus:
-        PCIEAER comes before PCIEASPM
+    endchoice
 
-[5] As fallback, sort symbols alphabetically
+    config OPTIONB
+        bool "Option B"
+    ---8<--- Config.test.in
 
-This heuristic tries hard to get interesting symbols first in the list.
+    ---8<--- config.defaults
+    CONFIG_OPTIONA=y
+    ---8<--- config.defaults
 
-In any case, exact match can (as previously) be requested by using
-start-of-line and end-of-line in the search regexp: ^PCI$
+And running:
+    ./scripts/kconfig/conf --randconfig Config.test.in
 
-Reported-by: Jean Delvare <jdelvare@suse.de>
+does properly randomise the two choice symbols (and the two booleans).
+
+However, running:
+    KCONFIG_ALLCONFIG=config.defaults \
+    ./scripts/kconfig/conf --randconfig Config.test.in
+
+does *not* reandomise the two choice entries, and only CHOICE_OPTIONA
+will ever be selected. (OPTIONA will always be set (expected), and
+OPTIONB will be be properly randomised (expected).)
+
+This patch defers setting that a choice has a value until a symbol for
+that choice is indeed set, so that choices are properly randomised when
+KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
+
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Cc: Michal Marek <mmarek@suse.cz>
-Cc: Roland Eggner <edvx1@systemanalysen.net>
-Cc: Wang YanQing <udknight@gmail.com>
----
- scripts/kconfig/symbol.c | 96 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 87 insertions(+), 9 deletions(-)
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index ab8f4c8..d08e300 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -954,38 +954,116 @@ const char *sym_escape_string_value(const char *in)
- 	return res;
- }
- 
-+struct sym_match {
-+	struct symbol	*sym;
-+	off_t		so, eo;
-+};
-+
-+/* Compare matched symbols as thus:
-+ * - first, symbols with a prompt,
-+ * - then, smallest offset,
-+ * - then, shortest match,
-+ * - then, highest relative match,
-+ * - finally, alphabetical sort
-+ */
-+static int sym_rel_comp( const void *sym1, const void *sym2 )
-+{
-+	struct sym_match *s1 = *(struct sym_match **)sym1;
-+	struct sym_match *s2 = *(struct sym_match **)sym2;
-+	struct property *p;
-+	bool p1 = false, p2 = false;
-+	int l1, l2, r1, r2;
-+
-+	for_all_prompts(s1->sym, p) {
-+		p1 = true;
-+	}
-+	for_all_prompts(s2->sym, p) {
-+		p2 = true;
-+	}
-+	if (p1 && !p2)
-+		return -1;
-+	if (!p1 && p2)
-+		return 1;
-+
-+	if (s1->so < s2->so)
-+		return -1;
-+	if (s1->so > s2->so)
-+		return 1;
-+
-+	l1 = s1->eo - s1->so;
-+	l2 = s2->eo - s2->so;
-+	if (l1>l2)
-+		return 1;
-+	if (l1<l2)
-+		return -1;
-+
-+	r1 = 100*l1 / strlen(s1->sym->name);
-+	r2 = 100*l2 / strlen(s2->sym->name);
-+	if (r1 > r2)
-+		return -1;
-+	if (r1 < r2)
-+		return 1;
-+
-+	return strcmp(s1->sym->name, s2->sym->name);
-+}
-+
- struct symbol **sym_re_search(const char *pattern)
- {
- 	struct symbol *sym, **sym_arr = NULL;
-+	struct sym_match **sym_match_arr = NULL;
- 	int i, cnt, size;
- 	regex_t re;
-+	regmatch_t match[1];
- 
- 	cnt = size = 0;
- 	/* Skip if empty */
- 	if (strlen(pattern) == 0)
- 		return NULL;
--	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
-+	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
- 		return NULL;
- 
+---
+Changes v3 -> v4
+  - fix previous issue where some choices would not be set, which would
+    cause silentoldconfig to ask for them and was then breaking this
+    workflow (as reported by Arnd and Sedat):
+        KCONFIG_ALLCONFIG=foo.defconfig make randconfig
+        make silentoldconfig </dev/nullo
+    which I have tested (3h28min!) with:
+        touch defconfig
+        for(( i=0; i<10000; i++ )); do
+            KCONFIG_ALLCONFIG=$(pwd)/defconfig make randconfig >/dev/null 2>&1
+            make silentoldconfig </dev/null >/dev/null 2>&1 || break
+        done
+    which did not break at all.
+  - change done in v3 (below) is already fixed by a previous patch
+
+Changes v2 -> v3
+  - ensure only one symbol is set in a choice
+
+Changes v1 -> v2:
+  - further postpone setting that a choice has a value until
+    one is indeed set
+  - do not print symbols that are part of an invisible choice
+---
+ scripts/kconfig/confdata.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index c55c227..3e39208 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -288,8 +288,6 @@ load:
  	for_all_symbols(i, sym) {
-+		struct sym_match *tmp_sym_match;
- 		if (sym->flags & SYMBOL_CONST || !sym->name)
- 			continue;
--		if (regexec(&re, sym->name, 0, NULL, 0))
-+		if (regexec(&re, sym->name, 1, match, 0))
- 			continue;
- 		if (cnt + 1 >= size) {
--			void *tmp = sym_arr;
-+			void *tmp;
- 			size += 16;
--			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
--			if (!sym_arr) {
--				free(tmp);
--				return NULL;
-+			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
-+			if (!tmp) {
-+				goto sym_re_search_free;
+ 		sym->flags |= SYMBOL_CHANGED;
+ 		sym->flags &= ~(def_flags|SYMBOL_VALID);
+-		if (sym_is_choice(sym))
+-			sym->flags |= def_flags;
+ 		switch (sym->type) {
+ 		case S_INT:
+ 		case S_HEX:
+@@ -379,13 +377,13 @@ setsym:
+ 			case mod:
+ 				if (cs->def[def].tri == yes) {
+ 					conf_warning("%s creates inconsistent choice state", sym->name);
+-					cs->flags &= ~def_flags;
+ 				}
+ 				break;
+ 			case yes:
+ 				if (cs->def[def].tri != no)
+ 					conf_warning("override: %s changes choice state", sym->name);
+ 				cs->def[def].val = sym;
++				cs->flags |= def_flags;
+ 				break;
  			}
-+			sym_match_arr = tmp;
- 		}
- 		sym_calc_value(sym);
--		sym_arr[cnt++] = sym;
-+		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
-+		if (!tmp_sym_match)
-+			goto sym_re_search_free;
-+		tmp_sym_match->sym = sym;
-+		/* As regexec return 0, we know we have a match, so
-+		 * we can use match[0].rm_[se]o without further checks
-+		 */
-+		tmp_sym_match->so = match[0].rm_so;
-+		tmp_sym_match->eo = match[0].rm_eo;
-+		sym_match_arr[cnt++] = tmp_sym_match;
- 	}
--	if (sym_arr)
-+	if (sym_match_arr) {
-+		qsort(sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp);
-+		sym_arr = malloc((cnt+1) * sizeof(struct symbol));
-+		if (!sym_arr)
-+			goto sym_re_search_free;
-+		for (i = 0; i < cnt; i++)
-+			sym_arr[i] = sym_match_arr[i]->sym;
- 		sym_arr[cnt] = NULL;
-+	}
-+sym_re_search_free:
-+	if (sym_match_arr) {
-+		for (i = 0; i < cnt; i++)
-+			free(sym_match_arr[i]);
-+		free(sym_match_arr);
-+	}
- 	regfree(&re);
+ 			cs->def[def].tri = EXPR_OR(cs->def[def].tri, sym->def[def].tri);
+@@ -791,6 +789,8 @@ int conf_write(const char *name)
+ 			sym_calc_value(sym);
+ 			if (!(sym->flags & SYMBOL_WRITE))
+ 				goto next;
++			if (sym_is_choice_value(sym) && !menu_is_visible(menu->parent))
++				goto next;
+ 			sym->flags &= ~SYMBOL_WRITE;
  
- 	return sym_arr;
+ 			conf_write_symbol(out, sym, &kconfig_printer_cb, NULL);
 -- 
 1.8.1.2
 
