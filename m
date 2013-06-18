@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3FRIqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:46:12 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.14]:24184 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755136Ab3FRIqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:46:09 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-8.tower-28.messagelabs.com!1371545166!24517812!1
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51C01E46.8040506@digi.com>
-Date: Tue, 18 Jun 2013 10:45:58 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755246Ab3FRIqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:46:35 -0400
+Received: from nm41-vm1.bullet.mail.gq1.yahoo.com ([67.195.87.88]:32593 "EHLO
+	nm41-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754907Ab3FRIqa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:46:30 -0400
+X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jun 2013 04:46:30 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 427499.49006.bm@omp1061.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=YvU9Tn+BeiQhLt6F91qCKvF2qxQCVIfvvY4mSlaSDGPFJc9Nz2E/FcEeHBC0Lpw3oTFMd4+0B3uGihP6uao8qsNx0E7Ua7zwkFOGxcztRqchU0wJM8vTf6nMtie+yUw45eON6lSuk/dADcwyCjGyLH0uwY1Cd8Y9WZsjPYbfiok=;
+X-YMail-OSG: RKo06WgVM1lTCxRQ.AAXdgRfBk3vPCxklyKVCPAISX6zRQR
+ t5RKkcDl8C9PfUGMc5gYqX5mlJG4a0VCO3GAw35UibT0_LxC2r2mYklIi5Ok
+ QPJX.oyFraSdhbSKxkp44VI3fx.u5I5cqzKlcE.OCVRADHizDCm1vLyvzLQq
+ uW_Ql9YABERYMB5wZTL5TBTEz0dyLTdY3fJv3sQ6vP6oGRHwuLmwOo9mq0Ld
+ u.upq181VqoL6DsQE4nJYmw5XIxDFu1QWpgpCuq.30Kk3APQAFayzpg0UDIy
+ YKb7qHt1eMsQbYyKu1WsD3pTSOqc_W.1L6Ul9kGs5o0ZzdS_mCOq1g0YWWcL
+ 5q31OPcxaEDDqCWItGA_JxU0jANy3JgOkUSeC_W.xHaviubdoeyMe7bLix5j
+ 2CnDN_rHOJsba4FkkRjKM2nroR4DsyMRVp085FnIxaW6HWUgGs.ff3zfzqBE
+ TDbk62RCCRUFButl.hihdFfgH7E5ertmZAJVL4u_ZGPZMYLHv3.ZISP7klB0
+ a
+X-Rocket-MIMEInfo: 002.001,CgpoaSwgCgppIGFtIGFsbW9zdCBmcmVzaCBpbiBlbWJlZGRlZCBMaW51eCwgaSAKd2FudCB0byB0ZXN0IExERDMgZXhhbXBsZXMsIGZvciB0aGF0IGkgaW5zdGFsbCBmZWRvcmEgNCBpbiBteSBWTSwgaSBhbSAKdW5hYmxlIHRvIGNvbXBpbGUgdGhlIGtlcm5lbCwgaSBoYXZlIHNldCBjb25maWdzIHVzaW5nIG1ha2UgbWVudWNvbmZpZywgCmFuZCB0aGVuIHRyeSB0byBtYWtlIGNvbXBpbGUgYnV0IGl0IGdpdmVzIG1lwqAgZXJyb3JzIGxpa2UKCltyb290QGxvY2FsaG9zdCAyLjYuMTEtMS4xMzY5X0ZDNC1pNjgBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.147.553
+Message-ID: <1371544794.13366.YahooMailNeo@web163905.mail.gq1.yahoo.com>
+Date: Tue, 18 Jun 2013 01:39:54 -0700 (PDT)
+From: Suki Buryani <sukiburyani@yahoo.com>
+Reply-To: Suki Buryani <sukiburyani@yahoo.com>
+Subject: Need to Test lld3 examples
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-CC: <FlorianSchandinat@gmx.de>, <linux-fbdev@vger.kernel.org>,
-        Juergen Beisert <jbe@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "brian@crystalfontz.com" <brian@crystalfontz.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>, <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] video: mxsfb: fix color settings for 18bit data bus and
- 32bpp
-References: <519E03B0.1080006@digi.com> <519F4435.5010703@digi.com> <201305241300.25461.jbe@pengutronix.de> <201305241533.19941.jbe@pengutronix.de> <20130607072103.GF14209@lukather> <51B18BA0.50506@digi.com> <20130607074200.GG14209@lukather> <51B1957F.40104@digi.com> <20130607090228.GI14209@lukather> <20130618083229.GC15037@lukather>
-In-Reply-To: <20130618083229.GC15037@lukather>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 10:32 AM, maxime.ripard@free-electrons.com wrote:
-> Hi Hector,
->
-> On Fri, Jun 07, 2013 at 11:02:28AM +0200, maxime.ripard@free-electrons.com wrote:
->> On Fri, Jun 07, 2013 at 10:10:39AM +0200, Hector Palacios wrote:
->>> For a combination of 18bit LCD data bus width and a color
->>> mode of 32bpp, the driver was setting the color mapping to
->>> rgb666, which is wrong, as the color in memory realy has an
->>> rgb888 layout.
->>>
->>> This patch also removes the setting of flag CTRL_DF24 that
->>> makes the driver dimiss the upper 2 bits when handling 32/24bpp
->>> colors in a diplay with 18bit data bus width. This flag made
->>> true color images display wrong in such configurations.
->>>
->>> Finally, the color mapping rgb666 has also been removed as nobody
->>> is using it and high level applications like Qt5 cannot work
->>> with it either.
->>>
->>> Reference: https://lkml.org/lkml/2013/5/23/220
->>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
->>> Acked-by: Juergen Beisert <jbe@pengutronix.de>
->>
->> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->>
->> Please also note that fbdev is now maintained by Jean Christophe
->> Plagniol-Villard (plagnioj@jcrosoft.com, in CC), and that he is away
->> until the 10th of June, so maybe it should be safe to resend it to him
->> after this date.
->
-> It seems like Jean-Christophe is back online, maybe you should resend
-> him the patch now, it would be great to have it for 3.11.
 
-I just resent it. Thanks for the reminder.
 
--- 
-Héctor Palacios
+hi, 
 
-Best regards,
---
-Hector Palacios
+i am almost fresh in embedded Linux, i 
+want to test LDD3 examples, for that i install fedora 4 in my VM, i am 
+unable to compile the kernel, i have set configs using make menuconfig, 
+and then try to make compile but it gives me  errors like
+
+[root@localhost 2.6.11-1.1369_FC4-i686]# make
+  CHK     include/linux/version.h
+scripts/kconfig/conf -s arch/i386/Kconfig
+#
+# using defaults found in .config
+#
+  SPLIT   include/linux/autoconf.h -> include/config/*
+  CHK     include/asm-i386/asm_offsets.h
+  CC      scripts/mod/empty.o
+  MKELF   scripts/mod/elfconfig.h
+  HOSTCC  scripts/mod/file2alias.o
+  HOSTCC  scripts/mod/modpost.o
+  HOSTCC  scripts/mod/sumversion.o
+scripts/mod/sumversion.c: In function 'parse_file':
+scripts/mod/sumversion.c:260: warning: pointer targets in passing argument 1 of 'grab_file' differ in signedness
+scripts/mod/sumversion.c:277: warning: pointer targets in passing argument 1 of 'parse_string' differ in signedness
+scripts/mod/sumversion.c:283: warning: pointer targets in passing argument 1 of 'parse_comment' differ in signedness
+scripts/mod/sumversion.c: In function 'parse_source_files':
+scripts/mod/sumversion.c:335: warning: pointer targets in initialization differ in signedness
+scripts/mod/sumversion.c:344: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:357: warning: pointer targets in passing argument 1 of 'parse_file' differ in signedness
+scripts/mod/sumversion.c: In function 'strip_rcs_crap':
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of '__builtin_strcmp' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of '__builtin_strcmp' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of '__builtin_strcmp' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of '__builtin_strcmp' differ in signedness
+scripts/mod/sumversion.c:465: warning: pointer targets in passing argument 1 of 'strncmp' differ in signedness
+scripts/mod/sumversion.c:469: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:469: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:469: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:485: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c:486: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+scripts/mod/sumversion.c: In function 'maybe_frob_rcs_version':
+scripts/mod/sumversion.c:496: warning: pointer targets in passing argument 1 of 'strip_rcs_crap' differ in signedness
+  HOSTLD  scripts/mod/modpost
+make[1]: *** No rule to make target `init/main.o', needed by `init/built-in.o'.  Stop.
+make: *** [init] Error 2
+
+
+could somebody inform me i could be missing, or where i can test LDD3 examples with zero defects
+
+Thanks
