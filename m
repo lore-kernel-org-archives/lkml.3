@@ -1,203 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933430Ab3FRQ2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:28:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49442 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933203Ab3FRQRs (ORCPT
+	id S933496Ab3FRQ3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:29:00 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:57808 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933219Ab3FRQ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:48 -0400
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 27/48] md/raid1,raid10: use freeze_array in place of raise_barrier in various places.
-Date: Tue, 18 Jun 2013 09:17:53 -0700
-Message-Id: <20130618161729.827896517@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
-References: <20130618161725.912524266@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 18 Jun 2013 12:28:55 -0400
+From: Lorenz Haspel <lorenz@badgers.com>
+To: devel@linuxdriverproject.org
+Cc: gregkh@linuxfoundation.org, puff65537@bansheeslibrary.com,
+        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de,
+        Lorenz Haspel <lorenz@badgers.com>
+Subject: [PATCH 1/4 v3] silicom: checkpatch: assignments in if conditions
+Date: Tue, 18 Jun 2013 18:28:38 +0200
+Message-Id: <1371572918-25493-1-git-send-email-lorenz@badgers.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371496539-25461-1-git-send-email-lorenz@badgers.com>
+References: <1371496539-25461-1-git-send-email-lorenz@badgers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes checkpatch error:
+There were assignments in if conditions, so I extracted them.
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: NeilBrown <neilb@suse.de>
-
-commit e2d59925221cd562e07fee38ec8839f7209ae603 upstream.
-
-Various places in raid1 and raid10 are calling raise_barrier when they
-really should call freeze_array.
-The former is only intended to be called from "make_request".
-The later has extra checks for 'nr_queued' and makes a call to
-flush_pending_writes(), so it is safe to call it from within the
-management thread.
-
-Using raise_barrier will sometimes deadlock.  Using freeze_array
-should not.
-
-As 'freeze_array' currently expects one request to be pending (in
-handle_read_error - the only previous caller), we need to pass
-it the number of pending requests (extra) to ignore.
-
-The deadlock was made particularly noticeable by commits
-050b66152f87c7 (raid10) and 6b740b8d79252f13 (raid1) which
-appeared in 3.4, so the fix is appropriate for any -stable
-kernel since then.
-
-This patch probably won't apply directly to some early kernels and
-will need to be applied by hand.
-
-Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
 ---
- drivers/md/raid1.c  |   22 +++++++++++-----------
- drivers/md/raid10.c |   14 +++++++-------
- 2 files changed, 18 insertions(+), 18 deletions(-)
+v2: removed some buggy extra lines and fixed white space issues
+v3: fixed some more extra lines
+---
+ drivers/staging/silicom/bpctl_mod.c |  179 +++++++++++++++++++----------------
+ 1 file changed, 98 insertions(+), 81 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -890,17 +890,17 @@ static void allow_barrier(struct r1conf
- 	wake_up(&conf->wait_barrier);
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index a3b974b..88ece4a 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -245,9 +245,11 @@ static int bp_device_event(struct notifier_block *unused,
+ 	case NETDEV_CHANGE:{
+ 			if (netif_carrier_ok(dev))
+ 				return NOTIFY_DONE;
+-
+-			if (((dev_num = get_dev_idx(dev->ifindex)) == -1) ||
+-			    (!(pbpctl_dev = &bpctl_dev_arr[dev_num])))
++			dev_num = get_dev_idx(dev->ifindex);
++			if (dev_num == -1)
++				return NOTIFY_DONE;
++			pbpctl_dev = &bpctl_dev_arr[dev_num];
++			if (!pbpctl_dev)
+ 				return NOTIFY_DONE;
+ 
+ 			if ((is_bypass_fn(pbpctl_dev)) == 1)
+@@ -306,7 +308,8 @@ static void write_pulse(bpctl_dev_t *pbpctl_dev,
+ 		ctrl = BP10G_READ_REG(pbpctl_dev, ESDP);
+ 
+ 	if (pbpctl_dev->bp_10g9) {
+-		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_c)
+ 			return;
+ 		ctrl = BP10G_READ_REG(pbpctl_dev_c, ESDP);
+ 	}
+@@ -606,7 +609,8 @@ static int read_pulse(bpctl_dev_t *pbpctl_dev, unsigned int ctrl_ext,
+ 	if (pbpctl_dev->bp_540)
+ 		ctrl = BP10G_READ_REG(pbpctl_dev, ESDP);
+ 	if (pbpctl_dev->bp_10g9) {
+-		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_c)
+ 			return -1;
+ 		ctrl = BP10G_READ_REG(pbpctl_dev_c, ESDP);
+ 	}
+@@ -775,7 +779,8 @@ static void write_reg(bpctl_dev_t *pbpctl_dev, unsigned char value,
+ 	bpctl_dev_t *pbpctl_dev_c = NULL;
+ 	unsigned long flags;
+ 	if (pbpctl_dev->bp_10g9) {
+-		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_c)
+ 			return;
+ 	}
+ 	if ((pbpctl_dev->wdt_status == WDT_STATUS_EN) &&
+@@ -953,7 +958,8 @@ static int read_reg(bpctl_dev_t *pbpctl_dev, unsigned char addr)
+ 	atomic_set(&pbpctl_dev->wdt_busy, 1);
+ #endif
+ 	if (pbpctl_dev->bp_10g9) {
+-		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_c)
+ 			return -1;
+ 	}
+ 
+@@ -1224,7 +1230,8 @@ static int wdt_pulse(bpctl_dev_t *pbpctl_dev)
+ 		return -1;
+ #endif
+ 	if (pbpctl_dev->bp_10g9) {
+-		if (!(pbpctl_dev_c = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_c = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_c)
+ 			return -1;
+ 	}
+ 
+@@ -1742,9 +1749,9 @@ static void write_data_port_int(bpctl_dev_t *pbpctl_dev,
+ 
+ static int write_data_int(bpctl_dev_t *pbpctl_dev, unsigned char value)
+ {
+-	bpctl_dev_t *pbpctl_dev_b = NULL;
++	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+ 
+-	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++	if (!pbpctl_dev_b)
+ 		return -1;
+ 	atomic_set(&pbpctl_dev->wdt_busy, 1);
+ 	write_data_port_int(pbpctl_dev, value & 0x3);
+@@ -1963,9 +1970,9 @@ int disc_port_off(bpctl_dev_t *pbpctl_dev)
+ int tpl_hw_on(bpctl_dev_t *pbpctl_dev)
+ {
+ 	int ret = 0, ctrl = 0;
+-	bpctl_dev_t *pbpctl_dev_b = NULL;
++	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+ 
+-	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++	if (!pbpctl_dev_b)
+ 		return BP_NOT_CAP;
+ 
+ 	if (pbpctl_dev->bp_caps_ex & TPL2_CAP_EX) {
+@@ -1990,9 +1997,9 @@ int tpl_hw_on(bpctl_dev_t *pbpctl_dev)
+ int tpl_hw_off(bpctl_dev_t *pbpctl_dev)
+ {
+ 	int ret = 0, ctrl = 0;
+-	bpctl_dev_t *pbpctl_dev_b = NULL;
++	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+ 
+-	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++	if (!pbpctl_dev_b)
+ 		return BP_NOT_CAP;
+ 	if (pbpctl_dev->bp_caps_ex & TPL2_CAP_EX) {
+ 		cmnd_on(pbpctl_dev);
+@@ -2373,28 +2380,24 @@ static int set_tx(bpctl_dev_t *pbpctl_dev, int tx_state)
+ 		if (PEG5_IF_SERIES(pbpctl_dev->subdevice)) {
+ 			if (tx_state) {
+ 				uint16_t mii_reg;
+-				if (!
+-				    (ret =
+-				     bp75_read_phy_reg(pbpctl_dev,
++				ret = bp75_read_phy_reg(pbpctl_dev,
+ 						       BPCTLI_PHY_CONTROL,
+-						       &mii_reg))) {
+-					if (mii_reg & BPCTLI_MII_CR_POWER_DOWN) {
+-						ret =
+-						    bp75_write_phy_reg
+-						    (pbpctl_dev,
+-						     BPCTLI_PHY_CONTROL,
+-						     mii_reg &
+-						     ~BPCTLI_MII_CR_POWER_DOWN);
+-					}
++						       &mii_reg);
++				if ((!ret) &&
++				    (mii_reg & BPCTLI_MII_CR_POWER_DOWN)) {
++					ret =
++					    bp75_write_phy_reg
++					    (pbpctl_dev,
++					     BPCTLI_PHY_CONTROL,
++					     mii_reg &
++					     ~BPCTLI_MII_CR_POWER_DOWN);
+ 				}
+ 			} else {
+ 				uint16_t mii_reg;
+-				if (!
+-				    (ret =
+-				     bp75_read_phy_reg(pbpctl_dev,
++				ret = bp75_read_phy_reg(pbpctl_dev,
+ 						       BPCTLI_PHY_CONTROL,
+-						       &mii_reg))) {
+-
++						       &mii_reg);
++				if (!ret) {
+ 					mii_reg |= BPCTLI_MII_CR_POWER_DOWN;
+ 					ret =
+ 					    bp75_write_phy_reg(pbpctl_dev,
+@@ -3237,30 +3240,33 @@ int bypass_from_last_read(bpctl_dev_t *pbpctl_dev)
+ 	uint32_t ctrl_ext = 0;
+ 	bpctl_dev_t *pbpctl_dev_b = NULL;
+ 
+-	if ((pbpctl_dev->bp_caps & SW_CTL_CAP)
+-	    && (pbpctl_dev_b = get_status_port_fn(pbpctl_dev))) {
+-		ctrl_ext = BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT);
+-		BPCTL_BP_WRITE_REG(pbpctl_dev_b, CTRL_EXT,
++	if (pbpctl_dev->bp_caps & SW_CTL_CAP) {
++		pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if (pbpctl_dev_b) {
++			ctrl_ext = BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT);
++			BPCTL_BP_WRITE_REG(pbpctl_dev_b, CTRL_EXT,
+ 				   (ctrl_ext & ~BPCTLI_CTRL_EXT_SDP7_DIR));
+-		ctrl_ext = BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT);
+-		if (ctrl_ext & BPCTLI_CTRL_EXT_SDP7_DATA)
+-			return 0;
+-		return 1;
+-	} else
+-		return BP_NOT_CAP;
++			ctrl_ext = BPCTL_READ_REG(pbpctl_dev_b, CTRL_EXT);
++			if (ctrl_ext & BPCTLI_CTRL_EXT_SDP7_DATA)
++				return 0;
++			return 1;
++		}
++	}
++	return BP_NOT_CAP;
  }
  
--static void freeze_array(struct r1conf *conf)
-+static void freeze_array(struct r1conf *conf, int extra)
+ int bypass_status_clear(bpctl_dev_t *pbpctl_dev)
  {
- 	/* stop syncio and normal IO and wait for everything to
- 	 * go quite.
- 	 * We increment barrier and nr_waiting, and then
--	 * wait until nr_pending match nr_queued+1
-+	 * wait until nr_pending match nr_queued+extra
- 	 * This is called in the context of one normal IO request
- 	 * that has failed. Thus any sync request that might be pending
- 	 * will be blocked by nr_pending, and we need to wait for
- 	 * pending IO requests to complete or be queued for re-try.
--	 * Thus the number queued (nr_queued) plus this request (1)
-+	 * Thus the number queued (nr_queued) plus this request (extra)
- 	 * must match the number of pending IOs (nr_pending) before
- 	 * we continue.
- 	 */
-@@ -908,7 +908,7 @@ static void freeze_array(struct r1conf *
- 	conf->barrier++;
- 	conf->nr_waiting++;
- 	wait_event_lock_irq_cmd(conf->wait_barrier,
--				conf->nr_pending == conf->nr_queued+1,
-+				conf->nr_pending == conf->nr_queued+extra,
- 				conf->resync_lock,
- 				flush_pending_writes(conf));
- 	spin_unlock_irq(&conf->resync_lock);
-@@ -1568,8 +1568,8 @@ static int raid1_add_disk(struct mddev *
- 		 * we wait for all outstanding requests to complete.
- 		 */
- 		synchronize_sched();
--		raise_barrier(conf);
--		lower_barrier(conf);
-+		freeze_array(conf, 0);
-+		unfreeze_array(conf);
- 		clear_bit(Unmerged, &rdev->flags);
- 	}
- 	md_integrity_add_rdev(rdev, mddev);
-@@ -1619,11 +1619,11 @@ static int raid1_remove_disk(struct mdde
- 			 */
- 			struct md_rdev *repl =
- 				conf->mirrors[conf->raid_disks + number].rdev;
--			raise_barrier(conf);
-+			freeze_array(conf, 0);
- 			clear_bit(Replacement, &repl->flags);
- 			p->rdev = repl;
- 			conf->mirrors[conf->raid_disks + number].rdev = NULL;
--			lower_barrier(conf);
-+			unfreeze_array(conf);
- 			clear_bit(WantReplacement, &rdev->flags);
- 		} else
- 			clear_bit(WantReplacement, &rdev->flags);
-@@ -2240,7 +2240,7 @@ static void handle_read_error(struct r1c
- 	 * frozen
- 	 */
- 	if (mddev->ro == 0) {
--		freeze_array(conf);
-+		freeze_array(conf, 1);
- 		fix_read_error(conf, r1_bio->read_disk,
- 			       r1_bio->sector, r1_bio->sectors);
- 		unfreeze_array(conf);
-@@ -3019,7 +3019,7 @@ static int raid1_reshape(struct mddev *m
- 		return -ENOMEM;
- 	}
+ 	bpctl_dev_t *pbpctl_dev_b = NULL;
  
--	raise_barrier(conf);
-+	freeze_array(conf, 0);
- 
- 	/* ok, everything is stopped */
- 	oldpool = conf->r1bio_pool;
-@@ -3050,7 +3050,7 @@ static int raid1_reshape(struct mddev *m
- 	conf->raid_disks = mddev->raid_disks = raid_disks;
- 	mddev->delta_disks = 0;
- 
--	lower_barrier(conf);
-+	unfreeze_array(conf);
- 
- 	set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 	md_wakeup_thread(mddev->thread);
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1065,17 +1065,17 @@ static void allow_barrier(struct r10conf
- 	wake_up(&conf->wait_barrier);
+-	if ((pbpctl_dev->bp_caps & SW_CTL_CAP)
+-	    && (pbpctl_dev_b = get_status_port_fn(pbpctl_dev))) {
+-
+-		send_bypass_clear_pulse(pbpctl_dev_b, 1);
+-		return 0;
+-	} else
+-		return BP_NOT_CAP;
++	if (pbpctl_dev->bp_caps & SW_CTL_CAP) {
++		pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if (pbpctl_dev_b) {
++			send_bypass_clear_pulse(pbpctl_dev_b, 1);
++			return 0;
++		}
++	}
++	return BP_NOT_CAP;
  }
  
--static void freeze_array(struct r10conf *conf)
-+static void freeze_array(struct r10conf *conf, int extra)
+ int bypass_flag_status(bpctl_dev_t *pbpctl_dev)
+@@ -3326,10 +3332,8 @@ static int bypass_status(bpctl_dev_t *pbpctl_dev)
  {
- 	/* stop syncio and normal IO and wait for everything to
- 	 * go quiet.
- 	 * We increment barrier and nr_waiting, and then
--	 * wait until nr_pending match nr_queued+1
-+	 * wait until nr_pending match nr_queued+extra
- 	 * This is called in the context of one normal IO request
- 	 * that has failed. Thus any sync request that might be pending
- 	 * will be blocked by nr_pending, and we need to wait for
- 	 * pending IO requests to complete or be queued for re-try.
--	 * Thus the number queued (nr_queued) plus this request (1)
-+	 * Thus the number queued (nr_queued) plus this request (extra)
- 	 * must match the number of pending IOs (nr_pending) before
- 	 * we continue.
- 	 */
-@@ -1083,7 +1083,7 @@ static void freeze_array(struct r10conf
- 	conf->barrier++;
- 	conf->nr_waiting++;
- 	wait_event_lock_irq_cmd(conf->wait_barrier,
--				conf->nr_pending == conf->nr_queued+1,
-+				conf->nr_pending == conf->nr_queued+extra,
- 				conf->resync_lock,
- 				flush_pending_writes(conf));
+ 	u32 ctrl_ext = 0;
+ 	if (pbpctl_dev->bp_caps & BP_CAP) {
+-
+-		bpctl_dev_t *pbpctl_dev_b = NULL;
+-
+-		if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++		bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_b)
+ 			return BP_NOT_CAP;
  
-@@ -1849,8 +1849,8 @@ static int raid10_add_disk(struct mddev
- 		 * we wait for all outstanding requests to complete.
- 		 */
- 		synchronize_sched();
--		raise_barrier(conf, 0);
--		lower_barrier(conf);
-+		freeze_array(conf, 0);
-+		unfreeze_array(conf);
- 		clear_bit(Unmerged, &rdev->flags);
+ 		if (INTEL_IF_SERIES(pbpctl_dev->subdevice)) {
+@@ -3615,9 +3619,8 @@ int tap_status(bpctl_dev_t *pbpctl_dev)
+ 	u32 ctrl_ext = 0;
+ 
+ 	if (pbpctl_dev->bp_caps & TAP_CAP) {
+-		bpctl_dev_t *pbpctl_dev_b = NULL;
+-
+-		if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++		bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_b)
+ 			return BP_NOT_CAP;
+ 
+ 		if (pbpctl_dev->bp_ext_ver >= 0x8) {
+@@ -3713,7 +3716,8 @@ int disc_off_status(bpctl_dev_t *pbpctl_dev)
+ 	u32 ctrl_ext = 0;
+ 
+ 	if (pbpctl_dev->bp_caps & DISC_CAP) {
+-		if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++		pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if (!pbpctl_dev_b)
+ 			return BP_NOT_CAP;
+ 		if (DISCF_IF_SERIES(pbpctl_dev->subdevice))
+ 			return ((((read_reg(pbpctl_dev, STATUS_DISC_REG_ADDR)) &
+@@ -3794,8 +3798,8 @@ static int disc_status(bpctl_dev_t *pbpctl_dev)
+ {
+ 	int ctrl = 0;
+ 	if (pbpctl_dev->bp_caps & DISC_CAP) {
+-
+-		if ((ctrl = disc_off_status(pbpctl_dev)) < 0)
++		ctrl = disc_off_status(pbpctl_dev);
++		if (ctrl < 0)
+ 			return ctrl;
+ 		return ((ctrl == 0) ? 1 : 0);
+ 
+@@ -3909,9 +3913,9 @@ int tpl2_flag_status(bpctl_dev_t *pbpctl_dev)
+ 
+ int tpl_hw_status(bpctl_dev_t *pbpctl_dev)
+ {
+-	bpctl_dev_t *pbpctl_dev_b = NULL;
++	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+ 
+-	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++	if (!pbpctl_dev_b)
+ 		return BP_NOT_CAP;
+ 
+ 	if (TPL_IF_SERIES(pbpctl_dev->subdevice))
+@@ -4215,9 +4219,9 @@ void bypass_caps_init(bpctl_dev_t *pbpctl_dev)
+ 
+ int bypass_off_init(bpctl_dev_t *pbpctl_dev)
+ {
+-	int ret = 0;
++	int ret = cmnd_on(pbpctl_dev);
+ 
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	if (ret < 0)
+ 		return ret;
+ 	if (INTEL_IF_SERIES(pbpctl_dev->subdevice))
+ 		return dis_bypass_cap(pbpctl_dev);
+@@ -4403,7 +4407,8 @@ int set_bypass_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
+ 
+ 	if (!(pbpctl_dev->bp_caps & BP_CAP))
+ 		return BP_NOT_CAP;
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (!bypass_mode)
+ 		ret = bypass_off(pbpctl_dev);
+@@ -4435,7 +4440,8 @@ int set_dis_bypass_fn(bpctl_dev_t *pbpctl_dev, int dis_param)
+ 
+ 	if (!(pbpctl_dev->bp_caps & BP_DIS_CAP))
+ 		return BP_NOT_CAP;
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (dis_param)
+ 		ret = dis_bypass_cap(pbpctl_dev);
+@@ -4461,7 +4467,8 @@ int set_bypass_pwoff_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
+ 
+ 	if (!(pbpctl_dev->bp_caps & BP_PWOFF_CTL_CAP))
+ 		return BP_NOT_CAP;
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (bypass_mode)
+ 		ret = bypass_state_pwroff(pbpctl_dev);
+@@ -4487,7 +4494,8 @@ int set_bypass_pwup_fn(bpctl_dev_t *pbpctl_dev, int bypass_mode)
+ 
+ 	if (!(pbpctl_dev->bp_caps & BP_PWUP_CTL_CAP))
+ 		return BP_NOT_CAP;
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (bypass_mode)
+ 		ret = bypass_state_pwron(pbpctl_dev);
+@@ -4514,7 +4522,8 @@ int set_bypass_wd_fn(bpctl_dev_t *pbpctl_dev, int timeout)
+ 	if (!(pbpctl_dev->bp_caps & WD_CTL_CAP))
+ 		return BP_NOT_CAP;
+ 
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (!timeout)
+ 		ret = wdt_off(pbpctl_dev);
+@@ -4583,7 +4592,8 @@ int set_std_nic_fn(bpctl_dev_t *pbpctl_dev, int nic_mode)
+ 	if (!(pbpctl_dev->bp_caps & STD_NIC_CAP))
+ 		return BP_NOT_CAP;
+ 
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	if (nic_mode)
+ 		ret = std_nic_on(pbpctl_dev);
+@@ -4648,8 +4658,8 @@ int get_tap_pwup_fn(bpctl_dev_t *pbpctl_dev)
+ 	int ret = 0;
+ 	if (!pbpctl_dev)
+ 		return -1;
+-
+-	if ((ret = default_pwron_tap_status(pbpctl_dev)) < 0)
++	ret = default_pwron_tap_status(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	return ((ret == 0) ? 1 : 0);
+ }
+@@ -4823,8 +4833,8 @@ int get_disc_port_pwup_fn(bpctl_dev_t *pbpctl_dev)
+ 	int ret = 0;
+ 	if (!pbpctl_dev)
+ 		return -1;
+-
+-	if ((ret = default_pwron_disc_port_status(pbpctl_dev)) < 0)
++	ret = default_pwron_disc_port_status(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	return ((ret == 0) ? 1 : 0);
+ }
+@@ -4851,7 +4861,8 @@ int reset_cont_fn(bpctl_dev_t *pbpctl_dev)
+ 	if (!pbpctl_dev)
+ 		return -1;
+ 
+-	if ((ret = cmnd_on(pbpctl_dev)) < 0)
++	ret = cmnd_on(pbpctl_dev);
++	if (ret < 0)
+ 		return ret;
+ 	return reset_cont(pbpctl_dev);
+ }
+@@ -4867,8 +4878,10 @@ int set_tx_fn(bpctl_dev_t *pbpctl_dev, int tx_state)
+ 	    (pbpctl_dev->bp_caps & SW_CTL_CAP)) {
+ 		if ((pbpctl_dev->bp_tpl_flag))
+ 			return BP_NOT_CAP;
+-	} else if ((pbpctl_dev_b = get_master_port_fn(pbpctl_dev))) {
+-		if ((pbpctl_dev_b->bp_caps & TPL_CAP) &&
++	} else {
++		pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++		if ((pbpctl_dev_b) &&
++		    (pbpctl_dev_b->bp_caps & TPL_CAP) &&
+ 		    (pbpctl_dev_b->bp_tpl_flag))
+ 			return BP_NOT_CAP;
  	}
- 	md_integrity_add_rdev(rdev, mddev);
-@@ -2646,7 +2646,7 @@ static void handle_read_error(struct mdd
- 	r10_bio->devs[slot].bio = NULL;
+@@ -4984,8 +4997,10 @@ int get_tx_fn(bpctl_dev_t *pbpctl_dev)
+ 	    (pbpctl_dev->bp_caps & SW_CTL_CAP)) {
+ 		if ((pbpctl_dev->bp_tpl_flag))
+ 			return BP_NOT_CAP;
+-	} else if ((pbpctl_dev_b = get_master_port_fn(pbpctl_dev))) {
+-		if ((pbpctl_dev_b->bp_caps & TPL_CAP) &&
++	} else{
++		pbpctl_dev_b = get_master_port_fn(pbpctl_dev);
++		if ((pbpctl_dev_b) &&
++		    (pbpctl_dev_b->bp_caps & TPL_CAP) &&
+ 		    (pbpctl_dev_b->bp_tpl_flag))
+ 			return BP_NOT_CAP;
+ 	}
+@@ -5022,9 +5037,9 @@ static void bp_tpl_timer_fn(unsigned long param)
+ {
+ 	bpctl_dev_t *pbpctl_dev = (bpctl_dev_t *) param;
+ 	uint32_t link1, link2;
+-	bpctl_dev_t *pbpctl_dev_b = NULL;
++	bpctl_dev_t *pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
  
- 	if (mddev->ro == 0) {
--		freeze_array(conf);
-+		freeze_array(conf, 1);
- 		fix_read_error(conf, mddev, r10_bio);
- 		unfreeze_array(conf);
- 	} else
-
+-	if (!(pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++	if (!pbpctl_dev_b)
+ 		return;
+ 
+ 	if (!pbpctl_dev->bp_tpl_flag) {
+@@ -5128,7 +5143,8 @@ int set_tpl_fn(bpctl_dev_t *pbpctl_dev, int tpl_mode)
+ 
+ 	if (pbpctl_dev->bp_caps & TPL_CAP) {
+ 		if (tpl_mode) {
+-			if ((pbpctl_dev_b = get_status_port_fn(pbpctl_dev)))
++			pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
++			if (pbpctl_dev_b)
+ 				set_tx(pbpctl_dev_b, 1);
+ 			set_tx(pbpctl_dev, 1);
+ 		}
+@@ -6708,7 +6724,8 @@ static int init_one(bpctl_dev_t *dev, bpmod_info_t *info, struct pci_dev *pdev1)
+ 			reset_cont(dev);
+ 	}
+ #ifdef BP_SELF_TEST
+-	if ((dev->bp_tx_data = kzalloc(BPTEST_DATA_LEN, GFP_KERNEL))) {
++	dev->bp_tx_data = kzalloc(BPTEST_DATA_LEN, GFP_KERNEL);
++	if (dev->bp_tx_data) {
+ 		memset(dev->bp_tx_data, 0xff, 6);
+ 		memset(dev->bp_tx_data + 6, 0x0, 1);
+ 		memset(dev->bp_tx_data + 7, 0xaa, 5);
+-- 
+1.7.10.4
 
