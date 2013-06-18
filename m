@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3FRB70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 21:59:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:42649 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab3FRB7W (ORCPT
+	id S1753789Ab3FRCCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:02:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19506 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab3FRCCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 21:59:22 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-12-51bfbef72473
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Alexander Holler'" <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'John Stultz'" <john.stultz@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-References: <51BB50B1.7060308@ahsoftware.de> <51BF2DD8.5030004@ahsoftware.de>
-In-reply-to: <51BF2DD8.5030004@ahsoftware.de>
-Subject: Re: BUG: rtc: rtc_device_unregister() broken in 3.10-rcN
-Date: Tue, 18 Jun 2013 10:59:19 +0900
-Message-id: <002901ce6bc7$71d32510$55796f30$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQDeVsvrEUPPO2Q8UKyq6zdMyqwuMAHfrg/gmwvho/A=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zY93v+/YHGqzaaWAxZ/0aNovDi14w
-	Wvzr3sVkcXnhJVaLM791LS7vmsNmsb+zg9Hi5J9eRgcOj9mdDWweO2fdZffYM/Ekm8eda3vY
-	PE7M+M3i0bdlFaPH501yAexRXDYpqTmZZalF+nYJXBl/J+9hLNjJUdGz+wJbA+Nbti5GDg4J
-	AROJe32CXYycQKaYxIV769lAbCGBZYwS51dJQcRNJDofdLN2MXIBxaczSnRf6meGcH4xSix5
-	8I4dpIpNQE3iy5fDYLaIgK7ErE3PwIqYBSYxSay6vJgZYqyvRMejTUwgNidQ0dT3e1lAbGEB
-	R4lHp86xgtgsAqoSDTtngA3iFbCUODL/AZQtKPFj8j2wemYBLYn1O48zQdjyEpvXvGWGOFVB
-	YsfZ14wQR1hJbNi6EqpGRGLfi3eMIAdJCPxll9jz9gMjxDIBiW+TD7FAgkJWYtMBqDmSEgdX
-	3GCZwCgxC8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihMR2/w7G
-	uwesDzEmA62fyCwlmpwPTA15JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQW
-	xReV5qQWH2Jk4uCUamCcqmb/tZVrdV8Lh7ris68JGiUXbBt4nPrvqplfyXvo3+upXX5HRWFb
-	YsGnoxPeOBm8cRdftMeWP9aoOoev3vLSv8sbfs3P/a8gcvGIE5u9kITbx6Qpf7U+TbvNp2P7
-	/OQGUfVEy037nq2Y/vDKWeHDwQsqpSRkBArq9CfzWVzoefG4esEJ7bNKLMUZiYZazEXFiQCa
-	F9HUAwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jQd3v+/YHGjzv1rGYs34Nm8XhRS8Y
-	Lf5172KyuLzwEqvFmd+6Fpd3zWGz2N/ZwWhx8k8vowOHx+zOBjaPnbPusnvsmXiSzePOtT1s
-	Hidm/Gbx6NuyitHj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
-	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZ
-	fyfvYSzYyVHRs/sCWwPjW7YuRk4OCQETic4H3awQtpjEhXvrgeJcHEIC0xklui/1M0M4vxgl
-	ljx4xw5SxSagJvHly2EwW0RAV2LWpmdgRcwCk5gkVl1ezAySEBLwleh4tIkJxOYEKpr6fi8L
-	iC0s4Cjx6NQ5sHUsAqoSDTtngA3iFbCUODL/AZQtKPFj8j2wemYBLYn1O48zQdjyEpvXvGWG
-	OFVBYsfZ14wQR1hJbNi6EqpGRGLfi3eMExiFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6
-	rpFecWJucWleul5yfu4mRnDyeCa9g3FVg8UhRgEORiUe3gSx/YFCrIllxZW5hxglOJiVRHhj
-	J+4LFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp0eR8YGLLK4k3NDYxM7I0MrMwMjE3J01YSZz3
-	YKt1oJBAemJJanZqakFqEcwWJg5OqQZGmUdtXR4xNo4JMyUyzQPf58o9/GtkdMqLV2iOjOXs
-	rkpx30UXYs+/eNI346p04BuTJxus4g/PZG2zWXPgX1j7Ot7kBy3G8selgub4V1cey/4h/ufM
-	y5WihcuD13AsbunaouPW51HXnX3pcO2zLaeFl6zLeVhamhxstk48vz+9N+va+WPdWiFKLMUZ
-	iYZazEXFiQBVsmYwYgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 17 Jun 2013 22:02:04 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=OjN0HKCXvREA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DnkOc9KbUqAA:10 a=tSAWcc6Xqgn2ay_OORwA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371520921.18733.28.camel@gandalf.local.home>
+Subject: Re: Re: [PATCH] tracing/uprobes: Support ftrace_event_file base
+ multibuffer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: paulmck@linux.vnet.ibm.com, "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Date: Mon, 17 Jun 2013 22:02:01 -0400
+In-Reply-To: <51BFB878.10508@hitachi.com>
+References: <51BA7578.4080108@huawei.com> <51BB18EB.9080307@hitachi.com>
+	  <1371223918.9844.324.camel@gandalf.local.home>
+	  <20130614162112.GO5146@linux.vnet.ibm.com>
+	  <1371227607.9844.335.camel@gandalf.local.home>
+	  <20130614172516.GP5146@linux.vnet.ibm.com> <51BE7A83.9060802@hitachi.com>
+	 <1371472393.18733.5.camel@gandalf.local.home> <51BFB878.10508@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 18, 2013 12:40 AM, Alexander Holler wrote:
-> Am 14.06.2013 19:19, schrieb Alexander Holler:
-> > Hello,
-> >
-> > I've just tested some things with 3.10-rc5+ and discovered that
-> > rtc_device_unregister is broken. This is most likely because of the
-> > switch to devm*. As 3.10 is already at -rc5, I'm posting this without
+On Tue, 2013-06-18 at 10:31 +0900, Masami Hiramatsu wrote:
+> (2013/06/17 21:33), Steven Rostedt wrote:
 
-CC'ed Dmitry Torokhov, Sachin Kamat
-
-
-Hi Alexander,
-
-You are using 'drivers/rtc/rtc-hid-sensor-time.c', right?
-If so, would you revert '479243b rtc: hid-sensor-time: use devm_rtc_device_register()',
-and give the result?
-
-
-Hi Dmitry, Sachin,
-You can see the kernel debug message, when the problem happens.
-(http://lists-archives.com/linux-kernel/27855385-bug-rtc-rtc_unregister_device-broken-in-3-10-rcn.html)
-
-
-Best regards,
-Jingoo Han
-
+> > The only reason ftrace function tracer uses the raw (and now
+> > raw_notrace) version is because it is extremely invasive, and these
+> > checks done at *every* function call can actually live lock the system.
+> > But other places in tracing use the appropriate rcu_dereference_*()
+> > functions. If they do not, then they need to be fixed too.
 > 
-> Just in case the question arises, this worked and works perfectly with
-> 3.9.x, so maybe I should have named it REGRESSION rather than BUG.
-> 
-> Regards,
-> 
-> Alexander
-> 
-> PS: I changed typo in the subject from rtc_unregister_device to
-> rtc_device_unregister
+> Oh, I see.
+> Anyway, it will be completely replaced by the Oleg's patch.
+> Or should I fix that before his work?
+
+It's not that urgent. If Oleg's patch will replace it, I wouldn't
+bother.
+
+-- Steve
+
 
