@@ -1,101 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3FRGwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:52:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47621 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3FRGwe (ORCPT
+	id S1753020Ab3FRG5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:57:04 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:40120 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049Ab3FRG5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:52:34 -0400
-Date: Tue, 18 Jun 2013 07:52:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC] should read(2) update the position if it returns an error?
-Message-ID: <20130618065231.GT4165@ZenIV.linux.org.uk>
-References: <20130614080528.GM4165@ZenIV.linux.org.uk>
- <CA+55aFyEuDsLtKXDCd1w_dUfOg-4_7b2WBO3P+5VMFXB4XS=YQ@mail.gmail.com>
+	Tue, 18 Jun 2013 02:57:02 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
+Subject: [PATCH V3 1/2] dma: mmp_pdma: add protect when alloc/free phy channels
+Date: Tue, 18 Jun 2013 14:55:58 +0800
+Message-ID: <1371538559-13185-2-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1371538559-13185-1-git-send-email-wangxfdu@gmail.com>
+References: <1371538559-13185-1-git-send-email-wangxfdu@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyEuDsLtKXDCd1w_dUfOg-4_7b2WBO3P+5VMFXB4XS=YQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 08:38:19AM -0700, Linus Torvalds wrote:
-> On Fri, Jun 14, 2013 at 1:05 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> >         Comments?  I'd obviously prefer to solve it that way (i.e. leave
-> > ->f_pos untouched if vfs_read() returns an error), but I might be missing
-> > some case where we want position updated even though read() returns an
-> > error.  I can't come up with one, but then I hadn't RTFS through every
-> > ->read() instance in drivers in search of weird cases like that - we've
-> > too many instances ;-/
-> 
-> Not updating f_pos on errors sounds like the right thing to do to me,
-> and if it also ends up fixing some nasty issues with hpfs and
-> potentially other cases, I'd say "go for it".
-> 
-> Not for 3.10, though. It's not like this is a new - or acute - problem.
+From: Xiang Wang <wangx@marvell.com>
 
-Grr...  I've just crawled through ->llseek() instances and I really wonder
-what to do with that crap.  Debugfs idiocies had been obvious, but there
-are much stranger turds floating there.
+In mmp pdma, phy channels are allocated/freed dynamically
+and frequently. But no proper protection is added.
+Conflict will happen when multi-users are requesting phy
+channels at the same time. Use spinlock to protect.
 
-Some random examples:
-drivers/sbus/char/flash.c:
-	SEEK_CUR beyond the EOF silently trims position to EOF
-	SEEK_SET to the same position just sets it
-	SEEK_END sets position to EOF, period - offset is simply ignored
+Signed-off-by: Xiang Wang <wangx@marvell.com>
+---
+ drivers/dma/mmp_pdma.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
 
-cris eeprom:
-	SEEK_END inverts the sign of offset
-	any seek to negative returns EOVERFLOW (instead of usual EINVAL)
-*and* sets position to 0
-	any seek to or beyond the EOF (there's an off-by-one) also
-returns EOVERFLOW *and* sets position to EOF - 1.  Yes, that includes
-lseek(fd, SEEK_END, 0)
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c26699f..226158d 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -121,6 +121,7 @@ struct mmp_pdma_device {
+ 	struct device			*dev;
+ 	struct dma_device		device;
+ 	struct mmp_pdma_phy		*phy;
++	spinlock_t phy_lock; /* protect alloc/free phy channels */
+ };
+ 
+ #define tx_to_mmp_pdma_desc(tx) container_of(tx, struct mmp_pdma_desc_sw, async_tx)
+@@ -219,6 +220,7 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 	int prio, i;
+ 	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
+ 	struct mmp_pdma_phy *phy;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * dma channel priorities
+@@ -227,6 +229,8 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 	 * ch 8 - 11, 24 - 27  <--> (2)
+ 	 * ch 12 - 15, 28 - 31  <--> (3)
+ 	 */
++
++	spin_lock_irqsave(&pdev->phy_lock, flags);
+ 	for (prio = 0; prio <= (((pdev->dma_channels - 1) & 0xf) >> 2); prio++) {
+ 		for (i = 0; i < pdev->dma_channels; i++) {
+ 			if (prio != ((i & 0xf) >> 2))
+@@ -234,14 +238,30 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 			phy = &pdev->phy[i];
+ 			if (!phy->vchan) {
+ 				phy->vchan = pchan;
++				spin_unlock_irqrestore(&pdev->phy_lock, flags);
+ 				return phy;
+ 			}
+ 		}
+ 	}
+ 
++	spin_unlock_irqrestore(&pdev->phy_lock, flags);
+ 	return NULL;
+ }
+ 
++static void mmp_pdma_free_phy(struct mmp_pdma_chan *pchan)
++{
++	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
++	unsigned long flags;
++
++	if (!pchan->phy)
++		return;
++
++	spin_lock_irqsave(&pdev->phy_lock, flags);
++	pchan->phy->vchan = NULL;
++	pchan->phy = NULL;
++	spin_unlock_irqrestore(&pdev->phy_lock, flags);
++}
++
+ /* desc->tx_list ==> pending list */
+ static void append_pending_queue(struct mmp_pdma_chan *chan,
+ 					struct mmp_pdma_desc_sw *desc)
+@@ -277,10 +297,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+ 
+ 	if (list_empty(&chan->chain_pending)) {
+ 		/* chance to re-fetch phy channel with higher prio */
+-		if (chan->phy) {
+-			chan->phy->vchan = NULL;
+-			chan->phy = NULL;
+-		}
++		mmp_pdma_free_phy(chan);
+ 		dev_dbg(chan->dev, "no pending list\n");
+ 		return;
+ 	}
+@@ -377,10 +394,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
+ 		dev_err(chan->dev, "unable to allocate descriptor pool\n");
+ 		return -ENOMEM;
+ 	}
+-	if (chan->phy) {
+-		chan->phy->vchan = NULL;
+-		chan->phy = NULL;
+-	}
++	mmp_pdma_free_phy(chan);
+ 	chan->idle = true;
+ 	chan->dev_addr = 0;
+ 	return 1;
+@@ -411,10 +425,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
+ 	chan->desc_pool = NULL;
+ 	chan->idle = true;
+ 	chan->dev_addr = 0;
+-	if (chan->phy) {
+-		chan->phy->vchan = NULL;
+-		chan->phy = NULL;
+-	}
++	mmp_pdma_free_phy(chan);
+ 	return;
+ }
+ 
+@@ -581,10 +592,7 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+ 	switch (cmd) {
+ 	case DMA_TERMINATE_ALL:
+ 		disable_chan(chan->phy);
+-		if (chan->phy) {
+-			chan->phy->vchan = NULL;
+-			chan->phy = NULL;
+-		}
++		mmp_pdma_free_phy(chan);
+ 		spin_lock_irqsave(&chan->desc_lock, flags);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_running);
+@@ -777,6 +785,8 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 		return -ENOMEM;
+ 	pdev->dev = &op->dev;
+ 
++	spin_lock_init(&pdev->phy_lock);
++
+ 	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
+ 	if (!iores)
+ 		return -EINVAL;
+-- 
+1.7.5.4
 
-carma-fpga-program.c:
-	SEEK_END inverts sign of offset
-	seeks past EOF give EINVAL
-	seeks to negative offsets pass on 32bit and give EINVAL on 64bit
-
-drivers/s390/char/vmur.c:
-	fails when offset is not a multiple of 4Kb; the trouble
-being, read() can bloody well leave you with position not being such
-a multiple, so that check buys us nothing - SEEK_CUR for 12Kb might
-be an equivalent of SEEK_SET to 13Kb; the former is allowed, the
-latter isn't.
-
-drivers/staging/vme/devices/vme_user.c:
-	apparent off-by-one - SEEK_END:-1 succeeds, SEEK_END:0 gives
-EINVAL.
-
-Then there's a bunch of drivers that either don't allow SEEK_END while
-having an upper limit to seekable positions acting as EOF would or
-allow seeks past what SEEK_END:0 yields.
-
-All that mess is a user-visible ABI and at least for the weird eeprom
-devices I would be very cautious with fixing it - the userland code
-dealing with those animals is rather obscure, can easily turn out
-to rely on the idiotic behaviour and brick the boxen if things go
-wrong.
-
-I'm switching everything I can to use of generic_file_llseek_size();
-quite a few can be switched, often along with dropping the locking
-that served only to serialize lseek vs. lseek.  The rest is going to
-be unpleasant.
-
-There's another pile of fun around f_pos manipulations - try to run
-ecryptfs on top of tmpfs or ceph and do seeks on directories.
-ecryptfs ->readdir() assigns ->f_pos of underlying file and calls
-underlying ->readdir(); the trouble is, underlying fs has things it
-wants done on ->f_pos changes (cursor needs to be moved, etc.).
-ecryptfs on top of hpfs is also a lot of fun, not that anybody had been
-using that combination.
-
-Sigh...
