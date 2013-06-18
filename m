@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933790Ab3FRVtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 17:49:07 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58974 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933755Ab3FRVtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 17:49:04 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Phil Carmody <phil.carmody@partner.samsung.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Ignore SI unit CamelCase variants like "_uV"
-Date: Tue, 18 Jun 2013 14:49:00 -0700
-Message-Id: <436886fed3a3e35ee900ff3bd37b2e4abb029fbc.1371591804.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <51ba353b.TlzEy+Prp1kCGnx4%akpm@linux-foundation.org>
-References: <51ba353b.TlzEy+Prp1kCGnx4%akpm@linux-foundation.org>
+	id S933768Ab3FRVts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 17:49:48 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55598 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933236Ab3FRVtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 17:49:46 -0400
+Date: Tue, 18 Jun 2013 14:49:29 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        Rob Landley <rob@landley.net>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, linux-doc@vger.kernel.org,
+        cocci@systeme.lip6.fr
+Subject: [PATCH v3] coccicheck: span checks across CPUs
+Message-ID: <20130618214929.GA15976@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many existing variable names use SI like variants that
-should be otherwise obvious and acceptable.
+This adds parallelism by default to the "coccicheck" target using
+spatch's "-max" and "-index" arguments.
 
-Whitelist them from the CamelCase message.
-
-Suggested-by: Phil Carmody <phil.carmody@partner.samsung.com>
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- scripts/checkpatch.pl | 3 +++
- 1 file changed, 3 insertions(+)
+v3:
+ - quiet bash typo, thanks to Nicholas Palix for catching that.
+v2:
+ - added job control to clean up on interrupt, suggested by Nicolas Palix.
+---
+ Documentation/coccinelle.txt |    5 +++++
+ scripts/coccicheck           |   31 ++++++++++++++++++++++++++++---
+ 2 files changed, 33 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 5989415..7e8aa1b 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3195,7 +3195,10 @@ sub process {
- #CamelCase
- 			if ($var !~ /^$Constant$/ &&
- 			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
-+#Ignore Page<foo> variants
- 			    $var !~ /^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
-+#Ignore SI style variants like nS, mV and dB (ie: max_uV, regulator_min_uA_show)
-+			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/ &&
- 			    !defined $camelcase{$var}) {
- 				$camelcase{$var} = 1;
- 				CHK("CAMELCASE",
+diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
+index 18de785..408439d 100644
+--- a/Documentation/coccinelle.txt
++++ b/Documentation/coccinelle.txt
+@@ -91,6 +91,11 @@ To enable verbose messages set the V= variable, for example:
+ 
+    make coccicheck MODE=report V=1
+ 
++By default, coccicheck tries to run as parallel as possible. To change
++the parallelism, set the J= variable. For example, to run across 4 CPUs:
++
++   make coccicheck MODE=report J=4
++
+ 
+  Using Coccinelle with a single semantic patch
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index 06fcb33..446497f 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -2,15 +2,24 @@
+ 
+ SPATCH="`which ${SPATCH:=spatch}`"
+ 
++trap kill_running SIGTERM SIGINT
++declare -a SPATCH_PID
++
+ # The verbosity may be set by the environmental parameter V=
+ # as for example with 'make V=1 coccicheck'
+ 
+ if [ -n "$V" -a "$V" != "0" ]; then
+-	VERBOSE=1
++	VERBOSE="$V"
+ else
+ 	VERBOSE=0
+ fi
+ 
++if [ -z "$J" ]; then
++	NPROC=$(getconf _NPROCESSORS_ONLN)
++else
++	NPROC="$J"
++fi
++
+ FLAGS="$SPFLAGS -very_quiet"
+ 
+ # spatch only allows include directories with the syntax "-I include"
+@@ -61,12 +70,28 @@ if [ "$ONLINE" = "0" ] ; then
+ fi
+ 
+ run_cmd() {
++	local i
+ 	if [ $VERBOSE -ne 0 ] ; then
+-		echo "Running: $@"
++		echo "Running ($NPROC in parallel): $@"
+ 	fi
+-	eval $@
++	for i in $(seq 0 $(( NPROC - 1)) ); do
++		eval "$@ -max $NPROC -index $i &"
++		SPATCH_PID[$i]=$!
++		if [ $VERBOSE -eq 2 ] ; then
++			echo "${SPATCH_PID[$i]} running"
++		fi
++	done
++	wait
+ }
+ 
++kill_running() {
++	for i in $(seq $(( NPROC - 1 )) ); do
++		if [ $VERBOSE -eq 2 ] ; then
++			echo "Killing ${SPATCH_PID[$i]}"
++		fi
++		kill ${SPATCH_PID[$i]} 2>/dev/null
++	done
++}
+ 
+ coccinelle () {
+     COCCI="$1"
 -- 
-1.8.1.2.459.gbcd45b4.dirty
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
