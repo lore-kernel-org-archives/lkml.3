@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab3FREIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:08:52 -0400
-Received: from nm16.access.bullet.mail.mud.yahoo.com ([66.94.237.217]:47292
-	"EHLO nm16.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750873Ab3FREIu (ORCPT
+	id S1752592Ab3FRELF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:11:05 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56217 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab3FRELD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:08:50 -0400
-X-Yahoo-Newman-Id: 651730.30128.bm@smtp119.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: F6s88xcVM1nb8VlAE3lBhPDpJUiX5iJgnOiCrcSwyOdcW.n
- oy8mIdHLjjHCsQJYH6bWMSIb1Rsw.4f_1TuuFvL6S_IGd7KxY7b91NIq_T6r
- 9YNP4XFoGRGIS8QdKkpwg4oR8onK4F59wnu4GmcvRsaZm8eT0BKZXGh_bCrp
- Soykugr24lD3zSn9LXQGsNgQMk_kOSl4YRR3lj3pqPgvAkbb5FJ7w6p6_CyQ
- CNzJcNdNZjB8Nogi3_o4vNGo9.RP.R2NV2Lkz.alTyHht5BkU3KuFG22k0pA
- W30HH.Jc_CVKbzfHDm.6mSiY2yqOsw0_Hw1YM0MTlajRDKurBWGAEgQKYdEu
- 57QykMOdllpRGJfgdcRuQSjz2WicNGg0rt_TlIqpWWurHW6CItMOjyqjHyyX
- bwrxOPBRYw6chs6FtsmHShDDCcvLSdJ9j1hE1GUnuz4CAl8oW55WVMq12O5T
- NVnPDKiLcb9RYWzUMsd8Nd80lcIAJdafjwKrqFPbP9Hk7AeN1pJ_dinCPVog
- YMbZCrtTadlofigGA7gY-
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp119.sbc.mail.ne1.yahoo.com with SMTP; 18 Jun 2013 04:03:12 +0000 UTC
-Date: Mon, 17 Jun 2013 21:03:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frank.Li@freescale.com, jim_baxter@mentor.com
-Subject: Re: [PATCH] net: fec: Fix build for MCF5272
-Message-ID: <20130618040312.GA12181@roeck-us.net>
-References: <1371500179-4733-1-git-send-email-linux@roeck-us.net>
- <20130617.161151.1327615665309510068.davem@davemloft.net>
+	Tue, 18 Jun 2013 00:11:03 -0400
+X-AuditID: 9c930179-b7c30ae0000047e1-95-51bfddd4c69b
+Date: Tue, 18 Jun 2013 13:11:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dhaval Giani <dgiani@mozilla.com>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/8] Volatile Ranges (v8?)
+Message-ID: <20130618041100.GA3116@bbox>
+References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
+ <51BF3827.4060606@mozilla.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130617.161151.1327615665309510068.davem@davemloft.net>
+In-Reply-To: <51BF3827.4060606@mozilla.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 04:11:51PM -0700, David Miller wrote:
-> From: Guenter Roeck <linux@roeck-us.net>
-> Date: Mon, 17 Jun 2013 13:16:19 -0700
-> 
-> > Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
-> > baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
-> > network) introduced functionality into the FEC driver which is not
-> > supported on MCF5272. As result, building images for MCF5272 fails,
-> > complaining about several undefined symbols.
-> > 
-> > Disabled the added functionality for MCF5272 builds.
-> > 
-> > Cc: Frank Li <Frank.Li@freescale.com>
-> > Cc: Jim Baxter <jim_baxter@mentor.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > Sorry for the added ifdefs. If anyone has a better idea on how to fix
-> > the problems, let me know.
-> > 
-> > This problem exists in 3.9 as well.
-> 
-> Does the M5272 not have these registers, or have you simply not added
-> defines for where there offsets are in that silicon instance?
-> 
-> I'd much rather you add the register offset defines than pepper the
-> entire driver with ifdefs.
-> 
-I agree, and that would have been my preferred solution as well.
-Unfortunately, according to the user manual (MCF5272 ColdFire
-Integrated Microprocessor User's Manual), the registers do not exist
-on this chip.
+Hello Dhaval,
 
-Guenter
+On Mon, Jun 17, 2013 at 12:24:07PM -0400, Dhaval Giani wrote:
+> Hi John,
+> 
+> I have been giving your git tree a whirl, and in order to simulate a
+> limited memory environment, I was using memory cgroups.
+> 
+> The program I was using to test is attached here. It is your test
+> code, with some changes (changing the syscall interface, reducing
+> the memory pressure to be generated).
+> 
+> I trapped it in a memory cgroup with 1MB memory.limit_in_bytes and hit this,
+> 
+> [  406.207612] ------------[ cut here ]------------
+> [  406.207621] kernel BUG at mm/vrange.c:523!
+> [  406.207626] invalid opcode: 0000 [#1] SMP
+> [  406.207631] Modules linked in:
+> [  406.207637] CPU: 0 PID: 1579 Comm: volatile-test Not tainted
+
+Thanks for the testing!
+Does below patch fix your problem?
+
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index d41c63f..1f6c80e 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -751,7 +751,7 @@ int __free_swap_and_cache(swp_entry_t entry)
+ 			page = find_get_page(swap_address_space(entry),
+ 						entry.val);
+ 		}
+-		spin_unlock(&swap_lock);
++		spin_unlock(&p->lock);
+ 	}
+ 
+ 	if (page) {
+diff --git a/mm/vrange.c b/mm/vrange.c
+index fa965fb..dc32cfa 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -485,7 +485,7 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte;
+-	pte_t pteval;
++	pte_t pteval, pteswap;
+ 	spinlock_t *ptl;
+ 	int ret = 0;
+ 	bool present;
+@@ -505,7 +505,7 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
+ 	present = pte_present(*pte);
+ 	flush_cache_page(vma, address, page_to_pfn(page));
+ 
+-	ptep_clear_flush(vma, address, pte);
++	pteswap = ptep_clear_flush(vma, address, pte);
+ 	pteval = pte_mkvrange(*pte);
+ 
+ 	update_hiwater_rss(mm);
+@@ -517,10 +517,11 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
+ 	page_remove_rmap(page);
+ 	page_cache_release(page);
+ 	if (!present) {
+-		swp_entry_t entry = pte_to_swp_entry(*pte);
++		swp_entry_t entry = pte_to_swp_entry(pteswap);
+ 		dec_mm_counter(mm, MM_SWAPENTS);
+-		if (unlikely(!__free_swap_and_cache(entry)))
++		if (unlikely(!__free_swap_and_cache(entry))) {
+ 			BUG_ON(1);
++		}
+ 	}
+ 
+ 	set_pte_at(mm, address, pte, pteval);
+-- 
+1.7.9.5
+
+-- 
+Kind regards,
+Minchan Kim
