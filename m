@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3FREZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:25:27 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:61630 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab3FREZZ (ORCPT
+	id S1752859Ab3FRE3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:29:55 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:62853 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab3FRE3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:25:25 -0400
-Date: Tue, 18 Jun 2013 00:25:22 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v4 2/2] drivers: mfd: vexpress: add Serial Power
- Controller (SPC) support
-In-Reply-To: <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
-Message-ID: <alpine.LFD.2.03.1306180001410.18597@syhkavp.arg>
-References: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com> <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 18 Jun 2013 00:29:54 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com, sachin.kamat@linaro.org, patches@linaro.org,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Subject: [PATCH V2 11/15] regulator: ti-abb: Convert to use devm_ioremap_resource
+Date: Tue, 18 Jun 2013 09:45:07 +0530
+Message-Id: <1371528907-14425-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
+References: <1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013, Lorenzo Pieralisi wrote:
+Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+introduced devm_ioremap_resource() and deprecated the use of
+devm_request_and_ioremap().
 
-> The TC2 versatile express core tile integrates a logic block that provides the
-> interface between the dual cluster test-chip and the M3 microcontroller that
-> carries out power management. The logic block, called Serial Power Controller
-> (SPC), contains several memory mapped registers to control among other things
-> low-power states, operating points and reset control.
+While at it, remove the error message as devm_ioremap_resource prints a similar
+error message.
 
-[...]
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+CC: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>
+---
+Changes for V2:
+* Removed error messages from devm_ioremap_resource exit path
 
-I slightly modified the following before committing this patch to my TC2 
-branch:
+ drivers/regulator/ti-abb-regulator.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-> +/**
-> + * ve_spc_cpu_wakeup_irq()
-> + *
-> + * Function to set/clear per-CPU wake-up IRQs. Not protected by locking since
-> + * it might be used in code paths where normal cacheable locks are not
-> + * working. Locking must be provided by the caller to ensure atomicity.
-> + *
-> + * @cpu: mpidr[7:0] bitfield describing cpu affinity level
-> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
-> + * @set: if true, wake-up IRQs are set, if false they are cleared
-> + */
-> +void ve_spc_cpu_wakeup_irq(u32 cpu, u32 cluster, bool set)
-> +{
+diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+index 870d209..3753ed0 100644
+--- a/drivers/regulator/ti-abb-regulator.c
++++ b/drivers/regulator/ti-abb-regulator.c
+@@ -722,10 +722,9 @@ static int ti_abb_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto err;
+ 	}
+-	abb->base = devm_request_and_ioremap(dev, res);
+-	if (!abb->base) {
+-		dev_err(dev, "Unable to map '%s'\n", pname);
+-		ret = -ENOMEM;
++	abb->base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(abb->base)) {
++		ret = PTR_ERR(abb->base);
+ 		goto err;
+ 	}
+ 
+@@ -776,10 +775,9 @@ static int ti_abb_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto skip_opt;
+ 	}
+-	abb->ldo_base = devm_request_and_ioremap(dev, res);
+-	if (!abb->ldo_base) {
+-		dev_err(dev, "Unable to map '%s'\n", pname);
+-		ret = -ENOMEM;
++	abb->ldo_base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(abb->ldo_base)) {
++		ret = PTR_ERR(abb->ldo_base);
+ 		goto err;
+ 	}
+ 
+-- 
+1.7.9.5
 
-I made cluster first then cpu.  All the other functions have the cluster 
-argument first, and ve_spc_set_resume_addr() already uses that order.
-
-[...]
-> +#ifdef CONFIG_VEXPRESS_SPC
-> +int ve_spc_probe(void);
-> +int ve_spc_get_freq(u32 cluster);
-> +int ve_spc_set_freq(u32 cluster, u32 freq);
-> +int ve_spc_get_freq_table(u32 cluster, const u32 **fptr);
-> +void ve_spc_global_wakeup_irq(bool set);
-> +void ve_spc_cpu_wakeup_irq(u32 cpu, u32 cluster, bool set);
-> +void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr);
-> +u32 ve_spc_get_nr_cpus(u32 cluster);
-> +void ve_spc_powerdown(u32 cluster, bool enable);
-> +#else
-> +static inline bool ve_spc_probe(void) { return -ENODEV; }
-
-s/bool/int/
-
-
-Nicolas
