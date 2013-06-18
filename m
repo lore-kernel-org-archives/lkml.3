@@ -1,33 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab3FRSu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:50:27 -0400
-Received: from 169-38-236-85.rev.customer-net.de ([85.236.38.169]:32811 "EHLO
-	srv02.bdsweb.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968Ab3FRSuB (ORCPT
+	id S933678Ab3FRSxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:53:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53129 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab3FRSxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:50:01 -0400
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jun 2013 14:50:01 EDT
-To: linux-kernel@vger.kernel.org
-Subject: Suply Sample
-X-PHP-Originating-Script: 10000:eM.php
-From: Donald Ness <donaldness77@gmail.com>
-Reply-To: donaldness66@gmail.com
+	Tue, 18 Jun 2013 14:53:12 -0400
+Message-ID: <51C0AC74.5050705@infradead.org>
+Date: Tue, 18 Jun 2013 11:52:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <20130618184042.57E0A4CF404E0@srv02.bdsweb.de>
-Date: Tue, 18 Jun 2013 20:40:42 +0200 (CEST)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        USB list <linux-usb@vger.kernel.org>,
+        David Lopo <dlopo@chipidea.mips.com>
+Subject: Re: linux-next: Tree for Jun 18 usb/chipidea)
+References: <20130618173030.16d73801ab72b7c611faccea@canb.auug.org.au>
+In-Reply-To: <20130618173030.16d73801ab72b7c611faccea@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/18/13 00:30, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130617:
+> 
 
 
-Hello sir/madam how are you doing i hope fine. Sir i contacted you r company so we can go into seriouse business . I will like you to supply the following product in a large quantity to my company i have attach a sample of it kindly view the sample in the attachment and see if you can supply much of it to my compnay. View it and get back to me as soon as possible so i can place and order for it. I look forward to hear from you soon thanks and have a great day .
+on i386:
 
-Kind regars
+# CONFIG_USB_PHY is not set
 
-Donald
+drivers/built-in.o: In function `ci_hdrc_probe':
+core.c:(.text+0x20446b): undefined reference to `of_usb_get_phy_mode'
 
 
+chipidea needs to depend on or select some kind of USB_PHY support...?
+
+
+-- 
+~Randy
