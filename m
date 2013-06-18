@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab3FRNHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 09:07:42 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:42143 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755644Ab3FRNHl (ORCPT
+	id S1755644Ab3FRNIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 09:08:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51417 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab3FRNIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 09:07:41 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 4/4] sched: adjust fix_small_imbalance moving task condition
-Date: Tue, 18 Jun 2013 21:04:19 +0800
-Message-ID: <1371560659-4686-5-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371560659-4686-1-git-send-email-leiwen@marvell.com>
-References: <1371560659-4686-1-git-send-email-leiwen@marvell.com>
+	Tue, 18 Jun 2013 09:08:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Joel A Fernandes <joelagnel@ti.com>
+Subject: Re: [PATCH v11 0/8] ] DMA Engine support for AM33XX
+Date: Tue, 18 Jun 2013 15:07:40 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+References: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
+In-Reply-To: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306181507.40849.arnd@arndb.de>
+X-Provags-ID: V02:K0:9gs1Y7kyF/Q8LkUe7+zegPKhE5XA8D63vK9lrcqkuH6
+ iws3YHXXyn2Cb7fTrk7r2vt72b4mdjUGNgDti+yo4Dcg+pJKZx
+ zHLnAcY705kbVJ83Cj1B+G6EjuiEiRAkUezfLdf/9LSYla0Zre
+ yJVmJLH18hc9V0Uj7/j9Iz5YmaOlqUqw1Jx7+i7pih36h3lT9D
+ JB6+hKolnOZrDBKJ9Orv4DehBiURU56ELLvAVgiO5c74gNuajQ
+ Q8goCuQo9PTMyAi30ix95XS/5Ygp4cmE0CBhF56GBQSSiE4KVs
+ MWA49vR8ibchMg59wIKe1ROrcQbuQA1n5zbD3FyYMcBRsxvuyH
+ BwVixWHvrAn1Jqnu9tCA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suppose here we have such example, in current domain, there are two
-cpus. CPU A with 4 task, while CPU B with 5 tasks. All tasks over two
-runqueue are the same priority.
+On Tuesday 18 June 2013, Joel A Fernandes wrote:
+> 
+> This series is a repost of Matt Porter's EDMA patches for AM33XX EDMA support
+> with changes for few pending review comments on v9 series.
+> 
+> Currently this is required for AM33XX (Beaglebone or EVM) to access MMC
+> and be able mount to rootfs and boot till command prompt over MMC.
+> Unless there are other pending review comments, I hope this series can
+> make it into 3.11 merge window, the dependent series has been posted at [1]
+> and completed review.
+> 
+> Tested EDMA on AM1808 EVM and AM33XX Beaglebone with MMC.
+> 
 
-Let say the load for CPU A is 4096, and CPU B is 5120, then avg_load
-should be 4608. Suppose sgp->power == SCHED_POWER_SCALE.
-Then the imbalance value should be 512, less then the
-busiest_load_per_task, which is 1024. From the logic we enter into
-fix_small_imbalance adjustment.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-For busiest_per_task==this_load_per_task, imbn's value is equal to 2.
-Thus below statement would be true, and load balance would move one task
-from CPU B to CPU A.
-      if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
-                        (scaled_busy_load_per_task * imbn)) {
+The binding looks good now.
 
-When CPU B issue load balance later, it would move one task back again,
-which bring infinite end...
-Kill the >=, and make it as >, to stop this loop.
+My usual comment about the fact that we shouldn't use a filter function in
+.xlate() applies here, but that is more about the missing interface of
+the dmaengine layer than the particular driver.
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c478022..3be7844 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4717,7 +4717,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds,
- 					<< SCHED_POWER_SHIFT;
- 	scaled_this_load_per_task /= sds->this->sgp->power;
- 
--	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
-+	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >
- 			(scaled_busy_load_per_task * imbn)) {
- 		env->imbalance = sds->busiest_load_per_task;
- 		return;
--- 
-1.7.10.4
-
+	Arnd
