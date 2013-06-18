@@ -1,149 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab3FRL76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:59:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24810 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab3FRL7z (ORCPT
+	id S932401Ab3FRMAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:00:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56087 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316Ab3FRLoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:59:55 -0400
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: openipmi-developer@lists.sourceforge.net, minyard@acm.org
-Subject: [PATCH] ipmi: make kcs timeout parameters as module options
-Date: Tue, 18 Jun 2013 16:06:44 +0400
-Message-Id: <1371557204-22338-1-git-send-email-maxim.uvarov@oracle.com>
-X-Mailer: git-send-email 1.8.3.1.378.g9926f66
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 18 Jun 2013 07:44:38 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 44/93] ALSA: usb-audio - Fix invalid volume resolution on Logitech HD webcam c270
+Date: Tue, 18 Jun 2013 12:42:52 +0100
+Message-Id: <1371555821-12820-45-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based off work by Pavel Bures <Pavel.Bures@Sun.COM>:
-For slow or heavily used BMC contollers the default wait timeouts for IBF or OBF
-bits in the driver may not be sufficient. This may cause problems during more
-complicated oem operatoins on the BMC side.
-These timeoutsare changed from hardcoded values in the code into kernel
-module parameters. The default values are kept unchanged.
+3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+------------------
+
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 11e7064f35bb87da8f427d1aa4bbd8b7473a3993 upstream.
+
+USB audio driver spews an error message when probing Logitech HD
+webcam c270:
+  ALSA mixer.c:1300 usb_audio: Warning! Unlikely big volume range (=6144), cval->res is probably wrong.
+  ALSA mixer.c:1304 usb_audio: [5] FU [Mic Capture Volume] ch = 1, val = 1536/7680/1
+
+Obviously the device needs a fixed volume resolution (cval->res = 384)
+like other Logitech devices.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=821735
+
+Reported-and-tested-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/ipmi/ipmi_kcs_sm.c |   45 +++++++++++++++++++++++++--------------
- 1 file changed, 29 insertions(+), 16 deletions(-)
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/char/ipmi/ipmi_kcs_sm.c b/drivers/char/ipmi/ipmi_kcs_sm.c
-index e53fc24..674ca99 100644
---- a/drivers/char/ipmi/ipmi_kcs_sm.c
-+++ b/drivers/char/ipmi/ipmi_kcs_sm.c
-@@ -54,10 +54,29 @@
- #define KCS_DEBUG_MSG		2
- #define	KCS_DEBUG_ENABLE	1
- 
-+/* Timeouts in microseconds. */
-+#define IBF_RETRY_TIMEOUT 5000000
-+#define OBF_RETRY_TIMEOUT 5000000
-+#define MAX_ERROR_RETRIES 10
-+#define ERROR0_OBF_WAIT_JIFFIES (2*HZ)
-+
- static int kcs_debug;
-+static uint kcs_obf_timeout = OBF_RETRY_TIMEOUT;
-+static uint kcs_ibf_timeout = IBF_RETRY_TIMEOUT;
-+static ushort kcs_err_retries = MAX_ERROR_RETRIES;
-+
- module_param(kcs_debug, int, 0644);
- MODULE_PARM_DESC(kcs_debug, "debug bitmask, 1=enable, 2=messages, 4=states");
- 
-+module_param(kcs_obf_timeout, uint, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(kcs_obf_timeout, "OBF timeout value in microseconds. Default is 1000000.");
-+
-+module_param(kcs_ibf_timeout, uint, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(kcs_ibf_timeout, "IBF timeout value in microseconds. Default is 1000000.");
-+
-+module_param(kcs_err_retries, ushort, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(kcs_err_retries, "Number of error retries for kcs device. Default is 10.");
-+
- /* The states the KCS driver may be in. */
- enum kcs_states {
- 	/* The KCS interface is currently doing nothing. */
-@@ -117,12 +136,6 @@ enum kcs_states {
- #define MAX_KCS_READ_SIZE IPMI_MAX_MSG_LENGTH
- #define MAX_KCS_WRITE_SIZE IPMI_MAX_MSG_LENGTH
- 
--/* Timeouts in microseconds. */
--#define IBF_RETRY_TIMEOUT 5000000
--#define OBF_RETRY_TIMEOUT 5000000
--#define MAX_ERROR_RETRIES 10
--#define ERROR0_OBF_WAIT_JIFFIES (2*HZ)
--
- struct si_sm_data {
- 	enum kcs_states  state;
- 	struct si_sm_io *io;
-@@ -151,8 +164,8 @@ static unsigned int init_kcs_data(struct si_sm_data *kcs,
- 	kcs->read_pos = 0;
- 	kcs->error_retries = 0;
- 	kcs->truncated = 0;
--	kcs->ibf_timeout = IBF_RETRY_TIMEOUT;
--	kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+	kcs->ibf_timeout = kcs_ibf_timeout;
-+	kcs->obf_timeout = kcs_obf_timeout;
- 
- 	/* Reserve 2 I/O bytes. */
- 	return 2;
-@@ -205,7 +218,7 @@ static inline void write_next_byte(struct si_sm_data *kcs)
- static inline void start_error_recovery(struct si_sm_data *kcs, char *reason)
- {
- 	(kcs->error_retries)++;
--	if (kcs->error_retries > MAX_ERROR_RETRIES) {
-+	if (kcs->error_retries > kcs_err_retries) {
- 		if (kcs_debug & KCS_DEBUG_ENABLE)
- 			printk(KERN_DEBUG "ipmi_kcs_sm: kcs hosed: %s\n",
- 			       reason);
-@@ -236,12 +249,12 @@ static inline int check_ibf(struct si_sm_data *kcs, unsigned char status,
- 		kcs->ibf_timeout -= time;
- 		if (kcs->ibf_timeout < 0) {
- 			start_error_recovery(kcs, "IBF not ready in time");
--			kcs->ibf_timeout = IBF_RETRY_TIMEOUT;
-+			kcs->ibf_timeout = kcs_ibf_timeout;
- 			return 1;
- 		}
- 		return 0;
- 	}
--	kcs->ibf_timeout = IBF_RETRY_TIMEOUT;
-+	kcs->ibf_timeout = kcs_ibf_timeout;
- 	return 1;
- }
- 
-@@ -256,7 +269,7 @@ static inline int check_obf(struct si_sm_data *kcs, unsigned char status,
- 		}
- 		return 0;
- 	}
--	kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+	kcs->obf_timeout = kcs_obf_timeout;
- 	return 1;
- }
- 
-@@ -272,8 +285,8 @@ static void restart_kcs_transaction(struct si_sm_data *kcs)
- 	kcs->write_pos = 0;
- 	kcs->read_pos = 0;
- 	kcs->state = KCS_WAIT_WRITE_START;
--	kcs->ibf_timeout = IBF_RETRY_TIMEOUT;
--	kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+	kcs->ibf_timeout = kcs_ibf_timeout;
-+	kcs->obf_timeout = kcs_obf_timeout;
- 	write_cmd(kcs, KCS_WRITE_START);
- }
- 
-@@ -303,8 +316,8 @@ static int start_kcs_transaction(struct si_sm_data *kcs, unsigned char *data,
- 	kcs->write_pos = 0;
- 	kcs->read_pos = 0;
- 	kcs->state = KCS_START_OP;
--	kcs->ibf_timeout = IBF_RETRY_TIMEOUT;
--	kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+	kcs->ibf_timeout = kcs_ibf_timeout;
-+	kcs->obf_timeout = kcs_obf_timeout;
- 	return 0;
- }
- 
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index 4d8ddc6..a3308e1 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -842,6 +842,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
++	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
+ 	/* Most audio usb devices lie about volume resolution.
+ 	 * Most Logitech webcams have res = 384.
 -- 
-1.7.9.5
+1.8.1.2
 
