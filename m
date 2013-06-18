@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab3FRFCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:02:34 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:64823 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3FRFCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:02:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130617173738.GA14921@kroah.com>
-References: <20130412184335.GA5510@amd.pavel.ucw.cz>
-	<20130617134741.GA15547@amd.pavel.ucw.cz>
-	<20130617173738.GA14921@kroah.com>
-Date: Tue, 18 Jun 2013 10:32:33 +0530
-Message-ID: <CAK9yfHxMpzPuDP4D8EztaUxseuZCX7VEHFB7dBWtntDDjZJD6g@mail.gmail.com>
-Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
- using command line option
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Pavel Machek <pavel@denx.de>, dzu@denx.de, hjk@hansjkoch.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+	id S1754110Ab3FRFO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:14:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3FRFOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 01:14:55 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: kys@microsoft.com, haiyangz@microsoft.com, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Jason Wang <jasowang@redhat.com>, stable@vger.kernel.org
+Subject: [PATCH] drivers: hv: switch to use mb() instead of smp_mb()
+Date: Tue, 18 Jun 2013 13:04:23 +0800
+Message-Id: <1371531863-12491-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Even if guest were compiled without SMP support, it could not assume that host
+wasn't. So switch to use mb() instead of smp_mb() to force memory barriers for
+UP guest.
 
-On 17 June 2013 23:07, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 17, 2013 at 03:47:41PM +0200, Pavel Machek wrote:
->> Hi!
->>
->> > This adds ability to bind uio driver to given open firmware device
->> > using command line option. Thus, userspace driver can be developed and
->> > used without modifying the kernel.
->> >
->> > Signed-off-by: Pavel Machek <pavel@denx.de>
->>
->> Ping? Greg, could you apply this patch? Or is there someone else I
->> should ask to apply it?
->
-> Ugh, Hans seems to have dropped off of the net for a long time now, so I
-> guess I'll start queueing up UIO patches again.  Care to resend this?
->
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/hv/ring_buffer.c |   10 +++++-----
+ drivers/hv/vmbus_drv.c   |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-Even I have a couple of outstanding UIO patches [1-2]. Shall I resend
-them as well?
-
-[1] https://lkml.org/lkml/2013/3/14/154
-[2] https://patchwork.kernel.org/patch/2268921/
-
-
+diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
+index d6fbb57..791f45d 100644
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -32,7 +32,7 @@
+ void hv_begin_read(struct hv_ring_buffer_info *rbi)
+ {
+ 	rbi->ring_buffer->interrupt_mask = 1;
+-	smp_mb();
++	mb();
+ }
+ 
+ u32 hv_end_read(struct hv_ring_buffer_info *rbi)
+@@ -41,7 +41,7 @@ u32 hv_end_read(struct hv_ring_buffer_info *rbi)
+ 	u32 write;
+ 
+ 	rbi->ring_buffer->interrupt_mask = 0;
+-	smp_mb();
++	mb();
+ 
+ 	/*
+ 	 * Now check to see if the ring buffer is still empty.
+@@ -71,7 +71,7 @@ u32 hv_end_read(struct hv_ring_buffer_info *rbi)
+ 
+ static bool hv_need_to_signal(u32 old_write, struct hv_ring_buffer_info *rbi)
+ {
+-	smp_mb();
++	mb();
+ 	if (rbi->ring_buffer->interrupt_mask)
+ 		return false;
+ 
+@@ -442,7 +442,7 @@ int hv_ringbuffer_write(struct hv_ring_buffer_info *outring_info,
+ 					     sizeof(u64));
+ 
+ 	/* Issue a full memory barrier before updating the write index */
+-	smp_mb();
++	mb();
+ 
+ 	/* Now, update the write location */
+ 	hv_set_next_write_location(outring_info, next_write_location);
+@@ -549,7 +549,7 @@ int hv_ringbuffer_read(struct hv_ring_buffer_info *inring_info, void *buffer,
+ 	/* Make sure all reads are done before we update the read index since */
+ 	/* the writer may start writing to the read area once the read index */
+ 	/*is updated */
+-	smp_mb();
++	mb();
+ 
+ 	/* Update the read index */
+ 	hv_set_next_read_location(inring_info, next_read_location);
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index bf421e0..4004e54 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -434,7 +434,7 @@ static void vmbus_on_msg_dpc(unsigned long data)
+ 		 * will not deliver any more messages since there is
+ 		 * no empty slot
+ 		 */
+-		smp_mb();
++		mb();
+ 
+ 		if (msg->header.message_flags.msg_pending) {
+ 			/*
 -- 
-With warm regards,
-Sachin
+1.7.1
+
