@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3FRCth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:49:37 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36380 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3FRCtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:49:36 -0400
-Message-ID: <51BFCAB8.20008@hitachi.com>
-Date: Tue, 18 Jun 2013 11:49:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753403Ab3FRCvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:51:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58847 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab3FRCvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 22:51:37 -0400
+Date: Mon, 17 Jun 2013 22:51:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+Message-ID: <20130618025133.GB24479@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+References: <51B7B128.60909@intel.com>
+ <20130614140940.GA20401@gmail.com>
+ <20130614140215.GA1017@thunk.org>
+ <20130614170028.GA21544@gmail.com>
+ <20130614180054.GB1017@thunk.org>
+ <20130617101033.GA17828@gmail.com>
+ <51BF7BAA.5030803@intel.com>
+ <20130618022548.GA24671@gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/3] tracing/kprobes: Kill probe_enable_lock
-References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com>
-In-Reply-To: <20130617151841.GA32267@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618022548.GA24671@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/18 0:18), Oleg Nesterov wrote:
-> On 06/17, Masami Hiramatsu wrote:
->>
->> (2013/06/17 2:21), Oleg Nesterov wrote:
->>> enable_trace_probe() and disable_trace_probe() should not worry about
->>> serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
->>> holds event_mutex.
->>>
->>> They are also called by kprobe_trace_self_tests_init(), but this __init
->>> function can't race with itself or trace_events.c
->>
->> Right,
->> For safety, we should comment this at the caller side,
-> 
-> Which caller do you mean?
+On Tue, Jun 18, 2013 at 10:25:48AM +0800, Zheng Liu wrote:
+> Ah, sorry, I forgot to mention that this patch bases against ext4/master
+> branch.  Now ext4/dev branch has some regression when I run xfstests.
 
-I meant the caller was kprobe_test_self_tests_init().
-Since that function calls enable/disable_trace_probe()
-without holding event_mutex, we need to notice that
-(this is safe because there is no race) at the calling
-places :)
+What regressions are you seeing?
 
-Thank you,
+> Ted, I notice that now in ext4 tree we have 'dev', 'dev-with-revert',
+> and 'dev2' branches.  Which one is the best to generate a new patch for
+> the next merge window?
 
-> 
-> The patch adds
-> 
-> 	/*
-> 	 * This and enable_trace_probe/disable_trace_probe rely on event_mutex
-> 	 * held by the caller, __ftrace_set_clr_event().
-> 	 */
-> 
-> above trace_probe_nr_files() but the next patch removes this function
-> with the comment...
-> 
-> Will you agree with this patch if I add something like
-> 
-> 	/*
-> 	 * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex
-> 	 */
-> 
-> above kprobe_register() ? Perhaps it makes sense to add
-> lockdep_assert_held(&event_mutex) into the body?
-> 
-> And:
-> 
->> because
->> those calls are the reason why I have introduced this lock.
-> 
-> Please do not hesitate to nack this patch if you think that we should
-> keep probe_enable_lock for safety even if it is not currently needed.
-> In this case I'd suggest to move lock/unlock into kprobe_register()
-> but this is minor.
-> 
-> Oleg.
-> 
-> 
+Either the dev branch or the master branch.   
 
+The dev-with-revert and dev2 were branches that I had created when
+investigating a potential regression with the invalidage page range
+patch set.  I've since determined that it's a timing issue and it's
+not a new regression --- we've had xfstests failures with test
+generic/300 for a while now.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+					- Ted
