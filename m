@@ -1,267 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907Ab3FRWrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 18:47:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933747Ab3FRWrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 18:47:49 -0400
-Message-ID: <1371595667.22659.53.camel@ul30vt.home>
-Subject: Re: [PATCH v2 1/2] pci: Fix flaw in pci_acs_enabled()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 18 Jun 2013 16:47:47 -0600
-In-Reply-To: <CAErSpo75R26gqO=muqrR28igNkMay4NNRW-VJWPt3xQCqp1YBQ@mail.gmail.com>
-References: <20130607162732.7733.17758.stgit@bling.home>
-	 <20130607163441.7733.23221.stgit@bling.home>
-	 <20130618170926.GA9203@google.com> <1371580735.22681.216.camel@ul30vt.home>
-	 <CAErSpo75R26gqO=muqrR28igNkMay4NNRW-VJWPt3xQCqp1YBQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933915Ab3FRWsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 18:48:15 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:49332 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933042Ab3FRWp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 18:45:26 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Dirk Gouders <dirk@gouders.net>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 05/14] mconf: use function calls instead of ncurses' variables LINES and COLS
+Date: Wed, 19 Jun 2013 00:45:01 +0200
+Message-Id: <4f2de3e19983dafca264b672152b36e4962ca1c3.1371595499.git.yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
+References: <cover.1371595499.git.yann.morin.1998@free.fr>
+In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
+References: <cover.1371595499.git.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 16:10 -0600, Bjorn Helgaas wrote:
-> On Tue, Jun 18, 2013 at 12:38 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Tue, 2013-06-18 at 11:09 -0600, Bjorn Helgaas wrote:
-> >> On Fri, Jun 07, 2013 at 10:34:41AM -0600, Alex Williamson wrote:
-> >> > Downstream ports support for all ACS flags supercedes multifunction
-> >> > exclusion of some flags.  The PCIe spec also fully specifies which
-> >> > PCIe types are subject to the multifunction rules and excludes event
-> >> > collectors and PCIe-to-PCI bridges entirely.  Document each rule to
-> >> > the section of the PCIe spec.
-> >>
-> >> What's the flaw, exactly?  Does this fix a user-visible issue?  Should
-> >> it be backported to any stable releases?  It'd be nice to have an
-> >> example or two of devices where we return the wrong thing today.
-> >>
-> >> Oh, I think I see: the original code filters out flags for
-> >> multi-function downstream ports, and your new code does not.
-> >
-> > Right, if you have a multifunction root port and you want to check a
-> > feature that applies to downstream ports, but not multifunction devices,
-> > we were previously filtering those out.
-> >
-> >> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> >> > ---
-> >> >  drivers/pci/pci.c |   59 ++++++++++++++++++++++++++++++++++++++++-------------
-> >> >  1 file changed, 45 insertions(+), 14 deletions(-)
-> >> >
-> >> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> >> > index b099e00..457ae51 100644
-> >> > --- a/drivers/pci/pci.c
-> >> > +++ b/drivers/pci/pci.c
-> >> > @@ -2354,6 +2354,19 @@ void pci_enable_acs(struct pci_dev *dev)
-> >> >     pci_write_config_word(dev, pos + PCI_ACS_CTRL, ctrl);
-> >> >  }
-> >> >
-> >> > +static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
-> >> > +{
-> >> > +   int pos;
-> >> > +   u16 ctrl;
-> >> > +
-> >> > +   pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
-> >> > +   if (!pos)
-> >> > +           return false;
-> >> > +
-> >> > +   pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
-> >> > +   return (ctrl & acs_flags) == acs_flags;
-> >> > +}
-> >> > +
-> >> >  /**
-> >> >   * pci_acs_enabled - test ACS against required flags for a given device
-> >> >   * @pdev: device to test
-> >> > @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
-> >> >   */
-> >> >  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
-> >>
-> >> I know you didn't change the *name* of this function, but I think it
-> >> would be easier to follow if you did change the name to something more
-> >> descriptive, e.g., something to do with the actual property you're
-> >> interested in, which has to do with routing peer-to-peer DMA.
-> >>
-> >> That property makes sense even for the excluded devices, while the
-> >> idea of an ACS capability that doesn't even exist is implicitly
-> >> enabled, really doesn't.
-> >
-> > I think we also don't want to put the complexity at the caller for
-> > understanding what capabilities are applicable to a given device.  It's
-> > also convenient to use the set of ACS flags.  Given that, the current
-> > naming came about.  It's a little awkward, but it's easy to use.
-> > Suggestions for a better name?
-> 
-> 100% agreed the caller shouldn't have to worry about different device
-> types.  I was thinking something like "pci_enforces_peer_isolation()"
-> or "pci_peer_dma_routed_upstream()".  Or maybe it should be
-> "pci_dev_...()".
+From: Dirk Gouders <dirk@gouders.net>
 
-Ok, I'll play with those.  I'm worried that there are nuances to each
-flag bit that don't all fit under such a broad description.  Do you want
-to gate this series on a rename of an existing function?
+According to the documentation [1], LINES and COLS are initialized by
+initscr(); it does not say anything about the behavior when windows are
+resized.
 
-> >> >  {
-> >> > -   int pos, ret;
-> >> > -   u16 ctrl;
-> >> > +   int ret;
-> >> >
-> >> >     ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
-> >> >     if (ret >= 0)
-> >> > @@ -2374,23 +2386,42 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
-> >> >     if (!pci_is_pcie(pdev))
-> >> >             return false;
-> >> >
-> >> > -   /* Filter out flags not applicable to multifunction */
-> >> > -   if (pdev->multifunction)
-> >> > +   switch (pci_pcie_type(pdev)) {
-> >> > +   /*
-> >> > +    * PCIe 3.0, 6.12.1 excludes ACS on these devices.  "Not applicable"
-> >> > +    */
-> >> > +   case PCI_EXP_TYPE_PCI_BRIDGE:
-> >> > +   case PCI_EXP_TYPE_RC_EC:
-> >> > +           break;
-> >>
-> >> Why not just return "true" immediately here, or even better, just omit
-> >> the case altogether, since it doesn't change the behavior at all?
-> >
-> > It could certainly return true, I debated that for a while and decided
-> > to break just to reduce the number of exit points.
-> 
-> That's interesting; I know lots of people advocate a single exit
-> point, but for functions like this where there's no cleanup and we're
-> essentially doing a "goto" to a "return <constant>", it seems harder
-> to read because I have to look down at the bottom to see how this case
-> is resolved.  Oh well, no point in arguing about *that* :)
-> 
-> > Omitting the case
-> > means that anyone who looks at this in the future has to figure out why
-> > those pcie types aren't explicitly listed.
-> >
-> >> > +   /*
-> >> > +    * PCIe 3.0, 6.12.1.1 specifies full ACS capabilities on downstream
-> >> > +    * ports, regardless of them being multifunction devices.
-> >> > +    */
-> >> > +   case PCI_EXP_TYPE_DOWNSTREAM:
-> >> > +   case PCI_EXP_TYPE_ROOT_PORT:
-> >> > +           return pci_acs_flags_enabled(pdev, acs_flags);
-> >> > +   /*
-> >> > +    * PCIe 3.0, 6.12.1.2 specifies unimplemented ACS capabilities on
-> >> > +    * multifunction devices.  6.12 footnote identifies specifically
-> >> > +    * which devices types this applies to.
-> >> > +    */
-> >> > +   case PCI_EXP_TYPE_ENDPOINT:
-> >> > +   case PCI_EXP_TYPE_UPSTREAM:
-> >> > +   case PCI_EXP_TYPE_LEG_END:
-> >> > +   case PCI_EXP_TYPE_RC_END:
-> >> > +           if (!pdev->multifunction)
-> >> > +                   break;
-> >>
-> >> And here.
-> >
-> > Same
-> >
-> >> > +
-> >> >             acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
-> >> >                           PCI_ACS_EC | PCI_ACS_DT);
-> >> >
-> >> > -   if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM ||
-> >> > -       pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT ||
-> >> > -       pdev->multifunction) {
-> >> > -           pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
-> >> > -           if (!pos)
-> >> > -                   return false;
-> >> > -
-> >> > -           pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
-> >> > -           if ((ctrl & acs_flags) != acs_flags)
-> >> > -                   return false;
-> >> > +           return pci_acs_flags_enabled(pdev, acs_flags);
-> >> >     }
-> >> >
-> >> > +   /*
-> >> > +    * PCIe 3.0, 6.12.1.3 specifies no ACS capabilties are applicable
-> >> > +    * to single function devices with the exception of downstream ports.
-> >> > +    */
-> >> >     return true;
-> >> >  }
-> >> >
-> >> >
-> >>
-> >> I actually liked the original code organization, because it's closer
-> >> to expressing the idea of "here are the control points where hardware
-> >> can make choices about routing peer-to-peer DMA and here's the knob
-> >> (ACS) that constrains those choices."
-> >>
-> >> Maybe something like (pidgin C):
-> >>
-> >>     if (PCI_EXP_TYPE_DOWNSTREAM || PCI_EXP_TYPE_ROOT_PORT)
-> >>       return pci_acs_flags_enabled(pdev, acs_flags);
-> >>
-> >>     if (!pdev->multifunction)
-> >>       return true;
-> >>
-> >>     acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | ...);
-> >>     return pci_acs_flags_enabled(pdev, acs_flags);
-> >
-> > Ok.  I re-organized it because I got tired of re-reading the spec to
-> > make sure that a given type of device was handled correctly.  Note that
-> > the above simplification incorrectly handles multifunction bridges or EC
-> > devices.
-> 
-> Hmm...  What *is* the correct behavior for a bridge?  You return
-> "true," i.e., you're saying that a PCIe-to-PCI bridge will always
-> route peer-to-peer transactions from PCI devices upstream to its PCIe
-> link.  But that seems wrong: a PCI DMA transaction can target a peer
-> on the same PCI bus, and it's not even possible for the bridge to
-> validate the transaction or forward it upstream.
-> 
-> I suspect the "ACS is never applicable to a PCI Express to PCI Bridge
-> Function" statement in 6.12.1 just means "it's impossible for ACS to
-> isolate the devices below the bridge from each other, so it would be
-> misleading to implement the capability."
+Do not rely on the current implementation of ncurses that updates
+these variables on resize, but use the propper function calls to get
+window dimensions.
 
-Note that we never consider ACS to be enabled for a conventional PCI
-device.  I suppose we could have cases where it's the only device on a
-bus, but for the most part, it's not worth the trouble (it may be the
-only device now, then a hotplug occurs).  So really saying the bridge
-does or doesn't support ACS doesn't matter to the devices behind it.
-What does matter is the fan-out of that isolation group of the
-conventional devices beyond the bridge.  If the spec is indicating that
-a bridge cannot do peer-to-peer with other devices  then all of the
-conventional devices behind it are in an isolation domain so long as the
-path between the bridge and the RC supports ACS.  If the bridge can do
-peer-to-peer and it is a multifunction device, then the isolation domain
-grows to include the other functions and subordinates of the other
-functions.  I took the assumption that a bridge probably needs to
-forward transaction upstream.  Do you have an alternate opinion?
+init_dialog() could make use of the variables, but for the sake of
+consistency we do not change it's current use of the macro getmaxyx().
 
-> I have no idea or speculation about why the spec calls out Event
-> Collectors.  They aren't bridges, so I suppose it must be related to
-> multi-function devices?
+[1] ncurses(3X)
 
-I wonder if they can even do DMA, that might be why they're called out.
-I don't really know anything about ECs though.
+Signed-off-by: Dirk Gouders <dirk@gouders.net>
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
+---
+ scripts/kconfig/lxdialog/checklist.c |  4 ++--
+ scripts/kconfig/lxdialog/inputbox.c  |  4 ++--
+ scripts/kconfig/lxdialog/menubox.c   |  4 ++--
+ scripts/kconfig/lxdialog/textbox.c   |  4 ++--
+ scripts/kconfig/lxdialog/util.c      | 13 +++++++++----
+ scripts/kconfig/lxdialog/yesno.c     |  4 ++--
+ 6 files changed, 19 insertions(+), 14 deletions(-)
 
-> > I can do something like you suggest, but being explicit was
-> > actually a goal in fixing this bug and avoiding future bugs.  Thanks,
-> 
-> Is there a bugzilla you can reference here?  Or can we at least turn
-> the "multi-function downstream port flag filtering" thing into a
-> user-visible effect?  I can see what it fixes at the microscopic
-> level, but I really don't know the implications of it.
-
-There's no bugzilla for this.  This is a subtle change I don't think you
-can see it.  If we assume that all devices comply with the spec (ha!),
-then downstream ports must implement all the capability bits.  We mask
-some out incorrectly, but we've already blasted a compatible set into
-the control register in pci_enable_acs().  So this is purely for
-correctness and you should not actually be able to see a difference in
-iommu group topology from it (unless you can find a non-spec compliant
-device which misses some required bits).  Thanks,
-
-Alex
+diff --git a/scripts/kconfig/lxdialog/checklist.c b/scripts/kconfig/lxdialog/checklist.c
+index 3034057..3b15c08 100644
+--- a/scripts/kconfig/lxdialog/checklist.c
++++ b/scripts/kconfig/lxdialog/checklist.c
+@@ -140,8 +140,8 @@ do_resize:
+ 	max_choice = MIN(list_height, item_count());
+ 
+ 	/* center dialog box on screen */
+-	x = (COLS - width) / 2;
+-	y = (LINES - height) / 2;
++	x = (getmaxx(stdscr) - width) / 2;
++	y = (getmaxy(stdscr) - height) / 2;
+ 
+ 	draw_shadow(stdscr, y, x, height, width);
+ 
+diff --git a/scripts/kconfig/lxdialog/inputbox.c b/scripts/kconfig/lxdialog/inputbox.c
+index 7b01add..447a582 100644
+--- a/scripts/kconfig/lxdialog/inputbox.c
++++ b/scripts/kconfig/lxdialog/inputbox.c
+@@ -62,8 +62,8 @@ do_resize:
+ 		return -ERRDISPLAYTOOSMALL;
+ 
+ 	/* center dialog box on screen */
+-	x = (COLS - width) / 2;
+-	y = (LINES - height) / 2;
++	x = (getmaxx(stdscr) - width) / 2;
++	y = (getmaxy(stdscr) - height) / 2;
+ 
+ 	draw_shadow(stdscr, y, x, height, width);
+ 
+diff --git a/scripts/kconfig/lxdialog/menubox.c b/scripts/kconfig/lxdialog/menubox.c
+index 00d2841..92b89a6 100644
+--- a/scripts/kconfig/lxdialog/menubox.c
++++ b/scripts/kconfig/lxdialog/menubox.c
+@@ -203,8 +203,8 @@ do_resize:
+ 	max_choice = MIN(menu_height, item_count());
+ 
+ 	/* center dialog box on screen */
+-	x = (COLS - width) / 2;
+-	y = (LINES - height) / 2;
++	x = (getmaxx(stdscr) - width) / 2;
++	y = (getmaxy(stdscr) - height) / 2;
+ 
+ 	draw_shadow(stdscr, y, x, height, width);
+ 
+diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
+index 907cdcb..1773319 100644
+--- a/scripts/kconfig/lxdialog/textbox.c
++++ b/scripts/kconfig/lxdialog/textbox.c
+@@ -98,8 +98,8 @@ do_resize:
+ 			width = 0;
+ 
+ 	/* center dialog box on screen */
+-	x = (COLS - width) / 2;
+-	y = (LINES - height) / 2;
++	x = (getmaxx(stdscr) - width) / 2;
++	y = (getmaxy(stdscr) - height) / 2;
+ 
+ 	draw_shadow(stdscr, y, x, height, width);
+ 
+diff --git a/scripts/kconfig/lxdialog/util.c b/scripts/kconfig/lxdialog/util.c
+index 0fa567e..58a8289 100644
+--- a/scripts/kconfig/lxdialog/util.c
++++ b/scripts/kconfig/lxdialog/util.c
+@@ -254,7 +254,12 @@ void attr_clear(WINDOW * win, int height, int width, chtype attr)
+ 
+ void dialog_clear(void)
+ {
+-	attr_clear(stdscr, LINES, COLS, dlg.screen.atr);
++	int lines, columns;
++
++	lines = getmaxy(stdscr);
++	columns = getmaxx(stdscr);
++
++	attr_clear(stdscr, lines, columns, dlg.screen.atr);
+ 	/* Display background title if it exists ... - SLH */
+ 	if (dlg.backtitle != NULL) {
+ 		int i, len = 0, skip = 0;
+@@ -269,10 +274,10 @@ void dialog_clear(void)
+ 		}
+ 
+ 		wmove(stdscr, 1, 1);
+-		if (len > COLS - 2) {
++		if (len > columns - 2) {
+ 			const char *ellipsis = "[...] ";
+ 			waddstr(stdscr, ellipsis);
+-			skip = len - (COLS - 2 - strlen(ellipsis));
++			skip = len - (columns - 2 - strlen(ellipsis));
+ 		}
+ 
+ 		for (pos = dlg.subtitles; pos != NULL; pos = pos->next) {
+@@ -298,7 +303,7 @@ void dialog_clear(void)
+ 				skip--;
+ 		}
+ 
+-		for (i = len + 1; i < COLS - 1; i++)
++		for (i = len + 1; i < columns - 1; i++)
+ 			waddch(stdscr, ACS_HLINE);
+ 	}
+ 	wnoutrefresh(stdscr);
+diff --git a/scripts/kconfig/lxdialog/yesno.c b/scripts/kconfig/lxdialog/yesno.c
+index abb0c39..676fb2f 100644
+--- a/scripts/kconfig/lxdialog/yesno.c
++++ b/scripts/kconfig/lxdialog/yesno.c
+@@ -51,8 +51,8 @@ do_resize:
+ 		return -ERRDISPLAYTOOSMALL;
+ 
+ 	/* center dialog box on screen */
+-	x = (COLS - width) / 2;
+-	y = (LINES - height) / 2;
++	x = (getmaxx(stdscr) - width) / 2;
++	y = (getmaxy(stdscr) - height) / 2;
+ 
+ 	draw_shadow(stdscr, y, x, height, width);
+ 
+-- 
+1.8.1.2
 
