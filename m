@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab3FRIJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:09:52 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:40864 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab3FRIJr (ORCPT
+	id S1753699Ab3FRILr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:11:47 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:35407 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab3FRILo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:09:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1371485086-16016-1-git-send-email-christian.ruppert@abilis.com>
-References: <20130617160324.GA15853@ab42.lan>
-	<1371485086-16016-1-git-send-email-christian.ruppert@abilis.com>
-Date: Tue, 18 Jun 2013 10:09:47 +0200
-Message-ID: <CACRpkdYZ6QXsh_7fG=B_Ci5hqm2LQe=Hbf5dyZK+tjdnVaHF4A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 04:11:44 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        ulli.kroll@googlemail.com, arm@kernel.org, florian@openwrt.org,
+        kaloz@openwrt.org, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v2] ARM: mm: cpu_fa526_do_idle: remove WFI
+Date: Tue, 18 Jun 2013 10:11:05 +0200
+Message-Id: <1371543065-5843-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 6:04 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
+As it was already suggested by Russell King and Arnd Bergmann:
 
-> This patch adds the infrastructure required to register non-linear gpio
-> ranges through gpiolib and the standard GPIO device tree bindings.
->
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+https://lkml.org/lkml/2013/5/16/133
 
->  Documentation/devicetree/bindings/gpio/gpio.txt |   44 ++++++++++++++++++
->  arch/arc/boot/dts/abilis_tb100.dtsi             |   56 +++++++++++-----------
->  arch/arc/boot/dts/abilis_tb101.dtsi             |   56 +++++++++++-----------
->  arch/arc/boot/dts/abilis_tb10x.dtsi             |    3 +-
->  drivers/gpio/gpiolib-of.c                       |   31 +++++++++---
->  drivers/gpio/gpiolib.c                          |   47 +++++++++++++++++++
->  drivers/pinctrl/core.c                          |   23 +++++++++
->  include/asm-generic/gpio.h                      |   10 ++++
->  include/linux/gpio.h                            |    9 ++++
->  include/linux/pinctrl/pinctrl.h                 |    3 +
->  10 files changed, 216 insertions(+), 66 deletions(-)
+moxart and gemini seem to be the only platforms using CPU_FA526,
+and instead of pointing arm_pm_idle to an empty function from
+platform code, it makes sense to remove WFI code from the processor
+specific idle function.
 
-Can you please split this patch in two?
+Applies to arm-soc/for-next.
 
-One altering drivers/* include/* and the Documentation/*
+Changes since v1:
 
-And a separate patch to alter all the abilis trees?
+1. remove WFI but make sure cpu_fa526_do_idle do not fall through
+   to cpu_fa526_dcache_clean_area
 
-I do not maintain bisectability across device trees
-to the rest of the kernel, as these trees are supposed
-to be moved out of the kernel at some point.
+Note: moxart boots and prints to UART without this patch, but input is broken.
 
-Yours,
-Linus Walleij
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
+ arch/arm/mm/proc-fa526.S |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mm/proc-fa526.S b/arch/arm/mm/proc-fa526.S
+index d217e97..aaeb6c1 100644
+--- a/arch/arm/mm/proc-fa526.S
++++ b/arch/arm/mm/proc-fa526.S
+@@ -81,7 +81,6 @@ ENDPROC(cpu_fa526_reset)
+  */
+ 	.align	4
+ ENTRY(cpu_fa526_do_idle)
+-	mcr	p15, 0, r0, c7, c0, 4		@ Wait for interrupt
+ 	mov	pc, lr
+ 
+ 
+-- 
+1.7.2.5
+
