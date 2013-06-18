@@ -1,189 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3FRMvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:51:15 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41415 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab3FRMvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:51:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / PM: Drop two functions that are not used any more
-Date: Tue, 18 Jun 2013 15:00:28 +0200
-Message-ID: <2356401.FiBQpSHJGJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51C02664.2050603@intel.com>
-References: <6895318.cKDBc4OdI0@vostro.rjw.lan> <2934743.cl2LaccKZx@vostro.rjw.lan> <51C02664.2050603@intel.com>
+	id S1754978Ab3FRMwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:52:39 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41225 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3FRMwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 08:52:38 -0400
+Date: Tue, 18 Jun 2013 14:52:35 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Detlev Zundel <dzu@denx.de>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org
+Subject: Re: [PATCH] fix UIO with device tree but no assigned interrupt
+Message-ID: <20130618125235.GA15122@amd.pavel.ucw.cz>
+References: <20130617134957.GA15602@amd.pavel.ucw.cz>
+ <CACxGe6sO6Tes8en905cyJwP69w82PHjwKV9+XxxXhAPMRyGYkA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6sO6Tes8en905cyJwP69w82PHjwKV9+XxxXhAPMRyGYkA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 18, 2013 05:20:36 PM Aaron Lu wrote:
-> On 06/14/2013 08:33 PM, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Two functions defined in device_pm.c, acpi_dev_pm_add_dependent()
-> > and acpi_dev_pm_remove_dependent(), have no callers and may be
-> > dropped, so drop them.
-> 
-> Please hold on for a moment, I would like to discuss the ATA ACPI
-> binding with you and Tejun, the current binding with SCSI device tree
-> doesn't buy us anything but introduced some nasty consequences. I think
-> we should bind ACPI handle with ATA port/device, I have a draft patch
-> for this and will send out soon. If we go binding with ATA port/device,
-> then the two functions will be needed :-)
 
-OK, this change can wait.  I'll drop [4/4] for now.
+If device is initialized from device tree, but has no interrupt
+assigned, uio will still try to request and interrupt old way, fails,
+and fails registration.
 
-Thanks,
-Rafael
+This is wrong; don't try initializing irq using platform data if
+device tree is available.
+
+Simplified code based on suggestion by Grant Likely.
+
+Fixed memory leak in "irq can not be registered" error path.
+
+Signed-off-by: Pavel Machek <pavel@denx.de>
+Reported-by: Detlev Zundel <dzu@denx.de>
+
+---
+
+Also redone against char-misc-next.
+
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index c122bca..a27fd50 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -103,24 +103,16 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	int i;
+ 
+ 	if (pdev->dev.of_node) {
+-		int irq;
+-
+ 		/* alloc uioinfo for one device */
+ 		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+ 		if (!uioinfo) {
+ 			ret = -ENOMEM;
+ 			dev_err(&pdev->dev, "unable to kmalloc\n");
+-			goto bad2;
++			return ret;
+ 		}
+ 		uioinfo->name = pdev->dev.of_node->name;
+ 		uioinfo->version = "devicetree";
+-
+ 		/* Multiple IRQs are not supported */
+-		irq = platform_get_irq(pdev, 0);
+-		if (irq == -ENXIO)
+-			uioinfo->irq = UIO_IRQ_NONE;
+-		else
+-			uioinfo->irq = irq;
+ 	}
+ 
+ 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+@@ -146,14 +138,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	priv->flags = 0; /* interrupt is enabled to begin with */
+ 	priv->pdev = pdev;
+ 
+-	if (!uioinfo->irq) {
+-		ret = platform_get_irq(pdev, 0);
+-		if (ret < 0) {
+-			dev_err(&pdev->dev, "failed to get IRQ\n");
+-			goto bad0;
+-		}
+-		uioinfo->irq = ret;
++	ret = platform_get_irq(pdev, 0);
++	uioinfo->irq = ret;
++	if (ret == -ENXIO && pdev->dev.of_node)
++		uioinfo->irq = UIO_IRQ_NONE;
++	else if (ret < 0) {
++		dev_err(&pdev->dev, "failed to get IRQ\n");
++		goto bad1;
+ 	}
++
+ 	uiomem = &uioinfo->mem[0];
+ 
+ 	for (i = 0; i < pdev->num_resources; ++i) {
+@@ -206,19 +199,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to register uio device\n");
+-		goto bad1;
++		goto bad2;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 	return 0;
++ bad2:
++	pm_runtime_disable(&pdev->dev);
+  bad1:
+ 	kfree(priv);
+-	pm_runtime_disable(&pdev->dev);
+  bad0:
+ 	/* kfree uioinfo for OF */
+ 	if (pdev->dev.of_node)
+ 		kfree(uioinfo);
+- bad2:
+ 	return ret;
+ }
+ 
 
 
-> > Moreover, they are the only functions adding entries to and removing
-> > entries from the power_dependent list in struct acpi_device, so drop
-> > that list and the loop walking it in acpi_power_resume_dependent()
-> > too.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/device_pm.c |   56 -----------------------------------------------
-> >  drivers/acpi/power.c     |    3 --
-> >  drivers/acpi/scan.c      |    1 
-> >  include/acpi/acpi_bus.h  |    7 -----
-> >  4 files changed, 67 deletions(-)
-> > 
-> > Index: linux-pm/include/acpi/acpi_bus.h
-> > ===================================================================
-> > --- linux-pm.orig/include/acpi/acpi_bus.h
-> > +++ linux-pm/include/acpi/acpi_bus.h
-> > @@ -308,7 +308,6 @@ struct acpi_device {
-> >  	struct list_head physical_node_list;
-> >  	struct mutex physical_node_lock;
-> >  	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
-> > -	struct list_head power_dependent;
-> >  	void (*remove)(struct acpi_device *);
-> >  };
-> >  
-> > @@ -461,8 +460,6 @@ acpi_status acpi_add_pm_notifier(struct
-> >  acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
-> >  				    acpi_notify_handler handler);
-> >  int acpi_pm_device_sleep_state(struct device *, int *, int);
-> > -void acpi_dev_pm_add_dependent(acpi_handle handle, struct device *depdev);
-> > -void acpi_dev_pm_remove_dependent(acpi_handle handle, struct device *depdev);
-> >  #else
-> >  static inline acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
-> >  					       acpi_notify_handler handler,
-> > @@ -482,10 +479,6 @@ static inline int acpi_pm_device_sleep_s
-> >  
-> >  	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
-> >  }
-> > -static inline void acpi_dev_pm_add_dependent(acpi_handle handle,
-> > -					     struct device *depdev) {}
-> > -static inline void acpi_dev_pm_remove_dependent(acpi_handle handle,
-> > -						struct device *depdev) {}
-> >  #endif
-> >  
-> >  #ifdef CONFIG_PM_RUNTIME
-> > Index: linux-pm/drivers/acpi/device_pm.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/device_pm.c
-> > +++ linux-pm/drivers/acpi/device_pm.c
-> > @@ -994,60 +994,4 @@ void acpi_dev_pm_detach(struct device *d
-> >  	}
-> >  }
-> >  EXPORT_SYMBOL_GPL(acpi_dev_pm_detach);
-> > -
-> > -/**
-> > - * acpi_dev_pm_add_dependent - Add physical device depending for PM.
-> > - * @handle: Handle of ACPI device node.
-> > - * @depdev: Device depending on that node for PM.
-> > - */
-> > -void acpi_dev_pm_add_dependent(acpi_handle handle, struct device *depdev)
-> > -{
-> > -	struct acpi_device_physical_node *dep;
-> > -	struct acpi_device *adev;
-> > -
-> > -	if (!depdev || acpi_bus_get_device(handle, &adev))
-> > -		return;
-> > -
-> > -	mutex_lock(&adev->physical_node_lock);
-> > -
-> > -	list_for_each_entry(dep, &adev->power_dependent, node)
-> > -		if (dep->dev == depdev)
-> > -			goto out;
-> > -
-> > -	dep = kzalloc(sizeof(*dep), GFP_KERNEL);
-> > -	if (dep) {
-> > -		dep->dev = depdev;
-> > -		list_add_tail(&dep->node, &adev->power_dependent);
-> > -	}
-> > -
-> > - out:
-> > -	mutex_unlock(&adev->physical_node_lock);
-> > -}
-> > -EXPORT_SYMBOL_GPL(acpi_dev_pm_add_dependent);
-> > -
-> > -/**
-> > - * acpi_dev_pm_remove_dependent - Remove physical device depending for PM.
-> > - * @handle: Handle of ACPI device node.
-> > - * @depdev: Device depending on that node for PM.
-> > - */
-> > -void acpi_dev_pm_remove_dependent(acpi_handle handle, struct device *depdev)
-> > -{
-> > -	struct acpi_device_physical_node *dep;
-> > -	struct acpi_device *adev;
-> > -
-> > -	if (!depdev || acpi_bus_get_device(handle, &adev))
-> > -		return;
-> > -
-> > -	mutex_lock(&adev->physical_node_lock);
-> > -
-> > -	list_for_each_entry(dep, &adev->power_dependent, node)
-> > -		if (dep->dev == depdev) {
-> > -			list_del(&dep->node);
-> > -			kfree(dep);
-> > -			break;
-> > -		}
-> > -
-> > -	mutex_unlock(&adev->physical_node_lock);
-> > -}
-> > -EXPORT_SYMBOL_GPL(acpi_dev_pm_remove_dependent);
-> >  #endif /* CONFIG_PM */
-> > Index: linux-pm/drivers/acpi/power.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/power.c
-> > +++ linux-pm/drivers/acpi/power.c
-> > @@ -253,9 +253,6 @@ static void acpi_power_resume_dependent(
-> >  	list_for_each_entry(pn, &adev->physical_node_list, node)
-> >  		pm_request_resume(pn->dev);
-> >  
-> > -	list_for_each_entry(pn, &adev->power_dependent, node)
-> > -		pm_request_resume(pn->dev);
-> > -
-> >  	mutex_unlock(&adev->physical_node_lock);
-> >  }
-> >  
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -1018,7 +1018,6 @@ int acpi_device_add(struct acpi_device *
-> >  	INIT_LIST_HEAD(&device->wakeup_list);
-> >  	INIT_LIST_HEAD(&device->physical_node_list);
-> >  	mutex_init(&device->physical_node_lock);
-> > -	INIT_LIST_HEAD(&device->power_dependent);
-> >  
-> >  	new_bus_id = kzalloc(sizeof(struct acpi_device_bus_id), GFP_KERNEL);
-> >  	if (!new_bus_id) {
-> > 
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
