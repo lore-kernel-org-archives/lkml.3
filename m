@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab3FRNxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 09:53:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36737 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932701Ab3FRNxV (ORCPT
+	id S932849Ab3FRN51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 09:57:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51695 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932701Ab3FRN5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 09:53:21 -0400
-Date: Tue, 18 Jun 2013 14:52:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kyle McMartin <kyle@redhat.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64/Makefile: provide vdso_install target
-Message-ID: <20130618135250.GH6801@mudshark.cambridge.arm.com>
-References: <20130616193243.GC8939@redacted.bos.redhat.com>
+	Tue, 18 Jun 2013 09:57:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
+Date: Tue, 18 Jun 2013 15:56:47 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>
+References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com> <7174350.I5qK0sQfHM@wuerfel> <000001ce6bd7$50146e60$f03d4b20$@samsung.com>
+In-Reply-To: <000001ce6bd7$50146e60$f03d4b20$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130616193243.GC8939@redacted.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306181556.47656.arnd@arndb.de>
+X-Provags-ID: V02:K0:KVt1xjvVCUR0vtxhPuYrEXDXUah8U3bF9x0bJbGRFMg
+ 55SnMGdWnjjnZKqiJKQGvVqbfeJgxzjf7m4K7TYS20YB90GSEw
+ bltCXBomVYkth8sUKJJWHtt2T9G8xVO6OqBk7QgPor2frHrf3+
+ pa3Wg3YrgfRn8/MCsSkiLQL/BM2vMoe7K2RyVwuJK3NzUrw8S5
+ xAtZhouP9k6cLfjC1QKKhaRZMGYTj0w2MYiGoojLAWGMybArAC
+ 2fp0Nf1fv7jDNCWVeZ5w/DdhsQf69FNkYYvkrcNzlhsabDlAsq
+ NL7nhwVIrYR6qgQGRPSfgxh8Dxdwpi+AiCGlIMd1ckKge/XMvN
+ 2L4/M0w7yz/GrfjGIIpk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 16, 2013 at 08:32:44PM +0100, Kyle McMartin wrote:
-> Provide a vdso_install target in the arm64 Makefile, as other architectures
-> with a vdso do.
-
-Thanks Kyle.
-
-  Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
-
-> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+On Tuesday 18 June 2013, Jingoo Han wrote:
+> On Monday, June 17, 2013 9:45 PM, Arnd Bergmann wrote:
+> > On Monday 17 June 2013 18:45:52 Jingoo Han wrote:
+> > > On Friday, June 14, 2013 9:54 PM, Arnd Bergmann wrote:
+> > > >
+> > > > Please look up the documentation about inbound viewport and describe
+> > > > in a code comment what it does. I /assume/ that this is how DMA accesses
+> > > > from the bus get translated into AXI bus transactions. If so, you have
+> > > > to let the window translate addresses from RAM. If it's something else,
+> > > > then you should document what it is and how it needs to be set up.
+> > >
+> > > One of our hardware engineer confirmed it.
+> > > He said that these inbound functions are unnecessary.
+> > > Also, I checked that PCIe works properly without these functions.
+> > > So, I will remove these inbound functions.
+> > 
+> > Ok, good. So DMA just gets translated 1:1 independent of the
+> > inbound viewport? Have you tested this with PCI device using
+> > DMA?
 > 
-> --- a/arch/arm64/Makefile
-> +++ b/arch/arm64/Makefile
-> @@ -60,6 +60,10 @@ zinstall install: vmlinux
->  dtbs: scripts
->  	$(Q)$(MAKE) $(build)=$(boot)/dts dtbs
->  
-> +PHONY += vdso_install
-> +vdso_install:
-> +	$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso $@
-> +
->  # We use MRPROPER_FILES and CLEAN_FILES now
->  archclean:
->  	$(Q)$(MAKE) $(clean)=$(boot)
+> According to our hardware engineer,
+> He said that
+> "That's correct. We tested it by doing a memory write from the device.
+> A device DMA is a series of memory r/w so I expect it to work same way."
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Also, he thought that I already tested too, since it works after removing
+> the functions.
+
+It could be that the default setting just creates a 1:1 map so that would
+work, but if you tested it, that should be good enough.
+
+> I looked at the pci-mvebu driver,
+> Then I fixed it as the pci-mvebu driver did.
+> Also, I added 'global_io_offset'.
 > 
+> @@ -909,6 +909,12 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
+>                 if (restype == IORESOURCE_IO) {
+>                         of_pci_range_to_resource(&range, np, &pp->io);
+>                         pp->io.name = "I/O";
+> +                       pp->io.start = max_t(resource_size_t,
+> +                                               PCIBIOS_MIN_IO,
+> +                                               range.pci_addr + global_io_offset);
+> +                       pp->io.end = min_t(resource_size_t,
+> +                                               IO_SPACE_LIMIT,
+> +                                               range.pci_addr + range.size + global_io_offset);
+>                         pp->config.io_size = resource_size(&pp->io);
+>                         pp->config.io_bus_addr = range.pci_addr;
+> 
+> In this case, boot message is as below:
+> 
+> PCI host bridge to bus 0000:00
+> pci_bus 0000:00: root bus resource [io  0x1000-0x10000]
+> pci_bus 0000:00: root bus resource [mem 0x40011000-0x5fffffff]
+> [.....]
+> PCI host bridge to bus 0001:00
+> pci_bus 0001:00: root bus resource [io  0x10000-0x20000] (bus address [0x0000-0x10000])
+> pci_bus 0001:00: root bus resource [mem 0x60011000-0x7fffffff]
+
+Ok, very good.
+> 
+> I will remove a 'remove' callback. Is it OK?
+> Or what should I do?
+
+I think you should keep the remove function, but add a comment explaining that
+you don't allow module unload and that in order to allow it, the remove function
+will have to remove all pci buses and devices under the host bridge.
+
+	Arnd
