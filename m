@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587Ab3FRQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:57:21 -0400
-Received: from shell.v3.sk ([195.168.3.45]:53049 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933077Ab3FRQ5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:57:19 -0400
-Subject: Re: [PATCH] hwrng: bcm2835: fix MODULE_LICENSE tag
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dom Cobley <popcornmix@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Matt Mackall <mpm@selenic.com>,
-        linux-rpi-kernel@lists.infradead.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-In-Reply-To: <1366732475-479886-4-git-send-email-arnd@arndb.de>
-References: <1366732475-479886-1-git-send-email-arnd@arndb.de>
-	 <1366732475-479886-4-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jun 2013 18:57:13 +0200
-Message-ID: <1371574633.18688.9.camel@hobbes.kokotovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S933238Ab3FRQ6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:58:01 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:55792 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933127Ab3FRQ57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:57:59 -0400
+Date: Tue, 18 Jun 2013 18:57:54 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Part2 PATCH v4 08/15] x86, numa: Save nid when reserve memory
+ into memblock.reserved[].
+Message-ID: <20130618165753.GB4553@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1371128619-8987-9-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371128619-8987-9-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 17:54 +0200, Arnd Bergmann wrote:
-> The MODULE_LICENSE macro invocation must use either "GPL" or "GPL v2",
-> but not "GPLv2" in order to be detected by the module loader.
-> 
-> This fixes the allmodconfig build error:
-> 
-> FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
+Hi Tang,
 
-Thank you, obviously a typo of mine that slipped through. I'm wondering
-if this could get queued for 3.10; it definitely can't do any harm.
+On Thu, Jun 13, 2013 at 09:03:32PM +0800, Tang Chen wrote:
+> Since we introduced numa_sync_memblock_nid synchronize nid info in
+> memblock.reserved[] and numa_meminfo, when numa_meminfo has been
+> initialized, we need to save the nid into memblock.reserved[] when
+> we reserve memory.
 
-Acked-by: Lubomir Rintel <lkundrak@v3.sk>
+thanks for the updated patches.
+I tested linux-next next-20130706 +part1+part2+part3 in a VM, hot-plugging
+memory and rebooting with movablecore=acpi. I think with this patch and 9/15
+we get the correct nids and the expected behaviour for the "movablecore=acpi"
+option.
 
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Dom Cobley <popcornmix@gmail.com>
-> Cc: Lubomir Rintel <lkundrak@v3.sk>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: linux-rpi-kernel@lists.infradead.org
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> ---
->  drivers/char/hw_random/bcm2835-rng.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
-> index eb7f147..43577ca 100644
-> --- a/drivers/char/hw_random/bcm2835-rng.c
-> +++ b/drivers/char/hw_random/bcm2835-rng.c
-> @@ -110,4 +110,4 @@ module_platform_driver(bcm2835_rng_driver);
->  
->  MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
->  MODULE_DESCRIPTION("BCM2835 Random Number Generator (RNG) driver");
-> -MODULE_LICENSE("GPLv2");
-> +MODULE_LICENSE("GPL v2");
+However, patches 21,22 of part1 and all part3 patches increase kernel usage
+of local node memory by putting pagetables local to those nodes. Are these
+pagetable pages accounted in part2's memblock_kernel_nodemask? It looks like
+part1 and part3 of these patchsets contradict or make the goal of part2 more
+difficult to achieve. (I will send more comments for part3 separately).
 
+thanks,
 
+- Vasilis
