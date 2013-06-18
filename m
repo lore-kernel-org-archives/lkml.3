@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab3FRQOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:14:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49261 "EHLO
+	id S933396Ab3FRQfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:35:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011Ab3FRQOi (ORCPT
+	with ESMTP id S933039Ab3FRQOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:38 -0400
+	Tue, 18 Jun 2013 12:14:44 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 09/26] ath9k: Disable PowerSave by default
-Date: Tue, 18 Jun 2013 09:14:49 -0700
-Message-Id: <20130618161233.140587296@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@freemail.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 18/26] x86: Fix typo in kexec register clearing
+Date: Tue, 18 Jun 2013 09:14:58 -0700
+Message-Id: <20130618161236.820508651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -29,37 +29,33 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 531671cb17af07281e6f28c1425f754346e65c41 upstream.
+commit c8a22d19dd238ede87aa0ac4f7dbea8da039b9c1 upstream.
 
-Almost all the DMA issues which have plagued ath9k (in station mode)
-for years are related to PS. Disabling PS usually "fixes" the user's
-connection stablility. Reports of DMA problems are still trickling in
-and are sitting in the kernel bugzilla. Until the PS code in ath9k is
-given a thorough review, disbale it by default. The slight increase
-in chip power consumption is a small price to pay for improved link
-stability.
+Fixes a typo in register clearing code. Thanks to PaX Team for fixing
+this originally, and James Troup for pointing it out.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20130605184718.GA8396@www.outflux.net
+Cc: PaX Team <pageexec@freemail.hu>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/init.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/kernel/relocate_kernel_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -671,8 +671,7 @@ void ath9k_set_hw_capab(struct ath_softc
- 		BIT(NL80211_IFTYPE_ADHOC) |
- 		BIT(NL80211_IFTYPE_MESH_POINT);
- 
--	if (AR_SREV_5416(sc->sc_ah))
--		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
-+	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
- 
- 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
- 	hw->wiphy->flags |= WIPHY_FLAG_SUPPORTS_TDLS;
+--- a/arch/x86/kernel/relocate_kernel_64.S
++++ b/arch/x86/kernel/relocate_kernel_64.S
+@@ -160,7 +160,7 @@ identity_mapped:
+ 	xorq    %rbp, %rbp
+ 	xorq	%r8,  %r8
+ 	xorq	%r9,  %r9
+-	xorq	%r10, %r9
++	xorq	%r10, %r10
+ 	xorq	%r11, %r11
+ 	xorq	%r12, %r12
+ 	xorq	%r13, %r13
 
 
