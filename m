@@ -1,208 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3FRAIB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:08:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25954 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3FRAH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:07:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
-   d="scan'208";a="331178130"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <1371512120.1778.40.camel@buesod1.americas.hpqcorp.net>
-References: <1371165333.27102.568.camel@schen9-DESK>
-	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BD8A77.2080201@intel.com>
-	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BF99B0.4040509@intel.com>
-	 <1371512120.1778.40.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jun 2013 17:08:01 -0700
-Message-ID: <1371514081.27102.651.camel@schen9-DESK>
+	id S1753269Ab3FRALp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:11:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40802 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab3FRALo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 20:11:44 -0400
+Date: Mon, 17 Jun 2013 17:11:41 -0700 (PDT)
+Message-Id: <20130617.171141.1129703356005827268.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: bridge@lists.linux-foundation.org, stephen@networkplumber.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bridge: fix switched interval for MLD Query types
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1371417634-29803-1-git-send-email-linus.luessing@web.de>
+References: <1371417634-29803-1-git-send-email-linus.luessing@web.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 16:35 -0700, Davidlohr Bueso wrote:
-> On Tue, 2013-06-18 at 07:20 +0800, Alex Shi wrote:
-> > On 06/18/2013 12:22 AM, Davidlohr Bueso wrote:
-> > > After a lot of benchmarking, I finally got the ideal results for aim7,
-> > > so far: this patch + optimistic spinning with preemption disabled. Just
-> > > like optimistic spinning, this patch by itself makes little to no
-> > > difference, yet combined is where we actually outperform 3.10-rc5. In
-> > > addition, I noticed extra throughput when disabling preemption in
-> > > try_optimistic_spin().
-> > > 
-> > > With i_mmap as a rwsem and these changes I could see performance
-> > > benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-> > > (+5%), shared (+15%) and short (+4%), most of them after around 500
-> > > users, for fewer users, it made little to no difference.
-> > 
-> > A pretty good number. what's the cpu number in your machine? :)
+From: Linus Lüssing <linus.luessing@web.de>
+Date: Sun, 16 Jun 2013 23:20:34 +0200
+
+> General Queries (the one with the Multicast Address field
+> set to zero / '::') are supposed to have a Maximum Response Delay
+> of [Query Response Interval], while for Multicast-Address-Specific
+> Queries it is [Last Listener Query Interval] - not the other way
+> round. (see RFC2710, section 7.3+7.8)
 > 
-> 8-socket, 80 cores (ht off)
-> 
-> 
+> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 
-David,
-
-I wonder if you are interested to try the experimental patch below.  
-It tries to avoid unnecessary writes to the sem->count when we are 
-going to fail the down_write by executing rwsem_down_write_failed_s
-instead of rwsem_down_write_failed.  It should further reduce the
-cache line bouncing.  It didn't make a difference for my 
-workload.  Wonder if it may help yours more in addition to the 
-other two patches.  Right now the patch is an ugly hack.  I'll merge
-rwsem_down_write_failed_s and rwsem_down_write_failed into one
-function if this approach actually helps things.
-
-I'll clean these three patches after we have some idea of their
-effectiveness.
-
-Thanks.
-
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
-commit 04c8ad3f21861746d5b7fff55a6ef186a4dd0765
-Author: Tim Chen <tim.c.chen@linux.intel.com>
-Date:   Mon Jun 10 04:50:04 2013 -0700
-
-    Try skip write to rwsem->count when we have active lockers
-
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..83f9184 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -33,6 +33,7 @@ struct rw_semaphore {
- 
- extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
- extern struct rw_semaphore *rwsem_down_write_failed(struct rw_semaphore *sem);
-+extern struct rw_semaphore *rwsem_down_write_failed_s(struct rw_semaphore *sem);
- extern struct rw_semaphore *rwsem_wake(struct rw_semaphore *);
- extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
- 
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cfff143..188f6ea 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -42,12 +42,22 @@ EXPORT_SYMBOL(down_read_trylock);
- /*
-  * lock for writing
-  */
-+
-+static void ___down_write(struct rw_semaphore *sem)
-+{
-+	if (sem->count & RWSEM_ACTIVE_MASK) {
-+		rwsem_down_write_failed_s(sem);
-+		return;
-+	}
-+	__down_write(sem);
-+}
-+
- void __sched down_write(struct rw_semaphore *sem)
- {
- 	might_sleep();
- 	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
- 
--	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	LOCK_CONTENDED(sem, __down_write_trylock, ___down_write);
- }
- 
- EXPORT_SYMBOL(down_write);
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 19c5fa9..25143b5 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -248,6 +248,63 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	return sem;
- }
- 
-+struct rw_semaphore __sched *rwsem_down_write_failed_s(struct rw_semaphore *sem)
-+{
-+	long count, adjustment = 0;
-+	struct rwsem_waiter waiter;
-+	struct task_struct *tsk = current;
-+
-+	/* set up my own style of waitqueue */
-+	waiter.task = tsk;
-+	waiter.type = RWSEM_WAITING_FOR_WRITE;
-+
-+	raw_spin_lock_irq(&sem->wait_lock);
-+	if (list_empty(&sem->wait_list))
-+		adjustment += RWSEM_WAITING_BIAS;
-+	list_add_tail(&waiter.list, &sem->wait_list);
-+
-+	/* If there were already threads queued before us and there are no
-+	 * active writers, the lock must be read owned; so we try to wake
-+	 * any read locks that were queued ahead of us. */
-+	if (adjustment == 0) {
-+		if (sem->count > RWSEM_WAITING_BIAS)
-+			sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
-+	} else
-+		count = rwsem_atomic_update(adjustment, sem);
-+
-+	/* wait until we successfully acquire the lock */
-+	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+	while (true) {
-+		if (!(sem->count & RWSEM_ACTIVE_MASK)) {
-+			/* Try acquiring the write lock. */
-+			count = RWSEM_ACTIVE_WRITE_BIAS;
-+			if (!list_is_singular(&sem->wait_list))
-+				count += RWSEM_WAITING_BIAS;
-+
-+			if (sem->count == RWSEM_WAITING_BIAS &&
-+			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-+							RWSEM_WAITING_BIAS)
-+				break;
-+		}
-+
-+		raw_spin_unlock_irq(&sem->wait_lock);
-+
-+		/* Block until there are no active lockers. */
-+		do {
-+			schedule();
-+			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
-+
-+		raw_spin_lock_irq(&sem->wait_lock);
-+	}
-+
-+	list_del(&waiter.list);
-+	raw_spin_unlock_irq(&sem->wait_lock);
-+	tsk->state = TASK_RUNNING;
-+
-+	return sem;
-+}
-+
- /*
-  * handle waking up a waiter on the semaphore
-  * - up_read/up_write has decremented the active part of count if we come here
-@@ -289,5 +346,6 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
- 
- EXPORT_SYMBOL(rwsem_down_read_failed);
- EXPORT_SYMBOL(rwsem_down_write_failed);
-+EXPORT_SYMBOL(rwsem_down_write_failed_s);
- EXPORT_SYMBOL(rwsem_wake);
- EXPORT_SYMBOL(rwsem_downgrade_wake);
-
-
+Applied, thanks.
