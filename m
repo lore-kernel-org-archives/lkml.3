@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046Ab3FRQut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:50:49 -0400
-Received: from shell.v3.sk ([195.168.3.45]:39170 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932879Ab3FRQus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:50:48 -0400
-Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Dom Cobley <popcornmix@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-In-Reply-To: <20130526142200.GA7603@spo001.leaseweb.com>
-References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
-	 <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
-	 <5153B24D.1010408@wwwdotorg.org>
-	 <20130526142200.GA7603@spo001.leaseweb.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jun 2013 18:50:41 +0200
-Message-ID: <1371574241.18688.5.camel@hobbes.kokotovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S933089Ab3FRQws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:52:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59887 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab3FRQwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:52:46 -0400
+Date: Tue, 18 Jun 2013 09:52:11 -0700
+From: tip-bot for Yinghai Lu <tipbot@zytor.com>
+Message-ID: <tip-0541881502a1276149889fe468662ff6a8fc8f6d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, joshuacov@googlemail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, joshuacov@googlemail.com,
+        hpa@linux.intel.com
+In-Reply-To: <1371154622-8929-3-git-send-email-yinghai@kernel.org>
+References: <1371154622-8929-3-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] range:
+  Do not add new blank slot with add_range_with_merge
+Git-Commit-ID: 0541881502a1276149889fe468662ff6a8fc8f6d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 18 Jun 2013 09:52:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Commit-ID:  0541881502a1276149889fe468662ff6a8fc8f6d
+Gitweb:     http://git.kernel.org/tip/0541881502a1276149889fe468662ff6a8fc8f6d
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 13 Jun 2013 13:17:02 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 18 Jun 2013 11:32:10 -0500
 
-On Sun, 2013-05-26 at 16:22 +0200, Wim Van Sebroeck wrote:
-> Hi Lubomir,
-> 
-> > On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
-> > > This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> > > used in Raspberry Pi and Roku 2 devices.
-> > > 
-> > > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> > > Signed-off-by: Dom Cobley <popcornmix@gmail.com>
-> > 
-> > Those two s-o-b lines should be swapped, since if Dom did sign off on
-> > any part of this patch, he did it before you did.
-> > 
-> > That said...
-> > 
-> > I wonder if it's actually appropriate to include Dom's s-o-b here, since
-> > I don't think he really wrote this patch itself. I think you mentioned
-> > that you hadn't use much of the downstream driver except for some defines?
-> > 
-> > To be clear, I mentioned the existence of the S-o-b line downstream
-> > simply to demonstrate that the commits you were getting information from
-> > had correctly followed the process described in
-> > Documentation/SubmittingPatches, and so it was OK to use that
-> > information while creating a GPL'd driver.
-> > 
-> > So there are a couple of ways that this patch could have been created:
-> > 
-> > 1) You took the downstream commit itself, cherry-picked it into the
-> > upstream kernel, modified it to suit upstream, and then submitted that.
-> > The modifications might be extensive, such as renaming the file,
-> > removing parts of the code that the upstream watchdog core now handles,
-> > adding some new features, fixing bugs, cleanup, etc.; whatever is needed
-> > to upstream the patch.
-> > 
-> > In this case, I believe it would be appropriate to maintain any S-o-b
-> > lines from the original downstream commit, and add yours. But, I believe
-> > you should also (a) maintain the git author field from the original
-> > downstream commit (b) include a list of the changes you made to the
-> > patch in the commit description, so you can be blamed for them rather
-> > than the original author:-)
-> > 
-> > 2) You read the downstream commit for information, but created a
-> > completely new driver for the upstream kernel, using the downstream
-> > driver just as a reference. In this case, I believe it's fine for the
-> > git author field to be you, and for the only s-o-b line present to be
-> > yours, since you really did write the patch from scratch. However, you
-> > should credit the downstream work in the (c) header and/or commit
-> > description.
-> > 
-> > This current patch sees to be a slight hybrid of both approaches (you're
-> > listed as the git author, but have included Dom's s-o-b line on a patch
-> > I don't think he created, and wasn't directly derived from one he created).
-> > 
-> > I'm not sure if I'm being too picky. I guess I'll leave it up to Wim Van
-> > Sebroeck, since he's the watchdog maintainer and would be the person who
-> > applies this patch.
-> 
-> Can you create a patch v5 with yourselve as author and add the necessary (c)
-> and references in it so that I can do the final review? (That is if situation
-> 2 is indeed the case. If however it is situation 1 then we should get the
-> original code and have that as a patch and then add a second patch with your
-> modifications.).
+range: Do not add new blank slot with add_range_with_merge
 
-I'm still not sure what to do. For most part, the driver is written from
-scratch, since the original one was not utilizing recent enough
-frameworks (such as watchdog-core or device tree bindings). Thus the
-patch against the original driver would not make any sense at all.
+Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
+during add range) broke mtrr cleanup on his setup in 3.9.5.
+corresponding commit in upstream is fbe06b7bae7c.
 
-On the other hand, I've referred to the original driver for hardware
-information and copied a couple of defines as they are (such as
-SECS_TO_WDOG_TICKS), thus I figured out it's a required to include the
-original driver's sign-off and copyright information.
+The reason is add_range_with_merge could generate blank spot.
 
-Thus neither 1) nor 2) is the case, and I can't figure out myself what
-needs to be changed at this point. I'm wondering if you could help me
-decide?
+We could avoid that by searching new expanded start/end, that
+new range should include all connected ranges in range array.
+At last add the new expanded start/end to the range array.
+Also move up left array so do not add new blank slot in the
+range array.
 
-Thank you,
--- 
-Lubomir Rintel <lkundrak@v3.sk>
+-v2: move left array to avoid enhance add_range()
+-v3: include fix from Joshua about memmove declaring when
+     DYN_DEBUG is used.
 
+Reported-by: Joshua Covington <joshuacov@googlemail.com>
+Tested-by: Joshua Covington <joshuacov@googlemail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1371154622-8929-3-git-send-email-yinghai@kernel.org
+Cc: <stable@vger.kernel.org> v3.9
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ kernel/range.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/range.c b/kernel/range.c
+index eb911db..322ea8e 100644
+--- a/kernel/range.c
++++ b/kernel/range.c
+@@ -4,7 +4,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/sort.h>
+-
++#include <linux/string.h>
+ #include <linux/range.h>
+ 
+ int add_range(struct range *range, int az, int nr_range, u64 start, u64 end)
+@@ -32,9 +32,8 @@ int add_range_with_merge(struct range *range, int az, int nr_range,
+ 	if (start >= end)
+ 		return nr_range;
+ 
+-	/* Try to merge it with old one: */
++	/* get new start/end: */
+ 	for (i = 0; i < nr_range; i++) {
+-		u64 final_start, final_end;
+ 		u64 common_start, common_end;
+ 
+ 		if (!range[i].end)
+@@ -45,14 +44,16 @@ int add_range_with_merge(struct range *range, int az, int nr_range,
+ 		if (common_start > common_end)
+ 			continue;
+ 
+-		final_start = min(range[i].start, start);
+-		final_end = max(range[i].end, end);
++		/* new start/end, will add it back at last */
++		start = min(range[i].start, start);
++		end = max(range[i].end, end);
+ 
+-		/* clear it and add it back for further merge */
+-		range[i].start = 0;
+-		range[i].end =  0;
+-		return add_range_with_merge(range, az, nr_range,
+-			final_start, final_end);
++		memmove(&range[i], &range[i + 1],
++			(nr_range - (i + 1)) * sizeof(range[i]));
++		range[nr_range - 1].start = 0;
++		range[nr_range - 1].end   = 0;
++		nr_range--;
++		i--;
+ 	}
+ 
+ 	/* Need to add it: */
