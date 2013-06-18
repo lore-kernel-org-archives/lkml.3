@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab3FRLvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:51:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
+	id S932521Ab3FRLpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:45:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56198 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab3FRLpO (ORCPT
+	with ESMTP id S932338Ab3FRLpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:45:14 -0400
+	Tue, 18 Jun 2013 07:45:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Kay Sievers <kay@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 75/93] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
-Date: Tue, 18 Jun 2013 12:43:23 +0100
-Message-Id: <1371555821-12820-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 67/93] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+Date: Tue, 18 Jun 2013 12:43:15 +0100
+Message-Id: <1371555821-12820-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -29,246 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 637241a900cbd982f744d44646b48a273d609b34 upstream.
+commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
 
-The dmesg_restrict sysctl currently covers the syslog method for access
-dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-people haven't noticed because util-linux dmesg(1) defaults to using the
-syslog method for access in older versions.  With util-linux dmesg(1)
-defaults to reading directly from /dev/kmsg.
+In
 
-To fix /dev/kmsg, let's compare the existing interfaces and what they
-allow:
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c
+Author: Egbert Eich <eich@suse.de>
+Date:   Tue Jun 4 17:13:21 2013 +0200
 
- - /proc/kmsg allows:
-  - open (SYSLOG_ACTION_OPEN) if CAP_SYSLOG since it uses a destructive
-    single-reader interface (SYSLOG_ACTION_READ).
-  - everything, after an open.
+    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
 
- - syslog syscall allows:
-  - anything, if CAP_SYSLOG.
-  - SYSLOG_ACTION_READ_ALL and SYSLOG_ACTION_SIZE_BUFFER, if
-    dmesg_restrict==0.
-  - nothing else (EPERM).
+Egbert Eich fixed a long-standing bug where we simply used a
+non-working i2c controller to read the EDID for SDVO-LVDS panels.
+Unfortunately some machines seem to not be able to cope with the mode
+provided in the EDID. Specifically they seem to not be able to cope
+with a 4x pixel mutliplier instead of a 2x one, which seems to have
+been worked around by slightly changing the panels native mode in the
+VBT so that the dotclock is just barely above 50MHz.
 
-The use-cases were:
- - dmesg(1) needs to do non-destructive SYSLOG_ACTION_READ_ALLs.
- - sysklog(1) needs to open /proc/kmsg, drop privs, and still issue the
-   destructive SYSLOG_ACTION_READs.
+Since it took forever to notice the breakage it's fairly safe to
+assume that at least for SDVO-LVDS panels the VBT contains fairly sane
+data. So just switch around the order and use VBT modes first.
 
-AIUI, dmesg(1) is moving to /dev/kmsg, and systemd-journald doesn't
-clear the ring buffer.
+v2: Also add EDID modes just in case, and spell Egbert correctly.
 
-Based on the comments in devkmsg_llseek, it sounds like actions besides
-reading aren't going to be supported by /dev/kmsg (i.e.
-SYSLOG_ACTION_CLEAR), so we have a strict subset of the non-destructive
-syslog syscall actions.
+v3: Elaborate a bit more about what's going on on Chris' machine.
 
-To this end, move the check as Josh had done, but also rename the
-constants to reflect their new uses (SYSLOG_FROM_CALL becomes
-SYSLOG_FROM_READER, and SYSLOG_FROM_FILE becomes SYSLOG_FROM_PROC).
-SYSLOG_FROM_READER allows non-destructive actions, and SYSLOG_FROM_PROC
-allows destructive actions after a capabilities-constrained
-SYSLOG_ACTION_OPEN check.
-
- - /dev/kmsg allows:
-  - open if CAP_SYSLOG or dmesg_restrict==0
-  - reading/polling, after open
-
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=903192
-
-[akpm@linux-foundation.org: use pr_warn_once()]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Christian Kujau <lists@nerdbynature.de>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Egbert Eich <eich@suse.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
+Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/proc/kmsg.c         | 10 +++---
- include/linux/syslog.h |  4 +--
- kernel/printk.c        | 91 +++++++++++++++++++++++++++-----------------------
- 3 files changed, 57 insertions(+), 48 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/fs/proc/kmsg.c b/fs/proc/kmsg.c
-index bd4b5a7..bdfabda 100644
---- a/fs/proc/kmsg.c
-+++ b/fs/proc/kmsg.c
-@@ -21,12 +21,12 @@ extern wait_queue_head_t log_wait;
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 63b53d2..00c6af5 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1596,10 +1596,13 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
+ 	 * arranged in priority order.
+ 	 */
+ 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+-	if (list_empty(&connector->probed_modes) == false)
+-		goto end;
  
- static int kmsg_open(struct inode * inode, struct file * file)
- {
--	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_PROC);
- }
- 
- static int kmsg_release(struct inode * inode, struct file * file)
- {
--	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_FILE);
-+	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_PROC);
- 	return 0;
- }
- 
-@@ -34,15 +34,15 @@ static ssize_t kmsg_read(struct file *file, char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
- 	if ((file->f_flags & O_NONBLOCK) &&
--	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return -EAGAIN;
--	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_PROC);
- }
- 
- static unsigned int kmsg_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &log_wait, wait);
--	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return POLLIN | POLLRDNORM;
- 	return 0;
- }
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 3891139..98a3153 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -44,8 +44,8 @@
- /* Return size of the log buffer */
- #define SYSLOG_ACTION_SIZE_BUFFER   10
- 
--#define SYSLOG_FROM_CALL 0
--#define SYSLOG_FROM_FILE 1
-+#define SYSLOG_FROM_READER           0
-+#define SYSLOG_FROM_PROC             1
- 
- int do_syslog(int type, char __user *buf, int count, bool from_file);
- 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 46f0c2c..5758501 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -357,6 +357,53 @@ static void log_store(int facility, int level,
- 	log_next_seq++;
- }
- 
-+#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-+int dmesg_restrict = 1;
-+#else
-+int dmesg_restrict;
-+#endif
-+
-+static int syslog_action_restricted(int type)
-+{
-+	if (dmesg_restrict)
-+		return 1;
+-	/* Fetch modes from VBT */
 +	/*
-+	 * Unless restricted, we allow "read all" and "get buffer size"
-+	 * for everybody.
++	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
++	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
++	 * drm_mode_probed_add adds the mode at the head of the list we add it
++	 * last.
 +	 */
-+	return type != SYSLOG_ACTION_READ_ALL &&
-+	       type != SYSLOG_ACTION_SIZE_BUFFER;
-+}
-+
-+static int check_syslog_permissions(int type, bool from_file)
-+{
-+	/*
-+	 * If this is from /proc/kmsg and we've already opened it, then we've
-+	 * already done the capabilities checks at open time.
-+	 */
-+	if (from_file && type != SYSLOG_ACTION_OPEN)
-+		return 0;
-+
-+	if (syslog_action_restricted(type)) {
-+		if (capable(CAP_SYSLOG))
-+			return 0;
-+		/*
-+		 * For historical reasons, accept CAP_SYS_ADMIN too, with
-+		 * a warning.
-+		 */
-+		if (capable(CAP_SYS_ADMIN)) {
-+			pr_warn_once("%s (%d): Attempt to access syslog with "
-+				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
-+				     "(deprecated).\n",
-+				 current->comm, task_pid_nr(current));
-+			return 0;
-+		}
-+		return -EPERM;
-+	}
-+	return security_syslog(type);
-+}
-+
-+
- /* /dev/kmsg - userspace message inject/listen interface */
- struct devkmsg_user {
- 	u64 seq;
-@@ -592,7 +639,8 @@ static int devkmsg_open(struct inode *inode, struct file *file)
- 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
- 		return 0;
+ 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
+ 		newmode = drm_mode_duplicate(connector->dev,
+ 					     dev_priv->sdvo_lvds_vbt_mode);
+@@ -1611,7 +1614,6 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
+ 		}
+ 	}
  
--	err = security_syslog(SYSLOG_ACTION_READ_ALL);
-+	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+				       SYSLOG_FROM_READER);
- 	if (err)
- 		return err;
- 
-@@ -759,45 +807,6 @@ static inline void boot_delay_msec(void)
- }
- #endif
- 
--#ifdef CONFIG_SECURITY_DMESG_RESTRICT
--int dmesg_restrict = 1;
--#else
--int dmesg_restrict;
--#endif
--
--static int syslog_action_restricted(int type)
--{
--	if (dmesg_restrict)
--		return 1;
--	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
--	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
--}
--
--static int check_syslog_permissions(int type, bool from_file)
--{
--	/*
--	 * If this is from /proc/kmsg and we've already opened it, then we've
--	 * already done the capabilities checks at open time.
--	 */
--	if (from_file && type != SYSLOG_ACTION_OPEN)
--		return 0;
--
--	if (syslog_action_restricted(type)) {
--		if (capable(CAP_SYSLOG))
--			return 0;
--		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
--		if (capable(CAP_SYS_ADMIN)) {
--			printk_once(KERN_WARNING "%s (%d): "
--				 "Attempt to access syslog with CAP_SYS_ADMIN "
--				 "but no CAP_SYSLOG (deprecated).\n",
--				 current->comm, task_pid_nr(current));
--			return 0;
--		}
--		return -EPERM;
--	}
--	return 0;
--}
--
- #if defined(CONFIG_PRINTK_TIME)
- static bool printk_time = 1;
- #else
-@@ -1195,7 +1204,7 @@ out:
- 
- SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
- {
--	return do_syslog(type, buf, len, SYSLOG_FROM_CALL);
-+	return do_syslog(type, buf, len, SYSLOG_FROM_READER);
- }
- 
- static bool __read_mostly ignore_loglevel;
+-end:
+ 	list_for_each_entry(newmode, &connector->probed_modes, head) {
+ 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
+ 			intel_sdvo->sdvo_lvds_fixed_mode =
 -- 
 1.8.1.2
 
