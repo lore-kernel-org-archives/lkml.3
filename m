@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab3FRIso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:48:44 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:47272 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab3FRIpe (ORCPT
+	id S1755174Ab3FRItb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:49:31 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:54387 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab3FRItZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:45:34 -0400
+	Tue, 18 Jun 2013 04:49:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C01BC3.4060100@ti.com>
-References: <1371481078-18058-1-git-send-email-prabhakar.csengg@gmail.com> <51C01BC3.4060100@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 18 Jun 2013 14:15:13 +0530
-Message-ID: <CA+V-a8szFcpxacZ3ERA3Sp7LP=fML3KaVyKtAL9K9tMwB3veNA@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: edma: Convert to devm_* api
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Mark Brown <broonie@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Fernandes, Joel A" <joelagnel@ti.com>
+In-Reply-To: <51C0193A.40607@linaro.org>
+References: <20130618071756.22598.51046.sendpatchset@w520>
+	<51C00D08.3080406@linaro.org>
+	<CANqRtoR-f6SXE0HFw_giJj3PMas-WZA_WvmkTL2rA-jVj_2QCA@mail.gmail.com>
+	<51C0193A.40607@linaro.org>
+Date: Tue, 18 Jun 2013 17:49:23 +0900
+Message-ID: <CANqRtoTLvTKgSRHWOOW3WHZ7LcgS4xijmz3KN1tgSLCO532_Cw@mail.gmail.com>
+Subject: Re: [PATCH/RFC] clockevents: Ignore C3STOP when CPUIdle is disabled
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        John Stultz <john.stultz@linaro.org>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+Hi Daniel,
 
-On Tue, Jun 18, 2013 at 2:05 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 6/17/2013 8:27 PM, Prabhakar Lad wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Tue, Jun 18, 2013 at 5:24 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/18/2013 09:39 AM, Magnus Damm wrote:
+>> On Tue, Jun 18, 2013 at 4:32 PM, Daniel Lezcano
+>> <daniel.lezcano@linaro.org> wrote:
+>>> On 06/18/2013 09:17 AM, Magnus Damm wrote:
+>>>> From: Magnus Damm <damm@opensource.se>
+>>>>
+>>>> Introduce the function tick_device_may_c3stop() that
+>>>> ignores the C3STOP flag in case CPUIdle is disabled.
+>>>>
+>>>> The C3STOP flag tells the system that a clock event
+>>>> device may be stopped during deep sleep, but if this
+>>>> will happen or not depends on things like if CPUIdle
+>>>> is enabled and if a CPUIdle driver is available.
+>>>>
+>>>> This patch assumes that if CPUIdle is disabled then
+>>>> the sleep mode triggering C3STOP will never be entered.
+>>>> So by ignoring C3STOP when CPUIdle is disabled then it
+>>>> becomes possible to use high resolution timers with only
+>>>> per-cpu local timers - regardless if they have the
+>>>> C3STOP flag set or not.
+>>>>
+>>>> Observed on the r8a73a4 SoC that at this point only uses
+>>>> ARM architected timers for clock event and clock sources.
+>>>>
+>>>> Without this patch high resolution timers are run time
+>>>> disabled on the r8a73a4 SoC - this regardless of CPUIdle
+>>>> is disabled or not.
+>>>>
+>>>> The less short term fix is to add support for more timers
+>>>> on the r8a73a4 SoC, but until CPUIdle support is enabled
+>>>> it must be possible to use high resoultion timers without
+>>>> additional timers.
+>>>>
+>>>> I'd like to hear some feedback and also test this on more
+>>>> systems before merging the code, see the non-SOB below.
+>>>
+>>> Do we need a broadcast timer when cpuidle is not compiled in the kernel ?
 >>
->> Use devm_ioremap_resource instead of reques_mem_region()/ioremap(),
->> devm_request_irq() instead of request_irq() and kzalloc() calls to
->> devm_kzalloc().
->>
->> This ensures more consistent error values and simplifies error paths.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> Yes, if there is no per-cpu timer available. It depends on what the
+>> SMP support code for a particular SoC or architecture happen to
+>> enable.
 >
-> Nice clean-up. The patch did not build since <linux/err.h> was not
-> included. I fixed it locally and applied to v3.11/soc-2 branch of my tree.
->
-Thanks for fixing it.
+> Ok thanks for the information.
 
-Regards,
---Prabhakar Lad
+No problem. Thanks for your comments!
+
+> There is here a multiple occurrence of the information "the timer will
+> stop when power is saved": CLOCK_EVT_FEAT_C3STOP and
+> CPUIDLE_FLAG_TIMER_STOP, so I am wondering if some code simplification
+> couldn't be done before your patch.
+
+I'm sure it's possible to rearrange things in many ways, and the area
+that you point out indeed seems to have some overlap. Somehow
+describing which timers that stop during what CPUIdle sleep state
+would be nice to have. Also, today clock event drivers simply state
+C3STOP but there may be shallow sleep modes where the timer doesn't
+have to stop. It all seems a bit coarse grained to me as-is.
+
+> The function:
+>
+> tick_broadcast_oneshot_control is called from clockevents_notify. This
+> one is called from the cpuidle framework or the back-end cpuidle driver.
+> The caller knows the timer will be stop and this is why it is switching
+> to the broadcast mode. But we have a sanity check in
+> tick_broadcast_oneshot_control function:
+>
+>         if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
+>                 return;
+>
+> In other words, CPUIDLE_FLAG_TIMER_STOP will tell the framework to call
+> clockevents_notify and the tick broadcast code will re-check the device
+> will effectively go down. IMHO, we can get rid of this check.
+>
+> The same happens for the tick_do_broadcast_on_off function.
+>
+> That reduces the number of C3STOP usage.
+
+That may very well be the case. Care to hack up a patch? =)
+
+The goal with this patch is simply to make it possible to use high
+resolution timers if CPUIdle is disabled. Right now the ARM
+architected timer is sort of optimized for power, so it sets the
+C3STOP flag to say that on some SoCs during some sleep modes these
+timers may stop. My point is that this flag doesn't matter as long as
+CPUIdle is disabled.
+
+Thanks,
+
+/ magnus
