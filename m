@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab3FRS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:28:16 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:52349 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933030Ab3FRS2O convert rfc822-to-8bit (ORCPT
+	id S933658Ab3FRScP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:32:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50831 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933080Ab3FRScN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:28:14 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 18 Jun 2013 14:32:13 -0400
+Date: Tue, 18 Jun 2013 11:32:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lorenz Haspel <lorenz@badgers.com>
+Cc: devel@linuxdriverproject.org, puff65537@bansheeslibrary.com,
+        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 1/4 v3] silicom: checkpatch: assignments in if conditions
+Message-ID: <20130618183212.GA8182@kroah.com>
+References: <1371496539-25461-1-git-send-email-lorenz@badgers.com>
+ <1371572918-25493-1-git-send-email-lorenz@badgers.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Paul Walmsley <pwalmsley@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <alpine.DEB.2.02.1306172019270.17176@utopia.booyaka.com>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>, Aleksandr Frid <afrid@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <20130607121505.21868.72360.stgit@dusk.lan>
- <20130607121901.21868.65416.stgit@dusk.lan> <51B21105.1080301@wwwdotorg.org>
- <alpine.DEB.2.02.1306071703050.7753@utopia.booyaka.com>
- <51B6D239.5030905@nvidia.com>
- <alpine.DEB.2.02.1306110944130.22645@utopia.booyaka.com>
- <20130616042256.7541.7096@quantum>
- <alpine.DEB.2.02.1306172019270.17176@utopia.booyaka.com>
-Message-ID: <20130618182808.9136.26244@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 3/3] clk: tegra: T114: add DFLL DVCO reset control
-Date: Tue, 18 Jun 2013 11:28:08 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371572918-25493-1-git-send-email-lorenz@badgers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Paul Walmsley (2013-06-17 13:22:48)
-> Hi,
+On Tue, Jun 18, 2013 at 06:28:38PM +0200, Lorenz Haspel wrote:
+> Fixes checkpatch error:
+> There were assignments in if conditions, so I extracted them.
 > 
-> On Sat, 15 Jun 2013, Mike Turquette wrote:
-> 
-> > These patches appear fine to me but I did not see any Acks, nor could I
-> > tell if a v2 was necessary based on the comments. Will there be another
-> > version?
-> 
-> I'm not planning to do another version at this time.
+> Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
+> Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
+> ---
+> v2: removed some buggy extra lines and fixed white space issues
+> v3: fixed some more extra lines
+> ---
+>  drivers/staging/silicom/bpctl_mod.c |  179 +++++++++++++++++++----------------
+>  1 file changed, 98 insertions(+), 81 deletions(-)
 
-Thanks for clarifying.  I couldn't tell based on the discussion.
+I'm getting confused.  I've applied some of the patches in this series,
+so are you going to resend all 4 patches?
 
-Anyways I've taken these into clk-next now.  There is not maintainer for
-that directory as you pointed out, so no need to wait for Acks.
+How about just resending what I haven't applied yet, as a whole new
+series, that would help out on my end a lot.
 
-Regards,
-Mike
+thanks,
 
-> 
-> > If not an Acked-by or Reviewed-by would be cool.
-> 
-> Hmm, not sure who the right people would be.  Looks like the 
-> drivers/clk/tegra directory is unmaintained, so not sure who could ack it?
-> 
-> Peter or Stephen, care to review these patches and send a Reviewed-by?
-> 
-> 
-> - Paul
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+greg k-h
