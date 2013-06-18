@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab3FRQRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49473 "EHLO
+	id S933423Ab3FRQZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:25:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49507 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229Ab3FRQRw (ORCPT
+	with ESMTP id S933248Ab3FRQR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:52 -0400
+	Tue, 18 Jun 2013 12:17:56 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>, Mike Miller <mike.miller@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 20/48] cciss: fix broken mutex usage in ioctl
-Date: Tue, 18 Jun 2013 09:17:46 -0700
-Message-Id: <20130618161728.808376750@linuxfoundation.org>
+        Alex Lyakas <alex@zadarastorage.com>, NeilBrown <neilb@suse.de>
+Subject: [ 25/48] md/raid1: consider WRITE as successful only if at least one non-Faulty and non-rebuilding drive completed it.
+Date: Tue, 18 Jun 2013 09:17:51 -0700
+Message-Id: <20130618161729.541053291@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -31,179 +28,88 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Alex Lyakas <alex@zadarastorage.com>
 
-commit 03f47e888daf56c8e9046c674719a0bcc644eed5 upstream.
+commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 upstream.
 
-If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
-(as is normal with the Array Configuration Utility) the process will
-hang as below.  It attempts to acquire the same mutex twice, once in
-do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
-the mutex isn't.
+Without that fix, the following scenario could happen:
 
-  Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
-  [...]
-  acu             D 0000000000000001     0  3246   3191 0x00000080
-  Call Trace:
-    schedule+0x29/0x70
-    schedule_preempt_disabled+0xe/0x10
-    __mutex_lock_slowpath+0x17b/0x220
-    mutex_lock+0x2b/0x50
-    cciss_unlocked_open+0x2f/0x110 [cciss]
-    __blkdev_get+0xd3/0x470
-    blkdev_get+0x5c/0x1e0
-    register_disk+0x182/0x1a0
-    add_disk+0x17c/0x310
-    cciss_add_disk+0x13a/0x170 [cciss]
-    cciss_update_drive_info+0x39b/0x480 [cciss]
-    rebuild_lun_table+0x258/0x370 [cciss]
-    cciss_ioctl+0x34f/0x470 [cciss]
-    do_ioctl+0x49/0x70 [cciss]
-    __blkdev_driver_ioctl+0x28/0x30
-    blkdev_ioctl+0x200/0x7b0
-    block_ioctl+0x3c/0x40
-    do_vfs_ioctl+0x89/0x350
-    SyS_ioctl+0xa1/0xb0
-    system_call_fastpath+0x16/0x1b
+- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
+- Drive A fails
+- WRITE request arrives to the array. It is failed by drive A, so
+r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
+succeeds in writing it, so the same r1_bio is marked as
+R1BIO_Uptodate.
+- r1_bio arrives to handle_write_finished, badblocks are disabled,
+md_error()->error() does nothing because we don't fail the last drive
+of raid1
+- raid_end_bio_io()  calls call_bio_endio()
+- As a result, in call_bio_endio():
+        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
+                clear_bit(BIO_UPTODATE, &bio->bi_flags);
+this code doesn't clear the BIO_UPTODATE flag, and the whole master
+WRITE succeeds, back to the upper layer.
 
-This mutex usage was added into the ioctl path when the big kernel lock
-was removed.  As it turns out, these paths are all thread safe anyway
-(or can easily be made so) and we don't want ioctl() to be single
-threaded in any case.
+So we returned success to the upper layer, even though we had written
+the data onto the rebuilding drive only. But when we want to read the
+data back, we would not read from the rebuilding drive, so this data
+is lost.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[neilb - applied identical change to raid10 as well]
+
+This bug can result in lost data, so it is suitable for any
+-stable kernel.
+
+Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cciss.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/md/raid1.c  |   12 +++++++++++-
+ drivers/md/raid10.c |   12 +++++++++++-
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -162,8 +162,6 @@ static irqreturn_t do_cciss_msix_intr(in
- static int cciss_open(struct block_device *bdev, fmode_t mode);
- static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
- static int cciss_release(struct gendisk *disk, fmode_t mode);
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned int cmd, unsigned long arg);
- static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 		       unsigned int cmd, unsigned long arg);
- static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
-@@ -229,7 +227,7 @@ static const struct block_device_operati
- 	.owner = THIS_MODULE,
- 	.open = cciss_unlocked_open,
- 	.release = cciss_release,
--	.ioctl = do_ioctl,
-+	.ioctl = cciss_ioctl,
- 	.getgeo = cciss_getgeo,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = cciss_compat_ioctl,
-@@ -1138,16 +1136,6 @@ static int cciss_release(struct gendisk
- 	return 0;
- }
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -427,7 +427,17 @@ static void raid1_end_write_request(stru
  
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned cmd, unsigned long arg)
--{
--	int ret;
--	mutex_lock(&cciss_mutex);
--	ret = cciss_ioctl(bdev, mode, cmd, arg);
--	mutex_unlock(&cciss_mutex);
--	return ret;
--}
--
- #ifdef CONFIG_COMPAT
+ 		r1_bio->bios[mirror] = NULL;
+ 		to_put = bio;
+-		set_bit(R1BIO_Uptodate, &r1_bio->state);
++		/*
++		 * Do not set R1BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
++		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
++			set_bit(R1BIO_Uptodate, &r1_bio->state);
  
- static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
-@@ -1174,7 +1162,7 @@ static int cciss_compat_ioctl(struct blo
- 	case CCISS_REGNEWD:
- 	case CCISS_RESCANDISK:
- 	case CCISS_GETLUNINFO:
--		return do_ioctl(bdev, mode, cmd, arg);
-+		return cciss_ioctl(bdev, mode, cmd, arg);
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(conf->mirrors[mirror].rdev,
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -490,7 +490,17 @@ static void raid10_end_write_request(str
+ 		sector_t first_bad;
+ 		int bad_sectors;
  
- 	case CCISS_PASSTHRU32:
- 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
-@@ -1214,7 +1202,7 @@ static int cciss_ioctl32_passthru(struct
- 	if (err)
- 		return -EFAULT;
+-		set_bit(R10BIO_Uptodate, &r10_bio->state);
++		/*
++		 * Do not set R10BIO_Uptodate if the current device is
++		 * rebuilding or Faulty. This is because we cannot use
++		 * such device for properly reading the data back (we could
++		 * potentially use it, if the current write would have felt
++		 * before rdev->recovery_offset, but for simplicity we don't
++		 * check this here.
++		 */
++		if (test_bit(In_sync, &rdev->flags) &&
++		    !test_bit(Faulty, &rdev->flags))
++			set_bit(R10BIO_Uptodate, &r10_bio->state);
  
--	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1256,7 +1244,7 @@ static int cciss_ioctl32_big_passthru(st
- 	if (err)
- 		return -EFAULT;
- 
--	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1306,11 +1294,14 @@ static int cciss_getpciinfo(ctlr_info_t
- static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
- {
- 	cciss_coalint_struct intinfo;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
- 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user
- 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
- 		return -EFAULT;
-@@ -1351,12 +1342,15 @@ static int cciss_setintinfo(ctlr_info_t
- static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
- {
- 	NodeName_type NodeName;
-+	unsigned long flags;
- 	int i;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	for (i = 0; i < 16; i++)
- 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1393,10 +1387,13 @@ static int cciss_setnodename(ctlr_info_t
- static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
- {
- 	Heartbeat_type heartbeat;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	heartbeat = readl(&h->cfgtable->HeartBeat);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1405,10 +1402,13 @@ static int cciss_getheartbeat(ctlr_info_
- static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
- {
- 	BusTypes_type BusTypes;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	BusTypes = readl(&h->cfgtable->BusTypes);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
- 		return -EFAULT;
- 	return 0;
+ 		/* Maybe we can clear some bad blocks. */
+ 		if (is_badblock(rdev,
 
 
