@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3FRJS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:18:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46977 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab3FRJS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:18:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
-   d="scan'208";a="318709436"
-Date: Tue, 18 Jun 2013 11:17:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lee.jones@linaro.org
-Subject: Re: [PATCH Resend 1/1] mfd: davinci_voicecodec: Convert to use
- devm_* APIs
-Message-ID: <20130618091741.GH7161@zurbaran>
-References: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
- <20130618084017.GA7161@zurbaran>
- <CAK9yfHxUzMx13UXkfd1s5KNhKJ+MeKEQHU2rEMDDmOPpKvAFKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK9yfHxUzMx13UXkfd1s5KNhKJ+MeKEQHU2rEMDDmOPpKvAFKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755566Ab3FRJTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:19:21 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:33871 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab3FRJTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:19:17 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH 1/4] pinctrl: bcm2835: Staticize bcm2835_gpio_pins
+Date: Tue, 18 Jun 2013 14:34:24 +0530
+Message-Id: <1371546267-22093-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:13:48PM +0530, Sachin Kamat wrote:
-> Hi Samuel,
-> 
-> On 18 June 2013 14:10, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > Hi Sachin,
-> >
-> > On Wed, Jun 12, 2013 at 01:49:42PM +0530, Sachin Kamat wrote:
-> >> devm_* APIs are device managed and make code simpler.
-> >>
-> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> >> Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
-> >> ---
-> >> CC'd Lee Jones
-> >>
-> >> Patch is based on mfd-next tree and compile tested.
-> >> This driver gives following compilation error (not introduced by this patch):
-> >> drivers/mfd/davinci_voicecodec.c:86:3: error: implicit declaration
-> >> of function ‘io_v2p’ [-Werror=implicit-function-declaration]
-> >>    (dma_addr_t)(io_v2p(davinci_vc->base) + DAVINCI_VC_WFIFO);
-> >>
-> >> In order to test my changes I added the following to davinci_voicecodec.h file:
-> >> +#define IO_OFFSET      0xfd000000 /* Virtual IO = 0xfec00000 */
-> >> +#define io_v2p(va)     ((va) - IO_OFFSET)
-> >>
-> >> I am not sure if these changes are right fix for the above error.
-> > io_v2p is define in davinci's mach/hardware.h so I believe this is what
-> > you should include in davinci_voicecodec.h.
-> 
-> Thanks. That was only required for compile testing my patch.
-> Does the patch look good?
-Yes, but I'd appreciate if you could also fix the driver build failures
-as well.
+'bcm2835_gpio_pins' is used only in this file.
 
-Cheers,
-Samuel.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+---
+ drivers/pinctrl/pinctrl-bcm2835.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/pinctrl/pinctrl-bcm2835.c b/drivers/pinctrl/pinctrl-bcm2835.c
+index c8f20a3..a1c88b3 100644
+--- a/drivers/pinctrl/pinctrl-bcm2835.c
++++ b/drivers/pinctrl/pinctrl-bcm2835.c
+@@ -113,7 +113,7 @@ static struct lock_class_key gpio_lock_class;
+ 
+ /* pins are just named GPIO0..GPIO53 */
+ #define BCM2835_GPIO_PIN(a) PINCTRL_PIN(a, "gpio" #a)
+-struct pinctrl_pin_desc bcm2835_gpio_pins[] = {
++static struct pinctrl_pin_desc bcm2835_gpio_pins[] = {
+ 	BCM2835_GPIO_PIN(0),
+ 	BCM2835_GPIO_PIN(1),
+ 	BCM2835_GPIO_PIN(2),
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
