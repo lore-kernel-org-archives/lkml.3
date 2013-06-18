@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3FRLbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:31:11 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50779 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3FRLbI (ORCPT
+	id S1754691Ab3FRLeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:34:04 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55195 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3FRLeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:31:08 -0400
-Date: Tue, 18 Jun 2013 19:30:55 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: sage <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH] ceph: fix sleeping function called from invalid context.
-X-Priority: 3
-X-GUID: 7878B98A-2ACD-47B8-9AA2-98F9C2B65AFB
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201306181930448773810@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 18 Jun 2013 07:34:02 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 1/6] mm/writeback: remove wb_reason_name
+Date: Tue, 18 Jun 2013 19:33:37 +0800
+Message-Id: <1371555222-22678-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061811-6102-0000-0000-000003B84FC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5IBVIJ8030783
 
-[ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
-[ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
-[ 1121.231971] 1 lock held by mv/9831:
-[ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
-[ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
-[ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
-O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
-[ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
-[ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
-[ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
-[ 1121.232056] Call Trace:
-[ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
-[ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
-[ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
-[ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
-[ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
-[ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
-[ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
-[ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-[ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
-[ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-[ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
-[ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
-[ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
-[ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
-[ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
-[ 1121.232154] 1 lock held by mv/9831:
-[ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
-[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+wb_reason_name is not used any more, this patch remove it.
 
-I think move the ci->i_ceph_lock down is safe because we can't free
-ceph_inode_info at there.
-
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- fs/ceph/xattr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/writeback.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
-index 9b6b2b6..4efde06 100644
---- a/fs/ceph/xattr.c
-+++ b/fs/ceph/xattr.c
-@@ -675,7 +675,6 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
-        if (!ceph_is_valid_xattr(name))
-                return -ENODATA;
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index e27468e..8b5cec4 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -51,7 +51,6 @@ enum wb_reason {
  
--       spin_lock(&ci->i_ceph_lock);
-        dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
-             ci->i_xattrs.version, ci->i_xattrs.index_version);
+ 	WB_REASON_MAX,
+ };
+-extern const char *wb_reason_name[];
  
-@@ -683,9 +682,10 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
-        vxattr = ceph_match_vxattr(inode, name);
-        if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
-                err = vxattr->getxattr_cb(ci, value, size);
--               goto out;
-+               return err;
-        }
- 
-+       spin_lock(&ci->i_ceph_lock);
-        if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
-            (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
-                goto get_xattr;
+ /*
+  * A control structure which tells the writeback code what to do.  These are
 -- 
-1.8.3.rc1.44.gb387c77
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.7.5.4
+
