@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab3FRSRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:17:00 -0400
-Received: from mail-ye0-f180.google.com ([209.85.213.180]:39586 "EHLO
-	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933070Ab3FRSQ7 (ORCPT
+	id S933638Ab3FRSSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:18:42 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:45872 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932323Ab3FRSSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:16:59 -0400
-Date: Tue, 18 Jun 2013 11:16:53 -0700
+	Tue, 18 Jun 2013 14:18:41 -0400
+Date: Tue, 18 Jun 2013 11:18:35 -0700
 From: Tejun Heo <tj@kernel.org>
 To: Li Zefan <lizefan@huawei.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/2] cgroup: convert cgroup_cft_commit() to use
- cgroup_for_each_descendant_pre()
-Message-ID: <20130618181653.GB1596@htj.dyndns.org>
+Subject: [PATCH 3/3] cgroup: clean up cgroup_serial_nr_cursor
+Message-ID: <20130618181835.GC1596@htj.dyndns.org>
 References: <51C03AF2.7050702@huawei.com>
  <51C03B05.4080504@huawei.com>
 MIME-Version: 1.0
@@ -25,203 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e8c82d20a9f729cf4b9f73043f7fd4e0872bebfd Mon Sep 17 00:00:00 2001
-From: Li Zefan <lizefan@huawei.com>
-Date: Tue, 18 Jun 2013 18:48:37 +0800
+>From 00356bd5f0f5e04183fb15805eb29e97c2fc20ac Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 18 Jun 2013 11:14:22 -0700
 
-We used root->allcg_list to iterate cgroup hierarchy because at that time
-cgroup_for_each_descendant_pre() hasn't been invented.
+cgroup_serial_nr_cursor was created atomic64_t because I thought it
+was never gonna used for anything other than assigning unique numbers
+to cgroups and didn't want to worry about synchronization; however,
+now we're using it as an event-stamp to distinguish cgroups created
+before and after certain point which assumes that it's protected by
+cgroup_mutex.
 
-tj: In cgroup_cfts_commit(), s/@serial_nr/@update_upto/, move the
-    assignment right above releasing cgroup_mutex and explain what's
-    going on there.
+Let's make it clear by making it a u64.  Also, rename it to
+cgroup_serial_nr_next and make it point to the next nr to allocate so
+that where it's pointing to is clear and more conventional.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 ---
-Applied to cgroup/for-3.11 with some minor updates.
+Applied to cgroup/for-3.11 as a follow-up.
 
 Thanks.
 
- include/linux/cgroup.h |  6 ----
- kernel/cgroup.c        | 80 +++++++++++++++++++++++++++-----------------------
- 2 files changed, 44 insertions(+), 42 deletions(-)
+ kernel/cgroup.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index f975227..b283658 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -206,9 +206,6 @@ struct cgroup {
- 	 */
- 	struct list_head cset_links;
- 
--	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
--	struct list_head cft_q_node;	/* used during cftype add/rm */
--
- 	/*
- 	 * Linked list running through all cgroups that can
- 	 * potentially be reaped by the release agent. Protected by
-@@ -313,9 +310,6 @@ struct cgroupfs_root {
- 	/* A list running through the active hierarchies */
- 	struct list_head root_list;
- 
--	/* All cgroups on this root, cgroup_mutex protected */
--	struct list_head allcg_list;
--
- 	/* Hierarchy-specific flags */
- 	unsigned long flags;
- 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e6571ca..0ed7d8d 100644
+index 0ed7d8d..65f333e 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1399,7 +1399,6 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
- 	INIT_LIST_HEAD(&cgrp->children);
- 	INIT_LIST_HEAD(&cgrp->files);
- 	INIT_LIST_HEAD(&cgrp->cset_links);
--	INIT_LIST_HEAD(&cgrp->allcg_node);
- 	INIT_LIST_HEAD(&cgrp->release_list);
- 	INIT_LIST_HEAD(&cgrp->pidlists);
- 	mutex_init(&cgrp->pidlist_mutex);
-@@ -1414,12 +1413,10 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+@@ -203,9 +203,10 @@ static struct cgroup_name root_cgroup_name = { .name = "/" };
+  * guarantees cgroups with bigger numbers are newer than those with smaller
+  * numbers.  Also, as cgroups are always appended to the parent's
+  * ->children list, it guarantees that sibling cgroups are always sorted in
+- * the ascending serial number order on the list.
++ * the ascending serial number order on the list.  Protected by
++ * cgroup_mutex.
+  */
+-static atomic64_t cgroup_serial_nr_cursor = ATOMIC64_INIT(0);
++static u64 cgroup_serial_nr_next = 1;
  
- 	INIT_LIST_HEAD(&root->subsys_list);
- 	INIT_LIST_HEAD(&root->root_list);
--	INIT_LIST_HEAD(&root->allcg_list);
- 	root->number_of_cgroups = 1;
- 	cgrp->root = root;
- 	cgrp->name = &root_cgroup_name;
- 	init_cgroup_housekeeping(cgrp);
--	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
- }
- 
- static int cgroup_init_root_id(struct cgroupfs_root *root)
-@@ -2785,65 +2782,78 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 	return ret;
- }
- 
--static DEFINE_MUTEX(cgroup_cft_mutex);
--
- static void cgroup_cfts_prepare(void)
--	__acquires(&cgroup_cft_mutex) __acquires(&cgroup_mutex)
-+	__acquires(&cgroup_mutex)
- {
- 	/*
- 	 * Thanks to the entanglement with vfs inode locking, we can't walk
- 	 * the existing cgroups under cgroup_mutex and create files.
--	 * Instead, we increment reference on all cgroups and build list of
--	 * them using @cgrp->cft_q_node.  Grab cgroup_cft_mutex to ensure
--	 * exclusive access to the field.
-+	 * Instead, we use cgroup_for_each_descendant_pre() and drop RCU
-+	 * read lock before calling cgroup_addrm_files().
- 	 */
--	mutex_lock(&cgroup_cft_mutex);
- 	mutex_lock(&cgroup_mutex);
- }
- 
- static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 			       struct cftype *cfts, bool is_add)
--	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
-+	__releases(&cgroup_mutex)
- {
- 	LIST_HEAD(pending);
--	struct cgroup *cgrp, *n;
-+	struct cgroup *cgrp, *root = &ss->root->top_cgroup;
+ /* This flag indicates whether tasks in the fork and exit paths should
+  * check for fork/exit handlers to call. This avoids us having to do
+@@ -2803,7 +2804,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
  	struct super_block *sb = ss->root->sb;
-+	struct dentry *prev = NULL;
-+	struct inode *inode;
-+	u64 update_upto;
+ 	struct dentry *prev = NULL;
+ 	struct inode *inode;
+-	u64 update_upto;
++	u64 update_before;
  
  	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
--	if (cfts && ss->root != &rootnode &&
--	    atomic_inc_not_zero(sb->s_active)) {
--		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
--			dget(cgrp->dentry);
--			list_add_tail(&cgrp->cft_q_node, &pending);
--		}
--	} else {
--		sb = NULL;
-+	if (!cfts || ss->root == &rootnode ||
-+	    !atomic_inc_not_zero(&sb->s_active)) {
-+		mutex_unlock(&cgroup_mutex);
-+		return;
- 	}
- 
--	mutex_unlock(&cgroup_mutex);
--
+ 	if (!cfts || ss->root == &rootnode ||
+@@ -2815,9 +2816,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
  	/*
--	 * All new cgroups will see @cfts update on @ss->cftsets.  Add/rm
--	 * files for all cgroups which were created before.
-+	 * All cgroups which are created after we drop cgroup_mutex will
-+	 * have the updated set of files, so we only need to update the
-+	 * cgroups created before the current @cgroup_serial_nr_cursor.
+ 	 * All cgroups which are created after we drop cgroup_mutex will
+ 	 * have the updated set of files, so we only need to update the
+-	 * cgroups created before the current @cgroup_serial_nr_cursor.
++	 * cgroups created before the current @cgroup_serial_nr_next.
  	 */
--	list_for_each_entry_safe(cgrp, n, &pending, cft_q_node) {
--		struct inode *inode = cgrp->dentry->d_inode;
-+	update_upto = atomic64_read(&cgroup_serial_nr_cursor);
-+
-+	mutex_unlock(&cgroup_mutex);
-+
-+	/* @root always needs to be updated */
-+	inode = root->dentry->d_inode;
-+	mutex_lock(&inode->i_mutex);
-+	mutex_lock(&cgroup_mutex);
-+	cgroup_addrm_files(root, ss, cfts, is_add);
-+	mutex_unlock(&cgroup_mutex);
-+	mutex_unlock(&inode->i_mutex);
-+
-+	/* add/rm files for all cgroups created before */
-+	rcu_read_lock();
-+	cgroup_for_each_descendant_pre(cgrp, root) {
-+		if (cgroup_is_dead(cgrp))
-+			continue;
-+
-+		inode = cgrp->dentry->d_inode;
-+		dget(cgrp->dentry);
-+		rcu_read_unlock();
-+
-+		dput(prev);
-+		prev = cgrp->dentry;
+-	update_upto = atomic64_read(&cgroup_serial_nr_cursor);
++	update_before = cgroup_serial_nr_next;
+ 
+ 	mutex_unlock(&cgroup_mutex);
+ 
+@@ -2844,7 +2845,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
  
  		mutex_lock(&inode->i_mutex);
  		mutex_lock(&cgroup_mutex);
--		if (!cgroup_is_dead(cgrp))
-+		if (cgrp->serial_nr <= update_upto && !cgroup_is_dead(cgrp))
+-		if (cgrp->serial_nr <= update_upto && !cgroup_is_dead(cgrp))
++		if (cgrp->serial_nr < update_before && !cgroup_is_dead(cgrp))
  			cgroup_addrm_files(cgrp, ss, cfts, is_add);
  		mutex_unlock(&cgroup_mutex);
  		mutex_unlock(&inode->i_mutex);
+@@ -4327,7 +4328,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		goto err_free_all;
+ 	lockdep_assert_held(&dentry->d_inode->i_mutex);
  
--		list_del_init(&cgrp->cft_q_node);
--		dput(cgrp->dentry);
-+		rcu_read_lock();
- 	}
--
--	if (sb)
--		deactivate_super(sb);
--
--	mutex_unlock(&cgroup_cft_mutex);
-+	rcu_read_unlock();
-+	dput(prev);
-+	deactivate_super(sb);
- }
- 
- /**
-@@ -4320,7 +4330,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
+-	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
++	cgrp->serial_nr = cgroup_serial_nr_next++;
  
  	/* allocation complete, commit to creation */
--	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
  	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
- 	root->number_of_cgroups++;
- 
-@@ -4559,7 +4568,6 @@ static void cgroup_offline_fn(struct work_struct *work)
- 
- 	/* delete this cgroup from parent->children */
- 	list_del_rcu(&cgrp->sibling);
--	list_del_init(&cgrp->allcg_node);
- 
- 	dput(d);
- 
 -- 
 1.8.2.1
 
