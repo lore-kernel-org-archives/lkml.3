@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab3FRKh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:37:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23440 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754367Ab3FRKh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:37:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,888,1363158000"; 
-   d="scan'208";a="355417174"
-Message-ID: <51C0385E.8030403@linux.intel.com>
-Date: Tue, 18 Jun 2013 13:37:18 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1756103Ab3FRKl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:41:26 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53739 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab3FRKlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:41:23 -0400
+Message-ID: <51C03913.5020008@huawei.com>
+Date: Tue, 18 Jun 2013 18:40:19 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
-References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>  <20130618085810.10941.55039.stgit@ladj378.jer.intel.com> <1371551139.3252.249.camel@edumazet-glaptop>
-In-Reply-To: <1371551139.3252.249.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 1/3] cgroup: fix umount vs cgroup_cfs_commit() race
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/06/2013 13:25, Eric Dumazet wrote:
-> On Tue, 2013-06-18 at 11:58 +0300, Eliezer Tamir wrote:
+cgroup_cfs_commit() uses dget() to keep cgroup alive after cgroup_mutex
+is dropped, but dget() won't prevent cgroupfs from being umounted. When
+the race happens, vfs will see some dentries with non-zero refcnt while
+umount is in process.
 
->> @@ -393,6 +394,15 @@ static inline void wait_key_set(poll_table *wait, unsigned long in,
->>   		wait->_key |= POLLOUT_SET;
->>   }
->>
->> +static inline void wait_key_set_lls(poll_table *wait, bool set)
->> +{
->> +	if (set)
->> +		wait->_key |= POLL_LL;
->> +	else
->> +		wait->_key &= ~POLL_LL;
->> +}
->> +
->
-> Instead of "bool set" you could use "unsigned int lls_bit"
->
-> and avoid conditional :
->
-> wait->_key |= lls_bit;
->
-> (you do not need to clear the bit in wait->_key, its already cleared in
-> wait_key_set())
->
-> Alternatively, add a parameter to wait_key_set(), it will be cleaner
+Keep running this:
+  mount -t cgroup -o blkio xxx /cgroup
+  umount /cgroup
 
-OK
+And this:
+  modprobe cfq-iosched
+  rmmod cfs-iosched
 
->> @@ -486,6 +504,11 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
->>   			break;
->>   		}
->>
->> +		if (can_poll_ll(ll_time) && can_ll) {
->
-> 	reorder tests to avoid sched_clock() call :
->
-> 		if (can_ll && can_poll_ll(ll_time))
->
+After a while, the BUG() in shrink_dcache_for_umount_subtree() may
+be triggered:
 
-right
+  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
 
->> -static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
->> +static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait,
->> +					bool *can_ll, bool try_ll)
->>   {
->>   	unsigned int mask;
->>   	int fd;
->> @@ -731,7 +755,11 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
->>   			mask = DEFAULT_POLLMASK;
->>   			if (f.file->f_op && f.file->f_op->poll) {
->>   				pwait->_key = pollfd->events|POLLERR|POLLHUP;
->> +				if (try_ll)
->> +					pwait->_key |= POLL_LL;
->
-> Well, why enforce POLL_LL ?
->
-> Sure we do this for select() as the API doesn't allow us to add the LL
-> flag, but poll() can do that.
->
-> An application might set POLL_LL flag only on selected fds.
->
-> I understand you want nice benchmarks for existing applications,
-> but I still think that globally enable/disable LLS for the whole host
-> is not a good thing.
->
-> POLL_LL wont be a win once we are over committing cpus (too many sockets
-> to poll)
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-I did not intend POLL_LL to be a user visible flag.
-But maybe your way will work better.
-Do you think we should also report POLL_LL to the user, so it will know
-if there are currently ll capable sockets?
-That might be hard to do without breaking the flag semantics,
-Since we might not want to wake up the user just to report that.
-
-Also, any suggestion on how not to depend on the global sysctl value for 
-poll? (we can't use a socket option here)
-
--Eliezer
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 25f1054..482252a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2788,13 +2788,17 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ {
+ 	LIST_HEAD(pending);
+ 	struct cgroup *cgrp, *n;
++	struct super_block *sb = ss->root->sb;
+ 
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+-	if (cfts && ss->root != &rootnode) {
++	if (cfts && ss->root != &rootnode &&
++	    atomic_inc_not_zero(sb->s_active)) {
+ 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
+ 			dget(cgrp->dentry);
+ 			list_add_tail(&cgrp->cft_q_node, &pending);
+ 		}
++	} else {
++		sb = NULL;
+ 	}
+ 
+ 	mutex_unlock(&cgroup_mutex);
+@@ -2817,6 +2821,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ 		dput(cgrp->dentry);
+ 	}
+ 
++	if (sb)
++		deactivate_super(sb);
++
+ 	mutex_unlock(&cgroup_cft_mutex);
+ }
+ 
+-- 
+1.8.0.2
