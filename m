@@ -1,401 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3FRQDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:03:45 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:53948 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab3FRQDn (ORCPT
+	id S1756309Ab3FRQDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:03:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49157 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756147Ab3FRQDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:03:43 -0400
-Message-ID: <51C084D9.50008@gmail.com>
-Date: Wed, 19 Jun 2013 00:03:37 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 12:03:49 -0400
+Date: Tue, 18 Jun 2013 09:04:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jeff Mahoney <jeffm@suse.com>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>,
+        Michal Marek <mmarek@suse.cz>, tomi.valkeinen@ti.com
+Subject: Re: [PATCH] build some drivers only when compile-testing
+Message-ID: <20130618160427.GE28961@kroah.com>
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+ <20130523022327.GB6159@kroah.com>
+ <519D8876.9050405@suse.com>
+ <51BF6BFF.7050705@suse.cz>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E . Patrakov" <patrakov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [BUGFIX v2 2/4] ACPI, DOCK: resolve possible deadlock scenarios
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <2139297.LeMhgEjsya@vostro.rjw.lan> <51BDF1E0.5070201@gmail.com> <2972274.Y9Nv7DUfsQ@vostro.rjw.lan>
-In-Reply-To: <2972274.Y9Nv7DUfsQ@vostro.rjw.lan>
-Content-Type: multipart/mixed;
- boundary="------------000700010704030103000407"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BF6BFF.7050705@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000700010704030103000407
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-
-On 06/17/2013 07:40 PM, Rafael J. Wysocki wrote:
-> On Monday, June 17, 2013 01:12:00 AM Jiang Liu wrote:
->> On 06/16/2013 06:54 AM, Rafael J. Wysocki wrote:
->>> On Saturday, June 15, 2013 11:20:40 PM Rafael J. Wysocki wrote:
->>>> On Saturday, June 15, 2013 10:17:42 PM Rafael J. Wysocki wrote:
->>>
->>> [...]
->>>
->>>>
->>>> Which sysfs interfaces do you mean, by the way?
->>>>
->>>> If you mean "eject", then it takes acpi_scan_lock and hotplug_dock_devices()
->>>> should always be run under acpi_scan_lock too.  It isn't at the moment,
->>>> because write_undock() doesn't take acpi_scan_lock(), but this is an obvious
->>>> bug (so I'm going to send a patch to fix it in a while).
->>>>
->>>> With that bug fixed, the possible race between acpi_eject_store() and
->>>> hotplug_dock_devices() should be prevented from happening, so perhaps we're
->>>> worrying about something that cannot happen?
->>>
->>> So here's a question: What particular races are possible if we remove
->>> ds->hp_lock entirely without doing anything else just yet?  I mean, how to
->>> *trigger* them from the start to the end and not how they can possibly happen
->>> but never do, because there's no way they can be actually triggered?
->> Hi Rafael,
->>     I have no really platform which triggers this bug, but I may imagine
->> a possible platform if it's valid for explanation.
->>     Let's think about a laptop dock station with a thunderbolt
->> controller built-in. The dock station is managed by dock driver and
->> acpiphp driver. And the PCIe hierarchy managed by the thunderbolt
->> controller may be managed by dock driver and ACPIPHP driver too.
->> So it may trigger the issue by pressing the dock button and unplugging
->> thunderbolt cable concurrently.
->>     But after all, this is all by imagination:). We may need to find a
->> simple and quick solution for 3.10 and the stable trees and enhance the
->> solution later to avoid introducing new bugs while fixing a bug.
+On Mon, Jun 17, 2013 at 10:05:19PM +0200, Jiri Slaby wrote:
+> On 05/23/2013 05:09 AM, Jeff Mahoney wrote:
+> > On 5/22/13 10:23 PM, Greg Kroah-Hartman wrote:
+> >> On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby wrote:
+> >>> Some drivers can be built on more platforms than they run on. This
+> >>> causes users and distributors packaging burden when they have to
+> >>> manually deselect some drivers from their allmodconfigs. Or sometimes
+> >>> it is even impossible to disable the drivers without patching the
+> >>> kernel.
+> >>>
+> >>> Introduce a new config option COMPILE_TEST and make all those drivers
+> >>> to depend on the platform they run on, or on the COMPILE_TEST option.
+> >>> Now, when users/distributors choose COMPILE_TEST=n they will not have
+> >>> the drivers in their allmodconfig setups, but developers still can
+> >>> compile-test them with COMPILE_TEST=y.
+> >>
+> >> I understand the urge, and it's getting hard for distros to handle these
+> >> drivers that just don't work on other architectures, but it's really
+> >> valuable to ensure that they build properly, for those of us that don't
+> >> have many/any cross compilers set up.
 > 
-> Well, if that particular bug is not fixed in 3,10, it won't be a tragedy,
-> and I *really* don't want that code to get substantially more complex than
-> it is now.
-Hi Rafael,
-    I hope I could help to simplify the implementation too, but failed
-until now:(. The PCI hotplug core has the same re-entrance issue too,
-and I have struggled with that issue about one year now:(
-    I have tried another solution by removing ds->hp_lock and
-hotplug_devices list, please refer to the attachment. It could be used
-to solve the deadlock issue in acpiphp, but may not be used to support
-the coming fix for an ATA driver
-regression(https://bugzilla.kernel.org/show_bug.cgi?id=59871).
-    The time window for 3.10 is closing, it would be great if we could
-reach a quick solution here.
-Regards!
-Gerry
-
+> But this is exactly what COMPILE_TEST will give us when set to "y", or
+> am I missing something?
 > 
-> Thanks,
-> Rafael
+> >>> Now the drivers where we use this new option:
+> >>> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
+> >>>   processors so it should depend on x86.
+> >>> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
+> >>> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
+> >>>   systems -- which do not actually support the hardware via that
+> >>>   method.
+> >>
+> >> This seems ripe to start to get really messy, really quickly.  Shouldn't
+> >> "default configs" handle if this "should" be enabled for a platform or
+> >> not, and let the rest of us just build them with no problems?
+> > 
+> > If every time a new Kconfig option is added, corresponding default
+> > config updates come with it, sure. I just don't see that happening,
+> > especially when it can be done much more clearly in the Kconfig while
+> > the developer is writing the driver.
+> > 
+> >> What problems is this causing you?  Are you running out of space in
+> >> kernel packages with drivers that will never be actually used?
+> > 
+> > Wasted build resources. Wasted disk space on /every/ system the kernel
+> > package is installed on. We're all trying to pare down the kernel
+> > packages to eliminate wasted space and doing it manually means a bunch
+> > of research, sometimes with incorrect assumptions about the results,
+> > needs to be done by someone not usually associated with that code. That
+> > research gets repeated by people maintaining kernel packages for pretty
+> > much every distro.
 > 
+> I second all the above.
 > 
+> >>> +config COMPILE_TEST
+> >>> +	bool "Compile also drivers which will not load" if EXPERT
+> >>
+> >> EXPERT is getting to be the "let's hide it here" option, isn't it...
+> >>
+> >> I don't know, if no one else strongly objects, I can be convinced that
+> >> this is needed, but so far, I don't see why it really is, or what this
+> >> is going to help with.
+> > 
+> > I'm not convinced adding a || COMPILE_TEST option to every driver that
+> > may be arch specific is the best way to go either. Perhaps adding a new
+> > Kconfig verb called "archdepends on" or something that will evaluate as
+> > true if COMPILE_TEST is enabled but will evaluate the conditional if
+> > not. *waves hands*
+> 
+> Sam Ravnborg (the kconfig ex-maintainer) once wrote that he doesn't want
+> to extend the kconfig language for this purpose (which I support). That
+> a config option is fine and sufficient in this case [1]. Except he
+> called the config option "SHOW_ALL_DRIVERS". Adding the current
+> maintainer to CCs ;).
+> 
+> [1] http://comments.gmane.org/gmane.linux.kbuild.devel/9829
+> 
+> The last point I inclined to the Greg's argument to remove the EXPERT
+> dependency.
+> 
+> So currently I have what is attached... Comments?
 
+Looks good to me, want me to queue it up through my char/misc driver
+tree for 3.11?
 
---------------000700010704030103000407
-Content-Type: text/x-patch;
- name="0001-.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-.patch"
+thanks,
 
->From d1a3f472ea81c780c370a98b553cf83f82d3e961 Mon Sep 17 00:00:00 2001
-From: Jiang Liu <jiang.liu@huawei.com>
-Date: Tue, 18 Jun 2013 22:22:23 +0800
-Subject: [PATCH]
-
----
- drivers/acpi/dock.c                | 108 +++++++++++++++----------------------
- drivers/pci/hotplug/acpiphp_glue.c |  32 ++++++-----
- 2 files changed, 62 insertions(+), 78 deletions(-)
-
-diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index 469ef56..fd8830a 100644
---- a/drivers/acpi/dock.c
-+++ b/drivers/acpi/dock.c
-@@ -58,10 +58,7 @@ struct dock_station {
- 	unsigned long last_dock_time;
- 	u32 flags;
- 	spinlock_t dd_lock;
--	struct mutex hp_lock;
- 	struct list_head dependent_devices;
--	struct list_head hotplug_devices;
--
- 	struct list_head sibling;
- 	struct platform_device *dock_device;
- };
-@@ -70,7 +67,6 @@ static int dock_station_count;
- 
- struct dock_dependent_device {
- 	struct list_head list;
--	struct list_head hotplug_list;
- 	acpi_handle handle;
- 	const struct acpi_dock_ops *ops;
- 	void *context;
-@@ -105,7 +101,6 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
- 
- 	dd->handle = handle;
- 	INIT_LIST_HEAD(&dd->list);
--	INIT_LIST_HEAD(&dd->hotplug_list);
- 
- 	spin_lock(&ds->dd_lock);
- 	list_add_tail(&dd->list, &ds->dependent_devices);
-@@ -115,38 +110,6 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
- }
- 
- /**
-- * dock_add_hotplug_device - associate a hotplug handler with the dock station
-- * @ds: The dock station
-- * @dd: The dependent device struct
-- *
-- * Add the dependent device to the dock's hotplug device list
-- */
--static void
--dock_add_hotplug_device(struct dock_station *ds,
--			struct dock_dependent_device *dd)
--{
--	mutex_lock(&ds->hp_lock);
--	list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
--	mutex_unlock(&ds->hp_lock);
--}
--
--/**
-- * dock_del_hotplug_device - remove a hotplug handler from the dock station
-- * @ds: The dock station
-- * @dd: the dependent device struct
-- *
-- * Delete the dependent device from the dock's hotplug device list
-- */
--static void
--dock_del_hotplug_device(struct dock_station *ds,
--			struct dock_dependent_device *dd)
--{
--	mutex_lock(&ds->hp_lock);
--	list_del(&dd->hotplug_list);
--	mutex_unlock(&ds->hp_lock);
--}
--
--/**
-  * find_dock_dependent_device - get a device dependent on this dock
-  * @ds: the dock station
-  * @handle: the acpi_handle of the device we want
-@@ -349,12 +312,10 @@ static void hotplug_dock_devices(struct dock_station *ds, u32 event)
- {
- 	struct dock_dependent_device *dd;
- 
--	mutex_lock(&ds->hp_lock);
--
- 	/*
- 	 * First call driver specific hotplug functions
- 	 */
--	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
- 		if (dd->ops && dd->ops->handler)
- 			dd->ops->handler(dd->handle, event, dd->context);
- 
-@@ -370,7 +331,6 @@ static void hotplug_dock_devices(struct dock_station *ds, u32 event)
- 		else
- 			dock_create_acpi_device(dd->handle);
- 	}
--	mutex_unlock(&ds->hp_lock);
- }
- 
- static void dock_event(struct dock_station *ds, u32 event, int num)
-@@ -392,7 +352,7 @@ static void dock_event(struct dock_station *ds, u32 event, int num)
- 	if (num == DOCK_EVENT)
- 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
- 
--	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
- 		if (dd->ops && dd->ops->uevent)
- 			dd->ops->uevent(dd->handle, event, dd->context);
- 
-@@ -559,19 +519,9 @@ void unregister_dock_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(unregister_dock_notifier);
- 
--/**
-- * register_hotplug_dock_device - register a hotplug function
-- * @handle: the handle of the device
-- * @ops: handlers to call after docking
-- * @context: device specific data
-- *
-- * If a driver would like to perform a hotplug operation after a dock
-- * event, they can register an acpi_notifiy_handler to be called by
-- * the dock driver after _DCK is executed.
-- */
--int
--register_hotplug_dock_device(acpi_handle handle, const struct acpi_dock_ops *ops,
--			     void *context)
-+/* must be called with ACPI scan lock held */
-+int __register_hotplug_dock_device(acpi_handle handle,
-+	       const struct acpi_dock_ops *ops, void *context)
- {
- 	struct dock_dependent_device *dd;
- 	struct dock_station *dock_station;
-@@ -594,20 +544,39 @@ register_hotplug_dock_device(acpi_handle handle, const struct acpi_dock_ops *ops
- 		if (dd) {
- 			dd->ops = ops;
- 			dd->context = context;
--			dock_add_hotplug_device(dock_station, dd);
- 			ret = 0;
- 		}
- 	}
- 
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(register_hotplug_dock_device);
- 
- /**
-- * unregister_hotplug_dock_device - remove yourself from the hotplug list
-- * @handle: the acpi handle of the device
-+ * register_hotplug_dock_device - register a hotplug function
-+ * @handle: the handle of the device
-+ * @ops: handlers to call after docking
-+ * @context: device specific data
-+ *
-+ * If a driver would like to perform a hotplug operation after a dock
-+ * event, they can register an acpi_notifiy_handler to be called by
-+ * the dock driver after _DCK is executed.
-  */
--void unregister_hotplug_dock_device(acpi_handle handle)
-+int
-+register_hotplug_dock_device(acpi_handle handle,
-+			     const struct acpi_dock_ops *ops, void *context)
-+{
-+	int ret;
-+
-+	acpi_scan_lock_acquire();
-+	ret = __register_hotplug_dock_device(handle, ops, context);
-+	acpi_scan_lock_release();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(register_hotplug_dock_device);
-+
-+/* must be called with ACPI scan lock held */
-+void __unregister_hotplug_dock_device(acpi_handle handle)
- {
- 	struct dock_dependent_device *dd;
- 	struct dock_station *dock_station;
-@@ -617,10 +586,23 @@ void unregister_hotplug_dock_device(acpi_handle handle)
- 
- 	list_for_each_entry(dock_station, &dock_stations, sibling) {
- 		dd = find_dock_dependent_device(dock_station, handle);
--		if (dd)
--			dock_del_hotplug_device(dock_station, dd);
-+		if (dd) {
-+			dd->ops = NULL;
-+			dd->context = NULL;
-+		}
- 	}
- }
-+
-+/**
-+ * unregister_hotplug_dock_device - remove yourself from the hotplug list
-+ * @handle: the acpi handle of the device
-+ */
-+void unregister_hotplug_dock_device(acpi_handle handle)
-+{
-+	acpi_scan_lock_acquire();
-+	__unregister_hotplug_dock_device(handle);
-+	acpi_scan_lock_release();
-+}
- EXPORT_SYMBOL_GPL(unregister_hotplug_dock_device);
- 
- /**
-@@ -945,10 +927,8 @@ static int __init dock_add(acpi_handle handle)
- 	dock_station->dock_device = dd;
- 	dock_station->last_dock_time = jiffies - HZ;
- 
--	mutex_init(&dock_station->hp_lock);
- 	spin_lock_init(&dock_station->dd_lock);
- 	INIT_LIST_HEAD(&dock_station->sibling);
--	INIT_LIST_HEAD(&dock_station->hotplug_devices);
- 	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
- 	INIT_LIST_HEAD(&dock_station->dependent_devices);
- 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 716aa93..699b8ca 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -61,6 +61,8 @@ static DEFINE_MUTEX(bridge_mutex);
- static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
- static void acpiphp_sanitize_bus(struct pci_bus *bus);
- static void acpiphp_set_hpp_values(struct pci_bus *bus);
-+static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
-+				       void *context);
- static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
- static void free_bridge(struct kref *kref);
- 
-@@ -147,7 +149,7 @@ static int post_dock_fixups(struct notifier_block *nb, unsigned long val,
- 
- 
- static const struct acpi_dock_ops acpiphp_dock_ops = {
--	.handler = handle_hotplug_event_func,
-+	.handler = _handle_hotplug_event_func,
- };
- 
- /* Check whether the PCI device is managed by native PCIe hotplug driver */
-@@ -1065,22 +1067,13 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
- 	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
- }
- 
--static void _handle_hotplug_event_func(struct work_struct *work)
-+static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
-+				       void *context)
- {
--	struct acpiphp_func *func;
-+	struct acpiphp_func *func = context;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpi_hp_work *hp_work;
--	acpi_handle handle;
--	u32 type;
--
--	hp_work = container_of(work, struct acpi_hp_work, work);
--	handle = hp_work->handle;
--	type = hp_work->type;
--	func = (struct acpiphp_func *)hp_work->context;
--
--	acpi_scan_lock_acquire();
- 
- 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
- 
-@@ -1113,7 +1106,18 @@ static void _handle_hotplug_event_func(struct work_struct *work)
- 		warn("notify_handler: unknown event type 0x%x for %s\n", type, objname);
- 		break;
- 	}
-+}
-+
-+static void _handle_hotplug_event_cb(struct work_struct *work)
-+{
-+	struct acpiphp_func *func;
-+	struct acpi_hp_work *hp_work;
- 
-+	hp_work = container_of(work, struct acpi_hp_work, work);
-+	func = (struct acpiphp_func *)hp_work->context;
-+	acpi_scan_lock_acquire();
-+	_handle_hotplug_event_func(hp_work->handle, hp_work->type,
-+				    hp_work->context);
- 	acpi_scan_lock_release();
- 	kfree(hp_work); /* allocated in handle_hotplug_event_func */
- 	put_bridge(func->slot->bridge);
-@@ -1141,7 +1145,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
- 	 * don't deadlock on hotplug actions.
- 	 */
- 	get_bridge(func->slot->bridge);
--	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
-+	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_cb);
- }
- 
- /*
--- 
-1.8.1.2
-
-
---------------000700010704030103000407--
+greg k-h
