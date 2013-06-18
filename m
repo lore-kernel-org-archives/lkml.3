@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3FREZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:25:01 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:54864 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3FREY7 (ORCPT
+	id S1753995Ab3FREZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:25:27 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:61630 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab3FREZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:24:59 -0400
+	Tue, 18 Jun 2013 00:25:25 -0400
+Date: Tue, 18 Jun 2013 00:25:22 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: Re: [RFC PATCH v4 2/2] drivers: mfd: vexpress: add Serial Power
+ Controller (SPC) support
+In-Reply-To: <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
+Message-ID: <alpine.LFD.2.03.1306180001410.18597@syhkavp.arg>
+References: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com> <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Date: Tue, 18 Jun 2013 12:24:58 +0800
-Message-ID: <CAPgLHd8SP8Cwiukgpwhfe0Cea248k5cE9P=SNG6Kgt=7z=4JLg@mail.gmail.com>
-Subject: [PATCH -next] pinctrl: core: fix missing unlock on error in pinctrl_find_gpio_range_from_pin()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: linus.walleij@linaro.org, christian.ruppert@abilis.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Mon, 17 Jun 2013, Lorenzo Pieralisi wrote:
 
-Add the missing unlock before return from function pinctrl_find_gpio_range_from_pin()
-in the error handling case.
+> The TC2 versatile express core tile integrates a logic block that provides the
+> interface between the dual cluster test-chip and the M3 microcontroller that
+> carries out power management. The logic block, called Serial Power Controller
+> (SPC), contains several memory mapped registers to control among other things
+> low-power states, operating points and reset control.
 
-Introduced by commit 2ff3477efd7086544b9e298fc63afab0645921b4.
-(pinctrl: add pin list based GPIO ranges)
+[...]
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/pinctrl/core.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+I slightly modified the following before committing this patch to my TC2 
+branch:
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 33710b5..28a3f7b 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -465,7 +465,7 @@ struct pinctrl_gpio_range *
- pinctrl_find_gpio_range_from_pin(struct pinctrl_dev *pctldev,
- 				 unsigned int pin)
- {
--	struct pinctrl_gpio_range *range = NULL;
-+	struct pinctrl_gpio_range *range;
- 
- 	mutex_lock(&pctldev->mutex);
- 	/* Loop over the ranges */
-@@ -475,17 +475,16 @@ pinctrl_find_gpio_range_from_pin(struct pinctrl_dev *pctldev,
- 			int a;
- 			for (a = 0; a < range->npins; a++) {
- 				if (range->pins[a] == pin)
--					return range;
-+					goto out;
- 			}
- 		} else if (pin >= range->pin_base &&
--			   pin < range->pin_base + range->npins) {
--			mutex_unlock(&pctldev->mutex);
--			return range;
--		}
-+			   pin < range->pin_base + range->npins)
-+			goto out;
- 	}
-+	range = NULL;
-+out:
- 	mutex_unlock(&pctldev->mutex);
--
--	return NULL;
-+	return range;
- }
- EXPORT_SYMBOL_GPL(pinctrl_find_gpio_range_from_pin);
- 
+> +/**
+> + * ve_spc_cpu_wakeup_irq()
+> + *
+> + * Function to set/clear per-CPU wake-up IRQs. Not protected by locking since
+> + * it might be used in code paths where normal cacheable locks are not
+> + * working. Locking must be provided by the caller to ensure atomicity.
+> + *
+> + * @cpu: mpidr[7:0] bitfield describing cpu affinity level
+> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
+> + * @set: if true, wake-up IRQs are set, if false they are cleared
+> + */
+> +void ve_spc_cpu_wakeup_irq(u32 cpu, u32 cluster, bool set)
+> +{
 
+I made cluster first then cpu.  All the other functions have the cluster 
+argument first, and ve_spc_set_resume_addr() already uses that order.
+
+[...]
+> +#ifdef CONFIG_VEXPRESS_SPC
+> +int ve_spc_probe(void);
+> +int ve_spc_get_freq(u32 cluster);
+> +int ve_spc_set_freq(u32 cluster, u32 freq);
+> +int ve_spc_get_freq_table(u32 cluster, const u32 **fptr);
+> +void ve_spc_global_wakeup_irq(bool set);
+> +void ve_spc_cpu_wakeup_irq(u32 cpu, u32 cluster, bool set);
+> +void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr);
+> +u32 ve_spc_get_nr_cpus(u32 cluster);
+> +void ve_spc_powerdown(u32 cluster, bool enable);
+> +#else
+> +static inline bool ve_spc_probe(void) { return -ENODEV; }
+
+s/bool/int/
+
+
+Nicolas
