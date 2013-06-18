@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3FRKId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:08:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64280 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754164Ab3FRKIc (ORCPT
+	id S1755986Ab3FRKIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:08:54 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:54986 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab3FRKIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:08:32 -0400
-Date: Tue, 18 Jun 2013 11:07:15 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>
-Subject: Re: [PATCH v6] arm: Preserve the user r/w register TPIDRURW on
- context, switch and fork
-Message-ID: <20130618100715.GA3539@mudshark.cambridge.arm.com>
-References: <51BF8A1C.5070403@dawncrow.de>
+	Tue, 18 Jun 2013 06:08:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51BF8A1C.5070403@dawncrow.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130613164730.65273fbd@mschwide>
+References: <20130613164730.65273fbd@mschwide>
+Date: Tue, 18 Jun 2013 12:08:51 +0200
+X-Google-Sender-Auth: h_6miM4WhzdQJIge7qO1mrmMFKM
+Message-ID: <CAMuHMdW+C=kQh+0XM1m1W5EPOPYCmq1KoJOKSbT+-VZWdK-9Ww@mail.gmail.com>
+Subject: Re: [GIT PULL] s390 patches for the 3.10-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 11:13:48PM +0100, André Hentschel wrote:
-> From: André Hentschel <nerv@dawncrow.de>
-> 
-> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
-> prevent it from being used as a covert channel between two tasks.
-> 
-> There are more and more applications coming to Windows RT,
-> Wine could support them, but mostly they expect to have
-> the thread environment block (TEB) in TPIDRURW.
-> 
-> This patch preserves that register per thread instead of clearing it.
-> Unlike the TPIDRURO, which is already switched, the TPIDRURW
-> can be updated from userspace so needs careful treatment in the case that we
-> modify TPIDRURW and call fork(). To avoid this we must always read
-> TPIDRURW in copy_thread.
-> 
-> Signed-off-by: André Hentschel <nerv@dawncrow.de>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com> 
-> 
-> ---
-> This patch is against Linux 3.10-rc6 (7d132055814ef17a6c7b69f342244c410a5e000f)
-> 
-> v2: rework and fixup of v1, based on a suggested patch by Will Deacon
-> v3: total rework and fixup of v2
-> v4: removed condition on assembler instruction,
->     adapted my code to kernel-style, both based on comments by Will Deacon
-> v5: rebased v4 on 3.10-rc2 and adding this version history
-> v6: moved loading the TLS registers to the macros
->     (fixing the "LDRD is not supported on all the CPUs we have" problem)
+On Thu, Jun 13, 2013 at 4:47 PM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
+> please pull from the 'for-linus' branch of
+>
+>         git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+>
+> to receive the following updates:
+>
+> Three kvm related memory management fixes, a fix for show_trace,
+> a fix for early console output and a patch from Ben to help prevent
+> compile errors in regard to irq functions (or our lack thereof).
+>
+> Ben Hutchings (1):
+>       s390/pci: Implement IRQ functions if !PCI
 
-You've changed quite a lot with this version, including the way the macro
-parameters are passed. Why not just replace the problematic ldrd with two
-ldr instructions and be done with it? I don't think the simple build error
-warrants an overhaul of the code we already had.
+> --- a/arch/s390/kernel/irq.c
+> +++ b/arch/s390/kernel/irq.c
+> @@ -311,3 +311,67 @@ void measurement_alert_subclass_unregister(void)
+>         spin_unlock(&ma_subclass_lock);
+>  }
+>  EXPORT_SYMBOL(measurement_alert_subclass_unregister);
+> +
+> +void synchronize_irq(unsigned int irq)
+> +{
+> +       /*
+> +        * Not needed, the handler is protected by a lock and IRQs that occur
+> +        * after the handler is deleted are just NOPs.
+> +        */
+> +}
 
-Cheers,
+allnoconfig:
 
-Will
+arch/s390/kernel/irq.c:315:6: error: expected identifier or '(' before '__asm__'
+http://kisskb.ellerman.id.au/kisskb/buildresult/8987667/
+
+The function is expanded to:
+
+    void __asm__ __volatile__("": : :"memory")
+    {
+
+    }
+
+include/linux/hardirq.h: # define synchronize_irq(irq)   barrier()
+include/linux/compiler-gcc.h: #define barrier() __asm__
+__volatile__("": : :"memory")
+
+Turning synchronize_irq() into a static inline function doesn't help as then
+it becomes a redefinition.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
