@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab3FRJOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:14:07 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:43031 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab3FRJOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:14:03 -0400
+	id S1755610Ab3FRJQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:16:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27964 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755332Ab3FRJQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:16:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
+   d="scan'208";a="355378759"
+Message-ID: <51C02571.3090100@intel.com>
+Date: Tue, 18 Jun 2013 17:16:33 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1371545519-27119-1-git-send-email-lee.jones@linaro.org>
-References: <1371545519-27119-1-git-send-email-lee.jones@linaro.org>
-Date: Tue, 18 Jun 2013 11:14:02 +0200
-Message-ID: <CACRpkdbpTMm8FG6KSwvq_7BQRGZ0P=PHHb+WikfRE6JqHv8xpw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ARM: ux500: mop500_snowball_ethernet_clock_enable() removal
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Matthew Garrett <mjg@redhat.com>, Liu Jiang <liuj97@gmail.com>,
+        Liu Jiang <liu97@gmail.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Liu Jiang <jiang.liu@huawei.com>
+Subject: Re: [PATCH] libata: remove dead code from libata-acpi.c
+References: <1371265368-7334-1-git-send-email-liuj97@gmail.com> <51BE6B5C.70803@intel.com> <20130617180151.GG32663@mtj.dyndns.org>
+In-Reply-To: <20130617180151.GG32663@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On 06/18/2013 02:01 AM, Tejun Heo wrote:
+> On Mon, Jun 17, 2013 at 09:50:20AM +0800, Aaron Lu wrote:
+>> On 06/15/2013 11:02 AM, Liu Jiang wrote:
+>>> From: Liu Jiang <liu97@gmail.com>
+>>>
+>>> Commit 30dcf76acc69 "libata: migrate ACPI code over to new bindings"
+>>> removed ACPI dock notification related code, but there's some dead
+>>> code left, so clean up it.
+>>
+>> I never noticed this, but it looks to be the case...
+>>
+>> I'm not sure the dock notification code is removed intentionally or
+>> mistakenly though, if it is a mistake, then instead of removing the left
+>> code here, we probably should add the dock notification code back.
+>>
+>> But I have no test system or any knowledge about how ata dock works, so
+>> I may be wrong :-)
+> 
+> Looks like a regression to me.  We're probably locking up on some
+> older laptops which connects optical drives with hotpluggable PATA.
+> Matthew, can you please fix it?
 
-> As requested by you, this gets rid of  mop500_snowball_ethernet_clock_enable()
-> which is no longer in use. It also straightens out a bug which ensures the
-> SMSC911x's regulator is turned on at start-up when using Device Tree.
->
-> This is based on your test-merge-20130615 branch.
+A user just reported a bug for this:
+https://bugzilla.kernel.org/show_bug.cgi?id=59871
 
-All are Acked-by: Linus Walleij <linus.walleij@linaro.org>
+And bisected to commit 30dcf76acc69. I proposed a fix patch there, let's
+see what the user's test result.
 
-I suggest the ARM SoC folks merge these three patches directly.
-I've queued 1/3 and 2/3 on my devicetree branch so they won't
-be lost, but 3/3 does not apply on any of my branches, it
-needs to be applied directly on some ARM SoC baseline.
-
-Yours,
-Linus Walleij
+Thanks,
+Aaron
