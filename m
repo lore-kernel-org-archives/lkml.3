@@ -1,124 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab3FRURM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 16:17:12 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59566 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab3FRURK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 16:17:10 -0400
-From: Joern Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joern Engel <joern@logfs.org>
-Subject: [PATCH 0/2] hugetlb fixes
-Date: Tue, 18 Jun 2013 14:47:03 -0400
-Message-Id: <1371581225-27535-1-git-send-email-joern@logfs.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S933433Ab3FRUQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 16:16:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33155 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932861Ab3FRUQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 16:16:19 -0400
+Date: Tue, 18 Jun 2013 23:12:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
+        David Lopo <dlopo@chipidea.mips.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: Re: linux-next: Tree for Jun 18 usb/chipidea)
+Message-ID: <20130618201245.GB14784@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130618173030.16d73801ab72b7c611faccea@canb.auug.org.au>
+ <51C0AC74.5050705@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
+Content-Disposition: inline
+In-Reply-To: <51C0AC74.5050705@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As everyone knows, hugetlbfs sucks.  But it is also necessary for
-large memory machines, so we should make it suck less.  Top of my list
-were lack of rss accounting and refusing mmap with MAP_HUGETLB when
-using hugetlbfs.  The latter generally created a know in every brain I
-explained this to.
+--hHWLQfXTYDoKhP50
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Test program below is failing before these two patches and passing
-after.
+Hi,
 
-Joern Engel (2):
-  hugetlb: properly account rss
-  mmap: allow MAP_HUGETLB for hugetlbfs files
+On Tue, Jun 18, 2013 at 11:52:36AM -0700, Randy Dunlap wrote:
+> On 06/18/13 00:30, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > Changes since 20130617:
+> >=20
+>=20
+>=20
+> on i386:
+>=20
+> # CONFIG_USB_PHY is not set
+>=20
+> drivers/built-in.o: In function `ci_hdrc_probe':
+> core.c:(.text+0x20446b): undefined reference to `of_usb_get_phy_mode'
+>=20
+>=20
+> chipidea needs to depend on or select some kind of USB_PHY support...?
 
- mm/hugetlb.c |    4 ++++
- mm/mmap.c    |   12 ++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+hmm, looks like a missing stub to me. Alex ?
 
--- 
-1.7.10.4
+--=20
+balbi
 
-#define _GNU_SOURCE
-#include <assert.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+--hHWLQfXTYDoKhP50
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-typedef unsigned long long u64;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-static size_t length = 1 << 24;
+iQIcBAEBAgAGBQJRwL89AAoJEIaOsuA1yqREdXAP/2II0v8MzNbMuM29NzDGnTi5
+F2LNBk1k7fr4B1plEPMo8VPD4ITIrfaNZKV1WvCTYvy7+zuqGXnFDchyeYnkRvZU
+D7z1dHLNaGjJWyAomVNH0GERbq1UcfPEQM728MejR2eMbPaZlG81leBkXkr242/S
+mqnZwuSGl9yKE/F3ZlKUwSBIo3i89DgIsKG4XrMTc5gpalANDV8Dn51rLycnn4sh
+Ai2GZU1j4tCXnY6Oyw0OzkyfONgPxE+p+yBXhJywSojUVdJKmINZuavpe6x8RXj6
+ZaILKnLVm72MmGG19bjyusL5g6jm3dkX5ZTQ6a7rFGXP1AoKcDgaClDPDHCWZMBI
+C8Do8x8Q2DHmJh/andiJKvJB4GeRm5gawC0kbgFPDO35bMTUguTyoCoaLg0L4Q7h
+afou96Ib5yQgSA4bqioPzRVCUXllCKrDRwmLRmBv95ehDqPYAXxSnuXEpu6ov+U8
+bcOkjLbHLjbxyEKF13OUoX+wqaHosAVfUdheDe4BhSLvOVfTRwmMAA8ofPhGgZgh
+xDRFeuYTQVl2rb9T96fTB+JhEqOok2NB2DYmkVFdoa9qNEpVvob0931i9RrsPum8
+KlFeJjkLoAqNPqPmE8t7pXXYMz4dE4U16SBF8KUJa3RA3c8YackzL9ZW2eu0I7IH
+zIP1gAZvRoerzSzN/NxR
+=uh9F
+-----END PGP SIGNATURE-----
 
-static u64 read_rss(void)
-{
-	char buf[4096], *s = buf;
-	int i, fd;
-	u64 rss;
-
-	fd = open("/proc/self/statm", O_RDONLY);
-	assert(fd > 2);
-	memset(buf, 0, sizeof(buf));
-	read(fd, buf, sizeof(buf) - 1);
-	for (i = 0; i < 1; i++)
-		s = strchr(s, ' ') + 1;
-	rss = strtoull(s, NULL, 10);
-	return rss << 12; /* assumes 4k pagesize */
-}
-
-static void do_mmap(int fd, int extra_flags, int unmap)
-{
-	int *p;
-	int flags = MAP_PRIVATE | MAP_POPULATE | extra_flags;
-	u64 before, after;
-
-	before = read_rss();
-	p = mmap(NULL, length, PROT_READ | PROT_WRITE, flags, fd, 0);
-	assert(p != MAP_FAILED ||
-			!"mmap returned an unexpected error");
-	after = read_rss();
-	assert(llabs(after - before - length) < 0x40000 ||
-			!"rss didn't grow as expected");
-	if (!unmap)
-		return;
-	munmap(p, length);
-	after = read_rss();
-	assert(llabs(after - before) < 0x40000 ||
-			!"rss didn't shrink as expected");
-}
-
-static int open_file(const char *path)
-{
-	int fd, err;
-
-	unlink(path);
-	fd = open(path, O_CREAT | O_RDWR | O_TRUNC | O_EXCL
-			| O_LARGEFILE | O_CLOEXEC, 0600);
-	assert(fd > 2);
-	unlink(path);
-	err = ftruncate(fd, length);
-	assert(!err);
-	return fd;
-}
-
-int main(void)
-{
-	int hugefd, fd;
-
-	fd = open_file("/dev/shm/hugetlbhog");
-	hugefd = open_file("/hugepages/hugetlbhog");
-
-	system("echo 100 > /proc/sys/vm/nr_hugepages");
-	do_mmap(-1, MAP_ANONYMOUS, 1);
-	do_mmap(fd, 0, 1);
-	do_mmap(-1, MAP_ANONYMOUS | MAP_HUGETLB, 1);
-	do_mmap(hugefd, 0, 1);
-	do_mmap(hugefd, MAP_HUGETLB, 1);
-	/* Leak the last one to test do_exit() */
-	do_mmap(-1, MAP_ANONYMOUS | MAP_HUGETLB, 0);
-	printf("oll korrekt.\n");
-	return 0;
-}
+--hHWLQfXTYDoKhP50--
