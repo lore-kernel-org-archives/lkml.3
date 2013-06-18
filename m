@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab3FROIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:08:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab3FROIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:08:01 -0400
-Date: Tue, 18 Jun 2013 10:07:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: [x86] only print out DR registers if they are not power-on
- defaults.
-Message-ID: <20130618140730.GA1313@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-References: <20130618041132.GA23492@redhat.com>
- <20130618084356.GA13123@pd.tnic>
+	id S932913Ab3FROIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:08:24 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49617 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932859Ab3FROIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:08:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618084356.GA13123@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130618125235.GA15122@amd.pavel.ucw.cz>
+References: <20130617134957.GA15602@amd.pavel.ucw.cz> <CACxGe6sO6Tes8en905cyJwP69w82PHjwKV9+XxxXhAPMRyGYkA@mail.gmail.com>
+ <20130618125235.GA15122@amd.pavel.ucw.cz>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 18 Jun 2013 15:08:02 +0100
+X-Google-Sender-Auth: tfAdqjqwLW2kGDgaJMvMJT4-Gvg
+Message-ID: <CACxGe6tLPfJ3KS6+4aO8s8emq8=ajuc+gmBtaEDqd60m4_vx6w@mail.gmail.com>
+Subject: Re: [PATCH] fix UIO with device tree but no assigned interrupt
+To: Pavel Machek <pavel@denx.de>
+Cc: Detlev Zundel <dzu@denx.de>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        trivial <trivial@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:43:56AM +0200, Borislav Petkov wrote:
- > On Tue, Jun 18, 2013 at 12:11:32AM -0400, Dave Jones wrote:
- > > The DR registers are rarely useful when decoding oopses.
- > > With screen real estate during oopses at a premium, we can save two lines
- > > by only printing out these registers when they are set to something other
- > > than they power-on state.
- > 
- > Makes sense, except...
- > 
- > > 
- > > Signed-off-by: Dave Jones <davej@redhat.com>
- > > 
- > > diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c linux-dj/arch/x86/kernel/process_64.c
- > > --- /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c	2013-05-01 10:02:52.064151923 -0400
- > > +++ linux-dj/arch/x86/kernel/process_64.c	2013-05-06 20:35:09.219868881 -0400
- > > @@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, i
- > >  	get_debugreg(d0, 0);
- > >  	get_debugreg(d1, 1);
- > >  	get_debugreg(d2, 2);
- > > -	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
- > >  	get_debugreg(d3, 3);
- > >  	get_debugreg(d6, 6);
- > >  	get_debugreg(d7, 7);
- > > +
- > > +	/* Only print out debug registers if they are in their non-default state. */
- > > +	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
- > > +	    (d6 & ~DR6_RESERVED) && (d7 == 0x400))
- > 
- > ... I'm not sure about %dr6. So we're not dumping %dr6 when, a.o.
- > any of the bits in the bit slices [3:0], [15:13] are set (bit 12
- > is Read-As-Zero). Now those mean stuff like Breakpoint-Condition
- > Detected or Debug-Register-Access Detected and so on and I think this is
- > meaningful information.
- > 
- > So actually, we wouldn't want to dump %dr6 when its contents are its
- > default contents, i.e, 0xffff0ff0, i.e. the test should be:
- > 
- > 	(d6 == DR6_RESERVED)
- > 
- > no?
+On Tue, Jun 18, 2013 at 1:52 PM, Pavel Machek <pavel@denx.de> wrote:
+>
+> If device is initialized from device tree, but has no interrupt
+> assigned, uio will still try to request and interrupt old way, fails,
+> and fails registration.
+>
+> This is wrong; don't try initializing irq using platform data if
+> device tree is available.
+>
+> Simplified code based on suggestion by Grant Likely.
+>
+> Fixed memory leak in "irq can not be registered" error path.
+>
+> Signed-off-by: Pavel Machek <pavel@denx.de>
+> Reported-by: Detlev Zundel <dzu@denx.de>
+>
+> ---
+>
+> Also redone against char-misc-next.
+>
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index c122bca..a27fd50 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -103,24 +103,16 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>         int i;
+>
+>         if (pdev->dev.of_node) {
+> -               int irq;
+> -
+>                 /* alloc uioinfo for one device */
+>                 uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+>                 if (!uioinfo) {
+>                         ret = -ENOMEM;
+>                         dev_err(&pdev->dev, "unable to kmalloc\n");
+> -                       goto bad2;
+> +                       return ret;
+>                 }
+>                 uioinfo->name = pdev->dev.of_node->name;
+>                 uioinfo->version = "devicetree";
+> -
+>                 /* Multiple IRQs are not supported */
+> -               irq = platform_get_irq(pdev, 0);
+> -               if (irq == -ENXIO)
+> -                       uioinfo->irq = UIO_IRQ_NONE;
+> -               else
+> -                       uioinfo->irq = irq;
+>         }
+>
+>         if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+> @@ -146,14 +138,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>         priv->flags = 0; /* interrupt is enabled to begin with */
+>         priv->pdev = pdev;
+>
+> -       if (!uioinfo->irq) {
+> -               ret = platform_get_irq(pdev, 0);
+> -               if (ret < 0) {
+> -                       dev_err(&pdev->dev, "failed to get IRQ\n");
+> -                       goto bad0;
+> -               }
+> -               uioinfo->irq = ret;
+> +       ret = platform_get_irq(pdev, 0);
+> +       uioinfo->irq = ret;
+> +       if (ret == -ENXIO && pdev->dev.of_node)
+> +               uioinfo->irq = UIO_IRQ_NONE;
 
-My intent here was to ignore cases where the reserved bits haven't been set.
-I occasionally see DR6: 00000000fffe0ff0 for eg.
+This short-circuits the platform data use case where uioinfo->irq is
+already set. The if (!uioinfo->irq) test is still needed. The original
+code looks like it already handles it correctly for both the
+platform_data and DT use cases because in the DT case the uioinfo
+structure is zeroed by kzalloc().
 
-But maybe you're right, and that is a clue and is worth printing ?
-I can't personally recall ever diagnosing a bug using those register dumps
-in the last 15 years.
+As an aside, switching to devm_kzalloc() would simplify the unwind path.
 
-	Dave
-
+> +       else if (ret < 0) {
+> +               dev_err(&pdev->dev, "failed to get IRQ\n");
+> +               goto bad1;
+>         }
+> +
+>         uiomem = &uioinfo->mem[0];
+>
+>         for (i = 0; i < pdev->num_resources; ++i) {
+> @@ -206,19 +199,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>         ret = uio_register_device(&pdev->dev, priv->uioinfo);
+>         if (ret) {
+>                 dev_err(&pdev->dev, "unable to register uio device\n");
+> -               goto bad1;
+> +               goto bad2;
+>         }
+>
+>         platform_set_drvdata(pdev, priv);
+>         return 0;
+> + bad2:
+> +       pm_runtime_disable(&pdev->dev);
+>   bad1:
+>         kfree(priv);
+> -       pm_runtime_disable(&pdev->dev);
+>   bad0:
+>         /* kfree uioinfo for OF */
+>         if (pdev->dev.of_node)
+>                 kfree(uioinfo);
+> - bad2:
+>         return ret;
+>  }
+>
+>
+>
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
