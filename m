@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab3FRRdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:33:08 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:44002 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab3FRRdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:33:06 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-	<87ppxd4ddm.fsf@devron.myhome.or.jp>
-	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
-	<87bo8v42wx.fsf@devron.myhome.or.jp>
-	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
-	<87vc722cdu.fsf@devron.myhome.or.jp>
-	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-	<87r4hp3kax.fsf@devron.myhome.or.jp>
-	<87k3nh3jzi.fsf@devron.myhome.or.jp>
-	<CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
-	<87fvy53eun.fsf@devron.myhome.or.jp>
-	<CAKYAXd95yVtbEmwiaDaxgDsJYbqWDV23rY0GuPKLVf0msSGJ2g@mail.gmail.com>
-	<CAKYAXd8kyN1w5GJ8zCoKL+XS67125dUf0ivqCQWKjGCSxnXYpg@mail.gmail.com>
-Date: Wed, 19 Jun 2013 02:33:01 +0900
-In-Reply-To: <CAKYAXd8kyN1w5GJ8zCoKL+XS67125dUf0ivqCQWKjGCSxnXYpg@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 18 Jun 2013 14:47:10 +0900")
-Message-ID: <87txkvjpde.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S933612Ab3FRRde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:33:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60176 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932728Ab3FRRdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:33:32 -0400
+Message-ID: <51C099D2.3090506@zytor.com>
+Date: Tue, 18 Jun 2013 12:33:06 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Joshua Covington <joshuacov@googlemail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] x86, mtrr: fixs for mtrr_cleanup
+References: <1371154622-8929-1-git-send-email-yinghai@kernel.org> <51C08B01.40200@zytor.com> <CAE9FiQXM=mgvUqLh_Uj9NA8fMOSt+zCz-ev-ujnVkhHm8fQW_g@mail.gmail.com>
+In-Reply-To: <CAE9FiQXM=mgvUqLh_Uj9NA8fMOSt+zCz-ev-ujnVkhHm8fQW_g@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On 06/18/2013 12:28 PM, Yinghai Lu wrote:
+> On Tue, Jun 18, 2013 at 9:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> On this subject: what do we need to happen to be able to dump the MTRR
+>> cleanup stuff?
+> 
+> the old x server like to add Write-combining entry in MTRR.
+> looks like drm for mga200 is adding that too ?
+>
 
->>If above is correct, right implement to change get_block().
-> Now when we try to write in the fallocated region ( with keep size) in
-> the fat_write_begin when it is called first time it checks that the
-> mismatch is present between the mmu_private and mmu_actual , and hence
-> zero out the region ; since buffer_new is not set for fallocated
-> region by fat_get_block , we explicitly zero out the lseeked region
-> using "fat_zero_falloc_area" and normal write occurs beyond that , and
-> i_size is updated accordingly , and as such there is no need to move
-> the code to fat_get_block .
+"Old X server" here has been a long time now.  I need to dig into the
+MGA200 I guess...
 
-OK. So, like I said, you *changed* the behavior of get_block() via
-fallocate() change, right?  (I think, now, you noticed fat_get_block()
-was changed.) Since you changed the behavior of get_block(), you had to
-hack write_begin(). (IMO, that patch is dirty hack to fix write_begin()
-path only)
+> We need to make them to use PAT instead.
 
-Likewise, you have to prove all callers of get_block() must work
-collectedly with that change.
+Yes.
 
-What happen on direct I/O, bmap ioctl, etc.? Well, anyway, please fix
-the root cause of change of behavior.
+	-hpa
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
