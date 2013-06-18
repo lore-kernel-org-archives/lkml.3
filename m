@@ -1,160 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab3FRSAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:00:06 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37849 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933157Ab3FRSAD (ORCPT
+	id S933623Ab3FRSHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:07:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44731 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933326Ab3FRSHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:00:03 -0400
-Message-ID: <51C0A01E.5020206@samsung.com>
-Date: Wed, 19 Jun 2013 02:59:58 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Tue, 18 Jun 2013 14:07:38 -0400
+Date: Tue, 18 Jun 2013 19:07:07 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "J, KEERTHY" <j-keerthy@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Message-ID: <20130618180707.GO1403@sirena.org.uk>
+References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
+ <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
+ <51C0820B.4020404@wwwdotorg.org>
+ <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
+ <51C093FF.6000204@wwwdotorg.org>
+ <DC88CAD03C0052499C1907B327FC63229EC5B4@DBDE04.ent.ti.com>
+ <51C09761.1020704@wwwdotorg.org>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        arnd@arndb.de, olof@lixom.net
-Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_* registers
-References: <1371569191-2364-1-git-send-email-t.figa@samsung.com> <4951987.HiKYku7923@flatron>
-In-Reply-To: <4951987.HiKYku7923@flatron>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bRSz5O7DOzi+nSIn"
+Content-Disposition: inline
+In-Reply-To: <51C09761.1020704@wwwdotorg.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
+ and then only request irq
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/13 02:45, Tomasz Figa wrote:
-> Ccing Arnd and Olof, because I forgot to add them to git send-email...
->
-> Sorry for the noise.
->
-> On Tuesday 18 of June 2013 17:26:31 Tomasz Figa wrote:
->> S5P_ARM_CORE1_* registers affect only core 1. To control further cores
->> properly another registers must be used.
->>
->> This patch replaces S5P_ARM_CORE1_* register definitions with
->> S5P_ARM_CORE_*(x) macro which return addresses of registers for
->> specified core.
->>
->> This fixes CPU hotplug on quad core Exynos SoCs on which currently
->> offlining CPUs 2 or 3 caused CPU 1 to be turned off.
->
-> Obviously this doesn't happen currently because of the if (cpu == 1), but
 
-Yes, not happened...and just note exynos5440 doesn't support hotplug :) 
-so this is available on exynos4412 and added 5420.
+--bRSz5O7DOzi+nSIn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> if logical cpu1 turned out not to be physical cpu1, then it would crash.
->
-> Best regards,
-> Tomasz
->
->> In addition,
->> bring-up of CPU 2 and 3 is fixed on boards where bootloader powers off
->> secondary cores by default.
->>
-I need to test on board about above...
+On Tue, Jun 18, 2013 at 11:22:41AM -0600, Stephen Warren wrote:
 
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
->> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
->> ---
->>   arch/arm/mach-exynos/hotplug.c               |  9 +++++----
->>   arch/arm/mach-exynos/include/mach/regs-pmu.h | 10 +++++++---
->>   arch/arm/mach-exynos/platsmp.c               |  9 +++++----
->>   3 files changed, 17 insertions(+), 11 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos/hotplug.c
->> b/arch/arm/mach-exynos/hotplug.c index af90cfa..c089943 100644
->> --- a/arch/arm/mach-exynos/hotplug.c
->> +++ b/arch/arm/mach-exynos/hotplug.c
->> @@ -93,10 +93,11 @@ static inline void cpu_leave_lowpower(void)
->>   static inline void platform_do_lowpower(unsigned int cpu, int
->> *spurious) {
->>   	for (;;) {
->> +		void __iomem *reg_base;
->> +		unsigned int phys_cpu = cpu_logical_map(cpu);
->>
->> -		/* make cpu1 to be turned off at next WFI command */
->> -		if (cpu == 1)
->> -			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
->> +		reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
->> +		__raw_writel(0, reg_base);
->>
->>   		/*
->>   		 * here's the WFI
->> @@ -106,7 +107,7 @@ static inline void platform_do_lowpower(unsigned int
->> cpu, int *spurious)
->>   		    : "memory", "cc");
->>
->> -		if (pen_release == cpu_logical_map(cpu)) {
->> +		if (pen_release == phys_cpu) {
->>   			/*
->>   			 * OK, proper wakeup, we're done
->>   			 */
->> diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h
->> b/arch/arm/mach-exynos/include/mach/regs-pmu.h index 57344b7..cf40b86
->> 100644
->> --- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
->> +++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
->> @@ -125,10 +125,14 @@
->>   #define S5P_GPS_ALIVE_LOWPWR			S5P_PMUREG(0x13A0)
->>
->>   #define S5P_ARM_CORE0_CONFIGURATION		S5P_PMUREG(0x2000)
->> +#define S5P_ARM_CORE0_STATUS			S5P_PMUREG(0x2004)
->>   #define S5P_ARM_CORE0_OPTION			S5P_PMUREG(0x2008)
->> -#define S5P_ARM_CORE1_CONFIGURATION		S5P_PMUREG(0x2080)
->> -#define S5P_ARM_CORE1_STATUS			S5P_PMUREG(0x2084)
->> -#define S5P_ARM_CORE1_OPTION			S5P_PMUREG(0x2088)
->> +#define S5P_ARM_CORE_CONFIGURATION(_nr)		\
->> +		(S5P_ARM_CORE0_CONFIGURATION + ((_nr) * 0x80))
->> +#define S5P_ARM_CORE_STATUS(_nr)		\
->> +		(S5P_ARM_CORE0_STATUS + ((_nr) * 0x80))
->> +#define S5P_ARM_CORE_OPTION(_nr)		\
->> +		(S5P_ARM_CORE0_OPTION + ((_nr) * 0x80))
->>
->>   #define S5P_ARM_COMMON_OPTION			S5P_PMUREG(0x2408)
->>   #define S5P_TOP_PWR_OPTION			S5P_PMUREG(0x2C48)
->> diff --git a/arch/arm/mach-exynos/platsmp.c
->> b/arch/arm/mach-exynos/platsmp.c index d9c6d0a..2cbabc8 100644
->> --- a/arch/arm/mach-exynos/platsmp.c
->> +++ b/arch/arm/mach-exynos/platsmp.c
->> @@ -109,14 +109,15 @@ static int __cpuinit
->> exynos_boot_secondary(unsigned int cpu, struct task_struct */
->>   	write_pen_release(phys_cpu);
->>
->> -	if (!(__raw_readl(S5P_ARM_CORE1_STATUS)&  S5P_CORE_LOCAL_PWR_EN))
-> {
->> +	if (!(__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
->> +	&  S5P_CORE_LOCAL_PWR_EN)) {
->>   		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
->> -			     S5P_ARM_CORE1_CONFIGURATION);
->> +			     S5P_ARM_CORE_CONFIGURATION(phys_cpu));
->>
->>   		timeout = 10;
->>
->>   		/* wait max 10 ms until cpu1 is on */
->> -		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
->> +		while ((__raw_readl(S5P_ARM_CORE_STATUS(phys_cpu))
->>   			&  S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN)
-> {
->>   			if (timeout-- == 0)
->>   				break;
->> @@ -125,7 +126,7 @@ static int __cpuinit exynos_boot_secondary(unsigned
->> int cpu, struct task_struct }
->>
->>   		if (timeout == 0) {
->> -			printk(KERN_ERR "cpu1 power enable failed");
->> +			printk(KERN_ERR "cpu%u power enable failed", cpu);
->>   			spin_unlock(&boot_lock);
->>   			return -ETIMEDOUT;
->>   		}
-> --
+> If the device was instantiated from a board file *or* a device tree,
+> i2c->irq is correctly set. Hence, checking that value works in both cases.
+
+The same thing will happen with any other firmware interface that gets
+introduced in the future - one of the goals with factoring all this out
+into the bus code is that it means the driver doesn't need to have any
+special handling.
+
+> If you check the interrupts DT property, that will only work if the
+> device was instantiated from device tree, and not if it was instantiated
+> from a board file; the property will never exist in the board file case,
+> and hence you'll never be able to have a board file provide an interrupt.
+
+Exactly.
+
+--bRSz5O7DOzi+nSIn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwKHIAAoJELSic+t+oim9ylUP/1AUr53DWEVwamFjR7TwDjQN
+eDvX4o2DHOh6xrqtwzjAj1oeTeWkqSA4J4nXc27cgf6ex94jporIagll1gzZzyhk
+s9ZlUjMFSVpNobZxY/SJRpFq8wtlxLbhJhPtJXaeRVgNN17963VddkLW4BOvpm3B
+XdHQXOWqr+ToBG3t5QILrFy5jcptVjXdzg3JtYyLXu5PWaed6mu3MkhwSjujZIp6
+ickmMYv1+SJN3VsvR4WIaSlDhIrUbtE/RaIp6khAcDhLRHSj8R5snSvHC9OR/v9D
+j3rPwiPhIMXRNkyVDIbvAmcJoSKgJRi5CaitKVWHW5Yt8qy7xEEAjbjZ3LJVi2tH
+H/yqlnn+Sy07bo1YHA2MVoezJtnu2OUIQHkuJ5dc5clbzxOy35ooLqHs4iD8Gne5
+YgZmV/FBhAIawxWZAcfujiuKCe6wjjcmFoTluIaZ4eqIgHBvHDJ+I82APCu5/CqV
++ONsZf7vFR0joBp353pedcWe6lvnZBVC3TWuG5XJWa4sCDnXNBmu372QCftbYPhe
+xtl0Ljhf+fmgdU3CyrduAxbh5poDdlErFGKs0Ybi1cr7Xa2weMO0q+fgrgvNz0nc
+JJ+IKsnUxp+snyROY5LqmqN+V5WB6xiyov9h4Lgs9Nxr9qZ8YkBOZhuYXgfT0TTS
+W1woJK7uiE51cRfXe0re
+=xRKR
+-----END PGP SIGNATURE-----
+
+--bRSz5O7DOzi+nSIn--
