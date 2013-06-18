@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3FRGlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:41:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54811 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab3FRGjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753042Ab3FRGjW (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Jun 2013 02:39:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42912 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3FRGjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 02:39:17 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Matt Porter <matt@ohporter.com>,
@@ -28,163 +29,78 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v11 0/8] ] DMA Engine support for AM33XX
-Date: Tue, 18 Jun 2013 01:38:11 -0500
-Message-ID: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
+        Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
+Subject: [PATCH v11 1/8] dmaengine: edma: Add TI EDMA device tree binding
+Date: Tue, 18 Jun 2013 01:38:12 -0500
+Message-ID: <1371537499-12970-2-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
+References: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a repost of Matt Porter's EDMA patches for AM33XX EDMA support
-with changes for few pending review comments on v9 series.
+From: Matt Porter <mdp@ti.com>
 
-Currently this is required for AM33XX (Beaglebone or EVM) to access MMC
-and be able mount to rootfs and boot till command prompt over MMC.
-Unless there are other pending review comments, I hope this series can
-make it into 3.11 merge window, the dependent series has been posted at [1]
-and completed review.
+The binding definition is based on the generic DMA controller
+binding.
 
-Tested EDMA on AM1808 EVM and AM33XX Beaglebone with MMC.
+Joel:
+* Droped reserved and queue DT entries from Documentation
+for now from the original patch series (v10)
+* Included properties in Documentation and clarified DMA properties (V11)
+* Made ti,hwmod option
+* Clarified DMA entries
 
-Sekhar Nori has posted a GIT PULL [1] which has 2 patches this series depends on:
-[1] http://www.spinics.net/lists/arm-kernel/msg251503.html
-
-Changes since v10:
-	- Reworked documentation based on Arnd's feedback
-	- Moved EDMA bindings documentation earlier in series
-	- Dropped mention on am33xx on 2/8 and 3/8 in the series
-
-Changes since v9:
-    - Droped reserved and queue DT entries from Documentation
-    for now from the original patch series.
-    - Drop DT entries that are non-hardware-description
-    - Split EDMA xbar support out of original EDMA DT parsing patch
-    to keep it easier for review.
-    - Rewrite shift and offset calculation xbar event mapping.
-    - Setup default one-to-one mapping for queue_priority and queue_tc
-    mapping as discussed in.
-    - Split out xbar stuff to separate patch.
-
-	Reference discussion:
-   https://patchwork.kernel.org/patch/2226761/
-
-Changes since v8:
-	- Removed edma node interrupt-parent property, it is inherited
-
-Changes since v7:
-	- Dropped dmaengine compat() patch. It is upstream.
-	- Submitted edma_alloc_slot() error checking bug fix separately,
-	  now a dependency
-	- Fixed bisect issues due to 3/10 hunks that went into 1/10
-	- Fixed incorrect IS_ERRVALUE() use in 3/10
-
-Changes since v6:
-	- Converted edma_of_read_*() to wrappers around of_property_read_*()
-	- Fixed wording on the omap-spi generic DMA properties
-	- Added comment/check to clarify that the driver only supports
-	  a single EDMA instance when booting from DT
-
-Changes since v5:
-	- Dropped mmc portion and moved it to a separate series
-	- Incorporate corrected version of dma_request_slave_channel_compat()
-	- Fix #defines and enablement of TI_PRIV_EDMA option
-
-Changes since v4:
-	- Fixed debug section mismatch in private edma api [01/14]
-	- Respun format-patch to catch the platform_data/edma.h rename [01/14]
-	- Removed address/size-cells from the EDMA binding [05/14]
-
-Changes since v3:
-	- Rebased on 3.8-rc3
-	- No longer an RFC
-	- Fixed bugs in DT/pdata parsing reported by Vaibhav Bedia
-	- Restored all the Davinci pdata to const
-	- Removed max_segs hack in favor of using dma_get_channel_caps()
-	- Fixed extra parens, __raw_* accessors and, ioremap error checks
-	  in xbar handling
-	- Removed excess license info in platform_data/edma.h
-	- Removed unneeded reserved channels data for AM33xx
-	- Removed test-specific pinmuxing from dts files
-	- Adjusted mmc1 node to be disabled by default in the dtsi
-
-Changes since v2:
-	- Rebased on 3.7-rc1
-	- Fixed bug in DT/pdata parsing first found by Gururaja
-	  that turned out to be masked by some toolchains
-	- Dropped unused mach-omap2/devices.c hsmmc patch
-	- Added AM33XX crossbar DMA event mux support
-	- Added am335x-evm support
-
-Changes since v1:
-	- Rebased on top of mainline from 12250d8
-	- Dropped the feature removal schedule patch
-	- Implemented dma_request_slave_channel_compat() and
-	  converted the mmc and spi drivers to use it
-	- Dropped unneeded #address-cells and #size-cells from
-	  EDMA DT support
-	- Moved private EDMA header to linux/platform_data/ and
-	  removed some unneeded definitions
-	- Fixed parsing of optional properties
-
-This series adds DMA Engine support for AM33xx, which uses
-an EDMA DMAC. The EDMA DMAC has been previously supported by only
-a private API implementation (much like the situation with OMAP
-DMA) found on the DaVinci family of SoCs.
-
-The series applies on top of 3.10-rc4.
-
-The approach taken is similar to how OMAP DMA is being converted to
-DMA Engine support. With the functional EDMA private API already
-existing in mach-davinci/dma.c, we first move that to an ARM common
-area so it can be shared. Adding DT and runtime PM support to the
-private EDMA API implementation allows it to run on AM33xx. AM33xx
-*only* boots using DT so the upstream generic DT DMA helpers are
-leveraged to register EDMA DMAC with the of_dma framework. SPI (and
-MMC in a separate series) are supported using the upstream
-dma_request_slave_channel_compat() dmaengine call that allows
-compatibility with !DT platforms.
-
-With this series both BeagleBone and the AM335x EVM have working
-SPI DMA support (and MMC support with the separate MMC series).
-
-This is tested on BeagleBone with a SPI framebuffer driver and MMC
-rootfs. A trivial gpio DMA event misc driver was used to test the
-crossbar DMA event support. It is also tested on the AM335x EVM
-with the onboard SPI flash and MMC rootfs. Note that MMC can only
-be tested with a separate MMC dmaengine/DT series applied.
-
-Regression testing was done on AM180x-EVM (which also makes use
-of the EDMA dmaengine driver and the EDMA private API) using SD,
-SPI flash, and the onboard audio supported by the ASoC Davinci
-driver. Regression testing was also done on a BeagleBoard xM
-booting from the legacy board file using MMC rootfs.
-
-
-Matt Porter (8):
-  dmaengine: edma: Add TI EDMA device tree binding
-  ARM: edma: Add DT and runtime PM support to the private EDMA API
-  ARM: edma: Add EDMA crossbar event mux support
-  ARM: dts: add AM33XX EDMA support
-  ARM: dts: add AM33XX SPI DMA support
-  dmaengine: edma: enable build for AM33XX
-  spi: omap2-mcspi: add generic DMA request support to the DT binding
-  spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-
- Documentation/devicetree/bindings/dma/ti-edma.txt  |   34 +++
- Documentation/devicetree/bindings/spi/omap-spi.txt |   27 ++-
- arch/arm/boot/dts/am33xx.dtsi                      |   22 ++
- arch/arm/common/edma.c                             |  249 +++++++++++++++++++-
- arch/arm/mach-omap2/Kconfig                        |    1 +
- drivers/dma/Kconfig                                |    2 +-
- drivers/spi/spi-omap2-mcspi.c                      |   64 +++--
- include/linux/platform_data/edma.h                 |    5 +-
- 8 files changed, 368 insertions(+), 36 deletions(-)
+Signed-off-by: Matt Porter <mporter@ti.com>
+Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+---
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   34 +++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..9fbbdb7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,34 @@
++TI EDMA
++
++Required properties:
++- compatible : "ti,edma3"
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++- #dma-cells: Should be set to <1>
++              Clients should use a single channel number per DMA request.
++- dma-channels: Specify total DMA channels per CC
++- reg: Memory map for accessing module
++- interrupt-parent: Interrupt controller the interrupt is routed through
++- interrupts: Exactly 3 interrupts need to be specified in the order:
++              1. Transfer completion interrupt.
++              2. Memory protection interrupt.
++              3. Error interrupt.
++Optional properties:
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-xbar-event-map: Crossbar event to channel map
++
++Example:
++
++edma: edma@49000000 {
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-xbar-event-map = <1 12
++				  2 13>;
++};
 -- 
 1.7.9.5
 
