@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab3FRMM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:12:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55907 "EHLO
+	id S932415Ab3FRMNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:13:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55895 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab3FRLn5 (ORCPT
+	with ESMTP id S1755508Ab3FRLnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:43:57 -0400
+	Tue, 18 Jun 2013 07:43:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Vladimir Murzin <murzin.v@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 08/93] iwlwifi: dvm: fix zero LQ CMD sending avoidance
-Date: Tue, 18 Jun 2013 12:42:16 +0100
-Message-Id: <1371555821-12820-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 05/93] xhci: fix list access before init
+Date: Tue, 18 Jun 2013 12:42:13 +0100
+Message-Id: <1371555821-12820-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Vladimir Murzin <murzin.v@gmail.com>
 
-commit a87783699b23395c46bbeeb5d28f6db24897bf26 upstream.
+commit 88696ae432ce7321540ac53d9caab3de9118b094 upstream.
 
-In 63b77bf489881747c5118476918cc8c29378ee63
+If for whatever reason we fall into fail path in xhci_mem_init()
+before bw table gets initialized we may access the uninitialized lists
+in xhci_mem_cleanup().
 
-	iwlwifi: dvm: don't send zeroed LQ cmd
+Check for bw table before traversing lists in cleanup routine.
 
-I tried to avoid to send zeroed LQ cmd, but I made a (very)
-stupid mistake in the memcmp.
-Since this patch has been ported to stable, the fix should
-go to stable too.
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
+information about roothubs and TTs."
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=58341
-
-Reported-by: Hinnerk van Bruinehsen <h.v.bruinehsen@fu-berlin.de>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Sergey Dyasly <dserrg@gmail.com>
+Tested-by: Sergey Dyasly <dserrg@gmail.com>
+Signed-off-by: Vladimir Murzin <murzin.v@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-mem.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-index b4f0661..dff75ea 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-@@ -763,7 +763,7 @@ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
- 					memcpy(&lq, priv->stations[i].lq,
- 					       sizeof(struct iwl_link_quality_cmd));
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 59c08b2..0618f25 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1847,6 +1847,9 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
--				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
-+				if (memcmp(&lq, &zero_lq, sizeof(lq)))
- 					send_lq = true;
- 			}
- 			spin_unlock_bh(&priv->sta_lock);
++	if (!xhci->rh_bw)
++		goto no_bw;
++
+ 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+ 	for (i = 0; i < num_ports; i++) {
+ 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+@@ -1865,6 +1868,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 		}
+ 	}
+ 
++no_bw:
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
+ 	xhci->num_active_eps = 0;
 -- 
 1.8.1.2
 
