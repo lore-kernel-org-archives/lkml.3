@@ -1,88 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab3FRKOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:14:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44571 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab3FRKOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:14:43 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <broonie@kernel.org>, <j-keerthy@ti.com>, <ldewangan@nvidia.com>,
-        <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
-        <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <gg@slimlogic.co.uk>
-Subject: [PATCH v2 3/4] mfd: Palmas: Add TPS659038 PMIC support
-Date: Tue, 18 Jun 2013 15:33:53 +0530
-Message-ID: <1371549834-7443-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S932150Ab3FRKO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:14:56 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17084 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756001Ab3FRKOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:14:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 18 Jun 2013 03:13:22 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v2 1/2] mfd: tps65910: Fix crash in i2c_driver .probe
+Date: Tue, 18 Jun 2013 13:14:40 +0300
+Message-ID: <1371550481-28126-2-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1371550481-28126-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1371550481-28126-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Patch adds TPS659038 PMIC support in the palmas mfd driver.
-The TPS659038 has almost the same registers as of the earlier
-supported variants of PALMAS family such as the TWL6035.
+Commit "i2c: core: make it possible to match a pure device tree driver"
+changed semantics of the i2c probing for device tree devices.
+Device tree probed devices now get a NULL i2c_device_id pointer.
+This caused kernel panics due to NULL dereference.
 
-The critical differences between TPS659038 and TWL6035 being:
+Moves the of_match_device call from tps65910_parse_dt to .probe to
+allow the chip type to be detected from device tree but with the
+device parameters coming from platform data.
 
-1) TPS659038 has nothing related to battery charging and back up battery stuff.
-2) TPS659038 does not have does not have SMPS10(Boost) step up convertor.
-3) TPS659038 does not have Battery detection and anything related to battery.
-4) SD card detection, Battery presence detection, Vibrator, USB OTG are missing
-   when compared to TWL6035.
-
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- Documentation/devicetree/bindings/mfd/palmas.txt |    2 ++
- drivers/mfd/palmas.c                             |    5 +++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ v2: Don't overwrite platform data from DT 
 
-diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-index 7bcd59c..89cb773 100644
---- a/Documentation/devicetree/bindings/mfd/palmas.txt
-+++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-@@ -5,6 +5,7 @@ twl6035 (palmas)
- twl6037 (palmas)
- tps65913 (palmas)
- tps65914 (palmas)
-+tps659038
+ drivers/mfd/tps65910.c | 39 +++++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index d792772..61147b4 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -384,22 +384,13 @@ static struct of_device_id tps65910_of_match[] = {
+ MODULE_DEVICE_TABLE(of, tps65910_of_match);
  
- Required properties:
- - compatible : Should be from the list
-@@ -14,6 +15,7 @@ Required properties:
-   ti,tps65913
-   ti,tps65914
-   ti,tps80036
-+  ti,tps659038
- and also the generic series names
-   ti,palmas
- - interrupt-controller : palmas has its own internal IRQs
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index f9630b1..d8f2e33 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -232,12 +232,17 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+-						int *chip_id)
++						int chip_id)
+ {
+ 	struct device_node *np = client->dev.of_node;
+ 	struct tps65910_board *board_info;
+ 	unsigned int prop;
+-	const struct of_device_id *match;
+ 	int ret = 0;
+ 
+-	match = of_match_device(tps65910_of_match, &client->dev);
+-	if (!match) {
+-		dev_err(&client->dev, "Failed to find matching dt id\n");
+-		return NULL;
+-	}
+-
+-	*chip_id  = (int)match->data;
+-
+ 	board_info = devm_kzalloc(&client->dev, sizeof(*board_info),
+ 			GFP_KERNEL);
+ 	if (!board_info) {
+@@ -410,13 +401,13 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+ 	ret = of_property_read_u32(np, "ti,vmbch-threshold", &prop);
+ 	if (!ret)
+ 		board_info->vmbch_threshold = prop;
+-	else if (*chip_id == TPS65911)
++	else if (chip_id == TPS65911)
+ 		dev_warn(&client->dev, "VMBCH-Threshold not specified");
+ 
+ 	ret = of_property_read_u32(np, "ti,vmbch2-threshold", &prop);
+ 	if (!ret)
+ 		board_info->vmbch2_threshold = prop;
+-	else if (*chip_id == TPS65911)
++	else if (chip_id == TPS65911)
+ 		dev_warn(&client->dev, "VMBCH2-Threshold not specified");
+ 
+ 	prop = of_property_read_bool(np, "ti,en-ck32k-xtal");
+@@ -432,7 +423,7 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+ #else
+ static inline
+ struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+-					 int *chip_id)
++					 int chip_id)
+ {
+ 	return NULL;
  }
+@@ -461,16 +452,28 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	struct tps65910_board *of_pmic_plat_data = NULL;
+ 	struct tps65910_platform_data *init_data;
+ 	int ret = 0;
+-	int chip_id = id->driver_data;
++	int chip_id = -1;
  
- static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
-+static unsigned int tps659038_features;
+ 	pmic_plat_data = dev_get_platdata(&i2c->dev);
  
- static const struct of_device_id of_palmas_match_tbl[] = {
- 	{
- 		.compatible = "ti,palmas",
- 		.data = &palmas_features,
- 	},
-+	{
-+		.compatible = "ti,tps659038",
-+		.data = &tps659038_features,
-+	},
- 	{ },
- };
+-	if (!pmic_plat_data && i2c->dev.of_node) {
+-		pmic_plat_data = tps65910_parse_dt(i2c, &chip_id);
+-		of_pmic_plat_data = pmic_plat_data;
++	if (id) {
++		chip_id = id->driver_data;
++	} else if (i2c->dev.of_node) {
++		const struct of_device_id *match;
++		match = of_match_device(tps65910_of_match, &i2c->dev);
++		if (!match) {
++			dev_err(&i2c->dev, "Failed to find matching dt id\n");
++			return -EINVAL;
++		}
++		chip_id  = (int)match->data;
++
++		if (!pmic_plat_data) {
++			pmic_plat_data = tps65910_parse_dt(i2c, chip_id);
++			of_pmic_plat_data = pmic_plat_data;
++		}
+ 	}
  
+-	if (!pmic_plat_data)
++	if (!pmic_plat_data || chip_id < 0)
+ 		return -EINVAL;
+ 
+ 	init_data = devm_kzalloc(&i2c->dev, sizeof(*init_data), GFP_KERNEL);
 -- 
-1.7.5.4
+1.8.1.5
 
