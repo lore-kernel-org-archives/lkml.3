@@ -1,140 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab3FRGbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:31:13 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:50458 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3FRGbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:31:12 -0400
-Date: Tue, 18 Jun 2013 10:31:05 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130618063104.GB20528@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618024623.GP29338@dastard>
+	id S1753511Ab3FRGj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:39:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46561 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab3FRGj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 02:39:26 -0400
+From: Joel A Fernandes <joelagnel@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>
+CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
+Subject: [PATCH v11 8/8] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+Date: Tue, 18 Jun 2013 01:38:19 -0500
+Message-ID: <1371537499-12970-9-git-send-email-joelagnel@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
+References: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618024623.GP29338@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 12:46:23PM +1000, Dave Chinner wrote:
-> On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
-> > On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
-> > > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
-> > > 
-> > > > > I managed to trigger:
-> > > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > > > > on top. 
-> > > > > 
-> > > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > > > > [...]
-> > > > > ffffffff81122d9c:       0f 0b                   ud2
-> > > > > 
-> > > > > RAX is -1UL.
-> > > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
-> > > > and BUG, instead of an unsigned quantity.
-> > > > 
-> > > > > 
-> > > > > I assume that the current backtrace is of no use and it would most
-> > > > > probably be some shrinker which doesn't behave.
-> > > > > 
-> > > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> > > > Assuming you are not using xfs, we are left with dentries and inodes.
-> > > > 
-> > > > The first thing to do is to find which one of them is misbehaving. You can try finding
-> > > > this out by the address of the list_lru, and where it lays in the superblock.
-> > > > 
-> > > > Once we know each of them is misbehaving, then we'll have to figure out why.
-> > > 
-> > > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
-> > > it's inodes?
-> > > 
-> > Assuming there is no memory corruption of any sort going on , let's check the code.
-> > nr_item is only manipulated in 3 places:
-> > 
-> > 1) list_lru_add, where it is increased
-> > 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
-> >    element from the list
-> > 3) list_lru_walk_node, where an element is removing during shrink.
-> > 
-> > All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
-> 
-> inode_lru_isolate() looks suspicious to me:
-> 
->         WARN_ON(inode->i_state & I_NEW);
->         inode->i_state |= I_FREEING;
->         spin_unlock(&inode->i_lock);
-> 
->         list_move(&inode->i_lru, freeable);
->         this_cpu_dec(nr_unused);
-> 	return LRU_REMOVED;
-> }
-> 
-> All the other cases where I_FREEING is set and the inode is removed
-> from the LRU are completely done under the inode->i_lock. i.e. from
-> an external POV, the state change to I_FREEING and removal from LRU
-> are supposed to be atomic, but they are not here.
-> 
-> I'm not sure this is the source of the problem, but it definitely
-> needs fixing.
-> 
-Yes, I missed that yesterday, but that does look suspicious to me as well.
+From: Matt Porter <mporter@ti.com>
 
-Michal, if you can manually move this one inside the lock as well and see
-if it fixes your problem as well... Otherwise I can send you a patch as well
-so we don't get lost on what is patched and what is not.
+Convert dmaengine channel requests to use
+dma_request_slave_channel_compat(). This supports the DT case of
+platforms requiring channel selection from either the OMAP DMA or
+the EDMA engine. AM33xx only boots from DT and is the only user
+implementing EDMA so in the !DT case we can default to the OMAP DMA
+filter.
 
-Let us at least know if this is the problem.
+Signed-off-by: Matt Porter <mporter@ti.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |   64 ++++++++++++++++++++++++++++-------------
+ 1 file changed, 44 insertions(+), 20 deletions(-)
 
-> > callers:
-> > iput_final, evict_inodes, invalidate_inodes.
-> > Both evict_inodes and invalidate_inodes will do the following pattern:
-> > 
-> >                 inode->i_state |= I_FREEING;                                            
-> >                 inode_lru_list_del(inode);
-> >                 spin_unlock(&inode->i_lock);
-> >                 list_add(&inode->i_lru, &dispose);
-> > 
-> > IOW, they will remove the element from the LRU, and add it to the dispose list.
-> > Both of them will also bail out if they see I_FREEING already set, so they are safe
-> > against each other - because the flag is manipulated inside the lock.
-> > 
-> > But how about iput_final? It seems to me that if we are calling iput_final at the
-> > same time as the other two, this *could* happen (maybe there is some extra protection
-> > that can be seen from Australia but not from here. Dave?)
-> 
-> If I_FREEING is set before we enter iput_final(), then something
-> else is screwed up. I_FREEING is only set once the last reference
-> has gone away and we are killing the inode. All the other callers
-> that set I_FREEING check that the reference count on the inode is
-> zero before they set I_FREEING. Hence I_FREEING cannot be set on the
-> transition of i_count from 1 to 0 when iput_final() is called. So
-> the patch won't do anything to avoid the problem being seen.
-> 
-Yes, but isn't things like evict_inodes and invalidate_inodes called at
-umount time, for instance? Can't it be that we drop the last reference
-to a valid in use inode while someone else is invalidating them all?
-
-> Keep in mind that we this is actually a new warning on the count of
-> inodes on the LRU - we never had a check that it didn't go negative
-> before....
->
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 86d2158..ca4ab78 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -102,6 +102,9 @@ struct omap2_mcspi_dma {
  
+ 	struct completion dma_tx_completion;
+ 	struct completion dma_rx_completion;
++
++	char dma_rx_ch_name[14];
++	char dma_tx_ch_name[14];
+ };
+ 
+ /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
+@@ -830,12 +833,20 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 	sig = mcspi_dma->dma_rx_sync_dev;
+-	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++
++	mcspi_dma->dma_rx =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &sig, &master->dev,
++						 mcspi_dma->dma_rx_ch_name);
+ 	if (!mcspi_dma->dma_rx)
+ 		goto no_dma;
+ 
+ 	sig = mcspi_dma->dma_tx_sync_dev;
+-	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++	mcspi_dma->dma_tx =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &sig, &master->dev,
++						 mcspi_dma->dma_tx_ch_name);
++
+ 	if (!mcspi_dma->dma_tx) {
+ 		dma_release_channel(mcspi_dma->dma_rx);
+ 		mcspi_dma->dma_rx = NULL;
+@@ -1256,29 +1267,42 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 		goto free_master;
+ 
+ 	for (i = 0; i < master->num_chipselect; i++) {
+-		char dma_ch_name[14];
++		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
++		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
+ 		struct resource *dma_res;
+ 
+-		sprintf(dma_ch_name, "rx%d", i);
+-		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-				dma_ch_name);
+-		if (!dma_res) {
+-			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
+-			status = -ENODEV;
+-			break;
+-		}
++		sprintf(dma_rx_ch_name, "rx%d", i);
++		if (!pdev->dev.of_node) {
++			dma_res =
++				platform_get_resource_byname(pdev,
++							     IORESOURCE_DMA,
++							     dma_rx_ch_name);
++			if (!dma_res) {
++				dev_dbg(&pdev->dev,
++					"cannot get DMA RX channel\n");
++				status = -ENODEV;
++				break;
++			}
+ 
+-		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
+-		sprintf(dma_ch_name, "tx%d", i);
+-		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-				dma_ch_name);
+-		if (!dma_res) {
+-			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
+-			status = -ENODEV;
+-			break;
++			mcspi->dma_channels[i].dma_rx_sync_dev =
++				dma_res->start;
+ 		}
++		sprintf(dma_tx_ch_name, "tx%d", i);
++		if (!pdev->dev.of_node) {
++			dma_res =
++				platform_get_resource_byname(pdev,
++							     IORESOURCE_DMA,
++							     dma_tx_ch_name);
++			if (!dma_res) {
++				dev_dbg(&pdev->dev,
++					"cannot get DMA TX channel\n");
++				status = -ENODEV;
++				break;
++			}
+ 
+-		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
++			mcspi->dma_channels[i].dma_tx_sync_dev =
++				dma_res->start;
++		}
+ 	}
+ 
+ 	if (status < 0)
+-- 
+1.7.9.5
+
