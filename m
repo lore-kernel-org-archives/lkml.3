@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333Ab3FRTvY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:51:24 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:45870 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab3FRTvW (ORCPT
+	id S933185Ab3FRTwl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:52:41 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:35036 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab3FRTwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:51:22 -0400
-Date: Tue, 18 Jun 2013 14:49:48 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH 9/11] rsxx: Adding EEH check inside cregs timeout.
-Message-ID: <20130618194948.GJ6492@oc6784271780.ibm.com>
+	Tue, 18 Jun 2013 15:52:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061819-5518-0000-0000-00000FB453EF
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430EA2AA2513@SC-VEXCH1.marvell.com>
+References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
+	<5146EAB0.1030705@samsung.com>
+	<CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
+	<515E88E3.5070507@samsung.com>
+	<003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
+	<CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
+	<001601ce35b9$652c5870$2f850950$%jun@samsung.com>
+	<CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
+	<001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
+	<477F20668A386D41ADCC57781B1F70430EA2AA2513@SC-VEXCH1.marvell.com>
+Date: Tue, 18 Jun 2013 12:52:37 -0700
+X-Google-Sender-Auth: ixzXo_osiyttC08RhAsN6JJvul4
+Message-ID: <CAD=FV=Xz-Cp86u=w8m91AEMJgH-o6cLkz6_udVw_3bm7Tm0OiA@mail.gmail.com>
+Subject: Re: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from STATE_DATA_ERROR
+From: Doug Anderson <dianders@chromium.org>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@gmail.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Bing,
 
-Unfortunaly, our CPU register path does not do any kind of
-EEH error checking. So to fix this issue, an ioread32 was
-added to the CPU register timeout code. This way, the
-driver can check to see if the timeout was caused by an EEH
-error or not. This is a dummy read.
+On Tue, Jun 18, 2013 at 12:46 PM, Bing Zhao <bzhao@marvell.com> wrote:
+> Hi Seungwon,
+>
+>> > I don't have the failing unit myself, so we'll have to get Bing to try
+>> > the patches.  You are suggesting that we try applying both of your
+>> > patches, right?
+>> Did you test the patch?
+>> I wonder that both are good for your side.
+>
+> I tested Doug's patch on my failing unit.
+>
+> Without this patch, mmc got hung_task and rebooted eventually.
+> With this patch applied, mmc returns CRC error instead of hung_task, and the error is handled gracefully.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+Have you tried one or both or Seungwon's fixes without mine?
 
-
-
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/cregs.c linux-block/drivers/block/rsxx/cregs.c
---- linux-block-vanilla/drivers/block/rsxx/cregs.c	2013-06-17 16:42:07.992905929 -0500
-+++ linux-block/drivers/block/rsxx/cregs.c	2013-06-17 18:01:27.883841190 -0500
-@@ -431,6 +431,15 @@ static int __issue_creg_rw(struct rsxx_c
- 	*hw_stat = completion.creg_status;
- 
- 	if (completion.st) {
-+		/*
-+		* This read is needed to verify that there has not been any
-+		* extreme errors that might have occurred, i.e. EEH. The
-+		* function iowrite32 will not detect EEH errors, so it is
-+		* necessary that we recover if such an error is the reason
-+		* for the timeout. This is a dummy read.
-+		*/
-+		ioread32(card->regmap + SCRATCH);
-+
- 		dev_warn(CARD_TO_DEV(card),
- 			"creg command failed(%d x%08x)\n",
- 			completion.st, addr);
-
+-Doug
