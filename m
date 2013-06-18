@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398Ab3FRQU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:20:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49589 "EHLO
+	id S933356Ab3FRQST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:18:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933375Ab3FRQS2 (ORCPT
+	with ESMTP id S933271Ab3FRQSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:18:28 -0400
+	Tue, 18 Jun 2013 12:18:07 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 47/48] tg3: Wait for boot code to finish after power on
-Date: Tue, 18 Jun 2013 09:18:13 -0700
-Message-Id: <20130618161732.770205071@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 42/48] powerpc: Fix missing/delayed calls to irq_work
+Date: Tue, 18 Jun 2013 09:18:08 -0700
+Message-Id: <20130618161732.041320108@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -30,57 +29,40 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit df465abfe06f7dc4f33f4a96d17f096e9e8ac917 upstream.
+commit 230b3034793247f61e6a0b08c44cf415f6d92981 upstream.
 
-Some systems that don't need wake-on-lan may choose to power down the
-chip on system standby. Upon resume, the power on causes the boot code
-to startup and initialize the hardware. On one new platform, this is
-causing the device to go into a bad state due to a race between the
-driver and boot code, once every several hundred resumes. The same race
-exists on open since we come up from a power on.
+When replaying interrupts (as a result of the interrupt occurring
+while soft-disabled), in the case of the decrementer, we are exclusively
+testing for a pending timer target. However we also use decrementer
+interrupts to trigger the new "irq_work", which in this case would
+be missed.
 
-This patch adds a wait for boot code signature at the beginning of
-tg3_init_hw() which is common to both cases. If there has not been a
-power-off or the boot code has already completed, the signature will be
-present and poll_fw() returns immediately. Also return immediately if
-the device does not have firmware.
+This change the logic to force a replay in both cases of a timer
+boundary reached and a decrementer interrupt having actually occurred
+while disabled. The former test is still useful to catch cases where
+a CPU having been hard-disabled for a long time completely misses the
+interrupt due to a decrementer rollover.
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/powerpc/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -1799,6 +1799,9 @@ static int tg3_poll_fw(struct tg3 *tp)
- 	int i;
- 	u32 val;
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -162,7 +162,7 @@ notrace unsigned int __check_irq_replay(
+ 	 * in case we also had a rollover while hard disabled
+ 	 */
+ 	local_paca->irq_happened &= ~PACA_IRQ_DEC;
+-	if (decrementer_check_overflow())
++	if ((happened & PACA_IRQ_DEC) || decrementer_check_overflow())
+ 		return 0x900;
  
-+	if (tg3_flag(tp, NO_FWARE_REPORTED))
-+		return 0;
-+
- 	if (tg3_flag(tp, IS_SSB_CORE)) {
- 		/* We don't use firmware. */
- 		return 0;
-@@ -10016,6 +10019,13 @@ static int tg3_reset_hw(struct tg3 *tp,
-  */
- static int tg3_init_hw(struct tg3 *tp, int reset_phy)
- {
-+	/* Chip may have been just powered on. If so, the boot code may still
-+	 * be running initialization. Wait for it to finish to avoid races in
-+	 * accessing the hardware.
-+	 */
-+	tg3_enable_register_access(tp);
-+	tg3_poll_fw(tp);
-+
- 	tg3_switch_clocks(tp);
- 
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
+ 	/* Finally check if an external interrupt happened */
 
 
