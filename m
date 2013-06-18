@@ -1,173 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab3FRG0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:26:32 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:49004 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3FRG0b (ORCPT
+	id S1752871Ab3FRG0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:26:43 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:34466 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751444Ab3FRG0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:26:31 -0400
-Date: Tue, 18 Jun 2013 10:26:24 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130618062623.GA20528@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
+	Tue, 18 Jun 2013 02:26:41 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: fix load_above_capacity underflow
+Date: Tue, 18 Jun 2013 14:26:23 +0800
+Message-ID: <1371536783-27012-1-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <20130617223004.GB2538@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Apparently we don't want to see sds->busiest_nr_running is small than
+sds->busiest_group_capacity, while our load_above_capacity is
+an "unsigned long" type.
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
-> On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
-> > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
-> > 
-> > > > I managed to trigger:
-> > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > > > on top. 
-> > > > 
-> > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > > > [...]
-> > > > ffffffff81122d9c:       0f 0b                   ud2
-> > > > 
-> > > > RAX is -1UL.
-> > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
-> > > and BUG, instead of an unsigned quantity.
-> > > 
-> > > > 
-> > > > I assume that the current backtrace is of no use and it would most
-> > > > probably be some shrinker which doesn't behave.
-> > > > 
-> > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> > > Assuming you are not using xfs, we are left with dentries and inodes.
-> > > 
-> > > The first thing to do is to find which one of them is misbehaving. You can try finding
-> > > this out by the address of the list_lru, and where it lays in the superblock.
-> > > 
-> > > Once we know each of them is misbehaving, then we'll have to figure out why.
-> > 
-> > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
-> > it's inodes?
-> > 
-> Assuming there is no memory corruption of any sort going on , let's check the code.
-> nr_item is only manipulated in 3 places:
-> 
-> 1) list_lru_add, where it is increased
-> 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
->    element from the list
-> 3) list_lru_walk_node, where an element is removing during shrink.
-> 
-> All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
-> Either the element was never added to the list, or it was added, removed, and we didn't notice
-> it. (Again, your backing storage is not XFS, is it? If it is , we have another user to look for)
-> 
-> I will assume that Andrew is correct and this is inode related. list_lru_del reads as follows:
->         spin_lock(&nlru->lock);
->         if (!list_empty(item)) { ... }
-> 
-> So one possibility is that we are manipulating this list outside this lock somewhere. Going to
-> inode.c... We always manipulate the LRU inside the lock, but the element is not always in the LRU,
-> if it is in a list. Could it be possible that the element is in the dispose_list, and at the same
-> time someone calls list_lru_del at it, creating the imbalance ?
-> 
-> callers:
-> iput_final, evict_inodes, invalidate_inodes.
-> Both evict_inodes and invalidate_inodes will do the following pattern:
-> 
->                 inode->i_state |= I_FREEING;                                            
->                 inode_lru_list_del(inode);
->                 spin_unlock(&inode->i_lock);
->                 list_add(&inode->i_lru, &dispose);
-> 
-> IOW, they will remove the element from the LRU, and add it to the dispose list.
-> Both of them will also bail out if they see I_FREEING already set, so they are safe
-> against each other - because the flag is manipulated inside the lock.
-> 
-> But how about iput_final? It seems to me that if we are calling iput_final at the
-> same time as the other two, this *could* happen (maybe there is some extra protection
-> that can be seen from Australia but not from here. Dave?)
-> 
-> Right now this is my best theory.
-> 
-> I am attaching a patch that should make a difference in case I am right.
-> 
-> 
-> 
-
-Which is obviously borked since I did not fix the other callers so to move I_FREEING
-after lru del.
-
-Michal, would you mind testing the following patch?
-
-
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline; filename="inode.patch"
-
-diff --git a/fs/inode.c b/fs/inode.c
-index 00b804e..48eafa6 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c61a614..fd90b17 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4780,12 +4780,17 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 		/*
+ 		 * Don't want to pull so many tasks that a group would go idle.
+ 		 */
+-		load_above_capacity = (sds->busiest_nr_running -
+-						sds->busiest_group_capacity);
++		if (sds->busiest_has_capacity)
++			load_above_capacity = 0;
++		else {
++			load_above_capacity = (sds->busiest_nr_running -
++					sds->busiest_group_capacity);
  
- static void inode_lru_list_del(struct inode *inode)
- {
-+	if (inode->i_state & I_FREEING)
-+		return;
+-		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
++			load_above_capacity *=
++				(SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
  
- 	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
- 		this_cpu_dec(nr_unused);
-@@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
- 			continue;
- 		}
- 
--		inode->i_state |= I_FREEING;
- 		inode_lru_list_del(inode);
-+		inode->i_state |= I_FREEING;
- 		spin_unlock(&inode->i_lock);
- 		list_add(&inode->i_lru, &dispose);
- 	}
-@@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
- 			continue;
- 		}
- 
--		inode->i_state |= I_FREEING;
- 		inode_lru_list_del(inode);
-+		inode->i_state |= I_FREEING;
- 		spin_unlock(&inode->i_lock);
- 		list_add(&inode->i_lru, &dispose);
- 	}
-@@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
- 		inode->i_state &= ~I_WILL_FREE;
+-		load_above_capacity /= sds->busiest->sgp->power;
++			load_above_capacity /= sds->busiest->sgp->power;
++		}
  	}
  
-+	inode_lru_list_del(inode);
- 	inode->i_state |= I_FREEING;
--	if (!list_empty(&inode->i_lru))
--		inode_lru_list_del(inode);
- 	spin_unlock(&inode->i_lock);
- 
- 	evict(inode);
+ 	/*
+-- 
+1.7.10.4
 
---ZGiS0Q5IWpPtfppv--
