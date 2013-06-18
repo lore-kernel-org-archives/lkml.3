@@ -1,57 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab3FRTd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:33:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53719 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182Ab3FRTd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:33:57 -0400
-Message-ID: <51C0B614.5000708@infradead.org>
-Date: Tue, 18 Jun 2013 12:33:40 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756361Ab3FRTfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:35:02 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51045 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753182Ab3FRTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 15:35:00 -0400
+Date: Tue, 18 Jun 2013 14:34:54 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH 1/11] rsxx: Individual workqueues for interruptible events.
+Message-ID: <20130618193454.GB6492@oc6784271780.ibm.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH -next] x86: fix build error and kconfig for ia32_emulation
- and binfmt
-References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au> <51BF4443.2040801@infradead.org> <20130618102411.258693d302bad332e920fd63@canb.auug.org.au>
-In-Reply-To: <20130618102411.258693d302bad332e920fd63@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061819-7182-0000-0000-000007643209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-Fix kconfig warning and build errors on x86_64 by selecting BINFMT_ELF
-when COMPAT_BINFMT_ELF is being selected.
+Giving all interrupt based events their own workqueue to complete
+tasks on. This fixes a bug that would cause creg commands to timeout
+if too many are issued at once.
 
-warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet direct dependencies (COMPAT && BINFMT_ELF)
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
 
-fs/built-in.o: In function `elf_core_dump':
-compat_binfmt_elf.c:(.text+0x3e093): undefined reference to `elf_core_extra_phdrs'
-compat_binfmt_elf.c:(.text+0x3ebcd): undefined reference to `elf_core_extra_data_size'
-compat_binfmt_elf.c:(.text+0x3eddd): undefined reference to `elf_core_write_extra_phdrs'
-compat_binfmt_elf.c:(.text+0x3f004): undefined reference to `elf_core_write_extra_data'
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- arch/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-05-31 14:57:49.404326499 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-05-31 15:05:02.770182971 -0500
+@@ -163,12 +163,13 @@ static irqreturn_t rsxx_isr(int irq, voi
+ 		}
+ 
+ 		if (isr & CR_INTR_CREG) {
+-			schedule_work(&card->creg_ctrl.done_work);
++			queue_work(card->creg_ctrl.creg_wq,
++				   &card->creg_ctrl.done_work);
+ 			handled++;
+ 		}
+ 
+ 		if (isr & CR_INTR_EVENT) {
+-			schedule_work(&card->event_work);
++			queue_work(card->event_wq, &card->event_work);
+ 			rsxx_disable_ier_and_isr(card, CR_INTR_EVENT);
+ 			handled++;
+ 		}
+@@ -610,7 +611,11 @@ static int rsxx_pci_probe(struct pci_dev
+ 	}
+ 
+ 	/************* Setup Processor Command Interface *************/
+-	rsxx_creg_setup(card);
++	st = rsxx_creg_setup(card);
++	if (st) {
++		dev_err(CARD_TO_DEV(card), "Failed to setup creg interface.\n");
++		goto failed_creg_setup;
++	}
+ 
+ 	spin_lock_irq(&card->irq_lock);
+ 	rsxx_enable_ier_and_isr(card, CR_INTR_CREG);
+@@ -650,6 +655,12 @@ static int rsxx_pci_probe(struct pci_dev
+ 	}
+ 
+ 	/************* Setup Card Event Handler *************/
++	card->event_wq = create_singlethread_workqueue(DRIVER_NAME"_event");
++	if (!card->event_wq) {
++		dev_err(CARD_TO_DEV(card), "Failed card event setup.\n");
++		goto failed_event_handler;
++	}
++
+ 	INIT_WORK(&card->event_work, card_event_handler);
+ 
+ 	st = rsxx_setup_dev(card);
+@@ -688,9 +699,15 @@ static int rsxx_pci_probe(struct pci_dev
+ 	return 0;
+ 
+ failed_create_dev:
++	destroy_workqueue(card->event_wq);
++	card->event_wq = NULL;
++failed_event_handler:
+ 	rsxx_dma_destroy(card);
+ failed_dma_setup:
+ failed_compatiblity_check:
++	destroy_workqueue(card->creg_ctrl.creg_wq);
++	card->creg_ctrl.creg_wq = NULL;
++failed_creg_setup:
+ 	spin_lock_irq(&card->irq_lock);
+ 	rsxx_disable_ier_and_isr(card, CR_INTR_ALL);
+ 	spin_unlock_irq(&card->irq_lock);
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/cregs.c linux-block/drivers/block/rsxx/cregs.c
+--- linux-block-vanilla/drivers/block/rsxx/cregs.c	2013-05-31 14:57:49.407047063 -0500
++++ linux-block/drivers/block/rsxx/cregs.c	2013-05-31 15:05:44.355016386 -0500
+@@ -727,6 +727,11 @@ int rsxx_creg_setup(struct rsxx_cardinfo
+ {
+ 	card->creg_ctrl.active_cmd = NULL;
+ 
++	card->creg_ctrl.creg_wq =
++			create_singlethread_workqueue(DRIVER_NAME"_creg");
++	if (!card->creg_ctrl.creg_wq)
++		return -ENOMEM;
++
+ 	INIT_WORK(&card->creg_ctrl.done_work, creg_cmd_done);
+ 	mutex_init(&card->creg_ctrl.reset_lock);
+ 	INIT_LIST_HEAD(&card->creg_ctrl.queue);
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
+--- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-31 14:57:49.411326932 -0500
++++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-31 15:06:51.577016400 -0500
+@@ -134,6 +134,7 @@ struct rsxx_cardinfo {
+ 		spinlock_t		lock;
+ 		bool			active;
+ 		struct creg_cmd		*active_cmd;
++		struct workqueue_struct	*creg_wq;
+ 		struct work_struct	done_work;
+ 		struct list_head	queue;
+ 		unsigned int		q_depth;
+@@ -154,6 +155,7 @@ struct rsxx_cardinfo {
+ 		int buf_len;
+ 	} log;
+ 
++	struct workqueue_struct	*event_wq;
+ 	struct work_struct	event_work;
+ 	unsigned int		state;
+ 	u64			size8;
 
---- linux-next-20130618.orig/arch/x86/Kconfig
-+++ linux-next-20130618/arch/x86/Kconfig
-@@ -2273,6 +2273,7 @@ source "fs/Kconfig.binfmt"
- config IA32_EMULATION
- 	bool "IA32 Emulation"
- 	depends on X86_64
-+	select BINFMT_ELF
- 	select COMPAT_BINFMT_ELF
- 	select HAVE_UID16
- 	---help---
