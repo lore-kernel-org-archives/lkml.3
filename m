@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab3FRRHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:07:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45956 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab3FRRHF (ORCPT
+	id S933605Ab3FRRIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:08:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33841 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933339Ab3FRRIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:07:05 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com, linux@arm.linux.org.uk,
-        catalin.marinas@arm.com, will.deacon@arm.com, mark.rutland@arm.com,
-        marc.zyngier@arm.com, tglx@linutronix.de,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH 0/4] ARM/ARM64 architected timer updates
-Date: Tue, 18 Jun 2013 18:06:59 +0100
-Message-Id: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-X-OriginalArrivalTime: 18 Jun 2013 17:07:00.0622 (UTC) FILETIME=[3F52BAE0:01CE6C46]
-X-MC-Unique: 113061818070200501
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 18 Jun 2013 13:08:19 -0400
+Message-ID: <51C093FF.6000204@wwwdotorg.org>
+Date: Tue, 18 Jun 2013 11:08:15 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "J, KEERTHY" <j-keerthy@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
+ and then only request irq
+References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com> <1371549692-7361-2-git-send-email-j-keerthy@ti.com> <51C0820B.4020404@wwwdotorg.org> <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
+In-Reply-To: <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r5IH8Qn9002379
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On 06/18/2013 10:54 AM, J, KEERTHY wrote:
+> Hi Stephen,
+> 
+>> -----Original Message-----
+>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+>> Sent: Tuesday, June 18, 2013 9:22 PM
+>> To: J, KEERTHY
+>> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
+>> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
+>> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
+>> doc@vger.kernel.org; gg@slimlogic.co.uk
+>> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
+>> exists and then only request irq
+>>
+>> On 06/18/2013 04:01 AM, J Keerthy wrote:
+>>> Check if interrupts property exists and then only request irq.
+>>> On some boards INT line might not be connected to a valid irq line on
+>>> the application processor. Hence keeping a check before requesting
+>>> irq.
+>>
+>> When there is no interrupts property, surely i2c->irq == 0, which is an
+>> invalid IRQ, and hence there's no need to check this before copying the
+>> value?
+> 
+> The intent here is NOT to request irq with 0 or Invalid IRQ.
 
-Hi,
+Sure.
 
-This patch series adds support to configure the rate and enable the event
-stream for architected timer. Since the timer control register is reset to
-zero on warm boot, CPU PM notifier is added to re-initialse it.
+> The board File will not populate the interrupts entry if the INT line is not
+> Connected.
 
-Regards,
-Sudeep
+Do you mean the interrupts DT property won't be present if there is no
+interrupt. If so, sure.
 
-Sudeep KarkadaNagesha (3):
-  ARM: arch_timer: add macros for bits in control register
-  ARM/ARM64: arch_timer: remove __cpuinit attribute for
-    arch_counter_set_user_access
-  drivers: clocksource: add CPU PM notifier for ARM architected timer
+> Hence the patch checks for the 'interrupts' property.
 
-Will Deacon (1):
-  drivers: clocksource: configure event stream for ARM arch timer
+That shouldn't be necessary; IIRC, the I2C core has already parsed the
+interrupts property if there was one, and if there wasn't, it has set
+i2c->irq to some invalid value already.
 
- arch/arm/include/asm/arch_timer.h    | 10 ++++++--
- arch/arm64/include/asm/arch_timer.h  | 12 +++++++---
- drivers/clocksource/arm_arch_timer.c | 46 +++++++++++++++++++++++++++++++++++-
- include/clocksource/arm_arch_timer.h | 10 ++++++++
- 4 files changed, 72 insertions(+), 6 deletions(-)
-
--- 
-1.8.1.2
-
-
+So, you simply need to check the value in i2c->irq, and don't need to
+look at the DT at all.
