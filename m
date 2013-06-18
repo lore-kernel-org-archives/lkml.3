@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3FRFjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:39:42 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:37438 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3FRFjk (ORCPT
+	id S1753767Ab3FRFlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:41:42 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:36013 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3FRFll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:39:40 -0400
+	Tue, 18 Jun 2013 01:41:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1597172.lxipa1bjlr@avalon>
-References: <20130617064052.3573.68839.sendpatchset@w520>
-	<1597172.lxipa1bjlr@avalon>
-Date: Tue, 18 Jun 2013 14:39:38 +0900
-Message-ID: <CANqRtoSnBfr5sfSiYayKCmyw0EpY4+kq7pnQ1BJQt6wagTe8eQ@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_cmt: 32-bit control register support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, john stultz <johnstul@us.ibm.com>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
+References: <1371502778-15849-1-git-send-email-oliver+list@schinagl.nl>
+	<1371502778-15849-2-git-send-email-oliver+list@schinagl.nl>
+Date: Tue, 18 Jun 2013 08:41:41 +0300
+Message-ID: <CAHp75VdQXyRtfkNbnOyz36sADA_3tx=i4C+Ga5AevpMfo48XFQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "maxime.ripard" <maxime.ripard@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-sunxi@googlegroups.com,
+        Oliver Schinagl <oliver@schinagl.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On Tue, Jun 18, 2013 at 3:37 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
+On Mon, Jun 17, 2013 at 11:59 PM, Oliver Schinagl
+<oliver+list@schinagl.nl> wrote:
+> From: Oliver Schinagl <oliver@schinagl.nl>
 >
-> Thanks for the patch.
+> Allwinner has electric fuses (efuse) on their line of chips. This driver
+> reads those fuses, seeds the kernel entropy and exports them as a sysfs node.
 >
-> On Monday 17 June 2013 15:40:52 Magnus Damm wrote:
->> From: Magnus Damm <damm@opensource.se>
->>
->> Add support for CMT hardware with 32-bit control and counter
->> registers, as found on r8a73a4 and r8a7790. To use the CMT
->> with 32-bit hardware a second I/O memory resource needs to
->> point out the CMSTR register and it needs to be 32 bit wide.
+> These fuses are most likly to be programmed at the factory, encoding
+> things like Chip ID, some sort of serial number etc and appear to be
+> reasonable unique.
+> While in theory, these should be writeable by the user, it will probably
+> be inconvinient to do so. Allwinner recommends that a certain input pin,
+> labeled 'efuse_vddq', be connected to GND. To write these fuses, 2.5 V
+> needs to be applied to this pin.
 >
-> Is a memory second resource required ? Can't we use a single resource that
-> will contain all the registers ?
+> Even so, they can still be used to generate a board-unique mac from, board
+> unique RSA key and seed the kernel RNG.
+>
 
-The CMT hardware block comes with a shared timer start stop register
-that historically has been left out of the resource. The location of
-this register has so far been pointed out by the "channel offset"
-platform data member, together with information about which bit that
-happens to be assigned to the timer channel. This start stop register
-has happened to be kept in the same page of I/O memory as the main
-timer channel resource, so at this point we're sort of "lucky" that a
-single ioremap() has covered all cases.
+> +++ b/drivers/misc/eeprom/sunxi_sid.c
+> @@ -0,0 +1,147 @@
 
-With this patch it becomes optional to instead of platform data use a
-second resource to point out the timer start/stop register. While we
-do that we can also use the size of that resource to determine the I/O
-access width, which happens to be something that is needed to enable
-the driver on certain SoCs.
+> +#include <linux/compiler.h>
 
-> Time to switch to devm_* managed functions ? :-)
+I don't think you have to use this header explicitly.
 
-Yes, indeed. That among other things, like converting the driver to in
-a more optimal way support clock source only or clock event only
-configurations. Also, some more modern CMT hardware versions have
-extended registers with 48-bit counters, and we can also often use
-more high frequency clocks to improve timer resolution.
+> +#define DRV_NAME "sunxi-sid"
 
-As you can tell, in general there are many things that can be improved
-with this driver. I thought a first shot could be to make it actually
-work on more recent CMT hardware with 32-bit only registers. So that's
-what this patch does!
+> +       if (size > (SID_SIZE - pos))
 
-Cheers,
+Useless internal braces.
 
-/ magnus
+> +static int sunxi_sid_remove(struct platform_device *pdev)
+> +{
+> +       device_remove_bin_file(&pdev->dev, &sid_bin_attr);
+> +       dev_dbg(&pdev->dev, "%s driver unloaded\n", DRV_NAME);
+
+It's useless to use DRV_NAME in conjunction with dev_* macros. dev_*
+will print driver name as a prefix.
+
+--
+With Best Regards,
+Andy Shevchenko
