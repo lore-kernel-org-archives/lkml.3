@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab3FRGjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:39:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42912 "EHLO
+	id S1752855Ab3FRGjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:39:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42910 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3FRGjR (ORCPT
+	with ESMTP id S1751787Ab3FRGjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 02:39:17 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
@@ -30,9 +30,9 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v11 1/8] dmaengine: edma: Add TI EDMA device tree binding
-Date: Tue, 18 Jun 2013 01:38:12 -0500
-Message-ID: <1371537499-12970-2-git-send-email-joelagnel@ti.com>
+Subject: [PATCH v11 6/8] dmaengine: edma: enable build for AM33XX
+Date: Tue, 18 Jun 2013 01:38:17 -0500
+Message-ID: <1371537499-12970-7-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
 References: <1371537499-12970-1-git-send-email-joelagnel@ti.com>
@@ -42,65 +42,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mdp@ti.com>
+From: Matt Porter <mporter@ti.com>
 
-The binding definition is based on the generic DMA controller
-binding.
-
-Joel:
-* Droped reserved and queue DT entries from Documentation
-for now from the original patch series (v10)
-* Included properties in Documentation and clarified DMA properties (V11)
-* Made ti,hwmod option
-* Clarified DMA entries
+Enable TI EDMA option on OMAP.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
 ---
- Documentation/devicetree/bindings/dma/ti-edma.txt |   34 +++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+ drivers/dma/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
-new file mode 100644
-index 0000000..9fbbdb7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-@@ -0,0 +1,34 @@
-+TI EDMA
-+
-+Required properties:
-+- compatible : "ti,edma3"
-+- ti,edma-regions: Number of regions
-+- ti,edma-slots: Number of slots
-+- #dma-cells: Should be set to <1>
-+              Clients should use a single channel number per DMA request.
-+- dma-channels: Specify total DMA channels per CC
-+- reg: Memory map for accessing module
-+- interrupt-parent: Interrupt controller the interrupt is routed through
-+- interrupts: Exactly 3 interrupts need to be specified in the order:
-+              1. Transfer completion interrupt.
-+              2. Memory protection interrupt.
-+              3. Error interrupt.
-+Optional properties:
-+- ti,hwmods: Name of the hwmods associated to the EDMA
-+- ti,edma-xbar-event-map: Crossbar event to channel map
-+
-+Example:
-+
-+edma: edma@49000000 {
-+	reg = <0x49000000 0x10000>;
-+	interrupt-parent = <&intc>;
-+	interrupts = <12 13 14>;
-+	compatible = "ti,edma3";
-+	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+	#dma-cells = <1>;
-+	dma-channels = <64>;
-+	ti,edma-regions = <4>;
-+	ti,edma-slots = <256>;
-+	ti,edma-xbar-event-map = <1 12
-+				  2 13>;
-+};
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index e992489..3215a3c 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -213,7 +213,7 @@ config SIRF_DMA
+ 
+ config TI_EDMA
+ 	tristate "TI EDMA support"
+-	depends on ARCH_DAVINCI
++	depends on ARCH_DAVINCI || ARCH_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 	default n
 -- 
 1.7.9.5
 
