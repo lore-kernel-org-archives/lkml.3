@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab3FRLeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:34:36 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:41472 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab3FRLeO (ORCPT
+	id S1755529Ab3FRLfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:35:02 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55198 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab3FRLeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:34:14 -0400
+	Tue, 18 Jun 2013 07:34:07 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -16,53 +16,45 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 5/6] mm/thp: fix doc for transparent huge zero page
-Date: Tue, 18 Jun 2013 19:33:41 +0800
-Message-Id: <1371555222-22678-5-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 3/6] mm/writeback: commit reason of WB_REASON_FORKER_THREAD mismatch name
+Date: Tue, 18 Jun 2013 19:33:39 +0800
+Message-Id: <1371555222-22678-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1371555222-22678-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1371555222-22678-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061811-5490-0000-0000-000003AB6E43
+x-cbid: 13061811-6102-0000-0000-000003B84FCE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- v1 - > v2:
-  * add Kirill's Acked
+After commit 839a8e86("writeback: replace custom worker pool implementation
+with unbound workqueue"), there is no bdi forker thread any more. However,
+WB_REASON_FORKER_THREAD is still used due to it is somewhat userland visible
+and we won't be exposing exactly the same information with just a different
+name.
 
-Transparent huge zero page is used during the page fault instead of
-in khugepaged.
-
-# ls /sys/kernel/mm/transparent_hugepage/
-defrag  enabled  khugepaged  use_zero_page
-# ls /sys/kernel/mm/transparent_hugepage/khugepaged/
-alloc_sleep_millisecs  defrag  full_scans  max_ptes_none  pages_collapsed  pages_to_scan  scan_sleep_millisecs
-
-This patch corrects the documentation just like the codes done.
-
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- Documentation/vm/transhuge.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/writeback.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-index 8785fb8..4a63953 100644
---- a/Documentation/vm/transhuge.txt
-+++ b/Documentation/vm/transhuge.txt
-@@ -120,8 +120,8 @@ By default kernel tries to use huge zero page on read page fault.
- It's possible to disable huge zero page by writing 0 or enable it
- back by writing 1:
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 8b5cec4..ac73a9d 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -47,6 +47,11 @@ enum wb_reason {
+ 	WB_REASON_LAPTOP_TIMER,
+ 	WB_REASON_FREE_MORE_MEM,
+ 	WB_REASON_FS_FREE_SPACE,
++/*
++ * There is no bdi forker thread any more and works are done by emergency
++ * worker, however, this is somewhat userland visible and we'll be exposing
++ * exactly the same information, so it has a mismatch name.
++ */
+ 	WB_REASON_FORKER_THREAD,
  
--echo 0 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
--echo 1 >/sys/kernel/mm/transparent_hugepage/khugepaged/use_zero_page
-+echo 0 >/sys/kernel/mm/transparent_hugepage/use_zero_page
-+echo 1 >/sys/kernel/mm/transparent_hugepage/use_zero_page
- 
- khugepaged will be automatically started when
- transparent_hugepage/enabled is set to "always" or "madvise, and it'll
+ 	WB_REASON_MAX,
 -- 
 1.7.5.4
 
