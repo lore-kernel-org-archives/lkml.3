@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab3FRQbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:31:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49411 "EHLO
+	id S933164Ab3FRQRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:17:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab3FRQRo (ORCPT
+	with ESMTP id S933060Ab3FRQRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:44 -0400
+	Tue, 18 Jun 2013 12:17:38 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [ 09/48] drm/gma500/psb: Unpin framebuffer on crtc disable
-Date: Tue, 18 Jun 2013 09:17:35 -0700
-Message-Id: <20130618161727.220122242@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 02/48] b43: stop format string leaking into error msgs
+Date: Tue, 18 Jun 2013 09:17:28 -0700
+Message-Id: <20130618161726.269850895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -29,54 +29,36 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 820de86a90089ee607d7864538c98a23b503c846 upstream.
+commit e0e29b683d6784ef59bbc914eac85a04b650e63c upstream.
 
-The framebuffer needs to be unpinned in the crtc->disable callback
-because of previous pinning in psb_intel_pipe_set_base(). This will fix
-a memory leak where the framebuffer was released but not unpinned
-properly. This patch only affects Poulsbo.
+The module parameter "fwpostfix" is userspace controllable, unfiltered,
+and is used to define the firmware filename. b43_do_request_fw() populates
+ctx->errors[] on error, containing the firmware filename. b43err()
+parses its arguments as a format string. For systems with b43 hardware,
+this could lead to a uid-0 to ring-0 escalation.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=889511
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=812113
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+CVE-2013-2852
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/psb_intel_display.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/b43/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/gma500/psb_intel_display.c
-+++ b/drivers/gpu/drm/gma500/psb_intel_display.c
-@@ -1246,6 +1246,19 @@ void psb_intel_crtc_destroy(struct drm_c
- 	kfree(psb_intel_crtc);
- }
- 
-+static void psb_intel_crtc_disable(struct drm_crtc *crtc)
-+{
-+	struct gtt_range *gt;
-+	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
-+
-+	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
-+
-+	if (crtc->fb) {
-+		gt = to_psb_fb(crtc->fb)->gtt;
-+		psb_gtt_unpin(gt);
-+	}
-+}
-+
- const struct drm_crtc_helper_funcs psb_intel_helper_funcs = {
- 	.dpms = psb_intel_crtc_dpms,
- 	.mode_fixup = psb_intel_crtc_mode_fixup,
-@@ -1253,6 +1266,7 @@ const struct drm_crtc_helper_funcs psb_i
- 	.mode_set_base = psb_intel_pipe_set_base,
- 	.prepare = psb_intel_crtc_prepare,
- 	.commit = psb_intel_crtc_commit,
-+	.disable = psb_intel_crtc_disable,
- };
- 
- const struct drm_crtc_funcs psb_intel_crtc_funcs = {
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2451,7 +2451,7 @@ static void b43_request_firmware(struct
+ 	for (i = 0; i < B43_NR_FWTYPES; i++) {
+ 		errmsg = ctx->errors[i];
+ 		if (strlen(errmsg))
+-			b43err(dev->wl, errmsg);
++			b43err(dev->wl, "%s", errmsg);
+ 	}
+ 	b43_print_fw_helptext(dev->wl, 1);
+ 	goto out;
 
 
