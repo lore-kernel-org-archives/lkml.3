@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab3FRACd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:02:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45593 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3FRACc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:02:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,884,1363158000"; 
-   d="scan'208";a="355179839"
-Date: Tue, 18 Jun 2013 02:02:11 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tero Kristo <t-kristo@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mfd: twl4030-power: Start transition to DT
-Message-ID: <20130618000211.GC7998@zurbaran>
-References: <1369921916-7435-1-git-send-email-florian.vaussard@epfl.ch>
- <1369921916-7435-3-git-send-email-florian.vaussard@epfl.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369921916-7435-3-git-send-email-florian.vaussard@epfl.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752205Ab3FRAHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:07:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48870 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3FRAHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 20:07:10 -0400
+Date: Tue, 18 Jun 2013 10:06:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jun 17
+Message-Id: <20130618100653.026e8d08af2f862b9b489893@canb.auug.org.au>
+In-Reply-To: <CAMuHMdVOYx0vtCiN26nWcTZOc-YH+K5A=BTnvhd7g_w7ALjSsg@mail.gmail.com>
+References: <20130617185106.5950ffbf4b96acd9b2b2c834@canb.auug.org.au>
+	<CAMuHMdVOYx0vtCiN26nWcTZOc-YH+K5A=BTnvhd7g_w7ALjSsg@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+--Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 30, 2013 at 03:51:55PM +0200, Florian Vaussard wrote:
->  int twl4030_power_probe(struct platform_device *pdev)
->  {
->  	struct twl4030_power_data *pdata = pdev->dev.platform_data;
-> +	struct device_node *node = pdev->dev.of_node;
->  	int err = 0;
-> -	int i;
-> -	struct twl4030_resconfig *resconfig;
-> -	u8 val, address = twl4030_start_script_address;
-> +	u8 val;
-> +
-> +	if (!pdata && !node) {
-> +		dev_err(&pdev->dev, "Platform data is missing\n");
-> +		return -EINVAL;
-> +	}
->  
->  	err = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
->  			       TWL4030_PM_MASTER_PROTECT_KEY);
-> @@ -525,26 +575,17 @@ int twl4030_power_probe(struct platform_device *pdev)
->  	if (err)
->  		goto unlock;
->  
-> -	for (i = 0; i < pdata->num; i++) {
-> -		err = load_twl4030_script(pdata->scripts[i], address);
-> +	if (pdata) {
-> +		err = twl4030_power_configure_scripts(pdata);
->  		if (err)
->  			goto load;
-> -		address += pdata->scripts[i]->size;
-> -	}
-> -
-> -	resconfig = pdata->resource_config;
-> -	if (resconfig) {
-> -		while (resconfig->resource) {
-> -			err = twl4030_configure_resource(resconfig);
-> -			if (err)
-> -				goto resource;
-> -			resconfig++;
-> -
-> -		}
-> +		err = twl4030_power_configure_resources(pdata);
-> +		if (err)
-> +			goto resource;
-You're simplifying the probe routine here by defining 2
-twl4030_power_configure_* functions. That's good, but it should be a
-separate patch as it's not related to the DT porting effort.
+Hi Geert,
 
+On Mon, 17 Jun 2013 12:04:18 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
+> wrote:
+>
+> On Mon, Jun 17, 2013 at 10:51 AM, Stephen Rothwell <sfr@canb.auug.org.au>=
+ wrote:
+> > Changes since 20130607:
+> >
+> > New trees: arm-mpidr and arm64-hugepages
+>=20
+> [long list of new conflicts deleted]
+>=20
+> Good to see you're back!
+> Thanks a lot ;-)
+
+Glad to be of service :-)
+
+--=20
 Cheers,
-Samuel.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+--Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRv6SiAAoJEECxmPOUX5FEb+EP/RCbGoY0qKsfbDiqGvThFXQ0
+sfLlu/s7fdjDum4RUmyUCpZTxVrkU6ZdLxjKrZkkEugMH188EwqGfnHgM+tDU2Pu
+7JslS2HV9hCCLIDbZFBfDJOMg6j8pC8sT2dv2Usq2lCan9pJKDAc+mFBX9Io7PzZ
+YkVMw7Dn7V5cbUFQpTtfrZJ+nzUGzM/xKAke+Po0vol4yS1UE0+BTKlK70wzt+nX
+SvYagmTuUeq8ct21m0q5frgSKfIGERjZERGEGRvi+IlFn/CKcXrurKvbnOROfm97
+kLGfzSneHWE9kpyRdcbZ0Xx3zhyAopIk2/ZIx+n4AeHH/K9LAh8gIaRaALdlDTT7
++fzIEdZQ4eBtpeHXy4sL4W+ItyEkVydvAuDVl4SvoqApWzq4hWmkSZG9JB9QTK86
+POTxUymi+3ZEs5O0iwxP90x61Zs3avdpxnIPEdOmh1wOjFu1tERH8ko43pYbQZvx
+qbmlGTPizZ4RjWcRwikKKlwvc+rH4WyoBhD0lCksdA0SAbCaWzjOplivmbU/8Bkw
+XeHZ8l20tQnW58+XhYzgCRnnolyqHEt+RAoXxsEA/Mq5VyZicDKFqDOyqGVdML4+
+uef/xU+vCPe3UAEpkaob7JznjZQZOsa2lU/cKFxKUx1Pb+4t2mmJocKoQmSWs/1k
+x2t5GR+JZb+BmJIVSSQ4
+=3f0c
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Jun_2013_10_06_53_+1000_OHvF7yj5+5iQaSEp--
