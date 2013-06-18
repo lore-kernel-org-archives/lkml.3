@@ -1,110 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab3FRSSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:18:42 -0400
-Received: from mail-ye0-f179.google.com ([209.85.213.179]:45872 "EHLO
-	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab3FRSSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:18:41 -0400
-Date: Tue, 18 Jun 2013 11:18:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 3/3] cgroup: clean up cgroup_serial_nr_cursor
-Message-ID: <20130618181835.GC1596@htj.dyndns.org>
-References: <51C03AF2.7050702@huawei.com>
- <51C03B05.4080504@huawei.com>
+	id S933608Ab3FRST3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:19:29 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33648 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933009Ab3FRST2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 14:19:28 -0400
+Date: Tue, 18 Jun 2013 11:17:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Borislav Petkov <bp@alien8.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mats Liljegren <liljegren.mats2@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Full dynticks selftests 0.0.1
+Message-ID: <20130618181733.GS5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130612151915.GD5332@somewhere>
+ <0000013f57a89d51-89f08a58-65d0-41f5-aaaa-b31d60c72a8e-000000@email.amazonses.com>
+ <20130618151520.GP5146@linux.vnet.ibm.com>
+ <20130618162256.GH17619@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C03B05.4080504@huawei.com>
+In-Reply-To: <20130618162256.GH17619@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061818-7182-0000-0000-000007637C05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 00356bd5f0f5e04183fb15805eb29e97c2fc20ac Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 18 Jun 2013 11:14:22 -0700
+On Tue, Jun 18, 2013 at 06:22:57PM +0200, Frederic Weisbecker wrote:
+> On Tue, Jun 18, 2013 at 08:15:20AM -0700, Paul E. McKenney wrote:
+> > On Tue, Jun 18, 2013 at 02:20:35PM +0000, Christoph Lameter wrote:
+> > > On Wed, 12 Jun 2013, Frederic Weisbecker wrote:
+> > > 
+> > > > Here it is, a very basic test that runs a userspace loop for ten seconds and dumps a trace
+> > > > of the tick, scheduler, workqueue, and other kind of kernel noise.
+> > > 
+> > > Excellent. Ticks are finally off here. Also has useful instructions on how
+> > > to figure out if something was wrong. The number of >1 microsecond
+> > > disturbances went down from 110 per second to 2.
+> > 
+> > Very cool!
+> > 
+> > Frederic, is the git tree mentioned in your email permanent?  If so, I
+> > will add it to the documentation.
+> 
+> Yep, it should be permanent.
 
-cgroup_serial_nr_cursor was created atomic64_t because I thought it
-was never gonna used for anything other than assigning unique numbers
-to cgroups and didn't want to worry about synchronization; however,
-now we're using it as an event-stamp to distinguish cgroups created
-before and after certain point which assumes that it's protected by
-cgroup_mutex.
+How about the following?
 
-Let's make it clear by making it a u64.  Also, rename it to
-cgroup_serial_nr_next and make it point to the next nr to allocate so
-that where it's pointing to is clear and more conventional.
+							Thanx, Paul
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
----
-Applied to cgroup/for-3.11 as a follow-up.
+------------------------------------------------------------------------
 
-Thanks.
+nohz_full: Add testing information to documentation
 
- kernel/cgroup.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+This commit adds information about testing nohz_full, and also emphasizes
+the fact that you need a multi-CPU system to get any benefit from nohz_full.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 0ed7d8d..65f333e 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -203,9 +203,10 @@ static struct cgroup_name root_cgroup_name = { .name = "/" };
-  * guarantees cgroups with bigger numbers are newer than those with smaller
-  * numbers.  Also, as cgroups are always appended to the parent's
-  * ->children list, it guarantees that sibling cgroups are always sorted in
-- * the ascending serial number order on the list.
-+ * the ascending serial number order on the list.  Protected by
-+ * cgroup_mutex.
-  */
--static atomic64_t cgroup_serial_nr_cursor = ATOMIC64_INIT(0);
-+static u64 cgroup_serial_nr_next = 1;
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+index 8869758..cca122f 100644
+--- a/Documentation/timers/NO_HZ.txt
++++ b/Documentation/timers/NO_HZ.txt
+@@ -24,8 +24,8 @@ There are three main ways of managing scheduling-clock interrupts
+ 	workloads, you will normally -not- want this option.
  
- /* This flag indicates whether tasks in the fork and exit paths should
-  * check for fork/exit handlers to call. This avoids us having to do
-@@ -2803,7 +2804,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 	struct super_block *sb = ss->root->sb;
- 	struct dentry *prev = NULL;
- 	struct inode *inode;
--	u64 update_upto;
-+	u64 update_before;
+ These three cases are described in the following three sections, followed
+-by a third section on RCU-specific considerations and a fourth and final
+-section listing known issues.
++by a third section on RCU-specific considerations, a fourth section
++discussing testing, and a fifth and final section listing known issues.
  
- 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
- 	if (!cfts || ss->root == &rootnode ||
-@@ -2815,9 +2816,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 	/*
- 	 * All cgroups which are created after we drop cgroup_mutex will
- 	 * have the updated set of files, so we only need to update the
--	 * cgroups created before the current @cgroup_serial_nr_cursor.
-+	 * cgroups created before the current @cgroup_serial_nr_next.
- 	 */
--	update_upto = atomic64_read(&cgroup_serial_nr_cursor);
-+	update_before = cgroup_serial_nr_next;
  
- 	mutex_unlock(&cgroup_mutex);
+ NEVER OMIT SCHEDULING-CLOCK TICKS
+@@ -121,14 +121,15 @@ boot parameter specifies the adaptive-ticks CPUs.  For example,
+ "nohz_full=1,6-8" says that CPUs 1, 6, 7, and 8 are to be adaptive-ticks
+ CPUs.  Note that you are prohibited from marking all of the CPUs as
+ adaptive-tick CPUs:  At least one non-adaptive-tick CPU must remain
+-online to handle timekeeping tasks in order to ensure that system calls
+-like gettimeofday() returns accurate values on adaptive-tick CPUs.
+-(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no
+-running user processes to observe slight drifts in clock rate.)
+-Therefore, the boot CPU is prohibited from entering adaptive-ticks
+-mode.  Specifying a "nohz_full=" mask that includes the boot CPU will
+-result in a boot-time error message, and the boot CPU will be removed
+-from the mask.
++online to handle timekeeping tasks in order to ensure that system
++calls like gettimeofday() returns accurate values on adaptive-tick CPUs.
++(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no running
++user processes to observe slight drifts in clock rate.)  Therefore, the
++boot CPU is prohibited from entering adaptive-ticks mode.  Specifying a
++"nohz_full=" mask that includes the boot CPU will result in a boot-time
++error message, and the boot CPU will be removed from the mask.  Note that
++this means that your system must have at least two CPUs in order for
++CONFIG_NO_HZ_FULL=y to do anything for you.
  
-@@ -2844,7 +2845,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ Alternatively, the CONFIG_NO_HZ_FULL_ALL=y Kconfig parameter specifies
+ that all CPUs other than the boot CPU are adaptive-ticks CPUs.  This
+@@ -232,6 +233,29 @@ scheduler will decide where to run them, which might or might not be
+ where you want them to run.
  
- 		mutex_lock(&inode->i_mutex);
- 		mutex_lock(&cgroup_mutex);
--		if (cgrp->serial_nr <= update_upto && !cgroup_is_dead(cgrp))
-+		if (cgrp->serial_nr < update_before && !cgroup_is_dead(cgrp))
- 			cgroup_addrm_files(cgrp, ss, cfts, is_add);
- 		mutex_unlock(&cgroup_mutex);
- 		mutex_unlock(&inode->i_mutex);
-@@ -4327,7 +4328,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		goto err_free_all;
- 	lockdep_assert_held(&dentry->d_inode->i_mutex);
  
--	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
-+	cgrp->serial_nr = cgroup_serial_nr_next++;
++TESTING
++
++So you enable all the OS-jitter features described in this document,
++but do not see any change in your workload's behavior.  Is this because
++your workload isn't affected that much by OS jitter, or is it because
++something else is in the way?  This section helps answer this question
++by providing a simple OS-jitter test suite, which is available on branch
++master of the following git archive:
++
++git://git.kernel.org/pub/scm/linux/kernel/git/frederic/dynticks-testing.git
++
++Clone this archive and follow the instructions in the README file.
++This test procedure will produce a trace that will allow you to evaluate
++whether or not you have succeeded in removing OS jitter from your system.
++If this trace shows that you have removed OS jitter as much as is
++possible, then you can conclude that your workload is not all that
++sensitive to OS jitter.
++
++Note: this test requires that your system have at least two CPUs.
++We do not currently have a good way to remove OS jitter from single-CPU
++systems.
++
++
+ KNOWN ISSUES
  
- 	/* allocation complete, commit to creation */
- 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
--- 
-1.8.2.1
+ o	Dyntick-idle slows transitions to and from idle slightly.
 
