@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3FRCtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:49:25 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:54334 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3FRCtY (ORCPT
+	id S1754015Ab3FRCth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:49:37 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36380 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab3FRCtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:49:24 -0400
-Subject: RE: [PATCH] x86, efi: retry ExitBootServices() on failure
-From: joeyli <jlee@suse.com>
-To: Zachary Bobroff <zacharyb@ami.com>
-Cc: "'Matt Fleming'" <matt@console-pimps.org>, Jan Beulich <JBeulich@suse.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-In-Reply-To: <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com>
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
-	 <1371139233.6523.272.camel@linux-s257.site>
-	 <20130617092107.GA5440@console-pimps.org>
-	 <51BEF71402000078000DEC12@nat28.tlf.novell.com>
-	 <20130617101745.GB8569@console-pimps.org>
-	 <51BF08CD02000078000DEC99@nat28.tlf.novell.com>
-	 <20130617123052.GE8569@console-pimps.org>
-	 <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jun 2013 10:47:45 +0800
-Message-ID: <1371523665.6523.336.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 17 Jun 2013 22:49:36 -0400
+Message-ID: <51BFCAB8.20008@hitachi.com>
+Date: Tue, 18 Jun 2013 11:49:28 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 2/3] tracing/kprobes: Kill probe_enable_lock
+References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com>
+In-Reply-To: <20130617151841.GA32267@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zach, 
+(2013/06/18 0:18), Oleg Nesterov wrote:
+> On 06/17, Masami Hiramatsu wrote:
+>>
+>> (2013/06/17 2:21), Oleg Nesterov wrote:
+>>> enable_trace_probe() and disable_trace_probe() should not worry about
+>>> serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
+>>> holds event_mutex.
+>>>
+>>> They are also called by kprobe_trace_self_tests_init(), but this __init
+>>> function can't race with itself or trace_events.c
+>>
+>> Right,
+>> For safety, we should comment this at the caller side,
+> 
+> Which caller do you mean?
 
-於 二，2013-06-18 於 00:18 +0000，Zachary Bobroff 提到：
-> All,
-> 
-> >> Why a single retry is having reasonable guarantees to work when the
-> original one failed (nothing prevents an event handler to do another
-> allocation the next time through).
-> 
-> This patch is being submitted because of the potential issues that
-> occur when 3rd party option ROMs are signaled by the ExitBootServices
-> event. At the time they are signaled, they can perform any number of
-> actions that would change the EFI Memory map.  This wasn't actually
-> seen with our default implementation of our firmware, it was seen when
-> this plug-in card's option rom was run.
-> 
-> We only need to retry once because of what is in the UEFI
-> specification 2.3.1 Errata C.  The exact verbiage is as follows:
-> 
-> The ExitBootServices() function is called by the currently executing
-> EFI OS loader image to terminate all boot services. On success, the
-> loader becomes responsible for the continued operation of the system.
-> All events of type EVT_SIGNAL_EXIT_BOOT_SERVICES must be signaled
-> before ExitBootServices() returns EFI_SUCCESS. The events are only
-> signaled once even if ExitBootServices() is called multiple times.
-> 
-> Since the firmware will only signal the ExitBootServices event once,
-> the code that has the potential to change the memory map will only be
-> signaled on the first call to exit boot services. 
+I meant the caller was kprobe_test_self_tests_init().
+Since that function calls enable/disable_trace_probe()
+without holding event_mutex, we need to notice that
+(this is safe because there is no race) at the calling
+places :)
 
-Does it possible have any delay time of 3rd party ROMs to change EFI
-memory map after they are signaled?
-or ExitBootServices() will wait all 3rd party ROMs updated memory map
-finished then return true/false to kernel?
+Thank you,
+
+> 
+> The patch adds
+> 
+> 	/*
+> 	 * This and enable_trace_probe/disable_trace_probe rely on event_mutex
+> 	 * held by the caller, __ftrace_set_clr_event().
+> 	 */
+> 
+> above trace_probe_nr_files() but the next patch removes this function
+> with the comment...
+> 
+> Will you agree with this patch if I add something like
+> 
+> 	/*
+> 	 * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex
+> 	 */
+> 
+> above kprobe_register() ? Perhaps it makes sense to add
+> lockdep_assert_held(&event_mutex) into the body?
+> 
+> And:
+> 
+>> because
+>> those calls are the reason why I have introduced this lock.
+> 
+> Please do not hesitate to nack this patch if you think that we should
+> keep probe_enable_lock for safety even if it is not currently needed.
+> In this case I'd suggest to move lock/unlock into kprobe_register()
+> but this is minor.
+> 
+> Oleg.
+> 
+> 
 
 
-Thanks a lot!
-Joey Lee
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
