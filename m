@@ -1,235 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab3FRKor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:44:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60054 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754242Ab3FRKoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:44:46 -0400
-Date: Tue, 18 Jun 2013 12:44:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130618104443.GH13677@dhcp22.suse.cz>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618024623.GP29338@dastard>
- <20130618063104.GB20528@localhost.localdomain>
- <20130618082414.GC13677@dhcp22.suse.cz>
+	id S1754418Ab3FRKsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:48:53 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11595 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3FRKsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:48:51 -0400
+Message-ID: <51C03B05.4080504@huawei.com>
+Date: Tue, 18 Jun 2013 18:48:37 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618082414.GC13677@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 2/2] cgroup: convert cgroup_cft_commit() to use cgroup_for_each_descendant_pre()
+References: <51C03AF2.7050702@huawei.com>
+In-Reply-To: <51C03AF2.7050702@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-06-13 10:24:14, Michal Hocko wrote:
-> On Tue 18-06-13 10:31:05, Glauber Costa wrote:
-> > On Tue, Jun 18, 2013 at 12:46:23PM +1000, Dave Chinner wrote:
-> > > On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
-> > > > On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
-> > > > > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
-> > > > > 
-> > > > > > > I managed to trigger:
-> > > > > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > > > > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > > > > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > > > > > > on top. 
-> > > > > > > 
-> > > > > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > > > > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > > > > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > > > > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > > > > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > > > > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > > > > > > [...]
-> > > > > > > ffffffff81122d9c:       0f 0b                   ud2
-> > > > > > > 
-> > > > > > > RAX is -1UL.
-> > > > > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
-> > > > > > and BUG, instead of an unsigned quantity.
-> > > > > > 
-> > > > > > > 
-> > > > > > > I assume that the current backtrace is of no use and it would most
-> > > > > > > probably be some shrinker which doesn't behave.
-> > > > > > > 
-> > > > > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> > > > > > Assuming you are not using xfs, we are left with dentries and inodes.
-> > > > > > 
-> > > > > > The first thing to do is to find which one of them is misbehaving. You can try finding
-> > > > > > this out by the address of the list_lru, and where it lays in the superblock.
-> > > > > > 
-> > > > > > Once we know each of them is misbehaving, then we'll have to figure out why.
-> > > > > 
-> > > > > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
-> > > > > it's inodes?
-> > > > > 
-> > > > Assuming there is no memory corruption of any sort going on , let's check the code.
-> > > > nr_item is only manipulated in 3 places:
-> > > > 
-> > > > 1) list_lru_add, where it is increased
-> > > > 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
-> > > >    element from the list
-> > > > 3) list_lru_walk_node, where an element is removing during shrink.
-> > > > 
-> > > > All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
-> > > 
-> > > inode_lru_isolate() looks suspicious to me:
-> > > 
-> > >         WARN_ON(inode->i_state & I_NEW);
-> > >         inode->i_state |= I_FREEING;
-> > >         spin_unlock(&inode->i_lock);
-> > > 
-> > >         list_move(&inode->i_lru, freeable);
-> > >         this_cpu_dec(nr_unused);
-> > > 	return LRU_REMOVED;
-> > > }
-> > > 
-> > > All the other cases where I_FREEING is set and the inode is removed
-> > > from the LRU are completely done under the inode->i_lock. i.e. from
-> > > an external POV, the state change to I_FREEING and removal from LRU
-> > > are supposed to be atomic, but they are not here.
-> > > 
-> > > I'm not sure this is the source of the problem, but it definitely
-> > > needs fixing.
-> > > 
-> > Yes, I missed that yesterday, but that does look suspicious to me as well.
-> > 
-> > Michal, if you can manually move this one inside the lock as well and see
-> > if it fixes your problem as well... Otherwise I can send you a patch as well
-> > so we don't get lost on what is patched and what is not.
-> 
-> OK, I am testing with this now:
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 604c15e..95e598c 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -733,9 +733,9 @@ inode_lru_isolate(struct list_head *item, spinlock_t *lru_lock, void *arg)
->  
->  	WARN_ON(inode->i_state & I_NEW);
->  	inode->i_state |= I_FREEING;
-> +	list_move(&inode->i_lru, freeable);
->  	spin_unlock(&inode->i_lock);
->  
-> -	list_move(&inode->i_lru, freeable);
->  	this_cpu_dec(nr_unused);
->  	return LRU_REMOVED;
->  }
+We used root->allcg_list to iterate cgroup hierarchy because at that time
+cgroup_for_each_descendant_pre() hasn't been invented.
 
-And this hung again:
- 4434 pts/0    S+     0:00                 /bin/sh ./run_batch.sh mmotmdebug
- 4436 pts/0    S+     0:00                   /bin/bash ./start.sh
- 4441 pts/0    S+     0:26                     /bin/bash ./start.sh
- 1919 pts/0    S+     0:00                       sleep 1s
- 4457 pts/0    S+     0:00                     /bin/bash ./run_test.sh /dev/cgroup A 2
- 4459 pts/0    S+     0:27                       /bin/bash ./run_test.sh /dev/cgroup A 2
- 1913 pts/0    S+     0:00                         sleep 1s
- 5626 pts/0    S+     0:00                       /usr/bin/time -v make -j4 vmlinux
- 5628 pts/0    S+     0:00                         make -j4 vmlinux
- 2676 pts/0    S+     0:00                           make -f scripts/Makefile.build obj=sound
- 2893 pts/0    S+     0:00                             make -f scripts/Makefile.build obj=sound/pci
- 2998 pts/0    D+     0:00                               make -f scripts/Makefile.build obj=sound/pci/emu10k1
- 6590 pts/0    D+     0:00                           make -f scripts/Makefile.build obj=net
- 4458 pts/0    S+     0:00                     /bin/bash ./run_test.sh /dev/cgroup B 2
- 4464 pts/0    S+     0:27                       /bin/bash ./run_test.sh /dev/cgroup B 2
- 1914 pts/0    S+     0:00                         sleep 1s
- 5625 pts/0    S+     0:00                       /usr/bin/time -v make -j4 vmlinux
- 5627 pts/0    S+     0:00                         make -j4 vmlinux
-13010 pts/0    D+     0:00                           make -f scripts/Makefile.build obj=kernel
- 3933 pts/0    Z+     0:00                             [sh] <defunct>
-14459 pts/0    S+     0:00                           make -f scripts/Makefile.build obj=fs
-  784 pts/0    D+     0:00                             make -f scripts/Makefile.build obj=fs/romfs
- 2401 pts/0    S+     0:00                           make -f scripts/Makefile.build obj=crypto
- 4614 pts/0    D+     0:00                             make -f scripts/Makefile.build obj=crypto/asymmetric_keys
- 3343 pts/0    S+     0:00                           make -f scripts/Makefile.build obj=block
- 5167 pts/0    D+     0:00                             make -f scripts/Makefile.build obj=block/partitions
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h |  6 -----
+ kernel/cgroup.c        | 62 +++++++++++++++++++++++++++-----------------------
+ 2 files changed, 33 insertions(+), 35 deletions(-)
 
-demon:/home/mhocko # cat /proc/2998/stack 
-[<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118525f>] iget_locked+0x4f/0x180
-[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-demon:/home/mhocko # cat /proc/6590/stack 
-[<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118525f>] iget_locked+0x4f/0x180
-[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81175254>] __lookup_hash+0x34/0x40
-[<ffffffff81179872>] path_lookupat+0x7a2/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-demon:/home/mhocko # cat /proc/13010/stack 
-[<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118525f>] iget_locked+0x4f/0x180
-[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81175254>] __lookup_hash+0x34/0x40
-[<ffffffff81179872>] path_lookupat+0x7a2/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-demon:/home/mhocko # cat /proc/784/stack 
-[<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118525f>] iget_locked+0x4f/0x180
-[<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81175254>] __lookup_hash+0x34/0x40
-[<ffffffff81179872>] path_lookupat+0x7a2/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-demon:/home/mhocko # cat /proc/4614/stack 
-[<ffffffff8117d0ca>] vfs_readdir+0x7a/0xc0
-[<ffffffff8117d1a6>] sys_getdents64+0x96/0x100
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-demon:/home/mhocko # cat /proc/5167/stack 
-[<ffffffff8117d0ca>] vfs_readdir+0x7a/0xc0
-[<ffffffff8117d1a6>] sys_getdents64+0x96/0x100
-[<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-JFYI: This is still with my -mm git tree + the above diff + referenced
-patch from Mel (mm: Clear page active before releasing pages).
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 835918c..f70b116 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -206,9 +206,6 @@ struct cgroup {
+ 	 */
+ 	struct list_head cset_links;
+ 
+-	struct list_head allcg_node;	/* cgroupfs_root->allcg_list */
+-	struct list_head cft_q_node;	/* used during cftype add/rm */
+-
+ 	/*
+ 	 * Linked list running through all cgroups that can
+ 	 * potentially be reaped by the release agent. Protected by
+@@ -317,9 +314,6 @@ struct cgroupfs_root {
+ 	/* A list running through the active hierarchies */
+ 	struct list_head root_list;
+ 
+-	/* All cgroups on this root, cgroup_mutex protected */
+-	struct list_head allcg_list;
+-
+ 	/* Hierarchy-specific flags */
+ 	unsigned long flags;
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b1d98f2..bc46c28 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1399,7 +1399,6 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	INIT_LIST_HEAD(&cgrp->children);
+ 	INIT_LIST_HEAD(&cgrp->files);
+ 	INIT_LIST_HEAD(&cgrp->cset_links);
+-	INIT_LIST_HEAD(&cgrp->allcg_node);
+ 	INIT_LIST_HEAD(&cgrp->release_list);
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+ 	mutex_init(&cgrp->pidlist_mutex);
+@@ -1414,12 +1413,10 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 
+ 	INIT_LIST_HEAD(&root->subsys_list);
+ 	INIT_LIST_HEAD(&root->root_list);
+-	INIT_LIST_HEAD(&root->allcg_list);
+ 	root->number_of_cgroups = 1;
+ 	cgrp->root = root;
+ 	cgrp->name = &root_cgroup_name;
+ 	init_cgroup_housekeeping(cgrp);
+-	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ }
+ 
+ static int cgroup_init_root_id(struct cgroupfs_root *root)
+@@ -2775,65 +2772,74 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 	return ret;
+ }
+ 
+-static DEFINE_MUTEX(cgroup_cft_mutex);
+-
+ static void cgroup_cfts_prepare(void)
+-	__acquires(&cgroup_cft_mutex) __acquires(&cgroup_mutex)
++	__acquires(&cgroup_mutex)
+ {
+ 	/*
+ 	 * Thanks to the entanglement with vfs inode locking, we can't walk
+ 	 * the existing cgroups under cgroup_mutex and create files.
+-	 * Instead, we increment reference on all cgroups and build list of
+-	 * them using @cgrp->cft_q_node.  Grab cgroup_cft_mutex to ensure
+-	 * exclusive access to the field.
++	 * Instead, we use cgroup_for_each_descendant_pre() and drop RCU
++	 * read lock before calling cgroup_addrm_files().
+ 	 */
+-	mutex_lock(&cgroup_cft_mutex);
+ 	mutex_lock(&cgroup_mutex);
+ }
+ 
+ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ 			       struct cftype *cfts, bool is_add)
+-	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
++	__releases(&cgroup_mutex)
+ {
+ 	LIST_HEAD(pending);
+-	struct cgroup *cgrp, *n;
++	struct cgroup *cgrp, *root = &ss->root->top_cgroup;
+ 	struct super_block *sb = ss->root->sb;
++	struct inode *inode;
++	struct dentry *prev = NULL;
++	u64 serial_nr = atomic64_read(&cgroup_serial_nr_cursor);
+ 
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+-	if (cfts && ss->root != &rootnode &&
+-	    atomic_inc_not_zero(&sb->s_active)) {
+-		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
+-			dget(cgrp->dentry);
+-			list_add_tail(&cgrp->cft_q_node, &pending);
+-		}
+-	} else {
+-		sb = NULL;
++	if (!cfts || ss->root == &rootnode ||
++	    !atomic_inc_not_zero(&sb->s_active)) {
++		mutex_unlock(&cgroup_mutex);
++		return;
+ 	}
++	mutex_unlock(&cgroup_mutex);
+ 
++	inode = root->dentry->d_inode;
++	mutex_lock(&inode->i_mutex);
++	mutex_lock(&cgroup_mutex);
++	cgroup_addrm_files(root, ss, cfts, is_add);
+ 	mutex_unlock(&cgroup_mutex);
++	mutex_unlock(&inode->i_mutex);
+ 
+ 	/*
+ 	 * All new cgroups will see @cfts update on @ss->cftsets.  Add/rm
+ 	 * files for all cgroups which were created before.
+ 	 */
+-	list_for_each_entry_safe(cgrp, n, &pending, cft_q_node) {
+-		struct inode *inode = cgrp->dentry->d_inode;
++	rcu_read_lock();
++	cgroup_for_each_descendant_pre(cgrp, root) {
++		if (cgroup_is_dead(cgrp))
++			continue;
++
++		inode = cgrp->dentry->d_inode;
++		dget(cgrp->dentry);
++		rcu_read_unlock();
++
++		dput(prev);
++		prev = cgrp->dentry;
+ 
+ 		mutex_lock(&inode->i_mutex);
+ 		mutex_lock(&cgroup_mutex);
+-		if (!cgroup_is_dead(cgrp))
++		if (cgrp->serial_nr <= serial_nr && !cgroup_is_dead(cgrp))
+ 			cgroup_addrm_files(cgrp, ss, cfts, is_add);
+ 		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&inode->i_mutex);
+ 
+-		list_del_init(&cgrp->cft_q_node);
+-		dput(cgrp->dentry);
++		rcu_read_lock();
+ 	}
++	rcu_read_unlock();
++	dput(prev);
+ 
+ 	if (sb)
+ 		deactivate_super(sb);
+-
+-	mutex_unlock(&cgroup_cft_mutex);
+ }
+ 
+ /**
+@@ -4316,7 +4322,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
+ 
+ 	/* allocation complete, commit to creation */
+-	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+ 	root->number_of_cgroups++;
+ 
+@@ -4555,7 +4560,6 @@ static void cgroup_offline_fn(struct work_struct *work)
+ 
+ 	/* delete this cgroup from parent->children */
+ 	list_del_rcu(&cgrp->sibling);
+-	list_del_init(&cgrp->allcg_node);
+ 
+ 	dput(d);
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.8.0.2
