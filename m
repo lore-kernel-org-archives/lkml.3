@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3FRLOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:14:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42861 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab3FRLOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:14:33 -0400
-Message-ID: <51C040E8.2050904@ti.com>
-Date: Tue, 18 Jun 2013 16:43:44 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754719Ab3FRLTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:19:17 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:44423 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab3FRLTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 07:19:16 -0400
+Date: Tue, 18 Jun 2013 13:19:10 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] s390 patches for the 3.10-rc6
+Message-ID: <20130618111910.GA24526@osiris>
+References: <20130613164730.65273fbd@mschwide>
+ <CAMuHMdW+C=kQh+0XM1m1W5EPOPYCmq1KoJOKSbT+-VZWdK-9Ww@mail.gmail.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
-        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
-        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <nsekhar@ti.com>
-Subject: Re: [PATCH v7 5/9] ARM: OMAP: USB: Add phy binding information
-References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-6-git-send-email-kishon@ti.com> <20130618094438.GT5461@arwen.pp.htv.fi> <51C030B4.5070707@ti.com> <20130618102725.GB7843@arwen.pp.htv.fi>
-In-Reply-To: <20130618102725.GB7843@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdW+C=kQh+0XM1m1W5EPOPYCmq1KoJOKSbT+-VZWdK-9Ww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061811-8372-0000-0000-000006579A6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 18, 2013 at 12:08:51PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Jun 13, 2013 at 4:47 PM, Martin Schwidefsky
+> allnoconfig:
+> 
+> arch/s390/kernel/irq.c:315:6: error: expected identifier or '(' before '__asm__'
+> http://kisskb.ellerman.id.au/kisskb/buildresult/8987667/
+> 
+> The function is expanded to:
+> 
+>     void __asm__ __volatile__("": : :"memory")
+>     {
+> 
+>     }
+> 
+> include/linux/hardirq.h: # define synchronize_irq(irq)   barrier()
+> include/linux/compiler-gcc.h: #define barrier() __asm__
+> __volatile__("": : :"memory")
+> 
+> Turning synchronize_irq() into a static inline function doesn't help as then
+> it becomes a redefinition.
 
-On Tuesday 18 June 2013 03:57 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Tue, Jun 18, 2013 at 03:34:36PM +0530, Kishon Vijay Abraham I wrote:
->> On Tuesday 18 June 2013 03:14 PM, Felipe Balbi wrote:
->>> On Thu, Jun 13, 2013 at 02:13:55PM +0530, Kishon Vijay Abraham I wrote:
->>>> In order for controllers to get PHY in case of non dt boot, the phy
->>>> binding information (phy device name) should be added in the platform
->>>> data of the controller.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>
->>> I would rather not pass strings around, any other way to handle this ?
->>> Why do you need to pass this string ?
->>
->> Our old way of binding the controller and the phy using device name
->> started creating problems after the devices are created using
->> PLATFORM_DEVID_AUTO. Infact non-dt boot is broken in mainline for
->> OMAP3 platforms for which I have posted a RFC series
->> http://www.serverphorums.com/read.php?12,708632 which also uses
->> strings.
->> I'm not sure of any other way to deal with this.
->
-> have you checked how other frameworks handle it ? Regulator has some
-> sort of binding in board-files, but I guess it passes the regulator
-> name?
+We received a patch from Ben which fixes this:
 
- From whatever I could make of, regulator has 3 ways to get the 
-regulator one of which is using the binding in board-files (but it also 
-uses device name which could create the same problem that we are facing).
+>From 7bf4da5763f30823b4eeb4c82f8499ffe2f475ab Mon Sep 17 00:00:00 2001
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Fri, 14 Jun 2013 01:18:44 +0100
+Subject: [PATCH] s390/irq: Only define synchronize_irq() on SMP
 
-1.) from dt data
-2.) from _supply_ name
-3.) from binding in board file
+In uniprocessor configurations, synchronize_irq() is defined in
+<linux/hardirq.h> as a macro, and this function definition fails to
+compile.
 
-(referred regulator_dev_lookup() in regulator/core.c)
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: stable@vger.kernel.org # 3.9
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ arch/s390/kernel/irq.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks
-Kishon
+diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
+index 408e866..dd3c199 100644
+--- a/arch/s390/kernel/irq.c
++++ b/arch/s390/kernel/irq.c
+@@ -312,6 +312,7 @@ void measurement_alert_subclass_unregister(void)
+ }
+ EXPORT_SYMBOL(measurement_alert_subclass_unregister);
+ 
++#ifdef CONFIG_SMP
+ void synchronize_irq(unsigned int irq)
+ {
+ 	/*
+@@ -320,6 +321,7 @@ void synchronize_irq(unsigned int irq)
+ 	 */
+ }
+ EXPORT_SYMBOL_GPL(synchronize_irq);
++#endif
+ 
+ #ifndef CONFIG_PCI
+ 
+-- 
+1.8.2.2
+
