@@ -1,57 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab3FRRDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:03:55 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:38723 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab3FRRDx (ORCPT
+	id S1756358Ab3FRRFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:05:04 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65520 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab3FRRFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:03:53 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <CA+G9fYu3_-RZxFyRENuqJvzsM=YToT7PG+5fUytMzhsFu3=z7g@mail.gmail.com>
-References: <CA+G9fYu3_-RZxFyRENuqJvzsM=YToT7PG+5fUytMzhsFu3=z7g@mail.gmail.com>
-Date: Tue, 18 Jun 2013 10:03:52 -0700
-Message-ID: <CAOesGMhL7P350yPkxEKAZ+FS9X6QMFL+4gv5dCRBCW8rwQBB0g@mail.gmail.com>
-Subject: Re: linux-next: origen build failed at drivers/pinctrl/pinctrl-exynos.c
-From: Olof Johansson <olof@lixom.net>
-To: Naresh Kamboju <naresh.kamboju@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 13:05:03 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Tue, 18 Jun 2013 12:05:01 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Frank Li <Frank.Li@freescale.com>,
+        Jim Baxter <jim_baxter@mentor.com>
+Subject: [PATCH v3] net: fec: Fix build for MCF5272
+Date: Tue, 18 Jun 2013 10:04:59 -0700
+Message-Id: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commits 4c09eed9 (net: fec: Enable imx6 enet checksum acceleration) and
+baa70a5c (net: fec: enable pause frame to improve rx prefomance for 1G
+network) introduced functionality into the FEC driver which is not
+supported on MCF5272. The registers used to implement this functionality
+do not exist on MCF5272. Since register defines for MCF5272 are separate
+from register defines for other chips, building images for MCF5272 fails
+as follows.
 
+fec_main.c: In function 'fec_restart':
+fec_main.c:520:8: error: 'FEC_RACC' undeclared (first use in this function)
+fec_main.c:585:3: error: 'FEC_R_FIFO_RSEM' undeclared (first use in this function)
+fec_main.c:586:3: error: 'FEC_R_FIFO_RSFL' undeclared (first use in this function)
+fec_main.c:587:3: error: 'FEC_R_FIFO_RAEM' undeclared (first use in this function)
+fec_main.c:588:3: error: 'FEC_R_FIFO_RAFL' undeclared (first use in this function)
+fec_main.c:591:3: error: 'FEC_OPD' undeclared (first use in this function)
 
-On Tue, Jun 18, 2013 at 9:19 AM, Naresh Kamboju
-<naresh.kamboju@linaro.org> wrote:
-> Hi,
->
-> linux-next branch failed to build origen build
->
-> defconfig: exynos_defconfig
+Adding the missing register defines is not an option, since the registers
+do not exist on MCF5272. Disable the added functionality for MCF5272 builds.
 
-This was broken yesterday and fixed today. Getting linux-next build
-error reports that are 24+ hours old isn't very useful, unfortunately.
+Cc: Frank Li <Frank.Li@freescale.com>
+Cc: Jim Baxter <jim_baxter@mentor.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3: Add build error to commit log
+v2: Improved explanation to clarify that the build fails due to missing register
+    defines which can not be added since the registers don't exist on MCF5272. 
 
-It'd also be convenient if you supplied the "git describe" version
-number of the source tree in these reports, so it'd be trivial to find
-out by glancing at the report, instead of going to the build log.
+This problem exists in 3.9 as well, though only due to commit baa70a5c. The
+patch does therefore not cleanly apply to 3.9. Options I can see are to ignore
+the build error in 3.9, to back-port the patch manually, or to split it into
+two separate patches. David, let me know which approach you prefer. 
 
-(Besides that, thanks for the bug report!)
+ drivers/net/ethernet/freescale/fec_main.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index a667015..d48099f 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -516,6 +516,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ 	/* Set MII speed */
+ 	writel(fep->phy_speed, fep->hwp + FEC_MII_SPEED);
+ 
++#if !defined(CONFIG_M5272)
+ 	/* set RX checksum */
+ 	val = readl(fep->hwp + FEC_RACC);
+ 	if (fep->csum_flags & FLAG_RX_CSUM_ENABLED)
+@@ -523,6 +524,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ 	else
+ 		val &= ~FEC_RACC_OPTIONS;
+ 	writel(val, fep->hwp + FEC_RACC);
++#endif
+ 
+ 	/*
+ 	 * The phy interface and speed need to get configured
+@@ -575,6 +577,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ #endif
+ 	}
+ 
++#if !defined(CONFIG_M5272)
+ 	/* enable pause frame*/
+ 	if ((fep->pause_flag & FEC_PAUSE_FLAG_ENABLE) ||
+ 	    ((fep->pause_flag & FEC_PAUSE_FLAG_AUTONEG) &&
+@@ -592,6 +595,7 @@ fec_restart(struct net_device *ndev, int duplex)
+ 	} else {
+ 		rcntl &= ~FEC_ENET_FCE;
+ 	}
++#endif /* !defined(CONFIG_M5272) */
+ 
+ 	writel(rcntl, fep->hwp + FEC_R_CNTRL);
+ 
+@@ -1205,7 +1209,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	/* mask with MAC supported features */
+ 	if (id_entry->driver_data & FEC_QUIRK_HAS_GBIT) {
+ 		phy_dev->supported &= PHY_GBIT_FEATURES;
++#if !defined(CONFIG_M5272)
+ 		phy_dev->supported |= SUPPORTED_Pause;
++#endif
+ 	}
+ 	else
+ 		phy_dev->supported &= PHY_BASIC_FEATURES;
+@@ -1390,6 +1396,8 @@ static int fec_enet_get_ts_info(struct net_device *ndev,
+ 	}
+ }
+ 
++#if !defined(CONFIG_M5272)
++
+ static void fec_enet_get_pauseparam(struct net_device *ndev,
+ 				    struct ethtool_pauseparam *pause)
+ {
+@@ -1436,9 +1444,13 @@ static int fec_enet_set_pauseparam(struct net_device *ndev,
+ 	return 0;
+ }
+ 
++#endif /* !defined(CONFIG_M5272) */
++
+ static const struct ethtool_ops fec_enet_ethtool_ops = {
++#if !defined(CONFIG_M5272)
+ 	.get_pauseparam		= fec_enet_get_pauseparam,
+ 	.set_pauseparam		= fec_enet_set_pauseparam,
++#endif
+ 	.get_settings		= fec_enet_get_settings,
+ 	.set_settings		= fec_enet_set_settings,
+ 	.get_drvinfo		= fec_enet_get_drvinfo,
+@@ -1874,10 +1886,12 @@ fec_probe(struct platform_device *pdev)
+ 	/* setup board info structure */
+ 	fep = netdev_priv(ndev);
+ 
++#if !defined(CONFIG_M5272)
+ 	/* default enable pause frame auto negotiation */
+ 	if (pdev->id_entry &&
+ 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
+ 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
++#endif
+ 
+ 	fep->hwp = devm_request_and_ioremap(&pdev->dev, r);
+ 	fep->pdev = pdev;
+-- 
+1.7.9.7
 
--Olof
