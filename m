@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab3FRQJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33531 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410Ab3FRQJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:09:35 -0400
-Date: Tue, 18 Jun 2013 12:09:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: [x86][v2] only print out DR registers if they are not power-on
- defaults.
-Message-ID: <20130618160911.GA24487@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-References: <20130618041132.GA23492@redhat.com>
- <20130618084356.GA13123@pd.tnic>
- <20130618140730.GA1313@redhat.com>
- <20130618155919.GC13123@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618155919.GC13123@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932844Ab3FRQKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:10:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49189 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab3FRQKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:10:07 -0400
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/7] 3.0.83-stable review
+Date: Tue, 18 Jun 2013 09:10:37 -0700
+Message-Id: <20130618160911.721012782@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.254.g5578ad7
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DR registers are rarely useful when decoding oopses.
-With screen real estate during oopses at a premium, we can save two lines
-by only printing out these registers when they are set to something other
-than they power-on state.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-[v2: incorporate D6 change suggested by Borislav Petkov <bp@alien8.de>]
+This is the start of the stable review cycle for the 3.0.83 release.
+There are 7 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Responses should be made by Thu Jun 20 16:07:34 UTC 2013.
+Anything received after that time might be too late.
 
-diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c linux-dj/arch/x86/kernel/process_64.c
---- linux/arch/x86/kernel/process_64.c	2013-05-01 10:02:52.064151923 -0400
-+++ linux-dj/arch/x86/kernel/process_64.c	2013-05-06 20:35:09.219868881 -0400
-@@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, i
- 	get_debugreg(d0, 0);
- 	get_debugreg(d1, 1);
- 	get_debugreg(d2, 2);
--	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
- 	get_debugreg(d3, 3);
- 	get_debugreg(d6, 6);
- 	get_debugreg(d7, 7);
-+
-+	/* Only print out debug registers if they are in their non-default state. */
-+	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
-+	    (d6 == DR6_RESERVED) && (d7 == 0x400))
-+		return;
-+
-+	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
- 	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
-+
- }
- 
- void release_thread(struct task_struct *dead_task)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.83-rc1.gz
+and the diffstat can be found below.
 
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 7305f7d..5905dc5 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -110,11 +110,16 @@ void __show_regs(struct pt_regs *regs, int all)
- 	get_debugreg(d1, 1);
- 	get_debugreg(d2, 2);
- 	get_debugreg(d3, 3);
--	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
--			d0, d1, d2, d3);
--
- 	get_debugreg(d6, 6);
- 	get_debugreg(d7, 7);
-+
-+	/* Only print out debug registers if they are in their non-default state. */
-+	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
-+	    (d6 == DR6_RESERVED) && (d7 == 0x400))
-+		return;
-+
-+	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
-+			d0, d1, d2, d3);
- 	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
- 			d6, d7);
- }
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.83-rc1
+
+Sage Weil <sage@inktank.com>
+    ceph: fix statvfs fr_size
+
+Kees Cook <keescook@chromium.org>
+    x86: Fix typo in kexec register clearing
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    mm: migration: add migrate_entry_wait_huge()
+
+Rafael Aquini <aquini@redhat.com>
+    swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
+
+Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+
+Sujith Manoharan <c_manoha@qca.qualcomm.com>
+    ath9k: Disable PowerSave by default
+
+Kees Cook <keescook@chromium.org>
+    b43: stop format string leaking into error msgs
+
+
+-------------
+
+Diffstat:
+
+ Makefile                              |  4 ++--
+ arch/x86/kernel/relocate_kernel_64.S  |  2 +-
+ drivers/gpu/drm/i915/intel_sdvo.c     | 10 ++++++----
+ drivers/net/wireless/ath/ath9k/init.c |  3 +--
+ drivers/net/wireless/b43/main.c       |  2 +-
+ fs/ceph/super.c                       |  7 ++++++-
+ fs/ceph/super.h                       |  2 +-
+ include/linux/swapops.h               |  3 +++
+ mm/hugetlb.c                          |  2 +-
+ mm/migrate.c                          | 23 ++++++++++++++++++-----
+ mm/swap_state.c                       | 18 +++++++++++++++++-
+ 11 files changed, 57 insertions(+), 19 deletions(-)
+
 
