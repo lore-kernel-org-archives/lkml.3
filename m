@@ -1,328 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656Ab3FRSYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:24:01 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61331 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab3FRSYA (ORCPT
+	id S933667Ab3FRSYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:24:23 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50348 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab3FRSYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:24:00 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 18 Jun 2013 11:24:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v5] watchdog: Add Broadcom BCM2835 watchdog timer driver
-Message-ID: <20130618182400.GA3776@roeck-us.net>
-References: <51C09478.30909@wwwdotorg.org>
- <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
+	Tue, 18 Jun 2013 14:24:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371577488-22438-1-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C099D2.3090506@zytor.com>
+References: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
+	<51C08B01.40200@zytor.com>
+	<CAE9FiQXM=mgvUqLh_Uj9NA8fMOSt+zCz-ev-ujnVkhHm8fQW_g@mail.gmail.com>
+	<51C099D2.3090506@zytor.com>
+Date: Tue, 18 Jun 2013 11:24:20 -0700
+X-Google-Sender-Auth: bTkbLJlT2AbXU0cGcggbPHn85SY
+Message-ID: <CAE9FiQWFgzF4fxULiNz5tqB8YEDCJ8TdPtUFpWKnR1wuwNQXgA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] x86, mtrr: fixs for mtrr_cleanup
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Joshua Covington <joshuacov@googlemail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 07:44:48PM +0200, Lubomir Rintel wrote:
-> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
-> 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: linux-rpi-kernel@lists.infradead.org
-> Cc: linux-watchdog@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
+On Tue, Jun 18, 2013 at 10:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/18/2013 12:28 PM, Yinghai Lu wrote:
+>> On Tue, Jun 18, 2013 at 9:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>
+>>> On this subject: what do we need to happen to be able to dump the MTRR
+>>> cleanup stuff?
+>>
+>> the old x server like to add Write-combining entry in MTRR.
+>> looks like drm for mga200 is adding that too ?
+>>
+>
+> "Old X server" here has been a long time now.  I need to dig into the
+> MGA200 I guess...
+>
+>> We need to make them to use PAT instead.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+looks that we have more mtrr_add calling:
 
-> ---
-> Changes for v2:
->     - Use per-device structure instead of global variables for lock and memory base
->     - Fix default timeout setting
->     - Do not leak memory if probe fails
->     - Style fixes
->     - Split out defconfig into a separate commit
->     - Meaningful commit message with credit
-> 
-> Changes for v3:
->     - Add proper copyright notice to header
->     - Drop status constants, we don't use them
->     - Fix heartbeat parameter's type
->     - Log driver initialization message once the device is probed
-> 
-> Changes for v4:
->     - Drop an useless initializer
->     - Add a signoff from downstream
->     - Do not announce the driver to the log if we failed to probe
->     - Set platform data earlier and do not explicitly unset it
-> 
-> Changes for v5:
->     - Copyright clarification
-> 
->  .../bindings/watchdog/brcm,bcm2835-pm-wdog.txt     |    5 +
->  drivers/watchdog/Kconfig                           |   11 ++
->  drivers/watchdog/Makefile                          |    1 +
->  drivers/watchdog/bcm2835_wdt.c                     |  189 ++++++++++++++++++++
->  4 files changed, 206 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/watchdog/bcm2835_wdt.c
-> 
-> diff --git a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-> index d209366..f801d71 100644
-> --- a/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-> +++ b/Documentation/devicetree/bindings/watchdog/brcm,bcm2835-pm-wdog.txt
-> @@ -5,9 +5,14 @@ Required properties:
->  - compatible : should be "brcm,bcm2835-pm-wdt"
->  - reg : Specifies base physical address and size of the registers.
->  
-> +Optional properties:
-> +
-> +- timeout-sec   : Contains the watchdog timeout in seconds
-> +
->  Example:
->  
->  watchdog {
->  	compatible = "brcm,bcm2835-pm-wdt";
->  	reg = <0x7e100000 0x28>;
-> +	timeout-sec = <10>;
->  };
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index e89fc31..c3d3b16 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1098,6 +1098,17 @@ config BCM63XX_WDT
->  	  To compile this driver as a loadable module, choose M here.
->  	  The module will be called bcm63xx_wdt.
->  
-> +config BCM2835_WDT
-> +	tristate "Broadcom BCM2835 hardware watchdog"
-> +	depends on ARCH_BCM2835
-> +	select WATCHDOG_CORE
-> +	help
-> +	  Watchdog driver for the built in watchdog hardware in Broadcom
-> +	  BCM2835 SoC.
-> +
-> +	  To compile this driver as a loadable module, choose M here.
-> +	  The module will be called bcm2835_wdt.
-> +
->  config LANTIQ_WDT
->  	tristate "Lantiq SoC watchdog"
->  	depends on LANTIQ
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index a300b94..1bf5675 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -54,6 +54,7 @@ obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
->  obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
->  obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
->  obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
-> +obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
->  
->  # AVR32 Architecture
->  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-> diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
-> new file mode 100644
-> index 0000000..61566fc
-> --- /dev/null
-> +++ b/drivers/watchdog/bcm2835_wdt.c
-> @@ -0,0 +1,189 @@
-> +/*
-> + * Watchdog driver for Broadcom BCM2835
-> + *
-> + * "bcm2708_wdog" driver written by Luke Diamand that was obtained from
-> + * branch "rpi-3.6.y" of git://github.com/raspberrypi/linux.git was used
-> + * as a hardware reference for the Broadcom BCM2835 watchdog timer.
-> + *
-> + * Copyright (C) 2013 Lubomir Rintel <lkundrak@v3.sk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2 of the License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <linux/types.h>
-> +#include <linux/module.h>
-> +#include <linux/io.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of_address.h>
-> +#include <linux/miscdevice.h>
-> +
-> +#define PM_RSTC				0x1c
-> +#define PM_WDOG				0x24
-> +
-> +#define PM_PASSWORD			0x5a000000
-> +
-> +#define PM_WDOG_TIME_SET		0x000fffff
-> +#define PM_RSTC_WRCFG_CLR		0xffffffcf
-> +#define PM_RSTC_WRCFG_SET		0x00000030
-> +#define PM_RSTC_WRCFG_FULL_RESET	0x00000020
-> +#define PM_RSTC_RESET			0x00000102
-> +
-> +#define SECS_TO_WDOG_TICKS(x) ((x) << 16)
-> +#define WDOG_TICKS_TO_SECS(x) ((x) >> 16)
-> +
-> +struct bcm2835_wdt {
-> +	void __iomem		*base;
-> +	spinlock_t		lock;
-> +};
-> +
-> +static unsigned int heartbeat;
-> +static bool nowayout = WATCHDOG_NOWAYOUT;
-> +
-> +static int bcm2835_wdt_start(struct watchdog_device *wdog)
-> +{
-> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-> +	uint32_t cur;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&wdt->lock, flags);
-> +
-> +	writel_relaxed(PM_PASSWORD | (SECS_TO_WDOG_TICKS(wdog->timeout) &
-> +				PM_WDOG_TIME_SET), wdt->base + PM_WDOG);
-> +	cur = readl_relaxed(wdt->base + PM_RSTC);
-> +	writel_relaxed(PM_PASSWORD | (cur & PM_RSTC_WRCFG_CLR) |
-> +		  PM_RSTC_WRCFG_FULL_RESET, wdt->base + PM_RSTC);
-> +
-> +	spin_unlock_irqrestore(&wdt->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static int bcm2835_wdt_stop(struct watchdog_device *wdog)
-> +{
-> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-> +
-> +	writel_relaxed(PM_PASSWORD | PM_RSTC_RESET, wdt->base + PM_RSTC);
-> +	dev_info(wdog->dev, "Watchdog timer stopped");
-> +	return 0;
-> +}
-> +
-> +static int bcm2835_wdt_set_timeout(struct watchdog_device *wdog, unsigned int t)
-> +{
-> +	wdog->timeout = t;
-> +	return 0;
-> +}
-> +
-> +static unsigned int bcm2835_wdt_get_timeleft(struct watchdog_device *wdog)
-> +{
-> +	struct bcm2835_wdt *wdt = watchdog_get_drvdata(wdog);
-> +
-> +	uint32_t ret = readl_relaxed(wdt->base + PM_WDOG);
-> +	return WDOG_TICKS_TO_SECS(ret & PM_WDOG_TIME_SET);
-> +}
-> +
-> +static struct watchdog_ops bcm2835_wdt_ops = {
-> +	.owner =	THIS_MODULE,
-> +	.start =	bcm2835_wdt_start,
-> +	.stop =		bcm2835_wdt_stop,
-> +	.set_timeout =	bcm2835_wdt_set_timeout,
-> +	.get_timeleft =	bcm2835_wdt_get_timeleft,
-> +};
-> +
-> +static struct watchdog_info bcm2835_wdt_info = {
-> +	.options =	WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
-> +			WDIOF_KEEPALIVEPING,
-> +	.identity =	"Broadcom BCM2835 Watchdog timer",
-> +};
-> +
-> +static struct watchdog_device bcm2835_wdt_wdd = {
-> +	.info =		&bcm2835_wdt_info,
-> +	.ops =		&bcm2835_wdt_ops,
-> +	.min_timeout =	1,
-> +	.max_timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
-> +	.timeout =	WDOG_TICKS_TO_SECS(PM_WDOG_TIME_SET),
-> +};
-> +
-> +static int bcm2835_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	struct bcm2835_wdt *wdt;
-> +	int err;
-> +
-> +	wdt = devm_kzalloc(dev, sizeof(struct bcm2835_wdt), GFP_KERNEL);
-> +	if (!wdt) {
-> +		dev_err(dev, "Failed to allocate memory for watchdog device");
-> +		return -ENOMEM;
-> +	}
-> +	platform_set_drvdata(pdev, wdt);
-> +
-> +	spin_lock_init(&wdt->lock);
-> +
-> +	wdt->base = of_iomap(np, 0);
-> +	if (!wdt->base) {
-> +		dev_err(dev, "Failed to remap watchdog regs");
-> +		return -ENODEV;
-> +	}
-> +
-> +	watchdog_set_drvdata(&bcm2835_wdt_wdd, wdt);
-> +	watchdog_init_timeout(&bcm2835_wdt_wdd, heartbeat, dev);
-> +	watchdog_set_nowayout(&bcm2835_wdt_wdd, nowayout);
-> +	err = watchdog_register_device(&bcm2835_wdt_wdd);
-> +	if (err) {
-> +		dev_err(dev, "Failed to register watchdog device");
-> +		iounmap(wdt->base);
-> +		return err;
-> +	}
-> +
-> +	dev_info(dev, "Broadcom BCM2835 watchdog timer");
-> +	return 0;
-> +}
-> +
-> +static int bcm2835_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct bcm2835_wdt *wdt = platform_get_drvdata(pdev);
-> +
-> +	watchdog_unregister_device(&bcm2835_wdt_wdd);
-> +	iounmap(wdt->base);
-> +
-> +	return 0;
-> +}
-> +
-> +static void bcm2835_wdt_shutdown(struct platform_device *pdev)
-> +{
-> +	bcm2835_wdt_stop(&bcm2835_wdt_wdd);
-> +}
-> +
-> +static const struct of_device_id bcm2835_wdt_of_match[] = {
-> +	{ .compatible = "brcm,bcm2835-pm-wdt", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, bcm2835_wdt_of_match);
-> +
-> +static struct platform_driver bcm2835_wdt_driver = {
-> +	.probe		= bcm2835_wdt_probe,
-> +	.remove		= bcm2835_wdt_remove,
-> +	.shutdown	= bcm2835_wdt_shutdown,
-> +	.driver = {
-> +		.name =		"bcm2835-wdt",
-> +		.owner =	THIS_MODULE,
-> +		.of_match_table = bcm2835_wdt_of_match,
-> +	},
-> +};
-> +module_platform_driver(bcm2835_wdt_driver);
-> +
-> +module_param(heartbeat, uint, 0);
-> +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
-> +
-> +module_param(nowayout, bool, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> +				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> +
-> +MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
-> +MODULE_DESCRIPTION("Driver for Broadcom BCM2835 watchdog timer");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> -- 
-> 1.7.1
-> 
-> 
+drivers/gpu/drm/ast/ast_ttm.c:  ast->fb_mtrr =
+drm_mtrr_add(pci_resource_start(dev->pdev, 0),
+drivers/gpu/drm/cirrus/cirrus_ttm.c:    cirrus->fb_mtrr =
+drm_mtrr_add(pci_resource_start(dev->pdev, 0),
+drivers/gpu/drm/drm_bufs.c:                             map->mtrr =
+mtrr_add(map->offset, map->size,
+drivers/gpu/drm/drm_pci.c:
+mtrr_add(dev->agp->agp_info.aper_base,
+drivers/gpu/drm/i915/i915_dma.c:        dev_priv->mm.gtt_mtrr =
+mtrr_add(base, size, MTRR_TYPE_WRCOMB, 1);
+drivers/gpu/drm/mgag200/mgag200_ttm.c:  mdev->fb_mtrr =
+drm_mtrr_add(pci_resource_start(dev->pdev, 0),
+drivers/gpu/drm/nouveau/nouveau_ttm.c:  drm->ttm.mtrr =
+drm_mtrr_add(pci_resource_start(dev->pdev, 1),
+drivers/gpu/drm/radeon/radeon_object.c:         rdev->mc.vram_mtrr =
+mtrr_add(rdev->mc.aper_base, rdev->mc.aper_size,
+drivers/gpu/drm/savage/savage_bci.c:
+drm_mtrr_add(dev_priv->mtrr[0].base,
+drivers/gpu/drm/savage/savage_bci.c:
+drm_mtrr_add(dev_priv->mtrr[1].base,
+drivers/gpu/drm/savage/savage_bci.c:
+drm_mtrr_add(dev_priv->mtrr[2].base,
+drivers/gpu/drm/savage/savage_bci.c:
+drm_mtrr_add(dev_priv->mtrr[0].base,
+drivers/gpu/drm/vmwgfx/vmwgfx_drv.c:    dev_priv->mmio_mtrr =
+drm_mtrr_add(dev_priv->mmio_start,
+drivers/infiniband/hw/ipath/ipath_wc_x86_64.c:          cookie =
+mtrr_add(pioaddr, piolen, MTRR_TYPE_WRCOMB, 0);
+drivers/infiniband/hw/ipath/ipath_wc_x86_64.c:
+          "mtrr_add()  WC for PIO bufs "
+drivers/infiniband/hw/qib/qib_wc_x86_64.c:              cookie =
+mtrr_add(pioaddr, piolen, MTRR_TYPE_WRCOMB, 0);
+drivers/infiniband/hw/qib/qib_wc_x86_64.c:
+          "mtrr_add()  WC for PIO bufs failed (%d)\n",
+drivers/media/pci/ivtv/ivtvfb.c:                if
+(mtrr_add(oi->fb_start_aligned_physaddr,
+drivers/message/fusion/mptbase.c:               ioc->mtrr_reg =
+mtrr_add(ioc->req_frames_dma,
+drivers/net/ethernet/myricom/myri10ge/myri10ge.c:       mgp->mtrr =
+mtrr_add(mgp->iomem_base, mgp->board_span,
+
+will be in drm:
+
+drivers/staging/xgifb/XGI_main_26.c:    xgifb_info->mtrr =
+mtrr_add(xgifb_info->video_base,
+
+video:
+
+drivers/video/arkfb.c:          par->mtrr_reg =
+mtrr_add(info->fix.smem_start, info->fix.smem_len, MTRR_TYPE_WRCOMB,
+1);
+drivers/video/aty/aty128fb.c:           par->mtrr.vram =
+mtrr_add(info->fix.smem_start,
+drivers/video/aty/atyfb_base.c:         par->mtrr_aper =
+mtrr_add(par->res_start, par->res_size,
+drivers/video/aty/atyfb_base.c:                 par->mtrr_reg =
+mtrr_add(par->res_start + 0x800000 -
+drivers/video/aty/radeon_base.c:        rinfo->mtrr_hdl = nomtrr ? -1
+: mtrr_add(rinfo->fb_base_phys,
+drivers/video/gbefb.c:  mtrr_add(gbe_mem_phys, gbe_mem_size,
+MTRR_TYPE_WRCOMB, 1);
+drivers/video/i740fb.c:         par->mtrr_reg = mtrr_add(info->fix.smem_start,
+drivers/video/i810/i810_main.h: par->mtrr_reg = mtrr_add((u32)
+par->aperture.physical,
+drivers/video/intelfb/intelfbdrv.c:     dinfo->mtrr_reg =
+mtrr_add(dinfo->aperture.physical,
+drivers/video/kyro/fbdev.c:                     mtrr_add(kyro_fix.smem_start,
+drivers/video/matrox/matroxfb_base.c:           minfo->mtrr.vram =
+mtrr_add(video_base_phys, minfo->video.len, MTRR_TYPE_WRCOMB, 1);
+drivers/video/neofb.c:          mtrr_add(info->fix.smem_start,
+pci_resource_len(dev, 0),
+drivers/video/nvidia/nvidia.c:          par->mtrr.vram =
+mtrr_add(nvidiafb_fix.smem_start,
+drivers/video/pm2fb.c:                  mtrr_add(pm2fb_fix.smem_start,
+drivers/video/pm3fb.c:          par->mtrr_handle =
+mtrr_add(pm3fb_fix.smem_start,
+drivers/video/riva/fbdev.c:             default_par->mtrr.vram =
+mtrr_add(rivafb_fix.smem_start,
+drivers/video/s3fb.c:           par->mtrr_reg =
+mtrr_add(info->fix.smem_start, info->fix.smem_len, MTRR_TYPE_WRCOMB,
+1);
+drivers/video/savage/savagefb_driver.c: par->video.mtrr =
+mtrr_add(par->video.pbase, video_len,
+drivers/video/sgivwfb.c:        mtrr_add(sgivwfb_mem_phys,
+sgivwfb_mem_size, MTRR_TYPE_WRCOMB, 1);
+drivers/video/sis/sis_main.c:           ivideo->mtrr =
+mtrr_add(ivideo->video_base, ivideo->video_size,
+drivers/video/tdfxfb.c:static inline int mtrr_add(unsigned long base,
+unsigned long size,
+drivers/video/tdfxfb.c:                 mtrr_add(info->fix.smem_start,
+info->fix.smem_len,
+drivers/video/uvesafb.c:                                rc =
+mtrr_add(info->fix.smem_start,
+drivers/video/vesafb.c:                         rc =
+mtrr_add(vesafb_fix.smem_start, temp_size,
+drivers/video/vt8623fb.c:               par->mtrr_reg =
+mtrr_add(info->fix.smem_start, info->fix.smem_len, MTRR_TYPE_WRCOMB,
+1);
