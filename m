@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab3FRL6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:58:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56103 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab3FRLol (ORCPT
+	id S932417Ab3FRL7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:59:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54529 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab3FRL7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:41 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 47/93] hwmon: (adm1021) Strengthen chip detection for ADM1021, LM84 and MAX1617
-Date: Tue, 18 Jun 2013 12:42:55 +0100
-Message-Id: <1371555821-12820-48-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 18 Jun 2013 07:59:18 -0400
+Date: Tue, 18 Jun 2013 12:59:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com,
+        sachin.kamat@linaro.org, patches@linaro.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130618115910.GN1403@sirena.org.uk>
+References: <1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
+ <1371528907-14425-1-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ujdcy72QwKYdVeZs"
+Content-Disposition: inline
+In-Reply-To: <1371528907-14425-1-git-send-email-tushar.behera@linaro.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 11/15] regulator: ti-abb: Convert to use
+ devm_ioremap_resource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--Ujdcy72QwKYdVeZs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Guenter Roeck <linux@roeck-us.net>
+On Tue, Jun 18, 2013 at 09:45:07AM +0530, Tushar Behera wrote:
+> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> introduced devm_ioremap_resource() and deprecated the use of
+> devm_request_and_ioremap().
 
-commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
+I've applied this.  In future please do remember that if you're not
+sending a patch series you shouldn't mark it as being part of one,
+people will only wonder where the rest of the series is and miss things.
+You haven't sent me 15 patches, you've sent me a single patch.
 
-On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
-as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
-Also improve detection for ADM1021.
+--Ujdcy72QwKYdVeZs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Modeled after chip detection code in sensors-detect command.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-[ luis: backport to 3.5: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hwmon/adm1021.c | 58 ++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 50 insertions(+), 8 deletions(-)
+iQIcBAEBAgAGBQJRwEuLAAoJELSic+t+oim9e5sQAIpqE/wLW/aj6Co/+HFbk5Bp
+8gF82aOTu4j7+RGalKVi/2nxmOrficSjxVYnRPOIyyBtexFmf/mh+dRMxzISww0I
+5WooayZI5vPRs+uqNUwGJIL954z8EMCMCi8QecdiSYzr71GpfCjJSkdEQHRI8eq/
+FO1C05NhpX/JS8hGE3JdLQvUVFGRg5/sjzeVPEJnPhQVlQrW/LE0ovdG5rjWCKCI
+hfyEoJpsrf1UVcqpWOVlZv5Qn74+Wev/WumXFOQkPAjDZlgCHofZW4fK6uof6BAR
+kXBLLQn3u02GeM5yIEdb9zPPyjpbbHeNEp22Xae3NOcXEImnP40J6zDFyBI4KOkK
+KYb+02J98GINwXAkMPRve0TEp9NGFiveUgGSEsCwPms6FnUkiCVl8rkkm2Pyedgl
+e2Fd6A3Xz6iAUVQPQ2eYS93mvOzxmJBXpvtX5xuSwZcTrIdVtGVZodz0vLH2UYhF
+NHZouql3tcqI6vV7Rx09u1uOVykwFiaXGuTDBB0icYa3ZpkvD1lUT7ZPjuS9ZtqL
+Hf//DpjsOgvF2qofgNLYCrLlyYXdQd4+Y0e2n8AEmUrGpH7+7apXhGb0BTqj4ikG
+QEDe0t7dupptHfAu5ArpPcq1IPC1t2IBmceuBP+XIt37dQLrvZu4abSKdz6A4Tgm
+/GVvHH3tqIpgZFHKEBrQ
+=MnuF
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
-index 4394e7e..5653461 100644
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -332,26 +332,68 @@ static int adm1021_detect(struct i2c_client *client,
- 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
- 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
- 
-+	if (man_id < 0 || dev_id < 0)
-+		return -ENODEV;
-+
- 	if (man_id == 0x4d && dev_id == 0x01)
- 		type_name = "max1617a";
- 	else if (man_id == 0x41) {
- 		if ((dev_id & 0xF0) == 0x30)
- 			type_name = "adm1023";
--		else
-+		else if ((dev_id & 0xF0) == 0x00)
- 			type_name = "adm1021";
-+		else
-+			return -ENODEV;
- 	} else if (man_id == 0x49)
- 		type_name = "thmc10";
- 	else if (man_id == 0x23)
- 		type_name = "gl523sm";
- 	else if (man_id == 0x54)
- 		type_name = "mc1066";
--	/* LM84 Mfr ID in a different place, and it has more unused bits */
--	else if (conv_rate == 0x00
--		 && (config & 0x7F) == 0x00
--		 && (status & 0xAB) == 0x00)
--		type_name = "lm84";
--	else
--		type_name = "max1617";
-+	else {
-+		int lte, rte, lhi, rhi, llo, rlo;
-+
-+		/* extra checks for LM84 and MAX1617 to avoid misdetections */
-+
-+		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
-+		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
-+
-+		/* fail if any of the additional register reads failed */
-+		if (llo < 0 || rlo < 0)
-+			return -ENODEV;
-+
-+		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
-+		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
-+		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
-+		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
-+
-+		/*
-+		 * Fail for negative temperatures and negative high limits.
-+		 * This check also catches read errors on the tested registers.
-+		 */
-+		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
-+			return -ENODEV;
-+
-+		/* fail if all registers hold the same value */
-+		if (lte == rte && lte == lhi && lte == rhi && lte == llo
-+		    && lte == rlo)
-+			return -ENODEV;
-+
-+		/*
-+		 * LM84 Mfr ID is in a different place,
-+		 * and it has more unused bits.
-+		 */
-+		if (conv_rate == 0x00
-+		    && (config & 0x7F) == 0x00
-+		    && (status & 0xAB) == 0x00) {
-+			type_name = "lm84";
-+		} else {
-+			/* fail if low limits are larger than high limits */
-+			if ((s8)llo > lhi || (s8)rlo > rhi)
-+				return -ENODEV;
-+			type_name = "max1617";
-+		}
-+	}
- 
- 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
- 		 type_name, i2c_adapter_id(adapter), client->addr);
--- 
-1.8.1.2
-
+--Ujdcy72QwKYdVeZs--
