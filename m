@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab3FRKaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:30:06 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48468 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3FRKaE (ORCPT
+	id S1754963Ab3FRKc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:32:26 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54601 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3FRKcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:30:04 -0400
-Date: Tue, 18 Jun 2013 12:23:25 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Johan Hovold <jhovold@gmail.com>, Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] USB: serial: make minor allocation dynamic
-Message-ID: <20130618102325.GA2594@localhost>
-References: <20130606173103.GA1812@kroah.com>
- <20130606173121.GA1866@kroah.com>
- <20130607180428.GB4204@kroah.com>
- <20130608100347.GO2566@localhost>
- <20130617201633.GA3903@kroah.com>
+	Tue, 18 Jun 2013 06:32:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130617201633.GA3903@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51BF77C2.70004@gmail.com>
+References: <20130514110745.GA10906@intel.com>
+	<1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
+	<51BF77C2.70004@gmail.com>
+Date: Tue, 18 Jun 2013 13:32:23 +0300
+Message-ID: <CAHp75VfgJ805yaM6mOf-H3tA5jNhKpe4C1SxL2yrvoe_h6jKzw@mail.gmail.com>
+Subject: Re: [PATCH REBASE] i2c-designware: make SDA hold time configurable
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > @@ -123,8 +116,9 @@ static void return_serial(struct usb_ser
-> > >  
-> > >  	mutex_lock(&table_lock);
-> > >  	for (i = 0; i < serial->num_ports; ++i)
-> > > -		serial_table[serial->minor + i] = NULL;
-> > > +		idr_remove(&serial_minors, serial->port[i]->minor);
-> > >  	mutex_unlock(&table_lock);
-> > > +	serial->minors_reserved = 0;
-> > 
-> > This isn't strictly needed as the serial struct release_serial is only
-> > called once when the struct is about to be freed.
-> 
-> Really?  Why were we doing this type of thing before with the "not
-> allocated" flag?  It seems that we were protecting some path that I
-> can't remember at the moment.  So to be safe, I'll leave it for now...
+On Mon, Jun 17, 2013 at 11:55 PM, Rob Herring <robherring2@gmail.com> wrote:
 
-It was and is only used when releasing the serial struct to check
-whether minors had been allocated or not at probe and if return_serial
-(release_minors) should be called. This in done in destroy_serial just
-before freeing the struct, so clearing the flag is redundant, but
-doesn't hurt anyone, I guess. ;)
+>> +Optional properties :
+>> + - sda-hold-time : should contain the SDA hold time in nanoseconds.
+>
+> Please specify time units in the property name. Perhaps
+> i2c-sda-hold-time-ns.
+>
+> Based on reading the discussion, there is one similar property I have
+> found: "samsung,i2c-sda-delay = <100>". I wouldn't copy it as it doesn't
+> tell the units or what the delay is.
 
-Johan
+Often on of the painful issues with DT models is the absence of the properties.
+Should someone create the property definition first under
+Documentation and _then_ patch everything around?
+(Though I think better to think and create documents first and after
+program accordingly)
+
+--
+With Best Regards,
+Andy Shevchenko
