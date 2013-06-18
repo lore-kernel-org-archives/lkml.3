@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3FRLXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:23:49 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61216 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752221Ab3FRLXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:23:47 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+GX9rnEPj5sgYccU6mAsXH
-Date: Tue, 18 Jun 2013 04:23:42 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: b-cousson@ti.com, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: OMAP2+: dts: HACK: Provide alias to USB PHY
- clock
-Message-ID: <20130618112342.GN5523@atomide.com>
-References: <1371553891-29364-1-git-send-email-rogerq@ti.com>
- <1371553891-29364-5-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371553891-29364-5-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754850Ab3FRL3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:29:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39537 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752221Ab3FRL3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 07:29:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,888,1363158000"; 
+   d="scan'208";a="331451971"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: Linus <linus.walleij@linaro.org>
+Cc: <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH v3 0/1] Pinctrl/gpio driver for Intel Baytrail platforms
+Date: Tue, 18 Jun 2013 14:33:01 +0300
+Message-Id: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130618 04:17]:
-> Till the OMAP clocks are correctly defined in device tree, use
-> this temporary hack to provide clock alias to the USB PHY clocks.
-> 
-> Without this, USB Host & Ethernet will not be functional with
-> device tree boots on Panda and uEVM.
+This is the third version of the Intel baytrail GPIO driver, now moved to Pinctrl
+subsystem.
 
-Thanks, this looks OK to me to have USB working until we have the
-DT defined clock patches ready.
+As Linus W. pointed out the Intel Baytrail gpio looks more like a pin controller with
+pad muxing and gpio-to-pad mappings than a pure gpio controller.
+Even if firmware does its best to make sure we don't need to worry about the muxings
+and other pinctrl features, there's a possibility these features might be useful in
+the future and then pinctrl is easier to build on. 
 
-The $Subject needs updating though, just make it ARM: OMAP2+: and
-leave out the dts and hack from there.
+Pinctrl also provides some generic gpio structures that are useful for this driver.        
 
-Regards,
+This driver is built on top of linux-pinctrl tree and needs the 
+"pinctrl: add pin list based GPIO ranges" patch by Christian Ruppert
+(commit 2ff3477efd7086544b9e298fc63afab0645921b4)
 
-Tony
- 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/mach-omap2/board-generic.c |   23 ++++++++++++++++++++++-
->  1 files changed, 22 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 88aa6b1..2b2d0de 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/clk.h>
->  
->  #include <asm/mach/arch.h>
->  
-> @@ -35,6 +36,21 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
->  	{ }
->  };
->  
-> +/*
-> + * HACK: create alias for USB host PHY clock.
-> + * Remove this when clock phandle can be provided via DT
-> + */
-> +static void __init legacy_init_ehci_clk(char *clkname)
-> +{
-> +	int ret;
-> +
-> +	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
-> +	if (ret) {
-> +		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
-> +						__func__, clkname, ret);
-> +	}
-> +}
-> +
->  static void __init omap_generic_init(void)
->  {
->  	omap_sdrc_init(NULL, NULL);
-> @@ -45,10 +61,15 @@ static void __init omap_generic_init(void)
->  	 * HACK: call display setup code for selected boards to enable omapdss.
->  	 * This will be removed when omapdss supports DT.
->  	 */
-> -	if (of_machine_is_compatible("ti,omap4-panda"))
-> +	if (of_machine_is_compatible("ti,omap4-panda")) {
->  		omap4_panda_display_init_of();
-> +		legacy_init_ehci_clk("auxclk3_ck");
-> +
-> +	}
->  	else if (of_machine_is_compatible("ti,omap4-sdp"))
->  		omap_4430sdp_display_init_of();
-> +	else if (of_machine_is_compatible("ti,omap5-uevm"))
-> +		legacy_init_ehci_clk("auxclk1_ck");
->  }
->  
->  #ifdef CONFIG_SOC_OMAP2420
-> -- 
-> 1.7.4.1
-> 
+Changes since v2:
+- move driver from gpio/gpio-baytrail to drivers/pinctrl/pinctrl-baytrail
+- use generic pinctrl_gpio_range structures from pinctrl instead of custom gpio_banks
+
+Changes since v1:
+- generic cleanups suggested by Andy S.
+- removed text about pin muxing
+- added missing 44:th pin to SUS controller
+- added level triggering option
+- prevent "forever loop" in case pin is stuck in "interrupt triggered" status,     
+
+Mathias Nyman (1):
+  pinctrl: add Intel BayTrail GPIO/pinctrl support
+
+ drivers/pinctrl/Kconfig            |   12 +
+ drivers/pinctrl/Makefile           |    1 +
+ drivers/pinctrl/pinctrl-baytrail.c |  543 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 556 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pinctrl/pinctrl-baytrail.c
+
+-- 
+1.7.4.1
+
