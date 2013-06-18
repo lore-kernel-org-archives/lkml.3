@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3FRPUC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:20:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47397 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567Ab3FRPUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:20:00 -0400
-Date: Tue, 18 Jun 2013 17:19:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: mingo@redhat.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 2/3] sched: don't call get_group() for covered cpus
-Message-ID: <20130618151954.GB16094@twins.programming.kicks-ass.net>
-References: <cover.1370948150.git.viresh.kumar@linaro.org>
- <7a61e955abdcbb1dfa9fe493f11a5ec53a11ddd3.1370948150.git.viresh.kumar@linaro.org>
- <20130618100306.GL3204@twins.programming.kicks-ass.net>
- <CAKohpo=oAa=mdkZk9yq4W7v-hQpCAM00rTJTWOn-eCBreEqTdA@mail.gmail.com>
+	id S932702Ab3FRPUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:20:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17689 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932293Ab3FRPUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 11:20:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,890,1363158000"; 
+   d="scan'208";a="318880027"
+Message-ID: <51C07ABC.2080704@linux.intel.com>
+Date: Tue, 18 Jun 2013 08:20:28 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=oAa=mdkZk9yq4W7v-hQpCAM00rTJTWOn-eCBreEqTdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: Ingo Molnar <mingo@kernel.org>, "alex.shi@intel.com" <alex.shi@intel.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, catalin.marinas@arm.com
+Subject: Re: power-efficient scheduling design
+References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com> <20130614160522.GG32728@e103034-lin>
+In-Reply-To: <20130614160522.GG32728@e103034-lin>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 03:45:15PM +0530, Viresh Kumar wrote:
-> On 18 June 2013 15:33, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Jun 11, 2013 at 04:32:44PM +0530, Viresh Kumar wrote:
-> >> In build_sched_groups() we don't need to call get_group() for cpus which are
-> >> already covered in previous iterations. So, call get_group() after checking if
-> >> cpu is covered or not.
-> >>
-> >
-> > Aside from not needing it; doing it would mark the group used and
-> > eventually leak it since we wouldn't connect it and not find it again to
-> > free it, right?
-> >
-> > So effectively this fixes a memory leak?
-> 
-> Exactly. To be precise: In cases where sg->cpumask contained more
-> than one cpu (For any topology level), this patch helps freeing sg's
-> memory for all cpus leaving the group leader.
-> 
-> May I update the logs again?
+On 6/14/2013 9:05 AM, Morten Rasmussen wrote:
 
-Sure. Just send a new patch and I'll substitute.
+> Looking at the discussion it seems that people have slightly different
+> views, but most agree that the goal is an integrated scheduling,
+> frequency, and idle policy like you pointed out from the beginning.
+
+
+... except that such a solution does not really work for Intel hardware.
+
+The OS does not get to really pick the CPU "frequency" (never mind that
+frequency is not what gets controlled), the hardware picks the frequency.
+The OS can do some level of requests (best to think of this as a percentage
+more than frequency) but what you actually get is more often than not
+what you asked for.
+
+You can look in hindsight what kind of performance you got (from some basic
+counters in MSRs), and the scheduler can use that to account backwards to what some process
+got. But to predict what you will get in the future...... that's near impossible
+on any realistic system nowadays (and even more so in the future).
+
+Treating "frequency" (well "performance) and idle separately is also a false thing to do
+(yes I know in 3.9/3.10 we still do that for Intel hw, but we're working
+on fixing that). They are by no means separate things. One guy's idle state
+is the other guys power budget (and thus performance)!.
+
+
+
