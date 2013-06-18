@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966Ab3FRQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:10:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49203 "EHLO
+	id S932920Ab3FRQKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:10:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49196 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab3FRQKU (ORCPT
+	with ESMTP id S932860Ab3FRQKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:10:20 -0400
+	Tue, 18 Jun 2013 12:10:19 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 4/7] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
-Date: Tue, 18 Jun 2013 09:10:41 -0700
-Message-Id: <20130618160912.270921813@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 3/7] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+Date: Tue, 18 Jun 2013 09:10:40 -0700
+Message-Id: <20130618160912.150691959@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618160911.721012782@linuxfoundation.org>
 References: <20130618160911.721012782@linuxfoundation.org>
@@ -33,66 +28,70 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Rafael Aquini <aquini@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit cbab0e4eec299e9059199ebe6daf48730be46d2b upstream.
+commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
 
-read_swap_cache_async() can race against get_swap_page(), and stumble
-across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
-into the swapcache yet.
+In
 
-This transient swap_map state is expected to be transitory, but the
-actual placement of discard at scan_swap_map() inserts a wait for I/O
-completion thus making the thread at read_swap_cache_async() to loop
-around its -EEXIST case, while the other end at get_swap_page() is
-scheduled away at scan_swap_map().  This can leave the system deadlocked
-if the I/O completion happens to be waiting on the CPU waitqueue where
-read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c
+Author: Egbert Eich <eich@suse.de>
+Date:   Tue Jun 4 17:13:21 2013 +0200
 
-This patch introduces a cond_resched() call to make the aforementioned
-read_swap_cache_async() busy loop condition to bail out when necessary,
-thus avoiding the subtle race window.
+    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Egbert Eich fixed a long-standing bug where we simply used a
+non-working i2c controller to read the EDID for SDVO-LVDS panels.
+Unfortunately some machines seem to not be able to cope with the mode
+provided in the EDID. Specifically they seem to not be able to cope
+with a 4x pixel mutliplier instead of a 2x one, which seems to have
+been worked around by slightly changing the panels native mode in the
+VBT so that the dotclock is just barely above 50MHz.
+
+Since it took forever to notice the breakage it's fairly safe to
+assume that at least for SDVO-LVDS panels the VBT contains fairly sane
+data. So just switch around the order and use VBT modes first.
+
+v2: Also add EDID modes just in case, and spell Egbert correctly.
+
+v3: Elaborate a bit more about what's going on on Chris' machine.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
+Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Egbert Eich <eich@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/swap_state.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -315,8 +315,24 @@ struct page *read_swap_cache_async(swp_e
- 		 * Swap entry may have been freed since our caller observed it.
- 		 */
- 		err = swapcache_prepare(entry);
--		if (err == -EEXIST) {	/* seems racy */
-+		if (err == -EEXIST) {
- 			radix_tree_preload_end();
-+			/*
-+			 * We might race against get_swap_page() and stumble
-+			 * across a SWAP_HAS_CACHE swap_map entry whose page
-+			 * has not been brought into the swapcache yet, while
-+			 * the other end is scheduled away waiting on discard
-+			 * I/O completion at scan_swap_map().
-+			 *
-+			 * In order to avoid turning this transitory state
-+			 * into a permanent loop around this -EEXIST case
-+			 * if !CONFIG_PREEMPT and the I/O completion happens
-+			 * to be waiting on the CPU waitqueue where we are now
-+			 * busy looping, we just conditionally invoke the
-+			 * scheduler here, if there are some more important
-+			 * tasks to run.
-+			 */
-+			cond_resched();
- 			continue;
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1610,10 +1610,13 @@ static void intel_sdvo_get_lvds_modes(st
+ 	 * arranged in priority order.
+ 	 */
+ 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+-	if (list_empty(&connector->probed_modes) == false)
+-		goto end;
+ 
+-	/* Fetch modes from VBT */
++	/*
++	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
++	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
++	 * drm_mode_probed_add adds the mode at the head of the list we add it
++	 * last.
++	 */
+ 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
+ 		newmode = drm_mode_duplicate(connector->dev,
+ 					     dev_priv->sdvo_lvds_vbt_mode);
+@@ -1625,7 +1628,6 @@ static void intel_sdvo_get_lvds_modes(st
  		}
- 		if (err) {		/* swp entry is obsolete ? */
+ 	}
+ 
+-end:
+ 	list_for_each_entry(newmode, &connector->probed_modes, head) {
+ 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
+ 			intel_sdvo->sdvo_lvds_fixed_mode =
 
 
