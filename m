@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3FRKDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:03:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39917 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3FRKDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:03:44 -0400
-Date: Tue, 18 Jun 2013 12:03:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: mingo@redhat.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 3/3] sched: remove WARN_ON(!sd) from
- init_sched_groups_power()
-Message-ID: <20130618100340.GM3204@twins.programming.kicks-ass.net>
-References: <cover.1370948150.git.viresh.kumar@linaro.org>
- <2bbe633cd74b431c05253a8ce61fdfd5066a531b.1370948150.git.viresh.kumar@linaro.org>
+	id S1755943Ab3FRKFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:05:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39581 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754164Ab3FRKF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:05:29 -0400
+Message-ID: <51C030B4.5070707@ti.com>
+Date: Tue, 18 Jun 2013 15:34:36 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2bbe633cd74b431c05253a8ce61fdfd5066a531b.1370948150.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: <balbi@ti.com>, <grant.likely@linaro.org>, <tony@atomide.com>
+CC: <arnd@arndb.de>, <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>
+Subject: Re: [PATCH v7 5/9] ARM: OMAP: USB: Add phy binding information
+References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-6-git-send-email-kishon@ti.com> <20130618094438.GT5461@arwen.pp.htv.fi>
+In-Reply-To: <20130618094438.GT5461@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 04:32:45PM +0530, Viresh Kumar wrote:
-> sd can't be NULL in init_sched_groups_power() and so checking it for NULL isn't
-> useful. In case it is required, then also we need to rearrange the code a bit as
-> we already accessed invalid pointer sd to get sg: sg = sd->groups.
-> 
+Hi,
 
-Err on the side of paranoia :-)
+On Tuesday 18 June 2013 03:14 PM, Felipe Balbi wrote:
+> On Thu, Jun 13, 2013 at 02:13:55PM +0530, Kishon Vijay Abraham I wrote:
+>> In order for controllers to get PHY in case of non dt boot, the phy
+>> binding information (phy device name) should be added in the platform
+>> data of the controller.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> I would rather not pass strings around, any other way to handle this ?
+> Why do you need to pass this string ?
+
+Our old way of binding the controller and the phy using device name 
+started creating problems after the devices are created using 
+PLATFORM_DEVID_AUTO. Infact non-dt boot is broken in mainline for OMAP3 
+platforms for which I have posted a RFC series 
+http://www.serverphorums.com/read.php?12,708632 which also uses strings.
+I'm not sure of any other way to deal with this.
+
+Thanks
+Kishon
