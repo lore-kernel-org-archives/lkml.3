@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab3FRQzD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:55:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33462 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932879Ab3FRQzA convert rfc822-to-8bit (ORCPT
+	id S933487Ab3FRQzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:55:50 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56658 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933032Ab3FRQzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:55:00 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
- and then only request irq
-Thread-Topic: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
- exists and then only request irq
-Thread-Index: AQHObAxY8SVidqm7fEWvMR88AcSmApk7GTuAgACV5XA=
-Date: Tue, 18 Jun 2013 16:54:28 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
-References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
- <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
- <51C0820B.4020404@wwwdotorg.org>
-In-Reply-To: <51C0820B.4020404@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Jun 2013 12:55:48 -0400
+X-Sasl-enc: PZ1jfHnsrbSPJiyyQJDGbZSRd76n7L/7dI3EwOYo738b 1371574546
+Date: Tue, 18 Jun 2013 09:55:45 -0700
+From: Greg KH <greg@kroah.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KEYS: Skip key state checks when checking for possession
+Message-ID: <20130618165545.GA29639@kroah.com>
+References: <20130618164722.23443.23372.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618164722.23443.23372.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Tuesday, June 18, 2013 9:22 PM
-> To: J, KEERTHY
-> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
-> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; gg@slimlogic.co.uk
-> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
-> exists and then only request irq
+On Tue, Jun 18, 2013 at 05:47:22PM +0100, David Howells wrote:
+> Skip key state checks (invalidation, revocation and expiration) when checking
+> for possession.  Without this, keys that have been marked invalid, revoked
+> keys and expired keys are not given a possession attribute - which means the
+> possessor is not granted any possession permits and cannot do anything with
+> them unless they also have one a user, group or other permit.
 > 
-> On 06/18/2013 04:01 AM, J Keerthy wrote:
-> > Check if interrupts property exists and then only request irq.
-> > On some boards INT line might not be connected to a valid irq line on
-> > the application processor. Hence keeping a check before requesting
-> > irq.
+> This causes failures in the keyutils test suite's revocation and expiration
+> tests now that commit 96b5c8fea6c0861621051290d705ec2e971963f1 reduced the
+> initial permissions granted to a key.
 > 
-> When there is no interrupts property, surely i2c->irq == 0, which is an
-> invalid IRQ, and hence there's no need to check this before copying the
-> value?
-
-The intent here is NOT to request irq with 0 or Invalid IRQ. The board
-File will not populate the interrupts entry if the INT line is not
-Connected. Hence the patch checks for the 'interrupts' property.
-
-This is essential since I do not want the probe to return error
-Just because the i2c->irq == 0. The explicit check for the property
-Ensures that the board does not have the INT line connected to
-A valid interrupt line on the other side.
-
+> The failures are due to accesses to revoked and expired keys being given
+> EACCES instead of EKEYREVOKED or EKEYEXPIRED.
 > 
-> In other words, I think this whole patch could just be:
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
 > 
-> + 	palmas->irq = i2c->irq;
+>  security/keys/internal.h         |    1 +
+>  security/keys/process_keys.c     |    8 +++++---
+>  security/keys/request_key.c      |    6 ++++--
+>  security/keys/request_key_auth.c |    2 +-
+>  4 files changed, 11 insertions(+), 6 deletions(-)
 > 
-> right?
 
-Just this will cause a probe failure. That is not what is needed.
-Instead the probe should continue skipping irq part.
+<formletter>
 
-Regards,
-Keerthy
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
+
+</formletter>
