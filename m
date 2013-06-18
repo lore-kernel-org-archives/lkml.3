@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3FRMbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:31:46 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56200 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab3FRMbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:31:44 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] clocksource: sh_cmt: Use devm_* managed helpers
-Date: Tue, 18 Jun 2013 14:31:58 +0200
-Message-ID: <2566074.m8COktZgTy@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CAK9yfHwq_OC6s5Lvh6j5RP5xCTzgkWxFLrUq7_5i_7gPfCDTXQ@mail.gmail.com>
-References: <1371553171-23530-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CAK9yfHwq_OC6s5Lvh6j5RP5xCTzgkWxFLrUq7_5i_7gPfCDTXQ@mail.gmail.com>
+	id S932269Ab3FRMdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:33:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36873 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932160Ab3FRMde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 08:33:34 -0400
+Message-ID: <51C05382.8090805@ti.com>
+Date: Tue, 18 Jun 2013 15:33:06 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Tony Lindgren <tony@atomide.com>
+CC: <b-cousson@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ARM: OMAP2+: dts: HACK: Provide alias to USB PHY
+ clock
+References: <1371553891-29364-1-git-send-email-rogerq@ti.com> <1371553891-29364-5-git-send-email-rogerq@ti.com> <20130618112342.GN5523@atomide.com>
+In-Reply-To: <20130618112342.GN5523@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
-
-On Tuesday 18 June 2013 17:13:37 Sachin Kamat wrote:
-> On 18 June 2013 16:29, Laurent Pinchart wrote:
-> > This simplifies the main error path by getting rid of it.
-> > 
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
-> > ---
-> > 
-> >  drivers/clocksource/sh_cmt.c | 40 ++++++++++++++-------------------------
-> >  1 file changed, 14 insertions(+), 26 deletions(-)
-> > 
-> > The patch is based on top of renesas-next-20130618 plus Magnus'
-> > "clocksource: sh_cmt: 32-bit control register support" patch.
-> > 
-> > diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-> > index 0965e98..7001e4d 100644
-> > --- a/drivers/clocksource/sh_cmt.c
-> > +++ b/drivers/clocksource/sh_cmt.c
-
-[snip]
-
-> > @@ -703,23 +701,23 @@ static int sh_cmt_setup(struct sh_cmt_priv *p,
-> > struct platform_device *pdev)> 
-> >         irq = platform_get_irq(p->pdev, 0);
-> >         if (irq < 0) {
-> >                 dev_err(&p->pdev->dev, "failed to get irq\n");
-> > -               goto err0;
-> > +               return -ENXIO;
-> >         }
-> >         
-> >         /* map memory, let mapbase point to our channel */
-> > -       p->mapbase = ioremap_nocache(res->start, resource_size(res));
-> > +       p->mapbase = devm_ioremap_resource(&pdev->dev, res);
-> >         if (p->mapbase == NULL) {
+On 06/18/2013 02:23 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [130618 04:17]:
+>> Till the OMAP clocks are correctly defined in device tree, use
+>> this temporary hack to provide clock alias to the USB PHY clocks.
+>>
+>> Without this, USB Host & Ethernet will not be functional with
+>> device tree boots on Panda and uEVM.
 > 
-> You should check for  IS_ERR (p->mapbase) and return PTR_ERR(p->mapbase)
+> Thanks, this looks OK to me to have USB working until we have the
+> DT defined clock patches ready.
 > 
-> >                 dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
+> The $Subject needs updating though, just make it ARM: OMAP2+: and
+> leave out the dts and hack from there.
 > 
-> This error message is not required as devm_ioremap_resource prints its own.
 
-Oops, my bad. I'll fix that and resubmit.
+OK. will send v2 as i need to make another minor change in the panda dts file.
 
--- 
-Regards,
-
-Laurent Pinchart
-
+cheers,
+-roger
