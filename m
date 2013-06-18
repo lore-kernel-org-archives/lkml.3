@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab3FRQ0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:26:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49494 "EHLO
+	id S933386Ab3FRQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:26:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237Ab3FRQRy (ORCPT
+	with ESMTP id S933230Ab3FRQRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 12:17:54 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 23/48] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
-Date: Tue, 18 Jun 2013 09:17:49 -0700
-Message-Id: <20130618161729.256731985@linuxfoundation.org>
+        Levi Pearson <levipearson@gmail.com>,
+        Michael Scott <hashcode0f@gmail.com>, Luciano Coelho <coelho@ti.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 22/48] wl12xx: fix minimum required firmware version for wl127x multirole
+Date: Tue, 18 Jun 2013 09:17:48 -0700
+Message-Id: <20130618161729.132773775@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,70 +30,35 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Luciano Coelho <coelho@ti.com>
 
-commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 upstream.
+commit 60c28cf18f970e1c1bd40d615596eeab6efbd9d7 upstream.
 
-In
+There was a typo in commit 8675f9 (wlcore/wl12xx/wl18xx: verify
+multi-role and single-role fw versions), which was causing the
+multirole firmware for wl127x (WiLink6) to be rejected.  The actual
+minimum version needed for wl127x multirole is 6.5.7.0.42.
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c
-Author: Egbert Eich <eich@suse.de>
-Date:   Tue Jun 4 17:13:21 2013 +0200
-
-    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
-
-Egbert Eich fixed a long-standing bug where we simply used a
-non-working i2c controller to read the EDID for SDVO-LVDS panels.
-Unfortunately some machines seem to not be able to cope with the mode
-provided in the EDID. Specifically they seem to not be able to cope
-with a 4x pixel mutliplier instead of a 2x one, which seems to have
-been worked around by slightly changing the panels native mode in the
-VBT so that the dotclock is just barely above 50MHz.
-
-Since it took forever to notice the breakage it's fairly safe to
-assume that at least for SDVO-LVDS panels the VBT contains fairly sane
-data. So just switch around the order and use VBT modes first.
-
-v2: Also add EDID modes just in case, and spell Egbert correctly.
-
-v3: Elaborate a bit more about what's going on on Chris' machine.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
-Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Egbert Eich <eich@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Levi Pearson <levipearson@gmail.com>
+Reported-by: Michael Scott <hashcode0f@gmail.com>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ti/wl12xx/wl12xx.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1771,10 +1771,13 @@ static void intel_sdvo_get_lvds_modes(st
- 	 * arranged in priority order.
- 	 */
- 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
--	if (list_empty(&connector->probed_modes) == false)
--		goto end;
+--- a/drivers/net/wireless/ti/wl12xx/wl12xx.h
++++ b/drivers/net/wireless/ti/wl12xx/wl12xx.h
+@@ -41,7 +41,7 @@
+ #define WL127X_IFTYPE_MR_VER	5
+ #define WL127X_MAJOR_MR_VER	7
+ #define WL127X_SUBTYPE_MR_VER	WLCORE_FW_VER_IGNORE
+-#define WL127X_MINOR_MR_VER	115
++#define WL127X_MINOR_MR_VER	42
  
--	/* Fetch modes from VBT */
-+	/*
-+	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
-+	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
-+	 * drm_mode_probed_add adds the mode at the head of the list we add it
-+	 * last.
-+	 */
- 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
- 		newmode = drm_mode_duplicate(connector->dev,
- 					     dev_priv->sdvo_lvds_vbt_mode);
-@@ -1786,7 +1789,6 @@ static void intel_sdvo_get_lvds_modes(st
- 		}
- 	}
- 
--end:
- 	list_for_each_entry(newmode, &connector->probed_modes, head) {
- 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
- 			intel_sdvo->sdvo_lvds_fixed_mode =
+ /* FW chip version for wl128x */
+ #define WL128X_CHIP_VER		7
 
 
