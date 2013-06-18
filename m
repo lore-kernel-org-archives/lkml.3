@@ -1,88 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3FRI6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:58:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38157 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab3FRI6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:58:36 -0400
-Date: Tue, 18 Jun 2013 09:58:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "J, KEERTHY" <j-keerthy@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Message-ID: <20130618085825.GL1403@sirena.org.uk>
-References: <1371470954-9124-1-git-send-email-j-keerthy@ti.com>
- <1371470954-9124-2-git-send-email-j-keerthy@ti.com>
- <20130617161615.GH1403@sirena.org.uk>
- <DC88CAD03C0052499C1907B327FC63229EC277@DBDE04.ent.ti.com>
+	id S1755428Ab3FRI7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:59:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39081 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755047Ab3FRI6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:58:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
+   d="scan'208";a="355254637"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v2 net-next] net: poll/select low latency socket support
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 18 Jun 2013 11:58:10 +0300
+Message-ID: <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rRbIS5PUI9wLpAeF"
-Content-Disposition: inline
-In-Reply-To: <DC88CAD03C0052499C1907B327FC63229EC277@DBDE04.ent.ti.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] MFD: Palmas: Add Interrupt feature
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+select/poll busy-poll support.
 
---rRbIS5PUI9wLpAeF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add a new poll flag POLL_LL. When this flag is set, sock poll will call
+sk_poll_ll() if possible. sock_poll sets this flag in its return value
+to indicate to select/poll when a socket that can busy poll is found.
 
-On Tue, Jun 18, 2013 at 05:15:03AM +0000, J, KEERTHY wrote:
+When poll/select have nothing to report, call the low-level
+sock_poll() again until we are out of time or we find something.
 
-> I understand your point. The IRQ is passed from device tree node.
-> Say if the chip for some reason is not connected to any valid
-> IRQ line the driver might end up requesting for a wrong IRQ line.
+Once the system call finds something, it stops setting POLL_LL, so it can
+return the result to the user ASAP.
 
-> So should I be validating the irq entry populated from  device tree?
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
-Yes, you should be checking that there's actually an interrupt there -
-the number will be zero if there isn't.
+ fs/select.c                     |   40 +++++++++++++++++++++++++++++++++++++--
+ include/net/ll_poll.h           |   34 +++++++++++++++++++++------------
+ include/uapi/asm-generic/poll.h |    2 ++
+ net/socket.c                    |   14 +++++++++++++-
+ 4 files changed, 75 insertions(+), 15 deletions(-)
 
-> Explicitly checking on chip ID helps to avoid wrongly populated
-> Device tree data.=20
+diff --git a/fs/select.c b/fs/select.c
+index 8c1c96c..1d081f7 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -27,6 +27,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/hrtimer.h>
+ #include <linux/sched/rt.h>
++#include <net/ll_poll.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -393,6 +394,15 @@ static inline void wait_key_set(poll_table *wait, unsigned long in,
+ 		wait->_key |= POLLOUT_SET;
+ }
+ 
++static inline void wait_key_set_lls(poll_table *wait, bool set)
++{
++	if (set)
++		wait->_key |= POLL_LL;
++	else
++		wait->_key &= ~POLL_LL;
++}
++
++
+ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ {
+ 	ktime_t expire, *to = NULL;
+@@ -400,6 +410,9 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 	poll_table *wait;
+ 	int retval, i, timed_out = 0;
+ 	unsigned long slack = 0;
++	u64 ll_time = ll_end_time();
++	bool try_ll = true;
++	bool can_ll = false;
+ 
+ 	rcu_read_lock();
+ 	retval = max_select_fd(n, fds);
+@@ -450,6 +463,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 					mask = DEFAULT_POLLMASK;
+ 					if (f_op && f_op->poll) {
+ 						wait_key_set(wait, in, out, bit);
++						wait_key_set_lls(wait, try_ll);
+ 						mask = (*f_op->poll)(f.file, wait);
+ 					}
+ 					fdput(f);
+@@ -468,6 +482,10 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 						retval++;
+ 						wait->_qproc = NULL;
+ 					}
++					if (retval)
++						try_ll = false;
++					if (mask & POLL_LL)
++						can_ll = true;
+ 				}
+ 			}
+ 			if (res_in)
+@@ -486,6 +504,11 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 			break;
+ 		}
+ 
++		if (can_poll_ll(ll_time) && can_ll) {
++			can_ll = false;
++			continue;
++		}
++
+ 		/*
+ 		 * If this is the first loop and we have a timeout
+ 		 * given, then we convert to ktime_t and set the to
+@@ -717,7 +740,8 @@ struct poll_list {
+  * pwait poll_table will be used by the fd-provided poll handler for waiting,
+  * if pwait->_qproc is non-NULL.
+  */
+-static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
++static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait,
++					bool *can_ll, bool try_ll)
+ {
+ 	unsigned int mask;
+ 	int fd;
+@@ -731,7 +755,11 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
+ 			mask = DEFAULT_POLLMASK;
+ 			if (f.file->f_op && f.file->f_op->poll) {
+ 				pwait->_key = pollfd->events|POLLERR|POLLHUP;
++				if (try_ll)
++					pwait->_key |= POLL_LL;
+ 				mask = f.file->f_op->poll(f.file, pwait);
++				if (mask & POLL_LL)
++					*can_ll = true;
+ 			}
+ 			/* Mask out unneeded events. */
+ 			mask &= pollfd->events | POLLERR | POLLHUP;
+@@ -750,6 +778,9 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 	ktime_t expire, *to = NULL;
+ 	int timed_out = 0, count = 0;
+ 	unsigned long slack = 0;
++	u64 ll_time = ll_end_time();
++	bool can_ll = false;
++	bool try_ll = true;
+ 
+ 	/* Optimise the no-wait case */
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+@@ -776,9 +807,10 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 				 * this. They'll get immediately deregistered
+ 				 * when we break out and return.
+ 				 */
+-				if (do_pollfd(pfd, pt)) {
++				if (do_pollfd(pfd, pt, &can_ll, try_ll)) {
+ 					count++;
+ 					pt->_qproc = NULL;
++					try_ll = false;
+ 				}
+ 			}
+ 		}
+@@ -795,6 +827,10 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 		if (count || timed_out)
+ 			break;
+ 
++		if (can_poll_ll(ll_time) && can_ll) {
++			can_ll = false;
++			continue;
++		}
+ 		/*
+ 		 * If this is the first loop and we have a timeout
+ 		 * given, then we convert to ktime_t and set the to
+diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
+index fcc7c36..49b954c 100644
+--- a/include/net/ll_poll.h
++++ b/include/net/ll_poll.h
+@@ -38,19 +38,21 @@ extern unsigned int sysctl_net_ll_poll __read_mostly;
+ 
+ /* we can use sched_clock() because we don't care much about precision
+  * we only care that the average is bounded
++ * we don't mind a ~2.5% imprecision so <<10 instead of *1000
++ * sk->sk_ll_usec is a u_int so this can't overflow
+  */
+-static inline u64 ll_end_time(struct sock *sk)
++static inline u64 ll_sk_end_time(struct sock *sk)
+ {
+-	u64 end_time = ACCESS_ONCE(sk->sk_ll_usec);
+-
+-	/* we don't mind a ~2.5% imprecision
+-	 * sk->sk_ll_usec is a u_int so this can't overflow
+-	 */
+-	end_time = (end_time << 10) + sched_clock();
++	return (ACCESS_ONCE(sk->sk_ll_usec) << 10) + sched_clock();
++}
+ 
+-	return end_time;
++/* in poll/select we use the global sysctl_net_ll_poll value */
++static inline u64 ll_end_time(void)
++{
++	return (ACCESS_ONCE(sysctl_net_ll_poll) << 10) + sched_clock();
+ }
+ 
++
+ static inline bool sk_valid_ll(struct sock *sk)
+ {
+ 	return sk->sk_ll_usec && sk->sk_napi_id &&
+@@ -62,10 +64,13 @@ static inline bool can_poll_ll(u64 end_time)
+ 	return !time_after64(sched_clock(), end_time);
+ }
+ 
++/* when used in sock_poll() nonblock is known at compile time to be true
++ * so the loop and end_time will be optimized out
++ */
+ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+ {
++	u64 end_time = nonblock ? 0 : ll_sk_end_time(sk);
+ 	const struct net_device_ops *ops;
+-	u64 end_time = ll_end_time(sk);
+ 	struct napi_struct *napi;
+ 	int rc = false;
+ 
+@@ -95,8 +100,8 @@ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+ 			NET_ADD_STATS_BH(sock_net(sk),
+ 					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
+ 
+-	} while (skb_queue_empty(&sk->sk_receive_queue)
+-			&& can_poll_ll(end_time) && !nonblock);
++	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue)
++			&& can_poll_ll(end_time));
+ 
+ 	rc = !skb_queue_empty(&sk->sk_receive_queue);
+ out:
+@@ -118,7 +123,12 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+ 
+ #else /* CONFIG_NET_LL_RX_POLL */
+ 
+-static inline u64 ll_end_time(struct sock *sk)
++static inline u64 sk_ll_end_time(struct sock *sk)
++{
++	return 0;
++}
++
++static inline u64 ll_end_time(void)
+ {
+ 	return 0;
+ }
+diff --git a/include/uapi/asm-generic/poll.h b/include/uapi/asm-generic/poll.h
+index 9ce7f44..4aee586 100644
+--- a/include/uapi/asm-generic/poll.h
++++ b/include/uapi/asm-generic/poll.h
+@@ -30,6 +30,8 @@
+ 
+ #define POLLFREE	0x4000	/* currently only for epoll */
+ 
++#define POLL_LL		0x8000
++
+ struct pollfd {
+ 	int fd;
+ 	short events;
+diff --git a/net/socket.c b/net/socket.c
+index 3eec3f7..a1c3ee8 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1147,13 +1147,25 @@ EXPORT_SYMBOL(sock_create_lite);
+ /* No kernel lock held - perfect */
+ static unsigned int sock_poll(struct file *file, poll_table *wait)
+ {
++	unsigned int ll_flag = 0;
+ 	struct socket *sock;
+ 
+ 	/*
+ 	 *      We can't return errors to poll, so it's either yes or no.
+ 	 */
+ 	sock = file->private_data;
+-	return sock->ops->poll(file, sock, wait);
++
++	if (sk_valid_ll(sock->sk)) {
++
++		/* this socket can poll_ll so tell the system call */
++		ll_flag = POLL_LL;
++
++		/* only if requested by syscall */
++		if (wait && (wait->_key & POLL_LL))
++			sk_poll_ll(sock->sk, 1);
++	}
++
++	return ll_flag | sock->ops->poll(file, sock, wait);
+ }
+ 
+ static int sock_mmap(struct file *file, struct vm_area_struct *vma)
 
-Right, but on the other hand it ought to be possible to handle chips
-that could but aren't configured to do interrupts and if the driver can
-do that then this becomes redundant.
-
---rRbIS5PUI9wLpAeF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwCEuAAoJELSic+t+oim99QoP/AoggKUOnjFfr9KsmRcZRQfj
-Mi0kRNpTv/JWJyv7QmbHJckNfDGmRBp/xI1zL17Dli3Hgl7hpfvP2Sn+T5fDwX7m
-fuAAFJViAXJ/fchPQIETRancmRRvZWe779bww/n1qf5xeOOPdiIhw+zLYqGpp34M
-XEJsBwsK9Xo5PRbmcKFJMY6rvSxciWgV70OGnxBA7TCLlIASsIA77ImAIB83R4SL
-TTT0Wr4mZXUJDyI6zG1FOuWoaRV+BvEJBtQ1C8U+/XYyS7UCY/AP09GR/M9T9fY+
-cVOlN+TA7OtvmGHhOuWjWMV0PB7UfqN6n8zNwPFya/y0vDY9Z+4XNbJe0iMA39nC
-6WXr8egdPDlA7pfI8buNub7+dDzwOJWH/dpQNvoGyyUQzy9wQXFHNbzou/VDyyrC
-kFFPqJsOzdULRFDC0hFQQWstd3uHf5BO80SItkgc0fpJvga18GSDufQTe/TDR2QZ
-+bl3CKItHVD6MkpB0OWh6wNopiTYidENfWirn8KxukFGN344rl8j01859qfQrIxb
-Retqot7MEnfj/SFdBNY+/YEwh6sNoW8V40czeM/bvaCyw3+9vSUF+0j6VHi5bpMA
-zvWo0y2PpyKxwNtOQIuX2Lsw7/02N7F/EvKSlopieNV+ENP55x8/rKuPHNkmzEgO
-0+HX5kZkpn9xv7binTWi
-=ZlCt
------END PGP SIGNATURE-----
-
---rRbIS5PUI9wLpAeF--
