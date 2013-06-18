@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3FRDaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 23:30:06 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47235 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752180Ab3FRDaE (ORCPT
+	id S1754091Ab3FRDbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 23:31:17 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35457 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3FRDbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 23:30:04 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jun 2013 23:30:04 EDT
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 3/3] sched: scale cpu load for judgment of group imbalance
-Date: Tue, 18 Jun 2013 11:18:06 +0800
-Message-ID: <1371525486-11270-4-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
-References: <1371525486-11270-1-git-send-email-leiwen@marvell.com>
+	Mon, 17 Jun 2013 23:31:16 -0400
+Date: Tue, 18 Jun 2013 11:49:31 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+Message-ID: <20130618034931.GA10628@gmail.com>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+References: <51B7B128.60909@intel.com>
+ <20130614140940.GA20401@gmail.com>
+ <20130614140215.GA1017@thunk.org>
+ <20130614170028.GA21544@gmail.com>
+ <20130614180054.GB1017@thunk.org>
+ <20130617101033.GA17828@gmail.com>
+ <51BF7BAA.5030803@intel.com>
+ <20130618022548.GA24671@gmail.com>
+ <20130618025133.GB24479@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618025133.GB24479@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cannot compare two load directly from two cpus, since the cpu power
-over two cpu may vary largely.
+On Mon, Jun 17, 2013 at 10:51:34PM -0400, Theodore Ts'o wrote:
+> On Tue, Jun 18, 2013 at 10:25:48AM +0800, Zheng Liu wrote:
+> > Ah, sorry, I forgot to mention that this patch bases against ext4/master
+> > branch.  Now ext4/dev branch has some regression when I run xfstests.
+> 
+> What regressions are you seeing?
 
-Suppose we meet such two kind of cpus.
-CPU A:
-	No real time work, and there are 3 task, with rq->load.weight
-being 512.
-CPU B:
-	Has real time work, and it take 3/4 of the cpu power, which
-makes CFS only take 1/4, that is 1024/4=256 cpu power. And over its CFS
-runqueue, there is only one task with weight as 128.
+generic/300.
 
-Since both cpu's CFS task take for half of the CFS's cpu power, it
-should be considered as balanced in such case.
+When I try to test my patch, I know that there has a report that
+invalidate page range patch set causes a regression, and I am not sure
+whether invalidate page range patch set causes it or not.  So I decide
+to generate my patch against ext4/master.  So, don't worry. :-)
 
-But original judgment like:
-        if ((max_cpu_load - min_cpu_load) >= avg_load_per_task &&
-            (max_nr_running - min_nr_running) > 1)
-It makes (512-128)>=((512+128)/4), and lead to imbalance conclusion...
+BTW, I will run xfstests this week.  If I meet any regression, I will
+let you know.
 
-Make the load as scaled, to avoid such case.
+> 
+> > Ted, I notice that now in ext4 tree we have 'dev', 'dev-with-revert',
+> > and 'dev2' branches.  Which one is the best to generate a new patch for
+> > the next merge window?
+> 
+> Either the dev branch or the master branch.   
+> 
+> The dev-with-revert and dev2 were branches that I had created when
+> investigating a potential regression with the invalidage page range
+> patch set.  I've since determined that it's a timing issue and it's
+> not a new regression --- we've had xfstests failures with test
+> generic/300 for a while now.
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+Thanks for pointing it out.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6173095..12826f9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4434,7 +4434,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			int local_group, int *balance, struct sg_lb_stats *sgs)
- {
- 	unsigned long nr_running, max_nr_running, min_nr_running;
--	unsigned long load, max_cpu_load, min_cpu_load;
-+	unsigned long scaled_load, load, max_cpu_load, min_cpu_load;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
- 	int i;
-@@ -4464,10 +4464,12 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			load = target_load(i, load_idx);
- 		} else {
- 			load = source_load(i, load_idx);
--			if (load > max_cpu_load)
--				max_cpu_load = load;
--			if (min_cpu_load > load)
--				min_cpu_load = load;
-+			scaled_load = load * SCHED_POWER_SCALE
-+					/ cpu_rq(i)->cpu_power;
-+			if (scaled_load	> max_cpu_load)
-+				max_cpu_load = scaled_load;
-+			if (min_cpu_load > scaled_load)
-+				min_cpu_load = scaled_load;
- 
- 			if (nr_running > max_nr_running)
- 				max_nr_running = nr_running;
-@@ -4511,8 +4513,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	 *      normalized nr_running number somewhere that negates
- 	 *      the hierarchy?
- 	 */
--	if (sgs->sum_nr_running)
--		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
-+	if (sgs->sum_nr_running) {
-+		avg_load_per_task = sgs->sum_weighted_load * SCHED_POWER_SCALE
-+					/ group->sgp->power;
-+		avg_load_per_task /= sgs->sum_nr_running;
-+	}
- 
- 	if ((max_cpu_load - min_cpu_load) >= avg_load_per_task &&
- 	    (max_nr_running - min_nr_running) > 1)
--- 
-1.7.10.4
-
+                                                - Zheng
