@@ -1,105 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933675Ab3FRSec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:34:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52021 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020Ab3FRSeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:34:31 -0400
-Date: Tue, 18 Jun 2013 19:33:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Rob Landley <rob@landley.net>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Message-ID: <20130618183359.GR1403@sirena.org.uk>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1347550912-18021-3-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130618113606.GA26763@n2100.arm.linux.org.uk>
- <CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
- <20130618151116.GZ2718@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sEhs5GQW+P4Mb8ab"
-Content-Disposition: inline
-In-Reply-To: <20130618151116.GZ2718@n2100.arm.linux.org.uk>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 02/10] pinctrl: mvebu: dove pinctrl driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S933597Ab3FRSi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:38:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756324Ab3FRSi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 14:38:58 -0400
+Message-ID: <1371580735.22681.216.camel@ul30vt.home>
+Subject: Re: [PATCH v2 1/2] pci: Fix flaw in pci_acs_enabled()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 18 Jun 2013 12:38:55 -0600
+In-Reply-To: <20130618170926.GA9203@google.com>
+References: <20130607162732.7733.17758.stgit@bling.home>
+	 <20130607163441.7733.23221.stgit@bling.home>
+	 <20130618170926.GA9203@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-06-18 at 11:09 -0600, Bjorn Helgaas wrote:
+> On Fri, Jun 07, 2013 at 10:34:41AM -0600, Alex Williamson wrote:
+> > Downstream ports support for all ACS flags supercedes multifunction
+> > exclusion of some flags.  The PCIe spec also fully specifies which
+> > PCIe types are subject to the multifunction rules and excludes event
+> > collectors and PCIe-to-PCI bridges entirely.  Document each rule to
+> > the section of the PCIe spec.
+> 
+> What's the flaw, exactly?  Does this fix a user-visible issue?  Should
+> it be backported to any stable releases?  It'd be nice to have an
+> example or two of devices where we return the wrong thing today.
+> 
+> Oh, I think I see: the original code filters out flags for
+> multi-function downstream ports, and your new code does not.
 
---sEhs5GQW+P4Mb8ab
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, if you have a multifunction root port and you want to check a
+feature that applies to downstream ports, but not multifunction devices,
+we were previously filtering those out.
 
-On Tue, Jun 18, 2013 at 04:11:16PM +0100, Russell King - ARM Linux wrote:
-> On Tue, Jun 18, 2013 at 05:02:49PM +0200, Linus Walleij wrote:
-> > Nowadays I would do the above with regmap_update_bits().
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  drivers/pci/pci.c |   59 ++++++++++++++++++++++++++++++++++++++++-------------
+> >  1 file changed, 45 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > index b099e00..457ae51 100644
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -2354,6 +2354,19 @@ void pci_enable_acs(struct pci_dev *dev)
+> >  	pci_write_config_word(dev, pos + PCI_ACS_CTRL, ctrl);
+> >  }
+> >  
+> > +static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
+> > +{
+> > +	int pos;
+> > +	u16 ctrl;
+> > +
+> > +	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+> > +	if (!pos)
+> > +		return false;
+> > +
+> > +	pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
+> > +	return (ctrl & acs_flags) == acs_flags;
+> > +}
+> > +
+> >  /**
+> >   * pci_acs_enabled - test ACS against required flags for a given device
+> >   * @pdev: device to test
+> > @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
+> >   */
+> >  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+> 
+> I know you didn't change the *name* of this function, but I think it
+> would be easier to follow if you did change the name to something more
+> descriptive, e.g., something to do with the actual property you're
+> interested in, which has to do with routing peer-to-peer DMA.
+> 
+> That property makes sense even for the excluded devices, while the
+> idea of an ACS capability that doesn't even exist is implicitly
+> enabled, really doesn't.
 
-> > Mutual exclusion for read-modify-write of individual bits in a
-> > register is one of those cases where doing a regmap over
-> > a memory-mapped register range makes a lot of sense.
-> > (drivers/mfd/syscon.c being a nice example)
+I think we also don't want to put the complexity at the caller for
+understanding what capabilities are applicable to a given device.  It's
+also convenient to use the set of ACS flags.  Given that, the current
+naming came about.  It's a little awkward, but it's easy to use.
+Suggestions for a better name?
 
-> So, for that solution we need to have some kind of global regmap per
-> register or somesuch.  Then you run into regmap needing a struct
-> device - well, with a shared register, which struct device do you
-> use, or do you have to invent one?
+> >  {
+> > -	int pos, ret;
+> > -	u16 ctrl;
+> > +	int ret;
+> >  
+> >  	ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
+> >  	if (ret >= 0)
+> > @@ -2374,23 +2386,42 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+> >  	if (!pci_is_pcie(pdev))
+> >  		return false;
+> >  
+> > -	/* Filter out flags not applicable to multifunction */
+> > -	if (pdev->multifunction)
+> > +	switch (pci_pcie_type(pdev)) {
+> > +	/*
+> > +	 * PCIe 3.0, 6.12.1 excludes ACS on these devices.  "Not applicable"
+> > +	 */
+> > +	case PCI_EXP_TYPE_PCI_BRIDGE:
+> > +	case PCI_EXP_TYPE_RC_EC:
+> > +		break;
+> 
+> Why not just return "true" immediately here, or even better, just omit
+> the case altogether, since it doesn't change the behavior at all?
 
-> That sounds more heavy-weight than is really necessary.
+It could certainly return true, I debated that for a while and decided
+to break just to reduce the number of exit points.  Omitting the case
+means that anyone who looks at this in the future has to figure out why
+those pcie types aren't explicitly listed.
 
-Yes, regmap is far too heavyweight for a lot of these things - it
-shouldn't really go in performance critical at the CPU level paths, it's
-designed around things where I/O costs are considerable and worth
-avoiding.
+> > +	/*
+> > +	 * PCIe 3.0, 6.12.1.1 specifies full ACS capabilities on downstream
+> > +	 * ports, regardless of them being multifunction devices.
+> > +	 */
+> > +	case PCI_EXP_TYPE_DOWNSTREAM:
+> > +	case PCI_EXP_TYPE_ROOT_PORT:
+> > +		return pci_acs_flags_enabled(pdev, acs_flags);
+> > +	/*
+> > +	 * PCIe 3.0, 6.12.1.2 specifies unimplemented ACS capabilities on
+> > +	 * multifunction devices.  6.12 footnote identifies specifically
+> > +	 * which devices types this applies to.
+> > +	 */
+> > +	case PCI_EXP_TYPE_ENDPOINT:
+> > +	case PCI_EXP_TYPE_UPSTREAM:
+> > +	case PCI_EXP_TYPE_LEG_END:
+> > +	case PCI_EXP_TYPE_RC_END:
+> > +		if (!pdev->multifunction)
+> > +			break;
+> 
+> And here.
 
-I do think that this is a very good idea - with the I2C/SPI drivers I
-was reviewing prior to regmap there were always just far too many simple
-bugs with read/modify/write cycles so factoring out the code really
-helped with review.
+Same
 
---sEhs5GQW+P4Mb8ab
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > +
+> >  		acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
+> >  			      PCI_ACS_EC | PCI_ACS_DT);
+> >  
+> > -	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM ||
+> > -	    pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT ||
+> > -	    pdev->multifunction) {
+> > -		pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+> > -		if (!pos)
+> > -			return false;
+> > -
+> > -		pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
+> > -		if ((ctrl & acs_flags) != acs_flags)
+> > -			return false;
+> > +		return pci_acs_flags_enabled(pdev, acs_flags);
+> >  	}
+> >  
+> > +	/*
+> > +	 * PCIe 3.0, 6.12.1.3 specifies no ACS capabilties are applicable
+> > +	 * to single function devices with the exception of downstream ports.
+> > +	 */
+> >  	return true;
+> >  }
+> >  
+> > 
+> 
+> I actually liked the original code organization, because it's closer
+> to expressing the idea of "here are the control points where hardware
+> can make choices about routing peer-to-peer DMA and here's the knob
+> (ACS) that constrains those choices."
+> 
+> Maybe something like (pidgin C):
+> 
+>     if (PCI_EXP_TYPE_DOWNSTREAM || PCI_EXP_TYPE_ROOT_PORT)
+> 	return pci_acs_flags_enabled(pdev, acs_flags);
+> 
+>     if (!pdev->multifunction)
+> 	return true;
+> 
+>     acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | ...);
+>     return pci_acs_flags_enabled(pdev, acs_flags);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Ok.  I re-organized it because I got tired of re-reading the spec to
+make sure that a given type of device was handled correctly.  Note that
+the above simplification incorrectly handles multifunction bridges or EC
+devices.  I can do something like you suggest, but being explicit was
+actually a goal in fixing this bug and avoiding future bugs.  Thanks,
 
-iQIbBAEBAgAGBQJRwKgUAAoJELSic+t+oim931YP9jgT/xuYt1YPLvhNf0/K6YN5
-t/d+KbC9qgJ1bsujku0xCFXAJozmt3b1WdvVYgz4CAgHLBmLMk3zeGeRTkjT1F+v
-HJAwDGyHu6uX27GDSkGSemJoo2w3OUbJurcs8684dFLtOqYXYkdvPg4csyGilG29
-8CnybUedH+wM3Lpd08r1NyKU4imuwzeCoLAV9LO7jAy9BikmyHDWtaW6QHYtQjz9
-xD50jgxVKXWT+6zEUCFTrZVExmfFcJFoh7VPhI54ZjJId5Ljb4xS41uVUZB+fMz2
-BrRDp156qr1CjC2moNgd0eFW5HO6iB8RPxg8spFpFAz06mupBvgj/mGK8bsTd9P/
-3xXBhszaXSe08H7bd32KS7fEkEoRGnPI2eKzThF24atjN6vTUInyfnucYresPwA6
-JVE2bNIfnAVF0DXcSksQm6FyNrcIn9po69ZjonR6vAH8NXrE/oc8767Q5voASzxw
-mAbYf658nPJ/d9fA+lgoI/ALFFgbT6qrDrWh4ooVHhw0rSquwiWKJbCda085Ifvc
-EMIKfRYcJKFDBPyEwzYoZ9c+LlDw5YXVzTrXz5o/5yTUX+xktwks01JdmhkyIaSW
-G1FmomSA54Nvw+4wa1SsLIXRyfRFNTEVoyuyxA4zQDbjdbmYn6aMUuT4BdSLy6EU
-yhvZavCs2IgnZS+xdXg=
-=LaNA
------END PGP SIGNATURE-----
+Alex
 
---sEhs5GQW+P4Mb8ab--
