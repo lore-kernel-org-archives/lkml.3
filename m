@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab3FRWp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 18:45:28 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42073 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab3FRWpZ (ORCPT
+	id S933859Ab3FRWpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 18:45:42 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:52462 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933822Ab3FRWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 18:45:25 -0400
+	Tue, 18 Jun 2013 18:45:38 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Dirk Gouders <dirk@gouders.net>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 04/14] kconfig/lxdialog: handle newline characters in print_autowrap()
-Date: Wed, 19 Jun 2013 00:45:00 +0200
-Message-Id: <1376391621654cc369c5e8b60497f7c184f0ed47.1371595499.git.yann.morin.1998@free.fr>
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Delvare <jdelvare@suse.de>,
+        Roland Eggner <edvx1@systemanalysen.net>,
+        Wang YanQing <udknight@gmail.com>
+Subject: [PATCH 12/14] kconfig: sort found symbols by relevance
+Date: Wed, 19 Jun 2013 00:45:08 +0200
+Message-Id: <3e2346029e33ef9405b87d72a32d96d0aafb524a.1371595499.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
 References: <cover.1371595499.git.yann.morin.1998@free.fr>
@@ -24,118 +26,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Gouders <dirk@gouders.net>
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-When exiting menuconfig with unsaved changes, a dialog like
-the following is shown:
+When searching for symbols, return the symbols sorted by relevance.
 
-        Do you wish to save your new configuration ? <ESC><ESC>
-        to continue.
+Sorting is done as thus:
+  - first, symbols with a prompt,   [1]
+  - then, smallest offset,          [2]
+  - then, shortest match,           [3]
+  - then, highest relative match,   [4]
+  - finally, alphabetical sort      [5]
 
-The author of the dialog text specified a newline after the '?',
-and probably expected it to be processed, so let print_autowrap()
-handle newlines propperly.
+So, searching (eg.) for 'P.*CI' :
 
-Also, reword that dialog's second phrase with a real sentence.
+[1] Symbols of interest are probably those with a prompt, as they can be
+    changed, while symbols with no prompt are only for info. Thus:
+        PCIEASPM comes before PCI_ATS
 
-Signed-off-by: Dirk Gouders <dirk@gouders.net>
-Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-[yann.morin.1998@free.fr: very slightly tweak the commit message]
-Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
+[2] Symbols that match earlier in the name are to be preferred over
+    symbols which match later. Thus:
+        PCI_MSI comes before WDTPCI
+
+[3] The shortest match is (IMHO) more interesting than a longer one.
+    Thus:
+        PCI comes before PCMCIA
+
+[4] The relative match is the ratio of the length of the match against
+    the length of the symbol. The more of a symbol name we match, the
+    more instersting that symbol is. Thus:
+        PCIEAER comes before PCIEASPM
+
+[5] As fallback, sort symbols alphabetically
+
+This heuristic tries hard to get interesting symbols first in the list.
+
+In any case, exact match can (as previously) be requested by using
+start-of-line and end-of-line in the search regexp: ^PCI$
+
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Roland Eggner <edvx1@systemanalysen.net>
+Cc: Wang YanQing <udknight@gmail.com>
 ---
- scripts/kconfig/lxdialog/util.c | 31 +++++++++++++++++--------------
- scripts/kconfig/mconf.c         |  4 ++--
- 2 files changed, 19 insertions(+), 16 deletions(-)
+ scripts/kconfig/symbol.c | 96 +++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 87 insertions(+), 9 deletions(-)
 
-diff --git a/scripts/kconfig/lxdialog/util.c b/scripts/kconfig/lxdialog/util.c
-index 78fe4e9..0fa567e 100644
---- a/scripts/kconfig/lxdialog/util.c
-+++ b/scripts/kconfig/lxdialog/util.c
-@@ -371,27 +371,19 @@ void print_title(WINDOW *dialog, const char *title, int width)
- /*
-  * Print a string of text in a window, automatically wrap around to the
-  * next line if the string is too long to fit on one line. Newline
-- * characters '\n' are replaced by spaces.  We start on a new line
-+ * characters '\n' are propperly processed.  We start on a new line
-  * if there is no room for at least 4 nonblanks following a double-space.
-  */
- void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index ab8f4c8..d08e300 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -954,38 +954,116 @@ const char *sym_escape_string_value(const char *in)
+ 	return res;
+ }
+ 
++struct sym_match {
++	struct symbol	*sym;
++	off_t		so, eo;
++};
++
++/* Compare matched symbols as thus:
++ * - first, symbols with a prompt,
++ * - then, smallest offset,
++ * - then, shortest match,
++ * - then, highest relative match,
++ * - finally, alphabetical sort
++ */
++static int sym_rel_comp( const void *sym1, const void *sym2 )
++{
++	struct sym_match *s1 = *(struct sym_match **)sym1;
++	struct sym_match *s2 = *(struct sym_match **)sym2;
++	struct property *p;
++	bool p1 = false, p2 = false;
++	int l1, l2, r1, r2;
++
++	for_all_prompts(s1->sym, p) {
++		p1 = true;
++	}
++	for_all_prompts(s2->sym, p) {
++		p2 = true;
++	}
++	if (p1 && !p2)
++		return -1;
++	if (!p1 && p2)
++		return 1;
++
++	if (s1->so < s2->so)
++		return -1;
++	if (s1->so > s2->so)
++		return 1;
++
++	l1 = s1->eo - s1->so;
++	l2 = s2->eo - s2->so;
++	if (l1>l2)
++		return 1;
++	if (l1<l2)
++		return -1;
++
++	r1 = 100*l1 / strlen(s1->sym->name);
++	r2 = 100*l2 / strlen(s2->sym->name);
++	if (r1 > r2)
++		return -1;
++	if (r1 < r2)
++		return 1;
++
++	return strcmp(s1->sym->name, s2->sym->name);
++}
++
+ struct symbol **sym_re_search(const char *pattern)
  {
- 	int newl, cur_x, cur_y;
--	int i, prompt_len, room, wlen;
--	char tempstr[MAX_LEN + 1], *word, *sp, *sp2;
-+	int prompt_len, room, wlen;
-+	char tempstr[MAX_LEN + 1], *word, *sp, *sp2, *newline_separator = 0;
+ 	struct symbol *sym, **sym_arr = NULL;
++	struct sym_match **sym_match_arr = NULL;
+ 	int i, cnt, size;
+ 	regex_t re;
++	regmatch_t match[1];
  
- 	strcpy(tempstr, prompt);
+ 	cnt = size = 0;
+ 	/* Skip if empty */
+ 	if (strlen(pattern) == 0)
+ 		return NULL;
+-	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
++	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
+ 		return NULL;
  
- 	prompt_len = strlen(tempstr);
+ 	for_all_symbols(i, sym) {
++		struct sym_match *tmp_sym_match;
+ 		if (sym->flags & SYMBOL_CONST || !sym->name)
+ 			continue;
+-		if (regexec(&re, sym->name, 0, NULL, 0))
++		if (regexec(&re, sym->name, 1, match, 0))
+ 			continue;
+ 		if (cnt + 1 >= size) {
+-			void *tmp = sym_arr;
++			void *tmp;
+ 			size += 16;
+-			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
+-			if (!sym_arr) {
+-				free(tmp);
+-				return NULL;
++			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
++			if (!tmp) {
++				goto sym_re_search_free;
+ 			}
++			sym_match_arr = tmp;
+ 		}
+ 		sym_calc_value(sym);
+-		sym_arr[cnt++] = sym;
++		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
++		if (!tmp_sym_match)
++			goto sym_re_search_free;
++		tmp_sym_match->sym = sym;
++		/* As regexec return 0, we know we have a match, so
++		 * we can use match[0].rm_[se]o without further checks
++		 */
++		tmp_sym_match->so = match[0].rm_so;
++		tmp_sym_match->eo = match[0].rm_eo;
++		sym_match_arr[cnt++] = tmp_sym_match;
+ 	}
+-	if (sym_arr)
++	if (sym_match_arr) {
++		qsort(sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp);
++		sym_arr = malloc((cnt+1) * sizeof(struct symbol));
++		if (!sym_arr)
++			goto sym_re_search_free;
++		for (i = 0; i < cnt; i++)
++			sym_arr[i] = sym_match_arr[i]->sym;
+ 		sym_arr[cnt] = NULL;
++	}
++sym_re_search_free:
++	if (sym_match_arr) {
++		for (i = 0; i < cnt; i++)
++			free(sym_match_arr[i]);
++		free(sym_match_arr);
++	}
+ 	regfree(&re);
  
--	/*
--	 * Remove newlines
--	 */
--	for (i = 0; i < prompt_len; i++) {
--		if (tempstr[i] == '\n')
--			tempstr[i] = ' ';
--	}
--
- 	if (prompt_len <= width - x * 2) {	/* If prompt is short */
- 		wmove(win, y, (width - prompt_len) / 2);
- 		waddstr(win, tempstr);
-@@ -401,7 +393,10 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
- 		newl = 1;
- 		word = tempstr;
- 		while (word && *word) {
--			sp = strchr(word, ' ');
-+			sp = strpbrk(word, "\n ");
-+			if (sp && *sp == '\n')
-+				newline_separator = sp;
-+
- 			if (sp)
- 				*sp++ = 0;
- 
-@@ -413,7 +408,7 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
- 			if (wlen > room ||
- 			    (newl && wlen < 4 && sp
- 			     && wlen + 1 + strlen(sp) > room
--			     && (!(sp2 = strchr(sp, ' '))
-+			     && (!(sp2 = strpbrk(sp, "\n "))
- 				 || wlen + 1 + (sp2 - sp) > room))) {
- 				cur_y++;
- 				cur_x = x;
-@@ -421,7 +416,15 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
- 			wmove(win, cur_y, cur_x);
- 			waddstr(win, word);
- 			getyx(win, cur_y, cur_x);
--			cur_x++;
-+
-+			/* Move to the next line if the word separator was a newline */
-+			if (newline_separator) {
-+				cur_y++;
-+				cur_x = x;
-+				newline_separator = 0;
-+			} else
-+				cur_x++;
-+
- 			if (sp && *sp == ' ') {
- 				cur_x++;	/* double space */
- 				while (*++sp == ' ') ;
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 2396c5b..cb8cf4a 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -958,8 +958,8 @@ static int handle_exit(void)
- 	dialog_clear();
- 	if (conf_get_changed())
- 		res = dialog_yesno(NULL,
--				   _("Do you wish to save your new configuration ?\n"
--				     "<ESC><ESC> to continue."),
-+				   _("Do you wish to save your new configuration?\n"
-+				     "(Press <ESC><ESC> to continue kernel configuration.)"),
- 				   6, 60);
- 	else
- 		res = -1;
+ 	return sym_arr;
 -- 
 1.8.1.2
 
