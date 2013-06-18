@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487Ab3FRQzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:55:50 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56658 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933032Ab3FRQzs (ORCPT
+	id S933534Ab3FRQ5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:57:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49847 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933077Ab3FRQ5J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:55:48 -0400
-X-Sasl-enc: PZ1jfHnsrbSPJiyyQJDGbZSRd76n7L/7dI3EwOYo738b 1371574546
-Date: Tue, 18 Jun 2013 09:55:45 -0700
-From: Greg KH <greg@kroah.com>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KEYS: Skip key state checks when checking for possession
-Message-ID: <20130618165545.GA29639@kroah.com>
-References: <20130618164722.23443.23372.stgit@warthog.procyon.org.uk>
+	Tue, 18 Jun 2013 12:57:09 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: RE: [PATCH v2 2/4] MFD: Palmas: Add SMPS10_BOOST feature
+Thread-Topic: [PATCH v2 2/4] MFD: Palmas: Add SMPS10_BOOST feature
+Thread-Index: AQHObAyHZpmkE/knmUuTOIbrHZosqpk7Ga2AgACXajA=
+Date: Tue, 18 Jun 2013 16:56:13 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EC576@DBDE04.ent.ti.com>
+References: <1371549794-7406-1-git-send-email-j-keerthy@ti.com>
+ <51C0826B.4060101@wwwdotorg.org>
+In-Reply-To: <51C0826B.4060101@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618164722.23443.23372.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 05:47:22PM +0100, David Howells wrote:
-> Skip key state checks (invalidation, revocation and expiration) when checking
-> for possession.  Without this, keys that have been marked invalid, revoked
-> keys and expired keys are not given a possession attribute - which means the
-> possessor is not granted any possession permits and cannot do anything with
-> them unless they also have one a user, group or other permit.
-> 
-> This causes failures in the keyutils test suite's revocation and expiration
-> tests now that commit 96b5c8fea6c0861621051290d705ec2e971963f1 reduced the
-> initial permissions granted to a key.
-> 
-> The failures are due to accesses to revoked and expired keys being given
-> EACCES instead of EKEYREVOKED or EKEYEXPIRED.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  security/keys/internal.h         |    1 +
->  security/keys/process_keys.c     |    8 +++++---
->  security/keys/request_key.c      |    6 ++++--
->  security/keys/request_key_auth.c |    2 +-
->  4 files changed, 11 insertions(+), 6 deletions(-)
-> 
+Hi Stephen,
 
-<formletter>
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, June 18, 2013 9:23 PM
+> To: J, KEERTHY
+> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
+> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
+> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
+> doc@vger.kernel.org; gg@slimlogic.co.uk
+> Subject: Re: [PATCH v2 2/4] MFD: Palmas: Add SMPS10_BOOST feature
+> 
+> On 06/18/2013 04:03 AM, J Keerthy wrote:
+> > The SMPS10 regulator is not presesnt in all the variants of the
+> PALMAS
+> > PMIC family. Hence adding a feature to distingush between them.
+> 
+> > diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+> 
+> > +	match = of_match_device(of_match_ptr(of_palmas_match_tbl),
+> > +&i2c->dev);
+> > +
+> > +	if (match) {
+> > +		features = (unsigned int *)match->data;
+> > +		palmas->features = *features;
+> > +	} else {
+> > +		return -ENODATA;
+> > +	}
+> 
+> 
+> I think it's more common to do the error-checking first. That way, the
+> success-case code doesn't need an indent:
+> 
+> match = of_match...(...);
+> if (!match)
+>     return -ENODATA;
+> 
+> features = ...;
+> palmas->features = *features;
 
-</formletter>
+Sure. I will fix this.
+
+Regards,
+Keerthy
+
