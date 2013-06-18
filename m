@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab3FRROz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:14:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36379 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932458Ab3FRROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:14:53 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-ext4@vger.kernel.org
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ext3: Reduce object size when !CONFIG_PRINTK
-Date: Tue, 18 Jun 2013 10:14:40 -0700
-Message-Id: <ef68d49cc50ebab3d84f90154488f51d929e68ce.1371575536.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <2e70d518b9f6b8eea33c01a36983a1ccb1839282.1371575536.git.joe@perches.com>
-References: <2e70d518b9f6b8eea33c01a36983a1ccb1839282.1371575536.git.joe@perches.com>
+	id S933339Ab3FRRPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:15:34 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:54917 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932458Ab3FRRPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:15:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
+	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
+	<CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
+Date: Tue, 18 Jun 2013 10:15:30 -0700
+X-Google-Sender-Auth: NRDDjTbsXc4JRH94ggVLZmD2ceE
+Message-ID: <CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Colin Cross <ccross@android.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reducing the object size ~11kb/12% could be useful for embedded
-systems.
+On Tue, Jun 18, 2013 at 6:17 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 17 June 2013 20:33, Colin Cross <ccross@android.com> wrote:
+>> This is a generic requirement for using a kernel with autosleep
+>> enabled.  Autosleep will enter suspend whenever there is no wakeup
+>> source/wakelock held.  Consider the following sequence:
+>>
+>> Kernel is suspended
+>> Card is inserted, triggering a wakeup interrupt, which is an implicit
+>> wakeup source until it is handled
+>
+> I don't think a card insert/remove irq need to be configured as a
+> wakeup interrupt. As you say, it will force a resume to detect the
+> card, but for what reason?
+> Instead, I think it it better to leave the card detection to be
+> handled at the next resume, thus not resuming the system when not
+> needed.
 
-Add #ifdef CONFIG_PRINTK #else #endif blocks
-to hold formats and arguments, passing " " to
-functions when !CONFIG_PRINTK and still verifying
-format and arguments with no_printk.
+That decision is going to be different on each device.  On Android
+devices it has been configured as a wakeup interrupt.  This patch is
+necessary on devices that want to handle the event as a wakeup event,
+and has negligible impact on those that do not.
 
- $ size fs/ext3/built-in.o*
-    text   data	    bss	    dec	    hex	filename
-   79857     51	      8	  79916	  1382c	fs/ext3/built-in.o.new
-   90958     51	      8	  91017	  16389	fs/ext3/built-in.o.old
+>> Kernel starts resuming, resumes the mmc driver
+>> The mmc driver enables its interrupt, which is immediately handled and
+>> queues an event to be handled by userspace
+>> At this point the wakeup interrupt is handled and gone, and no wakeup
+>> sources are being held, so the kernel can choose to go back to
+>> suspend, so userspace can't handle the insertion event until the
+>> kernel wakes up for another reason.
+>
+> Is this a problem? From my point of view it should be perfectly
+> acceptable to let userspace handle the event at the next resume/wakeup
+> instead. Don't you think so?
 
- $ grep -E "CONFIG_EXT3|CONFIG_PRINTK" .config
- # CONFIG_PRINTK is not set
- CONFIG_EXT3_FS=y
- CONFIG_EXT3_DEFAULTS_TO_ORDERED=y
- CONFIG_EXT3_FS_XATTR=y
- # CONFIG_EXT3_FS_POSIX_ACL is not set
- # CONFIG_EXT3_FS_SECURITY is not set
+Depends what userspace is doing.  If userspace would like to provide
+the user some feedback on the event, then it has to be a wakeup
+interrupt, and it has to hold a wakelock until it has passed the event
+to userspace.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/ext3/ext3.h  | 44 ++++++++++++++++++++++++++++++++++++++++----
- fs/ext3/super.c | 14 +++++++-------
- 2 files changed, 47 insertions(+), 11 deletions(-)
+>>
+>> In general, an event that is triggered by a wakeup interrupt that is
+>> being passed from the kernel to userspace needs to have a wakeup
+>> source held while the event is queued.
+>
+> That's sounds reasonable. Would it then make sense to hold a generic
+> wakeup source in the "suspend/resume core", once a wakeup interrupt is
+> fetched?
 
-diff --git a/fs/ext3/ext3.h b/fs/ext3/ext3.h
-index e85ff15..8aa33f8 100644
---- a/fs/ext3/ext3.h
-+++ b/fs/ext3/ext3.h
-@@ -1081,14 +1081,14 @@ extern int ext3_group_extend(struct super_block *sb,
- 
- /* super.c */
- extern __printf(3, 4)
--void ext3_error(struct super_block *, const char *, const char *, ...);
-+void __ext3_error(struct super_block *, const char *, const char *, ...);
- extern void __ext3_std_error (struct super_block *, const char *, int);
- extern __printf(3, 4)
--void ext3_abort(struct super_block *, const char *, const char *, ...);
-+void __ext3_abort(struct super_block *, const char *, const char *, ...);
- extern __printf(3, 4)
--void ext3_warning(struct super_block *, const char *, const char *, ...);
-+void __ext3_warning(struct super_block *, const char *, const char *, ...);
- extern __printf(3, 4)
--void ext3_msg(struct super_block *, const char *, const char *, ...);
-+void __ext3_msg(struct super_block *, const char *, const char *, ...);
- extern void ext3_update_dynamic_rev (struct super_block *sb);
- 
- #define ext3_std_error(sb, errno)				\
-@@ -1097,6 +1097,42 @@ do {								\
- 		__ext3_std_error((sb), __func__, (errno));	\
- } while (0)
- 
-+#ifdef CONFIG_PRINTK
-+
-+#define ext3_error(sb, func, fmt, ...)					\
-+	__ext3_error(sb, func, fmt, ##__VA_ARGS__)
-+#define ext3_abort(sb, func, fmt, ...)					\
-+	__ext3_abort(sb, func, fmt, ##__VA_ARGS__)
-+#define ext3_warning(sb, func, fmt, ...)				\
-+	__ext3_warning(sb, func, fmt, ##__VA_ARGS__)
-+#define ext3_msg(sb, prefix, fmt, ...)					\
-+	__ext3_msg(sb, prefix, fmt, ##__VA_ARGS__)
-+
-+#else
-+
-+#define ext3_error(sb, func, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext3_error(sb, func, " ");					\
-+} while (0)
-+#define ext3_abort(sb, func, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext3_abort(sb, func, " ");					\
-+} while (0)
-+#define ext3_warning(sb, func, fmt, ...)				\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext3_warning(sb, func, " ");					\
-+} while (0)
-+#define ext3_msg(sb, prefix, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext3_msg(sb, prefix, " ");					\
-+} while (0)
-+
-+#endif
-+
- /*
-  * Inodes and files operations
-  */
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 6356665..b7c3afc 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -123,7 +123,7 @@ void ext3_journal_abort_handle(const char *caller, const char *err_fn,
- 	journal_abort_handle(handle);
- }
- 
--void ext3_msg(struct super_block *sb, const char *prefix,
-+void __ext3_msg(struct super_block *sb, const char *prefix,
- 		const char *fmt, ...)
- {
- 	struct va_format vaf;
-@@ -182,8 +182,8 @@ static void ext3_handle_error(struct super_block *sb)
- 			sb->s_id);
- }
- 
--void ext3_error(struct super_block *sb, const char *function,
--		const char *fmt, ...)
-+void __ext3_error(struct super_block *sb, const char *function,
-+		  const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
-@@ -266,8 +266,8 @@ void __ext3_std_error (struct super_block * sb, const char * function,
-  * case we take the easy way out and panic immediately.
-  */
- 
--void ext3_abort(struct super_block *sb, const char *function,
--		 const char *fmt, ...)
-+void __ext3_abort(struct super_block *sb, const char *function,
-+		  const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
-@@ -297,8 +297,8 @@ void ext3_abort(struct super_block *sb, const char *function,
- 		journal_abort(EXT3_SB(sb)->s_journal, -EIO);
- }
- 
--void ext3_warning(struct super_block *sb, const char *function,
--		  const char *fmt, ...)
-+void __ext3_warning(struct super_block *sb, const char *function,
-+		    const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+No, the suspend/resume core can only hold a wakeup source until it has
+handed the event off to the driver, at which point it is the driver's
+responsibility to hold a wakeup source.  The suspend/resume core
+cannot tell if the event was handled by the driver or will be passed
+to userspace.
