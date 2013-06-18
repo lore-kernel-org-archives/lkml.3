@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab3FRMCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:02:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56044 "EHLO
+	id S932240Ab3FRLo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:44:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56026 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab3FRLo2 (ORCPT
+	with ESMTP id S932221Ab3FRLoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:28 -0400
+	Tue, 18 Jun 2013 07:44:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ash Willis <ashwillis@programmer.net>,
+Cc: Gustavo Maciel Dias Vieira <gustavo@sagui.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alex Hung <alex.hung@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 35/93] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
-Date: Tue, 18 Jun 2013 12:42:43 +0100
-Message-Id: <1371555821-12820-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 31/93] ACPI video: ignore BIOS backlight value for HP dm4
+Date: Tue, 18 Jun 2013 12:42:39 +0100
+Message-Id: <1371555821-12820-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: Gustavo Maciel Dias Vieira <gustavo@sagui.org>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit 771d09b3c4c45d4d534a83a68e6331b97fd82e15 upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+On a HP Pavilion dm4 laptop the BIOS sets minimum backlight on boot,
+completely dimming the screen. Ignore this initial value for this
+machine.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
+Signed-off-by: Gustavo Maciel Dias Vieira <gustavo@sagui.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Alex Hung <alex.hung@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
  drivers/acpi/video.c | 8 ++++++++
  1 file changed, 8 insertions(+)
 
 diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index a4d9f5d..403283d 100644
+index 3837739..f3b3027 100644
 --- a/drivers/acpi/video.c
 +++ b/drivers/acpi/video.c
-@@ -457,6 +457,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+@@ -447,6 +447,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
+ 		},
  	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
 +	{
 +	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP 1000 Notebook PC",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++	 .ident = "HP Pavilion dm4",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 -- 
 1.8.1.2
 
