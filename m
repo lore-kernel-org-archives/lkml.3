@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab3FRWVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 18:21:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30841 "EHLO mx1.redhat.com"
+	id S933759Ab3FRWWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 18:22:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754090Ab3FRWVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 18:21:50 -0400
-Date: Tue, 18 Jun 2013 19:21:06 -0300
+	id S1755322Ab3FRWVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 18:21:51 -0400
+Date: Tue, 18 Jun 2013 19:21:15 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
-Message-ID: <20130618222106.GB13856@amt.cnet>
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130614000821.GA3183@amt.cnet>
- <20130615112211.c28016009d4da2be4833eadc@gmail.com>
- <51BEFA13.20809@linux.vnet.ibm.com>
+To: Eugene Batalov <ebatalov@parallels.com>
+Cc: kvm@vger.kernel.org, imammedo@redhat.com, linux-kernel@vger.kernel.org,
+        eabatalov89@gmail.com
+Subject: Re: [PATCHv1] kvm guest: fix uninitialized kvmclock read by KVM guest
+Message-ID: <20130618222114.GC13856@amt.cnet>
+References: <20130610201933.GA31409@amt.cnet>
+ <1371319305-590-1-git-send-email-ebatalov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51BEFA13.20809@linux.vnet.ibm.com>
+In-Reply-To: <1371319305-590-1-git-send-email-ebatalov@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 07:59:15PM +0800, Xiao Guangrong wrote:
-> Sorry for the delay reply since i was on vacation.
+On Sat, Jun 15, 2013 at 10:01:45PM +0400, Eugene Batalov wrote:
+> Due to unintialized kvmclock read KVM guest is hanging on SMP boot stage.
+> If unintialized memory contains fatal garbage then hang reproduction is 100%.
+> Unintialized memory is allocated by memblock_alloc. So the garbage values
+> depend on many many things.
 > 
-> On 06/15/2013 10:22 AM, Takuya Yoshikawa wrote:
-> > On Thu, 13 Jun 2013 21:08:21 -0300
-> > Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > 
-> >> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
-> > 
-> >> - Where is the generation number increased?
-> > 
-> > Looks like when a new slot is installed in update_memslots() because
-> > it's based on slots->generation.  This is not restricted to "create"
-> > and "move".
+> See the detailed description of the bug and possible ways to fix it
+> in the kernel bug tracker.
+> "Bug 59521 - KVM linux guest reads uninitialized pvclock values before
+> executing rdmsr MSR_KVM_WALL_CLOCK"
 > 
-> Yes. It reuses slots->generation to avoid unnecessary synchronizations
-> (RCU, memory barrier).
+> I decided to fix it simply returning 0ULL from kvm_clock_read when
+> kvm clocksource is not initialized yet.
+> The same as kernel bootstrap CPU doesn on boot stage when kernel
+> clocksources are not initialized yet.
 > 
-> Increasing mmio generation number in the case of "create" and "move"
-> is ok - it is no addition work unless mmio generation number is overflow
-> which is hardly triggered (since the valid mmio generation number is
-> large enough and zap_all is scale well now.) and the mmio spte is updated
-> only when it is used in the future.
+> Signed-off-by: Eugene Batalov <ebatalov@parallels.com>
+> ---
+> I dont' use kernel percpu variables because for each SMP CPU
+> their contents are copied from the bootstrap CPU. And I don't
+> think that fixing the value for each SMP CPU is a good style.
+> If you know a better approach to store the is_pv_clock_ready flags
+> I am ready to use it.
 > 
-> > 
-> >> - Should use spinlock breakable code in kvm_mmu_zap_mmio_sptes()
-> >> (picture guest with 512GB of RAM, even walking all those pages is
-> >> expensive) (ah, patch to remove kvm_mmu_zap_mmio_sptes does that).
-> >> - Is -13 enough to test wraparound? Its highly likely the guest has 
-> >> not began executing by the time 13 kvm_set_memory_calls are made
-> >> (so no sptes around). Perhaps -2000 is more sensible (should confirm
-> >> though).
-> > 
-> > In the future, after we've tested enough, we should change the testing
-> > code to be executed only for some debugging configs.  Especially, if we
-> > change zap_mmio_sptes() to zap_all_shadows(), very common guests, even
-> > without huge memory like 512GB, can see the effect induced by sudden page
-> > faults unnecessarily.
-> > 
-> > If necessary, developers can test the wraparound code by lowering the
-> > max_gen itself anyway.
+> The patch applies cleanly to
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 > 
-> I agree.
+> I've tested the changes with Ubuntu 13.04 "raring" userspace and
+> Ubuntu-3.8.0.19-30 kernel tag.
 > 
-> > 
-> >> - Why remove "if (change == KVM_MR_CREATE) || (change
-> >> ==  KVM_MR_MOVE)" from kvm_arch_commit_memory_region?
-> >> Its instructive.
-> > 
-> > There may be a chance that we miss generation wraparounds if we don't
-> > check other cases: seems unlikely, but theoretically possible.
-> > 
-> > In short, all memory slot changes make mmio sptes stored in shadow pages
-> > obsolete, or zapped for wraparounds, in the new way -- am I right?
+>  arch/x86/kernel/kvmclock.c |   13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
 > 
-> Yes. You are definitely right. :)
-> 
-> Takuya-san, thank you very much for you answering the questions for me and thanks
-> all of you for patiently reviewing my patches.
-> 
-> Marcelo, your points?
+> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+> index 5bedbdd..a6e0af4 100644
+> --- a/arch/x86/kernel/kvmclock.c
+> +++ b/arch/x86/kernel/kvmclock.c
+> @@ -43,6 +43,9 @@ early_param("no-kvmclock", parse_no_kvmclock);
+>  static struct pvclock_vsyscall_time_info *hv_clock;
+>  static struct pvclock_wall_clock wall_clock;
+>  
+> +/* For each cpu store here a flag which tells whether pvclock is initialized */
+> +static int __cacheline_aligned_in_smp is_pv_clock_ready[NR_CPUS] = {};
+> +
+>  /*
+>   * The wallclock is the time of day when we booted. Since then, some time may
+>   * have elapsed since the hypervisor wrote the data. So we try to account for
+> @@ -84,8 +87,11 @@ static cycle_t kvm_clock_read(void)
+>  
+>  	preempt_disable_notrace();
+>  	cpu = smp_processor_id();
+> -	src = &hv_clock[cpu].pvti;
+> -	ret = pvclock_clocksource_read(src);
+> +	if (is_pv_clock_ready[cpu]) {
+> +		src = &hv_clock[cpu].pvti;
+> +		ret = pvclock_clocksource_read(src);
+> +	} else
+> +		ret = 0ULL;
+>  	preempt_enable_notrace();
+>  	return ret;
+>  }
+> @@ -168,6 +174,9 @@ int kvm_register_clock(char *txt)
+>  	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+>  	       cpu, high, low, txt);
+>  
+> +	if (!ret)
+> +		is_pv_clock_ready[cpu] = 1;
+> +
+>  	return ret;
+>  }
 
-Agreed - points are clear. Patchset looks good.
+The path can be really hot, so better avoid it if possible. The patch
+to zero the memblock_alloc'd area from Igor brings the behaviour back
+to before regression: return 0 until kvmclock is initialized. On top of
+your analysis in the BZ, it now seems the right (and safer) thing to do.
+
 
