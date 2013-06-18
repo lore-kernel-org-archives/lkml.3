@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab3FRKO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:14:56 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17084 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756001Ab3FRKOy (ORCPT
+	id S932166Ab3FRKPC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:15:02 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17716 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab3FRKO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:14:54 -0400
+	Tue, 18 Jun 2013 06:14:59 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 18 Jun 2013 03:13:22 -0700
+	by hqnvupgp07.nvidia.com on Tue, 18 Jun 2013 03:13:24 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         Wolfram Sang <wsa@the-dreams.de>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-i2c@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 1/2] mfd: tps65910: Fix crash in i2c_driver .probe
-Date: Tue, 18 Jun 2013 13:14:40 +0300
-Message-ID: <1371550481-28126-2-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 2/2] regulator: tps62360: Fix crash in i2c_driver .probe
+Date: Tue, 18 Jun 2013 13:14:41 +0300
+Message-ID: <1371550481-28126-3-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1371550481-28126-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1371550481-28126-1-git-send-email-ttynkkynen@nvidia.com>
@@ -33,104 +33,48 @@ changed semantics of the i2c probing for device tree devices.
 Device tree probed devices now get a NULL i2c_device_id pointer.
 This caused kernel panics due to NULL dereference.
 
-Moves the of_match_device call from tps65910_parse_dt to .probe to
-allow the chip type to be detected from device tree but with the
-device parameters coming from platform data.
-
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- v2: Don't overwrite platform data from DT 
+ v2: Added Stephen's Tested-by & Reviewed-by
 
- drivers/mfd/tps65910.c | 39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ drivers/regulator/tps62360-regulator.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index d792772..61147b4 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -384,22 +384,13 @@ static struct of_device_id tps65910_of_match[] = {
- MODULE_DEVICE_TABLE(of, tps65910_of_match);
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index 612919c..a490d5b 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -351,7 +351,6 @@ static int tps62360_probe(struct i2c_client *client,
+ 	int chip_id;
  
- static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
--						int *chip_id)
-+						int chip_id)
- {
- 	struct device_node *np = client->dev.of_node;
- 	struct tps65910_board *board_info;
- 	unsigned int prop;
--	const struct of_device_id *match;
- 	int ret = 0;
+ 	pdata = client->dev.platform_data;
+-	chip_id = id->driver_data;
  
--	match = of_match_device(tps65910_of_match, &client->dev);
--	if (!match) {
--		dev_err(&client->dev, "Failed to find matching dt id\n");
--		return NULL;
--	}
--
--	*chip_id  = (int)match->data;
--
- 	board_info = devm_kzalloc(&client->dev, sizeof(*board_info),
- 			GFP_KERNEL);
- 	if (!board_info) {
-@@ -410,13 +401,13 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- 	ret = of_property_read_u32(np, "ti,vmbch-threshold", &prop);
- 	if (!ret)
- 		board_info->vmbch_threshold = prop;
--	else if (*chip_id == TPS65911)
-+	else if (chip_id == TPS65911)
- 		dev_warn(&client->dev, "VMBCH-Threshold not specified");
- 
- 	ret = of_property_read_u32(np, "ti,vmbch2-threshold", &prop);
- 	if (!ret)
- 		board_info->vmbch2_threshold = prop;
--	else if (*chip_id == TPS65911)
-+	else if (chip_id == TPS65911)
- 		dev_warn(&client->dev, "VMBCH2-Threshold not specified");
- 
- 	prop = of_property_read_bool(np, "ti,en-ck32k-xtal");
-@@ -432,7 +423,7 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- #else
- static inline
- struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
--					 int *chip_id)
-+					 int chip_id)
- {
- 	return NULL;
- }
-@@ -461,16 +452,28 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	struct tps65910_board *of_pmic_plat_data = NULL;
- 	struct tps65910_platform_data *init_data;
- 	int ret = 0;
--	int chip_id = id->driver_data;
-+	int chip_id = -1;
- 
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
- 
--	if (!pmic_plat_data && i2c->dev.of_node) {
--		pmic_plat_data = tps65910_parse_dt(i2c, &chip_id);
--		of_pmic_plat_data = pmic_plat_data;
-+	if (id) {
+ 	if (client->dev.of_node) {
+ 		const struct of_device_id *match;
+@@ -364,6 +363,11 @@ static int tps62360_probe(struct i2c_client *client,
+ 		chip_id = (int)match->data;
+ 		if (!pdata)
+ 			pdata = of_get_tps62360_platform_data(&client->dev);
++	} else if (id) {
 +		chip_id = id->driver_data;
-+	} else if (i2c->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_device(tps65910_of_match, &i2c->dev);
-+		if (!match) {
-+			dev_err(&i2c->dev, "Failed to find matching dt id\n");
-+			return -EINVAL;
-+		}
-+		chip_id  = (int)match->data;
-+
-+		if (!pmic_plat_data) {
-+			pmic_plat_data = tps65910_parse_dt(i2c, chip_id);
-+			of_pmic_plat_data = pmic_plat_data;
-+		}
++	} else {
++		dev_err(&client->dev, "No device tree match or id table match found\n");
++		return -ENODEV;
  	}
  
--	if (!pmic_plat_data)
-+	if (!pmic_plat_data || chip_id < 0)
- 		return -EINVAL;
+ 	if (!pdata) {
+@@ -402,7 +406,7 @@ static int tps62360_probe(struct i2c_client *client,
+ 		return -ENODEV;
+ 	}
  
- 	init_data = devm_kzalloc(&i2c->dev, sizeof(*init_data), GFP_KERNEL);
+-	tps->desc.name = id->name;
++	tps->desc.name = client->name;
+ 	tps->desc.id = 0;
+ 	tps->desc.ops = &tps62360_dcdc_ops;
+ 	tps->desc.type = REGULATOR_VOLTAGE;
 -- 
 1.8.1.5
 
