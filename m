@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3FRMx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:53:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43980 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3FRMx5 (ORCPT
+	id S1755252Ab3FRMyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:54:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54598 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3FRMym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:53:57 -0400
-Date: Tue, 18 Jun 2013 14:53:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>, eranian@google.com
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130618125339.GC28407@twins.programming.kicks-ass.net>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
- <20130613131057.GA15997@somewhere>
- <20130613140207.GW133453@redhat.com>
- <20130618103632.GO3204@twins.programming.kicks-ass.net>
- <20130618120436.GA17619@somewhere.redhat.com>
+	Tue, 18 Jun 2013 08:54:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: irqchip: add support for MOXA ART SoCs
+Date: Tue, 18 Jun 2013 14:54:03 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, tglx@linutronix.de
+References: <1371549584-7169-1-git-send-email-jonas.jensen@gmail.com> <20130618103534.GW2718@n2100.arm.linux.org.uk>
+In-Reply-To: <20130618103534.GW2718@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618120436.GA17619@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306181454.04011.arnd@arndb.de>
+X-Provags-ID: V02:K0:7tM83bgjyZoJEAJPTa5wNjUOtKkARWXTkU+sV9g/grU
+ fKOHGRZ9P5IMfI8Y3PgCSXsn/ZRlms8EVzlXG/817wQ4h+nDjF
+ XGWuBCbCM2F0Mj8UR6ljJRIDV2TNiYFYVc8vpoZfjL7IBf+dBS
+ XiiSRhTBFdnxoHYlSiuiE+WiQXkwCsY+tbJpCgA2ZAGL9kYucf
+ cNcrwkRTWW2pfmLP2svgCWhT76qH4r1XdVMc+P+vBt0QGwgP1U
+ EmMskQitrPoO1WawfqM13reKzcgzFHIQUYuuCdWzz8zQoXMmJh
+ YQEfJ3e/Nqnu/2dxDghUHDK/xmY6BTrb5kZbEgtnAWla7A9011
+ 2DiyAsV7GTD+Pwp6zzN8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:04:38PM +0200, Frederic Weisbecker wrote:
-> I see. So what do you think, should I push my patch that deactivates
-> the watchdog to Ingo until this below patch gets ready? It would be nice to
-> have a solution for 3.11.
+On Tuesday 18 June 2013, Russell King - ARM Linux wrote:
+> Is there a reason this isn't using the irq_chip_generic stuff which would
+> eliminate all the above?
 
-I don't care too much either way.
+When I first reviewed the moxart code, the generic irqchip wasn't compatible
+with the linear irq domain. However this has changed now and it should indeed
+use that.
 
-> If you prefer I can work on getting your below proposal into shape. I'm on
-> vacancies next week but I can try to get it ready until the next merge window
-> closes.
-
-Right, except for some 'fun' details the proposed patch isn't actually
-that hard. Enjoy your holidays.
+	Arnd
