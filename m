@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290Ab3FRLof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56049 "EHLO
+	id S932346Ab3FRMBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:01:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192Ab3FRLoa (ORCPT
+	with ESMTP id S932280Ab3FRLoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:30 -0400
+	Tue, 18 Jun 2013 07:44:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 36/93] ALSA: usb-audio: fix Roland/Cakewalk UM-3G support
-Date: Tue, 18 Jun 2013 12:42:44 +0100
-Message-Id: <1371555821-12820-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 41/93] drm/radeon: don't allow audio on DCE6
+Date: Tue, 18 Jun 2013 12:42:49 +0100
+Message-Id: <1371555821-12820-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a0c6d309c6df14655f9962f666d1da96318b0b7c upstream.
+commit 1cbcca302a318499f20a512847c5d6a510c08c35 upstream.
 
-Commit 927c9423dd5f2d1c0b93d5e694ab84b4a5559713 (ALSA: usb-audio: add
-Edirol UM-3G support) used a wrong quirk type, which would make the
-driver refuse to attach with the error message "MIDIStreaming interface
-descriptor not found".
+It's not supported yet.  Fixes display issues when
+users force it on.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/quirks-table.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-index 128eb0c..1375633 100644
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1622,7 +1622,11 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	USB_DEVICE_VENDOR_SPEC(0x0582, 0x0108),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		.ifnum = 0,
--		.type = QUIRK_MIDI_STANDARD_INTERFACE
-+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-+		.data = & (const struct snd_usb_midi_endpoint_info) {
-+			.out_cables = 0x0007,
-+			.in_cables  = 0x0007
-+		}
- 	}
- },
+diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
+index 74cc710..66ecc38 100644
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -396,6 +396,8 @@ atombios_digital_setup(struct drm_encoder *encoder, int action)
+ int
+ atombios_get_encoder_mode(struct drm_encoder *encoder)
  {
++	struct drm_device *dev = encoder->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector;
+@@ -421,7 +423,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
+ 	case DRM_MODE_CONNECTOR_DVII:
+ 	case DRM_MODE_CONNECTOR_HDMIB: /* HDMI-B is basically DL-DVI; analog works fine */
+ 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
+-		    radeon_audio)
++		    radeon_audio &&
++		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
+ 			return ATOM_ENCODER_MODE_HDMI;
+ 		else if (radeon_connector->use_digital)
+ 			return ATOM_ENCODER_MODE_DVI;
+@@ -432,7 +435,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
+ 	case DRM_MODE_CONNECTOR_HDMIA:
+ 	default:
+ 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
+-		    radeon_audio)
++		    radeon_audio &&
++		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
+ 			return ATOM_ENCODER_MODE_HDMI;
+ 		else
+ 			return ATOM_ENCODER_MODE_DVI;
+@@ -446,7 +450,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
+ 		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP))
+ 			return ATOM_ENCODER_MODE_DP;
+ 		else if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
+-			 radeon_audio)
++			 radeon_audio &&
++			 !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
+ 			return ATOM_ENCODER_MODE_HDMI;
+ 		else
+ 			return ATOM_ENCODER_MODE_DVI;
 -- 
 1.8.1.2
 
