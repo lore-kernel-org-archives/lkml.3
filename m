@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933303Ab3FRQSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:18:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49552 "EHLO
+	id S933290Ab3FRQSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:18:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49558 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933269Ab3FRQSG (ORCPT
+	with ESMTP id S933268Ab3FRQSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:18:06 -0400
+	Tue, 18 Jun 2013 12:18:05 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 28/48] mm/page_alloc.c: fix watermark check in __zone_watermark_ok()
-Date: Tue, 18 Jun 2013 09:17:54 -0700
-Message-Id: <20130618161729.952381255@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 37/48] libceph: wrap auth ops in wrapper functions
+Date: Tue, 18 Jun 2013 09:18:03 -0700
+Message-Id: <20130618161731.290191358@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -35,95 +28,260 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 026b08147923142e925a7d0aaa39038055ae0156 upstream.
+commit 27859f9773e4a0b2042435b13400ee2c891a61f4 upstream.
 
-The watermark check consists of two sub-checks.  The first one is:
+Use wrapper functions that check whether the auth op exists so that callers
+do not need a bunch of conditional checks.  Simplifies the external
+interface.
 
-	if (free_pages <= min + lowmem_reserve)
-		return false;
-
-The check assures that there is minimal amount of RAM in the zone.  If
-CMA is used then the free_pages is reduced by the number of free pages
-in CMA prior to the over-mentioned check.
-
-	if (!(alloc_flags & ALLOC_CMA))
-		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
-
-This prevents the zone from being drained from pages available for
-non-movable allocations.
-
-The second check prevents the zone from getting too fragmented.
-
-	for (o = 0; o < order; o++) {
-		free_pages -= z->free_area[o].nr_free << o;
-		min >>= 1;
-		if (free_pages <= min)
-			return false;
-	}
-
-The field z->free_area[o].nr_free is equal to the number of free pages
-including free CMA pages.  Therefore the CMA pages are subtracted twice.
-This may cause a false positive fail of __zone_watermark_ok() if the CMA
-area gets strongly fragmented.  In such a case there are many 0-order
-free pages located in CMA.  Those pages are subtracted twice therefore
-they will quickly drain free_pages during the check against
-fragmentation.  The test fails even though there are many free non-cma
-pages in the zone.
-
-This patch fixes this issue by subtracting CMA pages only for a purpose of
-(free_pages <= min + lowmem_reserve) check.
-
-Laura said:
-
-  We were observing allocation failures of higher order pages (order 5 =
-  128K typically) under tight memory conditions resulting in driver
-  failure.  The output from the page allocation failure showed plenty of
-  free pages of the appropriate order/type/zone and mostly CMA pages in
-  the lower orders.
-
-  For full disclosure, we still observed some page allocation failures
-  even after applying the patch but the number was drastically reduced and
-  those failures were attributed to fragmentation/other system issues.
-
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ceph/mds_client.c      |   26 +++++++++++--------------
+ include/linux/ceph/auth.h |   13 ++++++++++++
+ net/ceph/auth.c           |   47 ++++++++++++++++++++++++++++++++++++++++++++++
+ net/ceph/auth_x.c         |    1 
+ net/ceph/mon_client.c     |    7 ++----
+ net/ceph/osd_client.c     |   26 ++++++++-----------------
+ 6 files changed, 84 insertions(+), 36 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1626,6 +1626,7 @@ static bool __zone_watermark_ok(struct z
- 	long min = mark;
- 	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
- 	int o;
-+	long free_cma = 0;
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -364,9 +364,9 @@ void ceph_put_mds_session(struct ceph_md
+ 	     atomic_read(&s->s_ref), atomic_read(&s->s_ref)-1);
+ 	if (atomic_dec_and_test(&s->s_ref)) {
+ 		if (s->s_auth.authorizer)
+-		     s->s_mdsc->fsc->client->monc.auth->ops->destroy_authorizer(
+-			     s->s_mdsc->fsc->client->monc.auth,
+-			     s->s_auth.authorizer);
++			ceph_auth_destroy_authorizer(
++				s->s_mdsc->fsc->client->monc.auth,
++				s->s_auth.authorizer);
+ 		kfree(s);
+ 	}
+ }
+@@ -3438,18 +3438,17 @@ static struct ceph_auth_handshake *get_a
+ 	struct ceph_auth_handshake *auth = &s->s_auth;
  
- 	free_pages -= (1 << order) - 1;
- 	if (alloc_flags & ALLOC_HIGH)
-@@ -1635,9 +1636,10 @@ static bool __zone_watermark_ok(struct z
- #ifdef CONFIG_CMA
- 	/* If allocation can't use CMA areas don't use free CMA pages */
- 	if (!(alloc_flags & ALLOC_CMA))
--		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
-+		free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+ 	if (force_new && auth->authorizer) {
+-		if (ac->ops && ac->ops->destroy_authorizer)
+-			ac->ops->destroy_authorizer(ac, auth->authorizer);
++		ceph_auth_destroy_authorizer(ac, auth->authorizer);
+ 		auth->authorizer = NULL;
+ 	}
+-	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+-		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
+-						     auth);
++	if (!auth->authorizer) {
++		int ret = ceph_auth_create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
++						      auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+-	} else if (ac->ops && ac->ops_update_authorizer) {
+-		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
+-						     auth);
++	} else {
++		int ret = ceph_auth_update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
++						      auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+ 	}
+@@ -3465,7 +3464,7 @@ static int verify_authorizer_reply(struc
+ 	struct ceph_mds_client *mdsc = s->s_mdsc;
+ 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
+ 
+-	return ac->ops->verify_authorizer_reply(ac, s->s_auth.authorizer, len);
++	return ceph_auth_verify_authorizer_reply(ac, s->s_auth.authorizer, len);
+ }
+ 
+ static int invalidate_authorizer(struct ceph_connection *con)
+@@ -3474,8 +3473,7 @@ static int invalidate_authorizer(struct
+ 	struct ceph_mds_client *mdsc = s->s_mdsc;
+ 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
+ 
+-	if (ac->ops->invalidate_authorizer)
+-		ac->ops->invalidate_authorizer(ac, CEPH_ENTITY_TYPE_MDS);
++	ceph_auth_invalidate_authorizer(ac, CEPH_ENTITY_TYPE_MDS);
+ 
+ 	return ceph_monc_validate_auth(&mdsc->fsc->client->monc);
+ }
+--- a/include/linux/ceph/auth.h
++++ b/include/linux/ceph/auth.h
+@@ -97,5 +97,18 @@ extern int ceph_build_auth(struct ceph_a
+ 		    void *msg_buf, size_t msg_len);
+ 
+ extern int ceph_auth_is_authenticated(struct ceph_auth_client *ac);
++extern int ceph_auth_create_authorizer(struct ceph_auth_client *ac,
++				       int peer_type,
++				       struct ceph_auth_handshake *auth);
++extern void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
++					 struct ceph_authorizer *a);
++extern int ceph_auth_update_authorizer(struct ceph_auth_client *ac,
++				       int peer_type,
++				       struct ceph_auth_handshake *a);
++extern int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
++					     struct ceph_authorizer *a,
++					     size_t len);
++extern void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac,
++					    int peer_type);
+ 
  #endif
--	if (free_pages <= min + lowmem_reserve)
+--- a/net/ceph/auth.c
++++ b/net/ceph/auth.c
+@@ -257,3 +257,50 @@ int ceph_auth_is_authenticated(struct ce
+ 		return 0;
+ 	return ac->ops->is_authenticated(ac);
+ }
++EXPORT_SYMBOL(ceph_auth_is_authenticated);
 +
-+	if (free_pages - free_cma <= min + lowmem_reserve)
- 		return false;
- 	for (o = 0; o < order; o++) {
- 		/* At the next order, this order's pages become unavailable */
++int ceph_auth_create_authorizer(struct ceph_auth_client *ac,
++				int peer_type,
++				struct ceph_auth_handshake *auth)
++{
++	if (ac->ops && ac->ops->create_authorizer)
++		return ac->ops->create_authorizer(ac, peer_type, auth);
++	return 0;
++}
++EXPORT_SYMBOL(ceph_auth_create_authorizer);
++
++void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
++				  struct ceph_authorizer *a)
++{
++	if (ac->ops && ac->ops->destroy_authorizer)
++		ac->ops->destroy_authorizer(ac, a);
++}
++EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
++
++int ceph_auth_update_authorizer(struct ceph_auth_client *ac,
++				int peer_type,
++				struct ceph_auth_handshake *a)
++{
++	int ret = 0;
++
++	if (ac->ops && ac->ops->update_authorizer)
++		ret = ac->ops->update_authorizer(ac, peer_type, a);
++	return ret;
++}
++EXPORT_SYMBOL(ceph_auth_update_authorizer);
++
++int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
++				      struct ceph_authorizer *a, size_t len)
++{
++	if (ac->ops && ac->ops->verify_authorizer_reply)
++		return ac->ops->verify_authorizer_reply(ac, a, len);
++	return 0;
++}
++EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
++
++void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
++{
++	if (ac->ops && ac->ops->invalidate_authorizer)
++		ac->ops->invalidate_authorizer(ac, peer_type);
++}
++EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -562,7 +562,6 @@ static int ceph_x_update_authorizer(
+ {
+ 	struct ceph_x_authorizer *au;
+ 	struct ceph_x_ticket_handler *th;
+-	int ret;
+ 
+ 	th = get_ticket_handler(ac, peer_type);
+ 	if (IS_ERR(th))
+--- a/net/ceph/mon_client.c
++++ b/net/ceph/mon_client.c
+@@ -737,7 +737,7 @@ static void delayed_work(struct work_str
+ 
+ 		__validate_auth(monc);
+ 
+-		if (monc->auth->ops->is_authenticated(monc->auth))
++		if (ceph_auth_is_authenticated(monc->auth))
+ 			__send_subscribe(monc);
+ 	}
+ 	__schedule_delayed(monc);
+@@ -892,8 +892,7 @@ static void handle_auth_reply(struct cep
+ 
+ 	mutex_lock(&monc->mutex);
+ 	had_debugfs_info = have_debugfs_info(monc);
+-	if (monc->auth->ops)
+-		was_auth = monc->auth->ops->is_authenticated(monc->auth);
++	was_auth = ceph_auth_is_authenticated(monc->auth);
+ 	monc->pending_auth = 0;
+ 	ret = ceph_handle_auth_reply(monc->auth, msg->front.iov_base,
+ 				     msg->front.iov_len,
+@@ -904,7 +903,7 @@ static void handle_auth_reply(struct cep
+ 		wake_up_all(&monc->client->auth_wq);
+ 	} else if (ret > 0) {
+ 		__send_prepared_auth_request(monc, ret);
+-	} else if (!was_auth && monc->auth->ops->is_authenticated(monc->auth)) {
++	} else if (!was_auth && ceph_auth_is_authenticated(monc->auth)) {
+ 		dout("authenticated, starting session\n");
+ 
+ 		monc->client->msgr.inst.name.type = CEPH_ENTITY_TYPE_CLIENT;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -654,8 +654,7 @@ static void put_osd(struct ceph_osd *osd
+ 	if (atomic_dec_and_test(&osd->o_ref) && osd->o_auth.authorizer) {
+ 		struct ceph_auth_client *ac = osd->o_osdc->client->monc.auth;
+ 
+-		if (ac->ops && ac->ops->destroy_authorizer)
+-			ac->ops->destroy_authorizer(ac, osd->o_auth.authorizer);
++		ceph_auth_destroy_authorizer(ac, osd->o_auth.authorizer);
+ 		kfree(osd);
+ 	}
+ }
+@@ -2168,17 +2167,16 @@ static struct ceph_auth_handshake *get_a
+ 	struct ceph_auth_handshake *auth = &o->o_auth;
+ 
+ 	if (force_new && auth->authorizer) {
+-		if (ac->ops && ac->ops->destroy_authorizer)
+-			ac->ops->destroy_authorizer(ac, auth->authorizer);
++		ceph_auth_destroy_authorizer(ac, auth->authorizer);
+ 		auth->authorizer = NULL;
+ 	}
+-	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
+-		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
+-							auth);
++	if (!auth->authorizer) {
++		int ret = ceph_auth_create_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
++						      auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+-	} else if (ac->ops && ac->ops->update_authorizer) {
+-		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
++	} else {
++		int ret = ceph_auth_update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
+ 						     auth);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+@@ -2195,11 +2193,7 @@ static int verify_authorizer_reply(struc
+ 	struct ceph_osd_client *osdc = o->o_osdc;
+ 	struct ceph_auth_client *ac = osdc->client->monc.auth;
+ 
+-	/*
+-	 * XXX If ac->ops or ac->ops->verify_authorizer_reply is null,
+-	 * XXX which do we do:  succeed or fail?
+-	 */
+-	return ac->ops->verify_authorizer_reply(ac, o->o_auth.authorizer, len);
++	return ceph_auth_verify_authorizer_reply(ac, o->o_auth.authorizer, len);
+ }
+ 
+ static int invalidate_authorizer(struct ceph_connection *con)
+@@ -2208,9 +2202,7 @@ static int invalidate_authorizer(struct
+ 	struct ceph_osd_client *osdc = o->o_osdc;
+ 	struct ceph_auth_client *ac = osdc->client->monc.auth;
+ 
+-	if (ac->ops && ac->ops->invalidate_authorizer)
+-		ac->ops->invalidate_authorizer(ac, CEPH_ENTITY_TYPE_OSD);
+-
++	ceph_auth_invalidate_authorizer(ac, CEPH_ENTITY_TYPE_OSD);
+ 	return ceph_monc_validate_auth(&osdc->client->monc);
+ }
+ 
 
 
