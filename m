@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3FRJvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:51:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56905 "EHLO mx2.suse.de"
+	id S1755797Ab3FRJv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:51:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38858 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab3FRJvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:51:40 -0400
-Date: Tue, 18 Jun 2013 11:51:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: i2c-hid: add DT bindings
-In-Reply-To: <1371109835-30796-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1306181151030.6750@pobox.suse.cz>
-References: <1371109835-30796-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755417Ab3FRJv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:51:56 -0400
+Date: Tue, 18 Jun 2013 12:49:42 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, <grant.likely@linaro.org>,
+        <tony@atomide.com>, <balbi@ti.com>, <arnd@arndb.de>,
+        <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <akpm@linux-foundation.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
+        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
+Subject: Re: [PATCH v7 0/9] Generic PHY Framework
+Message-ID: <20130618094942.GY5461@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1371113039-5784-1-git-send-email-kishon@ti.com>
+ <51BEE203.6090103@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8a48p4KKsB+A/3VY"
+Content-Disposition: inline
+In-Reply-To: <51BEE203.6090103@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013, Benjamin Tissoires wrote:
+--8a48p4KKsB+A/3VY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Add device tree based support for HID over I2C devices.
-> 
-> Tested on an Odroid-X board with a Synaptics touchpad.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Hi guys,
-> 
-> well, as the commit message says, this is the DT binding for HID over I2C.
-> I honestly don't know if it will be used besides me, but it may help others
-> with a DT based board.
-> As the spec is for ACPI only, I had no specifications regarding the DT names. So
-> these names can be changed if you think they are bad.
-> 
-> I also created a new bindings directory in the devicetree doc to reflect the
-> split we have between input and hid. However, if the DT experts prefer having
-> it under input, I'm fine with that.
-> 
-> Cheers,
-> Benjamin
-> 
->  .../devicetree/bindings/hid/hid-over-i2c.txt       | 28 ++++++++++++++
->  drivers/hid/i2c-hid/i2c-hid.c                      | 44 +++++++++++++++++++++-
->  include/linux/i2c/i2c-hid.h                        |  3 +-
->  3 files changed, 73 insertions(+), 2 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/hid/hid-over-i2c.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
+Hi,
 
-DT folks, any objections to this, please?
+On Mon, Jun 17, 2013 at 12:16:35PM +0200, Sylwester Nawrocki wrote:
+> I have already used this API for our MIPI CSI-2/DSIM DPHYs driver,
+> the RFC patch series can be found at [1].
+>=20
+> Thanks,
+> Sylwester
+>=20
+> [1] http://www.spinics.net/lists/arm-kernel/msg251666.html
 
-If not, I'd like to apply this for 3.11 into my tree.
+one comment to that series:
 
-Thanks.
+let's make the phy names standardized, how about phy-exynos-video-mipi.c
+or phy-mipi-csi-dsim.c ?
 
--- 
-Jiri Kosina
-SUSE Labs
+--=20
+balbi
+
+--8a48p4KKsB+A/3VY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwC02AAoJEIaOsuA1yqREr1gP+wUX4ATtRcf9e6UYNWg22b87
+GzL13FHHyH6O1mj+Qs3BfDYPMDHZNDfnwBBhxgBB+DlhgeyyCn0Ry3zeneA188wz
+OCXsD3pVWqZA4REcXF38+aZQr/fB54TYsF7DiKkqYid8IzbjFunKVn1KFJUZRemA
+yqr9DZNH4h44nvcB+/+k+G7tu11gbipklbq94cEr4FzRX5rTGWyXoxvl+N7WM7hU
+O9XLhvuAsIMwzSAIq7iFxq0ZhSUzG1Gx9bWh73M1Yhbg/5zaGw36Q+GXJ2Gm1eYm
+/dLWiKDfD8N1VDlLjfH/7kAMcCCaGVDtvOU2GA35RP9h4mSF/2EeaxoCqcZDgUHQ
+ieSverpduDO2/Kq9ppDlYHs/9bLfPKi8kDwNgKdpN8mRls61+u0MdSe/tCHzrnZ9
+B0lVpvzYiPPo20ldNb6Yqm5vM97RoLgNjPGbsSuAZbDo2VC/Y5U/qnqls1fa6LaF
+XTyMuZFbN52QYa2ls1or8d6pXKcsKA1kQFwZpQ2uCA5gmCtb0D4EfcITbU827/U9
+KMk9dLH8Wwzics97vraM7v27DQjoeBTzbMb7AIu7VQYNyOgNJ+NLDvZN8cumdkd1
+Fomw/4+ASxRS7b4gRzRcxHMmN8LDSafHGeXCtXYR/B3kyb3TW0UoH4kRgWDUlPPI
+Iv/HxD9vQzbKyKpYQtPw
+=5awi
+-----END PGP SIGNATURE-----
+
+--8a48p4KKsB+A/3VY--
