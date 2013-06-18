@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab3FRIgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:36:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53587 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417Ab3FRIgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:36:52 -0400
-Message-ID: <51C01BC4.9080503@ti.com>
-Date: Tue, 18 Jun 2013 11:35:16 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754781Ab3FRIh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:37:57 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60376 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab3FRIhy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:37:54 -0400
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Jiri Slaby <jslaby@suse.cz>, Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <jirislaby@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+In-Reply-To: <20130617143851.480d327256b7cb54f292e147@linux-foundation.org>
+References: <CA+55aFwdcdf0Zy82P70YsaF2Kqf4UTKKeDfMN0MPXXwSrGr4yw@mail.gmail.com>
+	<CAMuHMdWMYxg9QC_4EpDgcgevsTAt=3v6iaCa0cHxtzYbMheQ-w@mail.gmail.com>
+	<CA+55aFzw7b7qH37ZLSCAZ8xTd5ez2q44LmeY+GLFPsHEqDPfxA@mail.gmail.com>
+	<20130617133055.20463ce157e104af15ef60a1@linux-foundation.org>
+	<51BF7610.10803@caviumnetworks.com>
+	<20130617135920.587959a34da85d7940a6936f@linux-foundation.org>
+	<51BF7ABD.3080508@caviumnetworks.com>
+	<20130617141310.3d62ea2b05041ec5974f9525@linux-foundation.org>
+	<51BF7EE9.8060308@caviumnetworks.com>
+	<20130617143851.480d327256b7cb54f292e147@linux-foundation.org>
+Date: Tue, 18 Jun 2013 10:37:54 +0200
+X-Google-Sender-Auth: pxrNHuakX7PChyFtgRJEFmJy7WE
+Message-ID: <CAMuHMdUf9VRZKosS_L++BYOOs+mVKVow8aAqAcGK8TFgkBGPhg@mail.gmail.com>
+Subject: Re: Linux 3.10-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Daney <ddaney@caviumnetworks.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        <linux-usb@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-geode@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>, <netdev@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz> <51BFE754.5080301@suse.cz>
-In-Reply-To: <51BFE754.5080301@suse.cz>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2XEDXXSSTLPVPGILSWXGM"
+        David Daney <david.daney@cavium.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2XEDXXSSTLPVPGILSWXGM
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 17, 2013 at 11:38 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>> Once you fix the name of 'flags', I hope you don't run into the same
+>> Include Hell on ia64 and mn10300 that I did.
+>
+> I build-tested ia64.  I don't have an mn10300 cross-compiler set up.
 
-On 18/06/13 07:51, Michal Marek wrote:
+Both mn10300 defconfigs build fine with it, so
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
->> Sam Ravnborg (the kconfig ex-maintainer) once wrote that he doesn't wa=
-nt
->> to extend the kconfig language for this purpose (which I support). Tha=
-t
->> a config option is fine and sufficient in this case [1]. Except he
->> called the config option "SHOW_ALL_DRIVERS". Adding the current
->> maintainer to CCs ;).
->=20
-> I agree with Sam. 'depends on XY || COMPILE_TEST' is quite
-> self-explanatory. And even if it's not, you can look up the help text
-> for COMPILE_TEST. With "archdepends on" or "available on", you need to
-> know what to look for to override the dependency.
+FWIW, Tony's collection has one at
+https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/
 
-I would rather have "depends on", when the code actually depends on
-something (i.e. you can't compile/load the code otherwise), and "used
-on"/"available on" when the code is just normally not used except on the
-listed platforms (but nothing prevents from compiling and using the code
-on all platforms).
+It's called am33_2.0-linux-gcc, not mn10300-linux-gcc.
 
-But I'm fine with COMPILE_TEST or similar, I guess it's an acceptable
-compromise and trivial to implement. Even if we had "used on" we'd still
-need to update the Kconfig file when the code is being used on a new
-platform, just like with COMPILE_TEST.
+Gr{oetje,eeting}s,
 
- Tomi
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-------enig2XEDXXSSTLPVPGILSWXGM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRwBvEAAoJEPo9qoy8lh71VCYQAKwRBwrxv8PbNfV9MELqdlwK
-O4Ilm1bxmCPvZ6wPRs+LmTCLiIisOQY+2Crt72XlgqDqh+uOXlSx5CzMMXUQYSaS
-iEx2EGITSjqgW1tEALgEEfMLrguMbP9xifxBh/HT4qyATI3BX3IEAz/hp/YRGeRG
-t2UwNKeEvfPDQuFH+lHFNTztLLNAG2vu2H3X+Krr74kTpWloZkTW5lA81IM7JcmK
-Zs4pGDpT+6SxrxhTzsOv2Qj8Z0yGLkBvoFFQ+3uCTOM8zWSa98EVm2ktL3BmyyPy
-05NY72pxdHj3PZQY8sEt1legOjSLsvwn3f9HbdlhKqNifBVl69b2XWFb4H1wlqCD
-0rEo78IChYToeuRb++jf7T3phzZTX9mL5tpIn5zY3LwLWobALxItm+C92h5lN/ju
-S82HV6sjD0vcz8V/7gtbnO8YKkBrvdH7zDkdhM7LBnNDLwQOTY3LlY2WhEBodVBH
-pfRYXEi743VgydpJf4f1t45nNNw+r69cOuPSpMSeZhQZXKH6mqCXiDRbwrF74MMg
-2R/w9MFK6ieI1XHhRPbzPUv5NDHHgUMl02hmFQPqXFqjPVrLEkAo0Kac5/cUm/K9
-R9wuM8RN5ggOjuetoR1vH61S2UKL0yTgc+GprPRFu90kEB3WbhkKASDfHOBaPkYY
-v+A4JtNSNGpiZgY4IV1y
-=K7Rg
------END PGP SIGNATURE-----
-
-------enig2XEDXXSSTLPVPGILSWXGM--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
