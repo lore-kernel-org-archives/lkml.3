@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3FRLpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:45:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56218 "EHLO
+	id S1756077Ab3FRLvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:51:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338Ab3FRLpJ (ORCPT
+	with ESMTP id S932522Ab3FRLpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:45:09 -0400
+	Tue, 18 Jun 2013 07:45:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Kees Cook <keescook@chromium.org>, Kay Sievers <kay@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 68/93] Bluetooth: Fix mgmt handling of power on failures
-Date: Tue, 18 Jun 2013 12:43:16 +0100
-Message-Id: <1371555821-12820-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 75/93] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
+Date: Tue, 18 Jun 2013 12:43:23 +0100
+Message-Id: <1371555821-12820-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -29,106 +29,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 96570ffcca0b872dc8626e97569d2697f374d868 upstream.
+commit 637241a900cbd982f744d44646b48a273d609b34 upstream.
 
-If hci_dev_open fails we need to ensure that the corresponding
-mgmt_set_powered command gets an appropriate response. This patch fixes
-the missing response by adding a new mgmt_set_powered_failed function
-that's used to indicate a power on failure to mgmt. Since a situation
-with the device being rfkilled may require special handling in user
-space the patch uses a new dedicated mgmt status code for this.
+The dmesg_restrict sysctl currently covers the syslog method for access
+dmesg, however /dev/kmsg isn't covered by the same protections.  Most
+people haven't noticed because util-linux dmesg(1) defaults to using the
+syslog method for access in older versions.  With util-linux dmesg(1)
+defaults to reading directly from /dev/kmsg.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+To fix /dev/kmsg, let's compare the existing interfaces and what they
+allow:
+
+ - /proc/kmsg allows:
+  - open (SYSLOG_ACTION_OPEN) if CAP_SYSLOG since it uses a destructive
+    single-reader interface (SYSLOG_ACTION_READ).
+  - everything, after an open.
+
+ - syslog syscall allows:
+  - anything, if CAP_SYSLOG.
+  - SYSLOG_ACTION_READ_ALL and SYSLOG_ACTION_SIZE_BUFFER, if
+    dmesg_restrict==0.
+  - nothing else (EPERM).
+
+The use-cases were:
+ - dmesg(1) needs to do non-destructive SYSLOG_ACTION_READ_ALLs.
+ - sysklog(1) needs to open /proc/kmsg, drop privs, and still issue the
+   destructive SYSLOG_ACTION_READs.
+
+AIUI, dmesg(1) is moving to /dev/kmsg, and systemd-journald doesn't
+clear the ring buffer.
+
+Based on the comments in devkmsg_llseek, it sounds like actions besides
+reading aren't going to be supported by /dev/kmsg (i.e.
+SYSLOG_ACTION_CLEAR), so we have a strict subset of the non-destructive
+syslog syscall actions.
+
+To this end, move the check as Josh had done, but also rename the
+constants to reflect their new uses (SYSLOG_FROM_CALL becomes
+SYSLOG_FROM_READER, and SYSLOG_FROM_FILE becomes SYSLOG_FROM_PROC).
+SYSLOG_FROM_READER allows non-destructive actions, and SYSLOG_FROM_PROC
+allows destructive actions after a capabilities-constrained
+SYSLOG_ACTION_OPEN check.
+
+ - /dev/kmsg allows:
+  - open if CAP_SYSLOG or dmesg_restrict==0
+  - reading/polling, after open
+
+Addresses https://bugzilla.redhat.com/show_bug.cgi?id=903192
+
+[akpm@linux-foundation.org: use pr_warn_once()]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Christian Kujau <lists@nerdbynature.de>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Cc: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/bluetooth/hci_core.h |  1 +
- include/net/bluetooth/mgmt.h     |  1 +
- net/bluetooth/hci_core.c         |  6 +++++-
- net/bluetooth/mgmt.c             | 21 +++++++++++++++++++++
- 4 files changed, 28 insertions(+), 1 deletion(-)
+ fs/proc/kmsg.c         | 10 +++---
+ include/linux/syslog.h |  4 +--
+ kernel/printk.c        | 91 +++++++++++++++++++++++++++-----------------------
+ 3 files changed, 57 insertions(+), 48 deletions(-)
 
-diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
-index 9fc7728..e3fe61f 100644
---- a/include/net/bluetooth/hci_core.h
-+++ b/include/net/bluetooth/hci_core.h
-@@ -981,6 +981,7 @@ void hci_sock_dev_event(struct hci_dev *hdev, int event);
- int mgmt_control(struct sock *sk, struct msghdr *msg, size_t len);
- int mgmt_index_added(struct hci_dev *hdev);
- int mgmt_index_removed(struct hci_dev *hdev);
-+int mgmt_set_powered_failed(struct hci_dev *hdev, int err);
- int mgmt_powered(struct hci_dev *hdev, u8 powered);
- int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable);
- int mgmt_connectable(struct hci_dev *hdev, u8 connectable);
-diff --git a/include/net/bluetooth/mgmt.h b/include/net/bluetooth/mgmt.h
-index 23fd054..4ea860e 100644
---- a/include/net/bluetooth/mgmt.h
-+++ b/include/net/bluetooth/mgmt.h
-@@ -42,6 +42,7 @@
- #define MGMT_STATUS_NOT_POWERED		0x0f
- #define MGMT_STATUS_CANCELLED		0x10
- #define MGMT_STATUS_INVALID_INDEX	0x11
-+#define MGMT_STATUS_RFKILLED		0x12
+diff --git a/fs/proc/kmsg.c b/fs/proc/kmsg.c
+index bd4b5a7..bdfabda 100644
+--- a/fs/proc/kmsg.c
++++ b/fs/proc/kmsg.c
+@@ -21,12 +21,12 @@ extern wait_queue_head_t log_wait;
  
- struct mgmt_hdr {
- 	__le16	opcode;
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index de01610..448a574 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1097,11 +1097,15 @@ static const struct rfkill_ops hci_rfkill_ops = {
- static void hci_power_on(struct work_struct *work)
+ static int kmsg_open(struct inode * inode, struct file * file)
  {
- 	struct hci_dev *hdev = container_of(work, struct hci_dev, power_on);
-+	int err;
- 
- 	BT_DBG("%s", hdev->name);
- 
--	if (hci_dev_open(hdev->id) < 0)
-+	err = hci_dev_open(hdev->id);
-+	if (err < 0) {
-+		mgmt_set_powered_failed(hdev, err);
- 		return;
-+	}
- 
- 	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
- 		schedule_delayed_work(&hdev->power_off,
-diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
-index ec098bd..6406d7e 100644
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2912,6 +2912,27 @@ int mgmt_powered(struct hci_dev *hdev, u8 powered)
- 	return err;
+-	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_FILE);
++	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_PROC);
  }
  
-+int mgmt_set_powered_failed(struct hci_dev *hdev, int err)
+ static int kmsg_release(struct inode * inode, struct file * file)
+ {
+-	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_FILE);
++	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_PROC);
+ 	return 0;
+ }
+ 
+@@ -34,15 +34,15 @@ static ssize_t kmsg_read(struct file *file, char __user *buf,
+ 			 size_t count, loff_t *ppos)
+ {
+ 	if ((file->f_flags & O_NONBLOCK) &&
+-	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
++	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
+ 		return -EAGAIN;
+-	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
++	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_PROC);
+ }
+ 
+ static unsigned int kmsg_poll(struct file *file, poll_table *wait)
+ {
+ 	poll_wait(file, &log_wait, wait);
+-	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
++	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
+ 		return POLLIN | POLLRDNORM;
+ 	return 0;
+ }
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 3891139..98a3153 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -44,8 +44,8 @@
+ /* Return size of the log buffer */
+ #define SYSLOG_ACTION_SIZE_BUFFER   10
+ 
+-#define SYSLOG_FROM_CALL 0
+-#define SYSLOG_FROM_FILE 1
++#define SYSLOG_FROM_READER           0
++#define SYSLOG_FROM_PROC             1
+ 
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
+ 
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 46f0c2c..5758501 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -357,6 +357,53 @@ static void log_store(int facility, int level,
+ 	log_next_seq++;
+ }
+ 
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
++int dmesg_restrict = 1;
++#else
++int dmesg_restrict;
++#endif
++
++static int syslog_action_restricted(int type)
 +{
-+	struct pending_cmd *cmd;
-+	u8 status;
-+
-+	cmd = mgmt_pending_find(MGMT_OP_SET_POWERED, hdev);
-+	if (!cmd)
-+		return -ENOENT;
-+
-+	if (err == -ERFKILL)
-+		status = MGMT_STATUS_RFKILLED;
-+	else
-+		status = MGMT_STATUS_FAILED;
-+
-+	err = cmd_status(cmd->sk, hdev->id, MGMT_OP_SET_POWERED, status);
-+
-+	mgmt_pending_remove(cmd);
-+
-+	return err;
++	if (dmesg_restrict)
++		return 1;
++	/*
++	 * Unless restricted, we allow "read all" and "get buffer size"
++	 * for everybody.
++	 */
++	return type != SYSLOG_ACTION_READ_ALL &&
++	       type != SYSLOG_ACTION_SIZE_BUFFER;
 +}
 +
- int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable)
++static int check_syslog_permissions(int type, bool from_file)
++{
++	/*
++	 * If this is from /proc/kmsg and we've already opened it, then we've
++	 * already done the capabilities checks at open time.
++	 */
++	if (from_file && type != SYSLOG_ACTION_OPEN)
++		return 0;
++
++	if (syslog_action_restricted(type)) {
++		if (capable(CAP_SYSLOG))
++			return 0;
++		/*
++		 * For historical reasons, accept CAP_SYS_ADMIN too, with
++		 * a warning.
++		 */
++		if (capable(CAP_SYS_ADMIN)) {
++			pr_warn_once("%s (%d): Attempt to access syslog with "
++				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
++				     "(deprecated).\n",
++				 current->comm, task_pid_nr(current));
++			return 0;
++		}
++		return -EPERM;
++	}
++	return security_syslog(type);
++}
++
++
+ /* /dev/kmsg - userspace message inject/listen interface */
+ struct devkmsg_user {
+ 	u64 seq;
+@@ -592,7 +639,8 @@ static int devkmsg_open(struct inode *inode, struct file *file)
+ 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
+ 		return 0;
+ 
+-	err = security_syslog(SYSLOG_ACTION_READ_ALL);
++	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
++				       SYSLOG_FROM_READER);
+ 	if (err)
+ 		return err;
+ 
+@@ -759,45 +807,6 @@ static inline void boot_delay_msec(void)
+ }
+ #endif
+ 
+-#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+-int dmesg_restrict = 1;
+-#else
+-int dmesg_restrict;
+-#endif
+-
+-static int syslog_action_restricted(int type)
+-{
+-	if (dmesg_restrict)
+-		return 1;
+-	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
+-	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
+-}
+-
+-static int check_syslog_permissions(int type, bool from_file)
+-{
+-	/*
+-	 * If this is from /proc/kmsg and we've already opened it, then we've
+-	 * already done the capabilities checks at open time.
+-	 */
+-	if (from_file && type != SYSLOG_ACTION_OPEN)
+-		return 0;
+-
+-	if (syslog_action_restricted(type)) {
+-		if (capable(CAP_SYSLOG))
+-			return 0;
+-		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+-		if (capable(CAP_SYS_ADMIN)) {
+-			printk_once(KERN_WARNING "%s (%d): "
+-				 "Attempt to access syslog with CAP_SYS_ADMIN "
+-				 "but no CAP_SYSLOG (deprecated).\n",
+-				 current->comm, task_pid_nr(current));
+-			return 0;
+-		}
+-		return -EPERM;
+-	}
+-	return 0;
+-}
+-
+ #if defined(CONFIG_PRINTK_TIME)
+ static bool printk_time = 1;
+ #else
+@@ -1195,7 +1204,7 @@ out:
+ 
+ SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
  {
- 	struct cmd_lookup match = { NULL, hdev };
+-	return do_syslog(type, buf, len, SYSLOG_FROM_CALL);
++	return do_syslog(type, buf, len, SYSLOG_FROM_READER);
+ }
+ 
+ static bool __read_mostly ignore_loglevel;
 -- 
 1.8.1.2
 
