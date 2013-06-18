@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab3FRQQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:16:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49346 "EHLO
+	id S933067Ab3FRQOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:14:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49271 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933081Ab3FRQOt (ORCPT
+	with ESMTP id S1756153Ab3FRQOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:49 -0400
+	Tue, 18 Jun 2013 12:14:39 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 25/26] powerpc: Fix stack overflow crash in resume_kernel when ftracing
-Date: Tue, 18 Jun 2013 09:15:05 -0700
-Message-Id: <20130618161238.626277186@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/26] CPU hotplug: provide a generic helper to disable/enable CPU hotplug
+Date: Tue, 18 Jun 2013 09:14:51 -0700
+Message-Id: <20130618161233.459956541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -29,116 +34,138 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit 0e37739b1c96d65e6433998454985de994383019 upstream.
+commit 16e53dbf10a2d7e228709a7286310e629ede5e45 upstream.
 
-It's possible for us to crash when running with ftrace enabled, eg:
+There are instances in the kernel where we would like to disable CPU
+hotplug (from sysfs) during some important operation.  Today the freezer
+code depends on this and the code to do it was kinda tailor-made for
+that.
 
-  Bad kernel stack pointer bffffd12 at c00000000000a454
-  cpu 0x3: Vector: 300 (Data Access) at [c00000000ffe3d40]
-      pc: c00000000000a454: resume_kernel+0x34/0x60
-      lr: c00000000000335c: performance_monitor_common+0x15c/0x180
-      sp: bffffd12
-     msr: 8000000000001032
-     dar: bffffd12
-   dsisr: 42000000
+Restructure the code and make it generic enough to be useful for other
+usecases too.
 
-If we look at current's stack (paca->__current->stack) we see it is
-equal to c0000002ecab0000. Our stack is 16K, and comparing to
-paca->kstack (c0000002ecab3e30) we can see that we have overflowed our
-kernel stack. This leads to us writing over our struct thread_info, and
-in this case we have corrupted thread_info->flags and set
-_TIF_EMULATE_STACK_STORE.
-
-Dumping the stack we see:
-
-  3:mon> t c0000002ecab0000
-  [c0000002ecab0000] c00000000002131c .performance_monitor_exception+0x5c/0x70
-  [c0000002ecab0080] c00000000000335c performance_monitor_common+0x15c/0x180
-  --- Exception: f01 (Performance Monitor) at c0000000000fb2ec .trace_hardirqs_off+0x1c/0x30
-  [c0000002ecab0370] c00000000016fdb0 .trace_graph_entry+0xb0/0x280 (unreliable)
-  [c0000002ecab0410] c00000000003d038 .prepare_ftrace_return+0x98/0x130
-  [c0000002ecab04b0] c00000000000a920 .ftrace_graph_caller+0x14/0x28
-  [c0000002ecab0520] c0000000000d6b58 .idle_cpu+0x18/0x90
-  [c0000002ecab05a0] c00000000000a934 .return_to_handler+0x0/0x34
-  [c0000002ecab0620] c00000000001e660 .timer_interrupt+0x160/0x300
-  [c0000002ecab06d0] c0000000000025dc decrementer_common+0x15c/0x180
-  --- Exception: 901 (Decrementer) at c0000000000104d4 .arch_local_irq_restore+0x74/0xa0
-  [c0000002ecab09c0] c0000000000fe044 .trace_hardirqs_on+0x14/0x30 (unreliable)
-  [c0000002ecab0fb0] c00000000016fe3c .trace_graph_entry+0x13c/0x280
-  [c0000002ecab1050] c00000000003d038 .prepare_ftrace_return+0x98/0x130
-  [c0000002ecab10f0] c00000000000a920 .ftrace_graph_caller+0x14/0x28
-  [c0000002ecab1160] c0000000000161f0 .__ppc64_runlatch_on+0x10/0x40
-  [c0000002ecab11d0] c00000000000a934 .return_to_handler+0x0/0x34
-  --- Exception: 901 (Decrementer) at c0000000000104d4 .arch_local_irq_restore+0x74/0xa0
-
-  ... and so on
-
-__ppc64_runlatch_on() is called from RUNLATCH_ON in the exception entry
-path. At that point the irq state is not consistent, ie. interrupts are
-hard disabled (by the exception entry), but the paca soft-enabled flag
-may be out of sync.
-
-This leads to the local_irq_restore() in trace_graph_entry() actually
-enabling interrupts, which we do not want. Because we have not yet
-reprogrammed the decrementer we immediately take another decrementer
-exception, and recurse.
-
-The fix is twofold. Firstly make sure we call DISABLE_INTS before
-calling RUNLATCH_ON. The badly named DISABLE_INTS actually reconciles
-the irq state in the paca with the hardware, making it safe again to
-call local_irq_save/restore().
-
-Although that should be sufficient to fix the bug, we also mark the
-runlatch routines as notrace. They are called very early in the
-exception entry and we are asking for trouble tracing them. They are
-also fairly uninteresting and tracing them just adds unnecessary
-overhead.
-
-[ This regression was introduced by fe1952fc0afb9a2e4c79f103c08aef5d13db1873
-  "powerpc: Rework runlatch code" by myself --BenH
-]
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/exception-64s.h |    2 +-
- arch/powerpc/kernel/process.c            |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/cpu.h |    4 +++
+ kernel/cpu.c        |   55 +++++++++++++++++++++-------------------------------
+ 2 files changed, 27 insertions(+), 32 deletions(-)
 
---- a/arch/powerpc/include/asm/exception-64s.h
-+++ b/arch/powerpc/include/asm/exception-64s.h
-@@ -320,7 +320,7 @@ label##_common:							\
-  */
- #define STD_EXCEPTION_COMMON_ASYNC(trap, label, hdlr)		  \
- 	EXCEPTION_COMMON(trap, label, hdlr, ret_from_except_lite, \
--			 FINISH_NAP;RUNLATCH_ON;DISABLE_INTS)
-+			 FINISH_NAP;DISABLE_INTS;RUNLATCH_ON)
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -177,6 +177,8 @@ extern struct bus_type cpu_subsys;
  
- /*
-  * When the idle code in power4_idle puts the CPU into NAP mode,
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -1218,7 +1218,7 @@ EXPORT_SYMBOL(dump_stack);
+ extern void get_online_cpus(void);
+ extern void put_online_cpus(void);
++extern void cpu_hotplug_disable(void);
++extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+ #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
+ #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+@@ -199,6 +201,8 @@ static inline void cpu_hotplug_driver_un
  
- #ifdef CONFIG_PPC64
- /* Called with hard IRQs off */
--void __ppc64_runlatch_on(void)
-+void notrace __ppc64_runlatch_on(void)
- {
- 	struct thread_info *ti = current_thread_info();
- 	unsigned long ctrl;
-@@ -1231,7 +1231,7 @@ void __ppc64_runlatch_on(void)
+ #define get_online_cpus()	do { } while (0)
+ #define put_online_cpus()	do { } while (0)
++#define cpu_hotplug_disable()	do { } while (0)
++#define cpu_hotplug_enable()	do { } while (0)
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -124,6 +124,27 @@ static void cpu_hotplug_done(void)
+ 	mutex_unlock(&cpu_hotplug.lock);
  }
  
- /* Called with hard IRQs off */
--void __ppc64_runlatch_off(void)
-+void notrace __ppc64_runlatch_off(void)
- {
- 	struct thread_info *ti = current_thread_info();
- 	unsigned long ctrl;
++/*
++ * Wait for currently running CPU hotplug operations to complete (if any) and
++ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
++ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
++ * hotplug path before performing hotplug operations. So acquiring that lock
++ * guarantees mutual exclusion from any currently running hotplug operations.
++ */
++void cpu_hotplug_disable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
++
++void cpu_hotplug_enable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
+ #else /* #if CONFIG_HOTPLUG_CPU */
+ static void cpu_hotplug_begin(void) {}
+ static void cpu_hotplug_done(void) {}
+@@ -479,36 +500,6 @@ static int __init alloc_frozen_cpus(void
+ core_initcall(alloc_frozen_cpus);
+ 
+ /*
+- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+- * to continue until any currently running CPU hotplug operation gets
+- * completed.
+- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+- * CPU hotplug path and released only after it is complete. Thus, we
+- * (and hence the freezer) will block here until any currently running CPU
+- * hotplug operation gets completed.
+- */
+-void cpu_hotplug_disable_before_freeze(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 1;
+-	cpu_maps_update_done();
+-}
+-
+-
+-/*
+- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+- * disabled while beginning to freeze tasks).
+- */
+-void cpu_hotplug_enable_after_thaw(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 0;
+-	cpu_maps_update_done();
+-}
+-
+-/*
+  * When callbacks for CPU hotplug notifications are being executed, we must
+  * ensure that the state of the system with respect to the tasks being frozen
+  * or not, as reported by the notification, remains unchanged *throughout the
+@@ -527,12 +518,12 @@ cpu_hotplug_pm_callback(struct notifier_
+ 
+ 	case PM_SUSPEND_PREPARE:
+ 	case PM_HIBERNATION_PREPARE:
+-		cpu_hotplug_disable_before_freeze();
++		cpu_hotplug_disable();
+ 		break;
+ 
+ 	case PM_POST_SUSPEND:
+ 	case PM_POST_HIBERNATION:
+-		cpu_hotplug_enable_after_thaw();
++		cpu_hotplug_enable();
+ 		break;
+ 
+ 	default:
 
 
