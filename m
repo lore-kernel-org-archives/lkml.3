@@ -1,150 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab3FRT2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:28:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36289 "EHLO mx1.redhat.com"
+	id S933220Ab3FRT3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:29:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27723 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab3FRT2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:28:02 -0400
-Date: Tue, 18 Jun 2013 21:22:14 +0200
+	id S932391Ab3FRT3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 15:29:02 -0400
+Date: Tue, 18 Jun 2013 21:24:14 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] tracing/perf: reimplement TP_perf_assign() logic
-Message-ID: <20130618192214.GA19473@redhat.com>
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [PATCH 2/3] tracing/kprobes: Kill probe_enable_lock
+Message-ID: <20130618192414.GA19488@redhat.com>
+References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com> <51BFD6EF.1060805@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130618192147.GA19443@redhat.com>
+In-Reply-To: <51BFD6EF.1060805@hitachi.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TP_perf_assign/__perf_xxx is used to change the default values
-of __addr/__count/__task variables for perf_trace_buf_submit().
+On 06/18, Masami Hiramatsu wrote:
+>
+> Oh, I agree with removing probe_enable_lock itself :)
+> I just concerned only about the exceptional case of __init test
+> function, which can mislead someone to use enable/disable_trace_probe
+> at other racy point.
 
-Unfortunately, TP_perf_assign() is called "too late", we want to
-have a fast-path "__task != NULL" check in perf_trace_##call() at
-the start. So this patch simply embeds __perf_xxx() into TP_ARGS(),
-this way DECLARE_EVENT_CLASS() can use the result of assignments
-hidden in "args" right after ftrace_get_offsets_##call() which is
-mostly trivial.
+Ah, understand.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/trace/events/sched.h |   16 +++-------------
- include/trace/ftrace.h       |   19 +++++++++++--------
- 2 files changed, 14 insertions(+), 21 deletions(-)
+OK, I'll send v2 with the updated comments plus the additional patch
+tomorrow.
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 249c024..2e7d994 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -57,7 +57,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 
- 	TP_PROTO(struct task_struct *p, int success),
- 
--	TP_ARGS(p, success),
-+	TP_ARGS(__perf_task(p), success),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
-@@ -73,9 +73,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__entry->prio		= p->prio;
- 		__entry->success	= success;
- 		__entry->target_cpu	= task_cpu(p);
--	)
--	TP_perf_assign(
--		__perf_task(p);
- 	),
- 
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-@@ -313,7 +310,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 delay),
- 
--	TP_ARGS(tsk, delay),
-+	TP_ARGS(__perf_task(tsk), __perf_count(delay)),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -325,10 +322,6 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
- 		__entry->pid	= tsk->pid;
- 		__entry->delay	= delay;
--	)
--	TP_perf_assign(
--		__perf_count(delay);
--		__perf_task(tsk);
- 	),
- 
- 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
-@@ -376,7 +369,7 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
--	TP_ARGS(tsk, runtime, vruntime),
-+	TP_ARGS(tsk, __perf_count(runtime), vruntime),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -390,9 +383,6 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 		__entry->pid		= tsk->pid;
- 		__entry->runtime	= runtime;
- 		__entry->vruntime	= vruntime;
--	)
--	TP_perf_assign(
--		__perf_count(runtime);
- 	),
- 
- 	TP_printk("comm=%s pid=%d runtime=%Lu [ns] vruntime=%Lu [ns]",
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index aed594a..8886877 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -503,8 +503,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
- 
--#undef TP_perf_assign
--#define TP_perf_assign(args...)
-+#undef __perf_addr
-+#define __perf_addr(a)	(a)
-+
-+#undef __perf_count
-+#define __perf_count(c)	(c)
-+
-+#undef __perf_task
-+#define __perf_task(t)	(t)
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -632,16 +638,13 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #define __get_str(field) (char *)__get_dynamic_array(field)
- 
- #undef __perf_addr
--#define __perf_addr(a) __addr = (a)
-+#define __perf_addr(a)	(__addr = (a))
- 
- #undef __perf_count
--#define __perf_count(c) __count = (c)
-+#define __perf_count(c)	(__count = (c))
- 
- #undef __perf_task
--#define __perf_task(t) __task = (t)
--
--#undef TP_perf_assign
--#define TP_perf_assign(args...) args
-+#define __perf_task(t)	(__task = (t))
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
--- 
-1.5.5.1
+Thanks!
+
+Oleg.
 
