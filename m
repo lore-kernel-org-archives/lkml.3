@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab3FREEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:04:22 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:37481 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750823Ab3FREEU (ORCPT
+	id S1751165Ab3FREFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:05:48 -0400
+Received: from nm17-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.168]:30914
+	"EHLO nm17-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750763Ab3FREFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:04:20 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <dmitry.torokhov@gmail.com>, <arnd@arndb.de>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>, <drwyrm@gmail.com>, <stefan@openezx.org>,
-        <laforge@openezx.org>, <robert.jarzmik@free.fr>,
-        <marek.vasut@gmail.com>, <sleep_walker@suse.cz>, <slapin@ossfans.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <xiechao.mail@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V3 2/5] arm: mmp: use matrix_keymap for all boards
-Date: Mon, 17 Jun 2013 23:56:15 -0400
-Message-ID: <1371527778-5236-3-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1371527778-5236-1-git-send-email-chao.xie@marvell.com>
-References: <1371527778-5236-1-git-send-email-chao.xie@marvell.com>
+	Tue, 18 Jun 2013 00:05:47 -0400
+X-Yahoo-Newman-Id: 184965.4618.bm@smtp105.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 8ekVoqIVM1k8NL.M9IP3zgO3l2LGAMVurvX8UOwlbl_hkj0
+ yinFHrXU9mPfd_bgSCJNVXEUWbTSHMQVcvW.ybZf7F6JivI6cXayxxd9yeyk
+ LuzMYp5kmZ6vHMjVDq95D.yols_HPduPYXx3OrkI4SsS0HlZX_E3FV222UcG
+ CxO66_FwcUa4Wf0S__TjnQbEK3mKq.wyY3cGIpoezgJv5TVBVSd8aYKkpJSD
+ E81b3g49WBf83.OO3_vKUc89YFPQ9vBmqSSoMSho9nqLFoeexHYg97sRabfz
+ .LYuL5TfD0rnM.ETSffmdL79FdGXBGOTVYI_B7_azDcRkxWUtkPv6sy12kFf
+ 2vYC4L8JPYuauBOoHnnpnnQmMKWMDvgqa_4GwHu.Xs0R7soXdAMl61nB6odn
+ lWFjWNXFO2C.401hctK5GExy8O2ZDupe.A2CqV_3YhmucRk5i97uaH6EKHoS
+ _V_vJh7aNkO87hTVWUwQ61n3JfS0dk31eEgrPGa5uvUqwKpTQ46YNhEviLCo
+ aMYfWsxEsXlPD.qkohGAf7MejeWrqb9d.6LWMhzJA_15r.8nk6RGYhxDzL._
+ 0jFV1LAHt5iCD68PhL0Xhj60gHpM_B9o-
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp105.sbc.mail.gq1.yahoo.com with SMTP; 17 Jun 2013 21:05:47 -0700 PDT
+Date: Mon, 17 Jun 2013 21:05:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        nirinA raseliarison <nirina.raseliarison@gmail.com>,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] firmware loader: fix use-after-free by double abort
+Message-ID: <20130618040547.GB12181@roeck-us.net>
+References: <1371285398-18566-1-git-send-email-ming.lei@canonical.com>
+ <20130617235915.GA19162@kroah.com>
+ <CACVXFVNahZpH-FdZ=NJ1HZybDCSuoV2aZM2--gBVMD22FVBJcQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNahZpH-FdZ=NJ1HZybDCSuoV2aZM2--gBVMD22FVBJcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compile passed for the configuration
+On Tue, Jun 18, 2013 at 08:33:55AM +0800, Ming Lei wrote:
+> On Tue, Jun 18, 2013 at 7:59 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Sat, Jun 15, 2013 at 04:36:38PM +0800, Ming Lei wrote:
+> >> fw_priv->buf is accessed in both request_firmware_load() and
+> >> writing to sysfs file of 'loading' context, but not protected
+> >> by 'fw_lock' entirely. The patch makes sure that access on
+> >> 'fw_priv->buf' is protected by the lock.
+> >>
+> >> So fixes the double abort problem reported by nirinA raseliarison:
+> >>
+> >>       http://lkml.org/lkml/2013/6/14/188
+> >>
+> >> Reported-and-tested-by: nirinA raseliarison <nirina.raseliarison@gmail.com>
+> >> Cc: Guenter Roeck <linux@roeck-us.net>
+> >> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >> Cc: stable <stable@vger.kernel.org>
+> >> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> >
+> > So this is a 3.9-stable thing?  Anything newer than that?
+> 
+> Yes, only 3.9-stable need this.
+> 
+I may be missing something, but why would mainline not need it ?
+Or do you mean "mainline plus 3.9" ?
 
-pxa168_defconfig
-  aspenite.c(MACH_ASPENITE), teton_bgs.c(MACH_TENTON_BGA)
-
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- arch/arm/mach-mmp/aspenite.c  |   10 +++++++---
- arch/arm/mach-mmp/teton_bga.c |   10 +++++++---
- 2 files changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
-index 9f64d56..1e23346 100644
---- a/arch/arm/mach-mmp/aspenite.c
-+++ b/arch/arm/mach-mmp/aspenite.c
-@@ -205,7 +205,7 @@ struct pxa168fb_mach_info aspenite_lcd_info = {
- 	.invert_pixclock	= 0,
- };
- 
--static unsigned int aspenite_matrix_key_map[] = {
-+static const unsigned int aspenite_matrix_key_map[] = {
- 	KEY(0, 6, KEY_UP),	/* SW 4 */
- 	KEY(0, 7, KEY_DOWN),	/* SW 5 */
- 	KEY(1, 6, KEY_LEFT),	/* SW 6 */
-@@ -214,11 +214,15 @@ static unsigned int aspenite_matrix_key_map[] = {
- 	KEY(4, 7, KEY_ESC),	/* SW 9 */
- };
- 
-+static struct matrix_keymap_data aspenite_matrix_keymap_data = {
-+	.keymap			= aspenite_matrix_key_map,
-+	.keymap_size		= ARRAY_SIZE(aspenite_matrix_key_map),
-+};
-+
- static struct pxa27x_keypad_platform_data aspenite_keypad_info __initdata = {
- 	.matrix_key_rows	= 5,
- 	.matrix_key_cols	= 8,
--	.matrix_key_map		= aspenite_matrix_key_map,
--	.matrix_key_map_size	= ARRAY_SIZE(aspenite_matrix_key_map),
-+	.matrix_keymap_data	= &aspenite_matrix_keymap_data,
- 	.debounce_interval	= 30,
- };
- 
-diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
-index 8609967..2021769 100644
---- a/arch/arm/mach-mmp/teton_bga.c
-+++ b/arch/arm/mach-mmp/teton_bga.c
-@@ -49,18 +49,22 @@ static unsigned long teton_bga_pin_config[] __initdata = {
- 	GPIO78_GPIO,
- };
- 
--static unsigned int teton_bga_matrix_key_map[] = {
-+static const unsigned int teton_bga_matrix_key_map[] = {
- 	KEY(0, 6, KEY_ESC),
- 	KEY(0, 7, KEY_ENTER),
- 	KEY(1, 6, KEY_LEFT),
- 	KEY(1, 7, KEY_RIGHT),
- };
- 
-+static struct matrix_keymap_data teton_bga_matrix_keymap_data = {
-+	.keymap			= teton_bga_matrix_key_map,
-+	.keymap_size		= ARRAY_SIZE(teton_bga_matrix_key_map),
-+};
-+
- static struct pxa27x_keypad_platform_data teton_bga_keypad_info __initdata = {
- 	.matrix_key_rows        = 2,
- 	.matrix_key_cols        = 8,
--	.matrix_key_map         = teton_bga_matrix_key_map,
--	.matrix_key_map_size    = ARRAY_SIZE(teton_bga_matrix_key_map),
-+	.matrix_keymap_data	= &teton_bga_matrix_keymap_data,
- 	.debounce_interval      = 30,
- };
- 
--- 
-1.7.4.1
-
+Thanks,
+Guenter
