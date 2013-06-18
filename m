@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3FROly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:41:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755058Ab3FROlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:41:53 -0400
-Date: Tue, 18 Jun 2013 10:40:20 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com,
-        mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Another RCU trace. (3.10-rc5)
-Message-ID: <20130618144020.GB1313@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com,
-	mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-References: <20130610195145.GA26068@redhat.com>
- <20130610203355.GO5146@linux.vnet.ibm.com>
- <20130610210123.GA27154@redhat.com>
- <1370899008.9844.126.camel@gandalf.local.home>
- <20130618095821.GJ3204@twins.programming.kicks-ass.net>
+	id S1754754Ab3FROn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:43:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45468 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752691Ab3FROn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:43:57 -0400
+Date: Tue, 18 Jun 2013 10:43:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Yuan-Hsin Chen <yuanlmm@gmail.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>, Felipe Balbi <balbi@ti.com>,
+        <florian@openwrt.org>, USB list <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, ratbert <ratbert.chuang@gmail.com>,
+        =?UTF-8?B?Sm9obiBGZW5nLUhzaW4gQ2hpYW5nKOaxn+WzsOiIiCk=?= 
+	<john453@faraday-tech.com>
+Subject: Re: [PATCH] usb: host: Faraday fotg210-hcd driver
+In-Reply-To: <CADB-GoKACJnearpDL+kxxsW6ez=2cbP0UDgbZNL+uNN0bswDog@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1306181039440.1157-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618095821.GJ3204@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 11:58:21AM +0200, Peter Zijlstra wrote:
+On Tue, 18 Jun 2013, Yuan-Hsin Chen wrote:
 
- > > Peter, Are you going to take the preempt_schedule_context() patch?
- > 
- > I have it queued, I just seem to have some problems locating Ingo to
- > stuff patches into -tip :/
- > 
- > Will continue prodding.. Ingo if you're reading! :-)
+> > In that case, no, you should be figuring out how to refactor and reuse
+> > the EHCI code instead of copying it straight into your driver.
+> 
+> I was trying to use ehci-platform.c, anonymous union/struct, and quirk
+> flags to avoid copying EHCI code.
+> But there are too big incompatibilities between fotg210/fusbh200
+> controller and EHCI.
+> That's why Alan agreed that I could create a stand-alone driver for
+> fusbh200 host controller.
+> Since fotg210 and fusbh200 have the same issue,  fotg210 hcd is
+> supposed to be stand-alone.
+> More details please refer to mail sequence
+> http://www.spinics.net/lists/linux-usb/msg83812.html
 
-There's a bunch of other stuff in tip pending pushing to Linus too,
-including a bunch of fixes in timers/urgent that have been there
-over a month.
+That's right.  The patch's description mentions some of the
+incompatibilities.  In short, the Faraday controllers are a _very_
+noncompliant EHCI variant.  The changes needed to make ehci-hcd work
+with them were too invasive IMO.
 
-Ingo hasn't posted since the 3rd, maybe he's sick/on vacation.
-Does anyone else do pushes from tip->Linus ?  tglx ?
+It's a shame, because so much of the code is the same.  It makes you 
+want to go back and ask those Faraday engineers what they were thinking 
+of at the time.
 
-	Dave
+Alan Stern
 
