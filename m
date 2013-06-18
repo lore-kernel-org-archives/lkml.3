@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab3FRJxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:53:19 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:59987 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3FRJxS (ORCPT
+	id S1755744Ab3FRJyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:54:19 -0400
+Received: from smtp.chinaemail.cn ([218.5.74.238]:41678 "EHLO
+	smtp.chinaemail.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab3FRJyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:53:18 -0400
+	Tue, 18 Jun 2013 05:54:17 -0400
+Date: Tue, 18 Jun 2013 17:54:52 +0800
+From: "Coqozv" <sales5@feitengmetal.com>
+Reply-To: hzxh@xhindustry.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: paper supplier
+Message-ID: <201306181754522033134@feitengmetal.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Date: Tue, 18 Jun 2013 17:53:16 +0800
-Message-ID: <CAPgLHd_vfuN7Uenprrc_230MbyR7hAg+D4NCSSKEfcGNDtbS_Q@mail.gmail.com>
-Subject: [PATCH -next] Staging: netlogic: fix missing free_netdev() on error
- in xlr_net_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org, ganesanr@broadcom.com,
-        tushar.behera@linaro.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="GB2312"
+X-MID: 1995754587.1142572843.2.1371549244.416164.22590
+X-Rate: Yes
+X-Real-From: sales5@feitengmetal.com
+X-Rcpt: ,linux-kernel@vger.kernel.org,
+X-Mop-Send: ,hzft@feitengmetal.com,
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5I9sOOL030022
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Dear Purchasing manager:
+Nice time to you
 
-Fix missing free_netdev() before return from function xlr_net_probe()
-in the devm_ioremap_resource() error handling case.
+It is my big pleasure to hear you need A4 paper
+we are the leading supplier from China
+If you still need that pls tell me
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
-no compile test.
----
- drivers/staging/netlogic/xlr_net.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Then i can send you our best price
+Best wishes
+Zara
 
-diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
-index b529d79..2acde54 100644
---- a/drivers/staging/netlogic/xlr_net.c
-+++ b/drivers/staging/netlogic/xlr_net.c
-@@ -1023,9 +1023,9 @@ static int xlr_net_probe(struct platform_device *pdev)
- 	ndev->base_addr = (unsigned long) devm_ioremap_resource
- 		(&pdev->dev, res);
- 	if (IS_ERR_VALUE(ndev->base_addr)) {
--		dev_err(&pdev->dev,
--				"devm_ioremap_resource failed\n");
--		return ndev->base_addr;
-+		dev_err(&pdev->dev, "devm_ioremap_resource failed\n");
-+		err = ndev->base_addr;
-+		goto err_gmac;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+Zara Wang
 
+SALES MANAGER
+
+HANGZHOU XINHAO INDUSTRY CO., LIMITED 
+
+SKYPE: hzxinhao
+
+Email:hzxh@xhindustry.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
