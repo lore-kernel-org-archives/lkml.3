@@ -1,167 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab3FRReb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:34:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51913 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933128Ab3FRRe3 convert rfc822-to-8bit (ORCPT
+	id S1756373Ab3FRRfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:35:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54251 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752400Ab3FRRfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:34:29 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
- and then only request irq
-Thread-Topic: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
- exists and then only request irq
-Thread-Index: AQHObAxY8SVidqm7fEWvMR88AcSmApk7GTuAgACV5XD//3+CgIAAhmbw//99ooCAAIbxQA==
-Date: Tue, 18 Jun 2013 17:33:49 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EC5DB@DBDE04.ent.ti.com>
-References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
- <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
- <51C0820B.4020404@wwwdotorg.org>
- <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
- <51C093FF.6000204@wwwdotorg.org>
- <DC88CAD03C0052499C1907B327FC63229EC5B4@DBDE04.ent.ti.com>
- <51C09761.1020704@wwwdotorg.org>
-In-Reply-To: <51C09761.1020704@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Jun 2013 13:35:46 -0400
+Date: Tue, 18 Jun 2013 18:35:40 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Message-ID: <20130618173540.GP4752@decadent.org.uk>
+References: <20130618161725.912524266@linuxfoundation.org>
+ <20130618161727.767561192@linuxfoundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618161727.767561192@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 13/48] s390/pci: Implement IRQ functions if !PCI
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Tuesday, June 18, 2013 10:53 PM
-> To: J, KEERTHY
-> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
-> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; gg@slimlogic.co.uk
-> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
-> exists and then only request irq
+On Tue, Jun 18, 2013 at 09:17:39AM -0700, Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> On 06/18/2013 11:19 AM, J, KEERTHY wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Tuesday, June 18, 2013 10:38 PM
-> >> To: J, KEERTHY
-> >> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> >> ldewangan@nvidia.com; sameo@linux.intel.com;
-> >> grant.likely@secretlab.ca; swarren@nvidia.com;
-> >> linux-kernel@vger.kernel.org; linux- doc@vger.kernel.org;
-> >> gg@slimlogic.co.uk
-> >> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts
-> property
-> >> exists and then only request irq
-> >>
-> >> On 06/18/2013 10:54 AM, J, KEERTHY wrote:
-> >>> Hi Stephen,
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >>>> Sent: Tuesday, June 18, 2013 9:22 PM
-> >>>> To: J, KEERTHY
-> >>>> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
-> >>>> ldewangan@nvidia.com; sameo@linux.intel.com;
-> >>>> grant.likely@secretlab.ca; swarren@nvidia.com;
-> >>>> linux-kernel@vger.kernel.org; linux- doc@vger.kernel.org;
-> >>>> gg@slimlogic.co.uk
-> >>>> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts
-> >> property
-> >>>> exists and then only request irq
-> >>>>
-> >>>> On 06/18/2013 04:01 AM, J Keerthy wrote:
-> >>>>> Check if interrupts property exists and then only request irq.
-> >>>>> On some boards INT line might not be connected to a valid irq
-> line
-> >>>>> on the application processor. Hence keeping a check before
-> >>>>> requesting irq.
-> >>>>
-> >>>> When there is no interrupts property, surely i2c->irq == 0, which
-> >>>> is an invalid IRQ, and hence there's no need to check this before
-> >>>> copying the value?
-> >>>
-> >>> The intent here is NOT to request irq with 0 or Invalid IRQ.
-> >>
-> >> Sure.
-> >>
-> >>> The board File will not populate the interrupts entry if the INT
-> >>> line is not Connected.
-> >>
-> >> Do you mean the interrupts DT property won't be present if there is
-> >> no interrupt. If so, sure.
-> >
-> > Yes.
-> >
-> >>
-> >>> Hence the patch checks for the 'interrupts' property.
-> >>
-> >> That shouldn't be necessary; IIRC, the I2C core has already parsed
-> >> the interrupts property if there was one, and if there wasn't, it
-> has
-> >> set
-> >> i2c->irq to some invalid value already.
-> >>
-> >> So, you simply need to check the value in i2c->irq, and don't need
-> to
-> >> look at the DT at all.
-> >
-> > Instead of checking the Invalid irq value which most likely can be 0.
-> > I am not sure.
-> > I am explicitly checking if the interrupts property exists or not.
-> >
-> > If not present then It throws out a warning. Either there is no Valid
-> > INT line connection or the DeviceTree was not populated fully.
-> >
-> > This additional piece of information is good to have in the driver
-> > IMHO. Let me know if this is rational enough to have in the driver.
+> 3.9-stable review patch.  If anyone has any objections, please let me know.
 > 
-> No, you should just check the IRQ number.
-
-Hmmm...so something like (!i2c->irq)
-
+> ------------------
 > 
-> Consider this:
+> From: Ben Hutchings <ben@decadent.org.uk>
 > 
-> If the device was instantiated from a board file *or* a device tree,
-> i2c->irq is correctly set. Hence, checking that value works in both
-> cases.
+> commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
 > 
-> If you check the interrupts DT property, that will only work if the
-> device was instantiated from device tree, and not if it was
-> instantiated from a board file; the property will never exist in the
-> board file case, and hence you'll never be able to have a board file
-> provide an interrupt.
+> All architectures must implement IRQ functions.  Since various
+> dependencies on !S390 were removed, there are various drivers that can
+> be selected but will fail to link.  Provide a dummy implementation of
+> these functions for the !PCI case.
+[...]
 
-The board file approach is getting deprecated for this. I
-Myself removed board file related pdata stuff in one of the patches.
+This breaks !SMP builds, so it's probably best to defer this until the
+following fix is in mainline.
 
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg90598.html
+Ben.
 
-So going the DeviceTree way.
-
-Regards,
-Keerthy
-
-
-
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
