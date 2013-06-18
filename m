@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab3FRMgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:36:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:51723 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250Ab3FRMgP (ORCPT
+	id S932349Ab3FRMho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:37:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34334 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab3FRMhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:36:15 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-9a-51c0543e4692
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "'Will Newton'" <will.newton@gmail.com>,
-        "'Bing Zhao'" <bzhao@marvell.com>,
-        "'Ashok Nagarajan'" <asnagarajan@chromium.org>,
-        "'Paul Stewart'" <pstew@chromium.org>,
-        "'Olof Johansson'" <olof@lixom.net>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
- <5146EAB0.1030705@samsung.com>
- <CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
- <515E88E3.5070507@samsung.com>
- <003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
- <CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
- <001601ce35b9$652c5870$2f850950$%jun@samsung.com>
- <CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
-In-reply-to: <CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
-Subject: RE: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
- STATE_DATA_ERROR
-Date: Tue, 18 Jun 2013 21:36:13 +0900
-Message-id: <001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5nn/4Mso4caoRfTTCn8q9BQfbxFgDpDP3A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t8zfV27kAOBBlceS1hsXhdvMW/rUVaL
-	7a83slmcXXaQzeLGrzZWi8u75rBZHPnfz2hx6vpnNosNd6eyWizcdIjNgctjdsNFFo+ds+6y
-	exy6spbR48qJJlaPyQsvMnv0bVnF6PF5k1wAexSXTUpqTmZZapG+XQJXxpvvO9gLfnBWtF44
-	ydzAeIO9i5GTQ0LAROLPpGVsELaYxIV764FsLg4hgWWMEhv3TWWCKfp7to8FIrGIUeL8tKNM
-	EM4fRon5E98zg1SxCWhJ/H3zBswWEdCWePlgJTNIEbPAKSaJyU/nMEJ0HGGW2PZ8GytIFadA
-	sMS0uS9YQGxhgWiJA207wI5iEVCVmDV/DlgNr4CtxIy7Z1ggbEGJH5PvgdnMAnoSH//cZoSw
-	5SU2r3kLtI0D6FZ1iUd/dSGOMJJ4v+kZVLmIxL4X78BukBCYyCHxbs8JqF0CEt8mH2KB6JWV
-	2HSAGeJlSYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi0z1ihNzi0vz0vWS
-	83M3MUJifuIOxvsHrA8xJgOtn8gsJZqcD0wZeSXxhsZmRhamJqbGRuaWZqQJK4nzqrdYBwoJ
-	pCeWpGanphakFsUXleakFh9iZOLglGpgzMwKVnnx9PxlpcjH3h5FhY/4Ch/l7dwTraK+4EPE
-	wZyoe83NmpmrvvaLerPE3pvJZOHT1nJy+67DU315rYpPqTMeLJgWeiil9M7Mjao/yh/M9T90
-	b5pxlkSMKc+1/rDii5qzz+79ue9Tfuuy64I93pY3kiO3Sh47lNxx0f3/xLs33VYZs4a9V2Ip
-	zkg01GIuKk4EAEPZRUYPAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJKsWRmVeSWpSXmKPExsVy+t9jAV27kAOBBn9vCVtsXhdvMW/rUVaL
-	7a83slmcXXaQzeLGrzZWi8u75rBZHPnfz2hx6vpnNosNd6eyWizcdIjNgctjdsNFFo+ds+6y
-	exy6spbR48qJJlaPyQsvMnv0bVnF6PF5k1wAe1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8
-	qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0H1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1D
-	guB6jAzQQMI6xow333ewF/zgrGi9cJK5gfEGexcjJ4eEgInE37N9LBC2mMSFe+vZuhi5OIQE
-	FjFKnJ92lAnC+cMoMX/ie2aQKjYBLYm/b96A2SIC2hIvH6xkBiliFjjFJDH56RxGiI4jzBLb
-	nm9jBaniFAiWmDb3BdgOYYFoiQNtO8B2swioSsyaPweshlfAVmLG3TMsELagxI/J98BsZgE9
-	iY9/bjNC2PISm9e8BdrGAXSrusSjv7oQRxhJvN/0DKpcRGLfi3eMExiFZiGZNAvJpFlIJs1C
-	0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBCeSa9g3FVg8UhRgEORiUe3gSx/YFC
-	rIllxZW5hxglOJiVRHhr/Q8ECvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MNnllcQbGpuY
-	GVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjhWrzxVzOQsZ5eZmf5k7i
-	PGrUIuJSYWP2/s4tXS2e9IPWoiYrH9m0c3mr7Dxj8vzMNeMNG7QUOdbL8Iifdk6+pFnAtvmv
-	dnrvrtT8DxZKAj/MvM7+OqnyQ7hPXPi258NdAR0/RSddfl4RtEjn2+szcj7bpHhunFK+fF/w
-	TsKcd6meQdGL99gpsRRnJBpqMRcVJwIAhRmVu2wDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Jun 2013 08:37:42 -0400
+Date: Tue, 18 Jun 2013 15:35:36 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>
+Subject: Re: [PATCH v7 5/9] ARM: OMAP: USB: Add phy binding information
+Message-ID: <20130618123536.GD8620@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1371113039-5784-1-git-send-email-kishon@ti.com>
+ <1371113039-5784-6-git-send-email-kishon@ti.com>
+ <20130618094438.GT5461@arwen.pp.htv.fi>
+ <51C030B4.5070707@ti.com>
+ <20130618102725.GB7843@arwen.pp.htv.fi>
+ <51C040E8.2050904@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MAH+hnPXVZWQ5cD/"
+Content-Disposition: inline
+In-Reply-To: <51C040E8.2050904@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 13, 2013, Doug Anderson wrote:
-> Seungwon,
-> 
-> On Wed, Apr 10, 2013 at 12:02 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> >> > There are two solutions we have applied.
+--MAH+hnPXVZWQ5cD/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Tue, Jun 18, 2013 at 04:43:44PM +0530, Kishon Vijay Abraham I wrote:
+> >On Tue, Jun 18, 2013 at 03:34:36PM +0530, Kishon Vijay Abraham I wrote:
+> >>On Tuesday 18 June 2013 03:14 PM, Felipe Balbi wrote:
+> >>>On Thu, Jun 13, 2013 at 02:13:55PM +0530, Kishon Vijay Abraham I wrote:
+> >>>>In order for controllers to get PHY in case of non dt boot, the phy
+> >>>>binding information (phy device name) should be added in the platform
+> >>>>data of the controller.
+> >>>>
+> >>>>Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >>>
+> >>>I would rather not pass strings around, any other way to handle this ?
+> >>>Why do you need to pass this string ?
 > >>
-> >> I'm a little confused.  Have you already applied one or both of the
-> >> solutions you list below, or are you proposing them as alternates to
-> >> the patch I submitted?
-> > Yes, first one already has been applied.
-> > I wanted to introduce our fix. Did you try to test with these fixes?
-> 
-> I'm coming back to this after being quite distracted for a while.
-> 
-> I'm a little confused in that you said that your first fix was already
-> applied.  I don't see it anywhere.  Did you mean that you've already
-> applied it locally, or that it's applied in some git tree somewhere?
-> If so, can you point me to it?
-> 
-> If this hasn't been sent out anywhere, perhaps you could send out
-> official patches?
-Currently, it has just applied for some projects, not official patch.
-> 
-> I don't have the failing unit myself, so we'll have to get Bing to try
-> the patches.  You are suggesting that we try applying both of your
-> patches, right?
-Did you test the patch?
-I wonder that both are good for your side.
+> >>Our old way of binding the controller and the phy using device name
+> >>started creating problems after the devices are created using
+> >>PLATFORM_DEVID_AUTO. Infact non-dt boot is broken in mainline for
+> >>OMAP3 platforms for which I have posted a RFC series
+> >>http://www.serverphorums.com/read.php?12,708632 which also uses
+> >>strings.
+> >>I'm not sure of any other way to deal with this.
+> >
+> >have you checked how other frameworks handle it ? Regulator has some
+> >sort of binding in board-files, but I guess it passes the regulator
+> >name?
+>=20
+> From whatever I could make of, regulator has 3 ways to get the
+> regulator one of which is using the binding in board-files (but it
+> also uses device name which could create the same problem that we are
+> facing).
+>=20
+> 1.) from dt data
+> 2.) from _supply_ name
+> 3.) from binding in board file
+>=20
+> (referred regulator_dev_lookup() in regulator/core.c)
 
-Thanks,
-Seungwon Jeon
-> 
-> -Doug
+right, spot on. Which means we don't have a better, more elegant
+solution now. Let's go ahead with this.
 
+--=20
+balbi
+
+--MAH+hnPXVZWQ5cD/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwFQYAAoJEIaOsuA1yqRE9mIQAI2MqozlRuRD5dPS+8PB7X/n
+szivthcudB8IORFZOcZcYungNvj8XALlJsDMpeP5GHMmNRHC2PCYXBrXSWgLFW0m
+OVOZ1KjmpyoY9ufcR/M0T9AmaSCQ2TrVF92Ey7JL09CW9vH6/4DZiva7Nlc79wJQ
+dltl8RWnltcDTOIKkzkkvwq9+cKequoiWk8j/sTK6EzYaXAb5XkegZIiRS+Taala
+ZszOvqd94Wh64SJePeT95YwlZNT+yu7B1FWsNyJ10JLQju1ldJggzTEEzgYR0eSr
+ljzMWJC10WHAGSNU5RqOpbYzBV9MQsDo3U91Azax08YkH8SHBxdPYcz91P2eoTF6
+h1DMLKg2cOl4Fo2vF02aY5pikhH0JL3JUkTCCgpu9CGmZrQjWMiuEezBracp28rc
+bd87cviLYFoN8AEju9LNgJDYwjJTBWcEmPuem4bkNqge6g0Qi9eovA5JolnTPBK3
+SNTcT+6nZLSPlZ8kfl/Bstvc3/53j1aM3OBjp1RGJyOIS33dTF/uRnCW+mMaXblt
+XT9WhIyTKjvA3kx8Y1T4BB/x/72+gPfVB1M1xBTLraU68stKJ/rCEHMLBHf20LkD
+3olvxVPa/iNRYzDnSseUgL6bxpBWtXstIXaGx9h2QjP3SKXzN4i9lR2ORYg+xbbr
+mUn/SY6GH/i1TsovMdcO
+=lCNm
+-----END PGP SIGNATURE-----
+
+--MAH+hnPXVZWQ5cD/--
