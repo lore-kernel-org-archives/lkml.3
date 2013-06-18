@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350Ab3FRQ7W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:59:22 -0400
-Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:55848 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933050Ab3FRQ7F (ORCPT
+	id S1756346Ab3FRRBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:01:54 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:44085 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab3FRRBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:59:05 -0400
-Message-ID: <51C091D6.8010608@mozilla.com>
-Date: Tue, 18 Jun 2013 12:59:02 -0400
-From: Dhaval Giani <dgiani@mozilla.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 13:01:52 -0400
+Date: Tue, 18 Jun 2013 19:01:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] hw_breakpoint: Introduce "struct bp_cpuinfo"
+Message-ID: <20130618170145.GI17619@somewhere.redhat.com>
+References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu>
+ <20130602194912.GA3277@redhat.com>
+ <20130602195057.GC3277@redhat.com>
+ <20130618123741.GC17619@somewhere.redhat.com>
+ <20130618144225.GA26920@redhat.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/8] Volatile Ranges (v8?)
-References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org> <51BF3827.4060606@mozilla.com> <20130618041100.GA3116@bbox>
-In-Reply-To: <20130618041100.GA3116@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618144225.GA26920@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-06-18 12:11 AM, Minchan Kim wrote:
-> Hello Dhaval,
->
-> On Mon, Jun 17, 2013 at 12:24:07PM -0400, Dhaval Giani wrote:
->> Hi John,
->>
->> I have been giving your git tree a whirl, and in order to simulate a
->> limited memory environment, I was using memory cgroups.
->>
->> The program I was using to test is attached here. It is your test
->> code, with some changes (changing the syscall interface, reducing
->> the memory pressure to be generated).
->>
->> I trapped it in a memory cgroup with 1MB memory.limit_in_bytes and hit this,
->>
->> [  406.207612] ------------[ cut here ]------------
->> [  406.207621] kernel BUG at mm/vrange.c:523!
->> [  406.207626] invalid opcode: 0000 [#1] SMP
->> [  406.207631] Modules linked in:
->> [  406.207637] CPU: 0 PID: 1579 Comm: volatile-test Not tainted
-> Thanks for the testing!
-> Does below patch fix your problem?
+On Tue, Jun 18, 2013 at 04:42:25PM +0200, Oleg Nesterov wrote:
+> On 06/18, Frederic Weisbecker wrote:
+> >
+> > On Sun, Jun 02, 2013 at 09:50:57PM +0200, Oleg Nesterov wrote:
+> > > This patch simply moves all per-cpu variables into the new single
+> > > per-cpu "struct bp_cpuinfo".
+> > >
+> > > To me this looks more logical and clean, but this can also simplify
+> > > the further potential changes. In particular, I do not think this
+> > > memory should be per-cpu, it is never used "locally". After this
+> > > change it is trivial to turn it into, say, bootmem[nr_cpu_ids].
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > I'm ok with the patch because it's indeed more logical and clean to pack the info
+> > to a single struct.
+> 
+> Great,
+> 
+> > But I'm not sure why you think using per-cpu is a problem. It's not only
+> > deemed for optimized local uses,
+> 
+> But it is.
+> 
+> Simplest example,
+> 
+> 	for_each_possible_cpu(cpu)
+> 		total_count = per_cpu(per_cpu_count, cpu);
+> 
+> Every per_cpu() likely means the cache miss. Not to mention we need the
+> additional math to calculate the address of the local counter.
+> 
+> 	for_each_possible_cpu(cpu)
+> 		total_count = bootmem_or_kmalloc_array[cpu];
+> 
+> is much better in this respect.
+> 
+> And note also that per_cpu_count above can share the cacheline with
+> another "hot" per-cpu variable.
 
-Yes it does! Thank you very much for the patch.
+Ah I see, that's good to know.
 
-Thanks!
-Dhaval
+But these variables are supposed to only be touched from slow path
+(perf events syscall, ptrace breakpoints creation, etc...), right?
+So this is probably not a problem?
+
+> 
+> > it's also convenient for allocations and
+> > de-allocation, or static definitions.
+> 
+> Yes, this is advantage. But afaics the only one.
+> 
+> > I'm not sure why bootmem would make
+> > more sense.
+> 
+> Or kcalloc(nr_cpu_ids), I didn't really mean that alloc_bootmem() is
+> necessarily the best option.
+
+Ok.
+
+Well if there are any real performance issue I don't mind using arrays
+of course.
+
+> 
+> > Other than this in the changelog, the patch is nice, thanks!
+> >
+> > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> Thanks ;)
+> 
+> Oleg.
+> 
