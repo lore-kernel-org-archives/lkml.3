@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab3FRQ1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:27:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49480 "EHLO
+	id S933275Ab3FRQ1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:27:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933129Ab3FRQRx (ORCPT
+	with ESMTP id S933217Ab3FRQRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:53 -0400
+	Tue, 18 Jun 2013 12:17:51 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        Kees Cook <keescook@chromium.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Josh Boyer <jwboyer@redhat.com>, Kay Sievers <kay@vrfy.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 21/48] memcg: dont initialize kmem-cache destroying work for root caches
-Date: Tue, 18 Jun 2013 09:17:47 -0700
-Message-Id: <20130618161728.984004719@linuxfoundation.org>
+Subject: [ 19/48] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
+Date: Tue, 18 Jun 2013 09:17:45 -0700
+Message-Id: <20130618161728.665397552@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -36,55 +32,240 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit f101a9464bfbda42730b54a66f926d75ed2cd31e upstream.
+commit 637241a900cbd982f744d44646b48a273d609b34 upstream.
 
-struct memcg_cache_params has a union.  Different parts of this union
-are used for root and non-root caches.  A part with destroying work is
-used only for non-root caches.
+The dmesg_restrict sysctl currently covers the syslog method for access
+dmesg, however /dev/kmsg isn't covered by the same protections.  Most
+people haven't noticed because util-linux dmesg(1) defaults to using the
+syslog method for access in older versions.  With util-linux dmesg(1)
+defaults to reading directly from /dev/kmsg.
 
-  BUG: unable to handle kernel paging request at 0000000fffffffe0
-  IP: kmem_cache_alloc+0x41/0x1f0
-  Modules linked in: netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag ip6table_filter ip6_tables i2c_piix4 virtio_net virtio_balloon microcode i2c_core pcspkr floppy
-  CPU: 0 PID: 1929 Comm: lt-vzctl Tainted: G      D      3.10.0-rc1+ #2
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  RIP: kmem_cache_alloc+0x41/0x1f0
-  Call Trace:
-   getname_flags.part.34+0x30/0x140
-   getname+0x38/0x60
-   do_sys_open+0xc5/0x1e0
-   SyS_open+0x22/0x30
-   system_call_fastpath+0x16/0x1b
-  Code: f4 53 48 83 ec 18 8b 05 8e 53 b7 00 4c 8b 4d 08 21 f0 a8 10 74 0d 4c 89 4d c0 e8 1b 76 4a 00 4c 8b 4d c0 e9 92 00 00 00 4d 89 f5 <4d> 8b 45 00 65 4c 03 04 25 48 cd 00 00 49 8b 50 08 4d 8b 38 49
-  RIP  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
+To fix /dev/kmsg, let's compare the existing interfaces and what they
+allow:
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>
+ - /proc/kmsg allows:
+  - open (SYSLOG_ACTION_OPEN) if CAP_SYSLOG since it uses a destructive
+    single-reader interface (SYSLOG_ACTION_READ).
+  - everything, after an open.
+
+ - syslog syscall allows:
+  - anything, if CAP_SYSLOG.
+  - SYSLOG_ACTION_READ_ALL and SYSLOG_ACTION_SIZE_BUFFER, if
+    dmesg_restrict==0.
+  - nothing else (EPERM).
+
+The use-cases were:
+ - dmesg(1) needs to do non-destructive SYSLOG_ACTION_READ_ALLs.
+ - sysklog(1) needs to open /proc/kmsg, drop privs, and still issue the
+   destructive SYSLOG_ACTION_READs.
+
+AIUI, dmesg(1) is moving to /dev/kmsg, and systemd-journald doesn't
+clear the ring buffer.
+
+Based on the comments in devkmsg_llseek, it sounds like actions besides
+reading aren't going to be supported by /dev/kmsg (i.e.
+SYSLOG_ACTION_CLEAR), so we have a strict subset of the non-destructive
+syslog syscall actions.
+
+To this end, move the check as Josh had done, but also rename the
+constants to reflect their new uses (SYSLOG_FROM_CALL becomes
+SYSLOG_FROM_READER, and SYSLOG_FROM_FILE becomes SYSLOG_FROM_PROC).
+SYSLOG_FROM_READER allows non-destructive actions, and SYSLOG_FROM_PROC
+allows destructive actions after a capabilities-constrained
+SYSLOG_ACTION_OPEN check.
+
+ - /dev/kmsg allows:
+  - open if CAP_SYSLOG or dmesg_restrict==0
+  - reading/polling, after open
+
+Addresses https://bugzilla.redhat.com/show_bug.cgi?id=903192
+
+[akpm@linux-foundation.org: use pr_warn_once()]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Christian Kujau <lists@nerdbynature.de>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Cc: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/proc/kmsg.c         |   10 ++---
+ include/linux/syslog.h |    4 +-
+ kernel/printk.c        |   91 ++++++++++++++++++++++++++-----------------------
+ 3 files changed, 57 insertions(+), 48 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3033,8 +3033,6 @@ int memcg_update_cache_size(struct kmem_
- 			return -ENOMEM;
- 		}
+--- a/fs/proc/kmsg.c
++++ b/fs/proc/kmsg.c
+@@ -21,12 +21,12 @@ extern wait_queue_head_t log_wait;
  
--		INIT_WORK(&s->memcg_params->destroy,
--				kmem_cache_destroy_work_func);
- 		s->memcg_params->is_root_cache = true;
+ static int kmsg_open(struct inode * inode, struct file * file)
+ {
+-	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_FILE);
++	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_PROC);
+ }
  
- 		/*
+ static int kmsg_release(struct inode * inode, struct file * file)
+ {
+-	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_FILE);
++	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_PROC);
+ 	return 0;
+ }
+ 
+@@ -34,15 +34,15 @@ static ssize_t kmsg_read(struct file *fi
+ 			 size_t count, loff_t *ppos)
+ {
+ 	if ((file->f_flags & O_NONBLOCK) &&
+-	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
++	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
+ 		return -EAGAIN;
+-	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
++	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_PROC);
+ }
+ 
+ static unsigned int kmsg_poll(struct file *file, poll_table *wait)
+ {
+ 	poll_wait(file, &log_wait, wait);
+-	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
++	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
+ 		return POLLIN | POLLRDNORM;
+ 	return 0;
+ }
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -44,8 +44,8 @@
+ /* Return size of the log buffer */
+ #define SYSLOG_ACTION_SIZE_BUFFER   10
+ 
+-#define SYSLOG_FROM_CALL 0
+-#define SYSLOG_FROM_FILE 1
++#define SYSLOG_FROM_READER           0
++#define SYSLOG_FROM_PROC             1
+ 
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
+ 
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -368,6 +368,53 @@ static void log_store(int facility, int
+ 	log_next_seq++;
+ }
+ 
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
++int dmesg_restrict = 1;
++#else
++int dmesg_restrict;
++#endif
++
++static int syslog_action_restricted(int type)
++{
++	if (dmesg_restrict)
++		return 1;
++	/*
++	 * Unless restricted, we allow "read all" and "get buffer size"
++	 * for everybody.
++	 */
++	return type != SYSLOG_ACTION_READ_ALL &&
++	       type != SYSLOG_ACTION_SIZE_BUFFER;
++}
++
++static int check_syslog_permissions(int type, bool from_file)
++{
++	/*
++	 * If this is from /proc/kmsg and we've already opened it, then we've
++	 * already done the capabilities checks at open time.
++	 */
++	if (from_file && type != SYSLOG_ACTION_OPEN)
++		return 0;
++
++	if (syslog_action_restricted(type)) {
++		if (capable(CAP_SYSLOG))
++			return 0;
++		/*
++		 * For historical reasons, accept CAP_SYS_ADMIN too, with
++		 * a warning.
++		 */
++		if (capable(CAP_SYS_ADMIN)) {
++			pr_warn_once("%s (%d): Attempt to access syslog with "
++				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
++				     "(deprecated).\n",
++				 current->comm, task_pid_nr(current));
++			return 0;
++		}
++		return -EPERM;
++	}
++	return security_syslog(type);
++}
++
++
+ /* /dev/kmsg - userspace message inject/listen interface */
+ struct devkmsg_user {
+ 	u64 seq;
+@@ -624,7 +671,8 @@ static int devkmsg_open(struct inode *in
+ 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
+ 		return 0;
+ 
+-	err = security_syslog(SYSLOG_ACTION_READ_ALL);
++	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
++				       SYSLOG_FROM_READER);
+ 	if (err)
+ 		return err;
+ 
+@@ -817,45 +865,6 @@ static inline void boot_delay_msec(int l
+ }
+ #endif
+ 
+-#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+-int dmesg_restrict = 1;
+-#else
+-int dmesg_restrict;
+-#endif
+-
+-static int syslog_action_restricted(int type)
+-{
+-	if (dmesg_restrict)
+-		return 1;
+-	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
+-	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
+-}
+-
+-static int check_syslog_permissions(int type, bool from_file)
+-{
+-	/*
+-	 * If this is from /proc/kmsg and we've already opened it, then we've
+-	 * already done the capabilities checks at open time.
+-	 */
+-	if (from_file && type != SYSLOG_ACTION_OPEN)
+-		return 0;
+-
+-	if (syslog_action_restricted(type)) {
+-		if (capable(CAP_SYSLOG))
+-			return 0;
+-		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+-		if (capable(CAP_SYS_ADMIN)) {
+-			printk_once(KERN_WARNING "%s (%d): "
+-				 "Attempt to access syslog with CAP_SYS_ADMIN "
+-				 "but no CAP_SYSLOG (deprecated).\n",
+-				 current->comm, task_pid_nr(current));
+-			return 0;
+-		}
+-		return -EPERM;
+-	}
+-	return 0;
+-}
+-
+ #if defined(CONFIG_PRINTK_TIME)
+ static bool printk_time = 1;
+ #else
+@@ -1253,7 +1262,7 @@ out:
+ 
+ SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
+ {
+-	return do_syslog(type, buf, len, SYSLOG_FROM_CALL);
++	return do_syslog(type, buf, len, SYSLOG_FROM_READER);
+ }
+ 
+ /*
 
 
