@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989Ab3FRQK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:10:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49192 "EHLO
+	id S932966Ab3FRQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:10:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49203 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab3FRQKS (ORCPT
+	with ESMTP id S932861Ab3FRQKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:10:18 -0400
+	Tue, 18 Jun 2013 12:10:20 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 2/7] ath9k: Disable PowerSave by default
-Date: Tue, 18 Jun 2013 09:10:39 -0700
-Message-Id: <20130618160912.027018959@linuxfoundation.org>
+        Rafael Aquini <aquini@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 4/7] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
+Date: Tue, 18 Jun 2013 09:10:41 -0700
+Message-Id: <20130618160912.270921813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618160911.721012782@linuxfoundation.org>
 References: <20130618160911.721012782@linuxfoundation.org>
@@ -29,37 +33,66 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Rafael Aquini <aquini@redhat.com>
 
-commit 531671cb17af07281e6f28c1425f754346e65c41 upstream.
+commit cbab0e4eec299e9059199ebe6daf48730be46d2b upstream.
 
-Almost all the DMA issues which have plagued ath9k (in station mode)
-for years are related to PS. Disabling PS usually "fixes" the user's
-connection stablility. Reports of DMA problems are still trickling in
-and are sitting in the kernel bugzilla. Until the PS code in ath9k is
-given a thorough review, disbale it by default. The slight increase
-in chip power consumption is a small price to pay for improved link
-stability.
+read_swap_cache_async() can race against get_swap_page(), and stumble
+across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
+into the swapcache yet.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This transient swap_map state is expected to be transitory, but the
+actual placement of discard at scan_swap_map() inserts a wait for I/O
+completion thus making the thread at read_swap_cache_async() to loop
+around its -EEXIST case, while the other end at get_swap_page() is
+scheduled away at scan_swap_map().  This can leave the system deadlocked
+if the I/O completion happens to be waiting on the CPU waitqueue where
+read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+
+This patch introduces a cond_resched() call to make the aforementioned
+read_swap_cache_async() busy loop condition to bail out when necessary,
+thus avoiding the subtle race window.
+
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Shaohua Li <shli@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/init.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/swap_state.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -704,8 +704,7 @@ void ath9k_set_hw_capab(struct ath_softc
- 		BIT(NL80211_IFTYPE_ADHOC) |
- 		BIT(NL80211_IFTYPE_MESH_POINT);
- 
--	if (AR_SREV_5416(sc->sc_ah))
--		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
-+	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
- 
- 	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
- 
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -315,8 +315,24 @@ struct page *read_swap_cache_async(swp_e
+ 		 * Swap entry may have been freed since our caller observed it.
+ 		 */
+ 		err = swapcache_prepare(entry);
+-		if (err == -EEXIST) {	/* seems racy */
++		if (err == -EEXIST) {
+ 			radix_tree_preload_end();
++			/*
++			 * We might race against get_swap_page() and stumble
++			 * across a SWAP_HAS_CACHE swap_map entry whose page
++			 * has not been brought into the swapcache yet, while
++			 * the other end is scheduled away waiting on discard
++			 * I/O completion at scan_swap_map().
++			 *
++			 * In order to avoid turning this transitory state
++			 * into a permanent loop around this -EEXIST case
++			 * if !CONFIG_PREEMPT and the I/O completion happens
++			 * to be waiting on the CPU waitqueue where we are now
++			 * busy looping, we just conditionally invoke the
++			 * scheduler here, if there are some more important
++			 * tasks to run.
++			 */
++			cond_resched();
+ 			continue;
+ 		}
+ 		if (err) {		/* swp entry is obsolete ? */
 
 
