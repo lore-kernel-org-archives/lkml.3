@@ -1,91 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab3FRQp3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:45:29 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:41614 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932168Ab3FRQp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:45:28 -0400
-Date: Tue, 18 Jun 2013 11:45:37 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        linux-doc@vger.kernel.org, linux-mm@kvack.org,
-        Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
-Message-ID: <20130618164537.GJ16067@sgi.com>
-References: <1370967244-5610-1-git-send-email-athorlton@sgi.com>
- <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
+	id S933000Ab3FRQr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:47:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932442Ab3FRQr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:47:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] KEYS: Skip key state checks when checking for possession
+To: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Tue, 18 Jun 2013 17:47:22 +0100
+Message-ID: <20130618164722.23443.23372.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 03:20:09PM -0700, David Rientjes wrote:
-> On Tue, 11 Jun 2013, Alex Thorlton wrote:
-> 
-> > This patch adds the ability to control THPs on a per cpuset basis.
-> > Please see
-> > the additions to Documentation/cgroups/cpusets.txt for more
-> > information.
-> > 
-> 
-> What's missing from both this changelog and the documentation you
-> point to 
-> is why this change is needed.
-> 
-> I can understand how you would want a subset of processes to not use
-> thp 
-> when it is enabled.  This is typically where MADV_NOHUGEPAGE is used
-> with 
-> some type of malloc hook.
-> 
-> I don't think we need to do this on a cpuset level, so unfortunately I 
-> think this needs to be reworked.  Would it make sense to add a
-> per-process 
-> tunable to always get MADV_NOHUGEPAGE behavior for all of its sbrk()
-> and 
-> mmap() calls?  Perhaps, but then you would need to justify why it
-> can't be 
-> done with a malloc hook in userspace.
-> 
-> This seems to just be working around a userspace issue or for a matter
-> of 
-> convenience, right?
+Skip key state checks (invalidation, revocation and expiration) when checking
+for possession.  Without this, keys that have been marked invalid, revoked
+keys and expired keys are not given a possession attribute - which means the
+possessor is not granted any possession permits and cannot do anything with
+them unless they also have one a user, group or other permit.
 
-David,
+This causes failures in the keyutils test suite's revocation and expiration
+tests now that commit 96b5c8fea6c0861621051290d705ec2e971963f1 reduced the
+initial permissions granted to a key.
 
-Thanks for your input, however, I believe the method of using a malloc
-hook falls apart when it comes to static binaries, since we wont' have
-any shared libraries to hook into.  Although using a malloc hook is a
-perfectly suitable solution for most cases, we're looking to implement a
-solution that can be used in all situations.
+The failures are due to accesses to revoked and expired keys being given
+EACCES instead of EKEYREVOKED or EKEYEXPIRED.
 
-Aside from that particular shortcoming of the malloc hook solution,
-there are some other situations having a cpuset-based option is a
-much simpler and more efficient solution than the alternatives.  One
-such situation that comes to mind would be an environment where a batch
-scheduler is in use to ration system resources.  If an administrator
-determines that a users jobs run more efficiently with thp always on,
-the administrator can simply set the users jobs to always run with that
-setting, instead of having to coordinate with that user to get them to
-run their jobs in a different way.  I feel that, for cases such as this,
-the this additional flag is in line with the other capabilities that
-cgroups and cpusets provide.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-While there are likely numerous other situations where having a flag to
-control thp on the cpuset level makes things a bit easier to manage, the
-one real show-stopper here is that we really have no other options when
-it comes to static binaries.
+ security/keys/internal.h         |    1 +
+ security/keys/process_keys.c     |    8 +++++---
+ security/keys/request_key.c      |    6 ++++--
+ security/keys/request_key_auth.c |    2 +-
+ 4 files changed, 11 insertions(+), 6 deletions(-)
 
-- Alex Thorlton
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index d4f1468..df971fe 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -124,6 +124,7 @@ extern key_ref_t search_my_process_keyrings(struct key_type *type,
+ extern key_ref_t search_process_keyrings(struct key_type *type,
+ 					 const void *description,
+ 					 key_match_func_t match,
++					 bool no_state_check,
+ 					 const struct cred *cred);
+ 
+ extern struct key *find_keyring_by_name(const char *name, bool skip_perm_check);
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 42defae..a3410d6 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -440,6 +440,7 @@ found:
+ key_ref_t search_process_keyrings(struct key_type *type,
+ 				  const void *description,
+ 				  key_match_func_t match,
++				  bool no_state_check,
+ 				  const struct cred *cred)
+ {
+ 	struct request_key_auth *rka;
+@@ -448,7 +449,7 @@ key_ref_t search_process_keyrings(struct key_type *type,
+ 	might_sleep();
+ 
+ 	key_ref = search_my_process_keyrings(type, description, match,
+-					     false, cred);
++					     no_state_check, cred);
+ 	if (!IS_ERR(key_ref))
+ 		goto found;
+ 	err = key_ref;
+@@ -468,7 +469,8 @@ key_ref_t search_process_keyrings(struct key_type *type,
+ 			rka = cred->request_key_auth->payload.data;
+ 
+ 			key_ref = search_process_keyrings(type, description,
+-							  match, rka->cred);
++							  match, no_state_check,
++							  rka->cred);
+ 
+ 			up_read(&cred->request_key_auth->sem);
+ 
+@@ -675,7 +677,7 @@ try_again:
+ 		/* check to see if we possess the key */
+ 		skey_ref = search_process_keyrings(key->type, key,
+ 						   lookup_user_key_possessed,
+-						   cred);
++						   true, cred);
+ 
+ 		if (!IS_ERR(skey_ref)) {
+ 			key_put(key);
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index c411f9b..172115b 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -390,7 +390,8 @@ static int construct_alloc_key(struct key_type *type,
+ 	 * waited for locks */
+ 	mutex_lock(&key_construction_mutex);
+ 
+-	key_ref = search_process_keyrings(type, description, type->match, cred);
++	key_ref = search_process_keyrings(type, description, type->match,
++					  false, cred);
+ 	if (!IS_ERR(key_ref))
+ 		goto key_already_present;
+ 
+@@ -539,7 +540,8 @@ struct key *request_key_and_link(struct key_type *type,
+ 	       dest_keyring, flags);
+ 
+ 	/* search all the process keyrings for a key */
+-	key_ref = search_process_keyrings(type, description, type->match, cred);
++	key_ref = search_process_keyrings(type, description, type->match,
++					  false, cred);
+ 
+ 	if (!IS_ERR(key_ref)) {
+ 		key = key_ref_to_ptr(key_ref);
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 85730d5..92077de 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -247,7 +247,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ 		&key_type_request_key_auth,
+ 		(void *) (unsigned long) target_id,
+ 		key_get_instantiation_authkey_match,
+-		cred);
++		false, cred);
+ 
+ 	if (IS_ERR(authkey_ref)) {
+ 		authkey = ERR_CAST(authkey_ref);
+
