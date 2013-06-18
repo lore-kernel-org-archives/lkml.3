@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3FRELF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:11:05 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56217 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab3FRELD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:11:03 -0400
-X-AuditID: 9c930179-b7c30ae0000047e1-95-51bfddd4c69b
-Date: Tue, 18 Jun 2013 13:11:00 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dhaval Giani <dgiani@mozilla.com>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/8] Volatile Ranges (v8?)
-Message-ID: <20130618041100.GA3116@bbox>
-References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
- <51BF3827.4060606@mozilla.com>
+	id S1752779Ab3FRELo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:11:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab3FRELn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 00:11:43 -0400
+Date: Tue, 18 Jun 2013 00:11:32 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org
+Subject: [x86] only print out DR registers if they are not power-on defaults.
+Message-ID: <20130618041132.GA23492@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51BF3827.4060606@mozilla.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dhaval,
+The DR registers are rarely useful when decoding oopses.
+With screen real estate during oopses at a premium, we can save two lines
+by only printing out these registers when they are set to something other
+than they power-on state.
 
-On Mon, Jun 17, 2013 at 12:24:07PM -0400, Dhaval Giani wrote:
-> Hi John,
-> 
-> I have been giving your git tree a whirl, and in order to simulate a
-> limited memory environment, I was using memory cgroups.
-> 
-> The program I was using to test is attached here. It is your test
-> code, with some changes (changing the syscall interface, reducing
-> the memory pressure to be generated).
-> 
-> I trapped it in a memory cgroup with 1MB memory.limit_in_bytes and hit this,
-> 
-> [  406.207612] ------------[ cut here ]------------
-> [  406.207621] kernel BUG at mm/vrange.c:523!
-> [  406.207626] invalid opcode: 0000 [#1] SMP
-> [  406.207631] Modules linked in:
-> [  406.207637] CPU: 0 PID: 1579 Comm: volatile-test Not tainted
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Thanks for the testing!
-Does below patch fix your problem?
+diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c linux-dj/arch/x86/kernel/process_64.c
+--- /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c	2013-05-01 10:02:52.064151923 -0400
++++ linux-dj/arch/x86/kernel/process_64.c	2013-05-06 20:35:09.219868881 -0400
+@@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, i
+ 	get_debugreg(d0, 0);
+ 	get_debugreg(d1, 1);
+ 	get_debugreg(d2, 2);
+-	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
+ 	get_debugreg(d3, 3);
+ 	get_debugreg(d6, 6);
+ 	get_debugreg(d7, 7);
++
++	/* Only print out debug registers if they are in their non-default state. */
++	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
++	    (d6 & ~DR6_RESERVED) && (d7 == 0x400))
++		return;
++
++	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
+ 	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
++
+ }
+ 
+ void release_thread(struct task_struct *dead_task)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index d41c63f..1f6c80e 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -751,7 +751,7 @@ int __free_swap_and_cache(swp_entry_t entry)
- 			page = find_get_page(swap_address_space(entry),
- 						entry.val);
- 		}
--		spin_unlock(&swap_lock);
-+		spin_unlock(&p->lock);
- 	}
- 
- 	if (page) {
-diff --git a/mm/vrange.c b/mm/vrange.c
-index fa965fb..dc32cfa 100644
---- a/mm/vrange.c
-+++ b/mm/vrange.c
-@@ -485,7 +485,7 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte;
--	pte_t pteval;
-+	pte_t pteval, pteswap;
- 	spinlock_t *ptl;
- 	int ret = 0;
- 	bool present;
-@@ -505,7 +505,7 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
- 	present = pte_present(*pte);
- 	flush_cache_page(vma, address, page_to_pfn(page));
- 
--	ptep_clear_flush(vma, address, pte);
-+	pteswap = ptep_clear_flush(vma, address, pte);
- 	pteval = pte_mkvrange(*pte);
- 
- 	update_hiwater_rss(mm);
-@@ -517,10 +517,11 @@ int try_to_discard_one(struct vrange_root *vroot, struct page *page,
- 	page_remove_rmap(page);
- 	page_cache_release(page);
- 	if (!present) {
--		swp_entry_t entry = pte_to_swp_entry(*pte);
-+		swp_entry_t entry = pte_to_swp_entry(pteswap);
- 		dec_mm_counter(mm, MM_SWAPENTS);
--		if (unlikely(!__free_swap_and_cache(entry)))
-+		if (unlikely(!__free_swap_and_cache(entry))) {
- 			BUG_ON(1);
-+		}
- 	}
- 
- 	set_pte_at(mm, address, pte, pteval);
--- 
-1.7.9.5
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 7305f7d..5905dc5 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -110,11 +110,16 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	get_debugreg(d1, 1);
+ 	get_debugreg(d2, 2);
+ 	get_debugreg(d3, 3);
+-	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
+-			d0, d1, d2, d3);
+-
+ 	get_debugreg(d6, 6);
+ 	get_debugreg(d7, 7);
++
++	/* Only print out debug registers if they are in their non-default state. */
++	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
++	    (d6 & ~DR6_RESERVED) && (d7 == 0x400))
++		return;
++
++	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
++			d0, d1, d2, d3);
+ 	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
+ 			d6, d7);
+ }
