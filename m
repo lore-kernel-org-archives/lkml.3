@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab3FRSmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:42:19 -0400
-Received: from mail.lang.hm ([64.81.33.126]:46220 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933480Ab3FRSmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:42:17 -0400
-Date: Tue, 18 Jun 2013 10:39:27 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-cc: Ingo Molnar <mingo@kernel.org>, "alex.shi@intel.com" <alex.shi@intel.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: power-efficient scheduling design
-In-Reply-To: <20130618102324.GF5460@e103034-lin>
-Message-ID: <alpine.DEB.2.02.1306181032160.9258@nftneq.ynat.uz>
-References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com> <20130614160522.GG32728@e103034-lin> <alpine.DEB.2.02.1306171809200.9258@nftneq.ynat.uz> <20130618102324.GF5460@e103034-lin>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933560Ab3FRSnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:43:10 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59794 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932426Ab3FRSnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 14:43:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20130618091118.GG3204@twins.programming.kicks-ass.net>
+References: <20130605144346.GA20338@quad>
+	<20130618091118.GG3204@twins.programming.kicks-ass.net>
+Date: Tue, 18 Jun 2013 20:43:08 +0200
+Message-ID: <CABPqkBTtnX3KNyVXzXwL82EADhs14v-LCuoxLgGnXPTP_FaSFQ@mail.gmail.com>
+Subject: Re: [PATCH] perf,x86: Fix shared registers mutual exclusion bug
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, vincent.weaver@maine.edu,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jun 2013, Morten Rasmussen wrote:
-
->> I don't think that you are passing nearly enough information around.
+On Tue, Jun 18, 2013 at 11:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Jun 05, 2013 at 04:43:46PM +0200, Stephane Eranian wrote:
 >>
->> A fairly simple example
+>> This patch fixes a problem with the shared registers mutual
+>> exclusion code and incremental event scheduling by the
+>> generic perf_event code.
 >>
->> take a relatively modern 4-core system with turbo mode where speed controls
->> affect two cores at a time (I don't know the details of the available CPUs to
->> know if this is an exact fit to any existing system, but I think it's a
->> reasonable fit)
+>> There was a bug whereby the mutual exclusion on the shared
+>> registers was not enforced because of incremental scheduling
+>> abort due to event constraints.
 >>
->> If you are running with a loadave of 2, should you power down 2 cores and run
->> the other two in turbo mode, power down 2 cores and not increase the speed, or
->> leave all 4 cores running as is.
+>> Example on Nehalem:
+>> group1= ref-cycles,OFFCORE_RESPONSE_0:PF_RFO
+>> group2= ref-cycles
 >>
->> Depending on the mix of processes, I could see any one of the three being the
->> right answer.
+>> The ref-cycles event can only be measured by 1 counter. Yet, there
+>> are 2 instances here. The first group can be scheduled and is committed.
+>> Then, the generic code tries to schedule group2 and this fails (because
+>> there is no more counter to support the 2nd instance of ref-cycles).
 >>
->> If you have a process that's maxing out it's cpu time on one core, going to
->> turbo mode is the right thing as the other processes should fit on the other
->> core and that process will use more CPU (theoretically getting done sooner)
+>> But in x86_schedule_events() error path, put_event_contraints() is invoked
+>> on ALL the events and not just the ones that just failed. That causes the
+>> "lock" on the shared offcore_response MSR to be released. Yet the first group
+>> is actually scheduled and is exposed to reprogramming of that shared msr by
+>> the sibling HT thread (when they are shared by HT threads). In other words,
+>> there is no guarantee on what is measured for the offcore_response event.
 >>
->> If no process is close to maxing out the core, then if you are in power saving
->> mode, you probably want to shut down two cores and run everything on the other
->> two
+>> This patch fixes the problem by tagging committed events with the
+>> PERF_X86_EVENT_COMMITTED tag. In the error path of x86_schedule_events(),
+>> only the events NOT tagged have their constraint released. The tag
+>> is eventually removed when the event in descheduled.
 >>
->> If you only have two processes eating almost all your CPU time, going to two
->> cores is probably the right thing to do.
+>> Example was given with offcore_response but also applies to LBR_SELECT
+>> and LDLAT shared registers.
 >>
->> If you have more processes, each eating a little bit of time, then continuing
->> to run on all four cores uses more cache, and could let all of the tasks finish
->> faster.
->>
->>
->> So, how is the Power Scheduler going to get this level of information?
->>
->> It doesn't seem reasonable to either pass this much data around, or to try and
->> give two independant tools access to the same raw data (since that data is so
->> tied to the internal details of the scheduler). If we are talking two parts of
->> the same thing, then it's perfectly legitimate to have this sort of intimate
->> knowledge of the internal data structures.
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
 >
-> I realize that my description is not very clear about this point. Total
-> load is clearly not enough information for the power scheduler to take
-> any reasonable decisions. By current load, I mean per-cpu load, number
-> of tasks, and possibly more task statistics. Enough information to
-> determine the best use of the system cpus.
+> I'm getting conflicts against other patches -- most notably I think the
+> contraints stack opt from Andrew Hunter.
 >
-> As stated in my previous reply, this is not the ultimate design. It
-> expect to have many design iterations. If it turns out that it doesn't
-> make sense to have a separate power scheduler, then we should merge
-> them. I just propose to divide the design into manageable components. A
-> unified design covering the scheduler, two other policy frameworks, and
-> new policies is too complex in my opinion.
+Yes, that would not surprise me. I wrote this patch without assuming
+Andrew's patch would be there. But we need to add it. Then we can fix
+the shared_regs patch.
+
+> I'll try and get Ingo to finally pick up my queued patches so we can
+> rebase.
+
+Ok, thanks.
+
 >
-> The power scheduler may be viewed as an external extension to the
-> periodic scheduler load balance. I don't see a major problem in
-> accessing raw data in the scheduler. The power scheduler will live in
-> sched/power.c. In a unified solution where you put everything into
-> sched/fair.c you would still need access to the same raw data to make
-> the right power scheduling decisions. By having the power scheduler
-> separately we just attempt to minimize the entanglement.
-
-Why insist on this being treated as an external component that you have to pass 
-messages to?
-
-If you allow it to be combined, then it can lookup the info it needs rather than 
-trying to define an API between the two that accounts for everything that you 
-need to know (now and in the future)
-
-This will mean that as the internals of one change it will affect the internals 
-of the other, but it seems like this is far more likely to be successful.
-
-If you have hundreds or thousands of processes, it's bad enough to lookup the 
-data directly, but trying to marshal the infromation to send it to a separate 
-component seems counterproductive.
-
-David Lang
