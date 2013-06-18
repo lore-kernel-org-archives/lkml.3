@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab3FRTux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:50:53 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:36432 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932391Ab3FRTuv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:50:51 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>,
-        "'Doug Anderson'" <dianders@chromium.org>
-CC: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "'Will Newton'" <will.newton@gmail.com>,
-        "'Ashok Nagarajan'" <asnagarajan@chromium.org>,
-        "'Paul Stewart'" <pstew@chromium.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 18 Jun 2013 12:46:47 -0700
-Subject: RE: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
- STATE_DATA_ERROR
-Thread-Topic: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
- STATE_DATA_ERROR
-Thread-Index: Ac5nn/4Mso4caoRfTTCn8q9BQfbxFgDpDP3AAEWCGcA=
-Message-ID: <477F20668A386D41ADCC57781B1F70430EA2AA2513@SC-VEXCH1.marvell.com>
-References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
- <5146EAB0.1030705@samsung.com>
- <CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
- <515E88E3.5070507@samsung.com>
- <003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
- <CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
- <001601ce35b9$652c5870$2f850950$%jun@samsung.com>
- <CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
- <001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
-In-Reply-To: <001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S933267Ab3FRTvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:51:07 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42616 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932391Ab3FRTvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 15:51:05 -0400
+Date: Tue, 18 Jun 2013 14:50:48 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH 10/11] rsxx: Fixes incorrect stats calculation.
+Message-ID: <20130618195048.GK6492@oc6784271780.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061819-7182-0000-0000-00000764467B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seungwon,
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-> > I don't have the failing unit myself, so we'll have to get Bing to try
-> > the patches.  You are suggesting that we try applying both of your
-> > patches, right?
-> Did you test the patch?
-> I wonder that both are good for your side.
+Fixing incorrect stats calculation during read retries.
 
-I tested Doug's patch on my failing unit.
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
 
-Without this patch, mmc got hung_task and rebooted eventually.
-With this patch applied, mmc returns CRC error instead of hung_task, and the error is handled gracefully.
 
-Thanks,
-Bing
-
-> 
-> Thanks,
-> Seungwon Jeon
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-06-18 09:27:53.702978010 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-06-18 09:50:30.422844487 -0500
+@@ -269,6 +269,7 @@ static void rsxx_requeue_dma(struct rsxx
+ 	 * first.
+ 	 */
+ 	spin_lock_bh(&ctrl->queue_lock);
++	ctrl->stats.sw_q_depth++;
+ 	list_add(&dma->list, &ctrl->queue);
+ 	spin_unlock_bh(&ctrl->queue_lock);
+ }
 
