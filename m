@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3FRAQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 20:16:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50995 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab3FRAQ2 (ORCPT
+	id S1753348Ab3FRASC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 20:18:02 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:37866 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751337Ab3FRASA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 20:16:28 -0400
-Date: Tue, 18 Jun 2013 10:16:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Glauber Costa <glommer@openvz.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the kvm tree
-Message-Id: <20130618101624.00ad644cbfb29bd1ebe358ca@canb.auug.org.au>
-In-Reply-To: <51BEFFD4.6090904@linux.vnet.ibm.com>
-References: <20130617180735.c10c058469ce0633c65225a4@canb.auug.org.au>
-	<51BEFFD4.6090904@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Jun_2013_10_16_24_+1000_j+=FsB=nXL.Fgksi"
+	Mon, 17 Jun 2013 20:18:00 -0400
+X-Sasl-enc: yFyEBq2lBeZ7dFgiKXD09yJz3ppo33sOgXe2HRN/B7w9 1371514673
+Date: Mon, 17 Jun 2013 21:17:50 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Adam Lee <adam.lee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>,
+        Amos Kong <kongjianjun@gmail.com>
+Subject: Re: [PATCH 1/3 v3] thinkpad_acpi: return -NODEV while operating
+ uninitialized LEDs
+Message-ID: <20130618001750.GB27654@khazad-dum.debian.net>
+References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+ <1370681475-6601-1-git-send-email-adam.lee@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370681475-6601-1-git-send-email-adam.lee@canonical.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Jun_2013_10_16_24_+1000_j+=FsB=nXL.Fgksi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 08 Jun 2013, Adam Lee wrote:
+> Not all 0-15 LEDs are available for all models, sometimes it's even not
+> safe. This patch return -NODEV while operating uninitialized LEDs.
+> 
+> Signed-off-by: Adam Lee <adam.lee@canonical.com>
 
-Hi Xiao,
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-On Mon, 17 Jun 2013 20:23:48 +0800 Xiao Guangrong <xiaoguangrong@linux.vnet=
-.ibm.com> wrote:
->
-> On 06/17/2013 04:07 PM, Stephen Rothwell wrote:
->=20
-> > - 		prepare_zap_oldest_mmu_page(kvm, &invalid_list);
-> > + 		freed +=3D prepare_zap_oldest_mmu_page(kvm, &invalid_list);
->=20
-> It seems this change is not needed? and "freed" is not defined in mmu_shr=
-ink().
-> Right?
+> ---
+>  drivers/platform/x86/thinkpad_acpi.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+> index 54d31c0..455384b 100644
+> --- a/drivers/platform/x86/thinkpad_acpi.c
+> +++ b/drivers/platform/x86/thinkpad_acpi.c
+> @@ -369,7 +369,7 @@ struct tpacpi_led_classdev {
+>  	struct led_classdev led_classdev;
+>  	struct work_struct work;
+>  	enum led_status_t new_state;
+> -	unsigned int led;
+> +	int led;
+>  };
+>  
+>  /* brightness level capabilities */
+> @@ -5344,6 +5344,8 @@ static int __init led_init(struct ibm_init_struct *iibm)
+>  					  ARRAY_SIZE(led_useful_qtable));
+>  
+>  	for (i = 0; i < TPACPI_LED_NUMLEDS; i++) {
+> +		tpacpi_leds[i].led = -1;
+> +
+>  		if (!tpacpi_is_led_restricted(i) &&
+>  		    test_bit(i, &useful_leds)) {
+>  			rc = tpacpi_init_led(i);
+> @@ -5401,9 +5403,13 @@ static int led_write(char *buf)
+>  		return -ENODEV;
+>  
+>  	while ((cmd = next_cmd(&buf))) {
+> -		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > 15)
+> +		if (sscanf(cmd, "%d", &led) != 1)
+>  			return -EINVAL;
+>  
+> +		if (led < 0 || led > (TPACPI_LED_NUMLEDS - 1) ||
+> +				tpacpi_leds[led].led < 0)
+> +			return -ENODEV;
+> +
+>  		if (strstr(cmd, "off")) {
+>  			s = TPACPI_LED_OFF;
+>  		} else if (strstr(cmd, "on")) {
 
-That same patch in the akpm tree renames "mmu_shrink" to
-"mmu_shrink_scan" and declares "freed" ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__18_Jun_2013_10_16_24_+1000_j+=FsB=nXL.Fgksi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRv6bYAAoJEECxmPOUX5FEvbwQAJ/3AjnBJxfjamVgPGnXOcVG
-Ni8RzME5HUemdf39HNFRl4wWqkW8qswgi7180GpyxEKKjTNg5ht6MsIfw2ISrJfG
-JLQPIViohurU4tlkArN65kGNxicL9ZJ/KHt5CmLMiardSZMoD36WBBSYNHxoxLOk
-cSlxzfRWwrh4ICiYdObAmdUQx8WzHw7BIcafvmzitcsOzjMRIELNDcV2gv3TsFAu
-AG2S3kUYHoaXem4YHTPKXOTplR5c9IZthXpYJIqdLM6tFVh2XR17K2S1UqHRA8vT
-pEaWoYDPgb2M9RrE4xW9ohO3HkBBGPw81JtVC+sVkfdytzOtGC3SHtVzAmkcRySG
-9Rkwkk8GFsHOHnAYZhUfjma5nOxWz/0gXsomkOHVWSp8Up9Q3nJ+QRnrmaOkkQo4
-CvTKr9OSIM8iXWSh/2GhpLxSBorp31ZsBbRU+fSlLD1UBQujjziW8gJF+nPp+ZJR
-U2rpHKmb/fntaVqCQXnmiiF+20lMmxS5qjAIvz9RZo6yJyH9OgKsBZJAvrwsV0uV
-5V7dMDILrPjpeP+a633QWD/U9sDRsnftOcLDQMh7HA8o420sLUmdGB1GvAJHnpIv
-iYkqA9kaqoptOyJWkpH8Vv/kRkpDvID0hCClpxKFWdS0wsrTOtzRi6fUcbAZSbiw
-cqGBhX2LJnOUzY7plMse
-=6Z3Z
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Jun_2013_10_16_24_+1000_j+=FsB=nXL.Fgksi--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
