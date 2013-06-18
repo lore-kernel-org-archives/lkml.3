@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3FRGMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:12:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57809 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3FRGMu (ORCPT
+	id S1752709Ab3FRGW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:22:26 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:47022 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab3FRGWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:12:50 -0400
-Date: Tue, 18 Jun 2013 16:12:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>, Greg KH <greg@kroah.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: linux-next: manual merge of the arm-soc tree with the usb tree
-Message-Id: <20130618161239.5ce92432180d9418831d2514@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL"
+	Tue, 18 Jun 2013 02:22:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130618015806.GY32663@mtj.dyndns.org>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1371128589-8953-17-git-send-email-tangchen@cn.fujitsu.com>
+	<20130618015806.GY32663@mtj.dyndns.org>
+Date: Mon, 17 Jun 2013 23:22:23 -0700
+X-Google-Sender-Auth: dpbJ7114m3cza9Go0CmAiFewuwQ
+Message-ID: <CAE9FiQVVGdDMxO5RmHSzAcB_cu49EQFiNLxswS7U0Nt5-J774w@mail.gmail.com>
+Subject: Re: [Part1 PATCH v5 16/22] x86, mm, numa: Move numa emulation
+ handling down.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
+        Prarit Bhargava <prarit@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 17, 2013 at 6:58 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Jun 13, 2013 at 09:03:03PM +0800, Tang Chen wrote:
+>> From: Yinghai Lu <yinghai@kernel.org>
+>>
+>> numa_emulation() needs to allocate buffer for new numa_meminfo
+>> and distance matrix, so execute it later in x86_numa_init().
+>>
+>> Also we change the behavoir:
+>>       - before this patch, if user input wrong data in command
+>>         line, it will fall back to next numa probing or disabling
+>>         numa.
+>>       - after this patch, if user input wrong data in command line,
+>>         it will stay with numa info probed from previous probing,
+>>         like ACPI SRAT or amd_numa.
+>>
+>> We need to call numa_check_memblks to reject wrong user inputs early
+>> so that we can keep the original numa_meminfo not changed.
+>
+> So, this is another very subtle ordering you're adding without any
+> comment and I'm not sure it even makes sense because the function can
+> fail after that point.
 
-Hi all,
+Yes, if it fail, we will stay with current numa info from firmware.
+That looks like right behavior.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/usb/phy/phy-rcar-usb.c between commit 56a9a6de2a87 ("usb: phy:
-rcar-usb: Fix comment w.r.t. devm_ioremap_resource") from the usb tree
-and commit 725bf9dcafe1 ("phy-rcar-usb: correct base address") from the
-arm-soc tree.
+Before this patch, it will fail to next numa way like if acpi srat + user
+input fail, it will try to go with amd_numa then try apply user info.
 
-I fixed it up (The latter removed the comment corrected by the former)
-and can carry the fix as necessary (no action is required).
+>
+> I'm getting really doubtful about this whole approach of carefully
+> splitting discovery and registration.  It's inherently fragile like
+> hell and the poor documentation makes it a lot worse.  I'm gonna reply
+> to the head message.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Maybe look at the patch is not clear enough, but if looks at the final changed
+code it would be more clear.
 
---Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL
-Content-Type: application/pgp-signature
+Thanks
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRv/pcAAoJEECxmPOUX5FEIZoP/RMe+ZEtb3M8K/ITjKHlySWZ
-UBdNQ2aVPhVWerTWWwuVO5S+lDnp3jUchiYFSIyQXgh5rY5kTcWBXHnI8s/psne3
-XIx5fro6UF9a0QqaPeGa4Glqq8+TnNrR5TFq6tiNhPB/dpjhxinPb7vJO91LyD2C
-cAKzd4a8aM52NLasKW8lG5S5P1mse+JatNWb/8rH5HVctaEv6ZObPaTpkMqoJcj1
-+0S4LXQ8k+KTh5sLbiYSsNtPx8T9rz0X99xm/J1l+Sa8E+hcHTuS0e3MJjaNdxlD
-7JZVF+pc2C1InFqcFspzJQBMzaj0sIX8/zPsZLPiCinEpUnpO3YGyOt2oGKSCETr
-QuqVt6BSGoDxewVtL8m3m3CPxCNZNb7s0ieow7BRuapMUaIFEi7ApbRH1W7QDKJC
-uNy0a55u62zjYnlfZcXpBCXsEiQ040pQXG96h6SsEIulbgrkibNivw13UbJ44cW3
-n/aAx2nZriPiTOi/oSyZbR9JwLA5fPJIXyd8JZlZJVPcs8CzLHxQaWvJyd132wfN
-xQ/vSGIANWLZh1Y0vC6+HwGtgyje+Rf5LHoAsABB6BS5WPr8ZH1j1llSlX5jJDwV
-slz5RTbNLSNu8Sj+39tEBSdxwF5hPdrsKR3n3gFVk87BJbq9v1J1Dupau4EOUcJ1
-KuNnlzUOMOQyCpVpw0TN
-=z4B9
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Jun_2013_16_12_39_+1000_Sj5w0UsGeWh=SraL--
+Yinghai
