@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab3FRQYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:24:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49517 "EHLO
+	id S933336Ab3FRQZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:25:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229Ab3FRQR6 (ORCPT
+	with ESMTP id S933252Ab3FRQR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:58 -0400
+	Tue, 18 Jun 2013 12:17:57 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>, "Lee, Chun-Y" <jlee@suse.com>
-Subject: [ 39/48] Modify UEFI anti-bricking code
-Date: Tue, 18 Jun 2013 09:18:05 -0700
-Message-Id: <20130618161731.565472700@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 38/48] libceph: wrap auth methods in a mutex
+Date: Tue, 18 Jun 2013 09:18:04 -0700
+Message-Id: <20130618161731.418173078@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -29,401 +28,231 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+From: Sage Weil <sage@inktank.com>
 
-commit f8b8404337de4e2466e2e1139ea68b1f8295974f upstream.
+commit e9966076cdd952e19f2dd4854cd719be0d7cbebc upstream.
 
-This patch reworks the UEFI anti-bricking code, including an effective
-reversion of cc5a080c and 31ff2f20. It turns out that calling
-QueryVariableInfo() from boot services results in some firmware
-implementations jumping to physical addresses even after entering virtual
-mode, so until we have 1:1 mappings for UEFI runtime space this isn't
-going to work so well.
+The auth code is called from a variety of contexts, include the mon_client
+(protected by the monc's mutex) and the messenger callbacks (currently
+protected by nothing).  Avoid chaos by protecting all auth state with a
+mutex.  Nothing is blocking, so this should be simple and lightweight.
 
-Reverting these gets us back to the situation where we'd refuse to create
-variables on some systems because they classify deleted variables as "used"
-until the firmware triggers a garbage collection run, which they won't do
-until they reach a lower threshold. This results in it being impossible to
-install a bootloader, which is unhelpful.
-
-Feedback from Samsung indicates that the firmware doesn't need more than
-5KB of storage space for its own purposes, so that seems like a reasonable
-threshold. However, there's still no guarantee that a platform will attempt
-garbage collection merely because it drops below this threshold. It seems
-that this is often only triggered if an attempt to write generates a
-genuine EFI_OUT_OF_RESOURCES error. We can force that by attempting to
-create a variable larger than the remaining space. This should fail, but if
-it somehow succeeds we can then immediately delete it.
-
-I've tested this on the UEFI machines I have available, but I don't have
-a Samsung and so can't verify that it avoids the bricking problem.
-
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Signed-off-by: Lee, Chun-Y <jlee@suse.com> [ dummy variable cleanup ]
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/eboot.c      |   47 --------
- arch/x86/include/asm/efi.h            |    7 -
- arch/x86/include/uapi/asm/bootparam.h |    1 
- arch/x86/platform/efi/efi.c           |  190 +++++++++++-----------------------
- 4 files changed, 66 insertions(+), 179 deletions(-)
+ include/linux/ceph/auth.h |    2 +
+ net/ceph/auth.c           |   78 +++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 58 insertions(+), 22 deletions(-)
 
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -251,51 +251,6 @@ static void find_bits(unsigned long mask
- 	*size = len;
+--- a/include/linux/ceph/auth.h
++++ b/include/linux/ceph/auth.h
+@@ -78,6 +78,8 @@ struct ceph_auth_client {
+ 	u64 global_id;          /* our unique id in system */
+ 	const struct ceph_crypto_key *key;     /* our secret key */
+ 	unsigned want_keys;     /* which services we want */
++
++	struct mutex mutex;
+ };
+ 
+ extern struct ceph_auth_client *ceph_auth_init(const char *name,
+--- a/net/ceph/auth.c
++++ b/net/ceph/auth.c
+@@ -47,6 +47,7 @@ struct ceph_auth_client *ceph_auth_init(
+ 	if (!ac)
+ 		goto out;
+ 
++	mutex_init(&ac->mutex);
+ 	ac->negotiating = true;
+ 	if (name)
+ 		ac->name = name;
+@@ -73,10 +74,12 @@ void ceph_auth_destroy(struct ceph_auth_
+  */
+ void ceph_auth_reset(struct ceph_auth_client *ac)
+ {
++	mutex_lock(&ac->mutex);
+ 	dout("auth_reset %p\n", ac);
+ 	if (ac->ops && !ac->negotiating)
+ 		ac->ops->reset(ac);
+ 	ac->negotiating = true;
++	mutex_unlock(&ac->mutex);
  }
  
--static efi_status_t setup_efi_vars(struct boot_params *params)
--{
--	struct setup_data *data;
--	struct efi_var_bootdata *efidata;
--	u64 store_size, remaining_size, var_size;
--	efi_status_t status;
--
--	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
--		return EFI_UNSUPPORTED;
--
--	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
--
--	while (data && data->next)
--		data = (struct setup_data *)(unsigned long)data->next;
--
--	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
--				EFI_VARIABLE_NON_VOLATILE |
--				EFI_VARIABLE_BOOTSERVICE_ACCESS |
--				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
--				&remaining_size, &var_size);
--
--	if (status != EFI_SUCCESS)
--		return status;
--
--	status = efi_call_phys3(sys_table->boottime->allocate_pool,
--				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
--
--	if (status != EFI_SUCCESS)
--		return status;
--
--	efidata->data.type = SETUP_EFI_VARS;
--	efidata->data.len = sizeof(struct efi_var_bootdata) -
--		sizeof(struct setup_data);
--	efidata->data.next = 0;
--	efidata->store_size = store_size;
--	efidata->remaining_size = remaining_size;
--	efidata->max_var_size = var_size;
--
--	if (data)
--		data->next = (unsigned long)efidata;
--	else
--		params->hdr.setup_data = (unsigned long)efidata;
--
--}
--
- static efi_status_t setup_efi_pci(struct boot_params *params)
- {
- 	efi_pci_io_protocol *pci;
-@@ -1202,8 +1157,6 @@ struct boot_params *efi_main(void *handl
+ int ceph_entity_name_encode(const char *name, void **p, void *end)
+@@ -102,6 +105,7 @@ int ceph_auth_build_hello(struct ceph_au
+ 	int i, num;
+ 	int ret;
  
- 	setup_graphics(boot_params);
++	mutex_lock(&ac->mutex);
+ 	dout("auth_build_hello\n");
+ 	monhdr->have_version = 0;
+ 	monhdr->session_mon = cpu_to_le16(-1);
+@@ -122,15 +126,19 @@ int ceph_auth_build_hello(struct ceph_au
  
--	setup_efi_vars(boot_params);
--
- 	setup_efi_pci(boot_params);
+ 	ret = ceph_entity_name_encode(ac->name, &p, end);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	ceph_decode_need(&p, end, sizeof(u64), bad);
+ 	ceph_encode_64(&p, ac->global_id);
  
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -102,13 +102,6 @@ extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
+ 	ceph_encode_32(&lenp, p - lenp - sizeof(u32));
+-	return p - buf;
++	ret = p - buf;
++out:
++	mutex_unlock(&ac->mutex);
++	return ret;
  
--struct efi_var_bootdata {
--	struct setup_data data;
--	u64 store_size;
--	u64 remaining_size;
--	u64 max_var_size;
--};
--
- #ifdef CONFIG_EFI
- 
- static inline bool efi_is_native(void)
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -6,7 +6,6 @@
- #define SETUP_E820_EXT			1
- #define SETUP_DTB			2
- #define SETUP_PCI			3
--#define SETUP_EFI_VARS			4
- 
- /* ram_size flags */
- #define RAMDISK_IMAGE_START_MASK	0x07FF
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -41,7 +41,6 @@
- #include <linux/io.h>
- #include <linux/reboot.h>
- #include <linux/bcd.h>
--#include <linux/ucs2_string.h>
- 
- #include <asm/setup.h>
- #include <asm/efi.h>
-@@ -52,12 +51,12 @@
- 
- #define EFI_DEBUG	1
- 
--/*
-- * There's some additional metadata associated with each
-- * variable. Intel's reference implementation is 60 bytes - bump that
-- * to account for potential alignment constraints
-- */
--#define VAR_METADATA_SIZE 64
-+#define EFI_MIN_RESERVE 5120
-+
-+#define EFI_DUMMY_GUID \
-+	EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e, 0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92, 0xa9)
-+
-+static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
- 
- struct efi __read_mostly efi = {
- 	.mps        = EFI_INVALID_TABLE_ADDR,
-@@ -77,13 +76,6 @@ struct efi_memory_map memmap;
- static struct efi efi_phys __initdata;
- static efi_system_table_t efi_systab __initdata;
- 
--static u64 efi_var_store_size;
--static u64 efi_var_remaining_size;
--static u64 efi_var_max_var_size;
--static u64 boot_used_size;
--static u64 boot_var_size;
--static u64 active_size;
--
- unsigned long x86_efi_facility;
- 
- /*
-@@ -186,53 +178,8 @@ static efi_status_t virt_efi_get_next_va
- 					       efi_char16_t *name,
- 					       efi_guid_t *vendor)
- {
--	efi_status_t status;
--	static bool finished = false;
--	static u64 var_size;
--
--	status = efi_call_virt3(get_next_variable,
--				name_size, name, vendor);
--
--	if (status == EFI_NOT_FOUND) {
--		finished = true;
--		if (var_size < boot_used_size) {
--			boot_var_size = boot_used_size - var_size;
--			active_size += boot_var_size;
--		} else {
--			printk(KERN_WARNING FW_BUG  "efi: Inconsistent initial sizes\n");
--		}
--	}
--
--	if (boot_used_size && !finished) {
--		unsigned long size;
--		u32 attr;
--		efi_status_t s;
--		void *tmp;
--
--		s = virt_efi_get_variable(name, vendor, &attr, &size, NULL);
--
--		if (s != EFI_BUFFER_TOO_SMALL || !size)
--			return status;
--
--		tmp = kmalloc(size, GFP_ATOMIC);
--
--		if (!tmp)
--			return status;
--
--		s = virt_efi_get_variable(name, vendor, &attr, &size, tmp);
--
--		if (s == EFI_SUCCESS && (attr & EFI_VARIABLE_NON_VOLATILE)) {
--			var_size += size;
--			var_size += ucs2_strsize(name, 1024);
--			active_size += size;
--			active_size += VAR_METADATA_SIZE;
--			active_size += ucs2_strsize(name, 1024);
--		}
--
--		kfree(tmp);
--	}
--
--	return status;
-+	return efi_call_virt3(get_next_variable,
-+			      name_size, name, vendor);
+ bad:
+-	return -ERANGE;
++	ret = -ERANGE;
++	goto out;
  }
  
- static efi_status_t virt_efi_set_variable(efi_char16_t *name,
-@@ -241,34 +188,9 @@ static efi_status_t virt_efi_set_variabl
- 					  unsigned long data_size,
- 					  void *data)
- {
--	efi_status_t status;
--	u32 orig_attr = 0;
--	unsigned long orig_size = 0;
--
--	status = virt_efi_get_variable(name, vendor, &orig_attr, &orig_size,
--				       NULL);
--
--	if (status != EFI_BUFFER_TOO_SMALL)
--		orig_size = 0;
--
--	status = efi_call_virt5(set_variable,
--				name, vendor, attr,
--				data_size, data);
--
--	if (status == EFI_SUCCESS) {
--		if (orig_size) {
--			active_size -= orig_size;
--			active_size -= ucs2_strsize(name, 1024);
--			active_size -= VAR_METADATA_SIZE;
--		}
--		if (data_size) {
--			active_size += data_size;
--			active_size += ucs2_strsize(name, 1024);
--			active_size += VAR_METADATA_SIZE;
--		}
--	}
--
--	return status;
-+	return efi_call_virt5(set_variable,
-+			      name, vendor, attr,
-+			      data_size, data);
- }
- 
- static efi_status_t virt_efi_query_variable_info(u32 attr,
-@@ -776,9 +698,6 @@ void __init efi_init(void)
- 	char vendor[100] = "unknown";
- 	int i = 0;
- 	void *tmp;
--	struct setup_data *data;
--	struct efi_var_bootdata *efi_var_data;
--	u64 pa_data;
- 
- #ifdef CONFIG_X86_32
- 	if (boot_params.efi_info.efi_systab_hi ||
-@@ -796,22 +715,6 @@ void __init efi_init(void)
- 	if (efi_systab_init(efi_phys.systab))
- 		return;
- 
--	pa_data = boot_params.hdr.setup_data;
--	while (pa_data) {
--		data = early_ioremap(pa_data, sizeof(*efi_var_data));
--		if (data->type == SETUP_EFI_VARS) {
--			efi_var_data = (struct efi_var_bootdata *)data;
--
--			efi_var_store_size = efi_var_data->store_size;
--			efi_var_remaining_size = efi_var_data->remaining_size;
--			efi_var_max_var_size = efi_var_data->max_var_size;
--		}
--		pa_data = data->next;
--		early_iounmap(data, sizeof(*efi_var_data));
--	}
--
--	boot_used_size = efi_var_store_size - efi_var_remaining_size;
--
- 	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
- 
- 	/*
-@@ -1075,6 +978,13 @@ void __init efi_enter_virtual_mode(void)
- 		runtime_code_page_mkexec();
- 
- 	kfree(new_memmap);
-+
-+	/* clean DUMMY object */
-+	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-+			 EFI_VARIABLE_NON_VOLATILE |
-+			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
-+			 EFI_VARIABLE_RUNTIME_ACCESS,
-+			 0, NULL);
+ static int ceph_build_auth_request(struct ceph_auth_client *ac,
+@@ -151,11 +159,13 @@ static int ceph_build_auth_request(struc
+ 	if (ret < 0) {
+ 		pr_err("error %d building auth method %s request\n", ret,
+ 		       ac->ops->name);
+-		return ret;
++		goto out;
+ 	}
+ 	dout(" built request %d bytes\n", ret);
+ 	ceph_encode_32(&p, ret);
+-	return p + ret - msg_buf;
++	ret = p + ret - msg_buf;
++out:
++	return ret;
  }
  
  /*
-@@ -1126,33 +1036,65 @@ efi_status_t efi_query_variable_store(u3
- 	efi_status_t status;
- 	u64 storage_size, remaining_size, max_size;
+@@ -176,6 +186,7 @@ int ceph_handle_auth_reply(struct ceph_a
+ 	int result_msg_len;
+ 	int ret = -EINVAL;
  
-+	if (!(attributes & EFI_VARIABLE_NON_VOLATILE))
-+		return 0;
-+
- 	status = efi.query_variable_info(attributes, &storage_size,
- 					 &remaining_size, &max_size);
- 	if (status != EFI_SUCCESS)
- 		return status;
++	mutex_lock(&ac->mutex);
+ 	dout("handle_auth_reply %p %p\n", p, end);
+ 	ceph_decode_need(&p, end, sizeof(u32) * 3 + sizeof(u64), bad);
+ 	protocol = ceph_decode_32(&p);
+@@ -227,35 +238,44 @@ int ceph_handle_auth_reply(struct ceph_a
  
--	if (!max_size && remaining_size > size)
--		printk_once(KERN_ERR FW_BUG "Broken EFI implementation"
--			    " is returning MaxVariableSize=0\n");
- 	/*
- 	 * Some firmware implementations refuse to boot if there's insufficient
- 	 * space in the variable store. We account for that by refusing the
- 	 * write if permitting it would reduce the available space to under
--	 * 50%. However, some firmware won't reclaim variable space until
--	 * after the used (not merely the actively used) space drops below
--	 * a threshold. We can approximate that case with the value calculated
--	 * above. If both the firmware and our calculations indicate that the
--	 * available space would drop below 50%, refuse the write.
-+	 * 5KB. This figure was provided by Samsung, so should be safe.
- 	 */
-+	if ((remaining_size - size < EFI_MIN_RESERVE) &&
-+		!efi_no_storage_paranoia) {
+ 	ret = ac->ops->handle_reply(ac, result, payload, payload_end);
+ 	if (ret == -EAGAIN) {
+-		return ceph_build_auth_request(ac, reply_buf, reply_len);
++		ret = ceph_build_auth_request(ac, reply_buf, reply_len);
+ 	} else if (ret) {
+ 		pr_err("auth method '%s' error %d\n", ac->ops->name, ret);
+-		return ret;
+ 	}
+-	return 0;
  
--	if (!storage_size || size > remaining_size ||
--	    (max_size && size > max_size))
--		return EFI_OUT_OF_RESOURCES;
--
--	if (!efi_no_storage_paranoia &&
--	    ((active_size + size + VAR_METADATA_SIZE > storage_size / 2) &&
--	     (remaining_size - size < storage_size / 2)))
--		return EFI_OUT_OF_RESOURCES;
-+		/*
-+		 * Triggering garbage collection may require that the firmware
-+		 * generate a real EFI_OUT_OF_RESOURCES error. We can force
-+		 * that by attempting to use more space than is available.
-+		 */
-+		unsigned long dummy_size = remaining_size + 1024;
-+		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
+-bad:
+-	pr_err("failed to decode auth msg\n");
+ out:
++	mutex_unlock(&ac->mutex);
+ 	return ret;
 +
-+		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-+					  EFI_VARIABLE_NON_VOLATILE |
-+					  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-+					  EFI_VARIABLE_RUNTIME_ACCESS,
-+					  dummy_size, dummy);
-+
-+		if (status == EFI_SUCCESS) {
-+			/*
-+			 * This should have failed, so if it didn't make sure
-+			 * that we delete it...
-+			 */
-+			efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-+					 EFI_VARIABLE_NON_VOLATILE |
-+					 EFI_VARIABLE_BOOTSERVICE_ACCESS |
-+					 EFI_VARIABLE_RUNTIME_ACCESS,
-+					 0, dummy);
-+		}
-+
-+		/*
-+		 * The runtime code may now have triggered a garbage collection
-+		 * run, so check the variable info again
-+		 */
-+		status = efi.query_variable_info(attributes, &storage_size,
-+						 &remaining_size, &max_size);
-+
-+		if (status != EFI_SUCCESS)
-+			return status;
-+
-+		/*
-+		 * There still isn't enough room, so return an error
-+		 */
-+		if (remaining_size - size < EFI_MIN_RESERVE)
-+			return EFI_OUT_OF_RESOURCES;
-+	}
- 
- 	return EFI_SUCCESS;
++bad:
++	pr_err("failed to decode auth msg\n");
++	ret = -EINVAL;
++	goto out;
  }
+ 
+ int ceph_build_auth(struct ceph_auth_client *ac,
+ 		    void *msg_buf, size_t msg_len)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (!ac->protocol)
+-		return ceph_auth_build_hello(ac, msg_buf, msg_len);
+-	BUG_ON(!ac->ops);
+-	if (ac->ops->should_authenticate(ac))
+-		return ceph_build_auth_request(ac, msg_buf, msg_len);
+-	return 0;
++		ret = ceph_auth_build_hello(ac, msg_buf, msg_len);
++	else if (ac->ops->should_authenticate(ac))
++		ret = ceph_build_auth_request(ac, msg_buf, msg_len);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ 
+ int ceph_auth_is_authenticated(struct ceph_auth_client *ac)
+ {
+-	if (!ac->ops)
+-		return 0;
+-	return ac->ops->is_authenticated(ac);
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
++	if (ac->ops)
++		ret = ac->ops->is_authenticated(ac);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_is_authenticated);
+ 
+@@ -263,17 +283,23 @@ int ceph_auth_create_authorizer(struct c
+ 				int peer_type,
+ 				struct ceph_auth_handshake *auth)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->create_authorizer)
+-		return ac->ops->create_authorizer(ac, peer_type, auth);
+-	return 0;
++		ret = ac->ops->create_authorizer(ac, peer_type, auth);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_create_authorizer);
+ 
+ void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
+ 				  struct ceph_authorizer *a)
+ {
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->destroy_authorizer)
+ 		ac->ops->destroy_authorizer(ac, a);
++	mutex_unlock(&ac->mutex);
+ }
+ EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
+ 
+@@ -283,8 +309,10 @@ int ceph_auth_update_authorizer(struct c
+ {
+ 	int ret = 0;
+ 
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->update_authorizer)
+ 		ret = ac->ops->update_authorizer(ac, peer_type, a);
++	mutex_unlock(&ac->mutex);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_update_authorizer);
+@@ -292,15 +320,21 @@ EXPORT_SYMBOL(ceph_auth_update_authorize
+ int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 				      struct ceph_authorizer *a, size_t len)
+ {
++	int ret = 0;
++
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->verify_authorizer_reply)
+-		return ac->ops->verify_authorizer_reply(ac, a, len);
+-	return 0;
++		ret = ac->ops->verify_authorizer_reply(ac, a, len);
++	mutex_unlock(&ac->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
+ 
+ void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
+ {
++	mutex_lock(&ac->mutex);
+ 	if (ac->ops && ac->ops->invalidate_authorizer)
+ 		ac->ops->invalidate_authorizer(ac, peer_type);
++	mutex_unlock(&ac->mutex);
+ }
+ EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
 
 
