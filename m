@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3FRGmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 02:42:06 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38000 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3FRGmE (ORCPT
+	id S1753475Ab3FRGmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 02:42:19 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:51861 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab3FRGmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 02:42:04 -0400
-Message-ID: <51C00116.2080301@parallels.com>
-Date: Tue, 18 Jun 2013 10:41:26 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 18 Jun 2013 02:42:14 -0400
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-Subject: Re: [PATCH v2 2/4] SUNRPC: fix races on PipeFS MOUNT notifications
-References: <20130611143725.16046.17279.stgit@localhost.localdomain>  <20130611143917.16046.15791.stgit@localhost.localdomain> <1371493226.9595.5.camel@leira.trondhjem.org>
-In-Reply-To: <1371493226.9595.5.camel@leira.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+In-Reply-To: <20130617155156.4c729b5a@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpokQAsuAqWi7rNx9RaFz8KVRNXVkBD22KC5_Qh05k66qqA@mail.gmail.com>
+	<20130617091549.398b865f@amdc308.digital.local>
+	<CAKohpo=nfuqwCoQJRczmNRNXCOTL5FSJQEzjKpVdXU+wu-KJ1g@mail.gmail.com>
+	<20130617110811.1e1805d2@amdc308.digital.local>
+	<CAKohpo=oy3SQXgvNvOydggZ5NZu9yyVtKrdFQjNOGVmzhSaQUw@mail.gmail.com>
+	<20130617115809.5206c42c@amdc308.digital.local>
+	<CAKohpo=yPcH0FW7T38cd3E1xOpzC0AhJ5mtyVaQyuj_S8iLovw@mail.gmail.com>
+	<20130617155156.4c729b5a@amdc308.digital.local>
+Date: Tue, 18 Jun 2013 12:12:13 +0530
+Message-ID: <CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.06.2013 22:20, Myklebust, Trond пишет:
-> On Tue, 2013-06-11 at 18:39 +0400, Stanislav Kinsbursky wrote:
->> Below are races, when RPC client can be created without PiepFS dentries
->>
->> CPU#0					CPU#1
->> -----------------------------		-----------------------------
->> rpc_new_client				rpc_fill_super
->> rpc_setup_pipedir
->> mutex_lock(&sn->pipefs_sb_lock)
->> rpc_get_sb_net == NULL
->> (no per-net PipeFS superblock)
->> 					sn->pipefs_sb = sb;
->> 					notifier_call_chain(MOUNT)
->> 					(client is not in the list)
->> rpc_register_client
->> (client without pipes dentries)
->>
->> To fix this patch:
->> 1) makes PipeFS mount notification call with pipefs_sb_lock being held.
->> 2) releases pipefs_sb_lock on new SUNRPC client creation only after
->> registration.
->>
->> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->> Cc: stable@vger.kernel.org
+On 17 June 2013 19:21, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Mon, 17 Jun 2013 18:40:50 +0530, Viresh Kumar wrote:
+>> >> > The core acpi-cpufreq.c code hadn't been changed by me, so I
+>> >> > assume that it will work as before.
+>> >>
+>> >> That should adapt your patch in your patchset.
 >
-> Hi Stanislav,
->
-> This isn't going to apply to the stable kernels without the cleanup
-> patch. Could you please reorganise this patch series so that the cleanup
-> comes last.
->
-> Thanks,
->    Trond
->
->
+> Could you explain what do you mean?
 
-Hello, Trond.
-Sure, will do.
+Update acpi-cpufreq to use your infrastructure.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+>> >> From sysfs?? I thought we are going to have some automatic control
+>> >> of this stuff from inside kernel.
+>> >
+>> > From sysfs I just enable the boost. I do not order from userpace the
+>> > cpufreq to run with a particular (boosted) frequency.
+>> >
+>> > When I enable boost - I ask (politely) the cpufreq core to
+>> > reevaluate policies and when applicable increase policy->max.
+>> >
+>> > Then governor can use this new frequencies for normal operation.
+>>
+>> So, with your current patchset in, ondemand or conservative governors
+>> will start using boost frequencies. Which might burn your chip.
+>
+> Two scenarios:
+> 1. Thermal framework is compiled in and enabled (for exynos/other SoC)
+> -> trip point is reached -> boost is disabled -> frequency is reduced ->
+> SoC is cooled down.
+>
+> I think, that thermal framework is a good "safe valve" here.
+
+Even in this case boost shouldn't have been enabled by default.
+Its not only about burning the chip but more than that.
+
+According to my understanding, boost was important for power
+saving. In case a high load can be managed by a single cpu with
+boost freqs, then its better to use boost freqs rather than bringing
+another cpu up.
+
+Normally boost freqs are not so useful if we talk about powersaving,
+as their energy consumption is much higher with not so great impact
+on performance.
+
+That's why when this thread started we talked about boost only when
+one cpu is operational. But with your patch all cores can use boost
+freq and thermal will come into picture just to save the chip.
+
+That's wrong. This isn't why we invented boost here. Otherwise you
+just don't need boost feature at all for your SoC. Just make these
+freqs as available freqs and let thermal control policy->max/min
+to save your chip.
+
+> 2. Thermal framework is disabled and user has enabled boost and used
+> ondemand / conservative governor.
+> Then execute gzip < /dev/urandom > /dev/null & (on all cores).
+>
+> Then yes, chip will hang/burn due to crossing operating point (or burn).
+>
+>
+> What other means of control (despite of thermal) would you consider
+> applicable?
+>
+> What comes to my mind is modifying governor logic to count how long the
+> CPU run with boost enabled and then disable it.
+
+Its not about how long.. One cpu type can work longer with boost freq
+compared to other.
+
+What we probably need is:
+- Enabled boost from sysfs if required (now below steps will come into
+  picture)
+- See how many cpus are running, if only one then start using boost freqs
+- Now thermal should be come into picture to save chip in case a single
+cpu running at boost can burn it out.
