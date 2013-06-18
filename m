@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab3FRQ1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:27:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49469 "EHLO
+	id S933354Ab3FRQ1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:27:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49463 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933217Ab3FRQRv (ORCPT
+	with ESMTP id S933185Ab3FRQRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:51 -0400
+	Tue, 18 Jun 2013 12:17:50 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Josh Boyer <jwboyer@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        Robin Holt <holt@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 19/48] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
-Date: Tue, 18 Jun 2013 09:17:45 -0700
-Message-Id: <20130618161728.665397552@linuxfoundation.org>
+Subject: [ 18/48] reboot: rigrate shutdown/reboot to boot cpu
+Date: Tue, 18 Jun 2013 09:17:44 -0700
+Message-Id: <20130618161728.508854182@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -32,240 +35,100 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Robin Holt <holt@sgi.com>
 
-commit 637241a900cbd982f744d44646b48a273d609b34 upstream.
+commit cf7df378aa4ff7da3a44769b7ff6e9eef1a9f3db upstream.
 
-The dmesg_restrict sysctl currently covers the syslog method for access
-dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-people haven't noticed because util-linux dmesg(1) defaults to using the
-syslog method for access in older versions.  With util-linux dmesg(1)
-defaults to reading directly from /dev/kmsg.
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f2dc63 ("kernel/sys.c: call disable_nonboot_cpus() in
+kernel_restart()").
 
-To fix /dev/kmsg, let's compare the existing interfaces and what they
-allow:
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+boot cpu and then continuing with shutdown/reboot.
 
- - /proc/kmsg allows:
-  - open (SYSLOG_ACTION_OPEN) if CAP_SYSLOG since it uses a destructive
-    single-reader interface (SYSLOG_ACTION_READ).
-  - everything, after an open.
+This also has the effect of not breaking x86's command line parameter
+for specifying the reboot cpu.  Note, this code was shamelessly copied
+from arch/x86/kernel/reboot.c with bits removed pertaining to the
+reboot_cpu command line parameter.
 
- - syslog syscall allows:
-  - anything, if CAP_SYSLOG.
-  - SYSLOG_ACTION_READ_ALL and SYSLOG_ACTION_SIZE_BUFFER, if
-    dmesg_restrict==0.
-  - nothing else (EPERM).
-
-The use-cases were:
- - dmesg(1) needs to do non-destructive SYSLOG_ACTION_READ_ALLs.
- - sysklog(1) needs to open /proc/kmsg, drop privs, and still issue the
-   destructive SYSLOG_ACTION_READs.
-
-AIUI, dmesg(1) is moving to /dev/kmsg, and systemd-journald doesn't
-clear the ring buffer.
-
-Based on the comments in devkmsg_llseek, it sounds like actions besides
-reading aren't going to be supported by /dev/kmsg (i.e.
-SYSLOG_ACTION_CLEAR), so we have a strict subset of the non-destructive
-syslog syscall actions.
-
-To this end, move the check as Josh had done, but also rename the
-constants to reflect their new uses (SYSLOG_FROM_CALL becomes
-SYSLOG_FROM_READER, and SYSLOG_FROM_FILE becomes SYSLOG_FROM_PROC).
-SYSLOG_FROM_READER allows non-destructive actions, and SYSLOG_FROM_PROC
-allows destructive actions after a capabilities-constrained
-SYSLOG_ACTION_OPEN check.
-
- - /dev/kmsg allows:
-  - open if CAP_SYSLOG or dmesg_restrict==0
-  - reading/polling, after open
-
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=903192
-
-[akpm@linux-foundation.org: use pr_warn_once()]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Christian Kujau <lists@nerdbynature.de>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Cc: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/kmsg.c         |   10 ++---
- include/linux/syslog.h |    4 +-
- kernel/printk.c        |   91 ++++++++++++++++++++++++++-----------------------
- 3 files changed, 57 insertions(+), 48 deletions(-)
+ kernel/sys.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
---- a/fs/proc/kmsg.c
-+++ b/fs/proc/kmsg.c
-@@ -21,12 +21,12 @@ extern wait_queue_head_t log_wait;
- 
- static int kmsg_open(struct inode * inode, struct file * file)
- {
--	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_OPEN, NULL, 0, SYSLOG_FROM_PROC);
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -357,6 +357,29 @@ int unregister_reboot_notifier(struct no
  }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
  
- static int kmsg_release(struct inode * inode, struct file * file)
- {
--	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_FILE);
-+	(void) do_syslog(SYSLOG_ACTION_CLOSE, NULL, 0, SYSLOG_FROM_PROC);
- 	return 0;
- }
- 
-@@ -34,15 +34,15 @@ static ssize_t kmsg_read(struct file *fi
- 			 size_t count, loff_t *ppos)
- {
- 	if ((file->f_flags & O_NONBLOCK) &&
--	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	    !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return -EAGAIN;
--	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
-+	return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_PROC);
- }
- 
- static unsigned int kmsg_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &log_wait, wait);
--	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-+	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_PROC))
- 		return POLLIN | POLLRDNORM;
- 	return 0;
- }
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -44,8 +44,8 @@
- /* Return size of the log buffer */
- #define SYSLOG_ACTION_SIZE_BUFFER   10
- 
--#define SYSLOG_FROM_CALL 0
--#define SYSLOG_FROM_FILE 1
-+#define SYSLOG_FROM_READER           0
-+#define SYSLOG_FROM_PROC             1
- 
- int do_syslog(int type, char __user *buf, int count, bool from_file);
- 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -368,6 +368,53 @@ static void log_store(int facility, int
- 	log_next_seq++;
- }
- 
-+#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-+int dmesg_restrict = 1;
-+#else
-+int dmesg_restrict;
++/* Add backwards compatibility for stable trees. */
++#ifndef PF_NO_SETAFFINITY
++#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
 +#endif
 +
-+static int syslog_action_restricted(int type)
++static void migrate_to_reboot_cpu(void)
 +{
-+	if (dmesg_restrict)
-+		return 1;
-+	/*
-+	 * Unless restricted, we allow "read all" and "get buffer size"
-+	 * for everybody.
-+	 */
-+	return type != SYSLOG_ACTION_READ_ALL &&
-+	       type != SYSLOG_ACTION_SIZE_BUFFER;
++	/* The boot cpu is always logical cpu 0 */
++	int cpu = 0;
++
++	cpu_hotplug_disable();
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(cpu))
++		cpu = cpumask_first(cpu_online_mask);
++
++	/* Prevent races with other tasks migrating this task */
++	current->flags |= PF_NO_SETAFFINITY;
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
 +}
 +
-+static int check_syslog_permissions(int type, bool from_file)
-+{
-+	/*
-+	 * If this is from /proc/kmsg and we've already opened it, then we've
-+	 * already done the capabilities checks at open time.
-+	 */
-+	if (from_file && type != SYSLOG_ACTION_OPEN)
-+		return 0;
-+
-+	if (syslog_action_restricted(type)) {
-+		if (capable(CAP_SYSLOG))
-+			return 0;
-+		/*
-+		 * For historical reasons, accept CAP_SYS_ADMIN too, with
-+		 * a warning.
-+		 */
-+		if (capable(CAP_SYS_ADMIN)) {
-+			pr_warn_once("%s (%d): Attempt to access syslog with "
-+				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
-+				     "(deprecated).\n",
-+				 current->comm, task_pid_nr(current));
-+			return 0;
-+		}
-+		return -EPERM;
-+	}
-+	return security_syslog(type);
-+}
-+
-+
- /* /dev/kmsg - userspace message inject/listen interface */
- struct devkmsg_user {
- 	u64 seq;
-@@ -624,7 +671,8 @@ static int devkmsg_open(struct inode *in
- 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
- 		return 0;
- 
--	err = security_syslog(SYSLOG_ACTION_READ_ALL);
-+	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+				       SYSLOG_FROM_READER);
- 	if (err)
- 		return err;
- 
-@@ -817,45 +865,6 @@ static inline void boot_delay_msec(int l
- }
- #endif
- 
--#ifdef CONFIG_SECURITY_DMESG_RESTRICT
--int dmesg_restrict = 1;
--#else
--int dmesg_restrict;
--#endif
--
--static int syslog_action_restricted(int type)
--{
--	if (dmesg_restrict)
--		return 1;
--	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
--	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
--}
--
--static int check_syslog_permissions(int type, bool from_file)
--{
--	/*
--	 * If this is from /proc/kmsg and we've already opened it, then we've
--	 * already done the capabilities checks at open time.
--	 */
--	if (from_file && type != SYSLOG_ACTION_OPEN)
--		return 0;
--
--	if (syslog_action_restricted(type)) {
--		if (capable(CAP_SYSLOG))
--			return 0;
--		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
--		if (capable(CAP_SYS_ADMIN)) {
--			printk_once(KERN_WARNING "%s (%d): "
--				 "Attempt to access syslog with CAP_SYS_ADMIN "
--				 "but no CAP_SYSLOG (deprecated).\n",
--				 current->comm, task_pid_nr(current));
--			return 0;
--		}
--		return -EPERM;
--	}
--	return 0;
--}
--
- #if defined(CONFIG_PRINTK_TIME)
- static bool printk_time = 1;
- #else
-@@ -1253,7 +1262,7 @@ out:
- 
- SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
+ /**
+  *	kernel_restart - reboot the system
+  *	@cmd: pointer to buffer containing command to execute for restart
+@@ -368,7 +391,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
+ void kernel_restart(char *cmd)
  {
--	return do_syslog(type, buf, len, SYSLOG_FROM_CALL);
-+	return do_syslog(type, buf, len, SYSLOG_FROM_READER);
- }
- 
- /*
+ 	kernel_restart_prepare(cmd);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+@@ -395,7 +418,7 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+@@ -414,7 +437,7 @@ void kernel_power_off(void)
+ 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
 
 
