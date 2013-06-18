@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab3FRE4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 00:56:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54508 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab3FRE4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 00:56:12 -0400
-Date: Tue, 18 Jun 2013 14:55:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernd Bassimir <bassimir.kernel@gmx.de>,
-        Nico Doerr <nico.doerr@hawo.net>
-Subject: linux-next: manual merge of the staging tree with the usb tree
-Message-Id: <20130618145559.cc7923dac280e736c908a422@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Jun_2013_14_55_59_+1000_9sD/ms_5+mdhN2xF"
+	id S1753922Ab3FRE5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 00:57:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38703 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753563Ab3FRE5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 00:57:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,886,1363158000"; 
+   d="scan'208";a="355149949"
+Message-ID: <51BFE868.9010008@intel.com>
+Date: Tue, 18 Jun 2013 12:56:08 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, wangyun@linux.vnet.ibm.com,
+        Jason Low <jason.low2@hp.com>
+Subject: Re: [RFC patch 1/4] sched: change cfs_rq load avg to unsigned long
+References: <1370590169-24804-1-git-send-email-alex.shi@intel.com> <1370590169-24804-2-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1370590169-24804-2-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Jun_2013_14_55_59_+1000_9sD/ms_5+mdhN2xF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/07/2013 03:29 PM, Alex Shi wrote:
+> Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
+> smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
+> vaiables to describe them. unsigned long is more efficient and convenience.
+> 
 
-Hi Greg,
+update with a a bit clean up in tg_load_down()
+---
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/serqt_usb2/serqt_usb2.c between commit 1143832eca8f
-("USB: serial: ports: add minor and port number") from the usb tree and
-commit d68edc2881b1 ("staging: serqt_usb2: Fixed coding style
-CamelCases") from the staging tree.
+>From e78ccc55dff1a5ef406a100f6453d0b8c86ca310 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 6 Jun 2013 20:12:36 +0800
+Subject: [PATCH 1/5] sched: change cfs_rq load avg to unsigned long
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
+smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
+variables to describe them. unsigned long is more efficient and convenience.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+Tested-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/debug.c | 4 ++--
+ kernel/sched/fair.c  | 7 ++-----
+ kernel/sched/sched.h | 2 +-
+ 3 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --cc drivers/staging/serqt_usb2/serqt_usb2.c
-index 880f5c0,39de5e0..0000000
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@@ -870,10 -870,10 +870,10 @@@ static int qt_open(struct tty_struct *t
-  	usb_clear_halt(serial->dev, port->read_urb->pipe);
-  	port0->open_ports++;
- =20
-- 	result =3D qt_get_device(serial, &port0->DeviceData);
-+ 	result =3D qt_get_device(serial, &port0->device_data);
- =20
-  	/* Port specific setups */
-- 	result =3D qt_open_channel(serial, port->port_number, &ChannelData);
- -	result =3D qt_open_channel(serial, port->number, &channel_data);
-++	result =3D qt_open_channel(serial, port->port_number, &channel_data);
-  	if (result < 0) {
-  		dev_dbg(&port->dev, "qt_open_channel failed\n");
-  		return result;
-@@@ -1239,23 -1245,25 +1239,23 @@@ static void qt_set_termios(struct tty_s
- =20
-  	/* Now determine flow control */
-  	if (cflag & CRTSCTS) {
- -		dev_dbg(&port->dev, "%s - Enabling HW flow control port %d\n",
- -			__func__, port->number);
- +		dev_dbg(&port->dev, "%s - Enabling HW flow control\n", __func__);
- =20
-  		/* Enable RTS/CTS flow control */
-- 		status =3D BoxSetHW_FlowCtrl(port->serial, index, 1);
-+ 		status =3D box_set_hw_flow_ctrl(port->serial, index, 1);
- =20
-  		if (status < 0) {
-- 			dev_dbg(&port->dev, "BoxSetHW_FlowCtrl failed\n");
-+ 			dev_dbg(&port->dev, "box_set_hw_flow_ctrl failed\n");
-  			return;
-  		}
-  	} else {
-  		/* Disable RTS/CTS flow control */
-  		dev_dbg(&port->dev,
- -			"%s - disabling HW flow control port %d\n",
- -			__func__, port->number);
- +			"%s - disabling HW flow control\n", __func__);
- =20
-- 		status =3D BoxSetHW_FlowCtrl(port->serial, index, 0);
-+ 		status =3D box_set_hw_flow_ctrl(port->serial, index, 0);
-  		if (status < 0) {
-- 			dev_dbg(&port->dev, "BoxSetHW_FlowCtrl failed\n");
-+ 			dev_dbg(&port->dev, "box_set_hw_flow_ctrl failed\n");
-  			return;
-  		}
- =20
-@@@ -1324,12 -1332,12 +1324,12 @@@ static inline int qt_real_tiocmget(stru
-  	int status;
-  	unsigned int index;
- =20
- -	index =3D tty->index - serial->minor;
- +	index =3D port->port_number;
-  	status =3D
-- 	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-+ 	    box_get_register(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-  	if (status >=3D 0) {
-  		status =3D
-- 		    BoxGetRegister(port->serial, index,
-+ 		    box_get_register(port->serial, index,
-  				   MODEM_STATUS_REGISTER, &msr);
- =20
-  	}
-@@@ -1363,9 -1371,9 +1363,9 @@@ static inline int qt_real_tiocmset(stru
-  	int status;
-  	unsigned int index;
- =20
- -	index =3D tty->index - serial->minor;
- +	index =3D port->port_number;
-  	status =3D
-- 	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-+ 	    box_get_register(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
-  	if (status < 0)
-  		return -ESPIPE;
- =20
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 75024a6..160afdc 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -211,9 +211,9 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ #ifdef CONFIG_SMP
+-	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
++	SEQ_printf(m, "  .%-30s: %ld\n", "runnable_load_avg",
+ 			cfs_rq->runnable_load_avg);
+-	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
++	SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+ 			(unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 395f57c..39a5bae 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4186,12 +4186,9 @@ static int tg_load_down(struct task_group *tg, void *data)
+ 	if (!tg->parent) {
+ 		load = cpu_rq(cpu)->avg.load_avg_contrib;
+ 	} else {
+-		unsigned long tmp_rla;
+-		tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
+-
+ 		load = tg->parent->cfs_rq[cpu]->h_load;
+-		load *= tg->se[cpu]->avg.load_avg_contrib;
+-		load /= tmp_rla;
++		load = div64_ul(load * tg->se[cpu]->avg.load_avg_contrib,
++				tg->parent->cfs_rq[cpu]->runnable_load_avg + 1);
+ 	}
+ 
+ 	tg->cfs_rq[cpu]->h_load = load;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 0684c26..762fa63 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -277,7 +277,7 @@ struct cfs_rq {
+ 	 * This allows for the description of both thread and group usage (in
+ 	 * the FAIR_GROUP_SCHED case).
+ 	 */
+-	u64 runnable_load_avg, blocked_load_avg;
++	unsigned long runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
+ 
+-- 
+1.7.12
 
---Signature=_Tue__18_Jun_2013_14_55_59_+1000_9sD/ms_5+mdhN2xF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRv+hjAAoJEECxmPOUX5FEOF0P/iD7f1soVs8+CAEyQ/R+9fG6
-vzm38sQ67iWuxJEj5Xcir2CCQTdrm0jJJDMucvN3EKhPZA5ZkWPmsGqniKRNYEAz
-9SnfV2ZuQP4xE/Qzhx0Al/i/Hqh5pj/fLenCTeuo0f84mrXduEp3YF5vBhLiEhno
-4efUn66z05zQbUlYX2OSxZtbJf+gaWoH98otU+Gi6/WwQEEfpxkOV6jtjymk1fKf
-JFt15yKEbpC2b/57BX8cXxh+4oiuiNdLBqTbRFzXiTxcL5bU/5vaMrg4/39OFI9u
-59LMrzZZxsBlsvn87dheihk6HjGJ+VKTez0OZrBOntxTZ+giWwyEqjShJmPQ6pr8
-M00A/E159Qudt71Q8LxcHqPIpcKVhZ7QOid+ixO4q9jLQcNjv23eoNKLEtiQrA1y
-bIM3C1SETHc63ldjLBlLa809+YRS3L/ELya3Ymhj6x/D9m1VFDUv8QsrMuhGFixa
-hsyEKNsdpQ/oAOT/L3uZNUwQSlMB8+t2T/1UYZgcfSvCVYWZfBs5SHuJ54Vh+cEV
-MSHwqJlqakioIyEkSs4hsL3qYKSQFflorPJpLMAoCoHFWGSJGO1FD3Yg0VNCX5fk
-/3TDIuJhsXC2RpgHVOt/M82WTcTf3aiXztADVcQRUp4HFBH6GwyvECJgece6F53y
-lJEUCPBcu6Y+GHnOT3Xc
-=Hx75
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Jun_2013_14_55_59_+1000_9sD/ms_5+mdhN2xF--
