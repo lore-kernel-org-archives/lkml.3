@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109Ab3FRQQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:16:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49338 "EHLO
+	id S933139Ab3FRQRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:17:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933063Ab3FRQOr (ORCPT
+	with ESMTP id S933053Ab3FRQOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:47 -0400
+	Tue, 18 Jun 2013 12:14:46 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
-Subject: [ 22/26] libceph: wrap auth ops in wrapper functions
-Date: Tue, 18 Jun 2013 09:15:02 -0700
-Message-Id: <20130618161237.823867744@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 17/26] mm: migration: add migrate_entry_wait_huge()
+Date: Tue, 18 Jun 2013 09:14:57 -0700
+Message-Id: <20130618161236.586946659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -28,260 +34,109 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 27859f9773e4a0b2042435b13400ee2c891a61f4 upstream.
+commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
 
-Use wrapper functions that check whether the auth op exists so that callers
-do not need a bunch of conditional checks.  Simplifies the external
-interface.
+When we have a page fault for the address which is backed by a hugepage
+under migration, the kernel can't wait correctly and do busy looping on
+hugepage fault until the migration finishes.  As a result, users who try
+to kick hugepage migration (via soft offlining, for example) occasionally
+experience long delay or soft lockup.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+This is because pte_offset_map_lock() can't get a correct migration entry
+or a correct page table lock for hugepage.  This patch introduces
+migration_entry_wait_huge() to solve this.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mds_client.c      |   26 +++++++++++--------------
- include/linux/ceph/auth.h |   13 ++++++++++++
- net/ceph/auth.c           |   47 ++++++++++++++++++++++++++++++++++++++++++++++
- net/ceph/auth_x.c         |    1 
- net/ceph/mon_client.c     |    7 ++----
- net/ceph/osd_client.c     |   26 ++++++++-----------------
- 6 files changed, 84 insertions(+), 36 deletions(-)
+ include/linux/swapops.h |    3 +++
+ mm/hugetlb.c            |    2 +-
+ mm/migrate.c            |   23 ++++++++++++++++++-----
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -335,9 +335,9 @@ void ceph_put_mds_session(struct ceph_md
- 	     atomic_read(&s->s_ref), atomic_read(&s->s_ref)-1);
- 	if (atomic_dec_and_test(&s->s_ref)) {
- 		if (s->s_auth.authorizer)
--		     s->s_mdsc->fsc->client->monc.auth->ops->destroy_authorizer(
--			     s->s_mdsc->fsc->client->monc.auth,
--			     s->s_auth.authorizer);
-+			ceph_auth_destroy_authorizer(
-+				s->s_mdsc->fsc->client->monc.auth,
-+				s->s_auth.authorizer);
- 		kfree(s);
- 	}
- }
-@@ -3419,18 +3419,17 @@ static struct ceph_auth_handshake *get_a
- 	struct ceph_auth_handshake *auth = &s->s_auth;
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -137,6 +137,7 @@ static inline void make_migration_entry_
  
- 	if (force_new && auth->authorizer) {
--		if (ac->ops && ac->ops->destroy_authorizer)
--			ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		ceph_auth_destroy_authorizer(ac, auth->authorizer);
- 		auth->authorizer = NULL;
- 	}
--	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
--		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
--						     auth);
-+	if (!auth->authorizer) {
-+		int ret = ceph_auth_create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
-+						      auth);
- 		if (ret)
- 			return ERR_PTR(ret);
--	} else if (ac->ops && ac->ops_update_authorizer) {
--		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
--						     auth);
-+	} else {
-+		int ret = ceph_auth_update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
-+						      auth);
- 		if (ret)
- 			return ERR_PTR(ret);
- 	}
-@@ -3446,7 +3445,7 @@ static int verify_authorizer_reply(struc
- 	struct ceph_mds_client *mdsc = s->s_mdsc;
- 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
++extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
+ #else
  
--	return ac->ops->verify_authorizer_reply(ac, s->s_auth.authorizer, len);
-+	return ceph_auth_verify_authorizer_reply(ac, s->s_auth.authorizer, len);
- }
- 
- static int invalidate_authorizer(struct ceph_connection *con)
-@@ -3455,8 +3454,7 @@ static int invalidate_authorizer(struct
- 	struct ceph_mds_client *mdsc = s->s_mdsc;
- 	struct ceph_auth_client *ac = mdsc->fsc->client->monc.auth;
- 
--	if (ac->ops->invalidate_authorizer)
--		ac->ops->invalidate_authorizer(ac, CEPH_ENTITY_TYPE_MDS);
-+	ceph_auth_invalidate_authorizer(ac, CEPH_ENTITY_TYPE_MDS);
- 
- 	return ceph_monc_validate_auth(&mdsc->fsc->client->monc);
- }
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -97,5 +97,18 @@ extern int ceph_build_auth(struct ceph_a
- 		    void *msg_buf, size_t msg_len);
- 
- extern int ceph_auth_is_authenticated(struct ceph_auth_client *ac);
-+extern int ceph_auth_create_authorizer(struct ceph_auth_client *ac,
-+				       int peer_type,
-+				       struct ceph_auth_handshake *auth);
-+extern void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
-+					 struct ceph_authorizer *a);
-+extern int ceph_auth_update_authorizer(struct ceph_auth_client *ac,
-+				       int peer_type,
-+				       struct ceph_auth_handshake *a);
-+extern int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
-+					     struct ceph_authorizer *a,
-+					     size_t len);
-+extern void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac,
-+					    int peer_type);
- 
- #endif
---- a/net/ceph/auth.c
-+++ b/net/ceph/auth.c
-@@ -257,3 +257,50 @@ int ceph_auth_is_authenticated(struct ce
- 		return 0;
- 	return ac->ops->is_authenticated(ac);
- }
-+EXPORT_SYMBOL(ceph_auth_is_authenticated);
-+
-+int ceph_auth_create_authorizer(struct ceph_auth_client *ac,
-+				int peer_type,
-+				struct ceph_auth_handshake *auth)
-+{
-+	if (ac->ops && ac->ops->create_authorizer)
-+		return ac->ops->create_authorizer(ac, peer_type, auth);
-+	return 0;
-+}
-+EXPORT_SYMBOL(ceph_auth_create_authorizer);
-+
-+void ceph_auth_destroy_authorizer(struct ceph_auth_client *ac,
-+				  struct ceph_authorizer *a)
-+{
-+	if (ac->ops && ac->ops->destroy_authorizer)
-+		ac->ops->destroy_authorizer(ac, a);
-+}
-+EXPORT_SYMBOL(ceph_auth_destroy_authorizer);
-+
-+int ceph_auth_update_authorizer(struct ceph_auth_client *ac,
-+				int peer_type,
-+				struct ceph_auth_handshake *a)
-+{
-+	int ret = 0;
-+
-+	if (ac->ops && ac->ops->update_authorizer)
-+		ret = ac->ops->update_authorizer(ac, peer_type, a);
-+	return ret;
-+}
-+EXPORT_SYMBOL(ceph_auth_update_authorizer);
-+
-+int ceph_auth_verify_authorizer_reply(struct ceph_auth_client *ac,
-+				      struct ceph_authorizer *a, size_t len)
-+{
-+	if (ac->ops && ac->ops->verify_authorizer_reply)
-+		return ac->ops->verify_authorizer_reply(ac, a, len);
-+	return 0;
-+}
-+EXPORT_SYMBOL(ceph_auth_verify_authorizer_reply);
-+
-+void ceph_auth_invalidate_authorizer(struct ceph_auth_client *ac, int peer_type)
-+{
-+	if (ac->ops && ac->ops->invalidate_authorizer)
-+		ac->ops->invalidate_authorizer(ac, peer_type);
-+}
-+EXPORT_SYMBOL(ceph_auth_invalidate_authorizer);
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -562,7 +562,6 @@ static int ceph_x_update_authorizer(
+ #define make_migration_entry(page, write) swp_entry(0, 0)
+@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
++static inline void migration_entry_wait_huge(struct mm_struct *mm,
++					pte_t *pte) { }
+ static inline int is_write_migration_entry(swp_entry_t entry)
  {
- 	struct ceph_x_authorizer *au;
- 	struct ceph_x_ticket_handler *th;
--	int ret;
+ 	return 0;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2768,7 +2768,7 @@ int hugetlb_fault(struct mm_struct *mm,
+ 	if (ptep) {
+ 		entry = huge_ptep_get(ptep);
+ 		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait(mm, (pmd_t *)ptep, address);
++			migration_entry_wait_huge(mm, ptep);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -180,15 +180,14 @@ static void remove_migration_ptes(struct
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+  */
+-void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+-				unsigned long address)
++static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++				spinlock_t *ptl)
+ {
+-	pte_t *ptep, pte;
+-	spinlock_t *ptl;
++	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
  
- 	th = get_ticket_handler(ac, peer_type);
- 	if (IS_ERR(th))
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -737,7 +737,7 @@ static void delayed_work(struct work_str
- 
- 		__validate_auth(monc);
- 
--		if (monc->auth->ops->is_authenticated(monc->auth))
-+		if (ceph_auth_is_authenticated(monc->auth))
- 			__send_subscribe(monc);
- 	}
- 	__schedule_delayed(monc);
-@@ -893,8 +893,7 @@ static void handle_auth_reply(struct cep
- 
- 	mutex_lock(&monc->mutex);
- 	had_debugfs_info = have_debugfs_info(monc);
--	if (monc->auth->ops)
--		was_auth = monc->auth->ops->is_authenticated(monc->auth);
-+	was_auth = ceph_auth_is_authenticated(monc->auth);
- 	monc->pending_auth = 0;
- 	ret = ceph_handle_auth_reply(monc->auth, msg->front.iov_base,
- 				     msg->front.iov_len,
-@@ -905,7 +904,7 @@ static void handle_auth_reply(struct cep
- 		wake_up_all(&monc->client->auth_wq);
- 	} else if (ret > 0) {
- 		__send_prepared_auth_request(monc, ret);
--	} else if (!was_auth && monc->auth->ops->is_authenticated(monc->auth)) {
-+	} else if (!was_auth && ceph_auth_is_authenticated(monc->auth)) {
- 		dout("authenticated, starting session\n");
- 
- 		monc->client->msgr.inst.name.type = CEPH_ENTITY_TYPE_CLIENT;
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -671,8 +671,7 @@ static void put_osd(struct ceph_osd *osd
- 	if (atomic_dec_and_test(&osd->o_ref) && osd->o_auth.authorizer) {
- 		struct ceph_auth_client *ac = osd->o_osdc->client->monc.auth;
- 
--		if (ac->ops && ac->ops->destroy_authorizer)
--			ac->ops->destroy_authorizer(ac, osd->o_auth.authorizer);
-+		ceph_auth_destroy_authorizer(ac, osd->o_auth.authorizer);
- 		kfree(osd);
- 	}
- }
-@@ -2127,17 +2126,16 @@ static struct ceph_auth_handshake *get_a
- 	struct ceph_auth_handshake *auth = &o->o_auth;
- 
- 	if (force_new && auth->authorizer) {
--		if (ac->ops && ac->ops->destroy_authorizer)
--			ac->ops->destroy_authorizer(ac, auth->authorizer);
-+		ceph_auth_destroy_authorizer(ac, auth->authorizer);
- 		auth->authorizer = NULL;
- 	}
--	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
--		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
--							auth);
-+	if (!auth->authorizer) {
-+		int ret = ceph_auth_create_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
-+						      auth);
- 		if (ret)
- 			return ERR_PTR(ret);
--	} else if (ac->ops && ac->ops->update_authorizer) {
--		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
-+	} else {
-+		int ret = ceph_auth_update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
- 						     auth);
- 		if (ret)
- 			return ERR_PTR(ret);
-@@ -2154,11 +2152,7 @@ static int verify_authorizer_reply(struc
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
- 
--	/*
--	 * XXX If ac->ops or ac->ops->verify_authorizer_reply is null,
--	 * XXX which do we do:  succeed or fail?
--	 */
--	return ac->ops->verify_authorizer_reply(ac, o->o_auth.authorizer, len);
-+	return ceph_auth_verify_authorizer_reply(ac, o->o_auth.authorizer, len);
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	spin_lock(ptl);
+ 	pte = *ptep;
+ 	if (!is_swap_pte(pte))
+ 		goto out;
+@@ -216,6 +215,20 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
  }
  
- static int invalidate_authorizer(struct ceph_connection *con)
-@@ -2167,9 +2161,7 @@ static int invalidate_authorizer(struct
- 	struct ceph_osd_client *osdc = o->o_osdc;
- 	struct ceph_auth_client *ac = osdc->client->monc.auth;
- 
--	if (ac->ops && ac->ops->invalidate_authorizer)
--		ac->ops->invalidate_authorizer(ac, CEPH_ENTITY_TYPE_OSD);
--
-+	ceph_auth_invalidate_authorizer(ac, CEPH_ENTITY_TYPE_OSD);
- 	return ceph_monc_validate_auth(&osdc->client->monc);
- }
- 
++void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
++				unsigned long address)
++{
++	spinlock_t *ptl = pte_lockptr(mm, pmd);
++	pte_t *ptep = pte_offset_map(pmd, address);
++	__migration_entry_wait(mm, ptep, ptl);
++}
++
++void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
++{
++	spinlock_t *ptl = &(mm)->page_table_lock;
++	__migration_entry_wait(mm, pte, ptl);
++}
++
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
 
 
