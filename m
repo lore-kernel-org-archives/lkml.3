@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3FRM3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 08:29:25 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:36225 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab3FRM3X (ORCPT
+	id S1756160Ab3FRMa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:30:29 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56190 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab3FRMa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 08:29:23 -0400
+	Tue, 18 Jun 2013 08:30:27 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>, john stultz <johnstul@us.ibm.com>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource: sh_cmt: 32-bit control register support
+Date: Tue, 18 Jun 2013 14:30:41 +0200
+Message-ID: <6180605.R3OXnJCA3O@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CANqRtoTRcpEH13GY4jvmX5POFEZf2B6+vu0-ZGCMCk+sAeF7Ww@mail.gmail.com>
+References: <20130617064052.3573.68839.sendpatchset@w520> <1531456.g1EpKAjrma@avalon> <CANqRtoTRcpEH13GY4jvmX5POFEZf2B6+vu0-ZGCMCk+sAeF7Ww@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130617160200.27bb5d82df09a26adb8efce5@linux-foundation.org>
-References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
-	<CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
-	<20130617160200.27bb5d82df09a26adb8efce5@linux-foundation.org>
-Date: Tue, 18 Jun 2013 20:29:22 +0800
-Message-ID: <CAA_GA1cLD7-AW45VkU9Tx9os7Pu5jaW3UkrVaQu--ecQ2x9j_g@mail.gmail.com>
-Subject: Re: [PATCHv13 3/4] zswap: add to mm/
-From: Bob Liu <lliubbo@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I'm not sure how representative this is of real workloads, but it does
-> look rather fatal for zswap.  The differences are so large, I wonder if
-> it's just some silly bug or config issue.
->
+Hi Magnus,
 
-In my observation, zswap_pool_pages always close to zswap_stored_pages
-in this testing.
-I think it means that the fragmentation of zswap is heavy.
-Since in idea state number of zswap pool pages should be half of stored pages.
+On Tuesday 18 June 2013 20:54:47 Magnus Damm wrote:
+> On Tue, Jun 18, 2013 at 7:35 PM, Laurent Pinchart wrote:
+> > On Tuesday 18 June 2013 14:39:38 Magnus Damm wrote:
+> >> On Tue, Jun 18, 2013 at 3:37 AM, Laurent Pinchart wrote:
+> >> > On Monday 17 June 2013 15:40:52 Magnus Damm wrote:
+> >> >> From: Magnus Damm <damm@opensource.se>
+> >> >> 
+> >> >> Add support for CMT hardware with 32-bit control and counter
+> >> >> registers, as found on r8a73a4 and r8a7790. To use the CMT
+> >> >> with 32-bit hardware a second I/O memory resource needs to
+> >> >> point out the CMSTR register and it needs to be 32 bit wide.
+> >> > 
+> >> > Is a memory second resource required ? Can't we use a single resource
+> >> > that will contain all the registers ?
+> >> 
+> >> The CMT hardware block comes with a shared timer start stop register
+> >> that historically has been left out of the resource. The location of
+> >> this register has so far been pointed out by the "channel offset"
+> >> platform data member, together with information about which bit that
+> >> happens to be assigned to the timer channel. This start stop register
+> >> has happened to be kept in the same page of I/O memory as the main
+> >> timer channel resource, so at this point we're sort of "lucky" that a
+> >> single ioremap() has covered all cases.
+> >> 
+> >> With this patch it becomes optional to instead of platform data use a
+> >> second resource to point out the timer start/stop register. While we
+> >> do that we can also use the size of that resource to determine the I/O
+> >> access width, which happens to be something that is needed to enable
+> >> the driver on certain SoCs.
+> > 
+> > OK, I get it now. I've had a quick look at the documentation, and I'm
+> > wondering whether we shouldn't register a single platform device that span
+> > all the channels contained in the CMT, instead of registering one
+> > platform device per channel.
+> 
+> I both agree with you and disagree because of the current state of timers in
+> the linux kernel. I would have liked a single platform device with all
+> channles if this would be a generic timer driver that from user space could
+> be configured to associate channels with various subsystems like PWM,
+> clocksource, clockevent.
+> 
+> At this point the driver is doing clockevent and clocksource only, and no
+> sane user wants 84 channels of equivalent hardware blocks for those two.
 
-The reason may be this workload is not suitable for compression.
-The data of it can't be compressed to a low percent.
-It can only compressed to around 70% percent(not exactly but at least
-above 50%).
+Of course, but we could always select which channels to register clockevents 
+and clocksources for in platform data. That won't fix the overall problem, but 
+it's one step forward.
 
-I made a simple patch to limit the fragment of zswap to 70%.
-The result can be better but still not positive.
-                                         v3.10-rc4                   v3.10-rc4
-                               2G-parallio-nozswap     2G-parallio-zswapdefrag
-Ops memcachetest-0M              1041.00 (  0.00%)           1058.00 (  1.63%)
-Ops memcachetest-198M             973.00 (  0.00%)           1019.00 (  4.73%)
-Ops memcachetest-430M             892.00 (  0.00%)            831.00 ( -6.84%)
-Ops memcachetest-661M             819.00 (  0.00%)            850.00 (  3.79%)
-Ops memcachetest-893M             775.00 (  0.00%)            784.00 (  1.16%)
-Ops memcachetest-1125M            764.00 (  0.00%)            766.00 (  0.26%)
-Ops memcachetest-1356M            749.00 (  0.00%)            782.00 (  4.41%)
-Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-Ops io-duration-198M               21.00 (  0.00%)             28.00 (-33.33%)
-Ops io-duration-430M               29.00 (  0.00%)             32.00 (-10.34%)
-Ops io-duration-661M               34.00 (  0.00%)             34.00 (  0.00%)
-Ops io-duration-893M               36.00 (  0.00%)             42.00 (-16.67%)
-Ops io-duration-1125M              43.00 (  0.00%)             47.00 ( -9.30%)
-Ops io-duration-1356M              50.00 (  0.00%)             49.00 (  2.00%)
-Ops swaptotal-0M               469193.00 (  0.00%)         461146.00 (  1.72%)
-Ops swaptotal-198M             496201.00 (  0.00%)         495692.00 (  0.10%)
-Ops swaptotal-430M             520400.00 (  0.00%)         520252.00 (  0.03%)
-Ops swaptotal-661M             538872.00 (  0.00%)         513541.00 (  4.70%)
-Ops swaptotal-893M             522590.00 (  0.00%)         532311.00 ( -1.86%)
-Ops swaptotal-1125M            526934.00 (  0.00%)         527089.00 ( -0.03%)
-Ops swaptotal-1356M            525241.00 (  0.00%)         525747.00 ( -0.10%)
-Ops swapin-0M                  251226.00 (  0.00%)         248426.00 (  1.11%)
-Ops swapin-198M                236126.00 (  0.00%)         239031.00 ( -1.23%)
-Ops swapin-430M                265193.00 (  0.00%)         266174.00 ( -0.37%)
-Ops swapin-661M                280281.00 (  0.00%)         263151.00 (  6.11%)
-Ops swapin-893M                263004.00 (  0.00%)         268473.00 ( -2.08%)
-Ops swapin-1125M               261962.00 (  0.00%)         264925.00 ( -1.13%)
-Ops swapin-1356M               262571.00 (  0.00%)         266695.00 ( -1.57%)
-Ops minorfaults-0M             625759.00 (  0.00%)         620448.00 (  0.85%)
-Ops minorfaults-198M           769752.00 (  0.00%)         703458.00 (  8.61%)
-Ops minorfaults-430M           678590.00 (  0.00%)         686257.00 ( -1.13%)
-Ops minorfaults-661M           669308.00 (  0.00%)         668845.00 (  0.07%)
-Ops minorfaults-893M           656343.00 (  0.00%)         680286.00 ( -3.65%)
-Ops minorfaults-1125M          657954.00 (  0.00%)         655280.00 (  0.41%)
-Ops minorfaults-1356M          672035.00 (  0.00%)         659861.00 (  1.81%)
-Ops majorfaults-0M              39395.00 (  0.00%)          38828.00 (  1.44%)
-Ops majorfaults-198M            38758.00 (  0.00%)          42876.00 (-10.62%)
-Ops majorfaults-430M            39819.00 (  0.00%)          38668.00 (  2.89%)
-Ops majorfaults-661M            40171.00 (  0.00%)          38443.00 (  4.30%)
-Ops majorfaults-893M            37576.00 (  0.00%)          37664.00 ( -0.23%)
-Ops majorfaults-1125M           36891.00 (  0.00%)          37527.00 ( -1.72%)
-Ops majorfaults-1356M           37123.00 (  0.00%)          37779.00 ( -1.77%)
+> So based on that I'd rather do it like today and let people write custom
+> drivers for whatever applications they may use the other channels for.
+> 
+> So if you're in hacking mode, why don't you figure out some way timers can
+> be configured from user space? =)
 
---
+I don't have *that* much free time at the moment I'm afraid, and I'm sure you 
+know why :-)
+
+> If so then we can use DT to describe the actual hardware and let the
+> software policy be decided via some configuration mechanism.
+
+Don't we also need timers during early boot, when userspace isn't available 
+yet ?
+
+-- 
 Regards,
---Bob
+
+Laurent Pinchart
+
