@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab3FRP3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:29:11 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61720 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab3FRP3K (ORCPT
+	id S932820Ab3FRP3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:29:42 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:52762 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932302Ab3FRP3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:29:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH] ARM: clocksource: add support for MOXA ART SoCs
-Date: Tue, 18 Jun 2013 17:28:58 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, john.stultz@linaro.org, tglx@linutronix.de
-References: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+	Tue, 18 Jun 2013 11:29:40 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306181728.58869.arnd@arndb.de>
-X-Provags-ID: V02:K0:yXsSYVQrfELc1ndlN2P68deI57xlT1/FLKNiukCQVUA
- jps0fnJuUTPclwGCK/x01TzuWGjV2Swk0tnHa2U3d4Z1QF3oGW
- LCMKLoTJjes9hzSvBRfm/qIUSYtRmVrNdCiL9Lx6r93/5UgEPh
- Dp9RGfh+q6nzLAYM0pnrQE9Bd0DHAN4GunlUW94LV/6e5SjkkX
- XLe2dL4uqIhiIZNpNC3sB/aGJ/7iK4ko0fqYz0+Uj3sNTuW6rT
- egUSOL/DFT0Dk4wPdMQCExa5xFKIYj5DPtR9URq2HExE67Cb7t
- Gp0pdPA00Ti9L2+JArIoLkCmGrHzqYciM2qtFQgOT+RgENX6gA
- tjAB6fJ75+iInI/fNMw4=
+In-Reply-To: <20130618151954.GB16094@twins.programming.kicks-ass.net>
+References: <cover.1370948150.git.viresh.kumar@linaro.org>
+	<7a61e955abdcbb1dfa9fe493f11a5ec53a11ddd3.1370948150.git.viresh.kumar@linaro.org>
+	<20130618100306.GL3204@twins.programming.kicks-ass.net>
+	<CAKohpo=oAa=mdkZk9yq4W7v-hQpCAM00rTJTWOn-eCBreEqTdA@mail.gmail.com>
+	<20130618151954.GB16094@twins.programming.kicks-ass.net>
+Date: Tue, 18 Jun 2013 20:59:39 +0530
+Message-ID: <CAKohpon_1StvME0nySHRzc2dHNTXHF5X6CXo5J6Rvtyb8wktRg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] sched: don't call get_group() for covered cpus
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Content-Type: multipart/mixed; boundary=001a11c2ab98aefa8604df6f6116
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 June 2013, Jonas Jensen wrote:
-> This patch adds an clocksource driver for the main timer found
-> on MOXA ART SoCs.
-> 
-> Applies to 3.10-rc1 and arm-soc/for-next (2013-06-15)
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+--001a11c2ab98aefa8604df6f6116
+Content-Type: text/plain; charset=ISO-8859-1
 
-I didn't look closely before but I agree with Thomas Petazzoni, this should
-be converted to clocksource/clockevent.
+On 18 June 2013 20:49, Peter Zijlstra <peterz@infradead.org> wrote:
+> Sure. Just send a new patch and I'll substitute.
 
-A few other things I noticed now:
+This is the new log (patch is attached):
 
-> +#define APB_CLK 48000000
+sched: Fix memory leakage in build_sched_groups()
 
-You are hardcoding the clock rate above, which makes it less portable
-than it should be. Ideally you would use clk_get_rate() on
-the default clock, but you don't actually implement a clk
-driver for your platform and probably don't need one.
+In build_sched_groups() we don't need to call get_group() for cpus which are
+already covered in previous iterations. Calling get_group() would mark the group
+used and eventually leak it since we wouldn't connect it and not find it again
+to free it.
 
-I don't know what others think about this, but I'd suggest just
-using a "clock-frequency" property in the device node to read
-the clock rate.
+This will happen only in cases where sg->cpumask contained more than one cpu
+(For any topology level). This patch would free sg's memory for all cpus leaving
+the group leader as the group isn't marked used now.
 
-> +#define TIMER_1_COUNT(base_addr)        (base_addr + 0x00)
-> +#define TIMER_1_LOAD(base_addr)         (base_addr + 0x04)
-> +#define TIMER_1_MATCH1(base_addr)       (base_addr + 0x08)
-> +#define TIMER_1_MATCH2(base_addr)       (base_addr + 0x0C)
-> +
-> +#define TIMER_2_COUNT(base_addr)        (base_addr + 0x10)
-> +#define TIMER_2_LOAD(base_addr)         (base_addr + 0x14)
-> +#define TIMER_2_MATCH1(base_addr)       (base_addr + 0x18)
-> +#define TIMER_2_MATCH2(base_addr)       (base_addr + 0x1C)
-> +
-> +#define TIMER_3_COUNT(base_addr)        (base_addr + 0x20)
-> +#define TIMER_3_LOAD(base_addr)         (base_addr + 0x24)
-> +#define TIMER_3_MATCH1(base_addr)       (base_addr + 0x28)
-> +#define TIMER_3_MATCH2(base_addr)       (base_addr + 0x2C)
-> +
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/sched/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-You actually seem to have three independent timers here, which
-means you can use one as the clock source and one for clock
-events.
+--001a11c2ab98aefa8604df6f6116
+Content-Type: application/octet-stream; 
+	name="0001-sched-Fix-memory-leakage-in-build_sched_groups.patch"
+Content-Disposition: attachment; 
+	filename="0001-sched-Fix-memory-leakage-in-build_sched_groups.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hi38zcfo0
 
-> +#define TIMER1_COUNT                0x0
-> +#define TIMER1_LOAD                 0x4
-> +#define TIMER1_MATCH1               0x8
-> +#define TIMER1_MATCH2               0xC
-> +#define TIMER2_COUNT                0x10
-> +#define TIMER2_LOAD                 0x14
-> +#define TIMER2_MATCH1               0x18
-> +#define TIMER2_MATCH2               0x1C
-> +#define TIMER3_COUNT                0x20
-> +#define TIMER3_LOAD                 0x24
-> +#define TIMER3_MATCH1               0x28
-> +#define TIMER3_MATCH2               0x2C
-> +#define TIMER_INTR_MASK     0x38
-
-These look like duplicates from above. I'd prefer the second syntax, just
-do the addition of base_addr where you need it.
-
-	Arnd
+RnJvbSBmYTczMjA4YmJmYTBjMTZlNDY3NzY5NTA3MzYzMmVkYjk2NjIzNDNlIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8ZmE3MzIwOGJiZmEwYzE2ZTQ2Nzc2OTUwNzM2MzJl
+ZGI5NjYyMzQzZS4xMzcxNTY5MzQ1LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogVHVlLCAxMSBKdW4g
+MjAxMyAxNDo0Mzo0MyArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIHNjaGVkOiBGaXggbWVtb3J5IGxl
+YWthZ2UgaW4gYnVpbGRfc2NoZWRfZ3JvdXBzKCkKCkluIGJ1aWxkX3NjaGVkX2dyb3VwcygpIHdl
+IGRvbid0IG5lZWQgdG8gY2FsbCBnZXRfZ3JvdXAoKSBmb3IgY3B1cyB3aGljaCBhcmUKYWxyZWFk
+eSBjb3ZlcmVkIGluIHByZXZpb3VzIGl0ZXJhdGlvbnMuIENhbGxpbmcgZ2V0X2dyb3VwKCkgd291
+bGQgbWFyayB0aGUgZ3JvdXAKdXNlZCBhbmQgZXZlbnR1YWxseSBsZWFrIGl0IHNpbmNlIHdlIHdv
+dWxkbid0IGNvbm5lY3QgaXQgYW5kIG5vdCBmaW5kIGl0IGFnYWluCnRvIGZyZWUgaXQuCgpUaGlz
+IHdpbGwgaGFwcGVuIG9ubHkgaW4gY2FzZXMgd2hlcmUgc2ctPmNwdW1hc2sgY29udGFpbmVkIG1v
+cmUgdGhhbiBvbmUgY3B1CihGb3IgYW55IHRvcG9sb2d5IGxldmVsKS4gVGhpcyBwYXRjaCB3b3Vs
+ZCBmcmVlIHNnJ3MgbWVtb3J5IGZvciBhbGwgY3B1cyBsZWF2aW5nCnRoZSBncm91cCBsZWFkZXIg
+YXMgdGhlIGdyb3VwIGlzbid0IG1hcmtlZCB1c2VkIG5vdy4KClNpZ25lZC1vZmYtYnk6IFZpcmVz
+aCBLdW1hciA8dmlyZXNoLmt1bWFyQGxpbmFyby5vcmc+Ci0tLQoga2VybmVsL3NjaGVkL2NvcmUu
+YyB8IDQgKystLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMo
+LSkKCmRpZmYgLS1naXQgYS9rZXJuZWwvc2NoZWQvY29yZS5jIGIva2VybmVsL3NjaGVkL2NvcmUu
+YwppbmRleCA0YWJjNzQzLi4yNzg0MmY1IDEwMDY0NAotLS0gYS9rZXJuZWwvc2NoZWQvY29yZS5j
+CisrKyBiL2tlcm5lbC9zY2hlZC9jb3JlLmMKQEAgLTUzNDQsMTIgKzUzNDQsMTIgQEAgYnVpbGRf
+c2NoZWRfZ3JvdXBzKHN0cnVjdCBzY2hlZF9kb21haW4gKnNkLCBpbnQgY3B1KQogCiAJZm9yX2Vh
+Y2hfY3B1KGksIHNwYW4pIHsKIAkJc3RydWN0IHNjaGVkX2dyb3VwICpzZzsKLQkJaW50IGdyb3Vw
+ID0gZ2V0X2dyb3VwKGksIHNkZCwgJnNnKTsKLQkJaW50IGo7CisJCWludCBncm91cCwgajsKIAog
+CQlpZiAoY3B1bWFza190ZXN0X2NwdShpLCBjb3ZlcmVkKSkKIAkJCWNvbnRpbnVlOwogCisJCWdy
+b3VwID0gZ2V0X2dyb3VwKGksIHNkZCwgJnNnKTsKIAkJY3B1bWFza19jbGVhcihzY2hlZF9ncm91
+cF9jcHVzKHNnKSk7CiAJCXNnLT5zZ3AtPnBvd2VyID0gMDsKIAkJY3B1bWFza19zZXRhbGwoc2No
+ZWRfZ3JvdXBfbWFzayhzZykpOwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcyZQoK
+--001a11c2ab98aefa8604df6f6116--
