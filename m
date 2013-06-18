@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab3FRL4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:56:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56146 "EHLO
+	id S932453Ab3FRL4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:56:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56142 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab3FRLov (ORCPT
+	with ESMTP id S1756032Ab3FRLou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:51 -0400
+	Tue, 18 Jun 2013 07:44:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Sage Weil <sage@inktank.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 56/93] libceph: fix authorizer invalidation
-Date: Tue, 18 Jun 2013 12:43:04 +0100
-Message-Id: <1371555821-12820-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 55/93] libceph: clear messenger auth_retry flag when we authenticate
+Date: Tue, 18 Jun 2013 12:43:03 +0100
+Message-Id: <1371555821-12820-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sage Weil <sage@inktank.com>
 
-commit 4b8e8b5d78b8322351d44487c1b76f7e9d3412bc upstream.
+commit 20e55c4cc758e4dccdfd92ae8e9588dd624b2cd7 upstream.
 
-We were invalidating the authorizer by removing the ticket handler
-entirely.  This was effective in inducing us to request a new authorizer,
-but in the meantime it mean that any authorizer we generated would get a
-new and initialized handler with secret_id=0, which would always be
-rejected by the server side with a confusing error message:
+We maintain a counter of failed auth attempts to allow us to retry once
+before failing.  However, if the second attempt succeeds, the flag isn't
+cleared, which makes us think auth failed again later when the connection
+resets for other reasons (like a socket error).
 
- auth: could not find secret_id=0
- cephx: verify_authorizer could not get service secret for service osd secret_id=0
+This is one part of the sorry sequence of events in bug
 
-Instead, simply clear the validity field.  This will still induce the auth
-code to request a new secret, but will let us continue to use the old
-ticket in the meantime.  The messenger code will probably continue to fail,
-but the exponential backoff will kick in, and eventually the we will get a
-new (hopefully more valid) ticket from the mon and be able to continue.
+	http://tracker.ceph.com/issues/4282
 
 Signed-off-by: Sage Weil <sage@inktank.com>
 Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ceph/auth_x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/messenger.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
-index a16bf14..bd8758d 100644
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -630,7 +630,7 @@ static void ceph_x_invalidate_authorizer(struct ceph_auth_client *ac,
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index 692243a..559690f 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -1548,7 +1548,6 @@ static int process_connect(struct ceph_connection *con)
+ 			con->error_msg = "connect authorization failure";
+ 			return -1;
+ 		}
+-		con->auth_retry = 1;
+ 		con_out_kvec_reset(con);
+ 		ret = prepare_write_connect(con);
+ 		if (ret < 0)
+@@ -1633,7 +1632,7 @@ static int process_connect(struct ceph_connection *con)
  
- 	th = get_ticket_handler(ac, peer_type);
- 	if (!IS_ERR(th))
--		remove_ticket_handler(ac, th);
-+		memset(&th->validity, 0, sizeof(th->validity));
- }
- 
- 
+ 		BUG_ON(con->state != CON_STATE_NEGOTIATING);
+ 		con->state = CON_STATE_OPEN;
+-
++		con->auth_retry = 0;    /* we authenticated; clear flag */
+ 		con->peer_global_seq = le32_to_cpu(con->in_reply.global_seq);
+ 		con->connect_seq++;
+ 		con->peer_features = server_feat;
 -- 
 1.8.1.2
 
