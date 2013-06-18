@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab3FRQWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:22:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49553 "EHLO
+	id S933360Ab3FRQYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:24:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933187Ab3FRQSE (ORCPT
+	with ESMTP id S933264Ab3FRQR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:18:04 -0400
+	Tue, 18 Jun 2013 12:17:59 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 33/48] drm/nv50/kms: use dac loadval from vbios, where its available
-Date: Tue, 18 Jun 2013 09:17:59 -0700
-Message-Id: <20130618161730.688635361@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 29/48] mm: migration: add migrate_entry_wait_huge()
+Date: Tue, 18 Jun 2013 09:17:55 -0700
+Message-Id: <20130618161730.095209184@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -29,34 +34,109 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit d40ee48acde16894fb3b241d7e896d5fa84e0f10 upstream.
+commit 30dad30922ccc733cfdbfe232090cf674dc374dc upstream.
 
-Regression from merging the old nv50/nvd9 code together, and may be
-needed to fully fix fdo#64904.
+When we have a page fault for the address which is backed by a hugepage
+under migration, the kernel can't wait correctly and do busy looping on
+hugepage fault until the migration finishes.  As a result, users who try
+to kick hugepage migration (via soft offlining, for example) occasionally
+experience long delay or soft lockup.
 
-The value is ignored completely by the hardware starting from nva3.
+This is because pte_offset_map_lock() can't get a correct migration entry
+or a correct page table lock for hugepage.  This patch introduces
+migration_entry_wait_huge() to solve this.
 
-Reported-by: Emil Velikov <emil.l.velikov@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv50_display.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/swapops.h |    3 +++
+ mm/hugetlb.c            |    2 +-
+ mm/migrate.c            |   23 ++++++++++++++++++-----
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -1554,7 +1554,9 @@ nv50_dac_detect(struct drm_encoder *enco
- {
- 	struct nv50_disp *disp = nv50_disp(encoder->dev);
- 	int ret, or = nouveau_encoder(encoder)->or;
--	u32 load = 0;
-+	u32 load = nouveau_drm(encoder->dev)->vbios.dactestval;
-+	if (load == 0)
-+		load = 340;
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -137,6 +137,7 @@ static inline void make_migration_entry_
  
- 	ret = nv_exec(disp->core, NV50_DISP_DAC_LOAD + or, &load, sizeof(load));
- 	if (ret || load != 7)
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
++extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
+ #else
+ 
+ #define make_migration_entry(page, write) swp_entry(0, 0)
+@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
++static inline void migration_entry_wait_huge(struct mm_struct *mm,
++					pte_t *pte) { }
+ static inline int is_write_migration_entry(swp_entry_t entry)
+ {
+ 	return 0;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2823,7 +2823,7 @@ int hugetlb_fault(struct mm_struct *mm,
+ 	if (ptep) {
+ 		entry = huge_ptep_get(ptep);
+ 		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait(mm, (pmd_t *)ptep, address);
++			migration_entry_wait_huge(mm, ptep);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -200,15 +200,14 @@ static void remove_migration_ptes(struct
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+  */
+-void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+-				unsigned long address)
++static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++				spinlock_t *ptl)
+ {
+-	pte_t *ptep, pte;
+-	spinlock_t *ptl;
++	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
+ 
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	spin_lock(ptl);
+ 	pte = *ptep;
+ 	if (!is_swap_pte(pte))
+ 		goto out;
+@@ -236,6 +235,20 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
++				unsigned long address)
++{
++	spinlock_t *ptl = pte_lockptr(mm, pmd);
++	pte_t *ptep = pte_offset_map(pmd, address);
++	__migration_entry_wait(mm, ptep, ptl);
++}
++
++void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
++{
++	spinlock_t *ptl = &(mm)->page_table_lock;
++	__migration_entry_wait(mm, pte, ptl);
++}
++
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
 
 
