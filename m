@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455Ab3FRVeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 17:34:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41853 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756307Ab3FRVeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 17:34:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] ACPI / dock: Take ACPI scan lock in write_undock()
-Date: Tue, 18 Jun 2013 23:43:27 +0200
-Message-ID: <7930194.VHtf9LiNRh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371590917.13194.8.camel@misato.fc.hp.com>
-References: <1886227.aipra45Zvt@vostro.rjw.lan> <1371590917.13194.8.camel@misato.fc.hp.com>
+	id S933619Ab3FRVeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 17:34:25 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59589 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932869Ab3FRVeY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 17:34:24 -0400
+Date: Tue, 18 Jun 2013 16:04:33 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/2] hugetlb fixes
+Message-ID: <20130618200433.GA28198@logfs.org>
+References: <1371581225-27535-1-git-send-email-joern@logfs.org>
+ <20130618185055.GA27618@logfs.org>
+ <20130618132705.c5eb78a20499beb1b769f741@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130618132705.c5eb78a20499beb1b769f741@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 18, 2013 03:28:37 PM Toshi Kani wrote:
-> On Sun, 2013-06-16 at 00:16 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Since commit 3757b94 (ACPI / hotplug: Fix concurrency issues and
-> > memory leaks) acpi_bus_scan() and acpi_bus_trim() must always be
-> > called under acpi_scan_lock, but currently the following scenario
-> > violating that requirement is possible:
-> > 
-> >  write_undock()
-> >   handle_eject_request()
-> >    hotplug_dock_devices()
-> >     dock_remove_acpi_device()
-> >      acpi_bus_trim()
-> > 
-> > Fix that by making write_undock() acquire acpi_scan_lock before
-> > calling handle_eject_request() as appropriate (begin_undock() is
-> > under the lock too in analogy with acpi_dock_deferred_cb()).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, 18 June 2013 13:27:05 -0700, Andrew Morton wrote:
+> On Tue, 18 Jun 2013 14:50:55 -0400 J__rn Engel <joern@logfs.org> wrote:
 > 
-> Looks good.
+> > On Tue, 18 June 2013 14:47:03 -0400, Joern Engel wrote:
+> > > 
+> > > Test program below is failing before these two patches and passing
+> > > after.
+> > 
+> > Actually, do we have a place to stuff kernel tests?  And if not,
+> > should we have one?
 > 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
+> Yep, tools/testing/selftests/vm.  It's pretty simple and stupid at
+> present - it anything about the framework irritates you, please fix it!
 
-Thanks!
+Just did. :)
 
+Jörn
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--
+Maintenance in other professions and of other articles is concerned with
+the return of the item to its original state; in Software, maintenance
+is concerned with moving an item away from its original state.
+-- Les Belady
