@@ -1,191 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab3FRTAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:00:52 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:34087 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933697Ab3FRTAu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:00:50 -0400
-Message-ID: <51C0AE2D.9000109@hds.com>
-Date: Tue, 18 Jun 2013 14:59:57 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S933724Ab3FRTBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:01:36 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:47725 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756326Ab3FRTBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 15:01:34 -0400
+Date: Tue, 18 Jun 2013 15:01:21 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
+        Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH v5] Soft limit rework
+Message-ID: <20130618190121.GR15721@cmpxchg.org>
+References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org
-CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
-        linux-edac@vger.kernel.org, tony.luck@intel.com,
-        tomoki.sekiyama@hds.com, dle-develop@lists.sourceforge.net
-Subject: [PATCH v16 3/4] x86: Rename variables for debugging
-References: <51C0ADA6.8040801@hds.com>
-In-Reply-To: <51C0ADA6.8040801@hds.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-18_07:2013-06-18,2013-06-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1306180179
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename variables for debugging to describe meaning of them precisely.
+On Tue, Jun 18, 2013 at 02:09:39PM +0200, Michal Hocko wrote:
+> My primary test case was a parallel kernel build with 2 groups (make
+> is running with -j4 with a distribution .config in a separate cgroup
+> without any hard limit) on a 8 CPU machine booted with 1GB memory.  I
+> was mostly interested in 2 setups. Default - no soft limit set and - and
+> 0 soft limit set to both groups.
+> The first one should tell us whether the rework regresses the default
+> behavior while the second one should show us improvements in an extreme
+> case where both workloads are always over the soft limit.
 
-Also, introduce a generic way to switch IDT by checking a current state,
-debug on/off.
+The most interesting test case would be how it behaves if some groups
+are over the soft limits while others are not.  I would expect this to
+be the most common situation for when soft limits are used.
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- arch/x86/include/asm/desc.h  |   47 +++++++++++++++++++++++++++++++++++++++--
- arch/x86/kernel/cpu/common.c |   16 +++++++-------
- arch/x86/kernel/head_64.S    |    2 +-
- arch/x86/kernel/traps.c      |    2 +-
- 4 files changed, 54 insertions(+), 13 deletions(-)
+On the other hand, setting all soft limits to 0 makes every reclaim
+invocation do almost only soft reclaim.  What's the point of that?
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 8bf1c06..af290b8 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -36,8 +36,8 @@ static inline void fill_ldt(struct desc_struct *desc, const struct user_desc *in
- 
- extern struct desc_ptr idt_descr;
- extern gate_desc idt_table[];
--extern struct desc_ptr nmi_idt_descr;
--extern gate_desc nmi_idt_table[];
-+extern struct desc_ptr debug_idt_descr;
-+extern gate_desc debug_idt_table[];
- 
- struct gdt_page {
- 	struct desc_struct gdt[GDT_ENTRIES];
-@@ -316,7 +316,7 @@ static inline void set_nmi_gate(int gate, void *addr)
- 	gate_desc s;
- 
- 	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
--	write_idt_entry(nmi_idt_table, gate, &s);
-+	write_idt_entry(debug_idt_table, gate, &s);
- }
- #endif
- 
-@@ -405,4 +405,45 @@ static inline void set_system_intr_gate_ist(int n, void *addr, unsigned ist)
- 	_set_gate(n, GATE_INTERRUPT, addr, 0x3, ist, __KERNEL_CS);
- }
- 
-+#ifdef CONFIG_X86_64
-+DECLARE_PER_CPU(u32, debug_idt_ctr);
-+static inline bool is_debug_idt_enabled(void)
-+{
-+	if (this_cpu_read(debug_idt_ctr))
-+		return true;
-+
-+	return false;
-+}
-+
-+static inline void load_debug_idt(void)
-+{
-+	load_idt((const struct desc_ptr *)&debug_idt_descr);
-+}
-+#else
-+static inline bool is_debug_idt_enabled(void)
-+{
-+	return false;
-+}
-+
-+static inline void load_debug_idt(void)
-+{
-+}
-+#endif
-+
-+/*
-+ * the load_current_idt() is called with interrupt disabled by local_irq_save()
-+ * to avoid races. That way the IDT will always be set back to the expected
-+ * descriptor.
-+ */
-+static inline void load_current_idt(void)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	if (is_debug_idt_enabled())
-+		load_debug_idt();
-+	else
-+		load_idt((const struct desc_ptr *)&idt_descr);
-+	local_irq_restore(flags);
-+}
- #endif /* _ASM_X86_DESC_H */
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 22018f7..8f6a0f9 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1071,8 +1071,8 @@ __setup("clearcpuid=", setup_disablecpuid);
- 
- #ifdef CONFIG_X86_64
- struct desc_ptr idt_descr = { NR_VECTORS * 16 - 1, (unsigned long) idt_table };
--struct desc_ptr nmi_idt_descr = { NR_VECTORS * 16 - 1,
--				    (unsigned long) nmi_idt_table };
-+struct desc_ptr debug_idt_descr = { NR_VECTORS * 16 - 1,
-+				    (unsigned long) debug_idt_table };
- 
- DEFINE_PER_CPU_FIRST(union irq_stack_union,
- 		     irq_stack_union) __aligned(PAGE_SIZE);
-@@ -1148,20 +1148,20 @@ int is_debug_stack(unsigned long addr)
- 		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
- }
- 
--static DEFINE_PER_CPU(u32, debug_stack_use_ctr);
-+DEFINE_PER_CPU(u32, debug_idt_ctr);
- 
- void debug_stack_set_zero(void)
- {
--	this_cpu_inc(debug_stack_use_ctr);
--	load_idt((const struct desc_ptr *)&nmi_idt_descr);
-+	this_cpu_inc(debug_idt_ctr);
-+	load_current_idt();
- }
- 
- void debug_stack_reset(void)
- {
--	if (WARN_ON(!this_cpu_read(debug_stack_use_ctr)))
-+	if (WARN_ON(!this_cpu_read(debug_idt_ctr)))
- 		return;
--	if (this_cpu_dec_return(debug_stack_use_ctr) == 0)
--		load_idt((const struct desc_ptr *)&idt_descr);
-+	if (this_cpu_dec_return(debug_idt_ctr) == 0)
-+		load_current_idt();
- }
- 
- #else	/* CONFIG_X86_64 */
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 321d65e..84fb779 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -518,7 +518,7 @@ ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
- 
- 	.align L1_CACHE_BYTES
--ENTRY(nmi_idt_table)
-+ENTRY(debug_idt_table)
- 	.skip IDT_ENTRIES * 16
- 
- 	__PAGE_ALIGNED_BSS
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 772e2a8..d27182d 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -785,7 +785,7 @@ void __init trap_init(void)
- 	x86_init.irqs.trap_init();
- 
- #ifdef CONFIG_X86_64
--	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
-+	memcpy(&debug_idt_table, &idt_table, IDT_ENTRIES * 16);
- 	set_nmi_gate(X86_TRAP_DB, &debug);
- 	set_nmi_gate(X86_TRAP_BP, &int3);
- #endif
--- 
-1.7.1
+> /usr/bin/time -v has been used to collect the statistics and each
+> configuration had 3 runs after fresh boot without any other load on the
+> system.
+> 
+> base is mmotm-2013-05-09-15-57
+> baserebase is mmotm-2013-06-05-17-24-63 + patches from the current mmots
+> without slab shrinkers patchset.
+> reworkrebase all patches 8 applied on top of baserebase
+> 
+> * No-limit
+> User
+> base: min: 1164.94 max: 1169.75 avg: 1168.31 std: 1.57 runs: 6
+> baserebase: min: 1169.46 [100.4%] max: 1176.07 [100.5%] avg: 1172.49 [100.4%] std: 2.38 runs: 6
+> reworkrebase: min: 1172.58 [100.7%] max: 1177.43 [100.7%] avg: 1175.53 [100.6%] std: 1.91 runs: 6
+> System
+> base: min: 242.55 max: 245.36 avg: 243.92 std: 1.17 runs: 6
+> baserebase: min: 235.36 [97.0%] max: 238.52 [97.2%] avg: 236.70 [97.0%] std: 1.04 runs: 6
+> reworkrebase: min: 236.21 [97.4%] max: 239.46 [97.6%] avg: 237.55 [97.4%] std: 1.05 runs: 6
+> Elapsed
+> base: min: 596.81 max: 620.04 avg: 605.52 std: 7.56 runs: 6
+> baserebase: min: 666.45 [111.7%] max: 710.89 [114.7%] avg: 690.62 [114.1%] std: 13.85 runs: 6
+> reworkrebase: min: 664.05 [111.3%] max: 701.06 [113.1%] avg: 689.29 [113.8%] std: 12.36 runs: 6
+> 
+> Elapsed time regressed by 13% wrt. base but it seems that this came from
+> baserebase which regressed by the same amount.
 
+Which mmots does this refer to?  We should probably look into a
+regression this size...
 
+> * 0-limit
+> User
+> base: min: 1188.28 max: 1198.54 avg: 1194.10 std: 3.31 runs: 6
+> baserebase: min: 1186.17 [99.8%] max: 1196.46 [99.8%] avg: 1189.75 [99.6%] std: 3.41 runs: 6
+> reworkrebase: min: 1169.88 [98.5%] max: 1177.84 [98.3%] avg: 1173.50 [98.3%] std: 2.79 runs: 6
+> System
+> base: min: 248.40 max: 252.00 avg: 250.19 std: 1.38 runs: 6
+> baserebase: min: 240.77 [96.9%] max: 246.74 [97.9%] avg: 243.63 [97.4%] std: 2.23 runs: 6
+> reworkrebase: min: 235.19 [94.7%] max: 237.43 [94.2%] avg: 236.35 [94.5%] std: 0.86 runs: 6
+> Elapsed
+> base: min: 759.28 max: 805.30 avg: 784.87 std: 15.45 runs: 6
+> baserebase: min: 881.69 [116.1%] max: 938.14 [116.5%] avg: 911.68 [116.2%] std: 19.58 runs: 6
+> reworkrebase: min: 667.54 [87.9%] max: 718.54 [89.2%] avg: 695.61 [88.6%] std: 17.16 runs: 6
+> 
+> System time is slightly better but I wouldn't consider it relevant.
+> 
+> Elapsed time is more interesting though. baserebase regresses by 16%
+> again which is in par with no-limit configuration.
+> 
+> With the patchset applied we are 11% better in average wrt. to the
+> old base but it is important to realize that this is still 76.3% wrt.
+> baserebase so the effect of the series is comparable to the previous
+> version. Albeit the whole result is worse.
+> 
+> Page fault statistics tell us at least part of the story:
+> Minor
+> base: min: 35941845.00 max: 36029788.00 avg: 35986860.17 std: 28288.66 runs: 6
+> baserebase: min: 35852414.00 [99.8%] max: 35899605.00 [99.6%] avg: 35874906.83 [99.7%] std: 18722.59 runs: 6
+> reworkrebase: min: 35538346.00 [98.9%] max: 35584907.00 [98.8%] avg: 35562362.17 [98.8%] std: 18921.74 runs: 6
+> Major
+> base: min: 25390.00 max: 33132.00 avg: 29961.83 std: 2476.58 runs: 6
+> baserebase: min: 34224.00 [134.8%] max: 45674.00 [137.9%] avg: 41556.83 [138.7%] std: 3595.39 runs: 6
+> reworkrebase: min: 277.00 [1.1%] max: 480.00 [1.4%] avg: 384.67 [1.3%] std: 74.67 runs: 6
 
+The changes are big but the test makes no sense to me.
+
+> While the minor faults are within the noise the major faults are reduced
+> considerably. This looks like an aggressive pageout during the reclaim
+> and that pageout affects the working set presumably. Please note that
+> baserebase has even hight number of major page faults than the older
+> mmotm trree.
+> 
+> While this looks as a nice win it is fair to say that there are some
+> workloads that actually benefit from reclaim at 0 priority (from
+> background reclaim). E.g. an aggressive streaming IO would like to get
+> rid of as many pages as possible and do not block on the pages under
+> writeback. This can lead to a higher System time but I generally got
+> Elapsed which was comparable.
+> 
+> The following results are from 2 groups configuration on a 8GB machine
+> (A running stream IO with 4*TotalMem with 0 soft limit, B runnning a
+> mem_eater which consumes TotalMem-1G without any limit).
+> System
+> base: min: 124.88 max: 136.97 avg: 130.77 std: 4.94 runs: 3
+> baserebase: min: 102.51 [82.1%] max: 108.84 [79.5%] avg: 104.81 [80.1%] std: 2.86 runs: 3
+> reworkrebase: min: 108.29 [86.7%] max: 121.70 [88.9%] avg: 114.60 [87.6%] std: 5.50 runs: 3
+> Elapsed
+> base: min: 398.86 max: 412.81 avg: 407.62 std: 6.23 runs: 3
+> baserebase: min: 480.92 [120.6%] max: 497.56 [120.5%] avg: 491.46 [120.6%] std: 7.48 runs: 3
+> reworkrebase: min: 397.19 [99.6%] max: 462.57 [112.1%] avg: 436.13 [107.0%] std: 28.12 runs: 3
+
+Do you have individual runtimes for both the streamer and "mem_eater"?
+Is mem_eater's memory reclaimable?
