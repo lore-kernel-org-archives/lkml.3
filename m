@@ -1,133 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3FRCq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:46:29 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:52777 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070Ab3FRCq1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:46:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuoOAEnJv1F5LOOC/2dsb2JhbABSCIMJMbomhSEEAX4XdIIjAQEEAScTHCMFCwgDDgoJJQ8FDRgDIRECh3wDCQUNsWoNiE4EFoxMgS0MDYEdB4NgA4wyiSiBZocTgwuCAoUkgyEqBA
-Date: Tue, 18 Jun 2013 12:46:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130618024623.GP29338@dastard>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
+	id S1753920Ab3FRCre (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:47:34 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58843 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab3FRCrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 22:47:33 -0400
+Date: Mon, 17 Jun 2013 22:47:27 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+Message-ID: <20130618024727.GA24479@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+References: <51B7B128.60909@intel.com>
+ <20130614140940.GA20401@gmail.com>
+ <20130614140215.GA1017@thunk.org>
+ <20130614170028.GA21544@gmail.com>
+ <20130614180054.GB1017@thunk.org>
+ <20130617101033.GA17828@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130617223004.GB2538@localhost.localdomain>
+In-Reply-To: <20130617101033.GA17828@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
-> On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
-> > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
-> > 
-> > > > I managed to trigger:
-> > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
-> > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
-> > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
-> > > > on top. 
-> > > > 
-> > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
-> > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
-> > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
-> > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
-> > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
-> > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
-> > > > [...]
-> > > > ffffffff81122d9c:       0f 0b                   ud2
-> > > > 
-> > > > RAX is -1UL.
-> > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
-> > > and BUG, instead of an unsigned quantity.
-> > > 
-> > > > 
-> > > > I assume that the current backtrace is of no use and it would most
-> > > > probably be some shrinker which doesn't behave.
-> > > > 
-> > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
-> > > Assuming you are not using xfs, we are left with dentries and inodes.
-> > > 
-> > > The first thing to do is to find which one of them is misbehaving. You can try finding
-> > > this out by the address of the list_lru, and where it lays in the superblock.
-> > > 
-> > > Once we know each of them is misbehaving, then we'll have to figure out why.
-> > 
-> > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
-> > it's inodes?
-> > 
-> Assuming there is no memory corruption of any sort going on , let's check the code.
-> nr_item is only manipulated in 3 places:
+> Subject: [PATCH v2] ext4: improve extent cache shrink mechanism to avoid to burn CPU time
 > 
-> 1) list_lru_add, where it is increased
-> 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
->    element from the list
-> 3) list_lru_walk_node, where an element is removing during shrink.
+> From: Zheng Liu <wenqing.lz@taobao.com>
 > 
-> All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
-
-inode_lru_isolate() looks suspicious to me:
-
-        WARN_ON(inode->i_state & I_NEW);
-        inode->i_state |= I_FREEING;
-        spin_unlock(&inode->i_lock);
-
-        list_move(&inode->i_lru, freeable);
-        this_cpu_dec(nr_unused);
-	return LRU_REMOVED;
-}
-
-All the other cases where I_FREEING is set and the inode is removed
-from the LRU are completely done under the inode->i_lock. i.e. from
-an external POV, the state change to I_FREEING and removal from LRU
-are supposed to be atomic, but they are not here.
-
-I'm not sure this is the source of the problem, but it definitely
-needs fixing.
-
-> callers:
-> iput_final, evict_inodes, invalidate_inodes.
-> Both evict_inodes and invalidate_inodes will do the following pattern:
+> Now we maintain an proper in-order LRU list in ext4 to reclaim entries
+> from extent status tree when we are under heavy memory pressure.  For
+> keeping this order, a spin lock is used to protect this list.  But this
+> lock burns a lot of CPU time.  We can use the following steps to trigger
+> it.
 > 
->                 inode->i_state |= I_FREEING;                                            
->                 inode_lru_list_del(inode);
->                 spin_unlock(&inode->i_lock);
->                 list_add(&inode->i_lru, &dispose);
+>   % cd /dev/shm
+>   % dd if=/dev/zero of=ext4-img bs=1M count=2k
+>   % mkfs.ext4 ext4-img
+>   % mount -t ext4 -o loop ext4-img /mnt
+>   % cd /mnt
+>   % for ((i=0;i<160;i++)); do truncate -s 64g $i; done
+>   % for ((i=0;i<160;i++)); do cp $i /dev/null &; done
+>   % perf record -a -g
+>   % perf report
 > 
-> IOW, they will remove the element from the LRU, and add it to the dispose list.
-> Both of them will also bail out if they see I_FREEING already set, so they are safe
-> against each other - because the flag is manipulated inside the lock.
+> This commit tries to fix this problem.  Now a new member called
+> i_touch_when is added into ext4_inode_info to record the last access
+> time for an inode.  Meanwhile we never need to keep a proper in-order
+> LRU list.  So this can avoid to burns some CPU time.  When we try to
+> reclaim some entries from extent status tree, we use list_sort() to get
+> a proper in-order list.  Then we traverse this list to discard some
+> entries.  In ext4_sb_info, we use s_es_last_sorted to record the last
+> time of sorting this list.  When we traverse the list, we skip the inode
+> that is newer than this time, and move this inode to the tail of LRU
+> list.  When the head of the list is newer than s_es_last_sorted, we will
+> sort the LRU list again.
 > 
-> But how about iput_final? It seems to me that if we are calling iput_final at the
-> same time as the other two, this *could* happen (maybe there is some extra protection
-> that can be seen from Australia but not from here. Dave?)
+> In this commit, we break the loop if s_extent_cache_cnt == 0 because
+> that means that all extents in extent status tree have been reclaimed.
+> 
+> Meanwhile in this commit, ext4_es_{un}register_shrinker()'s prototype is
+> changed to save a local variable in these functions.
+> 
+> Reported-by: Dave Hansen <dave.hansen@intel.com>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
 
-If I_FREEING is set before we enter iput_final(), then something
-else is screwed up. I_FREEING is only set once the last reference
-has gone away and we are killing the inode. All the other callers
-that set I_FREEING check that the reference count on the inode is
-zero before they set I_FREEING. Hence I_FREEING cannot be set on the
-transition of i_count from 1 to 0 when iput_final() is called. So
-the patch won't do anything to avoid the problem being seen.
+Applied, thanks.
 
-Keep in mind that we this is actually a new warning on the count of
-inodes on the LRU - we never had a check that it didn't go negative
-before....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+					- Ted
