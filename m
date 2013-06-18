@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab3FRP2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:28:48 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:61908 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab3FRP2q (ORCPT
+	id S1756267Ab3FRP3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:29:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61720 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab3FRP3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:28:46 -0400
+	Tue, 18 Jun 2013 11:29:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH] ARM: clocksource: add support for MOXA ART SoCs
+Date: Tue, 18 Jun 2013 17:28:58 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, john.stultz@linaro.org, tglx@linutronix.de
+References: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1371549604-7201-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com>
- <20130618142744.GG17619@somewhere.redhat.com> <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 18 Jun 2013 11:28:26 -0400
-Message-ID: <CAHGf_=rNPM+6S1j_9p-RrmgTYiukMVpC0U_2_L1Gy3-xreXGFQ@mail.gmail.com>
-Subject: Re: [PATCH 6/8] sched: task_sched_runtime introduce micro optimization
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306181728.58869.arnd@arndb.de>
+X-Provags-ID: V02:K0:yXsSYVQrfELc1ndlN2P68deI57xlT1/FLKNiukCQVUA
+ jps0fnJuUTPclwGCK/x01TzuWGjV2Swk0tnHa2U3d4Z1QF3oGW
+ LCMKLoTJjes9hzSvBRfm/qIUSYtRmVrNdCiL9Lx6r93/5UgEPh
+ Dp9RGfh+q6nzLAYM0pnrQE9Bd0DHAN4GunlUW94LV/6e5SjkkX
+ XLe2dL4uqIhiIZNpNC3sB/aGJ/7iK4ko0fqYz0+Uj3sNTuW6rT
+ egUSOL/DFT0Dk4wPdMQCExa5xFKIYj5DPtR9URq2HExE67Cb7t
+ Gp0pdPA00Ti9L2+JArIoLkCmGrHzqYciM2qtFQgOT+RgENX6gA
+ tjAB6fJ75+iInI/fNMw4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 11:17 AM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
->>> +#ifdef CONFIG_64BIT
->>> +     /*
->>> +      * 64-bit doesn't need locks to atomically read a 64bit value. So we
->>> +      * have two optimization chances, 1) when caller doesn't need
->>> +      * delta_exec and 2) when the task's delta_exec is 0. The former is
->>> +      * obvious. The latter is complicated. reading ->on_cpu is racy, but
->>> +      * this is ok. If we race with it leaving cpu, we'll take a lock. So
->>> +      * we're correct. If we race with it entering cpu, unaccounted time
->>> +      * is 0. This is indistinguishable from the read occurring a few
->>> +      * cycles earlier.
->>> +      */
->>> +     if (!add_delta || !p->on_cpu)
->>> +             return p->se.sum_exec_runtime;
->>
->> I'm not sure this is correct from an smp ordering POV. p->on_cpu may appear
->> to be 0 whereas the task is actually running for a while and p->se.sum_exec_runtime
->> can then be past the actual value on the remote CPU.
->
-> Quate form Paul's last e-mail
->
->>Stronger:
->>
->>+#ifdef CONFIG_64BIT
->>+       if (!p->on_cpu)
->>+               return p->se.sum_exec_runtime;
->>+#endif
->>
->>[ Or !p->on_cpu || !add_delta ].
->>
->>We can take the racy read versus p->on_cpu since:
->>  If we race with it leaving cpu: we take lock, we're correct
->>  If we race with it entering cpu: unaccounted time ---> 0, this is
->>indistinguishable from the read occurring a few cycles earlier.
->
-> That said, even though we got slightly inaccurate current time, we
-> have no way to
-> know this is inaccurate. E.g. cpu clock saving feature bring us more
-> inaccuracy, but
-> we already live in such world.
+On Tuesday 18 June 2013, Jonas Jensen wrote:
+> This patch adds an clocksource driver for the main timer found
+> on MOXA ART SoCs.
+> 
+> Applies to 3.10-rc1 and arm-soc/for-next (2013-06-15)
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Ah, RT folks may want to call preempt_disable() in  thread_group_cputime()
-because preemptive kernel can be preemptible while for-each-threads loop
-for getting accurate time.
-But it is another story, it's not new issue and it's not introduced by me. :-)
+I didn't look closely before but I agree with Thomas Petazzoni, this should
+be converted to clocksource/clockevent.
+
+A few other things I noticed now:
+
+> +#define APB_CLK 48000000
+
+You are hardcoding the clock rate above, which makes it less portable
+than it should be. Ideally you would use clk_get_rate() on
+the default clock, but you don't actually implement a clk
+driver for your platform and probably don't need one.
+
+I don't know what others think about this, but I'd suggest just
+using a "clock-frequency" property in the device node to read
+the clock rate.
+
+> +#define TIMER_1_COUNT(base_addr)        (base_addr + 0x00)
+> +#define TIMER_1_LOAD(base_addr)         (base_addr + 0x04)
+> +#define TIMER_1_MATCH1(base_addr)       (base_addr + 0x08)
+> +#define TIMER_1_MATCH2(base_addr)       (base_addr + 0x0C)
+> +
+> +#define TIMER_2_COUNT(base_addr)        (base_addr + 0x10)
+> +#define TIMER_2_LOAD(base_addr)         (base_addr + 0x14)
+> +#define TIMER_2_MATCH1(base_addr)       (base_addr + 0x18)
+> +#define TIMER_2_MATCH2(base_addr)       (base_addr + 0x1C)
+> +
+> +#define TIMER_3_COUNT(base_addr)        (base_addr + 0x20)
+> +#define TIMER_3_LOAD(base_addr)         (base_addr + 0x24)
+> +#define TIMER_3_MATCH1(base_addr)       (base_addr + 0x28)
+> +#define TIMER_3_MATCH2(base_addr)       (base_addr + 0x2C)
+> +
+
+You actually seem to have three independent timers here, which
+means you can use one as the clock source and one for clock
+events.
+
+> +#define TIMER1_COUNT                0x0
+> +#define TIMER1_LOAD                 0x4
+> +#define TIMER1_MATCH1               0x8
+> +#define TIMER1_MATCH2               0xC
+> +#define TIMER2_COUNT                0x10
+> +#define TIMER2_LOAD                 0x14
+> +#define TIMER2_MATCH1               0x18
+> +#define TIMER2_MATCH2               0x1C
+> +#define TIMER3_COUNT                0x20
+> +#define TIMER3_LOAD                 0x24
+> +#define TIMER3_MATCH1               0x28
+> +#define TIMER3_MATCH2               0x2C
+> +#define TIMER_INTR_MASK     0x38
+
+These look like duplicates from above. I'd prefer the second syntax, just
+do the addition of base_addr where you need it.
+
+	Arnd
