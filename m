@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3FRIFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:05:39 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:22376 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3FRIFa (ORCPT
+	id S1754194Ab3FRIHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:07:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51643 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab3FRIHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:05:30 -0400
-Message-ID: <51C014CA.7040700@atmel.com>
-Date: Tue, 18 Jun 2013 10:05:30 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 04:07:11 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        Eilon Greenstein <eilong@broadcom.com>, <netdev@vger.kernel.org>
+Subject: [PATCH 1/9] Bnx2x: remove redundant D0 power state set
+Date: Tue, 18 Jun 2013 16:05:39 +0800
+Message-ID: <1371542739-13552-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Arnd Bergmann <arnd@arndb.de>, "balbi@ti.com" <balbi@ti.com>,
-        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
-        "Shen, Voice" <Voice.Shen@atmel.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "Linux Kernel list" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
-Subject: Re: RE : [GIT PULL] at91: Device Tree update for 3.11 #2
-References: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com> <1371250067-19317-1-git-send-email-nicolas.ferre@atmel.com> <20130615015224.GA25585@quad.lixom.net> <EABCC4A72A203F4BA2E04297CF0282C427D1E112@hnombx01.corp.atmel.com> <CAOesGMjHTSB3y3+TxLqM=s06jg8Qx8XnEeW9c2dDcWnneZPVXA@mail.gmail.com>
-In-Reply-To: <CAOesGMjHTSB3y3+TxLqM=s06jg8Qx8XnEeW9c2dDcWnneZPVXA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/06/2013 18:56, Olof Johansson :
-> On Mon, Jun 17, 2013 at 1:34 AM, Ferre, Nicolas <Nicolas.FERRE@atmel.com> wrote:
->>
->>> On Sat, Jun 15, 2013 at 12:47:47AM +0200, Nicolas Ferre wrote:
->>>> Arnd, Olof,
->>>>
->>>> Additional pull-request for AT91 DT patches.
->>>> It contains the remaining part of the USB gadget pull-request that I sent you
->>>> last week. After having split it, here is the DT part.
->>>> It also contains the update of DMA bindings: it is the AT91 part the should go
->>>> through arm-soc. I have included the patch (ARM: at91: dt: add header to define
->>>> at_hdmac configuration) so that we avoid build errors whichever git tree
->>>> (slave-dma or arm-soc) is merged first.
->>>> A SPI DT patch for at91sam9x5 is also added.
->>>>
->>>> Thanks, best regards,
->>>>
->>>> The following changes since commit 028633c238f91dc113520a7ad25d37b2ba9068af:
->>>>
->>>>    ARM: at91/dt: add pinctrl definition for at91 tc blocks (2013-05-31 22:40:37 +0200)
->>>>
->>>> are available in the git repository at:
->>>>
->>>>    git://github.com/at91linux/linux-at91.git tags/at91-dt
->>>
->>> Pulled, thanks.
->>
->> Hi,
->>
->> I do not see it appearing in arm-soc/at91/dt branch even though is it present in arm-soc/for-next: is it normal?
->
-> I had missed to push that (and the driver branch) up. They are there
-> now, as at91/dt2 and at91/drivers. Fixed the bad branch name in
-> arm-soc-for-next-contents.txt as well.
+Pci_enable_device() will set device power state to D0,
+so it's no need to do it again in bnx2x_init_dev().
+Also remove redundant PM Cap find code, because pci core
+has been saved the pci device pm cap value.
 
-Nice, thanks.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Bye,
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index b4c9dea..6ecd497 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -11959,7 +11959,7 @@ static int bnx2x_init_dev(struct bnx2x *bp, struct pci_dev *pdev,
+ 	}
+ 
+ 	if (IS_PF(bp)) {
+-		bp->pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM);
++		bp->pm_cap = pdev->pm_cap;
+ 		if (bp->pm_cap == 0) {
+ 			dev_err(&bp->pdev->dev,
+ 				"Cannot find power management capability, aborting\n");
+@@ -12008,8 +12008,6 @@ static int bnx2x_init_dev(struct bnx2x *bp, struct pci_dev *pdev,
+ 	}
+ 	BNX2X_DEV_INFO("me reg PF num: %d\n", bp->pf_num);
+ 
+-	bnx2x_set_power_state(bp, PCI_D0);
+-
+ 	/* clean indirect addresses */
+ 	pci_write_config_dword(bp->pdev, PCICFG_GRC_ADDRESS,
+ 			       PCICFG_VENDOR_ID_OFFSET);
 -- 
-Nicolas Ferre
+1.7.1
+
+
