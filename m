@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab3FRO1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:27:52 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:42890 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830Ab3FRO1t (ORCPT
+	id S1756229Ab3FROar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:30:47 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45832 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764Ab3FROaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:27:49 -0400
-Date: Tue, 18 Jun 2013 16:27:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 6/8] sched: task_sched_runtime introduce micro
- optimization
-Message-ID: <20130618142744.GG17619@somewhere.redhat.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com>
+	Tue, 18 Jun 2013 10:30:46 -0400
+Date: Tue, 18 Jun 2013 16:30:43 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: dzu@denx.de, hjk@hansjkoch.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
+ using command line option
+Message-ID: <20130618143043.GC17361@amd.pavel.ucw.cz>
+References: <20130412184335.GA5510@amd.pavel.ucw.cz>
+ <20130617134741.GA15547@amd.pavel.ucw.cz>
+ <20130617173738.GA14921@kroah.com>
+ <20130618130216.GB15122@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130618130216.GB15122@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 05:35:47PM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Tue 2013-06-18 15:02:16, Pavel Machek wrote:
+> On Mon 2013-06-17 10:37:38, Greg KH wrote:
+> > On Mon, Jun 17, 2013 at 03:47:41PM +0200, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > This adds ability to bind uio driver to given open firmware device
+> > > > using command line option. Thus, userspace driver can be developed and
+> > > > used without modifying the kernel.
+> > > > 
+> > > > Signed-off-by: Pavel Machek <pavel@denx.de> 
+> > > 
+> > > Ping? Greg, could you apply this patch? Or is there someone else I
+> > > should ask to apply it?
+> > 
+> > Ugh, Hans seems to have dropped off of the net for a long time now, so I
+> > guess I'll start queueing up UIO patches again.  Care to resend this?
 > 
-> rq lock in task_sched_runtime() is necessary for two reasons. 1)
-> accessing se.sum_exec_runtime is not atomic on 32bit and 2)
-> do_task_delta_exec() require it.
-> 
-> So, 64bit can avoid holding rq lock when add_delta is false and
-> delta_exec is 0.
-> 
-> Cc: Olivier Langlois <olivier@trillion01.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Suggested-by: Paul Turner <pjt@google.com>
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  kernel/sched/core.c |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 96512e9..0f859cc 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2692,6 +2692,21 @@ unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
->  	struct rq *rq;
->  	u64 ns = 0;
->  
-> +#ifdef CONFIG_64BIT
-> +	/*
-> +	 * 64-bit doesn't need locks to atomically read a 64bit value. So we
-> +	 * have two optimization chances, 1) when caller doesn't need
-> +	 * delta_exec and 2) when the task's delta_exec is 0. The former is
-> +	 * obvious. The latter is complicated. reading ->on_cpu is racy, but
-> +	 * this is ok. If we race with it leaving cpu, we'll take a lock. So
-> +	 * we're correct. If we race with it entering cpu, unaccounted time
-> +	 * is 0. This is indistinguishable from the read occurring a few
-> +	 * cycles earlier.
-> +	 */
-> +	if (!add_delta || !p->on_cpu)
-> +		return p->se.sum_exec_runtime;
+> Here you go. It still applies to your -next tree.
 
-I'm not sure this is correct from an smp ordering POV. p->on_cpu may appear
-to be 0 whereas the task is actually running for a while and p->se.sum_exec_runtime
-can then be past the actual value on the remote CPU.
+And here's version that removes "const" that is no longer true. I
+missed the compile warning before. Sorry,
+								Pavel
 
-> +#endif
-> +
->  	rq = task_rq_lock(p, &flags);
->  	ns = p->se.sum_exec_runtime;
->  	if (add_delta)
-> -- 
-> 1.7.1
-> 
+-(cut here)-
+
+This adds ability to bind uio driver to given open firmware device
+using command line option. Thus, userspace driver can be developed and
+used without modifying the kernel.
+
+Signed-off-by: Pavel Machek <pavel@denx.de>
+Tested-by: Detlev Zundel <dzu@denx.de>
+
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index d594dd9..9741549 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -258,10 +258,14 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+ };
+ 
+ #ifdef CONFIG_OF
+-static const struct of_device_id uio_of_genirq_match[] = {
+-	{ /* empty for now */ },
++static struct of_device_id uio_of_genirq_match[] = {
++	{ /* This is filled with module_parm */ },
++	{ /* Sentinel */ },
+ };
+ MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
++
++module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
++MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
+ #else
+ # define uio_of_genirq_match NULL
+ #endif
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
