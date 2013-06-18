@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab3FRPWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:22:45 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:62208 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118Ab3FRPWm (ORCPT
+	id S932808Ab3FRPXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:23:04 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:52466 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab3FRPXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:22:42 -0400
+	Tue, 18 Jun 2013 11:23:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <51BFE754.6000909@samsung.com>
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-1-git-send-email-dianders@chromium.org>
-	<1370626110-1731-2-git-send-email-dianders@chromium.org>
-	<51BFE754.6000909@samsung.com>
-Date: Tue, 18 Jun 2013 08:15:37 -0700
-X-Google-Sender-Auth: gzAYjSxyB74Rfp5xH78MUoZawCE
-Message-ID: <CAD=FV=Wy5X9C=NOUVyAzZK5+BKD1w4FTmoTHzKipq2j_Y9rdtg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] mmc: dw_mmc: Add the ability to set the ciu clock frequency
-From: Doug Anderson <dianders@chromium.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
+In-Reply-To: <20130618151116.GZ2718@n2100.arm.linux.org.uk>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347550912-18021-3-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130618113606.GA26763@n2100.arm.linux.org.uk>
+	<CACRpkdZTVN2O-Rv4u-Ccb9EzV0At3zc7GYQyTq=HkseOi=GTeg@mail.gmail.com>
+	<20130618151116.GZ2718@n2100.arm.linux.org.uk>
+Date: Tue, 18 Jun 2013 17:23:00 +0200
+Message-ID: <CACRpkdadS4Si0pqrxRrnriQk81aZgeKKQta7onEpJv3vi6mfdw@mail.gmail.com>
+Subject: Re: [PATCH v4 02/10] pinctrl: mvebu: dove pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@gmail.com>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        linux-doc@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jaehoon,
-
-On Mon, Jun 17, 2013 at 9:51 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Hi Doug,
+On Tue, Jun 18, 2013 at 5:11 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Jun 18, 2013 at 05:02:49PM +0200, Linus Walleij wrote:
+>> Nowadays I would do the above with regmap_update_bits().
+>>
+>> Mutual exclusion for read-modify-write of individual bits in a
+>> register is one of those cases where doing a regmap over
+>> a memory-mapped register range makes a lot of sense.
+>> (drivers/mfd/syscon.c being a nice example)
 >
-> I have one question for using <clock-frequency>.
-> I found the fixed-rate-clocks feature.
-> If we want to set <clock-frequency>, then can we use the fixed-rate-clocks?
-> i'm not sure how use the fixed-rate-clocks. but it seems to set fixed-rate value for clock frequency.
->
-> clk_set_rate() didn't ensure to set the <clock-frequency> value.
+> So, for that solution we need to have some kind of global regmap per
+> register or somesuch.  Then you run into regmap needing a struct
+> device - well, with a shared register, which struct device do you
+> use, or do you have to invent one?
 
-I'm not sure I understand the question.  I don't think that the
-fixed-rate-clocks have a close relation to the clock-frequency or the
-ciu clock.  The fixed-rate-clock entries for a board usually specify
-the root clock source for a board.  For instance in exynos5250-snow
-you can see:
+Usually, like for syscon, you create an MFD hub which
+carry the regmap.
 
-fixed-rate-clocks {
-  xxti {
-    compatible = "samsung,clock-xxti";
-    clock-frequency = <24000000>;
-  };
-};
+> That sounds more heavy-weight than is really necessary.
 
-Other clocks in the board are derived from this clock through PLLs,
-muxes, dividers, gates, etc.  On 5250 we have:
+May be so, especially if there is just one register to protect.
+The usefulness of MM-regmap increase with the set of registers
+needing to be protected.
 
- fin_pll (xxti) -> fout_mpll -> fout_mplldiv2 -> mout_mpll_fout ->
- sclk_mpll -> sclk_mpll_user -> mout_mmc1 -> div_mmc1
- div_mmc_pre1 -> sclk_mmc1
-
-In 5250 the ciu clock for mmc1 is sclk_mmc1, which is a simple gate.
-When you "enable" this clock it, ungates it.  The sclk_mmc1 has the
-flag CLK_SET_RATE_PARENT on it.  That means when you try to set the
-rate it will involve the parent clock (div_mmc_pre1).  The parent
-clock also has CLK_SET_RATE_PARENT, so it can also involve div_mmc1.
-I haven't dug through to see how the clock framework splits up divides
-between div_mmc1 and div_mmc_pre1, but it's supposed to handle that.
-
-We don't allow clk_set_rate to percolate any higher (no
-CLK_SET_RATE_PARENT at mout_mmc1).
-
--Doug
+Yours,
+Linus Walleij
