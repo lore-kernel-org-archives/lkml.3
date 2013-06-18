@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3FRLnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:43:40 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:39532 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab3FRLni (ORCPT
+	id S1755623Ab3FRLn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 07:43:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55878 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab3FRLnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:43:38 -0400
+	Tue, 18 Jun 2013 07:43:51 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 02/93] libata: make ata_exec_internal_sg honor DMADIR
+Date: Tue, 18 Jun 2013 12:42:10 +0100
+Message-Id: <1371555821-12820-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
+References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1371553171-23530-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1371553171-23530-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Date: Tue, 18 Jun 2013 17:13:37 +0530
-Message-ID: <CAK9yfHwq_OC6s5Lvh6j5RP5xCTzgkWxFLrUq7_5i_7gPfCDTXQ@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_cmt: Use devm_* managed helpers
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+3.5.7.15 -stable review patch.  If anyone has any objections, please let me know.
 
-On 18 June 2013 16:29, Laurent Pinchart
-<laurent.pinchart+renesas@ideasonboard.com> wrote:
-> This simplifies the main error path by getting rid of it.
->
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> ---
->  drivers/clocksource/sh_cmt.c | 40 ++++++++++++++--------------------------
->  1 file changed, 14 insertions(+), 26 deletions(-)
->
-> The patch is based on top of renesas-next-20130618 plus Magnus'
-> "clocksource: sh_cmt: 32-bit control register support" patch.
->
-> diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-> index 0965e98..7001e4d 100644
-> --- a/drivers/clocksource/sh_cmt.c
-> +++ b/drivers/clocksource/sh_cmt.c
-> @@ -681,20 +681,18 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
->         struct sh_timer_config *cfg = pdev->dev.platform_data;
->         struct resource *res, *res2;
->         int irq, ret;
-> -       ret = -ENXIO;
->
-> -       memset(p, 0, sizeof(*p));
->         p->pdev = pdev;
->
->         if (!cfg) {
->                 dev_err(&p->pdev->dev, "missing platform data\n");
-> -               goto err0;
-> +               return -ENXIO;
->         }
->
->         res = platform_get_resource(p->pdev, IORESOURCE_MEM, 0);
->         if (!res) {
->                 dev_err(&p->pdev->dev, "failed to get I/O memory\n");
-> -               goto err0;
-> +               return -ENXIO;
->         }
->
->         /* optional resource for the shared timer start/stop register */
-> @@ -703,23 +701,23 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
->         irq = platform_get_irq(p->pdev, 0);
->         if (irq < 0) {
->                 dev_err(&p->pdev->dev, "failed to get irq\n");
-> -               goto err0;
-> +               return -ENXIO;
->         }
->
->         /* map memory, let mapbase point to our channel */
-> -       p->mapbase = ioremap_nocache(res->start, resource_size(res));
-> +       p->mapbase = devm_ioremap_resource(&pdev->dev, res);
->         if (p->mapbase == NULL) {
+------------------
 
-You should check for  IS_ERR (p->mapbase) and return PTR_ERR(p->mapbase)
+From: Vincent Pelletier <plr.vincent@gmail.com>
 
->                 dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
+commit e771451c0a831d96a7c14b0ca8a8ec671d98567b upstream.
 
-This error message is not required as devm_ioremap_resource prints its own.
+libata honors DMADIR for regular commands, but not for internal commands
+used (among other) during device initialisation.
 
+This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
+(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
+after a few tries.
+
+Log output of the bridge being hot-plugged with an ATAPI drive:
+
+  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
+  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
+  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
+  [ 9631.212939] ata1: hard resetting link
+  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
+  [ 9632.106407] ata1.00: applying bridge limits
+  [ 9632.108151] ata1.00: configured for UDMA/33
+  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
+  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9637.105335] ata1: hard resetting link
+  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9638.047878] ata1.00: configured for UDMA/33
+  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
+  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
+  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
+  [ 9643.044979] ata1: hard resetting link
+  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+  [ 9643.987471] ata1.00: configured for UDMA/33
+  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
+  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9648.984619] ata1.00: disabled
+  [ 9649.000593] ata1: hard resetting link
+  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+  [ 9649.955864] ata1: EH complete
+
+With this patch, the drive enumerates correctly when libata is loaded with
+atapi_dmadir=1:
+
+  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
+  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
+  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
+  [ 9891.810900] ata1: hard resetting link
+  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
+  [ 9892.763558] ata1.00: applying bridge limits
+  [ 9892.765393] ata1.00: configured for UDMA/33
+  [ 9892.786063] ata1: EH complete
+  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
+  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
+  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
+  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
+
+Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
+http://marc.info/?l=linux-ide&m=136121147832295&w=2
+
+tj: minor formatting changes.
+
+Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/ata/libata-core.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 23f092d..9e47300 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -1599,6 +1599,12 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
+ 	qc->tf = *tf;
+ 	if (cdb)
+ 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
++
++	/* some SATA bridges need us to indicate data xfer direction */
++	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
++	    dma_dir == DMA_FROM_DEVICE)
++		qc->tf.feature |= ATAPI_DMADIR;
++
+ 	qc->flags |= ATA_QCFLAG_RESULT_TF;
+ 	qc->dma_dir = dma_dir;
+ 	if (dma_dir != DMA_NONE) {
 -- 
-With warm regards,
-Sachin
+1.8.1.2
+
