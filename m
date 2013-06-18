@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3FRRfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:35:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54251 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752400Ab3FRRfq (ORCPT
+	id S1756369Ab3FRRku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:40:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50325 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab3FRRks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:35:46 -0400
-Date: Tue, 18 Jun 2013 18:35:40 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Message-ID: <20130618173540.GP4752@decadent.org.uk>
-References: <20130618161725.912524266@linuxfoundation.org>
- <20130618161727.767561192@linuxfoundation.org>
+	Tue, 18 Jun 2013 13:40:48 -0400
+Date: Tue, 18 Jun 2013 10:40:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        cota@braap.org, siglesias@igalia.com, rob@landley.net,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 3/8] FMC: add core bus driver
+Message-ID: <20130618174047.GA21738@kroah.com>
+References: <cover.1371018406.git.rubini@gnudd.com>
+ <3e9f6b2fb7cd202da9bbb6371b27ff302ca8b860.1371018406.git.rubini@gnudd.com>
+ <20130617231606.GB12984@kroah.com>
+ <20130617233802.GA17517@mail.gnudd.com>
+ <CADDK0KdrVgmXN-TZw8E43JRNk5Wb_cfM6pUWaSxbJ49GU72cTg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130618161727.767561192@linuxfoundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADDK0KdrVgmXN-TZw8E43JRNk5Wb_cfM6pUWaSxbJ49GU72cTg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 13/48] s390/pci: Implement IRQ functions if !PCI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 09:17:39AM -0700, Greg Kroah-Hartman wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Tue, Jun 18, 2013 at 09:30:00AM +0200, Juan David Gonzalez Cobas wrote:
+> Hi all,
 > 
-> 3.9-stable review patch.  If anyone has any objections, please let me know.
+> On Tue, Jun 18, 2013 at 1:38 AM, Alessandro Rubini <rubini@gnudd.com> wrote:
 > 
-> ------------------
+>     [...]
 > 
-> From: Ben Hutchings <ben@decadent.org.uk>
+>  
 > 
-> commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
+>     Yes, it was intended. I don't think it's an issue for merging, but
+>     I understand you've seen so many such undesired copy-paste errors.
 > 
-> All architectures must implement IRQ functions.  Since various
-> dependencies on !S390 were removed, there are various drivers that can
-> be selected but will fail to link.  Provide a dummy implementation of
-> these functions for the !PCI case.
-[...]
+> 
+> CERN policies favour GPLv3 as default open source license as a recommendation.
+> The "GPLv2 or later" is, in effect, intentional.
 
-This breaks !SMP builds, so it's probably best to defer this until the
-following fix is in mainline.
+Ok, thanks for verifying this.
 
-Ben.
+>     >> +EXPORT_SYMBOL(fmc_driver_unregister);
+>     >
+>     > Any specific reason these aren't EXPORT_SYMBOL_GPL()?
+>     >
+>     > Again, just have to ask.
+> 
+>     I think we want to allow for proprietary FMC drivers. I personally
+>     don't feel this is a core kernel technology.  But I'll let David Cobas
+>     expand on CERN policies, as I'm only a consultant.
+> 
+> 
+> CERN policies (mostly recommendations) concern esp. the return of
+> investment of taxpayer money to society. In view of the potential use
+> cases of FMC, EXPORT_SYMBOL_GPL would better serve that
+> purpose than merely allowing proprietary modules, so GPL exports
+> are fine.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Great.
+
+Alessandro, care to respin the patches that I didn't apply and resend
+them so that I can?
+
+thanks,
+
+greg k-h
