@@ -1,172 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab3FRCor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:44:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44034 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3FRCop (ORCPT
+	id S1753727Ab3FRCq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:46:29 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:52777 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752070Ab3FRCq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:44:45 -0400
-Date: Mon, 17 Jun 2013 19:44:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: =?ISO-8859-1?Q?Rapha=EBl?= Beamonte <raphael.beamonte@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
-        Mel Gorman <mgorman@suse.de>, Rob van der Heij <rvdheij@gmail.com>
-Subject: Re: [lttng-dev] [-stable 3.8.1 performance regression] madvise
- POSIX_FADV_DONTNEED
-Message-Id: <20130617194430.16d8c3ea.akpm@linux-foundation.org>
-In-Reply-To: <20130618021528.GA29506@Krystal>
-References: <51BE1828.3060206@gmail.com>
-	<20130617141357.GA6034@Krystal>
-	<20130617142459.1d563072231ba269cdac8f11@linux-foundation.org>
-	<CAE_Gge34HCroSgNgiXL1j7Le3CNKRXR=7TZQhJSmY+wfWniKug@mail.gmail.com>
-	<20130617145714.8032ba33fd3e4e6887755209@linux-foundation.org>
-	<20130618021528.GA29506@Krystal>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Jun 2013 22:46:27 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuoOAEnJv1F5LOOC/2dsb2JhbABSCIMJMbomhSEEAX4XdIIjAQEEAScTHCMFCwgDDgoJJQ8FDRgDIRECh3wDCQUNsWoNiE4EFoxMgS0MDYEdB4NgA4wyiSiBZocTgwuCAoUkgyEqBA
+Date: Tue, 18 Jun 2013 12:46:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130618024623.GP29338@dastard>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617223004.GB2538@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jun 2013 22:15:28 -0400 Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> * Andrew Morton (akpm@linux-foundation.org) wrote:
-> > On Mon, 17 Jun 2013 17:39:36 -0400 Rapha__l Beamonte <raphael.beamonte@gmail.com> wrote:
+On Tue, Jun 18, 2013 at 02:30:05AM +0400, Glauber Costa wrote:
+> On Mon, Jun 17, 2013 at 02:35:08PM -0700, Andrew Morton wrote:
+> > On Mon, 17 Jun 2013 19:14:12 +0400 Glauber Costa <glommer@gmail.com> wrote:
 > > 
-> > > 2013/6/17 Andrew Morton <akpm@linux-foundation.org>
+> > > > I managed to trigger:
+> > > > [ 1015.776029] kernel BUG at mm/list_lru.c:92!
+> > > > [ 1015.776029] invalid opcode: 0000 [#1] SMP
+> > > > with Linux next (next-20130607) with https://lkml.org/lkml/2013/6/17/203
+> > > > on top. 
+> > > > 
+> > > > This is obviously BUG_ON(nlru->nr_items < 0) and 
+> > > > ffffffff81122d0b:       48 85 c0                test   %rax,%rax
+> > > > ffffffff81122d0e:       49 89 44 24 18          mov    %rax,0x18(%r12)
+> > > > ffffffff81122d13:       0f 84 87 00 00 00       je     ffffffff81122da0 <list_lru_walk_node+0x110>
+> > > > ffffffff81122d19:       49 83 7c 24 18 00       cmpq   $0x0,0x18(%r12)
+> > > > ffffffff81122d1f:       78 7b                   js     ffffffff81122d9c <list_lru_walk_node+0x10c>
+> > > > [...]
+> > > > ffffffff81122d9c:       0f 0b                   ud2
+> > > > 
+> > > > RAX is -1UL.
+> > > Yes, fearing those kind of imbalances, we decided to leave the counter as a signed quantity
+> > > and BUG, instead of an unsigned quantity.
 > > > 
-> > > > That change wasn't terribly efficient - if there are any unpopulated
-> > > > pages in the range (which is quite likely), fadvise() will now always
-> > > > call invalidate_mapping_pages() a second time.
-> > > >
-> > > > Perhaps this is fixable.  Say, make lru_add_drain_all() return a
-> > > > success code, or even teach lru_add_drain_all() to return a code
-> > > > indicating that one of the spilled pages was (or might have been) on a
-> > > > particular mapping.
-> > > >
+> > > > 
+> > > > I assume that the current backtrace is of no use and it would most
+> > > > probably be some shrinker which doesn't behave.
+> > > > 
+> > > There are currently 3 users of list_lru in tree: dentries, inodes and xfs.
+> > > Assuming you are not using xfs, we are left with dentries and inodes.
 > > > 
-> > > Following our tests results, that was the call to lru_add_drain_all() that
-> > > causes the problem. The second call to invalidate_mapping_pages() isn't
-> > > really important. We tried to compile a kernel with the commit introducing
-> > > this change but with the "lru_add_drain_all()" line removed, and the
-> > > problem disappeared, even if we called two times invalidate_mapping_pages()
-> > > (as the rest of the commit was still here).
+> > > The first thing to do is to find which one of them is misbehaving. You can try finding
+> > > this out by the address of the list_lru, and where it lays in the superblock.
+> > > 
+> > > Once we know each of them is misbehaving, then we'll have to figure out why.
 > > 
-> > Ah, OK, schedule_on_each_cpu() could certainly do that - it has to wait
-> > for every CPU to context switch and schedule the worker function.
+> > The trace says shrink_slab_node->super_cache_scan->prune_icache_sb.  So
+> > it's inodes?
 > > 
-> > There's a lot we could do here.  Such as not doing the schedule_work()
-> > at all for a cpu which has an empty lru_add_pvec.
+> Assuming there is no memory corruption of any sort going on , let's check the code.
+> nr_item is only manipulated in 3 places:
 > 
-> First approach proposed, submitted as RFC. Compile-tested only.
+> 1) list_lru_add, where it is increased
+> 2) list_lru_del, where it is decreased in case the user have voluntarily removed the
+>    element from the list
+> 3) list_lru_walk_node, where an element is removing during shrink.
 > 
-> ...
->
-> Second approach, submitted as RFC with some questions left unanswered
-> in the code. Compile-tested only.
+> All three excerpts seem to be correctly locked, so something like this indicates an imbalance.
+
+inode_lru_isolate() looks suspicious to me:
+
+        WARN_ON(inode->i_state & I_NEW);
+        inode->i_state |= I_FREEING;
+        spin_unlock(&inode->i_lock);
+
+        list_move(&inode->i_lru, freeable);
+        this_cpu_dec(nr_unused);
+	return LRU_REMOVED;
+}
+
+All the other cases where I_FREEING is set and the inode is removed
+from the LRU are completely done under the inode->i_lock. i.e. from
+an external POV, the state change to I_FREEING and removal from LRU
+are supposed to be atomic, but they are not here.
+
+I'm not sure this is the source of the problem, but it definitely
+needs fixing.
+
+> callers:
+> iput_final, evict_inodes, invalidate_inodes.
+> Both evict_inodes and invalidate_inodes will do the following pattern:
 > 
-> ---
->  include/linux/swap.h |    1 
->  mm/fadvise.c         |    2 -
->  mm/swap.c            |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 64 insertions(+), 1 deletion(-)
+>                 inode->i_state |= I_FREEING;                                            
+>                 inode_lru_list_del(inode);
+>                 spin_unlock(&inode->i_lock);
+>                 list_add(&inode->i_lru, &dispose);
 > 
-> Index: linux/include/linux/swap.h
-> ===================================================================
-> --- linux.orig/include/linux/swap.h
-> +++ linux/include/linux/swap.h
-> @@ -242,6 +242,7 @@ extern void mark_page_accessed(struct pa
->  extern void lru_add_drain(void);
->  extern void lru_add_drain_cpu(int cpu);
->  extern int lru_add_drain_all(void);
-> +extern int lru_add_drain_mapping(struct address_space *mapping);
->  extern void rotate_reclaimable_page(struct page *page);
->  extern void deactivate_page(struct page *page);
->  extern void swap_setup(void);
-> Index: linux/mm/swap.c
-> ===================================================================
-> --- linux.orig/mm/swap.c
-> +++ linux/mm/swap.c
-> @@ -689,6 +689,68 @@ int lru_add_drain_all(void)
->  }
->  
->  /*
-> + * Returns 0 for success
-> + */
-> +int lru_add_drain_mapping(struct address_space *mapping)
-> +{
-> +	int cpu;
-> +	struct work_struct __percpu *works;
-> +
-> +	works = alloc_percpu(struct work_struct);
-> +	if (!works)
-> +		return -ENOMEM;
-> +
-> +	get_online_cpus();
-> +
-> +	for_each_online_cpu(cpu) {
-> +		struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
-> +		struct work_struct *work = per_cpu_ptr(works, cpu);
-> +		struct pagevec *pvec;
-> +		int lru;
-> +
-> +		INIT_WORK(work, lru_add_drain_per_cpu);
-> +		for_each_lru(lru) {
-> +			int i;
-> +
-> +			pvec = &pvecs[lru - LRU_BASE];
-> +			/*
-> +			 * Race failure mode is to flush unnecessarily.
-> +			 * We use PAGEVEC_SIZE rather than pvec->nr to
-> +			 * stay on the safe-side wrt pvec resize.
-> +			 */
-> +			for (i = 0; i < PAGEVEC_SIZE; i++) {
-> +				struct page *page;
-> +
-> +				/*
-> +				 * Racy access to page. TODO: is it OK
-> +				 * to access it from the remote CPU's
-> +				 * lru without any kind of ownership or
-> +				 * synchronization ?
-> +				 */
+> IOW, they will remove the element from the LRU, and add it to the dispose list.
+> Both of them will also bail out if they see I_FREEING already set, so they are safe
+> against each other - because the flag is manipulated inside the lock.
+> 
+> But how about iput_final? It seems to me that if we are calling iput_final at the
+> same time as the other two, this *could* happen (maybe there is some extra protection
+> that can be seen from Australia but not from here. Dave?)
 
-Almost.  The only problem I can think of is that the other CPU flushes
-its pagevec then a page gets freed then a memory hot-unplug occurs and
-the memory hotplug handler frees and then unmaps the memory which was
-used to hold the page's `struct page' (I don't think the current
-mem-hotplug code even does this) and now this cpu's page->mapping
-access goes oops.  
+If I_FREEING is set before we enter iput_final(), then something
+else is screwed up. I_FREEING is only set once the last reference
+has gone away and we are killing the inode. All the other callers
+that set I_FREEING check that the reference count on the inode is
+zero before they set I_FREEING. Hence I_FREEING cannot be set on the
+transition of i_count from 1 to 0 when iput_final() is called. So
+the patch won't do anything to avoid the problem being seen.
 
-IOW, not worth worrying for a prototype "hey lets test this and see if
-it fixes things" patch.
+Keep in mind that we this is actually a new warning on the count of
+inodes on the LRU - we never had a check that it didn't go negative
+before....
 
+Cheers,
 
-> +				page = ACCESS_ONCE(pvec->pages[i]);
-> +				if (!pvec->pages[i])
-> +					continue;
-> +				if (page->mapping == mapping) {
-> +					schedule_work_on(cpu, work);
-> +					goto next_cpu;
-> +				}
-> +			}
-> +		}
-> +	next_cpu: ;	/* TODO: coding ugliness */
-> +	}
-> +
-> +	for_each_online_cpu(cpu) {
-> +		struct work_struct *work = per_cpu_ptr(works, cpu);
-> +		if (work_pending(work))
-> +			flush_work(work);
-> +	}
-> +
-> +	put_online_cpus();
-> +	free_percpu(works);
-> +	return 0;
-> +}
->
-> ...
->
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
