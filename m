@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3FRIjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:39:15 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51039 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3FRIjL convert rfc822-to-8bit (ORCPT
+	id S1754851Ab3FRIkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:40:33 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:35596 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab3FRIk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:39:11 -0400
+	Tue, 18 Jun 2013 04:40:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130617231638.GV7998@zurbaran>
-References: <1368049529-8168-1-git-send-email-geert@linux-m68k.org>
-	<CAPnjgZ3Akf0+LKBt4c5HQX5c8PhL+zuvvHWrDpVj0W++GiOanA@mail.gmail.com>
-	<20130515064248.GB24297@core.coreip.homeip.net>
-	<20130617231638.GV7998@zurbaran>
-Date: Tue, 18 Jun 2013 10:39:10 +0200
-X-Google-Sender-Auth: gYJn5NfVSvh0192G094qa7N9N1o
-Message-ID: <CAMuHMdVL=9m6zB_Jc+hE=iZr7LBT+vb9ckc2c-yxPJOvM-wrPQ@mail.gmail.com>
-Subject: Re: [PATCH] input: cros_ec_keyb_clear_keyboard() depends on CONFIG_PM_SLEEP
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Simon Glass <sjg@chromium.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130618102429.5ff68931@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-1-git-send-email-l.majewski@samsung.com>
+	<1371195540-2991-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpokQAsuAqWi7rNx9RaFz8KVRNXVkBD22KC5_Qh05k66qqA@mail.gmail.com>
+	<20130617091549.398b865f@amdc308.digital.local>
+	<CAKohpo=nfuqwCoQJRczmNRNXCOTL5FSJQEzjKpVdXU+wu-KJ1g@mail.gmail.com>
+	<20130617110811.1e1805d2@amdc308.digital.local>
+	<CAKohpo=oy3SQXgvNvOydggZ5NZu9yyVtKrdFQjNOGVmzhSaQUw@mail.gmail.com>
+	<20130617115809.5206c42c@amdc308.digital.local>
+	<CAKohpo=yPcH0FW7T38cd3E1xOpzC0AhJ5mtyVaQyuj_S8iLovw@mail.gmail.com>
+	<20130617155156.4c729b5a@amdc308.digital.local>
+	<CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
+	<20130618102429.5ff68931@amdc308.digital.local>
+Date: Tue, 18 Jun 2013 14:10:28 +0530
+Message-ID: <CAKohpo=Th-V4+i7r0+EoDL2fvoy-vMZrRa7wg5mJSQ7HjK_0YQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 1:16 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> On Tue, May 14, 2013 at 11:42:48PM -0700, Dmitry Torokhov wrote:
->> On Wed, May 08, 2013 at 09:25:56PM -0600, Simon Glass wrote:
->> > On Wed, May 8, 2013 at 3:45 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> > > If CONFIG_PM_SLEEP is not set:
->> > >
->> > > drivers/input/keyboard/cros_ec_keyb.c:211: warning: ‘cros_ec_keyb_clear_keyboard’ defined but not used
->> > >
->> > > Move the definition of cros_ec_keyb_clear_keyboard() inside the section
->> > > protected by #ifdef CONFIG_PM_SLEEP to fix this.
->> > >
->> > > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> >
->> > Acked-by: Simon Glass <sjg@chromium.org>
+On 18 June 2013 13:54, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Tue, 18 Jun 2013 08:42:13 +0200, Viresh Kumar wrote:
+
+>> Its not about how long.. One cpu type can work longer with boost freq
+>> compared to other.
 >>
->> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>
->> Could you please forward this to Linus as I do not have this driver in
->> my branch yet.
-> I guess you took that one now ? Or are you expecting me to merge it ?
+>> What we probably need is:
+>> - Enabled boost from sysfs if required (now below steps will come into
+>>   picture)
+>> - See how many cpus are running, if only one then start using boost
+>> freqs
+>
+> You are right here.
+>
+> I'd like to propose following solution:
+> 1. For acpi (where boost_enable come into play) - do not consider
+> number of active cpus (this is done in HW anyway)
+>
+> 2. For SW solution evaluate how many CPUs are running. If only one is
+> running then allow enabling boost from sysfs.
 
-FWIW, I also have it in my exotic-arch-fixes branch, now destined for 3.11.
+Looks fine.
 
-Gr{oetje,eeting}s,
+> But following situation is also possible: User enable boost when one
+> core is only running and then for some reason other core is woken up.
+> What shall be done then?
+> Shall we then disable boost immediately when cpufreq detects that
+> more than one core is running? Or leave this situation to be handled by
+> thermal subsystem?
 
-                        Geert
+Obviously disable boost ASAP. Every SoC might not have a thermal
+framework glue to do it.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> As a side note:
+> Logic proposed at point 2, is already implemented at LAB
+> (enable LAB only when one core is running and disable it when more
+> than one come into play).
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Hmm.. So, eventually that will go away now :)
+
+>> - Now thermal should be come into picture to save chip in case a
+>> single cpu running at boost can burn it out.
+>
+> I will extent v4 to embrace code which switches off boost at thermal.
+
+Gud.
