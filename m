@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3FRP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:58:16 -0400
-Received: from sauhun.de ([89.238.76.85]:60161 "EHLO pokefinder.org"
+	id S932354Ab3FRP70 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:59:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35751 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755764Ab3FRP6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:58:14 -0400
-Date: Tue, 18 Jun 2013 18:00:16 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: broonie@kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] regulator: tps51632: Get regulator name from i2c_client
-Message-ID: <20130618160016.GD7718@katana>
-References: <1371551413-12346-1-git-send-email-mperttunen@nvidia.com>
+	id S1755718Ab3FRP7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 11:59:25 -0400
+Date: Tue, 18 Jun 2013 17:59:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [x86] only print out DR registers if they are not power-on
+ defaults.
+Message-ID: <20130618155919.GC13123@pd.tnic>
+References: <20130618041132.GA23492@redhat.com>
+ <20130618084356.GA13123@pd.tnic>
+ <20130618140730.GA1313@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5gxpn/Q6ypwruk0T"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1371551413-12346-1-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <20130618140730.GA1313@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 18, 2013 at 10:07:30AM -0400, Dave Jones wrote:
+> My intent here was to ignore cases where the reserved bits haven't
+> been set. I occasionally see DR6: 00000000fffe0ff0 for eg.
 
---5gxpn/Q6ypwruk0T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's bit 16 which, according to the docs is read-as-1:
 
-On Tue, Jun 18, 2013 at 01:30:13PM +0300, Mikko Perttunen wrote:
-> Commit "i2c: core: make it possible to match a pure device tree driver"
-> changed semantics of the i2c probing for device tree devices.
-> Device tree probed devices now get a NULL i2c_device_id pointer.
-> This causes the regulator name to be set to NULL and the regulator
-> registration to fail.
->=20
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+"All remaining bits in the DR6 register are reserved. Reserved bits
+31:16 and 11:4 must all be set to 1, while reserved bit 12 must be
+cleared to 0. In 64-bit mode, the upper 32 bits of DR6 are reserved and
+must be written with zeros. Writing a 1 to any of the upper 32 bits
+results in a general-protection exception, #GP(0)."
 
-The commit in question will be reverted. This patch shouldn't hurt,
-though.
+This above if from AMD APM and Intel's SDM has a graphic showing the
+exact same thing:
 
+[31:16] = set to 1; [12] = 0b, [11:4] = 1b
 
---5gxpn/Q6ypwruk0T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So if you see bit 16 cleared, then some BIOS or even hardware is doing
+funky things. I wouldn't wonder at all if BIOS dudes used reserved bits
+in registers as scratch space.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> But maybe you're right, and that is a clue and is worth printing ? I
+> can't personally recall ever diagnosing a bug using those register
+> dumps in the last 15 years.
 
-iQIcBAEBAgAGBQJRwIQQAAoJEBQN5MwUoCm2U/4P/18zTGYbn2Xd25diOXJ2o0O1
-wYgVukDU0wRIwHDv6jLLu5mC7lswal3ezrZ6WOrxHgL7F/mA6kVkNyDgJp9Zc7h2
-usMTZyUgBZUP6OuaIynW6+dOg2gFPsMR+efxoKor0pHzxURpqPauhouOSwQcSyfg
-d2IHUQ7toAv7FipkRFUYY/Swn08j4poyltLpJT302BAluusPYplsLf6QuPXPvC52
-iA3CzhzIZEYLNBGZo2xvRVKEUbrdl0wVQW/+XIQtnjidnxYrKsrhFCiOvSgVc0Ob
-nPjQPyUjNs33AcxSb9nmRiju9G+gFBRsOBKRzhx4WYlpoTqsFdYi3EzOBA3A/F0O
-tf077eW5onXiAqWMhS2YIyRoQvUFVy6jFIw6sI5GXu0wGRbaPduOSrSKvxWyxtPH
-aYQA2f/F2IDyR5Y8Ucbba/Rv6+EwxseRsaQNhVXM0hBrqsDaLSdHWLjsKvueygtg
-ck/zdpqNlZQyTudwG9NXtf50y13mm/9/wFW3B8fmqGrO+u0GgLf7qIyn5WF4DYk4
-Zf4toJ6+4m6O69hPizKhjauub9Z11QdBrdRETBuAH2xHyh8/smyYVAKN5X12x1gg
-asnPpVy/izjQnWb7KIjI5nCIAsbhyuBEUSFKtYNBatLiCNVbzLmKzp4dqnKCj2Vf
-96GFeU9xZwxQGDD+6/la
-=KLdN
------END PGP SIGNATURE-----
+Right, I don't know whether it would always help but if you have an
+oops and see, say bit 0 in DR6 set, i.e. a debug exception was caused
+by address breakpoint condition in DR0, then that could be useful info,
+methinks.
 
---5gxpn/Q6ypwruk0T--
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
