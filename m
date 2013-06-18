@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab3FRQOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:14:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49271 "EHLO
+	id S933104Ab3FRQQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:16:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab3FRQOj (ORCPT
+	with ESMTP id S933070Ab3FRQOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:39 -0400
+	Tue, 18 Jun 2013 12:14:48 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/26] CPU hotplug: provide a generic helper to disable/enable CPU hotplug
-Date: Tue, 18 Jun 2013 09:14:51 -0700
-Message-Id: <20130618161233.459956541@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Greg Farnum <greg@inktank.com>
+Subject: [ 24/26] ceph: fix statvfs fr_size
+Date: Tue, 18 Jun 2013 09:15:04 -0700
+Message-Id: <20130618161238.463254333@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -34,138 +28,62 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Sage Weil <sage@inktank.com>
 
-commit 16e53dbf10a2d7e228709a7286310e629ede5e45 upstream.
+commit 92a49fb0f79f3300e6e50ddf56238e70678e4202 upstream.
 
-There are instances in the kernel where we would like to disable CPU
-hotplug (from sysfs) during some important operation.  Today the freezer
-code depends on this and the code to do it was kinda tailor-made for
-that.
+Different versions of glibc are broken in different ways, but the short of
+it is that for the time being, frsize should == bsize, and be used as the
+multiple for the blocks, free, and available fields.  This mirrors what is
+done for NFS.  The previous reporting of the page size for frsize meant
+that newer glibc and df would report a very small value for the fs size.
 
-Restructure the code and make it generic enough to be useful for other
-usecases too.
+Fixes http://tracker.ceph.com/issues/3793.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Greg Farnum <greg@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cpu.h |    4 +++
- kernel/cpu.c        |   55 +++++++++++++++++++++-------------------------------
- 2 files changed, 27 insertions(+), 32 deletions(-)
+ fs/ceph/super.c |    7 ++++++-
+ fs/ceph/super.h |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -177,6 +177,8 @@ extern struct bus_type cpu_subsys;
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -70,8 +70,14 @@ static int ceph_statfs(struct dentry *de
+ 	/*
+ 	 * express utilization in terms of large blocks to avoid
+ 	 * overflow on 32-bit machines.
++	 *
++	 * NOTE: for the time being, we make bsize == frsize to humor
++	 * not-yet-ancient versions of glibc that are broken.
++	 * Someday, we will probably want to report a real block
++	 * size...  whatever that may mean for a network file system!
+ 	 */
+ 	buf->f_bsize = 1 << CEPH_BLOCK_SHIFT;
++	buf->f_frsize = 1 << CEPH_BLOCK_SHIFT;
+ 	buf->f_blocks = le64_to_cpu(st.kb) >> (CEPH_BLOCK_SHIFT-10);
+ 	buf->f_bfree = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
+ 	buf->f_bavail = le64_to_cpu(st.kb_avail) >> (CEPH_BLOCK_SHIFT-10);
+@@ -79,7 +85,6 @@ static int ceph_statfs(struct dentry *de
+ 	buf->f_files = le64_to_cpu(st.num_objects);
+ 	buf->f_ffree = -1;
+ 	buf->f_namelen = NAME_MAX;
+-	buf->f_frsize = PAGE_CACHE_SIZE;
  
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
-+extern void cpu_hotplug_disable(void);
-+extern void cpu_hotplug_enable(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-@@ -199,6 +201,8 @@ static inline void cpu_hotplug_driver_un
+ 	/* leave fsid little-endian, regardless of host endianness */
+ 	fsid = *(u64 *)(&monmap->fsid) ^ *((u64 *)&monmap->fsid + 1);
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -21,7 +21,7 @@
  
- #define get_online_cpus()	do { } while (0)
- #define put_online_cpus()	do { } while (0)
-+#define cpu_hotplug_disable()	do { } while (0)
-+#define cpu_hotplug_enable()	do { } while (0)
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -124,6 +124,27 @@ static void cpu_hotplug_done(void)
- 	mutex_unlock(&cpu_hotplug.lock);
- }
+ /* large granularity for statfs utilization stats to facilitate
+  * large volume sizes on 32-bit machines. */
+-#define CEPH_BLOCK_SHIFT   20  /* 1 MB */
++#define CEPH_BLOCK_SHIFT   22  /* 4 MB */
+ #define CEPH_BLOCK         (1 << CEPH_BLOCK_SHIFT)
  
-+/*
-+ * Wait for currently running CPU hotplug operations to complete (if any) and
-+ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
-+ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
-+ * hotplug path before performing hotplug operations. So acquiring that lock
-+ * guarantees mutual exclusion from any currently running hotplug operations.
-+ */
-+void cpu_hotplug_disable(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 1;
-+	cpu_maps_update_done();
-+}
-+
-+void cpu_hotplug_enable(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 0;
-+	cpu_maps_update_done();
-+}
-+
- #else /* #if CONFIG_HOTPLUG_CPU */
- static void cpu_hotplug_begin(void) {}
- static void cpu_hotplug_done(void) {}
-@@ -479,36 +500,6 @@ static int __init alloc_frozen_cpus(void
- core_initcall(alloc_frozen_cpus);
- 
- /*
-- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
-- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
-- * to continue until any currently running CPU hotplug operation gets
-- * completed.
-- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-- * CPU hotplug path and released only after it is complete. Thus, we
-- * (and hence the freezer) will block here until any currently running CPU
-- * hotplug operation gets completed.
-- */
--void cpu_hotplug_disable_before_freeze(void)
--{
--	cpu_maps_update_begin();
--	cpu_hotplug_disabled = 1;
--	cpu_maps_update_done();
--}
--
--
--/*
-- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
-- * disabled while beginning to freeze tasks).
-- */
--void cpu_hotplug_enable_after_thaw(void)
--{
--	cpu_maps_update_begin();
--	cpu_hotplug_disabled = 0;
--	cpu_maps_update_done();
--}
--
--/*
-  * When callbacks for CPU hotplug notifications are being executed, we must
-  * ensure that the state of the system with respect to the tasks being frozen
-  * or not, as reported by the notification, remains unchanged *throughout the
-@@ -527,12 +518,12 @@ cpu_hotplug_pm_callback(struct notifier_
- 
- 	case PM_SUSPEND_PREPARE:
- 	case PM_HIBERNATION_PREPARE:
--		cpu_hotplug_disable_before_freeze();
-+		cpu_hotplug_disable();
- 		break;
- 
- 	case PM_POST_SUSPEND:
- 	case PM_POST_HIBERNATION:
--		cpu_hotplug_enable_after_thaw();
-+		cpu_hotplug_enable();
- 		break;
- 
- 	default:
+ #define CEPH_MOUNT_OPT_DIRSTAT         (1<<4) /* `cat dirname` for stats */
 
 
