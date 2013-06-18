@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab3FRQai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:30:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59712 "EHLO mail.zytor.com"
+	id S933526Ab3FRQaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:30:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933184Ab3FRQag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:30:36 -0400
-Message-ID: <51C08B01.40200@zytor.com>
-Date: Tue, 18 Jun 2013 11:29:53 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Joshua Covington <joshuacov@googlemail.com>,
+	id S933394Ab3FRQam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:30:42 -0400
+Date: Tue, 18 Jun 2013 18:24:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] x86, mtrr: fixs for mtrr_cleanup
-References: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1371154622-8929-1-git-send-email-yinghai@kernel.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 0/3] tracing: more list_empty(perf_events) checks
+Message-ID: <20130618162447.GA5877@redhat.com>
+References: <20130617170142.GA19780@redhat.com> <20130617201818.GA12349@redhat.com> <1371504473.18733.27.camel@gandalf.local.home> <20130618144635.GB26920@redhat.com> <1371570100.18733.30.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371570100.18733.30.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 03:17 PM, Yinghai Lu wrote:
-> Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
-> during add range) broke mtrr cleanup on his setup in 3.9.5.
-> corresponding commit in upstream is fbe06b7bae7c.
-> 
->   *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=59491
-> 
-> Fix it from two places, so late mtrr cleanup side and range add side.
-> 
->   x86, mtrr: Fix original mtrr range get for mtrr_cleanup
->   range: Do not add new blank slot with add_range_with_merge
-> 
-> Please apply them for v3.10.
-> 
+On 06/18, Steven Rostedt wrote:
+>
+> On Tue, 2013-06-18 at 16:46 +0200, Oleg Nesterov wrote:
+> >
+> > Perhaps you are trying to say that this patch needs more work...
+> >
+> > Just because it can't be compiled? Pedant.
+>
+> No, just because when I first looked at it, I didn't think it would,
 
-On this subject: what do we need to happen to be able to dump the MTRR
-cleanup stuff?
+And your intuition was correct.
 
-	-hpa
+It can't be compiled if you also change TRACE_EVENT(sched_stat_runtime)
+to use TP_perf_arg(__count, runtime). Hopefully this can be fixed by
 
+	- TRACE_EVENT(...)
+	+ DECLARE_EVENT_CLASS(...)
+	+ DEFINE_EVENT(...)
+
+Oleg.
 
