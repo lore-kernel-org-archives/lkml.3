@@ -1,220 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab3FRKgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 06:36:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40922 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab3FRKgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 06:36:48 -0400
-Date: Tue, 18 Jun 2013 12:36:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>, eranian@google.com
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130618103632.GO3204@twins.programming.kicks-ass.net>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
- <20130613131057.GA15997@somewhere>
- <20130613140207.GW133453@redhat.com>
+	id S1756092Ab3FRKh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 06:37:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23440 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754367Ab3FRKh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 06:37:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,888,1363158000"; 
+   d="scan'208";a="355417174"
+Message-ID: <51C0385E.8030403@linux.intel.com>
+Date: Tue, 18 Jun 2013 13:37:18 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613140207.GW133453@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>  <20130618085810.10941.55039.stgit@ladj378.jer.intel.com> <1371551139.3252.249.camel@edumazet-glaptop>
+In-Reply-To: <1371551139.3252.249.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:02:07AM -0400, Don Zickus wrote:
-> On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
-> > On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
-> > > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
-> > > > When the watchdog runs, it prevents the full dynticks
-> > > > CPUs from stopping their tick because the hard lockup
-> > > > detector uses perf events internally, which in turn
-> > > > rely on the periodic tick.
-> > > > 
-> > > > Since this is a rather confusing behaviour that is not
-> > > > easy to track down and identify for those who want to
-> > > > test CONFIG_NO_HZ_FULL, let's default disable the
-> > > > watchdog on boot time when full dynticks is enabled.
-> > > > 
-> > > > The user can still enable it later on runtime using
-> > > > proc or sysctl.
-> > > 
-> > > I thought we had a conversation awhile ago, where we agreed this was going
-> > > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
-> > > tree?  I am confused why this is still needed?
-> > 
-> > We agreed on the patch but it hasn't been applied yet. I'm trying to get
-> > a sane series of nohz patches before sending to Ingo.
-> 
-> Peter,
-> 
-> Where is this patch?
-> 
+On 18/06/2013 13:25, Eric Dumazet wrote:
+> On Tue, 2013-06-18 at 11:58 +0300, Eliezer Tamir wrote:
 
-9e6302056f8029f438e853432a856b9f13de26a6
-62b8563979273424d6ebe9201e34d1acc133ad4f
+>> @@ -393,6 +394,15 @@ static inline void wait_key_set(poll_table *wait, unsigned long in,
+>>   		wait->_key |= POLLOUT_SET;
+>>   }
+>>
+>> +static inline void wait_key_set_lls(poll_table *wait, bool set)
+>> +{
+>> +	if (set)
+>> +		wait->_key |= POLL_LL;
+>> +	else
+>> +		wait->_key &= ~POLL_LL;
+>> +}
+>> +
+>
+> Instead of "bool set" you could use "unsigned int lls_bit"
+>
+> and avoid conditional :
+>
+> wait->_key |= lls_bit;
+>
+> (you do not need to clear the bit in wait->_key, its already cleared in
+> wait_key_set())
+>
+> Alternatively, add a parameter to wait_key_set(), it will be cleaner
 
-made it in, it does need a little additional work; something like the
-below might be a start:
+OK
 
-Aside from doing the NOHZ thing there's also a partial fix for event migration
-since I now noticed we have per-cpu counters for various event types.
+>> @@ -486,6 +504,11 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+>>   			break;
+>>   		}
+>>
+>> +		if (can_poll_ll(ll_time) && can_ll) {
+>
+> 	reorder tests to avoid sched_clock() call :
+>
+> 		if (can_ll && can_poll_ll(ll_time))
+>
 
-Very much needs more work but shows what would be needed
+right
 
----
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -139,8 +139,11 @@ enum event_type_t {
-  * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
-  */
- struct static_key_deferred perf_sched_events __read_mostly;
-+
-+/* do we really need the atomic thing? */
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
- static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-+static DEFINE_PER_CPU(atomic_t, perf_freq_events);
- 
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -2791,6 +2794,17 @@ bool perf_event_can_stop_tick(void)
- }
- #endif
- 
-+void perf_kick_nohz_cpu(void)
-+{
-+	/* magic to drop out of NOHZ mode */
-+}
-+
-+bool perf_event_needs_cpu(void)
-+{
-+	return atomic_read(&__get_cpu_var(perf_freq_events)) || 
-+	       __this_cpu_read(perf_throttled_count);
-+}
-+
- void perf_event_task_tick(void)
- {
- 	struct list_head *head = &__get_cpu_var(rotation_list);
-@@ -3101,6 +3115,28 @@ static void free_event_rcu(struct rcu_he
- static void ring_buffer_put(struct ring_buffer *rb);
- static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
- 
-+static void __account_event(struct perf_event *event)
-+{
-+	if (is_cgroup_event(event))
-+		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
-+	if (has_branch_stack(event) && !(event->attach_state & PERF_ATTACH_TASK))
-+		atomic_inc(&per_cpu(perf_branch_stack_events, event->cpu));
-+	if (event->attr.freq) {
-+		atomic_inc(&per_cpu(perf_freq_events, event->cpu));
-+		perf_kick_nohz_cpu();
-+	}
-+}
-+
-+static void __unaccount_event(struct perf_event *event)
-+{
-+	if (is_cgroup_event(event))
-+		atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
-+	if (has_branch_stack(event) && !(event->attach_state & PERF_ATTACH_TASK))
-+		atomic_dec(&per_cpu(perf_branch_stack_events, event->cpu));
-+	if (event->attr.freq)
-+		atomic_dec(&per_cpu(perf_freq_events, event->cpu));
-+}
-+
- static void free_event(struct perf_event *event)
- {
- 	irq_work_sync(&event->pending);
-@@ -3116,19 +3152,12 @@ static void free_event(struct perf_event
- 			atomic_dec(&nr_task_events);
- 		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
- 			put_callchain_buffers();
--		if (is_cgroup_event(event)) {
--			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
-+		if (is_cgroup_event(event))
- 			static_key_slow_dec_deferred(&perf_sched_events);
--		}
--
--		if (has_branch_stack(event)) {
-+		if (has_branch_stack(event))
- 			static_key_slow_dec_deferred(&perf_sched_events);
--			/* is system-wide event */
--			if (!(event->attach_state & PERF_ATTACH_TASK)) {
--				atomic_dec(&per_cpu(perf_branch_stack_events,
--						    event->cpu));
--			}
--		}
-+
-+		__unaccount_event(event);
- 	}
- 
- 	if (event->rb) {
-@@ -5149,6 +5178,7 @@ static int __perf_event_overflow(struct
- 		if (unlikely(throttle
- 			     && hwc->interrupts >= max_samples_per_tick)) {
- 			__this_cpu_inc(perf_throttled_count);
-+			perf_kick_nohz_cpu(); /* XXX we're in NMI context */
- 			hwc->interrupts = MAX_INTERRUPTS;
- 			perf_log_throttle(event, 0);
- 			ret = 1;
-@@ -6544,6 +6574,7 @@ perf_event_alloc(struct perf_event_attr
- 			atomic_inc(&nr_task_events);
- 		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
- 			err = get_callchain_buffers();
-+			/* XXX this error patch leaks the above counts */
- 			if (err) {
- 				free_event(event);
- 				return ERR_PTR(err);
-@@ -6845,11 +6876,20 @@ SYSCALL_DEFINE5(perf_event_open,
- 		 * one more event:
- 		 * - that has cgroup constraint on event->cpu
- 		 * - that may need work on context switch
-+		 *
-+		 * assumes inherited counters don't have flags set.
- 		 */
--		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
- 		static_key_slow_inc(&perf_sched_events.key);
- 	}
- 
-+	if (!event->parent) {
-+		/* 
-+		 * XXX the above err_alloc will dec below zero for
-+		 * perf_branch_stack_events.
-+		 */ 
-+		__account_event(event);
-+	}
-+
- 	/*
- 	 * Special case software events and allow them to be part of
- 	 * any hardware group.
-@@ -7083,6 +7123,7 @@ void perf_pmu_migrate_context(struct pmu
- 		perf_remove_from_context(event);
- 		put_ctx(src_ctx);
- 		list_add(&event->event_entry, &events);
-+		__unaccount_event(event);
- 	}
- 	mutex_unlock(&src_ctx->mutex);
- 
-@@ -7091,6 +7132,8 @@ void perf_pmu_migrate_context(struct pmu
- 	mutex_lock(&dst_ctx->mutex);
- 	list_for_each_entry_safe(event, tmp, &events, event_entry) {
- 		list_del(&event->event_entry);
-+		event->cpu = dst_cpu; /* XXX perf_install_in_context already does this; do we really need __account_event() _before_ that? */
-+		__account_event(event);
- 		if (event->state >= PERF_EVENT_STATE_OFF)
- 			event->state = PERF_EVENT_STATE_INACTIVE;
- 		perf_install_in_context(dst_ctx, event, dst_cpu);
+>> -static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
+>> +static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait,
+>> +					bool *can_ll, bool try_ll)
+>>   {
+>>   	unsigned int mask;
+>>   	int fd;
+>> @@ -731,7 +755,11 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
+>>   			mask = DEFAULT_POLLMASK;
+>>   			if (f.file->f_op && f.file->f_op->poll) {
+>>   				pwait->_key = pollfd->events|POLLERR|POLLHUP;
+>> +				if (try_ll)
+>> +					pwait->_key |= POLL_LL;
+>
+> Well, why enforce POLL_LL ?
+>
+> Sure we do this for select() as the API doesn't allow us to add the LL
+> flag, but poll() can do that.
+>
+> An application might set POLL_LL flag only on selected fds.
+>
+> I understand you want nice benchmarks for existing applications,
+> but I still think that globally enable/disable LLS for the whole host
+> is not a good thing.
+>
+> POLL_LL wont be a win once we are over committing cpus (too many sockets
+> to poll)
 
+I did not intend POLL_LL to be a user visible flag.
+But maybe your way will work better.
+Do you think we should also report POLL_LL to the user, so it will know
+if there are currently ll capable sockets?
+That might be hard to do without breaking the flag semantics,
+Since we might not want to wake up the user just to report that.
+
+Also, any suggestion on how not to depend on the global sysctl value for 
+poll? (we can't use a socket option here)
+
+-Eliezer
