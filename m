@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3FROtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:49:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52611 "EHLO mx1.redhat.com"
+	id S1755985Ab3FROux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:50:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45924 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754995Ab3FROtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:49:10 -0400
-Message-ID: <1371566935.22681.169.camel@ul30vt.home>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Date: Tue, 18 Jun 2013 08:48:55 -0600
-In-Reply-To: <1371530335.21896.169.camel@pasglop>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
-	 <1370412673-1345-4-git-send-email-aik@ozlabs.ru>
-	 <1371422343.21896.143.camel@pasglop>
-	 <1371438800.22681.38.camel@ul30vt.home>
-	 <1371441361.21896.152.camel@pasglop>
-	 <1371522772.22681.140.camel@ul30vt.home>
-	 <1371530335.21896.169.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752691Ab3FROuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 10:50:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,889,1363158000"; 
+   d="scan'208";a="318861355"
+Message-ID: <51C073C4.7040702@linux.intel.com>
+Date: Tue, 18 Jun 2013 17:50:44 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v2 net-next] net: poll/select low latency socket support
+References: <20130618085759.10941.15811.stgit@ladj378.jer.intel.com>   <20130618085810.10941.55039.stgit@ladj378.jer.intel.com>  <1371551139.3252.249.camel@edumazet-glaptop>  <51C05FC1.4000201@linux.intel.com> <1371566148.3252.255.camel@edumazet-glaptop> <51C0728E.6060900@linux.intel.com>
+In-Reply-To: <51C0728E.6060900@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 14:38 +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2013-06-17 at 20:32 -0600, Alex Williamson wrote:
-> 
-> > Right, we don't want to create dependencies across modules.  I don't
-> > have a vision for how this should work.  This is effectively a complete
-> > side-band to vfio, so we're really just dealing in the iommu group
-> > space.  Maybe there needs to be some kind of registration of ownership
-> > for the group using some kind of token.  It would need to include some
-> > kind of notification when that ownership ends.  That might also be a
-> > convenient tag to toggle driver probing off for devices in the group.
-> > Other ideas?  Thanks,
-> 
-> All of that smells nasty like it will need a pile of bloody
-> infrastructure.... which makes me think it's too complicated and not the
-> right approach.
-> 
-> How does access control work today on x86/VFIO ? Can you give me a bit
-> more details ? I didn't get a good grasp in your previous email....
+On 18/06/2013 17:45, Eliezer Tamir wrote:
+> On 18/06/2013 17:35, Eric Dumazet wrote:
+>> On Tue, 2013-06-18 at 16:25 +0300, Eliezer Tamir wrote:
+>>
+>>> One other thing,
+>>> sock_poll() will only ll_poll if the flag was set _and_ the socket has a
+>>> none-zero value in sk->sk_ll_usec so you still only poll on sockets
+>>> that were enabled for LLS, not on every socket.
+>>
+>> But sockets are default enabled for LLS.
+>>
+>> sock_init_data()
+>> {
+>>     ...
+>>     sk->sk_ll_usec      =   sysctl_net_ll_poll;
+>>     ...
+>> }
+>
+> Yes, if you want to globally enable.
+>
+> But now that we have the socket option, you can leave the global
+> setting at 0 and only enable specific sockets via the socket option.
+> (I have tested this with a modified sockperf and it works.)
 
-The current model is not x86 specific, but it only covers doing iommu
-and device access through vfio.  The kink here is that we're trying to
-do device access and setup through vfio, but iommu manipulation through
-kvm.  We may want to revisit whether we can do the in-kernel iommu
-manipulation through vfio rather than kvm.
+I missed something, you need sysctl_net_ll_poll to be non-zero
+for poll to even try.
 
-For vfio in general, the group is the unit of ownership.  A user is
-granted access to /dev/vfio/$GROUP through file permissions.  The user
-opens the group and a container (/dev/vfio/vfio) and calls SET_CONTAINER
-on the group.  If supported by the platform, multiple groups can be set
-to the same container, which allows for iommu domain sharing.  Once a
-group is associated with a container, an iommu backend can be
-initialized for the container.  Only then can a device be accessed
-through the group.
-
-So even if we were to pass a vfio group file descriptor into kvm and it
-matched as some kind of ownership token on the iommu group, it's not
-clear that's sufficient to assume we can start programming the iommu.
-Thanks,
-
-Alex
-
-> From the look of it, the VFIO file descriptor is what has the "access
-> control" to the underlying iommu, is this right ? So we somewhat need to
-> transfer (or copy) that ownership from the VFIO fd to the KVM VM.
-> 
-> I don't see a way to do that without some cross-layering here...
-> 
-> Rusty, are you aware of some kernel mechanism we can use for that ?
-> 
-> Cheers,
-> Ben.
-> 
-> 
-
-
+So maybe add another sysctl value for poll?
+maybe sysctl_net_ll_poll for poll
+and sysctl_net_ll_read for socket reads?
 
