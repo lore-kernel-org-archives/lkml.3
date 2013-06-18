@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab3FRIx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:53:27 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:46856 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab3FRIxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:53:21 -0400
-Date: Tue, 18 Jun 2013 10:53:16 +0200
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: ux500: set coherent_dma_mask for dma40
-Message-ID: <20130618085316.GA7239@balto.lan>
-References: <1371131763-6288-1-git-send-email-fabio.baltieri@linaro.org>
- <CACRpkdYOP0xTJo3sLbRz5D=b4Vb1484a1qfE3aVAKRTM4+Y7QQ@mail.gmail.com>
+	id S1755221Ab3FRIyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:54:05 -0400
+Received: from smtp4.epfl.ch ([128.178.224.219]:49953 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754230Ab3FRIyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 04:54:01 -0400
+Message-ID: <51C0201E.2040909@epfl.ch>
+Date: Tue, 18 Jun 2013 10:53:50 +0200
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYOP0xTJo3sLbRz5D=b4Vb1484a1qfE3aVAKRTM4+Y7QQ@mail.gmail.com>
-X-Operating-System: Linux balto 3.10.0-rc6-00001-g8177a9d x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tero Kristo <t-kristo@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: twl4030-power: Split from twl-core into a dedicated
+ module
+References: <1369921916-7435-1-git-send-email-florian.vaussard@epfl.ch> <1369921916-7435-2-git-send-email-florian.vaussard@epfl.ch> <20130617235644.GB7998@zurbaran>
+In-Reply-To: <20130617235644.GB7998@zurbaran>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 05:42:48PM +0200, Linus Walleij wrote:
-> On Thu, Jun 13, 2013 at 3:56 PM, Fabio Baltieri
-> <fabio.baltieri@linaro.org> wrote:
-> 
-> > Set coherent_dma_mask to DMA_BIT_MASK(32) for dma40 platform_device, as
-> > without this DMA allocations were failing with the error:
-> >
-> > dma40 dma40.0: coherent DMA mask is unset
-> >
-> > when booting without device-tree.
-> >
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> > ---
-> >
-> > Hi Linus, Lee,
-> >
-> > I found this while removing the last hack I was keeping in my ASoC tree.
-> > I originally thought that I had to set this on the driver's pdata, but
-> > it turns out it's needed on the DMA controller one instead.
-> >
-> > When booting with device-tree enabled the mask seems to be set
-> > automatically.
-> >
-> > Would you consider applying this with the other dma40 patches?
-> 
-> Those are now upstream in the ARM SoC tree, you'd have to send it
-> to arm@kernel.org and ask Olof/Arnd to apply it directly to
-> the next/drivers branch (I think).
+Hello,
 
-Ok I can resend it but I'd like to have Lee's Ack before doing that.
+Thank you for the review.
 
-Lee: have you had a chance to look at this patch?
+On 06/18/2013 01:56 AM, Samuel Ortiz wrote:
+> Hi Florian,
+>
+> On Thu, May 30, 2013 at 03:51:54PM +0200, Florian Vaussard wrote:
+>> For now, the call to twl4030-power is hard-wired inside twl-core.
+>> To ease the future transition to DT, make twl4030-power as a
+>> separate module, like what is already done for twl4030-audio
+>> and others.
+>>
+>> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+>> ---
+>>   drivers/mfd/twl-core.c      |   12 ++++++---
+>>   drivers/mfd/twl4030-power.c |   54 +++++++++++++++++++++++++++++++++++--------
+>>   include/linux/i2c/twl.h     |    1 -
+>>   3 files changed, 52 insertions(+), 15 deletions(-)
+> Looks good, I only have one comment:
+>
+>> +static struct platform_driver twl4030_power_driver = {
+>> +	.driver = {
+>> +		.name	= "twl4030_power",
+>> +		.owner	= THIS_MODULE,
+>> +	},
+>> +	.probe		= twl4030_power_probe,
+>> +	.remove		= twl4030_power_remove,
+>> +};
+>> +
+>> +static int __init twl4030_power_init(void)
+>> +{
+>> +	return platform_driver_register(&twl4030_power_driver);
+>>   }
+>> +subsys_initcall(twl4030_power_init);
+>> +
+>> +static void __exit twl4030_power_exit(void)
+>> +{
+>> +	platform_driver_unregister(&twl4030_power_driver);
+>> +}
+>> +module_exit(twl4030_power_exit);
+> Please use module_platform_driver() here.
+>
 
-> I have also queued it on ux500-fixes so it won't be lost.
+Sure!
 
-That's nice!
+Regards,
 
-Thanks,
-Fabio
-
--- 
-Fabio Baltieri
+Florian
