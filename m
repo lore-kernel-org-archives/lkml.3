@@ -1,131 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab3FRQG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:06:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46959 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab3FRQFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:05:18 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <b-cousson@ti.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
-Date: Tue, 18 Jun 2013 19:04:44 +0300
-Message-ID: <1371571487-14389-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1371571487-14389-1-git-send-email-rogerq@ti.com>
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com>
+	id S1756285Ab3FRQJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:09:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755410Ab3FRQJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 12:09:35 -0400
+Date: Tue, 18 Jun 2013 12:09:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: [x86][v2] only print out DR registers if they are not power-on
+ defaults.
+Message-ID: <20130618160911.GA24487@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+References: <20130618041132.GA23492@redhat.com>
+ <20130618084356.GA13123@pd.tnic>
+ <20130618140730.GA1313@redhat.com>
+ <20130618155919.GC13123@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618155919.GC13123@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the RESET and Power regulators for the USB PHY,
-the USB Host port mode and the PHY device.
+The DR registers are rarely useful when decoding oopses.
+With screen real estate during oopses at a premium, we can save two lines
+by only printing out these registers when they are set to something other
+than they power-on state.
 
-Also provide pin multiplexer information for the USB host
-pins.
+[v2: incorporate D6 change suggested by Borislav Petkov <bp@alien8.de>]
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 00cbaa5..7a21e8e 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -59,6 +59,42 @@
- 			"AFML", "Line In",
- 			"AFMR", "Line In";
- 	};
+diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/arch/x86/kernel/process_64.c linux-dj/arch/x86/kernel/process_64.c
+--- linux/arch/x86/kernel/process_64.c	2013-05-01 10:02:52.064151923 -0400
++++ linux-dj/arch/x86/kernel/process_64.c	2013-05-06 20:35:09.219868881 -0400
+@@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, i
+ 	get_debugreg(d0, 0);
+ 	get_debugreg(d1, 1);
+ 	get_debugreg(d2, 2);
+-	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
+ 	get_debugreg(d3, 3);
+ 	get_debugreg(d6, 6);
+ 	get_debugreg(d7, 7);
 +
-+	/* HS USB Port 1 RESET */
-+	hsusb1_reset: hsusb1_reset_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_reset";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio2 30 0>;	/* gpio_62 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
++	/* Only print out debug registers if they are in their non-default state. */
++	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
++	    (d6 == DR6_RESERVED) && (d7 == 0x400))
++		return;
 +
-+	/* HS USB Port 1 Power */
-+	hsusb1_power: hsusb1_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio1 1 0>;	/* gpio_1 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
++	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
+ 	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
 +
-+	/* HS USB Host PHY on PORT 1 */
-+	hsusb1_phy: hsusb1_phy {
-+		compatible = "usb-nop-xceiv";
-+		reset-supply = <&hsusb1_reset>;
-+		vcc-supply = <&hsusb1_power>;
-+	/**
-+	 * FIXME:
-+	 * put the right clock phandle here when available
-+	 *	clocks = <&auxclk3>;
-+	 *	clock-names = "main_clk";
-+	 */
-+		clock-frequency = <19200000>;
-+	};
- };
+ }
  
- &omap4_pmx_wkup {
-@@ -83,6 +119,7 @@
- 			&mcbsp1_pins
- 			&dss_hdmi_pins
- 			&tpd12s015_pins
-+			&hsusbb1_pins
- 	>;
- 
- 	twl6030_pins: pinmux_twl6030_pins {
-@@ -133,6 +170,23 @@
- 		>;
- 	};
- 
-+	hsusbb1_pins: pinmux_hsusbb1_pins {
-+		pinctrl-single,pins = <
-+			0x82 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_clk.usbb1_ulpiphy_clk */
-+			0x84 (PIN_OUTPUT | MUX_MODE4)		/* usbb1_ulpitll_stp.usbb1_ulpiphy_stp */
-+			0x86 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dir.usbb1_ulpiphy_dir */
-+			0x88 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_nxt.usbb1_ulpiphy_nxt */
-+			0x8a (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat0.usbb1_ulpiphy_dat0 */
-+			0x8c (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat1.usbb1_ulpiphy_dat1 */
-+			0x8e (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat2.usbb1_ulpiphy_dat2 */
-+			0x90 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat3.usbb1_ulpiphy_dat3 */
-+			0x92 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat4.usbb1_ulpiphy_dat4 */
-+			0x94 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat5.usbb1_ulpiphy_dat5 */
-+			0x96 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat6.usbb1_ulpiphy_dat6 */
-+			0x98 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat7.usbb1_ulpiphy_dat7 */
-+		>;
-+	};
+ void release_thread(struct task_struct *dead_task)
+
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 7305f7d..5905dc5 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -110,11 +110,16 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	get_debugreg(d1, 1);
+ 	get_debugreg(d2, 2);
+ 	get_debugreg(d3, 3);
+-	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
+-			d0, d1, d2, d3);
+-
+ 	get_debugreg(d6, 6);
+ 	get_debugreg(d7, 7);
 +
- 	i2c1_pins: pinmux_i2c1_pins {
- 		pinctrl-single,pins = <
- 			0xe2 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl */
-@@ -283,3 +337,11 @@
- 	mode = <3>;
- 	power = <50>;
- };
++	/* Only print out debug registers if they are in their non-default state. */
++	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
++	    (d6 == DR6_RESERVED) && (d7 == 0x400))
++		return;
 +
-+&usbhshost {
-+	port1-mode = "ehci-phy";
-+};
-+
-+&usbhsehci {
-+	phys = <&hsusb1_phy>;
-+};
--- 
-1.7.4.1
++	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
++			d0, d1, d2, d3);
+ 	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
+ 			d6, d7);
+ }
 
