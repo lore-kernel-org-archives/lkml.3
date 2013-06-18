@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3FRLoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55985 "EHLO
+	id S932365Ab3FRMEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:04:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56003 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab3FRLoO (ORCPT
+	with ESMTP id S1755038Ab3FRLoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:14 -0400
+	Tue, 18 Jun 2013 07:44:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Joerg Roedel <joro@8bytes.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/93] USB: mos7720: fix hardware flow control
-Date: Tue, 18 Jun 2013 12:42:31 +0100
-Message-Id: <1371555821-12820-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 27/93] iommu/amd: Workaround for ERBT1312
+Date: Tue, 18 Jun 2013 12:42:35 +0100
+Message-Id: <1371555821-12820-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit a26f009a070e840fadacb91013b2391ba7ab6cc2 upstream.
+commit d3263bc29706e42f74d8800807c2dedf320d77f1 upstream.
 
-The register access to enable hardware flow control depends on the
-device port number and not the port minor number.
+Work around an IOMMU  hardware bug where clearing the
+EVT_INT or PPR_INT bit in the status register may race with
+the hardware trying to set it again. When not handled the
+bit might not be cleared and we lose all future event or ppr
+interrupts.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/mos7720.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c | 34 ++++++++++++++++++++++++++--------
+ 1 file changed, 26 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index bd42c97..614ad93 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -1695,7 +1695,7 @@ static void change_port_settings(struct tty_struct *tty,
- 		mos7720_port->shadowMCR |= (UART_MCR_XONANY);
- 		/* To set hardware flow control to the specified *
- 		 * serial port, in SP1/2_CONTROL_REG             */
--		if (port->number)
-+		if (port_number)
- 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x01);
- 		else
- 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x02);
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 257ab08..d3be586 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -531,14 +531,23 @@ retry:
+ 
+ static void iommu_poll_events(struct amd_iommu *iommu)
+ {
+-	u32 head, tail;
++	u32 head, tail, status;
+ 	unsigned long flags;
+ 
+-	/* enable event interrupts again */
+-	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
++	/* enable event interrupts again */
++	do {
++		/*
++		 * Workaround for Erratum ERBT1312
++		 * Clearing the EVT_INT bit may race in the hardware, so read
++		 * it again and make sure it was really cleared
++		 */
++		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
++		writel(MMIO_STATUS_EVT_INT_MASK,
++		       iommu->mmio_base + MMIO_STATUS_OFFSET);
++	} while (status & MMIO_STATUS_EVT_INT_MASK);
++
+ 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
+ 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+ 
+@@ -575,16 +584,25 @@ static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
+ static void iommu_poll_ppr_log(struct amd_iommu *iommu)
+ {
+ 	unsigned long flags;
+-	u32 head, tail;
++	u32 head, tail, status;
+ 
+ 	if (iommu->ppr_log == NULL)
+ 		return;
+ 
+-	/* enable ppr interrupts again */
+-	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
++	/* enable ppr interrupts again */
++	do {
++		/*
++		 * Workaround for Erratum ERBT1312
++		 * Clearing the PPR_INT bit may race in the hardware, so read
++		 * it again and make sure it was really cleared
++		 */
++		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
++		writel(MMIO_STATUS_PPR_INT_MASK,
++		       iommu->mmio_base + MMIO_STATUS_OFFSET);
++	} while (status & MMIO_STATUS_PPR_INT_MASK);
++
+ 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
+ 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+ 
 -- 
 1.8.1.2
 
