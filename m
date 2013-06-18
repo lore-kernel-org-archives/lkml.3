@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612Ab3FRRde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:33:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60176 "EHLO mail.zytor.com"
+	id S933621Ab3FRRdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:33:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20801 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932728Ab3FRRdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:33:32 -0400
-Message-ID: <51C099D2.3090506@zytor.com>
-Date: Tue, 18 Jun 2013 12:33:06 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S932728Ab3FRRdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:33:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,890,1363158000"; 
+   d="scan'208";a="318958772"
+Date: Tue, 18 Jun 2013 10:34:07 -0700
+From: Jubin Mehta <jubin.mehta@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
+Subject: Re: [PATCH] dmatest: masking tests for channel capabilities
+Message-ID: <20130618173406.GB5054@intel.com>
+References: <20130613172408.GA5561@intel.com>
+ <CAA9_cmf5y_z_XeX7N2Jno9uvUkrFK83RN1XrxTwVqZJnbdfEWA@mail.gmail.com>
+ <CAA9_cmdr7gjrbBN8tV9LAH2JXzFiegLzLPOAHVg-9sP8p9HRqg@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Joshua Covington <joshuacov@googlemail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] x86, mtrr: fixs for mtrr_cleanup
-References: <1371154622-8929-1-git-send-email-yinghai@kernel.org> <51C08B01.40200@zytor.com> <CAE9FiQXM=mgvUqLh_Uj9NA8fMOSt+zCz-ev-ujnVkhHm8fQW_g@mail.gmail.com>
-In-Reply-To: <CAE9FiQXM=mgvUqLh_Uj9NA8fMOSt+zCz-ev-ujnVkhHm8fQW_g@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmdr7gjrbBN8tV9LAH2JXzFiegLzLPOAHVg-9sP8p9HRqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 12:28 PM, Yinghai Lu wrote:
-> On Tue, Jun 18, 2013 at 9:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> On this subject: what do we need to happen to be able to dump the MTRR
->> cleanup stuff?
+On Mon, Jun 17, 2013 at 02:12:51PM -0700, Dan Williams wrote:
+> [ apologies for the resend, gmail defaulted to html ]
 > 
-> the old x server like to add Write-combining entry in MTRR.
-> looks like drm for mga200 is adding that too ?
->
+> On Mon, Jun 17, 2013 at 2:10 PM, Dan Williams <djbw@fb.com> wrote:
+> >> +Example to perform only MEMCPY and PQ mode tests (0x01 | 0x04 = 0x05):
+> >> +
+> >> +        % modprobe dmatest
+> >> +        % echo dma0chan0 > /sys/kernel/debug/dmatest/channel
+> >> +        % echo 5  > /sys/kernel/debug/dmatest/cap_mask
+> >> +        % echo 1 > /sys/kernel/debug/dmatest/iterations
+> >> +        % echo 1 > /sys/kernel/debug/dmatest/run
+> >
+> >
+> > Hmmm, I should have paid more attention when the debugfs support was
+> > initially proposed for dmatest.  As it is I see duplication and
+> > configuration parameters getting out of sync with their module parameter
+> > equivalents versus just having all configuration go through module
+> > parameters.  module_param_call() can be used for the more complex options.
+> > Debugfs at this point looks like overkill for what amounts to some simple
+> > configuration variables and a result line.
+> >
+> > --
+> > Dan
+> 
+Would you like to have some changes regarding the configuration
+process for the module parameters of the dmatest?
 
-"Old X server" here has been a long time now.  I need to dig into the
-MGA200 I guess...
-
-> We need to make them to use PAT instead.
-
-Yes.
-
-	-hpa
-
-
+Any other comments with respect to the patch?
