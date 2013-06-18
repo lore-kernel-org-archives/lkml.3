@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3FRFAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:00:44 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57416 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab3FRFAl (ORCPT
+	id S1754008Ab3FRFCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:02:34 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:64823 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3FRFCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:00:41 -0400
-From: girishks2000@gmail.com
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: broonie@kernel.org, Girish K S <girishks2000@gmail.com>
-Subject: [RESEND PATCH v1 3/3] spi: s3c64xx: Added support for exynos5440 spi
-Date: Tue, 18 Jun 2013 10:30:11 +0530
-Message-Id: <51bfe978.4266420a.3737.352e@mx.google.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1371531611-29031-1-git-send-email-0000-cover-letter.patch>
-References: <1371531611-29031-1-git-send-email-0000-cover-letter.patch>
+	Tue, 18 Jun 2013 01:02:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130617173738.GA14921@kroah.com>
+References: <20130412184335.GA5510@amd.pavel.ucw.cz>
+	<20130617134741.GA15547@amd.pavel.ucw.cz>
+	<20130617173738.GA14921@kroah.com>
+Date: Tue, 18 Jun 2013 10:32:33 +0530
+Message-ID: <CAK9yfHxMpzPuDP4D8EztaUxseuZCX7VEHFB7dBWtntDDjZJD6g@mail.gmail.com>
+Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
+ using command line option
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Pavel Machek <pavel@denx.de>, dzu@denx.de, hjk@hansjkoch.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Girish K S <girishks2000@gmail.com>
+Hi Greg,
 
-This patch adds support for the exynos5440 spi controller.
-The integration of the spi IP in exynos5440 is different from
-other SoC's. The I/O pins are no more configured via gpio, they
-have dedicated pins.
+On 17 June 2013 23:07, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Jun 17, 2013 at 03:47:41PM +0200, Pavel Machek wrote:
+>> Hi!
+>>
+>> > This adds ability to bind uio driver to given open firmware device
+>> > using command line option. Thus, userspace driver can be developed and
+>> > used without modifying the kernel.
+>> >
+>> > Signed-off-by: Pavel Machek <pavel@denx.de>
+>>
+>> Ping? Greg, could you apply this patch? Or is there someone else I
+>> should ask to apply it?
+>
+> Ugh, Hans seems to have dropped off of the net for a long time now, so I
+> guess I'll start queueing up UIO patches again.  Care to resend this?
+>
 
-Signed-off-by: Girish K S <ks.giri@samsung.com>
----
- drivers/spi/spi-s3c64xx.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Even I have a couple of outstanding UIO patches [1-2]. Shall I resend
+them as well?
 
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index eaf9e1c..bd43888 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -1608,6 +1608,15 @@ static struct s3c64xx_spi_port_config exynos4_spi_port_config = {
- 	.clk_from_cmu	= true,
- };
- 
-+static struct s3c64xx_spi_port_config exynos5440_spi_port_config = {
-+	.fifo_lvl_mask	= { 0x1ff },
-+	.rx_lvl_offset	= 15,
-+	.tx_st_done	= 25,
-+	.high_speed	= true,
-+	.clk_from_cmu	= true,
-+	.quirks		= S3C64XX_SPI_QUIRK_POLL,
-+};
-+
- static struct platform_device_id s3c64xx_spi_driver_ids[] = {
- 	{
- 		.name		= "s3c2443-spi",
-@@ -1636,6 +1645,9 @@ static const struct of_device_id s3c64xx_spi_dt_match[] = {
- 	{ .compatible = "samsung,exynos4210-spi",
- 			.data = (void *)&exynos4_spi_port_config,
- 	},
-+	{ .compatible = "samsung,exynos5440-spi",
-+			.data = (void *)&exynos5440_spi_port_config,
-+	},
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, s3c64xx_spi_dt_match);
+[1] https://lkml.org/lkml/2013/3/14/154
+[2] https://patchwork.kernel.org/patch/2268921/
+
+
 -- 
-1.7.5.4
-
+With warm regards,
+Sachin
