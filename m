@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3FRCdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jun 2013 22:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751430Ab3FRCdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jun 2013 22:33:06 -0400
-Message-ID: <1371522772.22681.140.camel@ul30vt.home>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Date: Mon, 17 Jun 2013 20:32:52 -0600
-In-Reply-To: <1371441361.21896.152.camel@pasglop>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
-	 <1370412673-1345-4-git-send-email-aik@ozlabs.ru>
-	 <1371422343.21896.143.camel@pasglop>
-	 <1371438800.22681.38.camel@ul30vt.home>
-	 <1371441361.21896.152.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
+	id S1752403Ab3FRCgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jun 2013 22:36:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40587 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751430Ab3FRCgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jun 2013 22:36:50 -0400
+Message-ID: <1371523003.2088.4.camel@joe-AO722>
+Subject: Re: [PATCH 4/4 v2] silicom: checkpatch: errors caused by macros
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Lorenz Haspel <lorenz@badgers.com>, devel@linuxdriverproject.org,
+        puff65537@bansheeslibrary.com, viro@zeniv.linux.org.uk,
+        michael.banken@mathe.stud.uni-erlangen.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Date: Mon, 17 Jun 2013 19:36:43 -0700
+In-Reply-To: <20130617211418.GA3219@kroah.com>
+References: <1371486386-8043-4-git-send-email-lorenz@badgers.com>
+	 <1371496814-26104-1-git-send-email-lorenz@badgers.com>
+	 <1371498132.2213.7.camel@joe-AO722> <20130617204922.GM5008@mwanda>
+	 <1371503023.2213.9.camel@joe-AO722> <20130617211418.GA3219@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 13:56 +1000, Benjamin Herrenschmidt wrote:
-> On Sun, 2013-06-16 at 21:13 -0600, Alex Williamson wrote:
+On Mon, 2013-06-17 at 14:14 -0700, Greg KH wrote:
+> On Mon, Jun 17, 2013 at 02:03:43PM -0700, Joe Perches wrote:
+> > Generally I think it's better that new submitters patches
+> > should go through more strict reviews and be as correct
+> > as possible.  I think this is especially true for patches
+> > that are just checkpatch driven.
 > 
-> > IOMMU groups themselves don't provide security, they're accessed by
-> > interfaces like VFIO, which provide the security.  Given a brief look, I
-> > agree, this looks like a possible backdoor.  The typical VFIO way to
-> > handle this would be to pass a VFIO file descriptor here to prove that
-> > the process has access to the IOMMU group.  This is how /dev/vfio/vfio
-> > gains the ability to setup an IOMMU domain an do mappings with the
-> > SET_CONTAINER ioctl using a group fd.  Thanks,
-> 
-> How do you envision that in the kernel ? IE. I'm in KVM code, gets that
-> vfio fd, what do I do with it ?
-> 
-> Basically, KVM needs to know that the user is allowed to use that iommu
-> group. I don't think we want KVM however to call into VFIO directly
-> right ?
+> I totally disagree, sorry.
 
-Right, we don't want to create dependencies across modules.  I don't
-have a vision for how this should work.  This is effectively a complete
-side-band to vfio, so we're really just dealing in the iommu group
-space.  Maybe there needs to be some kind of registration of ownership
-for the group using some kind of token.  It would need to include some
-kind of notification when that ownership ends.  That might also be a
-convenient tag to toggle driver probing off for devices in the group.
-Other ideas?  Thanks,
+I'm unsurprised.  We have different tastes.
 
-Alex
+While whitespace only cleanup patches have some use,
+for these types of patches, I'm more interested in
+educating others what sorts of patches have higher
+value.
+
+o defects
+o style/readability
+o whitespace
+
+As always, ymmv.
 
