@@ -1,109 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab3FRIpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:45:54 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:13563 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab3FRIpv (ORCPT
+	id S1755212Ab3FRIqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:46:08 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:45729 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755136Ab3FRIqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:45:51 -0400
-Message-ID: <51C01E3F.7000303@atmel.com>
-Date: Tue, 18 Jun 2013 10:45:51 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 04:46:03 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
+Subject: [PATCH V2] dma: mmp_pdma: support for getting residual bytes
+Date: Tue, 18 Jun 2013 16:41:20 +0800
+Message-ID: <1371544880-26782-1-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Arnd Bergmann <arnd@arndb.de>, "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
-Subject: Re: RE : [GIT PULL] at91: soc updates for 3.11 #1
-References: <1371246138-22207-1-git-send-email-nicolas.ferre@atmel.com> <20130615023702.GA8635@quad.lixom.net> <EABCC4A72A203F4BA2E04297CF0282C427D1E1F8@hnombx01.corp.atmel.com> <CAOesGMixxxUg-9h9KFNxAvp8DSNJN-SEQxXnU51BQJ9cAxSGBw@mail.gmail.com>
-In-Reply-To: <CAOesGMixxxUg-9h9KFNxAvp8DSNJN-SEQxXnU51BQJ9cAxSGBw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/06/2013 18:59, Olof Johansson :
-> On Mon, Jun 17, 2013 at 2:20 AM, Ferre, Nicolas <Nicolas.FERRE@atmel.com> wrote:
->> From: Olof Johansson [olof@lixom.net]
->>> Hi,
->>>
->>> On Fri, Jun 14, 2013 at 11:42:18PM +0200, Nicolas Ferre wrote:
->>>> Arnd, Olof,
->>>>
->>>> A little AT91 pull-request for patches that are more targeted to SoC/boards
->>>> modifications. It is prepared on top of the arm-soc/at91/cleanup branch.
->>>>
->>>> Thanks, best regards,
->>>>
->>>> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
->>>>
->>>>    ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
->>>>
->>>> are available in the git repository at:
->>>>
->>>>    git://github.com/at91linux/linux-at91.git tags/at91-soc
->>>>
->>>> for you to fetch changes up to 7e75545ea7fb972c3da759f92c3d0be84d1cee72:
->>>>
->>>>    ARM: at91: drop rm9200dk board support (2013-06-14 23:34:11 +0200)
->>>>
->>>> ----------------------------------------------------------------
->>>> Two non critical fixes that can go in 3.11.
->>>> An old board removed.
->>>>
->>>> ----------------------------------------------------------------
->>>> Alexandre Belloni (1):
->>>>        ARM: at91: Fix link breakage when !CONFIG_PHYLIB
->>>
->>> Fix
->>>
->>>> Jean-Christophe PLAGNIOL-VILLARD (1):
->>>>        ARM: at91: drop rm9200dk board support
->>>
->>> Cleanup
->>>
->>>> Wenyou Yang (1):
->>>>        ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED
->>>
->>> Fix
->>>
->>> ...assuming, of course, that none of the fixes are for errors introduced in
->>> some branch we already pulled, since then they should go on top of that branch.
->>
->> I do agree with you but:
->> 1/ the fixes are non-critical ones, so I do not see the need for another branch
->
-> We're happy to take branches with fixes that are not needed for
-> current release and queue them for the next one. We tend to merge
-> those into next/fixes-non-critical.
->
->> 2/ I didn't feel like touching the "cleanup" branch because we want to base all our 3.11 material on top of it, without adding new patches on top.
->
-> Adding new patches on top of a branch that is a base for something
-> else is just fine, and is the way you're supposed to do things. You
-> don't have to rebase the dependent branches just because they're not
-> based on the tip of the cleanup tree any more. I.e. just send another
-> pull request for "cleanups2" or whatever, that's based on the old
-> cleanups branch/tag. After that, cleanups3 would be based on
-> cleanups2. Etc. Some platforms do this a lot.
->
-> Of course, that assumes that the additional cleanups don't conflict
-> heavy with the later dependent branches like I already said. I don't
-> think that was the case this time?
+From: Xiang Wang <wangx@marvell.com>
 
-Fair enough, I have just sent 2 pull-requests:
-- a fixes-non-critical one
-- a cleanup one
+In some of our drivers (e.g. UART) we may stop a running DMA
+before it finishes. So we need APIs to know how many bytes
+have been transferred.
 
-Bye,
+Signed-off-by: Xiang Wang <wangx@marvell.com>
+---
+ drivers/dma/mmp_pdma.c |   88 +++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 80 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c26699f..57cd047 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -104,7 +104,8 @@ struct mmp_pdma_chan {
+ 	spinlock_t desc_lock;		/* Descriptor list lock */
+ 	struct list_head chain_pending;	/* Link descriptors queue for pending */
+ 	struct list_head chain_running;	/* Link descriptors queue for running */
+-	bool idle;			/* channel statue machine */
++	enum dma_status status; /* channel status machine */
++	u32 bytes_residue;
+ 
+ 	struct dma_pool *desc_pool;	/* Descriptors pool */
+ };
+@@ -270,7 +271,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+ 	struct mmp_pdma_desc_sw *desc;
+ 
+ 	/* still in running, irq will start the pending list */
+-	if (!chan->idle) {
++	if (chan->status == DMA_IN_PROGRESS) {
+ 		dev_dbg(chan->dev, "DMA controller still busy\n");
+ 		return;
+ 	}
+@@ -307,7 +308,64 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+ 	 */
+ 	set_desc(chan->phy, desc->async_tx.phys);
+ 	enable_chan(chan->phy);
+-	chan->idle = false;
++	chan->status = DMA_IN_PROGRESS;
++	chan->bytes_residue = 0;
++}
++
++/*
++ * Get the number of pending bytes. Should be called with desc_lock held
++ * because we are accessing desc list.
++ */
++static u32 mmp_pdma_get_bytes_residue(struct mmp_pdma_chan *chan)
++{
++	u32 reg, orig_pos, cur_pos, ddadr, residue = 0;
++	bool running_desc_found = false;
++	struct mmp_pdma_desc_sw *desc_sw;
++
++	/*
++	 * When a phy channel is unavailable, maybe it has been freed, return
++	 * last stored value for safe.
++	 */
++	if (!chan->phy)
++		return chan->bytes_residue;
++
++	reg = (chan->phy->idx << 4) + DDADR;
++	ddadr = readl_relaxed(chan->phy->base + reg);
++
++	/* iterate over all descriptors to sum up the number of pending bytes */
++	list_for_each_entry(desc_sw, &chan->chain_running, node) {
++		/* for the case of a running descriptor */
++		if (desc_sw->desc.ddadr == ddadr && !running_desc_found) {
++			switch (chan->dir) {
++			case DMA_DEV_TO_MEM:
++			case DMA_MEM_TO_MEM:
++				reg = (chan->phy->idx << 4) + DTADR;
++				cur_pos = readl_relaxed(chan->phy->base + reg);
++				orig_pos = desc_sw->desc.dtadr;
++				break;
++
++			case DMA_MEM_TO_DEV:
++				reg = (chan->phy->idx << 4) + DSADR;
++				cur_pos = readl_relaxed(chan->phy->base + reg);
++				orig_pos = desc_sw->desc.dsadr;
++				break;
++
++			default:
++				cur_pos = 0;
++				orig_pos = 0;
++			}
++			residue = (u32)(desc_sw->desc.dcmd & DCMD_LENGTH)
++					+ orig_pos - cur_pos;
++			running_desc_found = true;
++			continue;
++		}
++
++		/* for the case of following un-started descriptors*/
++		if (running_desc_found)
++			residue += (u32)(desc_sw->desc.dcmd & DCMD_LENGTH);
++	}
++
++	return residue;
+ }
+ 
+ 
+@@ -381,7 +439,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
+ 		chan->phy->vchan = NULL;
+ 		chan->phy = NULL;
+ 	}
+-	chan->idle = true;
++	chan->status = DMA_SUCCESS;
+ 	chan->dev_addr = 0;
+ 	return 1;
+ }
+@@ -409,7 +467,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
+ 
+ 	dma_pool_destroy(chan->desc_pool);
+ 	chan->desc_pool = NULL;
+-	chan->idle = true;
++	chan->status = DMA_SUCCESS;
+ 	chan->dev_addr = 0;
+ 	if (chan->phy) {
+ 		chan->phy->vchan = NULL;
+@@ -588,9 +646,16 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+ 		spin_lock_irqsave(&chan->desc_lock, flags);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_running);
++		chan->bytes_residue = 0;
+ 		spin_unlock_irqrestore(&chan->desc_lock, flags);
+-		chan->idle = true;
++		chan->status = DMA_SUCCESS;
+ 		break;
++
++	case DMA_PAUSE:
++		disable_chan(chan->phy);
++		chan->status = DMA_PAUSED;
++		break;
++
+ 	case DMA_SLAVE_CONFIG:
+ 		if (cfg->direction == DMA_DEV_TO_MEM) {
+ 			chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
+@@ -637,7 +702,9 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chan->desc_lock, flags);
+-	ret = dma_cookie_status(dchan, cookie, txstate);
++	chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
++	dma_set_residue(txstate, chan->bytes_residue);
++	ret = chan->status;
+ 	spin_unlock_irqrestore(&chan->desc_lock, flags);
+ 
+ 	return ret;
+@@ -684,6 +751,8 @@ static void dma_do_tasklet(unsigned long data)
+ 		dev_dbg(chan->dev, "completed_cookie=%d\n", cookie);
+ 	}
+ 
++	/* update bytes_residue so that the user can query later on */
++	chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+ 	/*
+ 	 * move the descriptors to a temporary list so we can drop the lock
+ 	 * during the entire cleanup operation
+@@ -691,7 +760,7 @@ static void dma_do_tasklet(unsigned long data)
+ 	list_splice_tail_init(&chan->chain_running, &chain_cleanup);
+ 
+ 	/* the hardware is now idle and ready for more */
+-	chan->idle = true;
++	chan->status = DMA_SUCCESS;
+ 
+ 	/* Start any pending transactions automatically */
+ 	start_pending_queue(chan);
+@@ -750,6 +819,9 @@ static int mmp_pdma_chan_init(struct mmp_pdma_device *pdev,
+ 	INIT_LIST_HEAD(&chan->chain_pending);
+ 	INIT_LIST_HEAD(&chan->chain_running);
+ 
++	chan->status = DMA_SUCCESS;
++	chan->bytes_residue = 0;
++
+ 	/* register virt channel to dma engine */
+ 	list_add_tail(&chan->chan.device_node,
+ 			&pdev->device.channels);
 -- 
-Nicolas Ferre
+1.7.5.4
+
