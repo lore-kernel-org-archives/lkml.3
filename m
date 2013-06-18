@@ -1,108 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab3FRIYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:24:30 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:52258 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3FRIYW (ORCPT
+	id S1754545Ab3FRIYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:24:50 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:62997 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab3FRIYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:24:22 -0400
-Message-ID: <51C0193A.40607@linaro.org>
-Date: Tue, 18 Jun 2013 10:24:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 04:24:45 -0400
+Message-ID: <51C01948.9060708@suse.cz>
+Date: Tue, 18 Jun 2013 10:24:40 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH/RFC] clockevents: Ignore C3STOP when CPUIdle is disabled
-References: <20130618071756.22598.51046.sendpatchset@w520> <51C00D08.3080406@linaro.org> <CANqRtoR-f6SXE0HFw_giJj3PMas-WZA_WvmkTL2rA-jVj_2QCA@mail.gmail.com>
-In-Reply-To: <CANqRtoR-f6SXE0HFw_giJj3PMas-WZA_WvmkTL2rA-jVj_2QCA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: balbi@ti.com, Michal Marek <mmarek@suse.cz>
+CC: Jeff Mahoney <jeffm@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
+Subject: Re: [PATCH] build some drivers only when compile-testing
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz> <51BFE754.5080301@suse.cz> <20130618081858.GD5461@arwen.pp.htv.fi>
+In-Reply-To: <20130618081858.GD5461@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 09:39 AM, Magnus Damm wrote:
-> On Tue, Jun 18, 2013 at 4:32 PM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> On 06/18/2013 09:17 AM, Magnus Damm wrote:
->>> From: Magnus Damm <damm@opensource.se>
->>>
->>> Introduce the function tick_device_may_c3stop() that
->>> ignores the C3STOP flag in case CPUIdle is disabled.
->>>
->>> The C3STOP flag tells the system that a clock event
->>> device may be stopped during deep sleep, but if this
->>> will happen or not depends on things like if CPUIdle
->>> is enabled and if a CPUIdle driver is available.
->>>
->>> This patch assumes that if CPUIdle is disabled then
->>> the sleep mode triggering C3STOP will never be entered.
->>> So by ignoring C3STOP when CPUIdle is disabled then it
->>> becomes possible to use high resolution timers with only
->>> per-cpu local timers - regardless if they have the
->>> C3STOP flag set or not.
->>>
->>> Observed on the r8a73a4 SoC that at this point only uses
->>> ARM architected timers for clock event and clock sources.
->>>
->>> Without this patch high resolution timers are run time
->>> disabled on the r8a73a4 SoC - this regardless of CPUIdle
->>> is disabled or not.
->>>
->>> The less short term fix is to add support for more timers
->>> on the r8a73a4 SoC, but until CPUIdle support is enabled
->>> it must be possible to use high resoultion timers without
->>> additional timers.
->>>
->>> I'd like to hear some feedback and also test this on more
->>> systems before merging the code, see the non-SOB below.
->>
->> Do we need a broadcast timer when cpuidle is not compiled in the kernel ?
+On 06/18/2013 10:18 AM, Felipe Balbi wrote:
+> Hi,
 > 
-> Yes, if there is no per-cpu timer available. It depends on what the
-> SMP support code for a particular SoC or architecture happen to
-> enable.
+> On Tue, Jun 18, 2013 at 06:51:32AM +0200, Michal Marek wrote:
+>> Dne 17.6.2013 22:05, Jiri Slaby napsal(a):
+>>> On 05/23/2013 05:09 AM, Jeff Mahoney wrote:
+>>>> On 5/22/13 10:23 PM, Greg Kroah-Hartman wrote:
+>>>>> On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby
+>>>>> wrote:
+>>>>>> Some drivers can be built on more platforms than they run
+>>>>>> on. This causes users and distributors packaging burden
+>>>>>> when they have to manually deselect some drivers from
+>>>>>> their allmodconfigs. Or sometimes it is even impossible
+>>>>>> to disable the drivers without patching the kernel.
+>>>>>> 
+>>>>>> Introduce a new config option COMPILE_TEST and make all
+>>>>>> those drivers to depend on the platform they run on, or
+>>>>>> on the COMPILE_TEST option. Now, when users/distributors
+>>>>>> choose COMPILE_TEST=n they will not have the drivers in
+>>>>>> their allmodconfig setups, but developers still can 
+>>>>>> compile-test them with COMPILE_TEST=y.
+>>>>> 
+>>>>> I understand the urge, and it's getting hard for distros to
+>>>>> handle these drivers that just don't work on other
+>>>>> architectures, but it's really valuable to ensure that they
+>>>>> build properly, for those of us that don't have many/any
+>>>>> cross compilers set up.
+>>> 
+>>> But this is exactly what COMPILE_TEST will give us when set to
+>>> "y", or am I missing something?
+>>> 
+>>>>>> Now the drivers where we use this new option: *
+>>>>>> PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with
+>>>>>> Intel Atom processors so it should depend on x86. *
+>>>>>> FB_GEODE: Geode is 32-bit only so only enable it for
+>>>>>> X86_32. * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will
+>>>>>> be met on powerpc systems -- which do not actually
+>>>>>> support the hardware via that method.
+>>>>> 
+>>>>> This seems ripe to start to get really messy, really
+>>>>> quickly.  Shouldn't "default configs" handle if this
+>>>>> "should" be enabled for a platform or not, and let the rest
+>>>>> of us just build them with no problems?
+>>>> 
+>>>> If every time a new Kconfig option is added, corresponding
+>>>> default config updates come with it, sure. I just don't see
+>>>> that happening, especially when it can be done much more
+>>>> clearly in the Kconfig while the developer is writing the
+>>>> driver.
+>>>> 
+>>>>> What problems is this causing you?  Are you running out of
+>>>>> space in kernel packages with drivers that will never be
+>>>>> actually used?
+>>>> 
+>>>> Wasted build resources. Wasted disk space on /every/ system
+>>>> the kernel package is installed on. We're all trying to pare
+>>>> down the kernel packages to eliminate wasted space and doing
+>>>> it manually means a bunch of research, sometimes with
+>>>> incorrect assumptions about the results, needs to be done by
+>>>> someone not usually associated with that code. That research
+>>>> gets repeated by people maintaining kernel packages for
+>>>> pretty much every distro.
+>>> 
+>>> I second all the above.
+>>> 
+>>>>>> +config COMPILE_TEST +	bool "Compile also drivers which
+>>>>>> will not load" if EXPERT
+>>>>> 
+>>>>> EXPERT is getting to be the "let's hide it here" option,
+>>>>> isn't it...
+>>>>> 
+>>>>> I don't know, if no one else strongly objects, I can be
+>>>>> convinced that this is needed, but so far, I don't see why
+>>>>> it really is, or what this is going to help with.
+>>>> 
+>>>> I'm not convinced adding a || COMPILE_TEST option to every
+>>>> driver that may be arch specific is the best way to go
+>>>> either. Perhaps adding a new Kconfig verb called "archdepends
+>>>> on" or something that will evaluate as true if COMPILE_TEST
+>>>> is enabled but will evaluate the conditional if not. *waves
+>>>> hands*
+>>> 
+>>> Sam Ravnborg (the kconfig ex-maintainer) once wrote that he
+>>> doesn't want to extend the kconfig language for this purpose
+>>> (which I support). That a config option is fine and sufficient
+>>> in this case [1]. Except he called the config option
+>>> "SHOW_ALL_DRIVERS". Adding the current maintainer to CCs ;).
+>> 
+>> I agree with Sam. 'depends on XY || COMPILE_TEST' is quite 
+>> self-explanatory. And even if it's not, you can look up the help
+>> text for COMPILE_TEST. With "archdepends on" or "available on",
+>> you need to know what to look for to override the dependency.
+> 
+> you will still end up with:
+> 
+> depends on (ARCH_OMAP || ARCH_EXYNOS || ARCH_DAVINCI || ARCH_PPC ||
+> ...)
+> 
+> And every now and again that particular line will be updated to
+> add another arch dependency.
 
-Ok thanks for the information.
+But that is perfectly fine *when* the driver is supported on those
+archs only.
 
-There is here a multiple occurrence of the information "the timer will
-stop when power is saved": CLOCK_EVT_FEAT_C3STOP and
-CPUIDLE_FLAG_TIMER_STOP, so I am wondering if some code simplification
-couldn't be done before your patch.
-
-The function:
-
-tick_broadcast_oneshot_control is called from clockevents_notify. This
-one is called from the cpuidle framework or the back-end cpuidle driver.
-The caller knows the timer will be stop and this is why it is switching
-to the broadcast mode. But we have a sanity check in
-tick_broadcast_oneshot_control function:
-
-        if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
-                return;
-
-In other words, CPUIDLE_FLAG_TIMER_STOP will tell the framework to call
-clockevents_notify and the tick broadcast code will re-check the device
-will effectively go down. IMHO, we can get rid of this check.
-
-The same happens for the tick_do_broadcast_on_off function.
-
-That reduces the number of C3STOP usage.
+And come on, how much often will this "every now and again" happen? We
+don't have that much cases where a driver is augmented to work on
+another arch or platform. It either works on all of them => doesn't
+need COMPILE_TEST, or work on one or two arches at most.
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+js
+suse labs
