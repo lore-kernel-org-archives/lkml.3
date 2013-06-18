@@ -1,812 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab3FRQEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:04:00 -0400
-Received: from forward10.mail.yandex.net ([77.88.61.49]:57121 "EHLO
-	forward10.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FRQD5 (ORCPT
+	id S932830Ab3FRQEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:04:31 -0400
+Received: from [207.46.163.27] ([207.46.163.27]:23241 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932555Ab3FRQE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:03:57 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <1371571012.18733.33.camel@gandalf.local.home>
-References: <1451381371569817@web21d.yandex.ru> <1371571012.18733.33.camel@gandalf.local.home>
-Subject: [PATCHv2 2/2]misc: Use schedule_(raw_)spin_unlock and schedule_(raw_)spin_unlock_irq
+	Tue, 18 Jun 2013 12:04:28 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(z551bizbb2dI98dI9371I936eI154dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bh8275dhz2dh668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+X-WSS-ID: 0MOLJ9C-01-1EZ-02
+X-M-MSG: 
+Message-ID: <51C084C0.2000608@amd.com>
+Date: Tue, 18 Jun 2013 11:03:12 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Message-Id: <670131371571433@web19e.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 18 Jun 2013 20:03:53 +0400
+To: <suravee.suthikulpanit@amd.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] Change IBS PMU to use perf_hw_context
+References: <1355518662-32071-1-git-send-email-suravee.suthikulpanit@amd.com>  <20121216090410.GC21690@gmail.com> <20121217094403.GF1893@rric.localhost>  <1355871266.21420.17.camel@sos-dev03.amd.com> <1358374756.2964.14.camel@Greyghost-ubuntu>
+In-Reply-To: <1358374756.2964.14.camel@Greyghost-ubuntu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helpers where possible (All directories except arch/.)
+Peter,
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: LKML
----
- drivers/base/devtmpfs.c                         |    3 +--
- drivers/base/power/runtime.c                    |   12 +++---------
- drivers/block/drbd/drbd_req.c                   |    3 +--
- drivers/char/ipmi/ipmi_watchdog.c               |    3 +--
- drivers/md/bitmap.c                             |    3 +--
- drivers/md/raid5.c                              |    3 +--
- drivers/media/rc/ir-raw.c                       |    3 +--
- drivers/mtd/nand/nand_base.c                    |    3 +--
- drivers/mtd/onenand/onenand_base.c              |    3 +--
- drivers/mtd/ubi/wl.c                            |    3 +--
- drivers/net/wireless/libertas/main.c            |    3 +--
- drivers/pci/access.c                            |    3 +--
- drivers/scsi/libsas/sas_scsi_host.c             |    3 +--
- drivers/staging/lustre/lnet/selftest/rpc.c      |    4 +---
- drivers/staging/lustre/lustre/libcfs/workitem.c |    3 +--
- fs/afs/callback.c                               |    3 +--
- fs/afs/vnode.c                                  |    3 +--
- fs/block_dev.c                                  |    3 +--
- fs/btrfs/extent-tree.c                          |    4 +---
- fs/btrfs/extent_io.c                            |    3 +--
- fs/dlm/user.c                                   |    3 +--
- fs/eventfd.c                                    |    6 ++----
- fs/exec.c                                       |    3 +--
- fs/fuse/dev.c                                   |    3 +--
- fs/gfs2/quota.c                                 |    3 +--
- fs/inode.c                                      |    3 +--
- fs/jbd/commit.c                                 |    6 ++----
- fs/jbd/journal.c                                |    3 +--
- fs/jbd/transaction.c                            |    9 +++------
- fs/jbd2/journal.c                               |    3 +--
- fs/jffs2/nodemgmt.c                             |    4 +---
- fs/jffs2/os-linux.h                             |    3 +--
- fs/jfs/jfs_logmgr.c                             |    3 +--
- fs/mbcache.c                                    |    6 ++----
- fs/nilfs2/segment.c                             |    3 +--
- fs/ocfs2/dlm/dlmthread.c                        |    3 +--
- fs/signalfd.c                                   |    3 +--
- fs/xfs/xfs_log_priv.h                           |    3 +--
- fs/xfs/xfs_trans_ail.c                          |    6 ++----
- kernel/posix-cpu-timers.c                       |    3 +--
- kernel/workqueue.c                              |    3 +--
- sound/core/control.c                            |    3 +--
- sound/core/rawmidi.c                            |    3 +--
- sound/core/seq/seq_fifo.c                       |    3 +--
- sound/core/seq/seq_memory.c                     |    3 +--
- sound/core/timer.c                              |    3 +--
- 46 files changed, 54 insertions(+), 114 deletions(-)
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 7413d06..e7fe22b 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -402,8 +402,7 @@ static int devtmpfsd(void *p)
- 			spin_lock(&req_lock);
- 		}
- 		__set_current_state(TASK_INTERRUPTIBLE);
--		spin_unlock(&req_lock);
--		schedule();
-+		schedule_spin_unlock(&req_lock);
- 	}
- 	return 0;
- out:
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 268a350..9d230a4 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -465,9 +465,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 			if (dev->power.runtime_status != RPM_SUSPENDING)
- 				break;
- 
--			spin_unlock_irq(&dev->power.lock);
--
--			schedule();
-+			schedule_spin_unlock_irq(&dev->power.lock);
- 
- 			spin_lock_irq(&dev->power.lock);
- 		}
-@@ -646,9 +644,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
- 			    && dev->power.runtime_status != RPM_SUSPENDING)
- 				break;
- 
--			spin_unlock_irq(&dev->power.lock);
--
--			schedule();
-+			schedule_spin_unlock_irq(&dev->power.lock);
- 
- 			spin_lock_irq(&dev->power.lock);
- 		}
-@@ -1078,9 +1074,7 @@ static void __pm_runtime_barrier(struct device *dev)
- 			    && dev->power.runtime_status != RPM_RESUMING
- 			    && !dev->power.idle_notification)
- 				break;
--			spin_unlock_irq(&dev->power.lock);
--
--			schedule();
-+			schedule_spin_unlock_irq(&dev->power.lock);
- 
- 			spin_lock_irq(&dev->power.lock);
- 		}
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index c24379f..e08329a 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -850,8 +850,7 @@ static void complete_conflicting_writes(struct drbd_request *req)
- 			break;
- 		/* Indicate to wake up device->misc_wait on progress.  */
- 		i->waiting = true;
--		spin_unlock_irq(&mdev->tconn->req_lock);
--		schedule();
-+		schedule_spin_unlock_irq(&mdev->tconn->req_lock);
- 		spin_lock_irq(&mdev->tconn->req_lock);
- 	}
- 	finish_wait(&mdev->misc_wait, &wait);
-diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-index 37b8be7..f825b3e 100644
---- a/drivers/char/ipmi/ipmi_watchdog.c
-+++ b/drivers/char/ipmi/ipmi_watchdog.c
-@@ -834,8 +834,7 @@ static ssize_t ipmi_read(struct file *file,
- 		add_wait_queue(&read_q, &wait);
- 		while (!data_to_read) {
- 			set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock(&ipmi_read_lock);
--			schedule();
-+			schedule_spin_unlock(&ipmi_read_lock);
- 			spin_lock(&ipmi_read_lock);
- 		}
- 		remove_wait_queue(&read_q, &wait);
-diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
-index a7fd821..af80b15 100644
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -1297,8 +1297,7 @@ int bitmap_startwrite(struct bitmap *bitmap, sector_t offset, unsigned long sect
- 			 */
- 			prepare_to_wait(&bitmap->overflow_wait, &__wait,
- 					TASK_UNINTERRUPTIBLE);
--			spin_unlock_irq(&bitmap->counts.lock);
--			schedule();
-+			schedule_spin_unlock_irq(&bitmap->counts.lock);
- 			finish_wait(&bitmap->overflow_wait, &__wait);
- 			continue;
- 		}
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 7674226..780b865 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -4397,8 +4397,7 @@ static void make_request(struct mddev *mddev, struct bio * bi)
- 				if (mddev->reshape_backwards
- 				    ? logical_sector < conf->reshape_safe
- 				    : logical_sector >= conf->reshape_safe) {
--					spin_unlock_irq(&conf->device_lock);
--					schedule();
-+					schedule_spin_unlock_irq(&conf->device_lock);
- 					goto retry;
- 				}
- 			}
-diff --git a/drivers/media/rc/ir-raw.c b/drivers/media/rc/ir-raw.c
-index 5c42750..30f733d 100644
---- a/drivers/media/rc/ir-raw.c
-+++ b/drivers/media/rc/ir-raw.c
-@@ -49,8 +49,7 @@ static int ir_raw_event_thread(void *data)
- 			if (kthread_should_stop())
- 				set_current_state(TASK_RUNNING);
- 
--			spin_unlock_irq(&raw->lock);
--			schedule();
-+			schedule_spin_unlock_irq(&raw->lock);
- 			continue;
- 		}
- 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 1cbacff..34138a73 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -756,8 +756,7 @@ retry:
- 	}
- 	set_current_state(TASK_UNINTERRUPTIBLE);
- 	add_wait_queue(wq, &wait);
--	spin_unlock(lock);
--	schedule();
-+	schedule_spin_unlock(lock);
- 	remove_wait_queue(wq, &wait);
- 	goto retry;
- }
-diff --git a/drivers/mtd/onenand/onenand_base.c b/drivers/mtd/onenand/onenand_base.c
-index b3f41f2..9e7dad1 100644
---- a/drivers/mtd/onenand/onenand_base.c
-+++ b/drivers/mtd/onenand/onenand_base.c
-@@ -987,8 +987,7 @@ static int onenand_get_device(struct mtd_info *mtd, int new_state)
- 		}
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		add_wait_queue(&this->wq, &wait);
--		spin_unlock(&this->chip_lock);
--		schedule();
-+		schedule_spin_unlock(&this->chip_lock);
- 		remove_wait_queue(&this->wq, &wait);
- 	}
- 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 5df49d3..0e2191e 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1808,8 +1808,7 @@ int ubi_thread(void *u)
- 		if (list_empty(&ubi->works) || ubi->ro_mode ||
- 		    !ubi->thread_enabled || ubi_dbg_is_bgt_disabled(ubi)) {
- 			set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock(&ubi->wl_lock);
--			schedule();
-+			schedule_spin_unlock(&ubi->wl_lock);
- 			continue;
- 		}
- 		spin_unlock(&ubi->wl_lock);
-diff --git a/drivers/net/wireless/libertas/main.c b/drivers/net/wireless/libertas/main.c
-index 0c02f04..898f126 100644
---- a/drivers/net/wireless/libertas/main.c
-+++ b/drivers/net/wireless/libertas/main.c
-@@ -501,8 +501,7 @@ static int lbs_thread(void *data)
- 				"psmode %d, psstate %d\n",
- 				priv->connect_status,
- 				priv->psmode, priv->psstate);
--			spin_unlock_irq(&priv->driver_lock);
--			schedule();
-+			schedule_spin_unlock_irq(&priv->driver_lock);
- 		} else
- 			spin_unlock_irq(&priv->driver_lock);
- 
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 1cc2366..47aeacd 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -136,8 +136,7 @@ static noinline void pci_wait_cfg(struct pci_dev *dev)
- 	__add_wait_queue(&pci_cfg_wait, &wait);
- 	do {
- 		set_current_state(TASK_UNINTERRUPTIBLE);
--		raw_spin_unlock_irq(&pci_lock);
--		schedule();
-+		schedule_raw_spin_unlock_irq(&pci_lock);
- 		raw_spin_lock_irq(&pci_lock);
- 	} while (dev->block_cfg_access);
- 	__remove_wait_queue(&pci_cfg_wait, &wait);
-diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
-index da3aee1..eaddf84 100644
---- a/drivers/scsi/libsas/sas_scsi_host.c
-+++ b/drivers/scsi/libsas/sas_scsi_host.c
-@@ -474,8 +474,7 @@ static void sas_wait_eh(struct domain_device *dev)
- 
- 	while (test_bit(SAS_DEV_EH_PENDING, &dev->state)) {
- 		prepare_to_wait(&ha->eh_wait_q, &wait, TASK_UNINTERRUPTIBLE);
--		spin_unlock_irq(&ha->lock);
--		schedule();
-+		schedule_spin_unlock_irq(&ha->lock);
- 		spin_lock_irq(&ha->lock);
- 	}
- 	finish_wait(&ha->eh_wait_q, &wait);
-diff --git a/drivers/staging/lustre/lnet/selftest/rpc.c b/drivers/staging/lustre/lnet/selftest/rpc.c
-index bc1f38b..a95fa07 100644
---- a/drivers/staging/lustre/lnet/selftest/rpc.c
-+++ b/drivers/staging/lustre/lnet/selftest/rpc.c
-@@ -1121,9 +1121,7 @@ srpc_del_client_rpc_timer (srpc_client_rpc_t *rpc)
- 
- 	/* timer detonated, wait for it to explode */
- 	while (rpc->crpc_timeout != 0) {
--		spin_unlock(&rpc->crpc_lock);
--
--		schedule();
-+		schedule_spin_unlock(&rpc->crpc_lock);
- 
- 		spin_lock(&rpc->crpc_lock);
- 	}
-diff --git a/drivers/staging/lustre/lustre/libcfs/workitem.c b/drivers/staging/lustre/lustre/libcfs/workitem.c
-index b533666..0acd07e 100644
---- a/drivers/staging/lustre/lustre/libcfs/workitem.c
-+++ b/drivers/staging/lustre/lustre/libcfs/workitem.c
-@@ -379,8 +379,7 @@ cfs_wi_sched_create(char *name, struct cfs_cpt_table *cptab,
- 		task_t	*task;
- 		spin_lock(&cfs_wi_data.wi_glock);
- 		while (sched->ws_starting > 0) {
--			spin_unlock(&cfs_wi_data.wi_glock);
--			schedule();
-+			schedule_spin_unlock(&cfs_wi_data.wi_glock);
- 			spin_lock(&cfs_wi_data.wi_glock);
- 		}
- 
-diff --git a/fs/afs/callback.c b/fs/afs/callback.c
-index 7ef637d..6308422 100644
---- a/fs/afs/callback.c
-+++ b/fs/afs/callback.c
-@@ -311,8 +311,7 @@ void afs_give_up_callback(struct afs_vnode *vnode)
- 			if (!vnode->cb_promised ||
- 			    afs_breakring_space(server) != 0)
- 				break;
--			spin_unlock(&server->cb_lock);
--			schedule();
-+			schedule_spin_unlock(&server->cb_lock);
- 			spin_lock(&server->cb_lock);
- 		}
- 		remove_wait_queue(&server->cb_break_waitq, &myself);
-diff --git a/fs/afs/vnode.c b/fs/afs/vnode.c
-index 25cf4c3..adc2651 100644
---- a/fs/afs/vnode.c
-+++ b/fs/afs/vnode.c
-@@ -324,9 +324,8 @@ int afs_vnode_fetch_status(struct afs_vnode *vnode,
- 				goto get_anyway;
- 			}
- 
--			spin_unlock(&vnode->lock);
-+			schedule_spin_unlock(&vnode->lock);
- 
--			schedule();
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 
- 			spin_lock(&vnode->lock);
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 9c8ebe4..9d049fd 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -691,8 +691,7 @@ retry:
- 		DEFINE_WAIT(wait);
- 
- 		prepare_to_wait(wq, &wait, TASK_UNINTERRUPTIBLE);
--		spin_unlock(&bdev_lock);
--		schedule();
-+		schedule_spin_unlock(&bdev_lock);
- 		finish_wait(wq, &wait);
- 		spin_lock(&bdev_lock);
- 		goto retry;
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index df472ab..cb6a1d6 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -550,9 +550,7 @@ static int cache_block_group(struct btrfs_block_group_cache *cache,
- 		ctl = cache->caching_ctl;
- 		atomic_inc(&ctl->count);
- 		prepare_to_wait(&ctl->wait, &wait, TASK_UNINTERRUPTIBLE);
--		spin_unlock(&cache->lock);
--
--		schedule();
-+		schedule_spin_unlock(&cache->lock);
- 
- 		finish_wait(&ctl->wait, &wait);
- 		put_caching_control(ctl);
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 6bca947..b629b8a 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -660,8 +660,7 @@ static void wait_on_state(struct extent_io_tree *tree,
- {
- 	DEFINE_WAIT(wait);
- 	prepare_to_wait(&state->wq, &wait, TASK_UNINTERRUPTIBLE);
--	spin_unlock(&tree->lock);
--	schedule();
-+	schedule_spin_unlock(&tree->lock);
- 	spin_lock(&tree->lock);
- 	finish_wait(&state->wq, &wait);
- }
-diff --git a/fs/dlm/user.c b/fs/dlm/user.c
-index 911649a..a3da6c2 100644
---- a/fs/dlm/user.c
-+++ b/fs/dlm/user.c
-@@ -825,8 +825,7 @@ static ssize_t device_read(struct file *file, char __user *buf, size_t count,
- 	repeat:
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (list_empty(&proc->asts) && !signal_pending(current)) {
--			spin_unlock(&proc->asts_spin);
--			schedule();
-+			schedule_spin_unlock(&proc->asts_spin);
- 			spin_lock(&proc->asts_spin);
- 			goto repeat;
- 		}
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index 35470d9..028848e 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -205,8 +205,7 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt)
- 				res = -ERESTARTSYS;
- 				break;
- 			}
--			spin_unlock_irq(&ctx->wqh.lock);
--			schedule();
-+			schedule_spin_unlock_irq(&ctx->wqh.lock);
- 			spin_lock_irq(&ctx->wqh.lock);
- 		}
- 		__remove_wait_queue(&ctx->wqh, &wait);
-@@ -269,8 +268,7 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
- 				res = -ERESTARTSYS;
- 				break;
- 			}
--			spin_unlock_irq(&ctx->wqh.lock);
--			schedule();
-+			schedule_spin_unlock_irq(&ctx->wqh.lock);
- 			spin_lock_irq(&ctx->wqh.lock);
- 		}
- 		__remove_wait_queue(&ctx->wqh, &wait);
-diff --git a/fs/exec.c b/fs/exec.c
-index 13f9bb0..7d93c1c 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -889,8 +889,7 @@ static int de_thread(struct task_struct *tsk)
- 
- 	while (sig->notify_count) {
- 		__set_current_state(TASK_KILLABLE);
--		spin_unlock_irq(lock);
--		schedule();
-+		schedule_spin_unlock_irq(lock);
- 		if (unlikely(__fatal_signal_pending(tsk)))
- 			goto killed;
- 		spin_lock_irq(lock);
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index 1d55f94..4e1c39e 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1027,8 +1027,7 @@ __acquires(fc->lock)
- 		if (signal_pending(current))
- 			break;
- 
--		spin_unlock(&fc->lock);
--		schedule();
-+		schedule_spin_unlock(&fc->lock);
- 		spin_lock(&fc->lock);
- 	}
- 	set_current_state(TASK_RUNNING);
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index db44135..41d4d8a 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -1296,8 +1296,7 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
- 		    (atomic_read(&qd->qd_count) &&
- 		     !test_bit(QDF_CHANGE, &qd->qd_flags))) {
- 			list_move(&qd->qd_list, head);
--			spin_unlock(&qd_lru_lock);
--			schedule();
-+			schedule_spin_unlock(&qd_lru_lock);
- 			spin_lock(&qd_lru_lock);
- 			continue;
- 		}
-diff --git a/fs/inode.c b/fs/inode.c
-index 00b804e..af2a0c6 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1687,8 +1687,7 @@ static void __wait_on_freeing_inode(struct inode *inode)
- 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
- 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
- 	spin_unlock(&inode->i_lock);
--	spin_unlock(&inode_hash_lock);
--	schedule();
-+	schedule_spin_unlock(&inode_hash_lock);
- 	finish_wait(wq, &wait.wait);
- 	spin_lock(&inode_hash_lock);
- }
-diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-index 11bb11f..b050ee3 100644
---- a/fs/jbd/commit.c
-+++ b/fs/jbd/commit.c
-@@ -105,8 +105,7 @@ static void release_data_buffer(struct buffer_head *bh)
- static int inverted_lock(journal_t *journal, struct buffer_head *bh)
- {
- 	if (!jbd_trylock_bh_state(bh)) {
--		spin_unlock(&journal->j_list_lock);
--		schedule();
-+		schedule_spin_unlock(&journal->j_list_lock);
- 		return 0;
- 	}
- 	return 1;
-@@ -358,8 +357,7 @@ void journal_commit_transaction(journal_t *journal)
- 					TASK_UNINTERRUPTIBLE);
- 		if (commit_transaction->t_updates) {
- 			spin_unlock(&commit_transaction->t_handle_lock);
--			spin_unlock(&journal->j_state_lock);
--			schedule();
-+			schedule_spin_unlock(&journal->j_state_lock);
- 			spin_lock(&journal->j_state_lock);
- 			spin_lock(&commit_transaction->t_handle_lock);
- 		}
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 6510d63..185e9b5 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -189,8 +189,7 @@ loop:
- 		if (journal->j_flags & JFS_UNMOUNT)
- 			should_sleep = 0;
- 		if (should_sleep) {
--			spin_unlock(&journal->j_state_lock);
--			schedule();
-+			schedule_spin_unlock(&journal->j_state_lock);
- 			spin_lock(&journal->j_state_lock);
- 		}
- 		finish_wait(&journal->j_wait_commit, &wait);
-diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-index be0c39b..ff3717d 100644
---- a/fs/jbd/transaction.c
-+++ b/fs/jbd/transaction.c
-@@ -152,8 +152,7 @@ repeat_locked:
- 
- 		prepare_to_wait(&journal->j_wait_transaction_locked,
- 					&wait, TASK_UNINTERRUPTIBLE);
--		spin_unlock(&journal->j_state_lock);
--		schedule();
-+		schedule_spin_unlock(&journal->j_state_lock);
- 		finish_wait(&journal->j_wait_transaction_locked, &wait);
- 		goto repeat;
- 	}
-@@ -179,8 +178,7 @@ repeat_locked:
- 		prepare_to_wait(&journal->j_wait_transaction_locked, &wait,
- 				TASK_UNINTERRUPTIBLE);
- 		__log_start_commit(journal, transaction->t_tid);
--		spin_unlock(&journal->j_state_lock);
--		schedule();
-+		schedule_spin_unlock(&journal->j_state_lock);
- 		finish_wait(&journal->j_wait_transaction_locked, &wait);
- 		goto repeat;
- 	}
-@@ -470,8 +468,7 @@ wait:
- 		prepare_to_wait(&journal->j_wait_updates, &wait,
- 				TASK_UNINTERRUPTIBLE);
- 		spin_unlock(&transaction->t_handle_lock);
--		spin_unlock(&journal->j_state_lock);
--		schedule();
-+		schedule_spin_unlock(&journal->j_state_lock);
- 		finish_wait(&journal->j_wait_updates, &wait);
- 		spin_lock(&journal->j_state_lock);
- 	}
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 4c8b8d4..0d3301c 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -2533,8 +2533,7 @@ restart:
- 		DEFINE_WAIT_BIT(wait, &jinode->i_flags, __JI_COMMIT_RUNNING);
- 		wq = bit_waitqueue(&jinode->i_flags, __JI_COMMIT_RUNNING);
- 		prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
--		spin_unlock(&journal->j_list_lock);
--		schedule();
-+		schedule_spin_unlock(&journal->j_list_lock);
- 		finish_wait(wq, &wait.wait);
- 		goto restart;
- 	}
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index 0331072..84eb517 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -176,9 +176,7 @@ int jffs2_reserve_space(struct jffs2_sb_info *c, uint32_t minsize,
- 					add_wait_queue(&c->erase_wait, &wait);
- 					jffs2_dbg(1, "%s waiting for erase to complete\n",
- 						  __func__);
--					spin_unlock(&c->erase_completion_lock);
--
--					schedule();
-+					schedule_spin_unlock(&c->erase_completion_lock);
- 				} else
- 					spin_unlock(&c->erase_completion_lock);
- 			} else if (ret)
-diff --git a/fs/jffs2/os-linux.h b/fs/jffs2/os-linux.h
-index d200a9b..f94e9f2 100644
---- a/fs/jffs2/os-linux.h
-+++ b/fs/jffs2/os-linux.h
-@@ -42,8 +42,7 @@ struct kvec;
- 		DECLARE_WAITQUEUE(__wait, current);		\
- 		add_wait_queue((wq), &__wait);			\
- 		set_current_state(TASK_UNINTERRUPTIBLE);	\
--		spin_unlock(s);					\
--		schedule();					\
-+		schedule_spin_unlock(s);			\
- 		remove_wait_queue((wq), &__wait);		\
- 	} while(0)
- 
-diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
-index 360d27c..fee71b6 100644
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -2357,8 +2357,7 @@ int jfsIOWait(void *arg)
- 			try_to_freeze();
- 		} else {
- 			set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock_irq(&log_redrive_lock);
--			schedule();
-+			schedule_spin_unlock_irq(&log_redrive_lock);
- 			__set_current_state(TASK_RUNNING);
- 		}
- 	} while (!kthread_should_stop());
-diff --git a/fs/mbcache.c b/fs/mbcache.c
-index e519e45..48ffe37 100644
---- a/fs/mbcache.c
-+++ b/fs/mbcache.c
-@@ -481,8 +481,7 @@ mb_cache_entry_get(struct mb_cache *cache, struct block_device *bdev,
- 				ce->e_queued++;
- 				prepare_to_wait(&mb_cache_queue, &wait,
- 						TASK_UNINTERRUPTIBLE);
--				spin_unlock(&mb_cache_spinlock);
--				schedule();
-+				schedule_spin_unlock(&mb_cache_spinlock);
- 				spin_lock(&mb_cache_spinlock);
- 				ce->e_queued--;
- 			}
-@@ -525,8 +524,7 @@ __mb_cache_entry_find(struct list_head *l, struct list_head *head,
- 				ce->e_queued++;
- 				prepare_to_wait(&mb_cache_queue, &wait,
- 						TASK_UNINTERRUPTIBLE);
--				spin_unlock(&mb_cache_spinlock);
--				schedule();
-+				schedule_spin_unlock(&mb_cache_spinlock);
- 				spin_lock(&mb_cache_spinlock);
- 				ce->e_queued--;
- 			}
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index bd88a74..6e6e519 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -2493,8 +2493,7 @@ static int nilfs_segctor_thread(void *arg)
- 					sci->sc_timer.expires);
- 
- 		if (should_sleep) {
--			spin_unlock(&sci->sc_state_lock);
--			schedule();
-+			schedule_spin_unlock(&sci->sc_state_lock);
- 			spin_lock(&sci->sc_state_lock);
- 		}
- 		finish_wait(&sci->sc_wait_daemon, &wait);
-diff --git a/fs/ocfs2/dlm/dlmthread.c b/fs/ocfs2/dlm/dlmthread.c
-index e73c833..1c6db06 100644
---- a/fs/ocfs2/dlm/dlmthread.c
-+++ b/fs/ocfs2/dlm/dlmthread.c
-@@ -68,8 +68,7 @@ void __dlm_wait_on_lockres_flags(struct dlm_lock_resource *res, int flags)
- repeat:
- 	set_current_state(TASK_UNINTERRUPTIBLE);
- 	if (res->state & flags) {
--		spin_unlock(&res->spinlock);
--		schedule();
-+		schedule_spin_unlock(&res->spinlock);
- 		spin_lock(&res->spinlock);
- 		goto repeat;
- 	}
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 424b7b6..a4331a9 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -183,8 +183,7 @@ static ssize_t signalfd_dequeue(struct signalfd_ctx *ctx, siginfo_t *info,
- 			ret = -ERESTARTSYS;
- 			break;
- 		}
--		spin_unlock_irq(&current->sighand->siglock);
--		schedule();
-+		schedule_spin_unlock_irq(&current->sighand->siglock);
- 		spin_lock_irq(&current->sighand->siglock);
- 	}
- 	spin_unlock_irq(&current->sighand->siglock);
-diff --git a/fs/xfs/xfs_log_priv.h b/fs/xfs/xfs_log_priv.h
-index b9ea262..278dd61 100644
---- a/fs/xfs/xfs_log_priv.h
-+++ b/fs/xfs/xfs_log_priv.h
-@@ -682,8 +682,7 @@ static inline void xlog_wait(wait_queue_head_t *wq, spinlock_t *lock)
- 
- 	add_wait_queue_exclusive(wq, &wait);
- 	__set_current_state(TASK_UNINTERRUPTIBLE);
--	spin_unlock(lock);
--	schedule();
-+	schedule_spin_unlock(lock);
- 	remove_wait_queue(wq, &wait);
- }
- #endif	/* __KERNEL__ */
-diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
-index 0eda725..6f36414 100644
---- a/fs/xfs/xfs_trans_ail.c
-+++ b/fs/xfs/xfs_trans_ail.c
-@@ -533,8 +533,7 @@ xfsaild(
- 		smp_rmb();
- 		if (!xfs_ail_min(ailp) &&
- 		    ailp->xa_target == ailp->xa_target_prev) {
--			spin_unlock(&ailp->xa_lock);
--			schedule();
-+			schedule_spin_unlock(&ailp->xa_lock);
- 			tout = 0;
- 			continue;
- 		}
-@@ -618,8 +617,7 @@ xfs_ail_push_all_sync(
- 		prepare_to_wait(&ailp->xa_empty, &wait, TASK_UNINTERRUPTIBLE);
- 		ailp->xa_target = lip->li_lsn;
- 		wake_up_process(ailp->xa_task);
--		spin_unlock(&ailp->xa_lock);
--		schedule();
-+		schedule_spin_unlock(&ailp->xa_lock);
- 		spin_lock(&ailp->xa_lock);
- 	}
- 	spin_unlock(&ailp->xa_lock);
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index c7f31aa..6e2c7a2 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1358,8 +1358,7 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
- 			 * Block until cpu_timer_fire (or a signal) wakes us.
- 			 */
- 			__set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock_irq(&timer.it_lock);
--			schedule();
-+			schedule_spin_unlock_irq(&timer.it_lock);
- 			spin_lock_irq(&timer.it_lock);
- 		}
- 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f02c4a4..0da9b8e 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2321,8 +2321,7 @@ sleep:
- 	 */
- 	worker_enter_idle(worker);
- 	__set_current_state(TASK_INTERRUPTIBLE);
--	spin_unlock_irq(&pool->lock);
--	schedule();
-+	schedule_spin_unlock_irq(&pool->lock);
- 	goto woke_up;
- }
- 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index d8aa206..fba94a5 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1437,8 +1437,7 @@ static ssize_t snd_ctl_read(struct file *file, char __user *buffer,
- 			init_waitqueue_entry(&wait, current);
- 			add_wait_queue(&ctl->change_sleep, &wait);
- 			set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock_irq(&ctl->read_lock);
--			schedule();
-+			schedule_spin_unlock_irq(&ctl->read_lock);
- 			remove_wait_queue(&ctl->change_sleep, &wait);
- 			if (ctl->card->shutdown)
- 				return -ENODEV;
-diff --git a/sound/core/rawmidi.c b/sound/core/rawmidi.c
-index 7b596b5..6bd5d45 100644
---- a/sound/core/rawmidi.c
-+++ b/sound/core/rawmidi.c
-@@ -996,8 +996,7 @@ static ssize_t snd_rawmidi_read(struct file *file, char __user *buf, size_t coun
- 			init_waitqueue_entry(&wait, current);
- 			add_wait_queue(&runtime->sleep, &wait);
- 			set_current_state(TASK_INTERRUPTIBLE);
--			spin_unlock_irq(&runtime->lock);
--			schedule();
-+			schedule_spin_unlock_irq(&runtime->lock);
- 			remove_wait_queue(&runtime->sleep, &wait);
- 			if (rfile->rmidi->card->shutdown)
- 				return -ENODEV;
-diff --git a/sound/core/seq/seq_fifo.c b/sound/core/seq/seq_fifo.c
-index 0d75afa..520e2f4 100644
---- a/sound/core/seq/seq_fifo.c
-+++ b/sound/core/seq/seq_fifo.c
-@@ -191,8 +191,7 @@ int snd_seq_fifo_cell_out(struct snd_seq_fifo *f,
- 		}
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		add_wait_queue(&f->input_sleep, &wait);
--		spin_unlock_irq(&f->lock);
--		schedule();
-+		schedule_spin_unlock_irq(&f->lock);
- 		spin_lock_irq(&f->lock);
- 		remove_wait_queue(&f->input_sleep, &wait);
- 		if (signal_pending(current)) {
-diff --git a/sound/core/seq/seq_memory.c b/sound/core/seq/seq_memory.c
-index f478f77..3741f6e 100644
---- a/sound/core/seq/seq_memory.c
-+++ b/sound/core/seq/seq_memory.c
-@@ -244,8 +244,7 @@ static int snd_seq_cell_alloc(struct snd_seq_pool *pool,
- 
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		add_wait_queue(&pool->output_sleep, &wait);
--		spin_unlock_irq(&pool->lock);
--		schedule();
-+		schedule_spin_unlock_irq(&pool->lock);
- 		spin_lock_irq(&pool->lock);
- 		remove_wait_queue(&pool->output_sleep, &wait);
- 		/* interrupted? */
-diff --git a/sound/core/timer.c b/sound/core/timer.c
-index 6ddcf06..99cbc7e 100644
---- a/sound/core/timer.c
-+++ b/sound/core/timer.c
-@@ -1863,8 +1863,7 @@ static ssize_t snd_timer_user_read(struct file *file, char __user *buffer,
- 			init_waitqueue_entry(&wait, current);
- 			add_wait_queue(&tu->qchange_sleep, &wait);
- 
--			spin_unlock_irq(&tu->qlock);
--			schedule();
-+			schedule_spin_unlock_irq(&tu->qlock);
- 			spin_lock_irq(&tu->qlock);
- 
- 			remove_wait_queue(&tu->qchange_sleep, &wait);
+I am trying to resurrect this patch.  Basically, I have provided the 
+information to show that IBS is supposed to support per-process usage.  
+Would you mind taking a look at this?
+
+Thank you,
+
+Suravee
+
+On 1/16/2013 4:19 PM, Suravee Suthikulpanit wrote:
+> Hi,
+>
+> I am following up with this patch. Please let me know if you would like
+> me to provide any more data or verifications.
+>
+> Thank you,
+>
+> Suravee
+>
+> On Tue, 2012-12-18 at 16:54 -0600, Suravee Suthikulpanit wrote:
+>> Ingo, Robert
+>>
+>> I am including a set of output from "perf report" to help validating IBS in per-process mode.
+>> In this experiment I ran a couple test cases:
+>>
+>> case 1. perf record -e cycles       (baseline per-process mode w/ regular counter)
+>> case 2. perf record -a -e cycles:p  (baseline system-wide mode w/ IBS)
+>> case 3. perf record -e cycles:p     (the proposed per-process mode w/IBS)
+>>
+>> In all 3 test cases, the target application (classic) are showing about 27K samples.
+>> I am also including the IBS OP MSRs (0xc00110[33-3a]) snapshots on all 32 cores
+>> (using rdmsr tools) from case 2 and 3 above.
+>>
+>> ------------------------------------------------------------
+>> CASE1:
+>>
+>> # ========
+>> # captured on: Tue Dec 18 16:32:43 2012
+>> # hostname : sos-dev02
+>> # os release : 3.7.0-IBS+
+>> # perf version : 3.7.rc8.g805f38
+>> # arch : x86_64
+>> # nrcpus online : 32
+>> # nrcpus avail : 32
+>> # cpudesc : AMD Eng Sample, 1S228145TGG54_31/22/20_2/16
+>> # cpuid : AuthenticAMD,21,2,0
+>> # total memory : 32863836 kB
+>> # cmdline : /sandbox/kernels/suravee/tools/perf/perf record -e cycles taskset -c 31 src/classic
+>> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, id = { 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229 }
+>> # HEADER_CPU_TOPOLOGY info available, use -I to display
+>> # HEADER_NUMA_TOPOLOGY info available, use -I to display
+>> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, ibs_fetch = 6, ibs_op = 7, breakpoint = 5
+>> # ========
+>> #
+>> # Samples: 27K of event 'cycles'
+>> # Event count (approx.): 20938245323
+>> #
+>> # Overhead      Samples  Command      Shared Object                                   Symbol
+>> # ........  ...........  .......  .................  .......................................
+>> #
+>>      99.16%        26927  classic  classic            [.] multiply_matrices()      <--- TARGET APP
+>>       0.32%           78  classic  libc-2.15.so       [.] random
+>>       0.10%           23  classic  libc-2.15.so       [.] random_r
+>>       0.07%           16  classic  classic            [.] initialize_matrices()
+>>       0.04%           10  classic  [kernel.kallsyms]  [k] ttwu_do_wakeup
+>>       0.03%            9  classic  [kernel.kallsyms]  [k] clear_page_c
+>>       0.02%           11  classic  [kernel.kallsyms]  [k] native_write_msr_safe
+>>       0.02%            5  classic  libc-2.15.so       [.] rand
+>>       0.02%            2  classic  ld-2.15.so         [.] 0x000000000000a456
+>>
+>> ------------------------------------------------------------
+>> CASE 2:
+>>
+>> # ========
+>> # captured on: Tue Dec 18 16:11:35 2012
+>> # hostname : sos-dev02
+>> # os release : 3.7.0-IBS+
+>> # perf version : 3.7.rc8.g805f38
+>> # arch : x86_64
+>> # nrcpus online : 32
+>> # nrcpus avail : 32
+>> # cpudesc : AMD Eng Sample, 1S228145TGG54_31/22/20_2/16
+>> # cpuid : AuthenticAMD,21,2,0
+>> # total memory : 32863836 kB
+>> # cmdline : /sandbox/kernels/suravee/tools/perf/perf record -a -e cycles:p taskset -c 31 src/classic
+>> # event : name = cycles:p, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 0, precise_ip = 1, id = { 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98 }
+>> # HEADER_CPU_TOPOLOGY info available, use -I to display
+>> # HEADER_NUMA_TOPOLOGY info available, use -I to display
+>> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, ibs_fetch = 6, ibs_op = 7, breakpoint = 5
+>> # ========
+>> #
+>> # Samples: 189K of event 'cycles:p'
+>> # Event count (approx.): 40504131338
+>> #
+>> # Overhead      Samples          Command                     Shared Object                                       Symbol
+>> # ........  ...........  ...............  ................................  ...........................................
+>> #
+>>      51.07%        26959          classic  classic                           [.] multiply_matrices()       <------ TARGET APP
+>>      35.39%       131620          swapper  [kernel.kallsyms]                 [k] acpi_idle_do_entry
+>>       2.10%         4673          swapper  [kernel.kallsyms]                 [k] native_safe_halt
+>>       0.71%         1303            rdmsr  ld-2.15.so                        [.] 0x0000000000002a44
+>>       0.33%          639            rdmsr  [kernel.kallsyms]                 [k] irq_return
+>>       0.26%          499            rdmsr  libc-2.15.so                      [.] 0x0000000000131d80
+>>       0.25%          440            rdmsr  [kernel.kallsyms]                 [k] generic_exec_single
+>>       0.25%          470            rdmsr  [kernel.kallsyms]                 [k] __do_fault
+>>       0.24%          478            rdmsr  [kernel.kallsyms]                 [k] unmap_single_vma
+>>
+>> ------------------------------------------------------------
+>> CASE 3:
+>>
+>> # ========
+>> # captured on: Tue Dec 18 16:13:53 2012
+>> # hostname : sos-dev02
+>> # os release : 3.7.0-IBS+
+>> # perf version : 3.7.rc8.g805f38
+>> # arch : x86_64
+>> # nrcpus online : 32
+>> # nrcpus avail : 32
+>> # cpudesc : AMD Eng Sample, 1S228145TGG54_31/22/20_2/16
+>> # cpuid : AuthenticAMD,21,2,0
+>> # total memory : 32863836 kB
+>> # cmdline : /sandbox/kernels/suravee/tools/perf/perf record -e cycles:p taskset -c 31 src/classic
+>> # event : name = cycles:p, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 0, precise_ip = 1, id = { 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131 }
+>> # HEADER_CPU_TOPOLOGY info available, use -I to display
+>> # HEADER_NUMA_TOPOLOGY info available, use -I to display
+>> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, ibs_fetch = 6, ibs_op = 7, breakpoint = 5
+>> # ========
+>> #
+>> # Samples: 27K of event 'cycles:p'
+>> # Event count (approx.): 20851884446
+>> #
+>> # Overhead      Samples  Command      Shared Object                          Symbol
+>> # ........  ...........  .......  .................  ..............................
+>> #
+>>      99.37%        27020  classic  classic            [.] multiply_matrices()      <--- TARGET APP
+>>       0.22%           58  classic  libc-2.15.so       [.] random_r
+>>       0.13%           32  classic  classic            [.] initialize_matrices()
+>>       0.10%           26  classic  libc-2.15.so       [.] random
+>>       0.03%            8  classic  libc-2.15.so       [.] rand
+>>       0.03%            7  classic  [kernel.kallsyms]  [k] clear_page_c
+>>       0.01%            2  classic  ld-2.15.so         [.] 0x000000000000a423
+>>       0.01%            2  classic  [kernel.kallsyms]  [k] retint_swapgs
+>>       0.01%            2  classic  [kernel.kallsyms]  [k] ttwu_do_wakeup
+>>
+>> ------------------------------------------------------------
+>> IBS MSR VALUES FROM CASE 2:
+>>
+>> core : 0xc0011033 0xc0011034 0xc0011035 0xc0011036 0xc0011037 0xc0011038 0xc0011039 0xc001103a
+>>   0 : 0000002300040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000040002 0000000000000000 000000fdfd300000 0000000000000100
+>>   1 : 0000006200040000 ffffffff813d8c6d 00000058000b0002 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>>   2 : 0000006000040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000040002 0000000000000000 000000fdfd300000 0000000000000100
+>>   3 : 0000005000040000 ffffffff813d8c6d 00000040000b0002 0000000000000000 0000000000040001 0000000000000400 000000fdfd300400 0000000000000100
+>>   4 : 0000005700040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>>   5 : 0000000000000000 ffffffff81043ea8 00000000000a0001 0000000000000000 0000000000000000 0000000000000514 000000fdfd300514 0000000000000100
+>>   6 : 0000004200040000 ffffffff813d8c74 00000000000b0006 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>>   7 : 0000000000000000 ffffffff81043ea8 00000000000a0000 0000000000000000 0000000000000000 0000000000000514 000000fdfd300514 0000000000000100
+>>   8 : 0000002300040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>>   9 : 0000004d00040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000040002 0000000000000400 000000fdfd300400 0000000000000100
+>> 10 : 00001fe500000000 ffffffff813d8c6d 00000058000b0002 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>> 11 : 0000000000000000 ffffffff81043ea8 00000000000a0001 0000000000000000 0000000000040001 0000000000000514 000000fdfd300514 0000000000000100
+>> 12 : 0000008100040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>> 13 : 0000006900040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000040002 0000000000000400 000000fdfd300400 0000000000000100
+>> 14 : 0000004900040000 ffffffff813d8c6d 00000040000b0002 0000000000000000 0000000000040001 0000000000000000 000000fdfd300000 0000000000000100
+>> 15 : 0000002300040000 ffffffff813d8c6d 00000040000b0002 0000000000000000 0000000000040001 0000000000000400 000000fdfd300400 0000000000000100
+>> 16 : 0000000f00040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>> 17 : 0000004b00040000 ffffffff813d8c6d 00000058000b0002 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 18 : 0000003d00040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 00000000000002b8 000000fdfd3002b8 0000000000000100
+>> 19 : 0000004400040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 20 : 0000001800040000 ffffffff813d8d27 0000000000060001 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>> 21 : 0000002900040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 22 : 0000005900040000 ffffffff813d8c6d 00000040000b0002 0000000000000000 0000000000040001 0000000000000000 000000fdfd300000 0000000000000100
+>> 23 : 0000001500040000 ffffffff813d8c6d 00000058000b0002 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 24 : 0000006100040000 ffffffff8133e844 00000028001e000f 0000000000000000 0000000000000000 0000000000000000 000000fdfd300000 0000000000000100
+>> 25 : 0000005400040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 26 : 0000002900040000 ffffffff813d8c6d 00000040000b0002 0000000000000000 0000000000040001 0000000000000000 000000fdfd300000 0000000000000100
+>> 27 : 0000000e00040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000000000 0000000000000400 000000fdfd300400 0000000000000100
+>> 28 : 0000007e00040000 ffffffff813d8c6d 00000040000b0006 0000000000000000 0000000000040042 0000000000000000 000000fdfd300000 0000000000000100
+>> 29 : 0000000000000000 ffffffff81043ea8 00000000000a0001 0000000000000000 0000000000040001 0000000000000514 000000fdfd300514 0000000000000100
+>> 30 : 00003f4a00000000 ffffffff813d8c6d 00000040000b0006 0000000000000000 000000000004000a 0000000000000000 000000fdfd300000 0000000000000100
+>> 31 : 0001147800000000 ffffffff810b9400 00000000003c0001 0000000000000000 0000000000040009 00000000000005dc 000000fdfd3005dc 0000000000000100
+>>
+>> ------------------------------------------------------------
+>> IBS MSR VALUES FROM CASE 3:
+>>
+>> core : 0xc0011033 0xc0011034 0xc0011035 0xc0011036 0xc0011037 0xc0011038 0xc0011039 0xc001103a
+>>   0 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   1 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   2 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   3 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   4 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   5 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   6 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   7 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   8 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>>   9 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 10 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 11 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 12 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 13 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 14 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 15 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 16 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 17 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 18 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 19 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 20 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 21 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 22 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 23 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 24 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 25 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 26 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 27 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 28 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 29 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 30 : 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000100
+>> 31 : 00034d8900000000 ffffffff811370cc 0000000000120000 0000000000000000 0000000000000008 ffff88082592bc58 000000082592bc58 0000000000000100
+>>
+>>
+>> Suravee
+>>
+>>
+>> On Mon, 2012-12-17 at 10:44 +0100, Robert Richter wrote:
+>>> On 16.12.12 10:04:10, Ingo Molnar wrote:
+>>>> * suravee.suthikulpanit@amd.com <suravee.suthikulpanit@amd.com> wrote:
+>>>>
+>>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>>>>
+>>>>> Currently, the AMD IBS PMU initialize pmu.task_ctx_nr to
+>>>>> perf_invalid_context which only allows IBS to be running only
+>>>>> in system-wide mode (e.g. perf record -a). IBS hardware is
+>>>>> available in each core and should be per-context.  This patch
+>>>>> modifies the task_ctx_nr to use the perf_hw_context (default)
+>>>>> instead.
+>>>> I'm wondering how extensively was it tested/verified that it's
+>>>> safe to enable IBS in per context mode as well, and that the
+>>>> profiling results are precise and accurate?
+>>>  From the implementation's point of view this is very similar to hw
+>>> perf counters. I wouldn't expect any issues here. Since IBS can be
+>>> immediatly started/stopped and there is no caching, there won't be any
+>>> incomming sample that is not related to that context.
+>>>
+>>> The only potential problem I see could be a security risk in a way
+>>> that an IBS sample might expose data related to other contexts such as
+>>> cache information. This is similar to uncore/northbridge events so I
+>>> don't think this is an issue, but we might want to evaluate this.
+>>>
+>>>> We never used the IBS hardware in this fashion before, so some
+>>>> extra care is prudent - and traces of that extra care should be
+>>>> visible in the changelog as well.
+>>> Yeah, a comparison of numbers for IBS and hw counter (-e r076:p,r076
+>>> and -e r0C1:p,r0C1) in per-context mode would be useful here.
+>>>
+>>> -Robert
+>>>
+>>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+
+
