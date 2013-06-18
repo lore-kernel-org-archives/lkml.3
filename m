@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab3FRLoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56150 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab3FRLow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932406Ab3FRLow (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Jun 2013 07:44:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56126 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230Ab3FRLos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 07:44:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>,
+Cc: Ying Xue <ying.xue@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 57/93] libceph: add update_authorizer auth method
-Date: Tue, 18 Jun 2013 12:43:05 +0100
-Message-Id: <1371555821-12820-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 52/93] USB: ftdi_sio: Quiet sparse noise about using plain integer was NULL pointer
+Date: Tue, 18 Jun 2013 12:43:00 +0100
+Message-Id: <1371555821-12820-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -27,145 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 0bed9b5c523d577378b6f83eab5835fe30c27208 upstream.
+commit a816e3113b63753c330ca4751ea1d208e93e3015 upstream.
 
-Currently the messenger calls out to a get_authorizer con op, which will
-create a new authorizer if it doesn't yet have one.  In the meantime, when
-we rotate our service keys, the authorizer doesn't get updated.  Eventually
-it will be rejected by the server on a new connection attempt and get
-invalidated, and we will then rebuild a new authorizer, but this is not
-ideal.
+Pointers should not be compared to plain integers.
+Quiets the sparse warning:
+warning: Using plain integer as NULL pointer
 
-Instead, if we do have an authorizer, call a new update_authorizer op that
-will verify that the current authorizer is using the latest secret.  If it
-is not, we will build a new one that does.  This avoids the transient
-failure.
-
-This fixes one of the sorry sequence of events for bug
-
-	http://tracker.ceph.com/issues/4282
-
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ceph/mds_client.c      |  7 ++++++-
- include/linux/ceph/auth.h |  3 +++
- net/ceph/auth_x.c         | 23 +++++++++++++++++++++++
- net/ceph/auth_x.h         |  1 +
- net/ceph/osd_client.c     |  5 +++++
- 5 files changed, 38 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 7f1682d..38042cb 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -3414,7 +3414,12 @@ static struct ceph_auth_handshake *get_authorizer(struct ceph_connection *con,
- 	}
- 	if (!auth->authorizer && ac->ops && ac->ops->create_authorizer) {
- 		int ret = ac->ops->create_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
--							auth);
-+						     auth);
-+		if (ret)
-+			return ERR_PTR(ret);
-+	} else if (ac->ops && ac->ops_update_authorizer) {
-+		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_MDS,
-+						     auth);
- 		if (ret)
- 			return ERR_PTR(ret);
- 	}
-diff --git a/include/linux/ceph/auth.h b/include/linux/ceph/auth.h
-index d4080f3..73e973e 100644
---- a/include/linux/ceph/auth.h
-+++ b/include/linux/ceph/auth.h
-@@ -52,6 +52,9 @@ struct ceph_auth_client_ops {
- 	 */
- 	int (*create_authorizer)(struct ceph_auth_client *ac, int peer_type,
- 				 struct ceph_auth_handshake *auth);
-+	/* ensure that an existing authorizer is up to date */
-+	int (*update_authorizer)(struct ceph_auth_client *ac, int peer_type,
-+				 struct ceph_auth_handshake *auth);
- 	int (*verify_authorizer_reply)(struct ceph_auth_client *ac,
- 				       struct ceph_authorizer *a, size_t len);
- 	void (*destroy_authorizer)(struct ceph_auth_client *ac,
-diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
-index bd8758d..2d59815 100644
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -298,6 +298,7 @@ static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
- 			return -ENOMEM;
- 	}
- 	au->service = th->service;
-+	au->secret_id = th->secret_id;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 45e80a7..3dbec15 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2137,7 +2137,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
  
- 	msg_a = au->buf->vec.iov_base;
- 	msg_a->struct_v = 1;
-@@ -555,6 +556,27 @@ static int ceph_x_create_authorizer(
- 	return 0;
- }
+ 	cflag = termios->c_cflag;
  
-+static int ceph_x_update_authorizer(
-+	struct ceph_auth_client *ac, int peer_type,
-+	struct ceph_auth_handshake *auth)
-+{
-+	struct ceph_x_authorizer *au;
-+	struct ceph_x_ticket_handler *th;
-+	int ret;
-+
-+	th = get_ticket_handler(ac, peer_type);
-+	if (IS_ERR(th))
-+		return PTR_ERR(th);
-+
-+	au = (struct ceph_x_authorizer *)auth->authorizer;
-+	if (au->secret_id < th->secret_id) {
-+		dout("ceph_x_update_authorizer service %u secret %llu < %llu\n",
-+		     au->service, au->secret_id, th->secret_id);
-+		return ceph_x_build_authorizer(ac, th, au);
-+	}
-+	return 0;
-+}
-+
- static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
- 					  struct ceph_authorizer *a, size_t len)
- {
-@@ -641,6 +663,7 @@ static const struct ceph_auth_client_ops ceph_x_ops = {
- 	.build_request = ceph_x_build_request,
- 	.handle_reply = ceph_x_handle_reply,
- 	.create_authorizer = ceph_x_create_authorizer,
-+	.update_authorizer = ceph_x_update_authorizer,
- 	.verify_authorizer_reply = ceph_x_verify_authorizer_reply,
- 	.destroy_authorizer = ceph_x_destroy_authorizer,
- 	.invalidate_authorizer = ceph_x_invalidate_authorizer,
-diff --git a/net/ceph/auth_x.h b/net/ceph/auth_x.h
-index f459e93..c5a058d 100644
---- a/net/ceph/auth_x.h
-+++ b/net/ceph/auth_x.h
-@@ -29,6 +29,7 @@ struct ceph_x_authorizer {
- 	struct ceph_buffer *buf;
- 	unsigned int service;
- 	u64 nonce;
-+	u64 secret_id;
- 	char reply_buf[128];  /* big enough for encrypted blob */
- };
+-	if (old_termios == 0)
++	if (!old_termios)
+ 		goto no_skip;
  
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index 065cc38..d514d45 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -2160,6 +2160,11 @@ static struct ceph_auth_handshake *get_authorizer(struct ceph_connection *con,
- 							auth);
- 		if (ret)
- 			return ERR_PTR(ret);
-+	} else if (ac->ops && ac->ops->update_authorizer) {
-+		int ret = ac->ops->update_authorizer(ac, CEPH_ENTITY_TYPE_OSD,
-+						     auth);
-+		if (ret)
-+			return ERR_PTR(ret);
- 	}
- 	*proto = ac->protocol;
- 
+ 	if (old_termios->c_cflag == termios->c_cflag
 -- 
 1.8.1.2
 
