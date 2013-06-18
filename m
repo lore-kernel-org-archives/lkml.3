@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab3FRJQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:16:22 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:41689 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab3FRJQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:16:18 -0400
+	id S1755594Ab3FRJS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:18:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46977 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754001Ab3FRJS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:18:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
+   d="scan'208";a="318709436"
+Date: Tue, 18 Jun 2013 11:17:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lee.jones@linaro.org
+Subject: Re: [PATCH Resend 1/1] mfd: davinci_voicecodec: Convert to use
+ devm_* APIs
+Message-ID: <20130618091741.GH7161@zurbaran>
+References: <1371025182-31386-1-git-send-email-sachin.kamat@linaro.org>
+ <20130618084017.GA7161@zurbaran>
+ <CAK9yfHxUzMx13UXkfd1s5KNhKJ+MeKEQHU2rEMDDmOPpKvAFKg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51BF43F4.9000007@codeaurora.org>
-References: <1370373600-31921-1-git-send-email-sboyd@codeaurora.org>
-	<CACRpkdZ5x3q9tn3J5_mQj-nJ_wO3HWgX5DTMQdMzF3mUDrAieQ@mail.gmail.com>
-	<51BF43F4.9000007@codeaurora.org>
-Date: Tue, 18 Jun 2013 11:16:17 +0200
-Message-ID: <CACRpkdZ=VbMUBfHt-GruTzc5_7vF508XFAW50YZb4ouG1TrjZg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: msm-v1: Remove errant __devinit to fix compile
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK9yfHxUzMx13UXkfd1s5KNhKJ+MeKEQHU2rEMDDmOPpKvAFKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 7:14 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 06/16/13 22:54, Linus Walleij wrote:
->> On Tue, Jun 4, 2013 at 9:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>
->>> Commit 7bce696 (gpio: Make gpio-msm-v1 into a platform driver,
->>> 2013-03-04) was based on an older kernel where __devinit still
->>> existed. Remove the erroneous __devinit marking.
->>>
->>> Cc: David Brown <davidb@codeaurora.org>
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> Patch applied.
->
-> Thanks. It looks like David picked this up and sent it off to arm-soc
-> last week. Cc'ing Olof for awareness of a possible duplicate.
+On Tue, Jun 18, 2013 at 02:13:48PM +0530, Sachin Kamat wrote:
+> Hi Samuel,
+> 
+> On 18 June 2013 14:10, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> > Hi Sachin,
+> >
+> > On Wed, Jun 12, 2013 at 01:49:42PM +0530, Sachin Kamat wrote:
+> >> devm_* APIs are device managed and make code simpler.
+> >>
+> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> >> Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
+> >> ---
+> >> CC'd Lee Jones
+> >>
+> >> Patch is based on mfd-next tree and compile tested.
+> >> This driver gives following compilation error (not introduced by this patch):
+> >> drivers/mfd/davinci_voicecodec.c:86:3: error: implicit declaration
+> >> of function ‘io_v2p’ [-Werror=implicit-function-declaration]
+> >>    (dma_addr_t)(io_v2p(davinci_vc->base) + DAVINCI_VC_WFIFO);
+> >>
+> >> In order to test my changes I added the following to davinci_voicecodec.h file:
+> >> +#define IO_OFFSET      0xfd000000 /* Virtual IO = 0xfec00000 */
+> >> +#define io_v2p(va)     ((va) - IO_OFFSET)
+> >>
+> >> I am not sure if these changes are right fix for the above error.
+> > io_v2p is define in davinci's mach/hardware.h so I believe this is what
+> > you should include in davinci_voicecodec.h.
+> 
+> Thanks. That was only required for compile testing my patch.
+> Does the patch look good?
+Yes, but I'd appreciate if you could also fix the driver build failures
+as well.
 
-Did that get ack by some GPIO maintainer?
+Cheers,
+Samuel.
 
-This needs to go through the GPIO tree, but I
-guess GIT will survive if it ends up in two trees.
-
-Yours,
-Linus Walleij
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
