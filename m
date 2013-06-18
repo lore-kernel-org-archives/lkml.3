@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab3FRSOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 14:14:09 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:24350 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932812Ab3FRSOG convert rfc822-to-8bit (ORCPT
+	id S933632Ab3FRSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 14:16:25 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:37761 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253Ab3FRSQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 14:14:06 -0400
-X-AuditID: cbfec37d-b7f036d000004805-82-51c0a36c90dd
-From: Shuah Khan <shuah.kh@samsung.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>, "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: pm: System date and time set incorrectly after suspend/resume to
- disk
-Thread-topic: pm: System date and time set incorrectly after suspend/resume to
- disk
-Thread-index: Ac5rw3sM8UdraAXMS3+tGCDERgjo2A==
-Date: Tue, 18 Jun 2013 18:14:02 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6172A4C4@sisaex02sj>
-References: <B8EFE96D1287C24090BAD9D858E15E6172A070@sisaex02sj>
- <CANcMJZCuYmim8q5ZPg2ppwA8T0jXMmpGowikeca5EzaoeVxr-Q@mail.gmail.com>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t9hX92cxQcCDeacVrdYcvEqu8WZ37oW
-	l3fNYbP43HuE0aJ/YS+Txf7ODkaLrz8dHNg9ds66y+6xZ+JJNo871/aweTxa3MLoMX3eTyaP
-	z5vkAtiiuGxSUnMyy1KL9O0SuDImLr3CXLBFuOL06ucsDYwn+LsYOTkkBEwk3m6czwphi0lc
-	uLeerYuRi0NIYBmjxK/uXnYIp5dJ4kznEhYIZz6jxObtTWAtbALqEp9f72AHsUUENCQWLrnK
-	BFLELHCdSWLJ8iMsIAlhgRCJ++fPskIUhUr8fX+aCcLWkzh7dDGYzSKgKrHyxhWwQbwC9hLN
-	u/+C2UICbYwSm/apg9iMQPd9P7UGrJ5ZQFyiufUmC8TdAhJL9pxnhrBFJV4+/ge0iwPIVpTY
-	vtoKolxLYv3O41Ct2hJP3l1ghVglKPFj8j2WCYxis5BMnYWkZRaSlllIWhYwsqxiFCstTi4o
-	TkpPrTDRK07MLS7NS9dLzs/dxAiJzNodjPe/2hxiFOBgVOLhTRDbHyjEmlhWXJl7iFGCg1lJ
-	hPdP84FAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyXOH14FKdKFFW/b3nClDX1WJH9ZtE1PC+2
-	rpVv9Ok+dtK7OPA7z7Vnwkz+mhU7JM7fPub47PmkgOySXztOfNwe+DHL6IeJxW+NnI0TF3Ct
-	WmPzbkLXzHsxh9bfza60/Vyqkaidu3ajf3/qWU7fHR4Lu9a+SxaJqI5a+iK5pUrwi9rDHx6F
-	OlOUWIozEg21mIuKEwEqzesoqgIAAA==
+	Tue, 18 Jun 2013 14:16:23 -0400
+Date: Tue, 18 Jun 2013 11:16:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/2][UPDATED] cgroup: make serial_nr_cursor available
+ throughout cgroup.c
+Message-ID: <20130618181618.GA1596@htj.dyndns.org>
+References: <51C03AF2.7050702@huawei.com>
+ <51C03C41.2040704@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C03C41.2040704@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 08:14 PM, John Stultz wrote:
-> On Mon, Jun 17, 2013 at 6:30 PM, Shuah Khan <shuah.kh@samsung.com> wrote:
->> I am seeing a problem on my system after a suspend to disk in reboot or
->> shutdown mode. When pm_trace is 0 (which is the default), I can't
->> reproduce the problem easily. I have to run a few more suspend tests
->> before I see the problem. When pm_trace is disabled, the problem showed
->> up when I ran suspend in platform mode in a row. However when pm_ptrace
->> is enabled, problem happens on the very first spend to disk in reboot mode.
->>
->> Steps to run into the issue:
->>
->> echo 1 > pm_print_times
->> echo 1 > pm_trace
->> echo reboot > disk
->> echo disk > state
->>
->> or
->>
->> echo 1 > pm_print_times
->> echo 1 > pm_trace
->> echo shutdown > disk
->> echo disk > state
->>
->> When system comes back up, system time set to incorrect time.
->
-> So I this is by design. Please see Documentation/power/s2ram.txt for details:
->
-> "pm_trace uses the system's Real Time Clock (RTC) to save the magic number.
-> Reason for this is that the RTC is the only reliably available piece of
-> hardware during resume operations where a value can be set that will
-> survive a reboot.
->
-> Consequence is that after a resume (even if it is successful) your system
-> clock will have a value corresponding to the magic number instead of the
-> correct date/time! It is therefore advisable to use a program like ntp-date
-> or rdate to reset the correct date/time from an external time source when
-> using this trace option."
->
-> thanks
-> -john
->
+>From 794611a1dfcb055d7d41ce133378dd8197d73e38 Mon Sep 17 00:00:00 2001
+From: Li Zefan <lizefan@huawei.com>
+Date: Tue, 18 Jun 2013 18:53:53 +0800
 
-Thanks. It definitely is working as designed and documented. :) Is there 
-a reason why pm_trace_store() couldn't/shouldn't  print a warning 
-message (pr_warn) along the lines of:
+The next patch will use it to determine if a cgroup is newly created
+while we're iterating the cgroup hierarchy.
 
-"CAUTION: this option will cause your machine's real-time clock to be 
-set to an invalid time after a resume. Remember to set correct time 
-after resume!!"
+tj: Rephrased the comment on top of cgroup_serial_nr_cursor.
 
-It will serve as a reminder to correct the time after resume. I could 
-send a patch in to add a warning message.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applied to cgroup/for-3.11 with minor update.
 
-thanks,
--- Shuah
+Thanks.
 
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+ kernel/cgroup.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1d4f471..e6571ca 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -198,6 +198,15 @@ static DEFINE_IDR(cgroup_hierarchy_idr);
+ 
+ static struct cgroup_name root_cgroup_name = { .name = "/" };
+ 
++/*
++ * Assign a monotonically increasing serial number to cgroups.  It
++ * guarantees cgroups with bigger numbers are newer than those with smaller
++ * numbers.  Also, as cgroups are always appended to the parent's
++ * ->children list, it guarantees that sibling cgroups are always sorted in
++ * the ascending serial number order on the list.
++ */
++static atomic64_t cgroup_serial_nr_cursor = ATOMIC64_INIT(0);
++
+ /* This flag indicates whether tasks in the fork and exit paths should
+  * check for fork/exit handlers to call. This avoids us having to do
+  * extra work in the fork/exit path if none of the subsystems need to
+@@ -4222,7 +4231,6 @@ static void offline_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 			     umode_t mode)
+ {
+-	static atomic64_t serial_nr_cursor = ATOMIC64_INIT(0);
+ 	struct cgroup *cgrp;
+ 	struct cgroup_name *name;
+ 	struct cgroupfs_root *root = parent->root;
+@@ -4309,13 +4317,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		goto err_free_all;
+ 	lockdep_assert_held(&dentry->d_inode->i_mutex);
+ 
+-	/*
+-	 * Assign a monotonically increasing serial number.  With the list
+-	 * appending below, it guarantees that sibling cgroups are always
+-	 * sorted in the ascending serial number order on the parent's
+-	 * ->children.
+-	 */
+-	cgrp->serial_nr = atomic64_inc_return(&serial_nr_cursor);
++	cgrp->serial_nr = atomic64_inc_return(&cgroup_serial_nr_cursor);
+ 
+ 	/* allocation complete, commit to creation */
+ 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+-- 
+1.8.2.1
+
