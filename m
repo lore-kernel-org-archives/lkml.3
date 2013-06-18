@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab3FRT1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 15:27:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30316 "EHLO mx1.redhat.com"
+	id S933299Ab3FRT1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 15:27:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932988Ab3FRT1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 15:27:21 -0400
-Date: Tue, 18 Jun 2013 21:22:11 +0200
+	id S932391Ab3FRT1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 15:27:32 -0400
+Date: Tue, 18 Jun 2013 21:21:47 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>
@@ -15,90 +15,41 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] tracing/perf: expand TRACE_EVENT(sched_stat_runtime)
-Message-ID: <20130618192211.GA19466@redhat.com>
+Subject: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
+Message-ID: <20130618192147.GA19443@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130618192147.GA19443@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To simplify the review of the next patch:
+Hello.
 
-1. We are going to reimplent __perf_task/counter and embedd them
-   into TP_ARGS(). expand TRACE_EVENT(sched_stat_runtime) into
-   DECLARE_EVENT_CLASS() + DEFINE_EVENT(), this way they can use
-   different TP_ARGS's.
+On top of "PATCH 0/3] tracing: more list_empty(perf_events) checks"
+series I sent yesterday.
 
-2. Change perf_trace_##call() macri to do perf_fetch_caller_regs()
-   right before perf_trace_buf_prepare(). This way it evaluates
-   "args" asap.
+Compile tested only, not for inclusion yet.
 
-   Note: after 87f44bbc perf_trace_buf_prepare() doesn't need
-   "struct pt_regs *regs", perhaps it makes sense to remove this
-   argument. And perhaps we can teach perf_trace_buf_submit()
-   to accept regs == NULL and do fetch_caller_regs(CALLER_ADDR1)
-   in this case.
+But I'll appreciate if you can take a look. I'll try to test this
+tomorrow somehow and let you know. Right now I am looking at asm code,
+looks correct...
 
-3. Cosmetic, but the typecast from "void*" buys nothing. It just
-   adds the noise, remove it.
+I also compiled the kernel with the additional patch below, everything
+compiles except sched/core.o as expected.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/trace/events/sched.h |    6 +++++-
- include/trace/ftrace.h       |    7 +++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+Oleg.
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index e5586ca..249c024 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -372,7 +372,7 @@ DEFINE_EVENT(sched_stat_template, sched_stat_blocked,
-  * Tracepoint for accounting runtime (time the task is executing
-  * on a CPU).
-  */
--TRACE_EVENT(sched_stat_runtime,
-+DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
-@@ -401,6 +401,10 @@ TRACE_EVENT(sched_stat_runtime,
- 			(unsigned long long)__entry->vruntime)
- );
- 
-+DEFINE_EVENT(sched_stat_runtime, sched_stat_runtime,
-+	     TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
-+	     TP_ARGS(tsk, runtime, vruntime));
-+
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-  * priority.
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index c162a57..aed594a 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
-@@ -659,15 +659,14 @@ perf_trace_##call(void *__data, proto)					\
- 	int __data_size;						\
- 	int rctx;							\
+@@ -664,6 +664,8 @@ perf_trace_##call(void *__data, proto)					\
  									\
--	perf_fetch_caller_regs(&__regs);				\
--									\
  	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
- 	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
- 			     sizeof(u64));				\
- 	__entry_size -= sizeof(u32);					\
  									\
--	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
--		__entry_size, event_call->event.type, &__regs, &rctx);	\
-+	perf_fetch_caller_regs(&__regs);				\
-+	entry = perf_trace_buf_prepare(__entry_size,			\
-+			event_call->event.type, &__regs, &rctx);	\
- 	if (!entry)							\
- 		return;							\
- 									\
--- 
-1.5.5.1
++	BUILD_BUG_ON(!(__builtin_constant_p(!__task) && !__task));	\
++									\
+ 	head = this_cpu_ptr(event_call->perf_events);			\
+ 	if (__builtin_constant_p(!__task) && !__task &&			\
+ 				hlist_empty(head))			\
 
