@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab3FRVZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 17:25:42 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41838 "EHLO hydra.sisk.pl"
+	id S933145Ab3FRV1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 17:27:52 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:38149 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756282Ab3FRVZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 17:25:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-Date: Tue, 18 Jun 2013 23:35:01 +0200
-Message-ID: <1880810.6jIKdDRiJm@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAN_LGv2Y6jebtNUQ1gJYfy8uG2pxtUjT1gqMPmL+6E7myELd3A@mail.gmail.com>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com> <CAN_LGv2Y6jebtNUQ1gJYfy8uG2pxtUjT1gqMPmL+6E7myELd3A@mail.gmail.com>
+	id S932799Ab3FRV1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 17:27:51 -0400
+Date: Tue, 18 Jun 2013 23:27:02 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org,
+        Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
+        "Emilio G. Cota" <cota@braap.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH V2 0/2] FMC: resend sample drivers
+Message-ID: <cover.1371589927.git.rubini@gnudd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 15, 2013 01:25:48 PM Alexander E. Patrakov wrote:
-> 2013/6/15 Alexander E. Patrakov <patrakov@gmail.com>:
-> > Note that the snd_hda_intel bug somehow didn't manifest itself today,
-> > probably because the TV that is connected to the HDMI output of the
-> > radeon card was off and because Xorg never really tried to use the
-> > card.
-> 
-> Well, it did. The sympthoms are the same as before: incomplete
-> undocking. The 16:00.1 device (HD audio controller on the radeon card)
-> has disappeared from lspci output, while 16:00.0 (the radeon card
-> itself) didn't, and the "Docked" LED didn't turn off. Fixed up by this
-> command:
-> 
-> fuser -k /dev/snd/* ; rmmod snd-hda-intel
-> 
-> thus confirming again that the extra references that acpiphp waits to
-> go away are from open fds.
+As suggested by Greg-KH [1] I'm resending the two example submodules
+(one carrier driver and one mezzanine driver) with a proper licence
+text for BSD. Among the various wordings, I chose the shortest one, as
+used by a number of drivers/net/wireless/ files.  Thank you David for
+checking the distribution policies.
 
-OK, let's try to untangle this a bit.
+I rebased to next-20130617 and rebuilt, with no conflicts. In any
+of the patches of the original series.
 
-If you applyt patches [1/4] and [4/4] from the $subject series only, what
-does remain unfixed?
+[1] https://lkml.org/lkml/2013/6/17/772:
+    "Just redo those two patches and send them as 'v2'")
 
-Rafael
+Alessandro Rubini (2):
+  FMC: add a software carrier driver
+  FMC: add a software mezzanine driver
 
+ Documentation/fmc/00-INDEX        |    6 +
+ Documentation/fmc/fmc-fakedev.txt |   36 ++++
+ Documentation/fmc/fmc-trivial.txt |   17 ++
+ drivers/fmc/Kconfig               |   18 ++
+ drivers/fmc/Makefile              |    3 +
+ drivers/fmc/fmc-fakedev.c         |  355 +++++++++++++++++++++++++++++++++++++
+ drivers/fmc/fmc-trivial.c         |  107 +++++++++++
+ 7 files changed, 542 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/fmc/fmc-fakedev.txt
+ create mode 100644 Documentation/fmc/fmc-trivial.txt
+ create mode 100644 drivers/fmc/fmc-fakedev.c
+ create mode 100644 drivers/fmc/fmc-trivial.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.7.2
