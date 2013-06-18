@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab3FRQhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:37:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49296 "EHLO
+	id S933010Ab3FRQOi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:14:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49253 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab3FRQOl (ORCPT
+	with ESMTP id S932886Ab3FRQOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:14:41 -0400
+	Tue, 18 Jun 2013 12:14:36 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/26] drivers/rtc/rtc-twl.c: fix missing device_init_wakeup() when booted with device tree
-Date: Tue, 18 Jun 2013 09:14:45 -0700
-Message-Id: <20130618161232.309241489@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 08/26] Bluetooth: Fix mgmt handling of power on failures
+Date: Tue, 18 Jun 2013 09:14:48 -0700
+Message-Id: <20130618161232.913051444@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161231.154881788@linuxfoundation.org>
 References: <20130618161231.154881788@linuxfoundation.org>
@@ -32,43 +31,98 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 24b8256a1fb28d357bc6fa09184ba29b4255ba5c upstream.
+commit 96570ffcca0b872dc8626e97569d2697f374d868 upstream.
 
-When booted in legacy mode device_init_wakeup() gets called by
-drivers/mfd/twl-core.c when the children are initialized.  However, when
-booted using device tree, the children are created with
-of_platform_populate() instead add_children().
+If hci_dev_open fails we need to ensure that the corresponding
+mgmt_set_powered command gets an appropriate response. This patch fixes
+the missing response by adding a new mgmt_set_powered_failed function
+that's used to indicate a power on failure to mgmt. Since a situation
+with the device being rfkilled may require special handling in user
+space the patch uses a new dedicated mgmt status code for this.
 
-This means that the RTC driver will not have device_init_wakeup() set,
-and we need to call it from the driver probe like RTC drivers typically
-do.
-
-Without this we cannot test PM wake-up events on omaps for cases where
-there may not be any physical wake-up event.
-
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-twl.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/bluetooth/hci_core.h |    1 +
+ include/net/bluetooth/mgmt.h     |    1 +
+ net/bluetooth/hci_core.c         |    6 +++++-
+ net/bluetooth/mgmt.c             |   21 +++++++++++++++++++++
+ 4 files changed, 28 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -523,6 +523,7 @@ static int __devinit twl_rtc_probe(struc
- 	}
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -976,6 +976,7 @@ void hci_sock_dev_event(struct hci_dev *
+ int mgmt_control(struct sock *sk, struct msghdr *msg, size_t len);
+ int mgmt_index_added(struct hci_dev *hdev);
+ int mgmt_index_removed(struct hci_dev *hdev);
++int mgmt_set_powered_failed(struct hci_dev *hdev, int err);
+ int mgmt_powered(struct hci_dev *hdev, u8 powered);
+ int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable);
+ int mgmt_connectable(struct hci_dev *hdev, u8 connectable);
+--- a/include/net/bluetooth/mgmt.h
++++ b/include/net/bluetooth/mgmt.h
+@@ -42,6 +42,7 @@
+ #define MGMT_STATUS_NOT_POWERED		0x0f
+ #define MGMT_STATUS_CANCELLED		0x10
+ #define MGMT_STATUS_INVALID_INDEX	0x11
++#define MGMT_STATUS_RFKILLED		0x12
  
- 	platform_set_drvdata(pdev, rtc);
-+	device_init_wakeup(&pdev->dev, 1);
- 	return 0;
+ struct mgmt_hdr {
+ 	__le16	opcode;
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1120,11 +1120,15 @@ EXPORT_SYMBOL(hci_free_dev);
+ static void hci_power_on(struct work_struct *work)
+ {
+ 	struct hci_dev *hdev = container_of(work, struct hci_dev, power_on);
++	int err;
  
- out2:
+ 	BT_DBG("%s", hdev->name);
+ 
+-	if (hci_dev_open(hdev->id) < 0)
++	err = hci_dev_open(hdev->id);
++	if (err < 0) {
++		mgmt_set_powered_failed(hdev, err);
+ 		return;
++	}
+ 
+ 	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
+ 		schedule_delayed_work(&hdev->power_off,
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2833,6 +2833,27 @@ int mgmt_powered(struct hci_dev *hdev, u
+ 	return err;
+ }
+ 
++int mgmt_set_powered_failed(struct hci_dev *hdev, int err)
++{
++	struct pending_cmd *cmd;
++	u8 status;
++
++	cmd = mgmt_pending_find(MGMT_OP_SET_POWERED, hdev);
++	if (!cmd)
++		return -ENOENT;
++
++	if (err == -ERFKILL)
++		status = MGMT_STATUS_RFKILLED;
++	else
++		status = MGMT_STATUS_FAILED;
++
++	err = cmd_status(cmd->sk, hdev->id, MGMT_OP_SET_POWERED, status);
++
++	mgmt_pending_remove(cmd);
++
++	return err;
++}
++
+ int mgmt_discoverable(struct hci_dev *hdev, u8 discoverable)
+ {
+ 	struct cmd_lookup match = { NULL, hdev };
 
 
