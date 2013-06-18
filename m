@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab3FRQRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 12:17:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49387 "EHLO
+	id S933505Ab3FRQaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 12:30:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933150Ab3FRQRl (ORCPT
+	with ESMTP id S933055Ab3FRQRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 12:17:41 -0400
+	Tue, 18 Jun 2013 12:17:46 -0400
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Schutt <jaschut@sandia.gov>, Alex Elder <elder@inktank.com>
-Subject: [ 06/48] ceph: ceph_pagelist_append might sleep while atomic
-Date: Tue, 18 Jun 2013 09:17:32 -0700
-Message-Id: <20130618161726.819506958@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 13/48] s390/pci: Implement IRQ functions if !PCI
+Date: Tue, 18 Jun 2013 09:17:39 -0700
+Message-Id: <20130618161727.767561192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130618161725.912524266@linuxfoundation.org>
 References: <20130618161725.912524266@linuxfoundation.org>
@@ -28,272 +30,143 @@ From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jim Schutt <jaschut@sandia.gov>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 39be95e9c8c0b5668c9f8806ffe29bf9f4bc0f40 upstream.
+commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
 
-Ceph's encode_caps_cb() worked hard to not call __page_cache_alloc()
-while holding a lock, but it's spoiled because ceph_pagelist_addpage()
-always calls kmap(), which might sleep.  Here's the result:
+All architectures must implement IRQ functions.  Since various
+dependencies on !S390 were removed, there are various drivers that can
+be selected but will fail to link.  Provide a dummy implementation of
+these functions for the !PCI case.
 
-[13439.295457] ceph: mds0 reconnect start
-[13439.300572] BUG: sleeping function called from invalid context at include/linux/highmem.h:58
-[13439.309243] in_atomic(): 1, irqs_disabled(): 0, pid: 12059, name: kworker/1:1
-    . . .
-[13439.376225] Call Trace:
-[13439.378757]  [<ffffffff81076f4c>] __might_sleep+0xfc/0x110
-[13439.384353]  [<ffffffffa03f4ce0>] ceph_pagelist_append+0x120/0x1b0 [libceph]
-[13439.391491]  [<ffffffffa0448fe9>] ceph_encode_locks+0x89/0x190 [ceph]
-[13439.398035]  [<ffffffff814ee849>] ? _raw_spin_lock+0x49/0x50
-[13439.403775]  [<ffffffff811cadf5>] ? lock_flocks+0x15/0x20
-[13439.409277]  [<ffffffffa045e2af>] encode_caps_cb+0x41f/0x4a0 [ceph]
-[13439.415622]  [<ffffffff81196748>] ? igrab+0x28/0x70
-[13439.420610]  [<ffffffffa045e9f8>] ? iterate_session_caps+0xe8/0x250 [ceph]
-[13439.427584]  [<ffffffffa045ea25>] iterate_session_caps+0x115/0x250 [ceph]
-[13439.434499]  [<ffffffffa045de90>] ? set_request_path_attr+0x2d0/0x2d0 [ceph]
-[13439.441646]  [<ffffffffa0462888>] send_mds_reconnect+0x238/0x450 [ceph]
-[13439.448363]  [<ffffffffa0464542>] ? ceph_mdsmap_decode+0x5e2/0x770 [ceph]
-[13439.455250]  [<ffffffffa0462e42>] check_new_map+0x352/0x500 [ceph]
-[13439.461534]  [<ffffffffa04631ad>] ceph_mdsc_handle_map+0x1bd/0x260 [ceph]
-[13439.468432]  [<ffffffff814ebc7e>] ? mutex_unlock+0xe/0x10
-[13439.473934]  [<ffffffffa043c612>] extra_mon_dispatch+0x22/0x30 [ceph]
-[13439.480464]  [<ffffffffa03f6c2c>] dispatch+0xbc/0x110 [libceph]
-[13439.486492]  [<ffffffffa03eec3d>] process_message+0x1ad/0x1d0 [libceph]
-[13439.493190]  [<ffffffffa03f1498>] ? read_partial_message+0x3e8/0x520 [libceph]
-    . . .
-[13439.587132] ceph: mds0 reconnect success
-[13490.720032] ceph: mds0 caps stale
-[13501.235257] ceph: mds0 recovery completed
-[13501.300419] ceph: mds0 caps renewed
-
-Fix it up by encoding locks into a buffer first, and when the number
-of encoded locks is stable, copy that into a ceph_pagelist.
-
-[elder@inktank.com: abbreviated the stack info a bit.]
-
-Signed-off-by: Jim Schutt <jaschut@sandia.gov>
-Reviewed-by: Alex Elder <elder@inktank.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/locks.c      |   76 +++++++++++++++++++++++++++++++--------------------
- fs/ceph/mds_client.c |   63 ++++++++++++++++++++++--------------------
- fs/ceph/super.h      |    9 ++++--
- 3 files changed, 88 insertions(+), 60 deletions(-)
+ arch/s390/kernel/irq.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++++
+ arch/s390/pci/pci.c    |   33 -------------------------
+ 2 files changed, 64 insertions(+), 33 deletions(-)
 
---- a/fs/ceph/locks.c
-+++ b/fs/ceph/locks.c
-@@ -191,29 +191,23 @@ void ceph_count_locks(struct inode *inod
+--- a/arch/s390/kernel/irq.c
++++ b/arch/s390/kernel/irq.c
+@@ -313,3 +313,67 @@ void measurement_alert_subclass_unregist
+ 	spin_unlock(&ma_subclass_lock);
  }
- 
- /**
-- * Encode the flock and fcntl locks for the given inode into the pagelist.
-- * Format is: #fcntl locks, sequential fcntl locks, #flock locks,
-- * sequential flock locks.
-- * Must be called with lock_flocks() already held.
-- * If we encounter more of a specific lock type than expected,
-- * we return the value 1.
-+ * Encode the flock and fcntl locks for the given inode into the ceph_filelock
-+ * array. Must be called with lock_flocks() already held.
-+ * If we encounter more of a specific lock type than expected, return -ENOSPC.
-  */
--int ceph_encode_locks(struct inode *inode, struct ceph_pagelist *pagelist,
--		      int num_fcntl_locks, int num_flock_locks)
-+int ceph_encode_locks_to_buffer(struct inode *inode,
-+				struct ceph_filelock *flocks,
-+				int num_fcntl_locks, int num_flock_locks)
- {
- 	struct file_lock *lock;
--	struct ceph_filelock cephlock;
- 	int err = 0;
- 	int seen_fcntl = 0;
- 	int seen_flock = 0;
--	__le32 nlocks;
-+	int l = 0;
- 
- 	dout("encoding %d flock and %d fcntl locks", num_flock_locks,
- 	     num_fcntl_locks);
--	nlocks = cpu_to_le32(num_fcntl_locks);
--	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
--	if (err)
--		goto fail;
+ EXPORT_SYMBOL(measurement_alert_subclass_unregister);
 +
- 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
- 		if (lock->fl_flags & FL_POSIX) {
- 			++seen_fcntl;
-@@ -221,20 +215,12 @@ int ceph_encode_locks(struct inode *inod
- 				err = -ENOSPC;
- 				goto fail;
- 			}
--			err = lock_to_ceph_filelock(lock, &cephlock);
-+			err = lock_to_ceph_filelock(lock, &flocks[l]);
- 			if (err)
- 				goto fail;
--			err = ceph_pagelist_append(pagelist, &cephlock,
--					   sizeof(struct ceph_filelock));
-+			++l;
- 		}
--		if (err)
--			goto fail;
- 	}
--
--	nlocks = cpu_to_le32(num_flock_locks);
--	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
--	if (err)
--		goto fail;
- 	for (lock = inode->i_flock; lock != NULL; lock = lock->fl_next) {
- 		if (lock->fl_flags & FL_FLOCK) {
- 			++seen_flock;
-@@ -242,19 +228,51 @@ int ceph_encode_locks(struct inode *inod
- 				err = -ENOSPC;
- 				goto fail;
- 			}
--			err = lock_to_ceph_filelock(lock, &cephlock);
-+			err = lock_to_ceph_filelock(lock, &flocks[l]);
- 			if (err)
- 				goto fail;
--			err = ceph_pagelist_append(pagelist, &cephlock,
--					   sizeof(struct ceph_filelock));
-+			++l;
- 		}
--		if (err)
--			goto fail;
- 	}
- fail:
- 	return err;
- }
- 
-+/**
-+ * Copy the encoded flock and fcntl locks into the pagelist.
-+ * Format is: #fcntl locks, sequential fcntl locks, #flock locks,
-+ * sequential flock locks.
-+ * Returns zero on success.
-+ */
-+int ceph_locks_to_pagelist(struct ceph_filelock *flocks,
-+			   struct ceph_pagelist *pagelist,
-+			   int num_fcntl_locks, int num_flock_locks)
++void synchronize_irq(unsigned int irq)
 +{
-+	int err = 0;
-+	__le32 nlocks;
-+
-+	nlocks = cpu_to_le32(num_fcntl_locks);
-+	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
-+	if (err)
-+		goto out_fail;
-+
-+	err = ceph_pagelist_append(pagelist, flocks,
-+				   num_fcntl_locks * sizeof(*flocks));
-+	if (err)
-+		goto out_fail;
-+
-+	nlocks = cpu_to_le32(num_flock_locks);
-+	err = ceph_pagelist_append(pagelist, &nlocks, sizeof(nlocks));
-+	if (err)
-+		goto out_fail;
-+
-+	err = ceph_pagelist_append(pagelist,
-+				   &flocks[num_fcntl_locks],
-+				   num_flock_locks * sizeof(*flocks));
-+out_fail:
-+	return err;
++	/*
++	 * Not needed, the handler is protected by a lock and IRQs that occur
++	 * after the handler is deleted are just NOPs.
++	 */
 +}
++EXPORT_SYMBOL_GPL(synchronize_irq);
 +
- /*
-  * Given a pointer to a lock, convert it to a ceph filelock
-  */
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -2474,39 +2474,44 @@ static int encode_caps_cb(struct inode *
++#ifndef CONFIG_PCI
++
++/* Only PCI devices have dynamically-defined IRQ handlers */
++
++int request_irq(unsigned int irq, irq_handler_t handler,
++		unsigned long irqflags, const char *devname, void *dev_id)
++{
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(request_irq);
++
++void free_irq(unsigned int irq, void *dev_id)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(free_irq);
++
++void enable_irq(unsigned int irq)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(enable_irq);
++
++void disable_irq(unsigned int irq)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(disable_irq);
++
++#endif /* !CONFIG_PCI */
++
++void disable_irq_nosync(unsigned int irq)
++{
++	disable_irq(irq);
++}
++EXPORT_SYMBOL_GPL(disable_irq_nosync);
++
++unsigned long probe_irq_on(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(probe_irq_on);
++
++int probe_irq_off(unsigned long val)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(probe_irq_off);
++
++unsigned int probe_irq_mask(unsigned long val)
++{
++	return val;
++}
++EXPORT_SYMBOL_GPL(probe_irq_mask);
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -306,15 +306,6 @@ static int zpci_cfg_store(struct zpci_de
+ 	return rc;
+ }
  
- 	if (recon_state->flock) {
- 		int num_fcntl_locks, num_flock_locks;
--		struct ceph_pagelist_cursor trunc_point;
-+		struct ceph_filelock *flocks;
+-void synchronize_irq(unsigned int irq)
+-{
+-	/*
+-	 * Not needed, the handler is protected by a lock and IRQs that occur
+-	 * after the handler is deleted are just NOPs.
+-	 */
+-}
+-EXPORT_SYMBOL_GPL(synchronize_irq);
+-
+ void enable_irq(unsigned int irq)
+ {
+ 	struct msi_desc *msi = irq_get_msi_desc(irq);
+@@ -331,30 +322,6 @@ void disable_irq(unsigned int irq)
+ }
+ EXPORT_SYMBOL_GPL(disable_irq);
  
--		ceph_pagelist_set_cursor(pagelist, &trunc_point);
--		do {
--			lock_flocks();
--			ceph_count_locks(inode, &num_fcntl_locks,
--					 &num_flock_locks);
--			rec.v2.flock_len = cpu_to_le32(2*sizeof(u32) +
--					    (num_fcntl_locks+num_flock_locks) *
--					    sizeof(struct ceph_filelock));
--			unlock_flocks();
+-void disable_irq_nosync(unsigned int irq)
+-{
+-	disable_irq(irq);
+-}
+-EXPORT_SYMBOL_GPL(disable_irq_nosync);
 -
--			/* pre-alloc pagelist */
--			ceph_pagelist_truncate(pagelist, &trunc_point);
--			err = ceph_pagelist_append(pagelist, &rec, reclen);
--			if (!err)
--				err = ceph_pagelist_reserve(pagelist,
--							    rec.v2.flock_len);
+-unsigned long probe_irq_on(void)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_on);
 -
--			/* encode locks */
--			if (!err) {
--				lock_flocks();
--				err = ceph_encode_locks(inode,
--							pagelist,
--							num_fcntl_locks,
--							num_flock_locks);
--				unlock_flocks();
--			}
--		} while (err == -ENOSPC);
-+encode_again:
-+		lock_flocks();
-+		ceph_count_locks(inode, &num_fcntl_locks, &num_flock_locks);
-+		unlock_flocks();
-+		flocks = kmalloc((num_fcntl_locks+num_flock_locks) *
-+				 sizeof(struct ceph_filelock), GFP_NOFS);
-+		if (!flocks) {
-+			err = -ENOMEM;
-+			goto out_free;
-+		}
-+		lock_flocks();
-+		err = ceph_encode_locks_to_buffer(inode, flocks,
-+						  num_fcntl_locks,
-+						  num_flock_locks);
-+		unlock_flocks();
-+		if (err) {
-+			kfree(flocks);
-+			if (err == -ENOSPC)
-+				goto encode_again;
-+			goto out_free;
-+		}
-+		/*
-+		 * number of encoded locks is stable, so copy to pagelist
-+		 */
-+		rec.v2.flock_len = cpu_to_le32(2*sizeof(u32) +
-+				    (num_fcntl_locks+num_flock_locks) *
-+				    sizeof(struct ceph_filelock));
-+		err = ceph_pagelist_append(pagelist, &rec, reclen);
-+		if (!err)
-+			err = ceph_locks_to_pagelist(flocks, pagelist,
-+						     num_fcntl_locks,
-+						     num_flock_locks);
-+		kfree(flocks);
- 	} else {
- 		err = ceph_pagelist_append(pagelist, &rec, reclen);
- 	}
+-int probe_irq_off(unsigned long val)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_off);
 -
- out_free:
- 	kfree(path);
- out_dput:
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -841,8 +841,13 @@ extern const struct export_operations ce
- extern int ceph_lock(struct file *file, int cmd, struct file_lock *fl);
- extern int ceph_flock(struct file *file, int cmd, struct file_lock *fl);
- extern void ceph_count_locks(struct inode *inode, int *p_num, int *f_num);
--extern int ceph_encode_locks(struct inode *i, struct ceph_pagelist *p,
--			     int p_locks, int f_locks);
-+extern int ceph_encode_locks_to_buffer(struct inode *inode,
-+				       struct ceph_filelock *flocks,
-+				       int num_fcntl_locks,
-+				       int num_flock_locks);
-+extern int ceph_locks_to_pagelist(struct ceph_filelock *flocks,
-+				  struct ceph_pagelist *pagelist,
-+				  int num_fcntl_locks, int num_flock_locks);
- extern int lock_to_ceph_filelock(struct file_lock *fl, struct ceph_filelock *c);
- 
- /* debugfs.c */
+-unsigned int probe_irq_mask(unsigned long val)
+-{
+-	return val;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_mask);
+-
+ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ }
 
 
