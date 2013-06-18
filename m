@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3FRFoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 01:44:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65298 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab3FRFoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 01:44:19 -0400
-X-IronPort-AV: E=Sophos;i="4.87,886,1363104000"; 
-   d="scan'208";a="7585652"
-Message-ID: <51BFF464.809@cn.fujitsu.com>
-Date: Tue, 18 Jun 2013 13:47:16 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org>
-In-Reply-To: <20130618020357.GZ32663@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/18 13:42:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/18 13:42:14,
-	Serialize complete at 2013/06/18 13:42:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753965Ab3FRFp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 01:45:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42313 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3FRFp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 01:45:27 -0400
+Date: Tue, 18 Jun 2013 15:45:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>
+Subject: linux-next: manual merge of the irqdomain tree with the  tree
+Message-Id: <20130618154515.828365d615bbe6b93169e706@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Jun_2013_15_45_15_+1000_kyU8PQTMQm4tDb.5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi tj,
+--Signature=_Tue__18_Jun_2013_15_45_15_+1000_kyU8PQTMQm4tDb.5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 06/18/2013 10:03 AM, Tejun Heo wrote:
-......
->
-> So, can you please explain why you're doing the above?  What are you
-> trying to achieve in the end and why is this the best approach?  This
-> is all for memory hotplug, right?
+Hi Grant,
 
-Yes, this is all for memory hotplug.
+Today's linux-next merge of the irqdomain tree got a conflict in
+kernel/irq/irqdomain.c between commit c5cdc67a58a2 ("irqdomain: Remove
+temporary MIPS workaround code") from the mips tree and commit
+bd4641e31e90 ("irq: fix checkpatch error") from the irqdomain tree.
 
-[why]
-At early boot time (before parsing SRAT), memblock will allocate memory
-for kernel to use. But the memory could be hotpluggable memory because
-at such an early time, we don't know which memory is hotpluggable. This
-will cause hotpluggable memory un-hotpluggable. What we are trying to
-do is to prevent memblock from allocating hotpluggable memory.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-[approach]
-Parse SRAT earlier before memblock starts to work, because there is a
-bit in SRAT specifying which memory is hotpluggable.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'm not saying this is the best approach. I can also see that this
-patch-set touches a lot of boot code. But i think parsing SRAT earlier
-is reasonable because this is the only way for now to know which memory
-is hotpluggable from firmware.
+diff --cc kernel/irq/irqdomain.c
+index a341b3d,13f2654..0000000
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@@ -665,8 -475,20 +475,8 @@@ unsigned int irq_create_of_mapping(stru
+ =20
+  	domain =3D controller ? irq_find_host(controller) : irq_default_domain;
+  	if (!domain) {
+- 		pr_warning("no irq domain found for %s !\n",
+- 			   of_node_full_name(controller));
+ -#ifdef CONFIG_MIPS
+ -		/*
+ -		 * Workaround to avoid breaking interrupt controller drivers
+ -		 * that don't yet register an irq_domain.  This is temporary
+ -		 * code. ~~~gcl, Feb 24, 2012
+ -		 *
+ -		 * Scheduled for removal in Linux v3.6.  That should be enough
+ -		 * time.
+ -		 */
+ -		if (intsize > 0)
+ -			return intspec[0];
+ -#endif
++ 		pr_warn("no irq domain found for %s !\n",
++ 			of_node_full_name(controller));
+  		return 0;
+  	}
+ =20
 
->
-> I can understand the part where you're move NUMA discovery before
-> initializations which will get allocated permanent addresses in the
-> wrong nodes, but trying to do the same with memblock itself is making
-> the code extremely fragile.  It's nasty because there's nothing
-> apparent which seems to necessitate such ordering.  The ordering looks
-> rather arbitrary but changing the orders will subtly break memory
-> hotplug support, which is a really bad way to structure the code.
->
-> Can't you just move memblock arrays after NUMA init is complete?
-> That'd be a lot simpler and way more robust than the proposed changes,
-> no?
+--Signature=_Tue__18_Jun_2013_15_45_15_+1000_kyU8PQTMQm4tDb.5
+Content-Type: application/pgp-signature
 
-Sorry, I don't quite understand the approach you are suggesting. If we
-move memblock arrays, we need to update all the pointers pointing to
-the moved memory. How can we do this ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Thanks. :)
+iQIcBAEBCAAGBQJRv/PvAAoJEECxmPOUX5FERSEP/A9HFMnUvVaXPGPmf9hFHzv2
+b+H0cXxnWDjFlq/dXUZmnxv2hmL/oEx1ZmkHAr3by1X9FJ1OkaMVFgb9ecc+oC24
+Id3iGBTHjmCwsqob+4cRyeYJ/5pwLjxKhglHeKuZ8SDsRqLIIUc6ApZHSjJwHyDA
+/gQCZ0n11pq/RMi9s5LcetSDuK6BkCKGGaiJ1LR9NJ7LJ+EQ68gXxLgQeggx1xOJ
+kVSB4NxSo8G18fhbgVSrcN0wNHs9I8siBvgfIYdn5Qu20he9TLepd/N+XfwsU4kM
+NIR5+ag8sDVxYh4uS8aKVb5gmpmPtFE6kMI4Eqx+v3xmJ2xvXmm/mF4BMusWBNy+
+O6f0CwVUVG64CsjewF0dfA+OFOosgOiFMiJ9kOCr9aQ09utKyukDZGw+xXEaCf0N
++MosZYihyH8Yh6e9OZtH7ydceKlVMh4gJizG1ZNPkjFfjQQetqZA7BP1iulfi6aK
+y0mKRzVZFtVdlKDpbdsnM3WwYR+XKMDGXCtivAGEvoOCGeRS85nLHnK3ARhLSbjk
+6xcP7zpzNl515bkqXcZgI9IJ3nfIh6hVeYEMt3rAHSJS6ifQUV9WL2V/C9c8a+Gk
+S2SoR/2iUQxKuX6hFJDTGwnX4G2xsf3tXEgfPJHfjzR4Us7tYu1z5Rp36wZvTUhF
+TZol188Z9LEsAH2HGvS0
+=ujxc
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Jun_2013_15_45_15_+1000_kyU8PQTMQm4tDb.5--
