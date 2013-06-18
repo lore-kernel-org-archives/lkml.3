@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab3FRPSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 11:18:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45519 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932490Ab3FRPSu (ORCPT
+	id S932490Ab3FRPUC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 11:20:02 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47397 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567Ab3FRPUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 11:18:50 -0400
-Date: Tue, 18 Jun 2013 11:18:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Roger Quadros <rogerq@ti.com>, Chao Xie <chao.xie@marvell.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <xiechao.mail@gmail.com>
-Subject: Re: [PATCH] USB: initialize or shutdown PHY when add or remove host
- controller
-In-Reply-To: <20130618150050.GD10318@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1306181113390.1157-100000@iolanthe.rowland.org>
+	Tue, 18 Jun 2013 11:20:00 -0400
+Date: Tue, 18 Jun 2013 17:19:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: mingo@redhat.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Subject: Re: [PATCH 2/3] sched: don't call get_group() for covered cpus
+Message-ID: <20130618151954.GB16094@twins.programming.kicks-ass.net>
+References: <cover.1370948150.git.viresh.kumar@linaro.org>
+ <7a61e955abdcbb1dfa9fe493f11a5ec53a11ddd3.1370948150.git.viresh.kumar@linaro.org>
+ <20130618100306.GL3204@twins.programming.kicks-ass.net>
+ <CAKohpo=oAa=mdkZk9yq4W7v-hQpCAM00rTJTWOn-eCBreEqTdA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpo=oAa=mdkZk9yq4W7v-hQpCAM00rTJTWOn-eCBreEqTdA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jun 2013, Felipe Balbi wrote:
-
-> yeah, Roger brought up a big problem with OMAP's EHCI depending on the
-> mode so, at least for now, we should keep phy_get and, in case of EHCI
-> OMAP, phy_init in the glue :-(
+On Tue, Jun 18, 2013 at 03:45:15PM +0530, Viresh Kumar wrote:
+> On 18 June 2013 15:33, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Jun 11, 2013 at 04:32:44PM +0530, Viresh Kumar wrote:
+> >> In build_sched_groups() we don't need to call get_group() for cpus which are
+> >> already covered in previous iterations. So, call get_group() after checking if
+> >> cpu is covered or not.
+> >>
+> >
+> > Aside from not needing it; doing it would mark the group used and
+> > eventually leak it since we wouldn't connect it and not find it again to
+> > free it, right?
+> >
+> > So effectively this fixes a memory leak?
 > 
-> Roger has all the details, and they're also in the list archives, but
-> basically, depending on the mode, PHY *must* be initialized at a
-> particular point.
-
-Right.  Which means the core shouldn't be involved, since the OMAP PHY
-initialization has to be done at a non-standard time.  (Unless we 
-decide to add a flag for this special case...)
-
-> > Given that the glue module has to be responsible for getting the PHY,
-> > it should also be responsible for error checking.  So the code added to
-> > hcd.c doesn't need to apply an IS_ERR check; it can simply assume that
-> > if hcd->phy is NULL then either there is no software-controllable PHY
-> > or else the HCD doesn't want the core to manage it.
+> Exactly. To be precise: In cases where sg->cpumask contained more
+> than one cpu (For any topology level), this patch helps freeing sg's
+> memory for all cpus leaving the group leader.
 > 
-> makes sense to me, add the requirement to:
-> 
-> if (IS_ERR(hcd->phy))
-> 	hcd->phy = NULL;
+> May I update the logs again?
 
-Actually, in the IS_ERR case, most glue drivers just fail the probe.  
-But for any that want to continue on, we would have to add this
-requirement.
-
-Alan Stern
-
+Sure. Just send a new patch and I'll substitute.
