@@ -1,184 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3FRI4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:56:40 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:56385 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3FRI4e (ORCPT
+	id S1754973Ab3FRI5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:57:23 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:50110 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3FRI5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:56:34 -0400
+	Tue, 18 Jun 2013 04:57:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C01A97.5000903@linaro.org>
-References: <20130618071756.22598.51046.sendpatchset@w520>
-	<51C01A97.5000903@linaro.org>
-Date: Tue, 18 Jun 2013 17:56:32 +0900
-Message-ID: <CANqRtoS14fpHg=T0H3TzVVoB-Q0PnwJsUPkQ1PEOo2hkMkTjSw@mail.gmail.com>
-Subject: Re: [PATCH/RFC] clockevents: Ignore C3STOP when CPUIdle is disabled
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20130617133808.GB10671@intel.com>
+References: <1369988485-23176-1-git-send-email-wangxfdu@gmail.com>
+	<20130617133808.GB10671@intel.com>
+Date: Tue, 18 Jun 2013 16:57:18 +0800
+Message-ID: <CACDNBm1ZU=7xmFQkE9dxWJKmwMMMZSGOR1EsWjj_Cie1k9JvSA@mail.gmail.com>
+Subject: Re: [PATCH] dma: mmp_pdma: support for getting residual bytes
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Tue, Jun 18, 2013 at 5:30 PM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> On 06/18/2013 09:17 AM, Magnus Damm wrote:
->> From: Magnus Damm <damm@opensource.se>
+2013/6/17 Vinod Koul <vinod.koul@intel.com>:
+> On Fri, May 31, 2013 at 04:21:25PM +0800, Xiang Wang wrote:
+>> From: Xiang Wang <wangx@marvell.com>
 >>
->> Introduce the function tick_device_may_c3stop() that
->> ignores the C3STOP flag in case CPUIdle is disabled.
+>> In some of our drivers (e.g. UART) we may stop a running DMA
+>> before it finishes. So we need to know how many bytes have
+>> been transferred.
 >>
->> The C3STOP flag tells the system that a clock event
->> device may be stopped during deep sleep, but if this
->> will happen or not depends on things like if CPUIdle
->> is enabled and if a CPUIdle driver is available.
->>
->> This patch assumes that if CPUIdle is disabled then
->> the sleep mode triggering C3STOP will never be entered.
->> So by ignoring C3STOP when CPUIdle is disabled then it
->> becomes possible to use high resolution timers with only
->> per-cpu local timers - regardless if they have the
->> C3STOP flag set or not.
->>
->> Observed on the r8a73a4 SoC that at this point only uses
->> ARM architected timers for clock event and clock sources.
->>
->> Without this patch high resolution timers are run time
->> disabled on the r8a73a4 SoC - this regardless of CPUIdle
->> is disabled or not.
->>
->> The less short term fix is to add support for more timers
->> on the r8a73a4 SoC, but until CPUIdle support is enabled
->> it must be possible to use high resoultion timers without
->> additional timers.
->>
->> I'd like to hear some feedback and also test this on more
->> systems before merging the code, see the non-SOB below.
->>
->> Not-Yet-Signed-off-by: Magnus Damm <damm@opensource.se>
+>> Signed-off-by: Xiang Wang <wangx@marvell.com>
 >> ---
+>>  drivers/dma/mmp_pdma.c |   77 +++++++++++++++++++++++++++++++++++++++++++-----
+>>  1 files changed, 69 insertions(+), 8 deletions(-)
 >>
->>  An earlier ARM arch timer specific version of this patch was
->>  posted yesterday as:
->>  "[PATCH/RFC] arm: arch_timer: Do not set C3STOP in case CPU_IDLE=n"
+>> diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+>> index 76a8dcf..0c623cc 100644
+>> --- a/drivers/dma/mmp_pdma.c
+>> +++ b/drivers/dma/mmp_pdma.c
+>> @@ -104,7 +104,8 @@ struct mmp_pdma_chan {
+>>       spinlock_t desc_lock;           /* Descriptor list lock */
+>>       struct list_head chain_pending; /* Link descriptors queue for pending */
+>>       struct list_head chain_running; /* Link descriptors queue for running */
+>> -     bool idle;                      /* channel statue machine */
+>> +     enum dma_status status; /* channel status machine */
+>> +     u32 bytes_residue;
 >>
->>  Many thanks to Mark Rutland for his kind feedback.
+>>       struct dma_pool *desc_pool;     /* Descriptors pool */
+>>  };
+>> @@ -270,7 +271,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+>>       struct mmp_pdma_desc_sw *desc;
 >>
->>  kernel/time/tick-broadcast.c |    8 ++++----
->>  kernel/time/tick-common.c    |    2 +-
->>  kernel/time/tick-internal.h  |   11 +++++++++++
->>  3 files changed, 16 insertions(+), 5 deletions(-)
->>
->> --- 0001/kernel/time/tick-broadcast.c
->> +++ work/kernel/time/tick-broadcast.c 2013-06-18 15:36:21.000000000 +0900
->> @@ -71,7 +71,7 @@ int tick_check_broadcast_device(struct c
->>       if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
->>           (tick_broadcast_device.evtdev &&
->>            tick_broadcast_device.evtdev->rating >= dev->rating) ||
->> -          (dev->features & CLOCK_EVT_FEAT_C3STOP))
->> +          tick_device_may_c3stop(dev))
->>               return 0;
->>
->>       clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
->> @@ -146,7 +146,7 @@ int tick_device_uses_broadcast(struct cl
->>                * feature and the cpu is marked in the broadcast mask
->>                * then clear the broadcast bit.
->>                */
->> -             if (!(dev->features & CLOCK_EVT_FEAT_C3STOP)) {
->> +             if (!tick_device_may_c3stop(dev)) {
->>                       int cpu = smp_processor_id();
->>                       cpumask_clear_cpu(cpu, tick_broadcast_mask);
->>                       tick_broadcast_clear_oneshot(cpu);
->> @@ -270,7 +270,7 @@ static void tick_do_broadcast_on_off(uns
->>       /*
->>        * Is the device not affected by the powerstate ?
->>        */
->> -     if (!dev || !(dev->features & CLOCK_EVT_FEAT_C3STOP))
->> +     if (!dev || !tick_device_may_c3stop(dev))
->>               goto out;
->>
->>       if (!tick_device_is_functional(dev))
->> @@ -568,7 +568,7 @@ void tick_broadcast_oneshot_control(unsi
->>       td = &per_cpu(tick_cpu_device, cpu);
->>       dev = td->evtdev;
->>
->> -     if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
->> +     if (!tick_device_may_c3stop(dev))
+>>       /* still in running, irq will start the pending list */
+>> -     if (!chan->idle) {
+>> +     if (chan->status == DMA_IN_PROGRESS) {
+>>               dev_dbg(chan->dev, "DMA controller still busy\n");
+> why are you not reading the residue and filling it here as well
+In patch V2, the user can query the residue bytes on the fly. We only
+need to read and save the value in some key points where phy channel
+are released (the registers will not be accessible).
+>
 >>               return;
->>
->>       bc = tick_broadcast_device.evtdev;
->> --- 0001/kernel/time/tick-common.c
->> +++ work/kernel/time/tick-common.c    2013-06-18 15:36:29.000000000 +0900
->> @@ -52,7 +52,7 @@ int tick_is_oneshot_available(void)
->>
->>       if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
->>               return 0;
->> -     if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
->> +     if (!tick_device_may_c3stop(dev))
->>               return 1;
->>       return tick_broadcast_oneshot_available();
->>  }
->> --- 0001/kernel/time/tick-internal.h
->> +++ work/kernel/time/tick-internal.h  2013-06-18 15:40:10.000000000 +0900
->> @@ -141,6 +141,17 @@ static inline int tick_device_is_functio
->>       return !(dev->features & CLOCK_EVT_FEAT_DUMMY);
->>  }
->>
->> +/*
->> + * Check, if the device has C3STOP behavior and CPU Idle is enabled
->> + */
->> +static inline bool tick_device_may_c3stop(struct clock_event_device *dev)
->
-> I prefer tick_device_is_reliable(struct clock_event_device *dev).
-
-Sure. I took the name from the flag, thought that made it easy to follow.
-
-I wonder what the timekeeping maintainers prefer?
-
->> +{
->> +     /* The C3 sleep mode can only trigger when CPU Idle is enabled,
->> +      * so if CPU Idle is disabled then the C3STOP flag can be ignored */
->> +     return (IS_ENABLED(CONFIG_CPU_IDLE) &&
->> +             (dev->features & CLOCK_EVT_FEAT_C3STOP));
+>>       }
+>> @@ -307,7 +308,55 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+>>        */
+>>       set_desc(chan->phy, desc->async_tx.phys);
+>>       enable_chan(chan->phy);
+>> -     chan->idle = false;
+>> +     chan->status = DMA_IN_PROGRESS;
+>> +     chan->bytes_residue = 0;
 >> +}
+>> +
+>> +/*
+>> + * Get the number of bytes untransferred by DMA.
+>                               ^^^^^^^^^^^^^
+> The word which might fit better is pending
+Updated in patch V2. Thanks!
+>> + */
+>> +static u32 mmp_pdma_get_bytes_residue(struct mmp_pdma_chan *chan)
+>> +{
+>> +     u32 reg, orig_pos, cur_pos, residue = 0;
+>> +     struct mmp_pdma_desc_sw *desc_sw;
+>> +     struct list_head *list_chain = NULL;
+>> +
+>> +     /*
+>> +      * When a phy channel is unavailable, maybe its destroied, return last
+> typo                                                    ^^^^^^^^^
+Updated in patch V2. Thanks!
+>> +      * stored value for safe.
+>> +      */
+>> +     if (!chan || !chan->phy)
+>> +             return chan->bytes_residue;
+>> +
+>> +     if (!list_empty(&chan->chain_running))
+>> +             list_chain = &chan->chain_running;
+>> +     else
+>> +             return 0;
+>> +
+>> +     desc_sw = list_first_entry(list_chain, struct mmp_pdma_desc_sw, node);
+>> +
+>> +     switch (chan->dir) {
+>> +     case DMA_DEV_TO_MEM:
+>> +             reg = (chan->phy->idx << 4) + DTADR;
+>> +             cur_pos = readl_relaxed(chan->phy->base + reg);
+>> +             orig_pos = desc_sw->desc.dtadr;
+>> +             break;
+> empty line here and below pls
+Updated in patch V2. Thanks!
 >
-> Preferably you may use the format:
+>> +     case DMA_MEM_TO_DEV:
+>> +             reg = (chan->phy->idx << 4) + DSADR;
+>> +             cur_pos = readl_relaxed(chan->phy->base + reg);
+>> +             orig_pos = desc_sw->desc.dsadr;
+>> +             break;
+>> +     case DMA_MEM_TO_MEM:
+>> +             reg = (chan->phy->idx << 4) + DTADR;
+>> +             cur_pos = readl_relaxed(chan->phy->base + reg);
+>> +             orig_pos = desc_sw->desc.dtadr;
+>> +             break;
+>> +     default:
+>> +             return 0;
+>> +     }
+>> +
+>> +     residue = (u32)(desc_sw->desc.dcmd & DCMD_LENGTH) + orig_pos - cur_pos;
+>> +     return residue;
+>>  }
+>>
+>>
+>> @@ -381,7 +430,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
+>>               chan->phy->vchan = NULL;
+>>               chan->phy = NULL;
+>>       }
+>> -     chan->idle = true;
+>> +     chan->status = DMA_SUCCESS;
+>>       chan->dev_addr = 0;
+>>       return 1;
+>>  }
+>> @@ -409,7 +458,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
+>>
+>>       dma_pool_destroy(chan->desc_pool);
+>>       chan->desc_pool = NULL;
+>> -     chan->idle = true;
+>> +     chan->status = DMA_SUCCESS;
+>>       chan->dev_addr = 0;
+>>       if (chan->phy) {
+>>               chan->phy->vchan = NULL;
+>> @@ -589,7 +638,13 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+>>               mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+>>               mmp_pdma_free_desc_list(chan, &chan->chain_running);
+>>               spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> -             chan->idle = true;
+>> +             chan->status = DMA_SUCCESS;
+>> +             chan->bytes_residue = 0;
+>> +             break;
+> ditto
+Also updated
+>> +     case DMA_PAUSE:
+>> +             disable_chan(chan->phy);
+>> +             chan->status = DMA_PAUSED;
+>> +             chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+>>               break;
+>>       case DMA_SLAVE_CONFIG:
+>>               if (cfg->direction == DMA_DEV_TO_MEM) {
+>> @@ -637,7 +692,8 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
+>>       unsigned long flags;
+>>
+>>       spin_lock_irqsave(&chan->desc_lock, flags);
+>> -     ret = dma_cookie_status(dchan, cookie, txstate);
+>> +     ret = chan->status;
+>> +     dma_set_residue(txstate, chan->bytes_residue);
+>>       spin_unlock_irqrestore(&chan->desc_lock, flags);
+>>
+>>       return ret;
+>> @@ -684,6 +740,8 @@ static void dma_do_tasklet(unsigned long data)
+>>               dev_dbg(chan->dev, "completed_cookie=%d\n", cookie);
+>>       }
+>>
+>> +     /* update bytes_residue so that the user can query later on */
+>> +     chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+>>       /*
+>>        * move the descriptors to a temporary list so we can drop the lock
+>>        * during the entire cleanup operation
+>> @@ -691,7 +749,7 @@ static void dma_do_tasklet(unsigned long data)
+>>       list_splice_tail_init(&chan->chain_running, &chain_cleanup);
+>>
+>>       /* the hardware is now idle and ready for more */
+>> -     chan->idle = true;
+>> +     chan->status = DMA_SUCCESS;
+>>
+>>       /* Start any pending transactions automatically */
+>>       start_pending_queue(chan);
+>> @@ -750,6 +808,9 @@ static int mmp_pdma_chan_init(struct mmp_pdma_device *pdev,
+>>       INIT_LIST_HEAD(&chan->chain_pending);
+>>       INIT_LIST_HEAD(&chan->chain_running);
+>>
+>> +     chan->status = DMA_SUCCESS;
+>> +     chan->bytes_residue = 0;
+>> +
+>>       /* register virt channel to dma engine */
+>>       list_add_tail(&chan->chan.device_node,
+>>                       &pdev->device.channels);
+> Okay I went thru the thread briefly. I understand why you are returning the
+> reside and nice usage model you have here.
+> What i odnt understand is that the reason for limiting the dma driver to a
+> certain usage model. Yes this is what you need a nd what you have done. But
+> nothing prevents you from reading the reside and returning on the fly. All the
+> basic elements are alreayd in this patch. SO lets do the right thing now :)
+In patch V2, the user can query residue bytes on the fly by modifying
+mmp_pdma_tx_status().
 >
-> #ifdef CONFIG_CPU_IDLE
-> static inline bool tick_device_is_reliable(struct clock_event_device *dev)
-> {
->         return dev->features & CLOCK_EVT_FEAT_C3STOP;
-> }
-> #else
-> static inline bool tick_device_is_reliable(struct clock_event_device *dev)
-> {
->         return true;
-> }
-> #endif
->
-> to conform the header style format already present in the file.
+> --
+> ~Vinod
 
-I agree with  you about following the same style. Actually, I wrote
-the code to follow the code right above the function, but I decided to
-return bool instead of int. I don't mind so much in general though,
-except trying to keep the code at least half well-commented and
-relatively compact.
 
-So regarding stylistic things, sure, we can move around things.
-Question is just if this is acceptable or not. =)
 
-Thanks,
-
-/ magnus
+--
+Regards,
+Xiang
