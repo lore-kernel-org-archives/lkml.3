@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933568Ab3FRRKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:10:43 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:64153 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933034Ab3FRRKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:10:41 -0400
-Date: Tue, 18 Jun 2013 19:10:36 +0200
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-Message-ID: <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756340Ab3FRROp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:14:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45163 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754497Ab3FRROo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 13:14:44 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-ext4@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ext2: Reduce object size when !CONFIG_PRINTK
+Date: Tue, 18 Jun 2013 10:14:39 -0700
+Message-Id: <2e70d518b9f6b8eea33c01a36983a1ccb1839282.1371575536.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Reducing the object size ~5kb/15% could be useful for embedded
+systems.
 
-On Thu, Jun 13, 2013 at 09:02:47PM +0800, Tang Chen wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
-> 
-> No offence, just rebase and resend the patches from Yinghai to help
-> to push this functionality faster.
-> Also improve the comments in the patches' log.
-> 
-> 
-> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
-> 
-> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-> | Author: Tang Chen <tangchen@cn.fujitsu.com>
-> | Date:   Fri Feb 22 16:33:44 2013 -0800
-> |
-> |    acpi, memory-hotplug: parse SRAT before memblock is ready
-> 
-> It broke several things, like acpi override and fall back path etc.
-> 
-> This patchset is clean implementation that will parse numa info early.
-> 1. keep the acpi table initrd override working by split finding with copying.
->    finding is done at head_32.S and head64.c stage,
->         in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
->         in head64.c, initrd is accessed via kernel low mapping address
->         with help of #PF set page table.
->    copying is done with early_ioremap just after memblock is setup.
-> 2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
->    seperate initmem_init to two stages.
->    early_initmem_init will only extract numa info early into numa_meminfo.
->    initmem_init will keep slit and emulation handling.
-> 3. keep other old code flow untouched like relocate_initrd and initmem_init.
->    early_initmem_init will take old init_mem_mapping position.
->    it call early_x86_numa_init and init_mem_mapping for every nodes.
->    For 64bit, we avoid having size limit on initrd, as relocate_initrd
->    is still after init_mem_mapping for all memory.
-> 4. last patch will try to put page table on local node, so that memory
->    hotplug will be happy.
-> 
-> In short, early_initmem_init will parse numa info early and call
-> init_mem_mapping to set page table for every nodes's mem.
-> 
-> could be found at:
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-> 
-> and it is based on today's Linus tree.
->
+Add #ifdef CONFIG_PRINTK #else #endif blocks
+to hold formats and arguments, passing " " to
+functions when !CONFIG_PRINTK and still verifying
+format and arguments with no_printk.
 
-Has this patchset been tested on various numa configs?
-I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
-boots successfully in many numa configs but while trying different memory sizes
-for a 2 numa node VM, I noticed that booting does not complete in all cases
-(bootup screen appears to hang but there is no output indicating an early panic)
+ $ size fs/ext2/built-in.o*
+    text   data	    bss	    dec	    hex	filename
+   31297     44	      4	  31345	   7a71	fs/ext2/built-in.o.ext2.new
+   36288     44	      4	  36336	   8df0	fs/ext2/built-in.o.ext2.old
 
-node0   node1	 boots
-1G 	1G	 yes
-1G 	2G	 yes
-1G 	0.5G	 yes
-3G 	2.5G	 yes
-3G 	3G 	 yes
-4G 	0G	 yes
-4G 	4G	 yes
-1.5G	1G	 no
-2G 	1G	 no
-2G 	2G	 no
-2.5G 	2G	 no
-2.5G 	2.5G	 no
+ $ grep -E "CONFIG_EXT2|CONFIG_PRINTK" .config
+ # CONFIG_PRINTK is not set
+ CONFIG_EXT2_FS=y
+ # CONFIG_EXT2_FS_XATTR is not set
+ # CONFIG_EXT2_FS_XIP is not set
 
-linux-next next-20130607 boots al of these configs fine.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/ext2/ext2.h  | 22 ++++++++++++++++++++--
+ fs/ext2/super.c |  6 +++---
+ 2 files changed, 23 insertions(+), 5 deletions(-)
 
-Looks odd, perhaps I have something wrong in my setup or maybe there is a
-seabios/qemu interaction with this patchset. I will update if I find something.
-
-thanks,
-
-- Vasilis
-
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index d9a17d0..888ae31 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -767,12 +767,30 @@ struct dentry *ext2_get_parent(struct dentry *child);
+ 
+ /* super.c */
+ extern __printf(3, 4)
+-void ext2_error(struct super_block *, const char *, const char *, ...);
++void __ext2_error(struct super_block *, const char *, const char *, ...);
+ extern __printf(3, 4)
+-void ext2_msg(struct super_block *, const char *, const char *, ...);
++void __ext2_msg(struct super_block *, const char *, const char *, ...);
+ extern void ext2_update_dynamic_rev (struct super_block *sb);
+ extern void ext2_write_super (struct super_block *);
+ 
++#ifdef CONFIG_PRINTK
++#define ext2_error(sb, func, fmt, ...)					\
++	__ext2_error(sb, func, fmt, ##__VA_ARGS__)
++#define ext2_msg(sb, prefix, fmt, ...)					\
++	__ext2_msg(sb, prefix, fmt, ##__VA_ARGS__)
++#else
++#define ext2_error(sb, func, fmt, ...)					\
++do {									\
++	no_printk(fmt, ##__VA_ARGS__);					\
++	__ext2_error(sb, func, " ");					\
++} while (0)
++#define ext2_msg(sb, prefix, fmt, ...)					\
++do {									\
++	no_printk(fmt, ##__VA_ARGS__);					\
++	__ext2_msg(sb, prefix, " ");					\
++} while (0)
++#endif
++
+ /*
+  * Inodes and files operations
+  */
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 2885349..61ffb3f 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -45,8 +45,8 @@ static int ext2_sync_fs(struct super_block *sb, int wait);
+ static int ext2_freeze(struct super_block *sb);
+ static int ext2_unfreeze(struct super_block *sb);
+ 
+-void ext2_error(struct super_block *sb, const char *function,
+-		const char *fmt, ...)
++void __ext2_error(struct super_block *sb, const char *function,
++		  const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+@@ -80,7 +80,7 @@ void ext2_error(struct super_block *sb, const char *function,
+ 	}
+ }
+ 
+-void ext2_msg(struct super_block *sb, const char *prefix,
++void __ext2_msg(struct super_block *sb, const char *prefix,
+ 		const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
