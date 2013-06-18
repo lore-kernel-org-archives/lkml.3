@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab3FROU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 10:20:59 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:38522 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932941Ab3FROU4 (ORCPT
+	id S1756202Ab3FROYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 10:24:47 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45550 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764Ab3FROYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 10:20:56 -0400
-Date: Tue, 18 Jun 2013 16:20:51 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 3/8] posix-cpu-timers: fix wrong timer initialization
-Message-ID: <20130618142050.GF17619@somewhere.redhat.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-6-git-send-email-kosaki.motohiro@gmail.com>
+	Tue, 18 Jun 2013 10:24:45 -0400
+Date: Tue, 18 Jun 2013 16:24:43 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Detlev Zundel <dzu@denx.de>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        trivial <trivial@kernel.org>
+Subject: Re: [PATCH] fix UIO with device tree but no assigned interrupt
+Message-ID: <20130618142442.GA17361@amd.pavel.ucw.cz>
+References: <20130617134957.GA15602@amd.pavel.ucw.cz>
+ <CACxGe6sO6Tes8en905cyJwP69w82PHjwKV9+XxxXhAPMRyGYkA@mail.gmail.com>
+ <20130618125235.GA15122@amd.pavel.ucw.cz>
+ <CACxGe6tLPfJ3KS6+4aO8s8emq8=ajuc+gmBtaEDqd60m4_vx6w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369604149-13016-6-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACxGe6tLPfJ3KS6+4aO8s8emq8=ajuc+gmBtaEDqd60m4_vx6w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 05:35:44PM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Currently glibc's rt/tst-cputimer1 testcase sporadically fails because
-> a timer created by timer_create() may fire earlier than specified.
-> 
-> posix_cpu_timer_set() uses "val" as current time for three purpose. 1)
-> initialize sig->cputimer. 2) calculation "old" val. 3) calculations an
-> expires.
-> 
-> (1) and (2) should only use committed time (i.e. without delta_exec)
-> because run_posix_cpu_timers() don't care of delta_exec and we need
-> consistency, but (3) need exact current time (aka cpu clock time) because
-> an expires should be "now + timeout" by definition.
-> 
-> This patch distinguishes between two kinds of "now".
-> 
-> Cc: Olivier Langlois <olivier@trillion01.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  include/linux/kernel_stat.h |    5 -----
->  kernel/posix-cpu-timers.c   |   14 ++++++++++++--
->  kernel/sched/core.c         |   13 -------------
->  3 files changed, 12 insertions(+), 20 deletions(-)
-> 
-> diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-> index ed5f6ed..f5d4fdf 100644
-> --- a/include/linux/kernel_stat.h
-> +++ b/include/linux/kernel_stat.h
-> @@ -117,11 +117,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
->  	return kstat_cpu(cpu).irqs_sum;
->  }
->  
-> -/*
-> - * Lock/unlock the current runqueue - to extract task statistics:
-> - */
-> -extern unsigned long long task_delta_exec(struct task_struct *);
-> -
->  extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
->  extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
->  extern void account_steal_time(cputime_t);
-> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-> index 25447c5..d068808 100644
-> --- a/kernel/posix-cpu-timers.c
-> +++ b/kernel/posix-cpu-timers.c
-> @@ -652,7 +652,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
->  		cpu->cpu = cputime.utime;
->  		break;
->  	case CPUCLOCK_SCHED:
-> -		cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
-> +		cpu->sched = cputime.sum_exec_runtime;
+Hi!
 
-Are you sure that all callers of cpu_timer_sample_group() are fine with that change?
-Looking at set_process_cpu_timer() it seems we want the committed time as well to
-be added on newval. For the same reasons we use cpu_clock_sample_group() in (3) here.
+> > If device is initialized from device tree, but has no interrupt
+> > assigned, uio will still try to request and interrupt old way, fails,
+> > and fails registration.
+> >
+> > This is wrong; don't try initializing irq using platform data if
+> > device tree is available.
+> >
+> > Simplified code based on suggestion by Grant Likely.
+> >
+> > Fixed memory leak in "irq can not be registered" error path.
+> >
+> > Signed-off-by: Pavel Machek <pavel@denx.de>
+> > Reported-by: Detlev Zundel <dzu@denx.de>
+
+> > @@ -146,14 +138,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+> >         priv->flags = 0; /* interrupt is enabled to begin with */
+> >         priv->pdev = pdev;
+> >
+> > -       if (!uioinfo->irq) {
+> > -               ret = platform_get_irq(pdev, 0);
+> > -               if (ret < 0) {
+> > -                       dev_err(&pdev->dev, "failed to get IRQ\n");
+> > -                       goto bad0;
+> > -               }
+> > -               uioinfo->irq = ret;
+> > +       ret = platform_get_irq(pdev, 0);
+> > +       uioinfo->irq = ret;
+> > +       if (ret == -ENXIO && pdev->dev.of_node)
+> > +               uioinfo->irq = UIO_IRQ_NONE;
+> 
+> This short-circuits the platform data use case where uioinfo->irq is
+> already set. The if (!uioinfo->irq) test is still needed. The original
+> code looks like it already handles it correctly for both the
+> platform_data and DT use cases because in the DT case the uioinfo
+> structure is zeroed by kzalloc().
+
+Ok, fixed, thanks!
+
+> As an aside, switching to devm_kzalloc() would simplify the unwind
+>   path.
+
+Well, lets leave that for another day...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
