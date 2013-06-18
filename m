@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3FRLoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 07:44:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55929 "EHLO
+	id S1756070Ab3FRMGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 08:06:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab3FRLoC (ORCPT
+	with ESMTP id S1755847Ab3FRLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 07:44:02 -0400
+	Tue, 18 Jun 2013 07:44:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 12/93] USB: visor: fix initialisation of Treo/Kyocera devices
-Date: Tue, 18 Jun 2013 12:42:20 +0100
-Message-Id: <1371555821-12820-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 19/93] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
+Date: Tue, 18 Jun 2013 12:42:27 +0100
+Message-Id: <1371555821-12820-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
 References: <1371555821-12820-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Finn Thain <fthain@telegraphics.com.au>
 
-commit 420021a395ce38b7ab2cceb52dee4038be7d8fa3 upstream.
+commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
 
-Fix regression introduced by commit 214916f2e ("USB: visor: reimplement
-using generic framework") which broke initialisation of Treo/Kyocera
-devices that re-mapped bulk-in endpoints.
+The present code does not wait for the SCC to finish resetting itself
+before trying to initialise the device. The result is that the SCC
+interrupt sources become enabled (if they weren't already). This leads to
+an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
+this by adding a delay. A successful reset disables the interrupt sources.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Also, after the reset for channel A setup, the SCC then gets a second
+reset for channel B setup which leaves channel A uninitialised again. Fix
+this by performing the reset only once.
+
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/visor.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/m68k/kernel/head.S | 29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-index 90cc160..4b53336 100644
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -570,9 +570,17 @@ static int treo_attach(struct usb_serial *serial)
- 	*/
- #define COPY_PORT(dest, src)						\
- 	do { \
-+		int i;							\
-+									\
-+		for (i = 0; i < ARRAY_SIZE(src->read_urbs); ++i) {	\
-+			dest->read_urbs[i] = src->read_urbs[i];		\
-+			dest->read_urbs[i]->context = dest;		\
-+			dest->bulk_in_buffers[i] = src->bulk_in_buffers[i]; \
-+		}							\
- 		dest->read_urb = src->read_urb;				\
- 		dest->bulk_in_endpointAddress = src->bulk_in_endpointAddress;\
- 		dest->bulk_in_buffer = src->bulk_in_buffer;		\
-+		dest->bulk_in_size = src->bulk_in_size;			\
- 		dest->interrupt_in_urb = src->interrupt_in_urb;		\
- 		dest->interrupt_in_urb->context = dest;			\
- 		dest->interrupt_in_endpointAddress = \
+diff --git a/arch/m68k/kernel/head.S b/arch/m68k/kernel/head.S
+index d197e7f..ac85f16 100644
+--- a/arch/m68k/kernel/head.S
++++ b/arch/m68k/kernel/head.S
+@@ -2752,11 +2752,9 @@ func_return	get_new_page
+ #ifdef CONFIG_MAC
+ 
+ L(scc_initable_mac):
+-	.byte	9,12		/* Reset */
+ 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
+ 	.byte	3,0xc0		/* receiver: 8 bpc */
+ 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
+-	.byte	9,0		/* no interrupts */
+ 	.byte	10,0		/* NRZ */
+ 	.byte	11,0x50		/* use baud rate generator */
+ 	.byte	12,1,13,0	/* 38400 baud */
+@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	is_not_mac(L(serial_init_not_mac))
+ 
+ #ifdef SERIAL_DEBUG
++
+ /* You may define either or both of these. */
+ #define MAC_USE_SCC_A /* Modem port */
+ #define MAC_USE_SCC_B /* Printer port */
+@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ #define mac_scc_cha_b_data_offset	0x4
+ #define mac_scc_cha_a_data_offset	0x6
+ 
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
++	movel	%pc@(L(mac_sccbase)),%a0
++	/* Reset SCC device */
++	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
++	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
++	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
++	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
++	movel	#35,%d0
++5:
++	subq	#1,%d0
++	jne	5b
++#endif
++
+ #ifdef MAC_USE_SCC_A
+ 	/* Initialize channel A */
+-	movel	%pc@(L(mac_sccbase)),%a0
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 5:	moveb	%a1@+,%d0
+ 	jmi	6f
+@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 
+ #ifdef MAC_USE_SCC_B
+ 	/* Initialize channel B */
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a0
+-#endif	/* MAC_USE_SCC_A */
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 7:	moveb	%a1@+,%d0
+ 	jmi	8f
+@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	jra	7b
+ 8:
+ #endif	/* MAC_USE_SCC_B */
++
+ #endif	/* SERIAL_DEBUG */
+ 
+ 	jra	L(serial_init_done)
+@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
+ 
+ #ifdef SERIAL_DEBUG
+ 
+-#ifdef MAC_USE_SCC_A
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
+ 	movel	%pc@(L(mac_sccbase)),%a1
++#endif
++
++#ifdef MAC_USE_SCC_A
+ 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
+ 	jeq	3b
+ 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
+ #endif	/* MAC_USE_SCC_A */
+ 
+ #ifdef MAC_USE_SCC_B
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a1
+-#endif	/* MAC_USE_SCC_A */
+ 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
+ 	jeq	4b
+ 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
 -- 
 1.8.1.2
 
