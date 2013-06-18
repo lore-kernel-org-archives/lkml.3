@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3FRJVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:21:38 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48665 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab3FRJVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:21:33 -0400
-Message-ID: <51C02693.9040304@suse.cz>
-Date: Tue, 18 Jun 2013 11:21:23 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1755813Ab3FRJWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:22:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21479 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755654Ab3FRJWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 05:22:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,887,1363158000"; 
+   d="scan'208";a="355270430"
+Date: Tue, 18 Jun 2013 11:16:10 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] mfd: tps65910: Fix crash in i2c_driver .probe
+Message-ID: <20130618091610.GG7161@zurbaran>
+References: <1371491257-23791-1-git-send-email-ttynkkynen@nvidia.com>
+ <1371491257-23791-2-git-send-email-ttynkkynen@nvidia.com>
+ <51BF5281.2030105@wwwdotorg.org>
 MIME-Version: 1.0
-To: balbi@ti.com, Michal Marek <mmarek@suse.cz>
-CC: Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz> <51BFE754.5080301@suse.cz> <20130618081858.GD5461@arwen.pp.htv.fi> <51C01948.9060708@suse.cz> <20130618083425.GI5461@arwen.pp.htv.fi> <51C01E04.2050908@suse.cz> <20130618085154.GN5461@arwen.pp.htv.fi>
-In-Reply-To: <20130618085154.GN5461@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51BF5281.2030105@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 10:51 AM, Felipe Balbi wrote:
-> right, but my argument is that I rather not have either. Depend on
-> PCI if you us PCI, depend on EXTCON if you use extcon, but no
-> driver should have an ARCH dependency. Specially since it lets
-> people include mach/* and asm/* headers because "it doesn't break
-> compilation for anyone".
+On Mon, Jun 17, 2013 at 12:16:33PM -0600, Stephen Warren wrote:
+> On 06/17/2013 11:47 AM, Tuomas Tynkkynen wrote:
+> > Commit "i2c: core: make it possible to match a pure device tree driver"
+> > changed semantics of the i2c probing for device tree devices.
+> > Device tree probed devices now get a NULL i2c_device_id pointer.
+> > This caused kernel panics due to NULL dereference.
+> 
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> 
+> (although I imagine I'd need to retest if there was a v2 to address my
+> previous comments)
+I would prefer seeing a v2, especially to address the pmic_plat_data
+overwriting issue.
 
-The argument is elsewhere. If I understand correctly, Kconfig is for
-users, not to be hi-jacked by kernel developers. And users should not
-really care about our development processes, cross compilations or
-whatever bells and whistles we use. They just don't want to see
-drivers which they have no way to *use*, they indeed don't care
-whether some more compile at all. We do not want every kernel packager
-for every distro out in the wild, to go through all the help texts, to
-see whether they should compile and package a driver or not. It's a
-tedious work and this option would save time to the packagers.
-
-Try to package and maintain a kernel for a distribution, you will find
-out what a cool and surprising work that is...
-
-In the best case I would vote for hard dependencies as cross-compilers
-are easy to obtain and set up nowadays. But well, we still want to
-("cross") compile drivers, so let's add COMPILE_TEST and use that to
-save time to automatic builds.
+Cheers,
+Samuel.
 
 -- 
-js
-suse labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
