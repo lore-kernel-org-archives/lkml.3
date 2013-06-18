@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab3FRRSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:18:25 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:42584 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3FRRSY (ORCPT
+	id S933471Ab3FRRTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:19:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40324 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933106Ab3FRRTh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:18:24 -0400
-Date: Tue, 18 Jun 2013 19:18:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 6/8] sched: task_sched_runtime introduce micro
- optimization
-Message-ID: <20130618171819.GJ17619@somewhere.redhat.com>
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
- <1369604149-13016-9-git-send-email-kosaki.motohiro@gmail.com>
- <20130618142744.GG17619@somewhere.redhat.com>
- <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
+	Tue, 18 Jun 2013 13:19:37 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: RE: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property exists
+ and then only request irq
+Thread-Topic: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
+ exists and then only request irq
+Thread-Index: AQHObAxY8SVidqm7fEWvMR88AcSmApk7GTuAgACV5XD//3+CgIAAhmbw
+Date: Tue, 18 Jun 2013 17:19:14 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EC5B4@DBDE04.ent.ti.com>
+References: <1371549692-7361-1-git-send-email-j-keerthy@ti.com>
+ <1371549692-7361-2-git-send-email-j-keerthy@ti.com>
+ <51C0820B.4020404@wwwdotorg.org>
+ <DC88CAD03C0052499C1907B327FC63229EC563@DBDE04.ent.ti.com>
+ <51C093FF.6000204@wwwdotorg.org>
+In-Reply-To: <51C093FF.6000204@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=qhooSDvZVBUqct0B9khTZ-8Ju5YZ7b0yA34=3UgY+OoA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 11:17:41AM -0400, KOSAKI Motohiro wrote:
-> >> +#ifdef CONFIG_64BIT
-> >> +     /*
-> >> +      * 64-bit doesn't need locks to atomically read a 64bit value. So we
-> >> +      * have two optimization chances, 1) when caller doesn't need
-> >> +      * delta_exec and 2) when the task's delta_exec is 0. The former is
-> >> +      * obvious. The latter is complicated. reading ->on_cpu is racy, but
-> >> +      * this is ok. If we race with it leaving cpu, we'll take a lock. So
-> >> +      * we're correct. If we race with it entering cpu, unaccounted time
-> >> +      * is 0. This is indistinguishable from the read occurring a few
-> >> +      * cycles earlier.
-> >> +      */
-> >> +     if (!add_delta || !p->on_cpu)
-> >> +             return p->se.sum_exec_runtime;
-> >
-> > I'm not sure this is correct from an smp ordering POV. p->on_cpu may appear
-> > to be 0 whereas the task is actually running for a while and p->se.sum_exec_runtime
-> > can then be past the actual value on the remote CPU.
+
+
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, June 18, 2013 10:38 PM
+> To: J, KEERTHY
+> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
+> ldewangan@nvidia.com; sameo@linux.intel.com; grant.likely@secretlab.ca;
+> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
+> doc@vger.kernel.org; gg@slimlogic.co.uk
+> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts property
+> exists and then only request irq
 > 
-> Quate form Paul's last e-mail
+> On 06/18/2013 10:54 AM, J, KEERTHY wrote:
+> > Hi Stephen,
+> >
+> >> -----Original Message-----
+> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> >> Sent: Tuesday, June 18, 2013 9:22 PM
+> >> To: J, KEERTHY
+> >> Cc: linux-omap@vger.kernel.org; broonie@kernel.org;
+> >> ldewangan@nvidia.com; sameo@linux.intel.com;
+> >> grant.likely@secretlab.ca; swarren@nvidia.com;
+> >> linux-kernel@vger.kernel.org; linux- doc@vger.kernel.org;
+> >> gg@slimlogic.co.uk
+> >> Subject: Re: [PATCH v2 1/4] MFD: Palmas: Check if interrupts
+> property
+> >> exists and then only request irq
+> >>
+> >> On 06/18/2013 04:01 AM, J Keerthy wrote:
+> >>> Check if interrupts property exists and then only request irq.
+> >>> On some boards INT line might not be connected to a valid irq line
+> >>> on the application processor. Hence keeping a check before
+> >>> requesting irq.
+> >>
+> >> When there is no interrupts property, surely i2c->irq == 0, which is
+> >> an invalid IRQ, and hence there's no need to check this before
+> >> copying the value?
+> >
+> > The intent here is NOT to request irq with 0 or Invalid IRQ.
 > 
-> >Stronger:
-> >
-> >+#ifdef CONFIG_64BIT
-> >+       if (!p->on_cpu)
-> >+               return p->se.sum_exec_runtime;
-> >+#endif
-> >
-> >[ Or !p->on_cpu || !add_delta ].
-> >
-> >We can take the racy read versus p->on_cpu since:
-> >  If we race with it leaving cpu: we take lock, we're correct
-> >  If we race with it entering cpu: unaccounted time ---> 0, this is
-> >indistinguishable from the read occurring a few cycles earlier.
+> Sure.
+> 
+> > The board File will not populate the interrupts entry if the INT line
+> > is not Connected.
+> 
+> Do you mean the interrupts DT property won't be present if there is no
+> interrupt. If so, sure.
 
-Yeah, my worry was more about both p->on_cpu and p->se.sum_exec_runtime being
-stale for too long. How much time can happen in the worst case before CPU X sees
-the updates done by a CPU Y under rq(Y)->lock considering that CPU X doesn't take rq(Y)
-to read that update? I guess it depends on the hardware, locking and ordering
-that happened before.
+Yes.
 
-Bah it probably doesn't matter in practice.
+> 
+> > Hence the patch checks for the 'interrupts' property.
+> 
+> That shouldn't be necessary; IIRC, the I2C core has already parsed the
+> interrupts property if there was one, and if there wasn't, it has set
+> i2c->irq to some invalid value already.
+> 
+> So, you simply need to check the value in i2c->irq, and don't need to
+> look at the DT at all.
 
-Thanks.
+Instead of checking the Invalid irq value which most likely can be 0.
+I am not sure.
+I am explicitly checking if the interrupts property exists or not.
+
+If not present then It throws out a warning. Either there is no
+Valid INT line connection or the DeviceTree was not populated fully.
+
+This additional piece of information is good to have in the driver
+IMHO. Let me know if this is rational enough to have in the driver.
+
+Regards,
+Keerthy
