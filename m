@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3FRJVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 05:21:19 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34289 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab3FRJVO (ORCPT
+	id S1755806Ab3FRJVi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 05:21:38 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:48665 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab3FRJVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 05:21:14 -0400
-Date: Tue, 18 Jun 2013 17:21:04 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: matthew.garrett@nebula.com, bhutchings@solarflare.com
-cc: platform-driver-x86@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        jim.epost@gmail.com
-Subject: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
-Message-ID: <alpine.DEB.2.02.1306181705530.28460@M2420>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Jun 2013 05:21:33 -0400
+Message-ID: <51C02693.9040304@suse.cz>
+Date: Tue, 18 Jun 2013 11:21:23 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: balbi@ti.com, Michal Marek <mmarek@suse.cz>
+CC: Jeff Mahoney <jeffm@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
+Subject: Re: [PATCH] build some drivers only when compile-testing
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz> <51BFE754.5080301@suse.cz> <20130618081858.GD5461@arwen.pp.htv.fi> <51C01948.9060708@suse.cz> <20130618083425.GI5461@arwen.pp.htv.fi> <51C01E04.2050908@suse.cz> <20130618085154.GN5461@arwen.pp.htv.fi>
+In-Reply-To: <20130618085154.GN5461@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+On 06/18/2013 10:51 AM, Felipe Balbi wrote:
+> right, but my argument is that I rather not have either. Depend on
+> PCI if you us PCI, depend on EXTCON if you use extcon, but no
+> driver should have an ARCH dependency. Specially since it lets
+> people include mach/* and asm/* headers because "it doesn't break
+> compilation for anyone".
 
-Fix randconfig build failure for Amilo x86 platform driver.
-AMILO_RFKILL requires SERIO_I8042 being available.
+The argument is elsewhere. If I understand correctly, Kconfig is for
+users, not to be hi-jacked by kernel developers. And users should not
+really care about our development processes, cross compilations or
+whatever bells and whistles we use. They just don't want to see
+drivers which they have no way to *use*, they indeed don't care
+whether some more compile at all. We do not want every kernel packager
+for every distro out in the wild, to go through all the help texts, to
+see whether they should compile and package a driver or not. It's a
+tedious work and this option would save time to the packagers.
 
-amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
-amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
-amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
+Try to package and maintain a kernel for a distribution, you will find
+out what a cool and surprising work that is...
 
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
----
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+In the best case I would vote for hard dependencies as cross-compilers
+are easy to obtain and set up nowadays. But well, we still want to
+("cross") compile drivers, so let's add COMPILE_TEST and use that to
+save time to automatic builds.
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 8577261..37645b9 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -176,6 +176,7 @@ config FUJITSU_TABLET
- config AMILO_RFKILL
- 	tristate "Fujitsu-Siemens Amilo rfkill support"
- 	depends on RFKILL
-+	depends on SERIO_I8042
- 	---help---
- 	  This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
- 	  laptops.
+-- 
+js
+suse labs
