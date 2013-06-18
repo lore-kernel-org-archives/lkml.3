@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab3FRRKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 13:10:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58064 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932756Ab3FRRKU (ORCPT
+	id S933568Ab3FRRKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 13:10:43 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:64153 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933034Ab3FRRKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 13:10:20 -0400
-Message-ID: <51C09478.30909@wwwdotorg.org>
-Date: Tue, 18 Jun 2013 11:10:16 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 18 Jun 2013 13:10:41 -0400
+Date: Tue, 18 Jun 2013 19:10:36 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+Message-ID: <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Dom Cobley <popcornmix@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
-References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>  <1364402424-19503-1-git-send-email-lkundrak@v3.sk>  <5153B24D.1010408@wwwdotorg.org>  <20130526142200.GA7603@spo001.leaseweb.com> <1371574241.18688.5.camel@hobbes.kokotovo>
-In-Reply-To: <1371574241.18688.5.camel@hobbes.kokotovo>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 10:50 AM, Lubomir Rintel wrote:
-> Hi Wim,
-> 
-> On Sun, 2013-05-26 at 16:22 +0200, Wim Van Sebroeck wrote:
->> Hi Lubomir,
->>
->>> On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
->>>> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
->>>> used in Raspberry Pi and Roku 2 devices.
->>>>
->>>> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
->>>> Signed-off-by: Dom Cobley <popcornmix@gmail.com>
->>>
->>> Those two s-o-b lines should be swapped, since if Dom did sign off on
->>> any part of this patch, he did it before you did.
->>>
->>> That said...
->>>
->>> I wonder if it's actually appropriate to include Dom's s-o-b here, since
->>> I don't think he really wrote this patch itself. I think you mentioned
->>> that you hadn't use much of the downstream driver except for some defines?
->>>
->>> To be clear, I mentioned the existence of the S-o-b line downstream
->>> simply to demonstrate that the commits you were getting information from
->>> had correctly followed the process described in
->>> Documentation/SubmittingPatches, and so it was OK to use that
->>> information while creating a GPL'd driver.
->>>
->>> So there are a couple of ways that this patch could have been created:
->>>
->>> 1) You took the downstream commit itself, cherry-picked it into the
->>> upstream kernel, modified it to suit upstream, and then submitted that.
->>> The modifications might be extensive, such as renaming the file,
->>> removing parts of the code that the upstream watchdog core now handles,
->>> adding some new features, fixing bugs, cleanup, etc.; whatever is needed
->>> to upstream the patch.
->>>
->>> In this case, I believe it would be appropriate to maintain any S-o-b
->>> lines from the original downstream commit, and add yours. But, I believe
->>> you should also (a) maintain the git author field from the original
->>> downstream commit (b) include a list of the changes you made to the
->>> patch in the commit description, so you can be blamed for them rather
->>> than the original author:-)
->>>
->>> 2) You read the downstream commit for information, but created a
->>> completely new driver for the upstream kernel, using the downstream
->>> driver just as a reference. In this case, I believe it's fine for the
->>> git author field to be you, and for the only s-o-b line present to be
->>> yours, since you really did write the patch from scratch. However, you
->>> should credit the downstream work in the (c) header and/or commit
->>> description.
->>>
->>> This current patch sees to be a slight hybrid of both approaches (you're
->>> listed as the git author, but have included Dom's s-o-b line on a patch
->>> I don't think he created, and wasn't directly derived from one he created).
->>>
->>> I'm not sure if I'm being too picky. I guess I'll leave it up to Wim Van
->>> Sebroeck, since he's the watchdog maintainer and would be the person who
->>> applies this patch.
->>
->> Can you create a patch v5 with yourselve as author and add the necessary (c)
->> and references in it so that I can do the final review? (That is if situation
->> 2 is indeed the case. If however it is situation 1 then we should get the
->> original code and have that as a patch and then add a second patch with your
->> modifications.).
-> 
-> I'm still not sure what to do. For most part, the driver is written from
-> scratch, since the original one was not utilizing recent enough
-> frameworks (such as watchdog-core or device tree bindings). Thus the
-> patch against the original driver would not make any sense at all.
-> 
-> On the other hand, I've referred to the original driver for hardware
-> information and copied a couple of defines as they are (such as
-> SECS_TO_WDOG_TICKS), thus I figured out it's a required to include the
-> original driver's sign-off and copyright information.
-> 
-> Thus neither 1) nor 2) is the case, and I can't figure out myself what
-> needs to be changed at this point. I'm wondering if you could help me
-> decide?
+Hi,
 
-This sounds exactly like case (2) to me; copying a few defines for HW
-constants doesn't really sound like having derived the driver from the
-original commit.
+On Thu, Jun 13, 2013 at 09:02:47PM +0800, Tang Chen wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+> 
+> No offence, just rebase and resend the patches from Yinghai to help
+> to push this functionality faster.
+> Also improve the comments in the patches' log.
+> 
+> 
+> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+> 
+> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+> | Author: Tang Chen <tangchen@cn.fujitsu.com>
+> | Date:   Fri Feb 22 16:33:44 2013 -0800
+> |
+> |    acpi, memory-hotplug: parse SRAT before memblock is ready
+> 
+> It broke several things, like acpi override and fall back path etc.
+> 
+> This patchset is clean implementation that will parse numa info early.
+> 1. keep the acpi table initrd override working by split finding with copying.
+>    finding is done at head_32.S and head64.c stage,
+>         in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
+>         in head64.c, initrd is accessed via kernel low mapping address
+>         with help of #PF set page table.
+>    copying is done with early_ioremap just after memblock is setup.
+> 2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
+>    seperate initmem_init to two stages.
+>    early_initmem_init will only extract numa info early into numa_meminfo.
+>    initmem_init will keep slit and emulation handling.
+> 3. keep other old code flow untouched like relocate_initrd and initmem_init.
+>    early_initmem_init will take old init_mem_mapping position.
+>    it call early_x86_numa_init and init_mem_mapping for every nodes.
+>    For 64bit, we avoid having size limit on initrd, as relocate_initrd
+>    is still after init_mem_mapping for all memory.
+> 4. last patch will try to put page table on local node, so that memory
+>    hotplug will be happy.
+> 
+> In short, early_initmem_init will parse numa info early and call
+> init_mem_mapping to set page table for every nodes's mem.
+> 
+> could be found at:
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+> 
+> and it is based on today's Linus tree.
+>
+
+Has this patchset been tested on various numa configs?
+I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
+boots successfully in many numa configs but while trying different memory sizes
+for a 2 numa node VM, I noticed that booting does not complete in all cases
+(bootup screen appears to hang but there is no output indicating an early panic)
+
+node0   node1	 boots
+1G 	1G	 yes
+1G 	2G	 yes
+1G 	0.5G	 yes
+3G 	2.5G	 yes
+3G 	3G 	 yes
+4G 	0G	 yes
+4G 	4G	 yes
+1.5G	1G	 no
+2G 	1G	 no
+2G 	2G	 no
+2.5G 	2G	 no
+2.5G 	2.5G	 no
+
+linux-next next-20130607 boots al of these configs fine.
+
+Looks odd, perhaps I have something wrong in my setup or maybe there is a
+seabios/qemu interaction with this patchset. I will update if I find something.
+
+thanks,
+
+- Vasilis
+
+
