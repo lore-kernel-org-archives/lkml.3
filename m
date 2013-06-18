@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3FRIcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 04:32:47 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59933 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab3FRIco (ORCPT
+	id S1754596Ab3FRIdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 04:33:25 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:11164 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417Ab3FRIdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 04:32:44 -0400
-Date: Tue, 18 Jun 2013 10:32:29 +0200
-From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        Juergen Beisert <jbe@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "brian@crystalfontz.com" <brian@crystalfontz.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>, plagnioj@jcrosoft.com
-Subject: Re: [PATCH] video: mxsfb: fix color settings for 18bit data bus and
- 32bpp
-Message-ID: <20130618083229.GC15037@lukather>
-References: <519E03B0.1080006@digi.com>
- <519F4435.5010703@digi.com>
- <201305241300.25461.jbe@pengutronix.de>
- <201305241533.19941.jbe@pengutronix.de>
- <20130607072103.GF14209@lukather>
- <51B18BA0.50506@digi.com>
- <20130607074200.GG14209@lukather>
- <51B1957F.40104@digi.com>
- <20130607090228.GI14209@lukather>
+	Tue, 18 Jun 2013 04:33:23 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: <wenyou.yang@atmel.com>, <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: non critical fixes
+Date: Tue, 18 Jun 2013 10:33:21 +0200
+Message-ID: <1371544401-22369-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130607090228.GI14209@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hector,
+Arnd, Olof,
 
-On Fri, Jun 07, 2013 at 11:02:28AM +0200, maxime.ripard@free-electrons.com wrote:
-> On Fri, Jun 07, 2013 at 10:10:39AM +0200, Hector Palacios wrote:
-> > For a combination of 18bit LCD data bus width and a color
-> > mode of 32bpp, the driver was setting the color mapping to
-> > rgb666, which is wrong, as the color in memory realy has an
-> > rgb888 layout.
-> > 
-> > This patch also removes the setting of flag CTRL_DF24 that
-> > makes the driver dimiss the upper 2 bits when handling 32/24bpp
-> > colors in a diplay with 18bit data bus width. This flag made
-> > true color images display wrong in such configurations.
-> > 
-> > Finally, the color mapping rgb666 has also been removed as nobody
-> > is using it and high level applications like Qt5 cannot work
-> > with it either.
-> > 
-> > Reference: https://lkml.org/lkml/2013/5/23/220
-> > Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> > Acked-by: Juergen Beisert <jbe@pengutronix.de>
-> 
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
-> Please also note that fbdev is now maintained by Jean Christophe
-> Plagniol-Villard (plagnioj@jcrosoft.com, in CC), and that he is away
-> until the 10th of June, so maybe it should be safe to resend it to him
-> after this date.
+Refurbish of preceding "soc" pull-request for extracting fixes. Note that this
+at91-fixes tag is now based on v3.10-rc5 as I have found that it is the base of
+your next/fixes-non-critical branch.
 
-It seems like Jean-Christophe is back online, maybe you should resend
-him the patch now, it would be great to have it for 3.11.
+Thanks, best regards,
 
-Thanks,
-Maxime
+The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
+
+  Linux 3.10-rc5 (2013-06-08 17:41:04 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 133e00116b5bc76110bcc41ded369489209b641f:
+
+  ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED (2013-06-18 10:20:30 +0200)
+
+----------------------------------------------------------------
+Two non critical fixes that can go in 3.11.
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+
+Wenyou Yang (1):
+      ARM: at91: Change the internal SRAM memory type MT_MEMORY_NONCACHED
+
+ arch/arm/mach-at91/Kconfig          | 1 +
+ arch/arm/mach-at91/board-dt-sama5.c | 3 ++-
+ arch/arm/mach-at91/setup.c          | 2 +-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
 -- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Nicolas Ferre
