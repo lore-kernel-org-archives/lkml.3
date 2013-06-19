@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3FSN3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:29:39 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46400 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481Ab3FSN3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:29:36 -0400
-Message-ID: <51C1B237.8050601@linux.vnet.ibm.com>
-Date: Wed, 19 Jun 2013 21:29:27 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756820Ab3FSN3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756481Ab3FSN3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 09:29:40 -0400
+Message-ID: <51C1B23B.7080703@redhat.com>
+Date: Wed, 19 Jun 2013 15:29:31 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 2/7] KVM: MMU: document clear_spte_count
-References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <51C196E9.2080508@redhat.com> <51C19BA6.2060501@linux.vnet.ibm.com> <51C19C4C.3000800@redhat.com> <51C1A34A.7080201@linux.vnet.ibm.com> <51C1A6F0.6000603@redhat.com>
-In-Reply-To: <51C1A6F0.6000603@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Batalov Eugene <eabatalov89@gmail.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Eugene Batalov <ebatalov@parallels.com>, kvm@vger.kernel.org,
+        Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1] kvm guest: fix uninitialized kvmclock read by KVM guest
+References: <20130610201933.GA31409@amt.cnet> <1371319305-590-1-git-send-email-ebatalov@parallels.com> <20130618222114.GC13856@amt.cnet> <51C1AC93.6010001@redhat.com> <CAJF2t5sYHy9q9a7-fZauf1Z7_FkK1_DOP13GHji=8-vDUsnnsQ@mail.gmail.com>
+In-Reply-To: <CAJF2t5sYHy9q9a7-fZauf1Z7_FkK1_DOP13GHji=8-vDUsnnsQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061913-5490-0000-0000-000003AD19A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 08:41 PM, Paolo Bonzini wrote:
-> Il 19/06/2013 14:25, Xiao Guangrong ha scritto:
->> On 06/19/2013 07:55 PM, Paolo Bonzini wrote:
->>> Il 19/06/2013 13:53, Xiao Guangrong ha scritto:
->>>> On 06/19/2013 07:32 PM, Paolo Bonzini wrote:
->>>>> Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
->>>>>> Document it to Documentation/virtual/kvm/mmu.txt
->>>>>
->>>>> While reviewing the docs, I looked at the code.
->>>>>
->>>>> Why can't this happen?
->>>>>
->>>>>     CPU 1: __get_spte_lockless          CPU 2: __update_clear_spte_slow
->>>>> ------------------------------------------------------------------------------
->>>>>                                         write low
->>>>>     read count
->>>>>     read low
->>>>>     read high
->>>>>                                         write high
->>>>>     check low and count
->>>>>                                         update count
->>>>>
->>>>> The check passes, but CPU 1 read a "torn" SPTE.
->>>>
->>>> In this case, CPU 1 will read the "new low bits" and the "old high bits", right?
->>>> the P bit in the low bits is cleared when do __update_clear_spte_slow, i.e, it is
->>>> not present, so the whole value is ignored.
->>>
->>> Indeed that's what the comment says, too.  But then why do we need the
->>> count at all?  The spte that is read is exactly the same before and
->>> after the count is updated.
->>
->> In order to detect repeatedly marking spte present to stop the lockless side
->> to see present to present change, otherwise, we can get this:
->>
->> Say spte = 0xa11110001 (high 32bits = 0xa, low 32bit = 0x11110001)
->>
->> CPU 1: __get_spte_lockless          CPU 2: __update_clear_spte_slow
->> ----------------------------------------------------------------------
->> read low: low= 0x11110001
->>                                     clear the spte, then spte = 0x0ull
->> read high: high = 0x0
->>                                     set spte to 0xb11110001 (high 32bits = 0xb,
->>                                     low 32bit = 0x11110001)
->>
->> read low: 0x11110001 and see
->> it is not changed.
->>
->> In this case, CPU 1 see the low bits are not changed, then it tries to access the memory at:
->> 0x11110000.
+Il 19/06/2013 15:20, Batalov Eugene ha scritto:
 > 
-> Got it.  What about this in the comment to __get_spte_lockless:
+> I've missed this detail. It looks like Igor's patch doesn't bring
+> secondary cpus kvm_clocksource behavior back to one before the regression,
+> Before the regression per_cpu variables are used to allocate
+> kvm_pv_clock areas.
+> To to usage of percpu variables bootstrap cpu kvm_clock area contents
+> were copied to smp secondary cpus kvm_clock areas when they were started.
+> Bootstrap cpu kvm_clock area was not zeroed at this time.
+> So kvm_pv_clock for secondary cpus never returned "zero" clock before
+> the regression.
 > 
->  * The idea using the light way get the spte on x86_32 guest is from
->  * gup_get_pte(arch/x86/mm/gup.c).
->  *
->  * An spte tlb flush may be pending, because kvm_set_pte_rmapp
->  * coalesces them and we are running out of the MMU lock.  Therefore
->  * we need to protect against in-progress updates of the spte.
->  *
->  * A race on changing present->non-present may get the old value for
->  * the high part of the spte.  This is okay because the high part of
->  * the spte is ignored for non-present spte.
->  *
->  * However, we must detect a present->present change and reread the
->  * spte in case the change is in progress.  Because all such changes
->  * are done in two steps (present->non-present and non-present->present),
->  * it is enough to count the number of present->non-present updates,
->  * which is done using clear_spte_count.
+> During the analysis of the bug I introduced idea to return zero before
+> kvm clocksource is initialized for secondary cpus
+> just like bootstrap cpu does on kernel boot. You can read that in BZ.
 
-It is fantastic :)
+Yes, this is why I prefer to invert the two function calls.  But Igor's
+patch fixes the hang (trivially because version is even) and is more
+appropriate for -rc6.
 
+Paolo
