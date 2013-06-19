@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3FSS4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:56:41 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43163 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3FSS4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:56:40 -0400
+	id S1757390Ab3FSS73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:59:29 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59505 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756776Ab3FSS71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:59:27 -0400
+Date: Wed, 19 Jun 2013 14:59:17 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>, Dave Chinner <dchinner@redhat.com>,
+        Glauber Costa <glommer@openvz.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the ext4 tree
+Message-ID: <20130619185917.GC24587@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Glauber Costa <glommer@gmail.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
+	Dave Chinner <dchinner@redhat.com>,
+	Glauber Costa <glommer@openvz.org>
+References: <20130619172721.00e757acd76e1f9d362f59be@canb.auug.org.au>
+ <20130619074402.GC1990@localhost.localdomain>
+ <20130619142031.GC24194@thunk.org>
+ <20130619100635.72acbd05.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20130619175206.GA20737@jonmason-lab>
-References: <1371602813-19828-1-git-send-email-jon.mason@intel.com>
-	<1371602813-19828-3-git-send-email-jon.mason@intel.com>
-	<CAA9_cmeie_V0PauHBadVsg22OQmFrC_Oeg1o1FwdzQ+mVU9gTA@mail.gmail.com>
-	<20130619175206.GA20737@jonmason-lab>
-Date: Wed, 19 Jun 2013 11:56:38 -0700
-X-Google-Sender-Auth: pUCqtvlwQogDLyhsI24Rf6HesdM
-Message-ID: <CAA9_cmdVfFmD5Li4b8WEtAiqCiSCKYuva_86MLV3ysAhyLXtig@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ioatdma: add DMA_PRIVATE capabilities flag
-From: Dan Williams <djbw@fb.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619100635.72acbd05.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 10:52 AM, Jon Mason <jon.mason@intel.com> wrote:
->> DMA_PRIVATE here keeps all channels private, so they couldn't be used
->> elsewhere, for example raid offload.  Do you need a private allocation
->> or can you get away with a dynamically assigned channel?
->
-> I would like to have a dedicated DMA engine.  async_tx could cause the
-> copies to complete out of order.  Do I need to add infrastructure to
-> allow for private channel usage, and when unused allow the channel to
-> be used by async_tx?
+On Wed, Jun 19, 2013 at 10:06:35AM -0700, Andrew Morton wrote:
+> 
+> Merge the ext4 change early, please.  The core shrinker changes aren't
+> 100% certain at this time - first they need to stop oopsing ;)
 
-Can NTB just call dma_find_channel() once and be done?  Also, async_tx
-will only get things out of order if you allow it to pick a new
-channel for every operation, but as long as you specify a dependency
-chain it will keep things in order (same as remembering the result of
-dma_find_channel).
+Ack, sounds like a plan.
 
---
-Dan
+Are they oopsing often enough that they are likely to interfere with
+running regression tests on linux-next?
+
+					- Ted
