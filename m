@@ -1,167 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933957Ab3FSHNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:13:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47894 "EHLO mx2.suse.de"
+	id S1756572Ab3FSHPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:15:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933081Ab3FSHNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:13:48 -0400
-Date: Wed, 19 Jun 2013 09:13:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130619071346.GA9545@dhcp22.suse.cz>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618062623.GA20528@localhost.localdomain>
+	id S1755967Ab3FSHPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 03:15:16 -0400
+Message-ID: <51C15A6C.1090702@redhat.com>
+Date: Wed, 19 Jun 2013 15:14:52 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618062623.GA20528@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, edumazet@google.com, hkchu@google.com, mst@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
+ queues by using flex array
+References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>  <1371620452-49349-2-git-send-email-jasowang@redhat.com> <1371623518.3252.267.camel@edumazet-glaptop>
+In-Reply-To: <1371623518.3252.267.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-06-13 10:26:24, Glauber Costa wrote:
-[...]
-> Michal, would you mind testing the following patch?
->
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 00b804e..48eafa6 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
->  
->  static void inode_lru_list_del(struct inode *inode)
->  {
-> +	if (inode->i_state & I_FREEING)
-> +		return;
->  
->  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
->  		this_cpu_dec(nr_unused);
-> @@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
->  			continue;
->  		}
->  
-> -		inode->i_state |= I_FREEING;
->  		inode_lru_list_del(inode);
-> +		inode->i_state |= I_FREEING;
->  		spin_unlock(&inode->i_lock);
->  		list_add(&inode->i_lru, &dispose);
->  	}
-> @@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
->  			continue;
->  		}
->  
-> -		inode->i_state |= I_FREEING;
->  		inode_lru_list_del(inode);
-> +		inode->i_state |= I_FREEING;
->  		spin_unlock(&inode->i_lock);
->  		list_add(&inode->i_lru, &dispose);
->  	}
-> @@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
->  		inode->i_state &= ~I_WILL_FREE;
->  	}
->  
-> +	inode_lru_list_del(inode);
->  	inode->i_state |= I_FREEING;
-> -	if (!list_empty(&inode->i_lru))
-> -		inode_lru_list_del(inode);
->  	spin_unlock(&inode->i_lock);
->  
->  	evict(inode);
+On 06/19/2013 02:31 PM, Eric Dumazet wrote:
+> On Wed, 2013-06-19 at 13:40 +0800, Jason Wang wrote:
+>> Currently, we use kcalloc to allocate rx/tx queues for a net device which could
+>> be easily lead to a high order memory allocation request when initializing a
+>> multiqueue net device. We can simply avoid this by switching to use flex array
+>> which always allocate at order zero.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  include/linux/netdevice.h |   13 ++++++----
+>>  net/core/dev.c            |   57 ++++++++++++++++++++++++++++++++------------
+>>  net/core/net-sysfs.c      |   15 +++++++----
+>>  3 files changed, 58 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+>> index 09b4188..c0b5d04 100644
+>> --- a/include/linux/netdevice.h
+>> +++ b/include/linux/netdevice.h
+>> @@ -32,6 +32,7 @@
+>>  #include <linux/atomic.h>
+>>  #include <asm/cache.h>
+>>  #include <asm/byteorder.h>
+>> +#include <linux/flex_array.h>
+>>  
+>>  #include <linux/percpu.h>
+>>  #include <linux/rculist.h>
+>> @@ -1230,7 +1231,7 @@ struct net_device {
+>>  
+>>
+>>  #ifdef CONFIG_RPS
+>> -	struct netdev_rx_queue	*_rx;
+>> +	struct flex_array	*_rx;
+>>  
+>>  	/* Number of RX queues allocated at register_netdev() time */
+>>  	unsigned int		num_rx_queues;
+>> @@ -1250,7 +1251,7 @@ struct net_device {
+>>  /*
+>>   * Cache lines mostly used on transmit path
+>>   */
+>> -	struct netdev_queue	*_tx ____cacheline_aligned_in_smp;
+>> +	struct flex_array	*_tx ____cacheline_aligned_in_smp;
+>>  
+> Using flex_array and adding overhead in this super critical part of
+> network stack, only to avoid order-1 allocations done in GFP_KERNEL
+> context is simply insane.
 
-No luck. I have this on top of inode_lru_isolate one but still can see
-hangs:
-911 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118529f>] iget_locked+0x4f/0x180
-[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81175254>] __lookup_hash+0x34/0x40
-[<ffffffff81179872>] path_lookupat+0x7a2/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-21409 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118529f>] iget_locked+0x4f/0x180
-[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-21745 [<ffffffff81179862>] path_lookupat+0x792/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-22032 [<ffffffff81179862>] path_lookupat+0x792/0x830
-[<ffffffff81179933>] filename_lookup+0x33/0xd0
-[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-[<ffffffff8117ab4c>] user_path_at+0xc/0x10
-[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-[<ffffffff81170116>] vfs_stat+0x16/0x20
-[<ffffffff8117013f>] sys_newstat+0x1f/0x50
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-22621 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-[<ffffffff8118529f>] iget_locked+0x4f/0x180
-[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-[<ffffffff81174ad0>] lookup_real+0x20/0x60
-[<ffffffff81177e25>] lookup_open+0x175/0x1d0
-[<ffffffff8117815e>] do_last+0x2de/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-22711 [<ffffffff81178144>] do_last+0x2c4/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-22946 [<ffffffff81178144>] do_last+0x2c4/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-23393 [<ffffffff81178144>] do_last+0x2c4/0x780
-[<ffffffff8117ae9a>] path_openat+0xda/0x400
-[<ffffffff8117b303>] do_filp_open+0x43/0xa0
-[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-[<ffffffff81168f9c>] sys_open+0x1c/0x20
-[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
--- 
-Michal Hocko
-SUSE Labs
+Yes, and I also miss the fact of GFP_KERNEL allocation.
+> We can revisit this in 2050 if we ever need order-4 allocations or so,
+> and still use 4K pages.
+>
+>
+
+Will drop this patch, thanks.
