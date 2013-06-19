@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934391Ab3FSI7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:59:55 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:43838 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934376Ab3FSIxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:23 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 00/13] CPUFreq: Fix {PRE|POST}CHANGE notification sequence
-Date: Wed, 19 Jun 2013 14:22:54 +0530
-Message-Id: <cover.1371630975.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S934397Ab3FSJAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:00:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60070 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934361Ab3FSIxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:53:20 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>
+Subject: [PATCH 3/4] usb: musb: omap: use the new API to get PHY reference by label
+Date: Wed, 19 Jun 2013 14:22:30 +0530
+Message-ID: <1371631951-369-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371631951-369-1-git-send-email-kishon@ti.com>
+References: <1371631951-369-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
-should be called or both shouldn't be.
+After the devices are created using PLATFORM_DEVID_AUTO,
+devm_usb_get_phy_dev and usb_get_phy_dev can't be used reliably
+as it relies on the device_names passed in usb_bind_phy. So used the
+new API devm_usb_get_phy_by_name to get the PHY reference.
 
-In case we have started PRECHANGE notifier and found an error, we must call
-POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
-calling notifiers is complete.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+---
+ drivers/usb/musb/musb_core.c |    1 +
+ drivers/usb/musb/musb_core.h |    1 +
+ drivers/usb/musb/omap2430.c  |    2 +-
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
-This isn't obeyed by many of the drivers and core wasn't forcing it.
-
-This patchset first fixes all the driver to follow it strictly and then adds
-some protection against this. Now, we keep track of the last transaction and see
-if something went wrong.
-
-Last patch is intentionally kept towards the end, so that git bisect still works
-well for all the faulty drivers.
-
-This is pushed here and a pull request for 3.11 would be sent after few days.
-
-git://git.linaro.org/people/vireshk/linux.git cpufreq-fix-notification
-
-Viresh Kumar (13):
-  cpufreq: acpi: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error
-    cases
-  cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: dbx500: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: e_powersave: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: exynos: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: imx6q: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: omap: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: pcc: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: powernow-k8: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: s3c64xx: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier in error cases
-  cpufreq: make sure frequency transitions are serialized
-
- drivers/cpufreq/acpi-cpufreq.c    |  6 ++++--
- drivers/cpufreq/arm_big_little.c  |  4 +---
- drivers/cpufreq/cpufreq.c         |  9 +++++++++
- drivers/cpufreq/davinci-cpufreq.c |  3 +++
- drivers/cpufreq/dbx500-cpufreq.c  |  4 ++--
- drivers/cpufreq/e_powersaver.c    |  3 +++
- drivers/cpufreq/exynos-cpufreq.c  | 10 ++++++++--
- drivers/cpufreq/imx6q-cpufreq.c   | 17 +++++++++++------
- drivers/cpufreq/omap-cpufreq.c    |  6 +++---
- drivers/cpufreq/pcc-cpufreq.c     |  2 ++
- drivers/cpufreq/powernow-k8.c     |  6 +++---
- drivers/cpufreq/s3c64xx-cpufreq.c |  8 ++++++--
- drivers/cpufreq/tegra-cpufreq.c   |  4 ++--
- 13 files changed, 57 insertions(+), 25 deletions(-)
-
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 37a261a..00fbaf4 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1864,6 +1864,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	musb->board_set_power = plat->set_power;
+ 	musb->min_power = plat->min_power;
+ 	musb->ops = plat->platform_ops;
++	musb->phy_name = plat->phy_name;
+ 
+ 	/* The musb_platform_init() call:
+ 	 *   - adjusts musb->mregs
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index 7fb4819..e9a9339 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -434,6 +434,7 @@ struct musb {
+ 	unsigned                double_buffer_not_ok:1;
+ 
+ 	struct musb_hdrc_config	*config;
++	const char		*phy_name;
+ 
+ #ifdef MUSB_CONFIG_PROC_FS
+ 	struct proc_dir_entry *proc_entry;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 628b93f..f872ebc 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -352,7 +352,7 @@ static int omap2430_musb_init(struct musb *musb)
+ 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+ 		    "usb-phy", 0);
+ 	else
+-		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
++		musb->xceiv = devm_usb_get_phy_by_name(dev, musb->phy_name);
+ 
+ 	if (IS_ERR(musb->xceiv)) {
+ 		status = PTR_ERR(musb->xceiv);
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.10.4
 
