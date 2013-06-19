@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3FSGAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 02:00:44 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:25971
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756445Ab3FSGAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 02:00:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51C148F5.5050304@freescale.com>
-Date: Wed, 19 Jun 2013 11:30:21 +0530
-From: Akhil Goyal <akhil.goyal@freescale.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.26) Gecko/20120129 Thunderbird/3.1.18
+	id S1756464Ab3FSGMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 02:12:02 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16006 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183Ab3FSGMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 02:12:00 -0400
+X-IronPort-AV: E=Sophos;i="4.87,894,1363104000"; 
+   d="scan'208";a="7599188"
+Message-ID: <51C14C5E.6090501@cn.fujitsu.com>
+Date: Wed, 19 Jun 2013 14:14:54 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <gregkh@linuxfoundation.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <pankaj.chauhan@freescale.com>
-Subject: Re: [PATCH 1/5] drivers/misc: Support for RF interface device framework
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <201306172328.26430.arnd@arndb.de> <51C00FC0.90105@freescale.com> <201306181540.45454.arnd@arndb.de>
-In-Reply-To: <201306181540.45454.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
+        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Part2 PATCH v4 08/15] x86, numa: Save nid when reserve memory
+ into memblock.reserved[].
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com> <1371128619-8987-9-git-send-email-tangchen@cn.fujitsu.com> <20130618165753.GB4553@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20130618165753.GB4553@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 14:10:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 14:10:55,
+	Serialize complete at 2013/06/19 14:10:55
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/18/2013 7:10 PM, Arnd Bergmann wrote:
-> On Tuesday 18 June 2013, Akhil Goyal wrote:
->> On 6/18/2013 2:58 AM, Arnd Bergmann wrote:
->>>> +	/*
->>>> +	 * Spin_locks are changed to mutexes if PREEMPT_RT is enabled,
->>>> +	 * i.e they can sleep. This fact is problem for us because
->>>> +	 * add_wait_queue()/wake_up_all() takes wait queue spin lock.
->>>> +	 * Since spin lock can sleep with PREEMPT_RT, wake_up_all() can not be
->>>> +	 * called from rf_notify_dl_tti (which is called in interrupt context).
->>>> +	 * As a workaround, wait_q_lock is used for protecting the wait_q and
->>>> +	 * add_wait_queue_locked()/ wake_up_locked() functions of wait queues
->>>> +	 * are used.
->>>> +	 */
->>>> +	raw_spin_lock_irqsave(&rf_dev->wait_q_lock, flags);
->>>> +	__add_wait_queue_tail_exclusive(&rf_dev->wait_q,&wait);
->>>> +	raw_spin_unlock_irqrestore(&rf_dev->wait_q_lock, flags);
->>>> +	set_current_state(TASK_INTERRUPTIBLE);
->>>> +	/*Now wait here, tti notificaion will wake us up*/
->>>> +	schedule();
->>>> +	set_current_state(TASK_RUNNING);
->>>> +	raw_spin_lock_irqsave(&rf_dev->wait_q_lock, flags);
->>>> +	__remove_wait_queue(&rf_dev->wait_q,&wait);
->>>> +	raw_spin_unlock_irqrestore(&rf_dev->wait_q_lock, flags);
->>>
->>> This is not a proper method of waiting for an event. Why can't you
->>> use wait_event() here?
->> wait_event() is internally calling spin_lock_irqsave() and this function
->> will be called in hard IRQ context with PREEMPT_RT enabled(IRQF_NODELAY
->> set). So wait_event cannot be used.
->> This problem can be solved if we can get the following patch applied on
->> the tree.
->> https://patchwork.kernel.org/patch/2161261/
+Hi Vasilis,
+
+Thanks for reviewing. :)
+
+On 06/19/2013 12:57 AM, Vasilis Liaskovitis wrote:
+......
 >
-> I see. How about using wait_event here then and adding a comment about
-> the RT kernel?
-We can change it to wait_event but the problem is that, the ISR in 
-Antenna Controller driver will always run in HARDIRQ context because of 
-its latency requirements. In that case we will always get warning for 
-"Trying to sleep in interrupt context".
+> However, patches 21,22 of part1 and all part3 patches increase kernel usage
+> of local node memory by putting pagetables local to those nodes. Are these
+> pagetable pages accounted in part2's memblock_kernel_nodemask? It looks like
 
-Since we always require PREEMPT_RT patch while working with Antenna 
-Controller Driver and there is no use case for running it in non-RT 
-kernel. May be we can add dependency on CONFIG_PREEMPT_RT in the Kconfig 
-of this framework/driver.
+No, they are not. What I wanted to acheve was that the local pagetable pages
+are transparent to users. For a movable node (all memory is hotpluggable),
+seeing from users level, they think all the node's memory is not used by 
+the
+kernel. Actually pagetable pages are used by the kernel, but users don't 
+know
+it, and they don't care about it.
 
-If the patch "Simple waitqueue implementation" from Steven Rostedt 
-<rostedt@goodmis.org> gets mainlined then we can use simple wait queues 
-to make a clean up here.
+And also, memblock_kernel_nodemask is only used at very early time. When 
+the
+system is up, it is useless.
+
+This is just my approach for this problem. It is not good enough, and we can
+improve it.
+
+> part1 and part3 of these patchsets contradict or make the goal of part2 more
+> difficult to achieve. (I will send more comments for part3 separately).
 >
->>> The explanation about the interrupt handler seems incorrect, since PREEMPT_RT
->>> also turns interrupt handlers into threads.
->> The interrupt handler has real time requirement and thus running in
->> HARDIRQ context with flag IRQF_NODELAY. We get this interrupt in every
->> millisecond.
->
-> Ok. So there would be no problem without the RT patch set.
-This driver always require PREEMPT_RT enabled. As mentioned above I can 
-add dependency on CONFIG_PREEMPT_RT.
->
-> IRQF_NODELAY is specific to the RT kernel, so you can change the wait_event
-> function to something else in the same patch that adds this flag.
 
+I think allocating pagetable to local node really makes thing a little more
+difficult than before. But I also think Yinghai's work is reasonable 
+because
+it helps to improve the performance.
 
+What I am thinking now is to allocate things like pagetable pages to local
+device. (Seems I mentioned this before.)
 
+If a node has more than one memory device, and all the pagetable pages are
+allocated in one device. Then this device cannot be hot-removed unless all
+the other memory devices are hot-removed.
+
+So I think allocating pagetable pages to local device is more reasonable.
+But as you said, this could be more complex.
+
+Thanks. :)
