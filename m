@@ -1,142 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab3FSBXW (ORCPT <rfc822;w@1wt.eu>);
+	id S934012Ab3FSBXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:23:25 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36568 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933885Ab3FSBXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 21:23:22 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58803 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932687Ab3FSBXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:23:21 -0400
-Message-ID: <51C106A1.9030001@ti.com>
-Date: Tue, 18 Jun 2013 20:17:21 -0500
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+Message-ID: <51C107E9.9050900@huawei.com>
+Date: Wed, 19 Jun 2013 09:22:49 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com>
-In-Reply-To: <1371571487-14389-2-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Joern Engel <joern@logfs.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mmap: allow MAP_HUGETLB for hugetlbfs files
+References: <1371581225-27535-1-git-send-email-joern@logfs.org> <1371581225-27535-3-git-send-email-joern@logfs.org>
+In-Reply-To: <1371581225-27535-3-git-send-email-joern@logfs.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+Hi Joern，
 
-On 06/18/2013 11:04 AM, Roger Quadros wrote:
-> Provide the RESET and Power regulators for the USB PHY,
-> the USB Host port mode and the PHY device.
->
-> Also provide pin multiplexer information for the USB host
-> pins.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+On 2013/6/19 2:47, Joern Engel wrote:
+
+> It is counterintuitive at best that mmap'ing a hugetlbfs file with
+> MAP_HUGETLB fails, while mmap'ing it without will a) succeed and b)
+> return huge pages.
+> 
+> Signed-off-by: Joern Engel <joern@logfs.org>
 > ---
->   arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
->   1 files changed, 62 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> index 00cbaa5..7a21e8e 100644
-> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> @@ -59,6 +59,42 @@
->   			"AFML", "Line In",
->   			"AFMR", "Line In";
->   	};
+>  mm/mmap.c |   12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 2a594246..76eb6df 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/uprobes.h>
+>  #include <linux/rbtree_augmented.h>
+>  #include <linux/sched/sysctl.h>
+> +#include <linux/magic.h>
+>  
+>  #include <asm/uaccess.h>
+>  #include <asm/cacheflush.h>
+> @@ -1313,6 +1314,11 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+>  	return addr;
+>  }
+>  
+> +static inline int is_hugetlb_file(struct file *file)
+> +{
+> +	return file->f_inode->i_sb->s_magic == HUGETLBFS_MAGIC;
+> +}
 > +
-> +	/* HS USB Port 1 RESET */
-> +	hsusb1_reset: hsusb1_reset_reg {
-> +		compatible = "regulator-fixed";
-> +		regulator-name = "hsusb1_reset";
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +		gpio = <&gpio2 30 0>;	/* gpio_62 */
-> +		startup-delay-us = <70000>;
-> +		enable-active-high;
-> +	};
+>  SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+>  		unsigned long, prot, unsigned long, flags,
+>  		unsigned long, fd, unsigned long, pgoff)
+> @@ -1322,11 +1328,12 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+>  
+>  	if (!(flags & MAP_ANONYMOUS)) {
+>  		audit_mmap_fd(fd, flags);
+> -		if (unlikely(flags & MAP_HUGETLB))
+> -			return -EINVAL;
+>  		file = fget(fd);
+>  		if (!file)
+>  			goto out;
+> +		retval = -EINVAL;
+> +		if (unlikely(flags & MAP_HUGETLB && !is_hugetlb_file(file)))
 
-Is this really a regulator? Or just a GPIO line used to reset the USB PHY?
+We already have is_file_hugepages().
 
-If this is the case, I don't think it should be represented as a regulator.
+Thanks,
+Jianguo Wu
 
-Regards,
-Benoit
+> +			goto out_fput;
+>  	} else if (flags & MAP_HUGETLB) {
+>  		struct user_struct *user = NULL;
+>  		/*
+> @@ -1346,6 +1353,7 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+>  	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+>  
+>  	retval = vm_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+> +out_fput:
+>  	if (file)
+>  		fput(file);
+>  out:
 
-> +
-> +	/* HS USB Port 1 Power */
-> +	hsusb1_power: hsusb1_power_reg {
-> +		compatible = "regulator-fixed";
-> +		regulator-name = "hsusb1_vbus";
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +		gpio = <&gpio1 1 0>;	/* gpio_1 */
-> +		startup-delay-us = <70000>;
-> +		enable-active-high;
-> +	};
-> +
-> +	/* HS USB Host PHY on PORT 1 */
-> +	hsusb1_phy: hsusb1_phy {
-> +		compatible = "usb-nop-xceiv";
-> +		reset-supply = <&hsusb1_reset>;
-> +		vcc-supply = <&hsusb1_power>;
-> +	/**
-> +	 * FIXME:
-> +	 * put the right clock phandle here when available
-> +	 *	clocks = <&auxclk3>;
-> +	 *	clock-names = "main_clk";
-> +	 */
-> +		clock-frequency = <19200000>;
-> +	};
->   };
->
->   &omap4_pmx_wkup {
-> @@ -83,6 +119,7 @@
->   			&mcbsp1_pins
->   			&dss_hdmi_pins
->   			&tpd12s015_pins
-> +			&hsusbb1_pins
->   	>;
->
->   	twl6030_pins: pinmux_twl6030_pins {
-> @@ -133,6 +170,23 @@
->   		>;
->   	};
->
-> +	hsusbb1_pins: pinmux_hsusbb1_pins {
-> +		pinctrl-single,pins = <
-> +			0x82 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_clk.usbb1_ulpiphy_clk */
-> +			0x84 (PIN_OUTPUT | MUX_MODE4)		/* usbb1_ulpitll_stp.usbb1_ulpiphy_stp */
-> +			0x86 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dir.usbb1_ulpiphy_dir */
-> +			0x88 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_nxt.usbb1_ulpiphy_nxt */
-> +			0x8a (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat0.usbb1_ulpiphy_dat0 */
-> +			0x8c (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat1.usbb1_ulpiphy_dat1 */
-> +			0x8e (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat2.usbb1_ulpiphy_dat2 */
-> +			0x90 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat3.usbb1_ulpiphy_dat3 */
-> +			0x92 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat4.usbb1_ulpiphy_dat4 */
-> +			0x94 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat5.usbb1_ulpiphy_dat5 */
-> +			0x96 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat6.usbb1_ulpiphy_dat6 */
-> +			0x98 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* usbb1_ulpitll_dat7.usbb1_ulpiphy_dat7 */
-> +		>;
-> +	};
-> +
->   	i2c1_pins: pinmux_i2c1_pins {
->   		pinctrl-single,pins = <
->   			0xe2 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl */
-> @@ -283,3 +337,11 @@
->   	mode = <3>;
->   	power = <50>;
->   };
-> +
-> +&usbhshost {
-> +	port1-mode = "ehci-phy";
-> +};
-> +
-> +&usbhsehci {
-> +	phys = <&hsusb1_phy>;
-> +};
->
+
 
