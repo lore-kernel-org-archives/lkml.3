@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab3FSFRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:17:00 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:61122 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3FSFQ6 (ORCPT
+	id S1755585Ab3FSFSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:18:44 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:38619 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3FSFSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:16:58 -0400
+	Wed, 19 Jun 2013 01:18:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFgnuDcxS53FS0w31w8k4JzyhKadfO+P12jOy5hyfVKf6pEPWg@mail.gmail.com>
-References: <1371606191-5618-1-git-send-email-chenxg@marvell.com>
-	<CAKohpont42JcdLH-TawNWVDJeiLNHeAWx4fgvAkyerOD=64MLQ@mail.gmail.com>
-	<CAFgnuDcxS53FS0w31w8k4JzyhKadfO+P12jOy5hyfVKf6pEPWg@mail.gmail.com>
-Date: Wed, 19 Jun 2013 10:46:57 +0530
-Message-ID: <CAKohpo=t+bVdPpqVoBOGByeNguLgyLqoE3sLwjfDFAeQArbuMA@mail.gmail.com>
-Subject: Re: [PATCH v6] Cpufreq: Fix governor start/stop race condition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Xiaoguang Chen <chenxg.marvell@gmail.com>
-Cc: Xiaoguang Chen <chenxg@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1880810.6jIKdDRiJm@vostro.rjw.lan>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com>
+	<CAN_LGv1itN=ADE-3LNCoBJFXmpWZffhQb6NQuoBzvONkX3brug@mail.gmail.com>
+	<CAN_LGv2Y6jebtNUQ1gJYfy8uG2pxtUjT1gqMPmL+6E7myELd3A@mail.gmail.com>
+	<1880810.6jIKdDRiJm@vostro.rjw.lan>
+Date: Wed, 19 Jun 2013 11:18:41 +0600
+Message-ID: <CAN_LGv0DUH3o6=iCBcQDEOLQ3n=O=GR5BSQU5dLs306YeLVL7w@mail.gmail.com>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 June 2013 10:45, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
-> 2013/6/19 Viresh Kumar <viresh.kumar@linaro.org>:
->> On 19 June 2013 07:13, Xiaoguang Chen <chenxg@marvell.com> wrote:
->>> There are 4 CPUs and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
->>> The normal sequence is as below:
->>
->> I thought Rafael asked to write cpu0 as CPU0, ...
+2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+> OK, let's try to untangle this a bit.
 >
-> I changed "cpus" to "CPUs" as Rafael suggested(Please spell cpus as
-> "CPUs".  And please start sequences from capitals.)
-> do I need to change other "cpu" to "CPU"?
+> If you applyt patches [1/4] and [4/4] from the $subject series only, what
+> does remain unfixed?
 
-I am not really sure what he meant by "sequence", but I guess its regarding
-cpu0, cpu1, cpu2, etc... and not cpu .
+[not tested, can do so in 12 hours if needed]
+
+I think there will be problems on undocking and/or on the second
+docking, as described in comments #6 - #8 of
+https://bugzilla.kernel.org/show_bug.cgi?id=59501
+
+-- 
+Alexander E. Patrakov
