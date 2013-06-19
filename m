@@ -1,96 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab3FSHn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:43:58 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:34344 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab3FSHn4 (ORCPT
+	id S1756642Ab3FSHoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:44:12 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:47684 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab3FSHoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:43:56 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
-        swarren@wwwdotorg.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
-Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
-Date: Wed, 19 Jun 2013 09:43:52 +0200
-Message-ID: <65316055.UrW2Xpt9hs@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <51C13886.1050201@linaro.org>
-References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <51BE95A5.5090509@linaro.org> <51C13886.1050201@linaro.org>
+	Wed, 19 Jun 2013 03:44:09 -0400
+Date: Wed, 19 Jun 2013 11:44:04 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <dchinner@redhat.com>,
+        Glauber Costa <glommer@openvz.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the ext4 tree
+Message-ID: <20130619074402.GC1990@localhost.localdomain>
+References: <20130619172721.00e757acd76e1f9d362f59be@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619172721.00e757acd76e1f9d362f59be@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tushar,
-
-On Wednesday 19 of June 2013 10:20:14 Tushar Behera wrote:
-> On 06/17/2013 10:20 AM, Tushar Behera wrote:
-> > On 06/11/2013 12:23 AM, Tomasz Figa wrote:
-> >> On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
-> >>> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
-> >>>> On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
-> > [ ... ]
-> > 
-> >>>>>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
-> >>>>> 
-> >>>>> -			SRC_CPU, 16, 1, "mout_core"),
-> >>>>> +			SRC_CPU, 16, 1, "moutcore"),
-> >>>> 
-> >>>> IMHO those typo corrections are not part of this patch.
-> >>> 
-> >>> But the older drivers (before migration to CCF) were using the clock
-> >>> "moutcore" (not "mout_core").
-> >> 
-> >> I mean, this should be placed in a separate patch, as this change is
-> >> not "adding alias for cpufreq related clocks", but rather fixing a
-> >> typo.> 
-> > Is it ok if I split this patch into 2, one adding clock alias
-> > 'mout_apll' and another one fixing the alias names 'mout_mpll',
-> > 'moutcore' and 'armclk'?
+On Wed, Jun 19, 2013 at 05:27:21PM +1000, Stephen Rothwell wrote:
+> Hi Andrew,
 > 
-> I have to fix up another clock for exynos4x12 too. I feel all these
-> modifications are too small to justify different patches. I would modify
-> the commit message appropriately.
+> Today's linux-next merge of the akpm tree got a conflict in
+> fs/ext4/extents_status.c between commit 6480bad916be ("ext4: improve
+> extent cache shrink mechanism to avoid to burn CPU time") from the ext
+> tree and commit 1f42d0934b4e ("fs: convert fs shrinkers to new scan/count
+> API") from the akpm tree.
+> 
+> I fixed it up (I am not sure if the result makes complete sense - see
+> below) and can carry the fix as necessary (no action is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc fs/ext4/extents_status.c
+> index 80dcc59,4bce4f0..0000000
+> --- a/fs/ext4/extents_status.c
+> +++ b/fs/ext4/extents_status.c
+> @@@ -876,58 -878,32 +876,63 @@@ int ext4_es_zeroout(struct inode *inode
+>   				     EXTENT_STATUS_WRITTEN);
+>   }
+>   
+>  +static int ext4_inode_touch_time_cmp(void *priv, struct list_head *a,
+>  +				     struct list_head *b)
+>  +{
+>  +	struct ext4_inode_info *eia, *eib;
+>  +	unsigned long diff;
+>  +
+>  +	eia = list_entry(a, struct ext4_inode_info, i_es_lru);
+>  +	eib = list_entry(b, struct ext4_inode_info, i_es_lru);
+>  +
+>  +	diff = eia->i_touch_when - eib->i_touch_when;
+>  +	if (diff < 0)
+>  +		return -1;
+>  +	if (diff > 0)
+>  +		return 1;
+>  +	return 0;
+>  +}
+>   
+This comes straight from ext4, so no problem.
 
-Fine.
+Now we just need to make sure that the shrinker is clearly separated
+between a count part and a scan part.
 
-> > [ ... ]
-> > 
-> >>>> Basically I don't like the idea of those global aliases, which IMHO
-> >>>> should be completely dropped. Someone might not like it, but I'd go
-> >>>> with the conversion of our cpufreq drivers to platform drivers
-> >>>> instead, which could receive things like clocks and regulators
-> >>>> using
-> >>>> DT-based lookups.
-> >>> 
-> >>> I agree. Migration of exynos-cpufreq driver as a platform driver is
-> >>> the
-> >>> best solution. But unless someone picks up that work, cpufreq
-> >>> support
-> >>> for EXYNOS4 based systems is broken because of the incorrect clock
-> >>> aliases.
-> >> 
-> >> We have patches for this in our internal tree. I will clean them up a
-> >> bit and submit soon.
-> > 
-> > If you are going to submit the cpufreq driver patches for v3.11, then
-> > we can ignore this patchset. Otherwise, I would prefer to get these
-> > patches merged for v3.11 to get cpufreq working. Once the driver
-> > changes are incorporated, we can very well modify these later.
+> - static int ext4_es_shrink(struct shrinker *shrink, struct shrink_control *sc)
+> + static long ext4_es_count(struct shrinker *shrink, struct shrink_control *sc)
+> + {
+> + 	long nr;
+> + 	struct ext4_sb_info *sbi = container_of(shrink,
+> + 					struct ext4_sb_info, s_es_shrinker);
+> + 
+> + 	nr = percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
+> + 	trace_ext4_es_shrink_enter(sbi->s_sb, sc->nr_to_scan, nr);
+> + 	return nr;
+> + }
+The count seems okay.
 
-I hope we can get my patches merged for 3.11, but just to be safe and have 
-things working for now, please proceed with yours.
+> + 
+> + static long ext4_es_scan(struct shrinker *shrink, struct shrink_control *sc)
+>   {
+>   	struct ext4_sb_info *sbi = container_of(shrink,
+>   					struct ext4_sb_info, s_es_shrinker);
+>   	struct ext4_inode_info *ei;
+>  -	struct list_head *cur, *tmp, scanned;
+>  +	struct list_head *cur, *tmp;
+>  +	LIST_HEAD(skiped);
+>   	int nr_to_scan = sc->nr_to_scan;
+> - 	int ret, nr_shrunk = 0;
+> - 
+> - 	ret = percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
+> - 	trace_ext4_es_shrink_enter(sbi->s_sb, nr_to_scan, ret);
+> - 
+> - 	if (!nr_to_scan)
+> - 		return ret;
+> + 	int ret = 0, nr_shrunk = 0;
+>   
+>  -	INIT_LIST_HEAD(&scanned);
+>  -
+>   	spin_lock(&sbi->s_es_lru_lock);
+>  +
+>  +	/*
+>  +	 * If the inode that is at the head of LRU list is newer than
+>  +	 * last_sorted time, that means that we need to sort this list.
+>  +	 */
+>  +	ei = list_first_entry(&sbi->s_es_lru, struct ext4_inode_info, i_es_lru);
+>  +	if (sbi->s_es_last_sorted < ei->i_touch_when) {
+>  +		list_sort(NULL, &sbi->s_es_lru, ext4_inode_touch_time_cmp);
+>  +		sbi->s_es_last_sorted = jiffies;
+>  +	}
+>  +
+They are sorting the list, but that doesn't change the ammount of items they report.
+So far it is fine. My only concern here would be locking, but it seems to be all
+protected by the s_es_lru_lock.
 
-I need a bit more time for this, because IMHO the current design of our 
-cpufreq drivers is inappropriate (directly accessing CMU registers) with 
-common clock framework already existing and it needs to be redesigned.
+>   	list_for_each_safe(cur, tmp, &sbi->s_es_lru) {
+>  -		list_move_tail(cur, &scanned);
+>  +		/*
+>  +		 * If we have already reclaimed all extents from extent
+>  +		 * status tree, just stop the loop immediately.
+>  +		 */
+>  +		if (percpu_counter_read_positive(&sbi->s_extent_cache_cnt) == 0)
+>  +			break;
+>   
+>   		ei = list_entry(cur, struct ext4_inode_info, i_es_lru);
+>   
+> @@@ -951,22 -923,22 +956,22 @@@
+>   		if (nr_to_scan == 0)
+>   			break;
+>   	}
+>  -	list_splice_tail(&scanned, &sbi->s_es_lru);
+>  +
+>  +	/* Move the newer inodes into the tail of the LRU list. */
+>  +	list_splice_tail(&skiped, &sbi->s_es_lru);
+>   	spin_unlock(&sbi->s_es_lru_lock);
+>   
+> - 	ret = percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
+>   	trace_ext4_es_shrink_exit(sbi->s_sb, nr_shrunk, ret);
+> - 	return ret;
+> + 	return nr_shrunk;
+>   }
+>   
+This part also seems fine.
 
-Best regards,
-Tomasz
+>  -void ext4_es_register_shrinker(struct super_block *sb)
+>  +void ext4_es_register_shrinker(struct ext4_sb_info *sbi)
+>   {
+>  -	struct ext4_sb_info *sbi;
+>  -
+>  -	sbi = EXT4_SB(sb);
+>   	INIT_LIST_HEAD(&sbi->s_es_lru);
+>   	spin_lock_init(&sbi->s_es_lru_lock);
+>  +	sbi->s_es_last_sorted = 0;
+> - 	sbi->s_es_shrinker.shrink = ext4_es_shrink;
+> + 	sbi->s_es_shrinker.scan_objects = ext4_es_scan;
+> + 	sbi->s_es_shrinker.count_objects = ext4_es_count;
+>   	sbi->s_es_shrinker.seeks = DEFAULT_SEEKS;
+>   	register_shrinker(&sbi->s_es_shrinker);
+>   }
+
+And so does this.
+
+I believe the resolution is okay, at least from our PoV.
 
