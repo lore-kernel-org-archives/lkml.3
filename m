@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964800Ab3FSSjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:39:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40071 "EHLO
+	id S964814Ab3FSSkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:40:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40076 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935070Ab3FSSjv (ORCPT
+	with ESMTP id S934962Ab3FSSj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:39:51 -0400
-Date: Wed, 19 Jun 2013 11:39:15 -0700
-From: tip-bot for Vincent Guittot <tipbot@zytor.com>
-Message-ID: <tip-873b4c65b519fd769940eb281f77848227d4e5c1@git.kernel.org>
+	Wed, 19 Jun 2013 14:39:57 -0400
+Date: Wed, 19 Jun 2013 11:39:24 -0700
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-29bb9e5a75684106a37593ad75ec75ff8312731b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, vincent.guittot@linaro.org, tglx@linutronix.de
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <1370419991-13870-1-git-send-email-vincent.guittot@linaro.org>
-References: <1370419991-13870-1-git-send-email-vincent.guittot@linaro.org>
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1369423420.6828.226.camel@gandalf.local.home>
+References: <1369423420.6828.226.camel@gandalf.local.home>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix clear NOHZ_BALANCE_KICK
-Git-Commit-ID: 873b4c65b519fd769940eb281f77848227d4e5c1
+Subject: [tip:sched/core] tracing/context-tracking:
+  Add preempt_schedule_context() for tracing
+Git-Commit-ID: 29bb9e5a75684106a37593ad75ec75ff8312731b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,102 +28,172 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:39:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:39:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  873b4c65b519fd769940eb281f77848227d4e5c1
-Gitweb:     http://git.kernel.org/tip/873b4c65b519fd769940eb281f77848227d4e5c1
-Author:     Vincent Guittot <vincent.guittot@linaro.org>
-AuthorDate: Wed, 5 Jun 2013 10:13:11 +0200
+Commit-ID:  29bb9e5a75684106a37593ad75ec75ff8312731b
+Gitweb:     http://git.kernel.org/tip/29bb9e5a75684106a37593ad75ec75ff8312731b
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Fri, 24 May 2013 15:23:40 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 12:55:09 +0200
+CommitDate: Wed, 19 Jun 2013 12:55:10 +0200
 
-sched: Fix clear NOHZ_BALANCE_KICK
+tracing/context-tracking: Add preempt_schedule_context() for tracing
 
-I have faced a sequence where the Idle Load Balance was sometime not
-triggered for a while on my platform, in the following scenario:
+Dave Jones hit the following bug report:
 
- CPU 0 and CPU 1 are running tasks and CPU 2 is idle
+ ===============================
+ [ INFO: suspicious RCU usage. ]
+ 3.10.0-rc2+ #1 Not tainted
+ -------------------------------
+ include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+ other info that might help us debug this:
+ RCU used illegally from idle CPU! rcu_scheduler_active = 1, debug_locks = 0
+ RCU used illegally from extended quiescent state!
+ 2 locks held by cc1/63645:
+  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816b39fd>] __schedule+0xed/0x9b0
+  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8109d645>] cpuacct_charge+0x5/0x1f0
 
- CPU 1 kicks the Idle Load Balance
- CPU 1 selects CPU 2 as the new Idle Load Balancer
- CPU 2 sets NOHZ_BALANCE_KICK for CPU 2
- CPU 2 sends a reschedule IPI to CPU 2
+ CPU: 1 PID: 63645 Comm: cc1 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 25/277 64369]
+ Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+  0000000000000000 ffff88010f78fcf8 ffffffff816ae383 ffff88010f78fd28
+  ffffffff810b698d ffff88011c092548 000000000023d073 ffff88011c092500
+  0000000000000001 ffff88010f78fd60 ffffffff8109d7c5 ffffffff8109d645
+ Call Trace:
+  [<ffffffff816ae383>] dump_stack+0x19/0x1b
+  [<ffffffff810b698d>] lockdep_rcu_suspicious+0xfd/0x130
+  [<ffffffff8109d7c5>] cpuacct_charge+0x185/0x1f0
+  [<ffffffff8109d645>] ? cpuacct_charge+0x5/0x1f0
+  [<ffffffff8108dffc>] update_curr+0xec/0x240
+  [<ffffffff8108f528>] put_prev_task_fair+0x228/0x480
+  [<ffffffff816b3a71>] __schedule+0x161/0x9b0
+  [<ffffffff816b4721>] preempt_schedule+0x51/0x80
+  [<ffffffff816b4800>] ? __cond_resched_softirq+0x60/0x60
+  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+  [<ffffffff810ff3cc>] ftrace_ops_control_func+0x1dc/0x210
+  [<ffffffff816be280>] ftrace_call+0x5/0x2f
+  [<ffffffff816b681d>] ? retint_careful+0xb/0x2e
+  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+ ------------[ cut here ]------------
 
- While CPU 3 wakes up, CPU 0 or CPU 1 migrates a waking up task A on CPU 2
+What happened was that the function tracer traced the schedule_user() code
+that tells RCU that the system is coming back from userspace, and to
+add the CPU back to the RCU monitoring.
 
- CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
-       task A quickly goes back to sleep (before a tick occurs on CPU 2)
- CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
+Because the function tracer does a preempt_disable/enable_notrace() calls
+the preempt_enable_notrace() checks the NEED_RESCHED flag. If it is set,
+then preempt_schedule() is called. But this is called before the user_exit()
+function can inform the kernel that the CPU is no longer in user mode and
+needs to be accounted for by RCU.
 
-Whenever CPU 2 will be selected as the ILB, no reschedule IPI will be sent
-because NOHZ_BALANCE_KICK is already set and no Idle Load Balance will be
-performed.
+The fix is to create a new preempt_schedule_context() that checks if
+the kernel is still in user mode and if so to switch it to kernel mode
+before calling schedule. It also switches back to user mode coming back
+from schedule in need be.
 
-We must wait for the sched softirq to be raised on CPU 2 thanks to another
-part the kernel to come back to clear NOHZ_BALANCE_KICK.
+The only user of this currently is the preempt_enable_notrace(), which is
+only used by the tracing subsystem.
 
-The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
-we can't raise the sched_softirq for the Idle Load Balance.
-
-Change since V1:
-
-- move the clear of NOHZ_BALANCE_KICK in got_nohz_idle_kick if the ILB
-  can't run on this CPU (as suggested by Peter)
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1370419991-13870-1-git-send-email-vincent.guittot@linaro.org
+Link: http://lkml.kernel.org/r/1369423420.6828.226.camel@gandalf.local.home
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ include/linux/preempt.h   | 18 +++++++++++++++++-
+ kernel/context_tracking.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 58453b8..919bee6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -633,7 +633,19 @@ void wake_up_nohz_cpu(int cpu)
- static inline bool got_nohz_idle_kick(void)
- {
- 	int cpu = smp_processor_id();
--	return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 87a03c7..f5d4723 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -33,9 +33,25 @@ do { \
+ 		preempt_schedule(); \
+ } while (0)
+ 
++#ifdef CONFIG_CONTEXT_TRACKING
 +
-+	if (!test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu)))
-+		return false;
++void preempt_schedule_context(void);
 +
-+	if (idle_cpu(cpu) && !need_resched())
-+		return true;
++#define preempt_check_resched_context() \
++do { \
++	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++		preempt_schedule_context(); \
++} while (0)
++#else
 +
-+	/*
-+	 * We can't run Idle Load Balance on this CPU for this time so we
-+	 * cancel it and clear NOHZ_BALANCE_KICK
-+	 */
-+	clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-+	return false;
++#define preempt_check_resched_context() preempt_check_resched()
++
++#endif /* CONFIG_CONTEXT_TRACKING */
++
+ #else /* !CONFIG_PREEMPT */
+ 
+ #define preempt_check_resched()		do { } while (0)
++#define preempt_check_resched_context()	do { } while (0)
+ 
+ #endif /* CONFIG_PREEMPT */
+ 
+@@ -88,7 +104,7 @@ do { \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+ 	barrier(); \
+-	preempt_check_resched(); \
++	preempt_check_resched_context(); \
+ } while (0)
+ 
+ #else /* !CONFIG_PREEMPT_COUNT */
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 65349f0..6667700 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -71,6 +71,46 @@ void user_enter(void)
+ 	local_irq_restore(flags);
  }
  
- #else /* CONFIG_NO_HZ_COMMON */
-@@ -1393,8 +1405,9 @@ static void sched_ttwu_pending(void)
++#ifdef CONFIG_PREEMPT
++/**
++ * preempt_schedule_context - preempt_schedule called by tracing
++ *
++ * The tracing infrastructure uses preempt_enable_notrace to prevent
++ * recursion and tracing preempt enabling caused by the tracing
++ * infrastructure itself. But as tracing can happen in areas coming
++ * from userspace or just about to enter userspace, a preempt enable
++ * can occur before user_exit() is called. This will cause the scheduler
++ * to be called when the system is still in usermode.
++ *
++ * To prevent this, the preempt_enable_notrace will use this function
++ * instead of preempt_schedule() to exit user context if needed before
++ * calling the scheduler.
++ */
++void __sched notrace preempt_schedule_context(void)
++{
++	struct thread_info *ti = current_thread_info();
++	enum ctx_state prev_ctx;
++
++	if (likely(ti->preempt_count || irqs_disabled()))
++		return;
++
++	/*
++	 * Need to disable preemption in case user_exit() is traced
++	 * and the tracer calls preempt_enable_notrace() causing
++	 * an infinite recursion.
++	 */
++	preempt_disable_notrace();
++	prev_ctx = exception_enter();
++	preempt_enable_no_resched_notrace();
++
++	preempt_schedule();
++
++	preempt_disable_notrace();
++	exception_exit(prev_ctx);
++	preempt_enable_notrace();
++}
++EXPORT_SYMBOL_GPL(preempt_schedule_context);
++#endif /* CONFIG_PREEMPT */
  
- void scheduler_ipi(void)
- {
--	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
--	    && !tick_nohz_full_cpu(smp_processor_id()))
-+	if (llist_empty(&this_rq()->wake_list)
-+			&& !tick_nohz_full_cpu(smp_processor_id())
-+			&& !got_nohz_idle_kick())
- 		return;
- 
- 	/*
-@@ -1417,7 +1430,7 @@ void scheduler_ipi(void)
- 	/*
- 	 * Check if someone kicked us for doing the nohz idle load balance.
- 	 */
--	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
-+	if (unlikely(got_nohz_idle_kick())) {
- 		this_rq()->idle_balance = 1;
- 		raise_softirq_irqoff(SCHED_SOFTIRQ);
- 	}
+ /**
+  * user_exit - Inform the context tracking that the CPU is
