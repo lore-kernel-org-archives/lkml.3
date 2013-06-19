@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934664Ab3FSKxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:53:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54078 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934011Ab3FSKxE (ORCPT
+	id S934679Ab3FSKxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:53:20 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:55390 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934011Ab3FSKxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:53:04 -0400
-Date: Wed, 19 Jun 2013 12:53:03 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
- spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
-In-Reply-To: <51C1861A.6030901@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306191249260.4013@ionos.tec.linutronix.de>
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C1861A.6030901@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Jun 2013 06:53:15 -0400
+Date: Wed, 19 Jun 2013 12:52:59 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
+Message-ID: <20130619105259.GC9448@linux-mips.org>
+References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com>
+ <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com>
+ <2302882.NVjP8DdXWY@wuerfel>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2302882.NVjP8DdXWY@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Chen Gang wrote:
+On Wed, Jun 19, 2013 at 12:01:06PM +0200, Arnd Bergmann wrote:
 
-> On 06/19/2013 05:59 PM, Thomas Gleixner wrote:
-> > I'm well aware how that works. And there is no difference whether you
-> > do:
-> > 
-> > 	local_irq_save(flags);
-> > 	spin_lock(&lock);
-> > or
-> > 	spin_lock_irqsave(&lock, flags);
-> 
-> if CONFIG_LOCKDEP is not defined, they are not semantically the same.
+> This breaks building on 32 bit architectures as I found on my daily ARM
+> builds: __raw_writeq cannot be defined on architectures that don't have
+> native 64 bit data access instructions. It's also wrong to use the
+> __raw_* variant, which is not guaranteed to be atomic and is not
+> endian-safe.
 
-Care to explain _your_ spinlock semantics to me?
+I've dequeued the series from the mips-next tree until David has a chance
+to fix this.
 
-The factual ones are:
-
-    spin_lock_irqsave() returns with the lock held, interrupts and
-    preemption disabled. 
-
-    spin_lock() returns with the lock held, preemption disabled. It
-    does not affect interrupt disabled/enabled state
-
-So
-	local_irq_save(flags);
-	spin_lock(&lock);
-
-is semantically the same as 
-
-	spin_lock_irqsave(&lock, flags);
-
-And this is completely independent of LOCKDEP.
-
-Thanks,
-
-	tglx
-
-    
+  Ralf
