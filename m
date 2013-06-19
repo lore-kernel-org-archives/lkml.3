@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934361Ab3FSLXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:23:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48227 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934067Ab3FSLXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:23:47 -0400
-Message-ID: <51C19498.8090807@ti.com>
-Date: Wed, 19 Jun 2013 16:53:04 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S934427Ab3FSL1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:27:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51974 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934141Ab3FSL07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 07:26:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH] usb: gadget: at91_udc: call at91udc_of_init only when needed
+Date: Wed, 19 Jun 2013 13:27:27 +0200
+Message-ID: <6194333.jEShKk4GmN@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
 MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/7] gpio: davinci: move to platform device
-References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com> <1371202532-14628-3-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1371202532-14628-3-git-send-email-avinashphilip@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:tkrQmEwYRLw8e0g91BxmEkptIw2M5Y4Jeo7VZmf5L4P
+ ELvj45sHHrR2+hu3RSEG6Hg/M9+5P6+8O1KsiYV481tPyfmSnQ
+ 37xPAcowqZD78Yg+WIp05QWqOxR0NG+cnZikHyydQkmv/Fqz+8
+ uELfjpwRj8LTTWkpIalW3/QJNUckAlXYKtL98Epcdfv3imjsYk
+ +A3WsVV/IUh5GckM+sIvsFlAaFEg+DeNkMnPBvK0RkiambGLST
+ bSHP1OXhJEsBwbV0PbrArYG8EtDPTskLcheid0y6C0fbIhM0mg
+ XN9gA6fnGIA2dhLhX1o41FWunpukRcGIZojfc1sxOgRLtWQ+l0
+ X75DcWnZm/SutLkC02uU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/14/2013 3:05 PM, Philip Avinash wrote:
-> From: KV Sujith <sujithkv@ti.com>
-> 
-> Modify GPIO Davinci driver to be compliant to standard platform drivers.
-> The driver did not have platform driver structure or a probe. Instead,
-> had a davinci_gpio_setup() function which is called in the pure_init
-> sequence. The function also had dependency on davinci_soc_info structure
-> of the corresponding platform. For Device Tree(DT) implementation, we
-> need to get rid of the dependency on the davinci_soc_info structure.
-> Hence as a first stage of DT conversion, we implement a probe. Future
-> commits shall modify the probe to read platform related data from DT.
-> 
-> - Add platform_driver structure and driver register function for davinci
->   GPIO driver. The driver registration is made to happen in
->   postcore_initcall. This is required since machine init functions like
->   da850_lcd_hw_init() make use of GPIO.
-> - Convert the davinci_gpio_setup() to davinci_gpio_probe().
-> - Remove access of members in soc_info structure. Instead, relevant data
->   are taken from davinci_gpio_platform_data structure pointed by
->   pdev->dev.platform_data.
-> - Change clk_get() to devm_clk_get() as devm_clk_get() is a device
->   managed function and makes error handling simpler.
-> - Change pr_err to dev_err for ngpio error reporting.
+This avoids a build error in at91sam9261_9g10_defconfig:
 
-s/ngpio/gpio
+drivers/usb/gadget/at91_udc.c: In function 'at91udc_probe':
+drivers/usb/gadget/at91_udc.c:1685:34: warning: 'flags' may be used uninitialized in this
+function [-Wmaybe-uninitialized]
+  board->vbus_active_low = (flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0;
+                                  ^
+drivers/usb/gadget/at91_udc.c:1678:21: note: 'flags' was declared here
+  enum of_gpio_flags flags;
+                     ^
 
-> - Arrange include files in alphabetical order
+Making the call to at91udc_of_init conditinal also reduces
+the object code size without sacrificing build coverage.
 
-Doesn't happen in this patch.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> - Add struct davinci_gpio_platform_data davinci for gpio module.
-> 
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> [avinashphilip@ti.com: Move global definition for "struct
-> davinci_gpio_controller" variable to local in probe and set it as driver
-> data.]
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> ---
+diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+index 073b938..2cbab1c 100644
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -1725,7 +1725,7 @@ static int at91udc_probe(struct platform_device *pdev)
+ 	/* init software state */
+ 	udc = &controller;
+ 	udc->gadget.dev.parent = dev;
+-	if (pdev->dev.of_node)
++	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
+ 		at91udc_of_init(udc, pdev->dev.of_node);
+ 	else
+ 		memcpy(&udc->board, dev->platform_data,
 
-> diff --git a/arch/arm/mach-davinci/include/mach/gpio-davinci.h b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-> index 1fdd1fd..b325a1d 100644
-> --- a/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-> +++ b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-> @@ -60,6 +60,8 @@ struct davinci_gpio_controller {
->  	void __iomem		*set_data;
->  	void __iomem		*clr_data;
->  	void __iomem		*in_data;
-> +	int			gpio_unbanked;
-
-You don't really use this member in this patch. You should add it in the
-patch you need it in.
-
-I fixed these issues locally and pushed this patch to my v3.11/gpio branch.
-
-Thanks,
-Sekhar
