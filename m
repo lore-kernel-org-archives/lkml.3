@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934310Ab3FSJaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:30:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34360 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933820Ab3FSJac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:30:32 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Dave Chiluk <chiluk@canonical.com>
-Cc: viro@zeniv.linux.org.uk, petr@vandrovec.name, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
-References: <1369781410-24473-1-git-send-email-chiluk@canonical.com>
-Date: Wed, 19 Jun 2013 10:30:26 +0100
-In-Reply-To: <1369781410-24473-1-git-send-email-chiluk@canonical.com> (Dave
-	Chiluk's message of "Tue, 28 May 2013 17:50:10 -0500")
-Message-ID: <87fvwev45p.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+	id S934368Ab3FSJcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:32:18 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:50602 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934057Ab3FSJcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 05:32:15 -0400
+Date: Wed, 19 Jun 2013 04:32:13 -0500
+From: Robin Holt <holt@sgi.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org,
+        Robin Holt <holt@sgi.com>
+Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
+Message-ID: <20130619093212.GX3658@sgi.com>
+References: <1370967244-5610-1-git-send-email-athorlton@sgi.com>
+ <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
+ <20130618164537.GJ16067@sgi.com>
+ <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chiluk <chiluk@canonical.com> writes:
+On Tue, Jun 18, 2013 at 05:01:23PM -0700, David Rientjes wrote:
+> On Tue, 18 Jun 2013, Alex Thorlton wrote:
+> 
+> > Thanks for your input, however, I believe the method of using a malloc
+> > hook falls apart when it comes to static binaries, since we wont' have
+> > any shared libraries to hook into.  Although using a malloc hook is a
+> > perfectly suitable solution for most cases, we're looking to implement a
+> > solution that can be used in all situations.
+> > 
+> 
+> I guess the question would be why you don't want your malloc memory backed 
+> by thp pages for certain static binaries and not others?  Is it because of 
+> an increased rss due to khugepaged collapsing memory because of its 
+> default max_ptes_none value?
+> 
+> > Aside from that particular shortcoming of the malloc hook solution,
+> > there are some other situations having a cpuset-based option is a
+> > much simpler and more efficient solution than the alternatives.
+> 
+> Sure, but why should this be a cpuset based solution?  What is special 
+> about cpusets that make certain statically allocated binaries not want 
+> memory backed by thp while others do?  This still seems based solely on 
+> convenience instead of any hard requirement.
 
-> 1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in ncpfs such that
-> directories could no longer be removed.  This was because ncp_rmdir checked
-> to see if a dentry could be unhashed before allowing it to be removed. Since
-> 1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that incremented
-> dentry->d_count causing it to always be greater than 1 unhash would always
-> fail.  Thus causing the error path in ncp_rmdir to always be taken.  Removing
-> this error path is safe as unhashing is still accomplished by calls to dput
-> from vfs_rmdir.
+The convenience being that many batch schedulers have added cpuset
+support.  They create the cpuset's and configure them as appropriate
+for the job as determined by a mixture of input from the submitting
+user but still under the control of the administrator.  That seems like
+a fairly significant convenience given that it took years to get the
+batch schedulers to adopt cpusets in the first place.  At this point,
+expanding their use of cpusets is under the control of the system
+administrator and would not require any additional development on
+the batch scheduler developers part.
 
-Stable kernels starting with 3.0 also contain the offending commit, so
-I believe this patch should be applied to stable kernels as well.
+> > One
+> > such situation that comes to mind would be an environment where a batch
+> > scheduler is in use to ration system resources.  If an administrator
+> > determines that a users jobs run more efficiently with thp always on,
+> > the administrator can simply set the users jobs to always run with that
+> > setting, instead of having to coordinate with that user to get them to
+> > run their jobs in a different way.  I feel that, for cases such as this,
+> > the this additional flag is in line with the other capabilities that
+> > cgroups and cpusets provide.
+> > 
+> 
+> That sounds like a memcg, i.e. container, type of an issue, not a cpuset 
+> issue which is more geared toward NUMA optimizations.  User jobs should 
+> always run more efficiently with thp always on, the worst-case scenario 
+> should be if they run with the same performance as thp set to never.  In 
+> other words, there shouldn't be any regression that requires certain 
+> cpusets to disable thp because of a performance regression.  If there are 
+> any, we'd like to investigate that separately from this patch.
 
-Upstream commit is 698b8223631472bf982ed570b0812faa61955683.
+Here are the entries in the cpuset:
+cgroup.event_control  mem_exclusive    memory_pressure_enabled  notify_on_release         tasks
+cgroup.procs          mem_hardwall     memory_spread_page       release_agent
+cpu_exclusive         memory_migrate   memory_spread_slab       sched_load_balance
+cpus                  memory_pressure  mems                     sched_relax_domain_level
 
-Cheers,
--- 
-Luis
+There are scheduler, slab allocator, page_cache layout, etc controls.
+Why _NOT_ add a thp control to that nicely contained central location?
+It is a concise set of controls for the job.
 
-> ---
->  fs/ncpfs/dir.c |    9 ---------
->  1 file changed, 9 deletions(-)
->
-> diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-> index 8163260..6792ce1 100644
-> --- a/fs/ncpfs/dir.c
-> +++ b/fs/ncpfs/dir.c
-> @@ -1029,15 +1029,6 @@ static int ncp_rmdir(struct inode *dir, struct dentry *dentry)
->  	DPRINTK("ncp_rmdir: removing %s/%s\n",
->  		dentry->d_parent->d_name.name, dentry->d_name.name);
->  
-> -	/*
-> -	 * fail with EBUSY if there are still references to this
-> -	 * directory.
-> -	 */
-> -	dentry_unhash(dentry);
-> -	error = -EBUSY;
-> -	if (!d_unhashed(dentry))
-> -		goto out;
-> -
->  	len = sizeof(__name);
->  	error = ncp_io2vol(server, __name, &len, dentry->d_name.name,
->  			   dentry->d_name.len, !ncp_preserve_case(dir));
+Maybe I am misunderstanding.  Are you saying you want to put memcg
+information into the cpuset or something like that?
+
+Robin
