@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933864Ab3FSAwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 20:52:23 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:45209 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933445Ab3FSAwW (ORCPT
+	id S933850Ab3FSBCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:02:31 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60111 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 20:52:22 -0400
-Date: Tue, 18 Jun 2013 17:52:21 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: majianpeng <majianpeng@gmail.com>
-cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH] ceph: fix sleeping function called from invalid
- context.
-In-Reply-To: <201306190837590546663@gmail.com>
-Message-ID: <alpine.DEB.2.00.1306181750040.18947@cobra.newdream.net>
-References: <201306181930448773810@gmail.com>,  <alpine.DEB.2.00.1306180807210.23632@cobra.newdream.net> <201306190837590546663@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 18 Jun 2013 21:02:30 -0400
+X-AuditID: 9c93016f-b7b6cae000007078-db-51c103236d03
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 1/3] perf record: support duration option to run during specified time
+Date: Wed, 19 Jun 2013 10:02:28 +0900
+Message-Id: <1371603750-15053-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, majianpeng wrote:
-> >On Tue, 18 Jun 2013, majianpeng wrote:
-> >> [ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
-> >> [ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
-> >> [ 1121.231971] 1 lock held by mv/9831:
-> >> [ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
-> >> [ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
-> >> [ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
-> >> O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
-> >> [ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
-> >> [ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
-> >> [ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
-> >> [ 1121.232056] Call Trace:
-> >> [ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
-> >> [ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
-> >> [ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
-> >> [ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
-> >> [ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
-> >> [ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
-> >> [ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
-> >> [ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-> >> [ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
-> >> [ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-> >> [ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
-> >> [ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
-> >> [ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
-> >> [ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
-> >> [ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
-> >> [ 1121.232154] 1 lock held by mv/9831:
-> >> [ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
-> >> [<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
-> >> 
-> >> I think move the ci->i_ceph_lock down is safe because we can't free
-> >> ceph_inode_info at there.
-> >> 
-> >> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> >> ---
-> >>  fs/ceph/xattr.c | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >> 
-> >> diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
-> >> index 9b6b2b6..4efde06 100644
-> >> --- a/fs/ceph/xattr.c
-> >> +++ b/fs/ceph/xattr.c
-> >> @@ -675,7 +675,6 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
-> >>         if (!ceph_is_valid_xattr(name))
-> >>                 return -ENODATA;
-> >>  
-> >> -       spin_lock(&ci->i_ceph_lock);
-> >>         dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
-> >>              ci->i_xattrs.version, ci->i_xattrs.index_version);
-> >
-> >Unfortunately these intervening lines neext i_ceph_lock to prevent the 
-> >i_xattrs struct contents from shifting underneath us.  It is more 
-> IMHO,for those line
-> >         vxattr = ceph_match_vxattr(inode, name);
-> >         if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
-> >                 err = vxattr->getxattr_cb(ci, value, size);
-> It's no need to protect by i_ceph_lock.
-> Can you expalin in detail?
+Currently, there is no method to quit at specified time later.
+We are used to using 'sleep N' as command argument if we need it,
+but explicitly supporting this feature maybe makes sense.
 
-Oh!  You're totally right.  I got distracted by the dout() line that 
-prints i_xattrs.* fields; *that* needs to move that too to stay inside the 
-lock.  Care to update the patch?
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Thanks!
-sage
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index cdf58ec..19c65b5 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -29,6 +29,7 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
++static unsigned int duration;
+ #ifndef HAVE_ON_EXIT
+ #ifndef ATEXIT_MAX
+ #define ATEXIT_MAX 32
+@@ -194,7 +195,7 @@ static void perf_record__sig_exit(int exit_status __maybe_unused, void *arg)
+ 			psignal(WTERMSIG(status), rec->progname);
+ 	}
+ 
+-	if (signr == -1 || signr == SIGUSR1)
++	if (signr == -1 || signr == SIGUSR1 || signr == SIGALRM)
+ 		return;
+ 
+ 	signal(signr, SIG_DFL);
+@@ -404,6 +405,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
++	signal(SIGALRM, sig_handler);
+ 
+ 	if (!output_name) {
+ 		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+@@ -471,6 +473,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 			goto out_delete_session;
+ 	}
+ 
++	alarm(duration);
+ 	if (forks) {
+ 		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
+ 						    argv, opts->pipe_output,
+@@ -955,6 +958,7 @@ const struct option record_options[] = {
+ 		     parse_branch_stack),
+ 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+ 		    "sample by weight (on special events only)"),
++	OPT_UINTEGER(0, "duration", &duration, "run during specified seconds"),
+ 	OPT_END()
+ };
+ 
+-- 
+1.7.9.5
 
-
-> >expensive for the general getxattr case, but a simpler fix is to take 
-> >map_sem outside of i_ceph_lock.
-> [snip]
-> 
-> 
-> Thanks
-> Jianpeng Ma
