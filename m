@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934778Ab3FSPb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:31:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64006 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934566Ab3FSPb0 (ORCPT
+	id S1756722Ab3FSPdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:33:15 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:18620 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756629Ab3FSPdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:31:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 11/11] ARM: msm: Move MSM's DT based hardware to multi-platform support
-Date: Wed, 19 Jun 2013 17:30:55 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1371600281-6118-1-git-send-email-sboyd@codeaurora.org> <1371600281-6118-12-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1371600281-6118-12-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 19 Jun 2013 11:33:13 -0400
+Message-ID: <1371655968.22206.35.camel@misato.fc.hp.com>
+Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Wed, 19 Jun 2013 09:32:48 -0600
+In-Reply-To: <51C11E56.2090903@jp.fujitsu.com>
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+	  <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <1371599989.22206.6.camel@misato.fc.hp.com>
+	 <51C11E56.2090903@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306191730.55203.arnd@arndb.de>
-X-Provags-ID: V02:K0:QxjgI3njrd2E4qEIE0umDSGnc//hmmGk9jWXvXANps4
- lycGGKwLXaQ0etc11mNFXw9A7cooPDXTtsD3dvySGZBO/rJPBY
- Ty3hY2rTxauoCNA3nW017Vz5AwOVGEnyL8kVxKp/nHll9Qeofm
- KwMrV9Lp0YPIXHW+6L1CcqV4lHVMgVp7hZ9o+hDFnGZIk+8HnU
- tY7cIgVJ58CnPy0MFUF+z0UdcK5Lrg2zYQ5GatwfZD4mooHfX3
- 48Hp8INsju68orqMVBiWfslT6ohNlQ/1+4lY8PqPFWf0cXFm/d
- KZ8ma7JjYN7Spr9xvGhrc4BduhKGWnUR8emyaCXoWXGd7Ch41o
- sdciGvhhNtxtwIMLSDX4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 June 2013, Stephen Boyd wrote:
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 430c922..22d4fff 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -618,8 +618,9 @@ config ARCH_PXA
->         help
->           Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
->  
-> -config ARCH_MSM
-> +config ARCH_MSM_NODT
->         bool "Qualcomm MSM"
-> +       select ARCH_MSM
->         select ARCH_REQUIRE_GPIOLIB
->         select CLKDEV_LOOKUP
->         select CLKSRC_OF if OF
+On Wed, 2013-06-19 at 11:58 +0900, Yasuaki Ishimatsu wrote:
+> 2013/06/19 8:59, Toshi Kani wrote:
+> > On Tue, 2013-06-18 at 19:05 +0200, Vasilis Liaskovitis wrote:
+> >> Hi,
+> >>
+> >> On Thu, Jun 13, 2013 at 09:03:52PM +0800, Tang Chen wrote:
+> >>> The following patch-set from Yinghai allocates pagetables to local nodes.
+> >>> v1: https://lkml.org/lkml/2013/3/7/642
+> >>> v2: https://lkml.org/lkml/2013/3/10/47
+> >>> v3: https://lkml.org/lkml/2013/4/4/639
+> >>> v4: https://lkml.org/lkml/2013/4/11/829
+> >>>
+> >>> Since pagetable pages are used by the kernel, they cannot be offlined.
+> >>> As a result, they cannot be hot-remove.
+> >>>
+> >>> This patch fix this problem with the following solution:
+> >>>
+> >>>       1.   Introduce a new bootmem type LOCAL_NODE_DATAL, and register local
+> >>>            pagetable pages as LOCAL_NODE_DATAL by setting page->lru.next to
+> >>>            LOCAL_NODE_DATAL, just like we register SECTION_INFO pages.
+> >>>
+> >>>       2.   Skip LOCAL_NODE_DATAL pages in offline/online procedures. When the
+> >>>            whole memory block they reside in is offlined, the kernel can
+> >>>            still access the pagetables.
+> >>>            (This changes the semantics of offline/online a little bit.)
+> >>
+> >> This could be a design problem of part3: if we allow local pagetable memory
+> >> to not be offlined but allow the offlining to return successfully, then
+> >> hot-remove is going to succeed. But the direct mapped pagetable pages are still
+> >> mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
+> >> physical DIMMs getting disabled in real hardware, or in a VM case the
+> >> corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
+> >> system can crash as a result.
+> >>
+> >> I think these local pagetables do need to be unmapped from kernel, offlined and
+> >> removed somehow - otherwise hot-remove should fail. Could they be migrated
+> >> alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
+> >> migrated, correct?
+> >>
+> >> What is the original reason for local node pagetable allocation with regards
+> >> to memory hotplug? I assume we want to have hotplugged nodes use only their local
+> >> memory, so that there are no inter-node memory dependencies for hot-add/remove.
+> >> Are there other reasons that I am missing?
+> >
+> > I second Vasilis.  The part1/2/3 series could be much simpler & less
+> > riskier if we focus on the SRAT changes first, and make the local node
+> > pagetable changes as a separate item.  Is there particular reason why
+> > they have to be done at a same time?
+> 
+> If my understanding is correct:
+> Main purpose of Yinghai's work is to put pagetable on local node ram.
+> For this, he needs to know SRAT information before setting pagetable.
+> So part1 does them same time.
+
+Thanks Yasuaki.  I like Tang Chen's new plan, and I think it is going to
+be easier to proceed in that way.
+-Toshi
 
 
-I think you have to adapt your defconfig after this change.
-
-I'd suggest enabling all drivers for DT-based booting in
-multi_v7_defconfig, and changing msm_defconfig to select
-ARCH_MSM_NODT.
-
-	Arnd
