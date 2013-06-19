@@ -1,215 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab3FST4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:56:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51582 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757302Ab3FST4H (ORCPT
+	id S1757407Ab3FST7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:59:23 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:60325 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab3FST7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:56:07 -0400
-Message-ID: <51C20CCC.3060502@ti.com>
-Date: Wed, 19 Jun 2013 15:55:56 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 15:59:22 -0400
 MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        <jonghwa3.lee@samsung.com>
-Subject: Re: [PATCH V6 08/30] thermal: exynos: Add missing definations and
- code cleanup
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1371451599-31035-9-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2QWVXCKMXPNKBUGUSRJIK"
+In-Reply-To: <51C206C2.2070404@google.com>
+References: <51C206C2.2070404@google.com>
+From: Tristan Schmelcher <tschmelcher@google.com>
+Date: Wed, 19 Jun 2013 15:59:01 -0400
+Message-ID: <CADNZ+wTGfASDe23n9fy=+6C060ZjZ0cWMkbs=+wbLaeA46zPgQ@mail.gmail.com>
+Subject: Re: [PATCH] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
+ and in other edge cases
+To: Richard Weinberger <richard@nod.at>, jdike@addtoit.com
+Cc: user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2QWVXCKMXPNKBUGUSRJIK
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+And of course I found a bug in it moments after sending. Please
+ignore, v2 coming shortly.
 
-On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
-> This patch adds some extra register bitfield definations and cleans
-> up the code to prepare for moving register macros and definations insid=
-e
-> the TMU data section.
->=20
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+On 19 June 2013 15:30, Tristan Schmelcher <tschmelcher@google.com> wrote:
+> From: Tristan Schmelcher <tschmelcher@google.com>
+>
+> which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to
+> /run/shm), if there were multiple mounts on top of each other, if the
+> mount(s) were obscured by a later mount, or if /dev/shm was a prefix of
+> another mount point. This fixes these cases. Applies to 3.9.6.
+>
+> Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
 > ---
->  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++-=
---------
->  1 files changed, 46 insertions(+), 16 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
-sung/exynos_tmu.c
-> index 5df04a1..fa33a48 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -43,9 +43,12 @@
-> =20
->  #define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
->  #define EXYNOS_TMU_GAIN_SHIFT		8
-> +#define EXYNOS_TMU_GAIN_MASK		0xf
->  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-> -#define EXYNOS_TMU_CORE_ON		3
-> -#define EXYNOS_TMU_CORE_OFF		2
-> +#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
-> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
-> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
-> +#define EXYNOS_TMU_CORE_EN_SHIFT	0
->  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
-> =20
->  /* Exynos4210 specific registers */
-> @@ -63,6 +66,7 @@
->  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
->  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
->  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
->  #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
-> =20
->  /* Exynos5250 and Exynos4412 specific registers */
-> @@ -72,17 +76,30 @@
->  #define EXYNOS_EMUL_CON		0x80
-> =20
->  #define EXYNOS_TRIMINFO_RELOAD		0x1
-> +#define EXYNOS_TRIMINFO_SHIFT		0x0
-> +#define EXYNOS_TMU_RISE_INT_MASK	0x111
-> +#define EXYNOS_TMU_RISE_INT_SHIFT	0
-> +#define EXYNOS_TMU_FALL_INT_MASK	0x111
-> +#define EXYNOS_TMU_FALL_INT_SHIFT	12
->  #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
->  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
-> -#define EXYNOS_MUX_ADDR_VALUE		6
-> -#define EXYNOS_MUX_ADDR_SHIFT		20
->  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-> +#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+>
+> --- linux-3.9.6/arch/um/os-Linux/mem.c.orig     2013-06-19
+> 14:50:14.000000000 -0400
+> +++ linux-3.9.6/arch/um/os-Linux/mem.c  2013-06-19 14:53:07.000000000 -0400
+> @@ -53,6 +53,25 @@ static void __init find_tempdir(void)
+>  }
+>   /*
+> + * Remove bytes from the front of the buffer and refill it so that if
+> there's a
+> + * partial string that we care about, it will be completed, and we can
+> recognize
+> + * it.
+> + */
+> +static int pop(int fd, char *buf, size_t size, size_t npop)
+> +{
+> +       ssize_t n;
+> +       size_t len = strlen(&buf[npop]);
 > +
-> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
-> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
-> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
-> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
-> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
-> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
-> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
-> =20
->  #define EFUSE_MIN_VALUE 40
->  #define EFUSE_MAX_VALUE 100
-> =20
->  #ifdef CONFIG_THERMAL_EMULATION
->  #define EXYNOS_EMUL_TIME	0x57F0
-> +#define EXYNOS_EMUL_TIME_MASK	0xffff
->  #define EXYNOS_EMUL_TIME_SHIFT	16
->  #define EXYNOS_EMUL_DATA_SHIFT	8
->  #define EXYNOS_EMUL_DATA_MASK	0xFF
-> @@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_de=
-vice *pdev, bool on)
->  	mutex_lock(&data->lock);
->  	clk_enable(data->clk);
-> =20
-> -	con =3D pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-> -		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-> +	con =3D readl(data->base + EXYNOS_TMU_REG_CONTROL);
-> =20
-> -	if (data->soc =3D=3D SOC_ARCH_EXYNOS) {
-> -		con |=3D pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
-> -		con |=3D (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-> +	if (pdata->reference_voltage) {
-> +		con &=3D ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
-> +				EXYNOS_TMU_REF_VOLTAGE_SHIFT);
-> +		con |=3D pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-> +	}
+> +       memmove(buf, &buf[npop], len + 1);
+> +       n = read(fd, &buf[len], size - len - 1);
+> +       if (n < 0)
+> +               return -errno;
 > +
-> +	if (pdata->gain) {
-> +		con &=3D ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
-> +		con |=3D (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
-> +	}
+> +       buf[len + n] = '\0';
+> +       return 1;
+> +}
 > +
-> +	if (pdata->noise_cancel_mode) {
-> +		con &=3D ~(EXYNOS_TMU_TRIP_MODE_MASK <<
-> +					EXYNOS_TMU_TRIP_MODE_SHIFT);
-> +		con |=3D (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
->  	}
-> =20
->  	if (on) {
-> -		con |=3D EXYNOS_TMU_CORE_ON;
-
-
-
-Before, in order to turn core on you had:
-	con =3D con | 3;
-
-now you do:
-	con =3D con | (1 << 0);
-
-To me, before you would set bit 1 and 0, now you set bit 0.
-
-
-> -		interrupt_en =3D pdata->trigger_level3_en << 12 |
-> -			pdata->trigger_level2_en << 8 |
-> -			pdata->trigger_level1_en << 4 |
-> -			pdata->trigger_level0_en;
-> +		con |=3D (1 << EXYNOS_TMU_CORE_EN_SHIFT);
-> +		interrupt_en =3D
-> +		pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
-> +		pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
-> +		pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
-> +		pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
->  		if (pdata->threshold_falling)
-> -			interrupt_en |=3D interrupt_en << 16;
-> +			interrupt_en |=3D
-> +				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
->  	} else {
-> -		con |=3D EXYNOS_TMU_CORE_OFF;
-> +		con &=3D ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
-
-
-Before, in order to turno core off you had:
-	con =3D con | 2;
-
-now you do:
-	con =3D con & ~(1 << 0);
-
-To me, before you would set bit 2, now you clear bit 0.
-
-Using the approach on this patch looks correct to me if you have 1 bit
-core_en for instance.
-
-so, Is this a fix?
-
-Just to be clear, is this what you want ?
-
->  		interrupt_en =3D 0; /* Disable all interrupts */
->  	}
->  	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-------enig2QWVXCKMXPNKBUGUSRJIK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHCDMwACgkQCXcVR3XQvP0LbAD/eEt4Mm9DeKzFUM6cvBl+DlhS
-ugGrOP8rczQB45DF+4UBAPpf4PvJfU5G6397t8PtTlD/7XBZg+KRNeHa2eoUY5kf
-=HXc2
------END PGP SIGNATURE-----
-
-------enig2QWVXCKMXPNKBUGUSRJIK--
+> +/*
+>   * This will return 1, with the first character in buf being the
+>   * character following the next instance of c in the file.  This will
+>   * read the file as needed.  If there's an error, -errno is returned;
+> @@ -61,7 +80,6 @@ static void __init find_tempdir(void)
+>  static int next(int fd, char *buf, size_t size, char c)
+>  {
+>         ssize_t n;
+> -       size_t len;
+>         char *ptr;
+>         while ((ptr = strchr(buf, c)) == NULL) {
+> @@ -74,20 +92,113 @@ static int next(int fd, char *buf, size_
+>                 buf[n] = '\0';
+>         }
+>  -      ptr++;
+> -       len = strlen(ptr);
+> -       memmove(buf, ptr, len + 1);
+> +       return pop(fd, buf, size, ptr - buf + 1);
+> +}
+>  -      /*
+> -        * Refill the buffer so that if there's a partial string that we
+> care
+> -        * about, it will be completed, and we can recognize it.
+> -        */
+> -       n = read(fd, &buf[len], size - len - 1);
+> -       if (n < 0)
+> -               return -errno;
+> +/*
+> + * Decode an octal-escaped and space-terminated path of the form used by
+> + * /proc/mounts. May be used to decode a path in-place. "out" must be at
+> least
+> + * as large as the input.
+> + */
+> +static int decode_path(const char *in, char *out, size_t *ndecoded,
+> +                      size_t *decodedlen)
+> +{
+> +       const char *first_in = in;
+> +       char *first_out = out;
+> +       int c;
+> +       int i;
+> +       while (*in) {
+> +               switch (*in) {
+> +               case ' ':
+> +                       *out = '\0';
+> +                       *ndecoded = in - first_in + 1;
+> +                       *decodedlen = out - first_out;
+> +                       return 0;
+>  -      buf[len + n] = '\0';
+> -       return 1;
+> +               case '\\':
+> +                       in++;
+> +                       c = 0;
+> +                       for (i = 0; i < 3; i++) {
+> +                               if (*in < '0' || *in > '7')
+> +                                       return -EINVAL;
+> +                               c = (c << 3) | (*in++ - '0');
+> +                       }
+> +                       *out++ = (char) c;
+> +                       break;
+> +
+> +               default:
+> +                       *out++ = *in++;
+> +                       break;
+> +               }
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+> +static size_t octal_encoded_length(const char *s, const char *chars)
+> +{
+> +       size_t len = strlen(s);
+> +       while ((s = strpbrk(s, chars)) != NULL) {
+> +               len += 3;
+> +               s++;
+> +       }
+> +
+> +       return len;
+> +}
+> +
+> +enum {
+> +       OUTCOME_NOT_A_MOUNT_POINT,
+> +       OUTCOME_TMPFS_MOUNT,
+> +       OUTCOME_NON_TMPFS_MOUNT,
+> +};
+> +
+> +/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
+> +static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
+> +                     int *outcome)
+> +{
+> +       int found;
+> +       int match;
+> +       size_t ndecoded;
+> +       size_t decodedlen;
+> +
+> +       enum {
+> +               MATCH_NONE,
+> +               MATCH_EXACT,
+> +               MATCH_PARENT,
+> +       };
+> +
+> +       found = next(fd, buf, bufsize, ' ');
+> +       if (found != 1)
+> +               return found;
+> +
+> +       if (!decode_path(buf, buf, &ndecoded, &decodedlen)) {
+> +               match = MATCH_NONE;
+> +               if (!strcmp(buf, path))
+> +                       match = MATCH_EXACT;
+> +               else if (!strncmp(buf, path, decodedlen)
+> +                        && (path[decodedlen] == '/' || !strcmp(buf, "/")))
+> +                       match = MATCH_PARENT;
+> +
+> +               found = pop(fd, buf, bufsize, ndecoded);
+> +               if (found != 1)
+> +                       return found;
+> +
+> +               switch (match) {
+> +               case MATCH_EXACT:
+> +                       if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
+> +                               *outcome = OUTCOME_TMPFS_MOUNT;
+> +                       else
+> +                               *outcome = OUTCOME_NON_TMPFS_MOUNT;
+> +                       break;
+> +
+> +               case MATCH_PARENT:
+> +                       /* This mount obscures any previous ones. */
+> +                       *outcome = OUTCOME_NOT_A_MOUNT_POINT;
+> +                       break;
+> +               }
+> +       }
+> +
+> +       return next(fd, buf, bufsize, '\n');
+>  }
+>   /* which_tmpdir is called only during early boot */
+> @@ -106,8 +217,12 @@ static int checked_tmpdir = 0;
+>   */
+>  static void which_tmpdir(void)
+>  {
+> -       int fd, found;
+> -       char buf[128] = { '\0' };
+> +       int fd;
+> +       int found;
+> +       int outcome;
+> +       char *path;
+> +       char *buf;
+> +       size_t bufsize;
+>         if (checked_tmpdir)
+>                 return;
+> @@ -116,49 +231,66 @@ static void which_tmpdir(void)
+>         printf("Checking for tmpfs mount on /dev/shm...");
+>  +      path = realpath("/dev/shm", NULL);
+> +       if (!path) {
+> +               printf("failed to check real path, errno = %d\n", errno);
+> +               return;
+> +       }
+> +       printf("%s...", path);
+> +
+> +       /*
+> +        * The buffer needs to be able to fit the full octal-escaped path, a
+> +        * space, and a trailing null in order to successfully decode it.
+> +        */
+> +       bufsize = octal_encoded_length(path, " \t\n\\") + 2;
+> +
+> +       if (bufsize < 128)
+> +               bufsize = 128;
+> +
+> +       buf = malloc(bufsize);
+> +       if (!buf) {
+> +               printf("malloc failed, errno = %d\n", errno);
+> +               goto out;
+> +       }
+> +       buf[0] = '\0';
+> +
+>         fd = open("/proc/mounts", O_RDONLY);
+>         if (fd < 0) {
+>                 printf("failed to open /proc/mounts, errno = %d\n", errno);
+> -               return;
+> +               goto out1;
+>         }
+>  +      outcome = OUTCOME_NOT_A_MOUNT_POINT;
+>         while (1) {
+> -               found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+> -               if (found != 1)
+> -                       break;
+> -
+> -               if (!strncmp(buf, "/dev/shm", strlen("/dev/shm")))
+> -                       goto found;
+> -
+> -               found = next(fd, buf, ARRAY_SIZE(buf), '\n');
+> +               found = read_mount(fd, buf, bufsize, path, &outcome);
+>                 if (found != 1)
+>                         break;
+>         }
+>  -err:
+> -       if (found == 0)
+> -               printf("nothing mounted on /dev/shm\n");
+> -       else if (found < 0)
+> +       if (found < 0) {
+>                 printf("read returned errno %d\n", -found);
+> +       } else {
+> +               switch (outcome) {
+> +               case OUTCOME_TMPFS_MOUNT:
+> +                       printf("OK\n");
+> +                       default_tmpdir = "/dev/shm";
+> +                       break;
+>  -out:
+> -       close(fd);
+> -
+> -       return;
+> -
+> -found:
+> -       found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+> -       if (found != 1)
+> -               goto err;
+> +               case OUTCOME_NON_TMPFS_MOUNT:
+> +                       printf("not tmpfs\n");
+> +                       break;
+>  -      if (strncmp(buf, "tmpfs", strlen("tmpfs"))) {
+> -               printf("not tmpfs\n");
+> -               goto out;
+> +               default:
+> +                       printf("nothing mounted on /dev/shm\n");
+> +                       break;
+> +               }
+>         }
+>  -      printf("OK\n");
+> -       default_tmpdir = "/dev/shm";
+> -       goto out;
+> +       close(fd);
+> +out1:
+> +       free(buf);
+> +out:
+> +       free(path);
+>  }
+>   static int __init make_tempfile(const char *template, char **out_tempname,
+>
