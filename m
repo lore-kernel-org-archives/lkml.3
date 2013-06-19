@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934724Ab3FSMnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:43:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58276 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934022Ab3FSMnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:43:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
-Date: Wed, 19 Jun 2013 14:43:09 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>
-References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com> <201306181556.47656.arnd@arndb.de> <002401ce6c8a$2dd1e4a0$8975ade0$@samsung.com>
-In-Reply-To: <002401ce6c8a$2dd1e4a0$8975ade0$@samsung.com>
+	id S934758Ab3FSMn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:43:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934599Ab3FSMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:43:56 -0400
+Message-ID: <51C1A78A.3090904@redhat.com>
+Date: Wed, 19 Jun 2013 08:43:54 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
+References: <20130530183955.14686.89444.stgit@bling.home> <20130618172819.GA16134@google.com> <1371579648.22681.209.camel@ul30vt.home> <CAErSpo5mRKhBYun_i=iFppmQ5+7ODCY7q=sehHjBXWqPRH=ZZw@mail.gmail.com> <1371594159.22659.34.camel@ul30vt.home> <51C0E73F.1060708@redhat.com> <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>
+In-Reply-To: <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306191443.09598.arnd@arndb.de>
-X-Provags-ID: V02:K0:CkNO/Gy7toFTThRgs8GffxsAipuT1LAc6N+Y0fEsN9O
- PxNDRF6+J9aW/edk9lqtI6TT0NPC6M8oZyI34OFIp/9wOHxuBI
- uxbGoTPxXEB6WXUz1EoiUa40RH7iqnyex2Mnp9rwjjYWnoLnY3
- ALx8pJPGzJSK3yeWqb/PLfwfpG9K84IAQ0uDuEwzJ91khe9Tlu
- wL2ZdCAi57hJtfHyNCQHpy7m1qSZkUjeKSZcd0DakHa+RExMH/
- 5lXpG6E4nWlQVYcX30n1U6+LWDNBsHc2HO/sjg0Hj0UFLUSWWW
- bzsZAPRBTKA4HoHLG9UrU2/0Vq3soatXofXsG4l3azkIP8sMoL
- hrdO14JzpppM9jUPVNeE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 June 2013, Jingoo Han wrote:
-> Then, do you mean the following?
-> 
-> static int __exit exynos_pcie_remove(struct platform_device *pdev)
-> {
->         struct pcie_port *pp = platform_get_drvdata(pdev);
-> 
->         clk_disable_unprepare(pp->bus_clk);
->         clk_disable_unprepare(pp->clk);
-> 
->         return 0;
-> }
-> 
-> static struct platform_driver exynos_pcie_driver = {
->         .remove = __exit_p(exynos_pcie_remove),
-> 
-> [.....]
-> 
-> /* Exynos PCIe driver does not allow module unload */
-> 
-> static int __init pcie_init(void)
-> {
->         hook_fault_code(16 + 6, exynos_pcie_abort, SIGBUS, 0,
->                         "imprecise external abort");
-> 
->         platform_driver_probe(&exynos_pcie_driver, exynos_pcie_probe);
-> 
->         return 0;
-> }
-> subsys_initcall(pcie_init);
-> 
-> MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
-> MODULE_DESCRIPTION("Samsung PCIe host controller driver");
-> MODULE_LICENSE("GPLv2");
-> 
+On 06/18/2013 10:52 PM, Bjorn Helgaas wrote:
+> On Tue, Jun 18, 2013 at 5:03 PM, Don Dutile<ddutile@redhat.com>  wrote:
+>> On 06/18/2013 06:22 PM, Alex Williamson wrote:
+>>>
+>>> On Tue, 2013-06-18 at 15:31 -0600, Bjorn Helgaas wrote:
+>>>>
+>>>> On Tue, Jun 18, 2013 at 12:20 PM, Alex Williamson
+>>>> <alex.williamson@redhat.com>   wrote:
+>>>>>
+>>>>> On Tue, 2013-06-18 at 11:28 -0600, Bjorn Helgaas wrote:
+>>>>>>
+>>>>>> On Thu, May 30, 2013 at 12:40:19PM -0600, Alex Williamson wrote:
+>> ...
+>>>>>> Who do you expect to decide whether to use this option?  I think it
+>>>>>> requires intimate knowledge of how the device works.
+>>>>>>
+>>>>>> I think the benefit of using the option is that it makes assignment of
+>>>>>> devices to guests more flexible, which will make it attractive to
+>>>>>> users.
+>>>>>> But most users have no way of knowing whether it's actually *safe* to
+>>>>>> use this.  So I worry that you're adding an easy way to pretend
+>>>>>> isolation
+>>>>>> exists when there's no good way of being confident that it actually
+>>>>>> does.
+>
+>> ...
+>
+>>>> I wonder if we should taint the kernel if this option is used (but not
+>>>> for specific devices added to pci_dev_acs_enabled[]).  It would also
+>>>> be nice if pci_dev_specific_acs_enabled() gave some indication in
+>>>> dmesg for the specific devices you're hoping to add to
+>>>> pci_dev_acs_enabled[].  It's not an enumeration-time quirk right now,
+>>>> so I'm not sure how we'd limit it to one message per device.
+>>>
+>>> Right, setup vs use and getting single prints is a lot of extra code.
+>>> Tainting is troublesome for support, Don had some objections when I
+>>> suggested the same to him.
+>>>
+>> For RH GSS (Global Support Services), a 'taint' in the kernel printk means
+>> RH doesn't support that system.  The 'non-support' due to 'taint' being
+>> printed
+>> out in this case may be incorrect -- RH may support that use, at least until
+>> a more sufficient patched kernel is provided.
+>> Thus my dissension that 'taint' be output.  WARN is ok. 'driver beware',
+>> 'unleashed dog afoot'.... sure...
+>
+> So ...  that's really a RH-specific support issue, and easily worked
+> around by RH adding a patch that turns off tainting.
+>
+sure. what's another patch to the thousands... :-/
 
-Yes, this looks good. I would probably use platform_driver_register
-rather than platform_driver_probe, but that is your choice. using
-platform_driver_probe() mean you cannot deal with deferred probing.
+> It still sounds like a good idea to me for upstream, where use of this
+> option can very possibly lead to corruption or information leakage
+> between devices the user claimed were isolated, but in fact were not.
+>
+> Bjorn
+Did I miss something?  This patch provides a user-level/chosen override;
+like all other overrides, (pci=realloc, etc.), it can lead to a failing system.
+IMO, this patch is no different.  If you want to tag this patch with taint,
+then let's audit all the (PCI) overrides and taint them appropriately.
+Taint should be reserved to changes to the kernel that were done outside
+the development of the kernel, or with the explicit intent to circumvent
+the normal operation of the kernel.  This patch provides a way to enable
+ACS checking to succeed when the devices have not provided sufficiently complete
+ACS information.  i.e., it's a growth path for PCIe-ACS and its need for
+proper support.
 
-	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
