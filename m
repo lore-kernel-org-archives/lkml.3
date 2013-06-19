@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325Ab3FSIvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:51:40 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:46043 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934057Ab3FSIvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:51:36 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] cpufreq: make __cpufreq_notify_transition() static
-Date: Wed, 19 Jun 2013 14:19:34 +0530
-Message-Id: <77a7487c0518f8a56d9d6927b2f2380e66ca836e.1371631432.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <9625ea15bf036549ac323d7d4ae3b87ada007e7a.1371631432.git.viresh.kumar@linaro.org>
-References: <9625ea15bf036549ac323d7d4ae3b87ada007e7a.1371631432.git.viresh.kumar@linaro.org>
-In-Reply-To: <9625ea15bf036549ac323d7d4ae3b87ada007e7a.1371631432.git.viresh.kumar@linaro.org>
-References: <9625ea15bf036549ac323d7d4ae3b87ada007e7a.1371631432.git.viresh.kumar@linaro.org>
+	id S934251Ab3FSIwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:52:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:46920 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933820Ab3FSIwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:52:03 -0400
+Date: Wed, 19 Jun 2013 18:51:59 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, acme@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130619085159.GA25177@concordia>
+References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
+ <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__cpufreq_notify_transition() is used only in cpufreq.c, make it static.
+On Sat, Apr 20, 2013 at 12:19:23PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Add support to perf stat to print the basic transactional execution statistics:
+> Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+> using the intx and intx_checkpoint qualifiers.
+> Transaction Starts and Elision Starts, to compute the average transaction length.
+> 
+> This is a reasonable overview over the success of the transactions.
+> 
+> Enable with a new --transaction / -T option.
+> 
+> This requires measuring these events in a group, since they depend on each
+> other.
+> 
+> This is implemented by using TM sysfs events exported by the kernel
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Andi,
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 7c38842..8a9a23a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -248,7 +248,7 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
- }
- #endif
- 
--void __cpufreq_notify_transition(struct cpufreq_policy *policy,
-+static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
- 		struct cpufreq_freqs *freqs, unsigned int state)
- {
- 	BUG_ON(irqs_disabled());
--- 
-1.7.12.rc2.18.g61b472e
+I think this still hasn't gone upstream, so I thought I'd just jump in
+and comment for powerpc ...
 
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 7e910ba..5053c1a 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -70,6 +70,30 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
+>  static void print_counter(struct perf_evsel *counter, char *prefix);
+>  static void print_aggr(char *prefix);
+>  
+> +/* Default events used for perf stat -T */
+> +static const char * const transaction_attrs[] = {
+> +	"task-clock",
+> +	"{"
+> +	"instructions,"
+> +	"cycles,"
+> +	"cpu/cycles-t/,"
+> +	"cpu/cycles-ct/,"
+> +	"cpu/tx-start/,"
+> +	"cpu/el-start/"
+> +	"}"
+> +};
+
+This hard coded list isn't going to work for us on powerpc.
+
+We don't have HLE, so we won't ever have an event for el-start.
+
+I don't quite grok what the cycles-ct is about, checkpointed cycles? But
+I don't think we have anything equivalent.
+
+I guess the simplest option is to make it a per-arch list inside the
+perf tool?
+
+cheers
