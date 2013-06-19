@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935211Ab3FSVnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 17:43:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41959 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935023Ab3FSVnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 17:43:08 -0400
-Message-ID: <51C225D9.8070100@zytor.com>
-Date: Wed, 19 Jun 2013 14:42:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S935222Ab3FSVpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 17:45:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62619 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934858Ab3FSVpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 17:45:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Adding support for ARINC429 into the Linux kernel
+Date: Wed, 19 Jun 2013 23:45:30 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <20130619202954.GA5594@roeck-us.net>
+In-Reply-To: <20130619202954.GA5594@roeck-us.net>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Subject: Re: [x86] only print out DR registers if they are not power-on defaults.
-References: <20130618041132.GA23492@redhat.com> <20130618084356.GA13123@pd.tnic> <20130618140730.GA1313@redhat.com> <20130618155919.GC13123@pd.tnic>
-In-Reply-To: <20130618155919.GC13123@pd.tnic>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306192345.31106.arnd@arndb.de>
+X-Provags-ID: V02:K0:LKt2X0PrDEiLRrw16cfWPWgmpdiMJ1pl4uCaKx9eiMk
+ lLLdAm/+ZssabwJaeN6pp6E+xD0G269OYRtH3OrRcAaOX5sxuz
+ 1GrOfNI0+KlsxOVcIu4J7C9POtV6sJvSAYGWy7qWS2ZMp9L839
+ i5U3nHjgHMg1o+KJ4pE5efGoU44y7bf/STiC+pdKXhZEB/8iyY
+ pm4wYrlUwN5DZMHAN0CSLsFFAK5094smY4Opl9CfI9wAvIKXd7
+ O8fnM9m5bxCVXLvry9qXBvjILrBC3BOzIyVtN8wmhP9+ECJqB/
+ edxSHXhkCoWqRD14DWceE6jGtAXGDvowK/F072whNI3QVwDHHR
+ anqYyJndN7qjF/+fFBSQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 08:59 AM, Borislav Petkov wrote:
-> On Tue, Jun 18, 2013 at 10:07:30AM -0400, Dave Jones wrote:
->> My intent here was to ignore cases where the reserved bits haven't
->> been set. I occasionally see DR6: 00000000fffe0ff0 for eg.
+On Wednesday 19 June 2013, Guenter Roeck wrote:
+> I have been asked to explore options for adding ARINC 429 support [1]
+> into the Linux kernel, primarily to support devices from Holt Integrated
+> Circuits [2] (the request is unrelated to the chip manufacturer).
 > 
-> That's bit 16 which, according to the docs is read-as-1:
+> ARINC429 is a protocol which is widely used in commercial airplanes. 
 > 
-> "All remaining bits in the DR6 register are reserved. Reserved bits
-> 31:16 and 11:4 must all be set to 1, while reserved bit 12 must be
-> cleared to 0. In 64-bit mode, the upper 32 bits of DR6 are reserved and
-> must be written with zeros. Writing a 1 to any of the upper 32 bits
-> results in a general-protection exception, #GP(0)."
+> There are various chips supporting this protocol available, as well as
+> out-of-tree Linux support. The drivers I have looked at implement it
+> either as character device or misc device and typically pass raw receive
+> data to userspace.
 > 
-> This above if from AMD APM and Intel's SDM has a graphic showing the
-> exact same thing:
+> I can see a number of options for going forward:
+> 1) Implement as character device (or possibly misc device) and pass
+>    raw data to/from user space
+>    1a) Just implement a driver for the specific chips
+>    2b) Implement some kind of generic infrastructure
+> 2) Implement as network driver with a new address family, similar to,
+>    say, AF_CAN.
 > 
-> [31:16] = set to 1; [12] = 0b, [11:4] = 1b
-> 
-> So if you see bit 16 cleared, then some BIOS or even hardware is doing
-> funky things. I wouldn't wonder at all if BIOS dudes used reserved bits
-> in registers as scratch space.
-> 
->> But maybe you're right, and that is a clue and is worth printing ? I
->> can't personally recall ever diagnosing a bug using those register
->> dumps in the last 15 years.
-> 
-> Right, I don't know whether it would always help but if you have an
-> oops and see, say bit 0 in DR6 set, i.e. a debug exception was caused
-> by address breakpoint condition in DR0, then that could be useful info,
-> methinks.
-> 
+> Any thoughts / suggestions which approach would be better and, most of all,
+> which approach might have a better chance of being accepted upstream ?
 
-There is serious confusion with regards to DR6 about the bits which are
-*fixed* (forced to 1) and the ones which are *reserved* (should always
-have a fixed value.)
+Since this is a standard protocol, a driver that just supports a specific
+chip (1a) would be the worst option IMHO.
 
-There are some bits in DR6 which are used by hardware probes.
+A character device and a network protocol both sound reasonable, but
+it really depends on the use cases:
 
-	-hpa
+* Does Linux act both as the sender and receiver, or do you want to
+  support just one of the cases (which?)?
 
+* Would you expect to always just transfer a single 32-bit word, or
+  are there larger chunks of logically contigous data? What are typical
+  and maximum sizes for those?
 
+* Would you expect the kernel to filter for specific data on the
+  receiver side?
+
+* Would a user space receiver want to always see all data from one
+  sender, or only the latest word?
+
+	Arnd
