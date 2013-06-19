@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934237Ab3FSLEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:04:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39331 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934022Ab3FSLEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:04:14 -0400
-Message-ID: <51C19011.5050107@ti.com>
-Date: Wed, 19 Jun 2013 14:03:45 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S934222Ab3FSLIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:08:21 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:50051 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933991Ab3FSLIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 07:08:19 -0400
+Message-ID: <51C1911A.3000507@redhat.com>
+Date: Wed, 19 Jun 2013 13:08:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com>
-In-Reply-To: <51C183AC.8040801@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Gleb Natapov <gleb@redhat.com>
+CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
+        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075656.GY4725@redhat.com> <51B590C9.9080009@gmail.com> <20130610224352.0a769838745b294fc43f7823@gmail.com> <20130610170341.GJ29022@redhat.com>
+In-Reply-To: <20130610170341.GJ29022@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 01:10 PM, Benoit Cousson wrote:
-> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
->> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
->>> Hi Benoit,
->>>
->>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
->>>> Hi Roger,
->>>>
->>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
->>>>> Provide the RESET and Power regulators for the USB PHY,
->>>>> the USB Host port mode and the PHY device.
->>>>>
->>>>> Also provide pin multiplexer information for the USB host
->>>>> pins.
->>>>>
->>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>>> ---
->>>>>    arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
->>>>>    1 files changed, 62 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>> index 00cbaa5..7a21e8e 100644
->>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>> @@ -59,6 +59,42 @@
->>>>>                "AFML", "Line In",
->>>>>                "AFMR", "Line In";
->>>>>        };
->>>>> +
->>>>> +    /* HS USB Port 1 RESET */
->>>>> +    hsusb1_reset: hsusb1_reset_reg {
->>>>> +        compatible = "regulator-fixed";
->>>>> +        regulator-name = "hsusb1_reset";
->>>>> +        regulator-min-microvolt = <3300000>;
->>>>> +        regulator-max-microvolt = <3300000>;
->>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
->>>>> +        startup-delay-us = <70000>;
->>>>> +        enable-active-high;
->>>>> +    };
->>>>
->>>> Is this really a regulator? Or just a GPIO line used to reset the USB PHY?
->>>
->>> It is in fact a GPIO line used as reset.
->>>>
->>>> If this is the case, I don't think it should be represented as a regulator.
->>>
->>> Why not? I think it fits very well in the regulator device model.
-> 
-> I'm not sure fitting very well is the correct term.
-> It works, for sure, but it is no different than when we were trying to abuse the regulator fmwk to enable the 32k clock in phoenix.
-> It is just a hack.
-> 
-
-The only difference is there is a dedicated framework for clocks. Since there is nothing specific to
-handle reset lines it is left to the driver writer how he wants to manage it.
-
->>> I couldn't find a better
->>> way to represent this. It gives us a way to specify not only the GPIO line but also
->>> the polarity. I know mostly reset is active low but still there is flexibility as you never
->>> know for sure.
-> 
-> Mmm, and what about just controlling the gpio from the driver?
-
-Yes gpio is possible. But then you need to add additional code in the driver to parse GPIO number and polarity.
-Using regulator_get() was plain simple for me.
-
-> 
->> I think it's really a mux + a comparator. But from Linux driver point of view
->> a regulator fits well as we don't have anything better. After all, the pin
->> voltage changes, and then something can be done based on the comparator
->> value.
+Il 10/06/2013 19:03, Gleb Natapov ha scritto:
+> On Mon, Jun 10, 2013 at 10:43:52PM +0900, Takuya Yoshikawa wrote:
+>> On Mon, 10 Jun 2013 16:39:37 +0800
+>> Xiao Guangrong <xiaoguangrong.eric@gmail.com> wrote:
 >>
->>> Do you have any better ideas?
+>>> On 06/10/2013 03:56 PM, Gleb Natapov wrote:
+>>>> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
 >>
->> We have a similar issue with the MMC1 PBIAS. I think in the long run we
->> should expand regulator (and possibly pinctrl) framework(s) to handle
->> comparators. We could just assume that a comparatator is a regulator,
->> and have a comparator binding that just uses the regulator code.
-> 
-> In the case of pbias, the pinctrl seems to be a much better fit for my point of view. pinctrl can handle pin configuration and this is what the pbias is in the case of MMC pins.
-> 
->>> FYI. The USB PHY driver is already treating reset as a regulator and is into 3.10. Reworking that
->>> will take some time. Not getting these in will prevent USB host/ethernet support on panda.
-> 
-> That's not because we did some mistake in the past that we have to keep doing that :-)
-> 
+>>>> Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
+>>>> sp->mmio_cached, so they should be removed as part of the patch series?
+>>>
+>>> Yes, i agree, they should be removed. :)
+>>
+>> I'm fine with removing it but please make it clear that you all agree
+>> on the same basis.
+>>
+>> Last time, Paolo mentioned the possibility to use some bits of spte for
+>> other things.  The suggestion there was to keep sp->mmio_cached code
+>> for the time we would need to reduce the bits for generation numbers.
+>>
+>> Do you think that zap_all() is now preemptible and can treat the
+>> situation reasonably well as the current kvm_mmu_zap_mmio_sptes()?
+>>
+>> One downside is the need to zap unrelated shadow pages, but if this case
+>> is really very rare, yes I agree, it should not be a problem: it depends
+>> on how many bits we can use.
+>>
+>> Just please reconfirm.
+>>
+> That was me who mention the possibility to use some bits of spte for
+> other things. But for now I have a use for one bit only. Now that you
+> have reminded me about that discussion I am not so sure we want to
+> remove kvm_mmu_zap_mmio_sptes(), but on the other hand it is non
+> preemptable, so large number of mmio sptes can cause soft lockups.
+> zap_all() is better in this regards now.
 
-I had actually thought it well and don't consider it as a mistake. It is just a difference in opinion.
+I asked Gleb on IRC, and he's fine with applying patch 7 too (otherwise
+there's hardly any benefit, because kvm_mmu_zap_mmio_sptes is
+non-preemptable).
 
->> Yes and we need to have some solution for v3.11 as we've dropped the
->> legacy data for omap4. Otherwise things won't work properly.
-> 
-> I'm fine taking it as soon as big disclaimer is added to avoid mis-using the regulator in the future for controlling a gpio line.
-> 
+I'm also changing the -13 to -150 since it's quite easy to generate 150
+calls to KVM_SET_USER_MEMORY_REGION.  Using QEMU, and for a pretty basic
+guest with virtio-net, IDE controller and VGA you get:
 
-I can re-work the phy driver. No problem. But I'm still not convinced
-what it will improve. IMHO it just adds more code in the phy driver without any benefits.
+- 9-10 calls before starting the guest, depending on the guest memory size
 
-cheers,
--roger
+- around 25 during the BIOS
 
+- around 20 during kernel boot
+
+- 34 during a single dump of the 64 KB ROM from a virtio-net device.
+
+Paolo
