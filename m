@@ -1,103 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935017Ab3FSRPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:15:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:11500 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934961Ab3FSRNG (ORCPT
+	id S935018Ab3FSRPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:15:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65299 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934942Ab3FSRM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:13:06 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-57-51c1e6a133f7
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH v4 1/7] cpufreq: Store cpufreq policies in a list
-Date: Wed, 19 Jun 2013 19:12:42 +0200
-Message-id: <1371661969-7660-2-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQd2Fzw4GGvxq0bD483Y5q8XTph/s
-	FvM+y1qs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbS43biCzaJ/YS+TxZOH
-	fWwWHUe+MVts/OrhwO+xeM9LJo871/aweayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAexSX
-	TUpqTmZZapG+XQJXxtbNB9kLvvJV/Pxs3MB4haeLkZNDQsBEYtbtUywQtpjEhXvr2boYuTiE
-	BKYzSlw70AjldDFJLNpynxGkik1AT+Lz3adMILaIgK9Ez7JDTCBFzAL7WCSmfutg7WLk4BAW
-	cJRY8zIEpIZFQFXi0fUtYPW8Aq4SC3/OZ4XYJi/x9H4fG4jNKeAmcfxbF9SyRkaJtRseME9g
-	5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhon0ntYFzZYHGIUYCDUYmHV+PywUAh
-	1sSy4srcQ4wSHMxKIrxLjwKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0t
-	SC2CyTJxcEo1MB5l273YW2bl8WwHBesUx2UuvcKLXl6fviJdzaxyloQPa8GEH+aHJjcvkZfW
-	XJR8sfuKdW+6u9NNzYeRO1ZOy4m8dNi45ukKid/RE4JPrnf7fmgu4/zwWecfrNl+ZONBw4Un
-	F24MeX7JvD+Jv8Lj+jGO9j/bnh6Wb4mceb9o88xjDzNNQvl6pr5RYinOSDTUYi4qTgQAUOeD
-	/VYCAAA=
+	Wed, 19 Jun 2013 13:12:56 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v5 6/6] staging: android: binder: fix binder interface for 64bit compat layer
+Date: Wed, 19 Jun 2013 18:12:36 +0100
+Message-Id: <1371661956-10894-7-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
+References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Policies available in a cpufreq framework are now linked together. They are
-accessible via cpufreq_policy_list defined at cpufreq core.
+The changes in this patch will fix the binder interface for use on 64bit
+machines and stand as the base of the 64bit compat support. The changes
+apply to the structures that are passed between the kernel and
+userspace.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Most of the  changes applied mirror the change to struct binder_version
+where there is no need for a 64bit wide protocol_version(on 64bit
+machines). The change inlines with the existing 32bit userspace(the
+structure has the same size) and simplifies the compat layer such that
+the same handler can service the BINDER_VERSION ioctl.
 
-Changes for v4:
-- New patch
+Other changes make use of kernel types as well as user-exportable ones
+and fix format specifier issues.
+
+The changes do not affect existing 32bit ABI.
+
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/cpufreq/cpufreq.c |    3 +++
- include/linux/cpufreq.h   |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/staging/android/binder.c |   20 ++++++++++----------
+ drivers/staging/android/binder.h |   10 +++++-----
+ 2 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2ce86ed..665e641 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
- static DEFINE_RWLOCK(cpufreq_driver_lock);
-+static LIST_HEAD(cpufreq_policy_list);
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 7450d56..056afe7 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1271,7 +1271,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_HANDLE: {
+ 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
+ 			if (ref == NULL) {
+-				pr_err("transaction release %d bad handle %ld\n",
++				pr_err("transaction release %d bad handle %d\n",
+ 				 debug_id, fp->handle);
+ 				break;
+ 			}
+@@ -1283,13 +1283,13 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
  
- /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-@@ -989,6 +990,7 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	}
- #endif
+ 		case BINDER_TYPE_FD:
+ 			binder_debug(BINDER_DEBUG_TRANSACTION,
+-				     "        fd %ld\n", fp->handle);
++				     "        fd %d\n", fp->handle);
+ 			if (failed_at)
+ 				task_close_fd(proc, fp->handle);
+ 			break;
  
-+	list_add(&policy->policy_list, &cpufreq_policy_list);
- 	ret = cpufreq_add_dev_interface(cpu, policy, dev);
- 	if (ret)
- 		goto err_out_unregister;
-@@ -1992,6 +1994,7 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
- 	subsys_interface_unregister(&cpufreq_interface);
- 	unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
+ 		default:
+-			pr_err("transaction release %d bad object type %lx\n",
++			pr_err("transaction release %d bad object type %x\n",
+ 				debug_id, fp->type);
+ 			break;
+ 		}
+@@ -1547,7 +1547,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_HANDLE: {
+ 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
+ 			if (ref == NULL) {
+-				binder_user_error("%d:%d got transaction with invalid handle, %ld\n",
++				binder_user_error("%d:%d got transaction with invalid handle, %d\n",
+ 						proc->pid,
+ 						thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+@@ -1590,13 +1590,13 @@ static void binder_transaction(struct binder_proc *proc,
  
-+	list_del(&cpufreq_policy_list);
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 	cpufreq_driver = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index ab1932c..5348981 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -117,6 +117,7 @@ struct cpufreq_policy {
+ 			if (reply) {
+ 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
+-					binder_user_error("%d:%d got reply with fd, %ld, but target does not allow fds\n",
++					binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
+ 						proc->pid, thread->pid, fp->handle);
+ 					return_error = BR_FAILED_REPLY;
+ 					goto err_fd_not_allowed;
+ 				}
+ 			} else if (!target_node->accept_fds) {
+-				binder_user_error("%d:%d got transaction with fd, %ld, but target does not allow fds\n",
++				binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
+ 					proc->pid, thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+ 				goto err_fd_not_allowed;
+@@ -1604,7 +1604,7 @@ static void binder_transaction(struct binder_proc *proc,
  
- 	struct cpufreq_real_policy	user_policy;
+ 			file = fget(fp->handle);
+ 			if (file == NULL) {
+-				binder_user_error("%d:%d got transaction with invalid fd, %ld\n",
++				binder_user_error("%d:%d got transaction with invalid fd, %d\n",
+ 					proc->pid, thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+ 				goto err_fget_failed;
+@@ -1618,13 +1618,13 @@ static void binder_transaction(struct binder_proc *proc,
+ 			task_fd_install(target_proc, target_fd, file);
+ 			trace_binder_transaction_fd(t, fp->handle, target_fd);
+ 			binder_debug(BINDER_DEBUG_TRANSACTION,
+-				     "        fd %ld -> %d\n", fp->handle, target_fd);
++				     "        fd %d -> %d\n", fp->handle, target_fd);
+ 			/* TODO: fput? */
+ 			fp->handle = target_fd;
+ 		} break;
  
-+	struct list_head        policy_list;
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
+ 		default:
+-			binder_user_error("%d:%d got transaction with invalid object type, %lx\n",
++			binder_user_error("%d:%d got transaction with invalid object type, %x\n",
+ 				proc->pid, thread->pid, fp->type);
+ 			return_error = BR_FAILED_REPLY;
+ 			goto err_bad_object_type;
+@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			goto err;
+ 		}
+ 		binder_debug(BINDER_DEBUG_READ_WRITE,
+-			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
++			     "%d:%d write %zd at %016lx, read %zd at %016lx\n",
+ 			     proc->pid, thread->pid, bwr.write_size,
+ 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
+ 
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index dadfce0..b88b263 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -48,13 +48,13 @@ enum {
+  */
+ struct flat_binder_object {
+ 	/* 8 bytes for large_flat_header. */
+-	unsigned long		type;
+-	unsigned long		flags;
++	__u32		type;
++	__u32		flags;
+ 
+ 	/* 8 bytes of data. */
+ 	union {
+ 		void __user	*binder;	/* local object */
+-		signed long	handle;		/* remote object */
++		__u32	    handle;		/* remote object */
+ 	};
+ 
+ 	/* extra data associated with local object */
+@@ -78,7 +78,7 @@ struct binder_write_read {
+ /* Use with BINDER_VERSION, driver fills in fields. */
+ struct binder_version {
+ 	/* driver protocol version -- increment with incompatible change */
+-	signed long	protocol_version;
++	__s32       protocol_version;
  };
+ 
+ /* This is the current protocol version. */
+@@ -119,7 +119,7 @@ struct binder_transaction_data {
+ 	 * identifying the target and contents of the transaction.
+ 	 */
+ 	union {
+-		size_t	handle;	/* target descriptor of command transaction */
++		__u32	handle;	/* target descriptor of command transaction */
+ 		void	*ptr;	/* target descriptor of return transaction */
+ 	} target;
+ 	void		*cookie;	/* target object cookie */
 -- 
-1.7.10.4
+1.7.9.5
 
