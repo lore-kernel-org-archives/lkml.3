@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab3FSPZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:25:54 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:50898 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab3FSPZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:25:52 -0400
+	id S1757102Ab3FSP0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:26:15 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:4335 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757026Ab3FSPZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:25:51 -0400
 X-IronPort-AV: E=Sophos;i="4.87,898,1363132800"; 
-   d="scan'208";a="30603447"
+   d="scan'208";a="32137909"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <xen-devel@lists.xen.org>
 CC: David Vrabel <david.vrabel@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/4] x86/xen: sync the wallclock when the system time is stepped
-Date: Wed, 19 Jun 2013 16:25:22 +0100
-Message-ID: <1371655523-15609-4-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 2/4] time: add a notifier chain for when the system time is stepped
+Date: Wed, 19 Jun 2013 16:25:21 +0100
+Message-ID: <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com>
 References: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com>
@@ -29,66 +28,244 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Vrabel <david.vrabel@citrix.com>
 
-The Xen wallclock is a software only clock within the Xen hypervisor
-that is used by: a) PV guests as the equivalent of a hardware RTC; and
-b) the hypervisor as the clock source for the emulated RTC provided to
-HVM guests.
+The high resolution timer code gets notified of step changes to the
+system time with clock_was_set() or clock_was_set_delayed() calls.  If
+other parts of the kernel require similar notification there is no
+clear place to hook into.
 
-Currently the Xen wallclock is only updated every 11 minutes if NTP is
-synchronized to its clock source.  If a guest is started before NTP is
-synchronized it may see an incorrect wallclock time.
+Add a clock_was_set atomic notifier chain
+(clock_was_set_notifier_list) and call this in place of
+clock_was_set().  If the timekeeping locks are held, the calls are
+deferred to a new tasklet.
 
-Use the clock_was_set notifier chain to receive a notification when
-the system time is stepped and update the wallclock to match the
-current system time.
+The hrtimer code adds a notifier block to this chain and uses it to
+call (the now internal) clock_was_set().  Since the timekeeping code
+does not call the chain from the timer irq clock_was_set_delayed() and
+associated code can be removed.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/xen/time.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+ include/linux/hrtimer.h   |    7 -------
+ include/linux/time.h      |    5 +++++
+ kernel/hrtimer.c          |   33 ++++++++++++++-------------------
+ kernel/time/timekeeping.c |   34 +++++++++++++++++++++++++---------
+ 4 files changed, 44 insertions(+), 35 deletions(-)
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index a1947ac..c4bb255 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -211,6 +211,26 @@ static int xen_set_wallclock(const struct timespec *now)
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index d19a5c2..6da7439 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -166,7 +166,6 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
+- * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -180,7 +179,6 @@ enum  hrtimer_base_type {
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+ 	unsigned int			active_bases;
+-	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -289,8 +287,6 @@ extern void hrtimer_peek_ahead_timers(void);
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
  
- 	return HYPERVISOR_dom0_op(&op);
+-extern void clock_was_set_delayed(void);
+-
+ #else
+ 
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -312,11 +308,8 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
+ 	return 0;
  }
-+ 
-+static int xen_clock_was_set_notify(struct notifier_block *nb, unsigned long unused,
-+				    void *priv)
+ 
+-static inline void clock_was_set_delayed(void) { }
+-
+ #endif
+ 
+-extern void clock_was_set(void);
+ #ifdef CONFIG_TIMERFD
+ extern void timerfd_clock_was_set(void);
+ #else
+diff --git a/include/linux/time.h b/include/linux/time.h
+index d5d229b..75bca39 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -185,6 +185,11 @@ struct tms;
+ extern void do_sys_times(struct tms *);
+ 
+ /*
++ * Notifier chain called when system time is stepped.
++ */
++extern struct atomic_notifier_head clock_was_set_notifier_list;
++
++/*
+  * Similar to the struct tm in userspace <time.h>, but it needs to be here so
+  * that the kernel source is self contained.
+  */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index fd4b13b..6e475d5 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -721,19 +721,6 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
+-/*
+- * Called from timekeeping code to reprogramm the hrtimer interrupt
+- * device. If called from the timer interrupt context we defer it to
+- * softirq context.
+- */
+-void clock_was_set_delayed(void)
+-{
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-
+-	cpu_base->clock_was_set = 1;
+-	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+-}
+-
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -762,7 +749,7 @@ static inline void retrigger_next_event(void *arg) { }
+  * resolution timer interrupts. On UP we just disable interrupts and
+  * call the high resolution interrupt code.
+  */
+-void clock_was_set(void)
++static void clock_was_set(void)
+ {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	/* Retrigger the CPU local events everywhere */
+@@ -1434,11 +1421,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+ 
+-	if (cpu_base->clock_was_set) {
+-		cpu_base->clock_was_set = 0;
+-		clock_was_set();
+-	}
+-
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
+@@ -1776,11 +1758,24 @@ static struct notifier_block __cpuinitdata hrtimers_nb = {
+ 	.notifier_call = hrtimer_cpu_notify,
+ };
+ 
++static int hrtimer_clock_was_set_notify(struct notifier_block *self,
++					unsigned long action, void *data)
 +{
-+       struct timespec now;
-+       int ret;
-+
-+       /*
-+        * Set the Xen wallclock from Linux system time.
-+        */
-+       now = current_kernel_time();
-+       xen_set_wallclock(&now);
-+
-+       return NOTIFY_OK;
++	clock_was_set();
++	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block xen_clock_was_set_notifier = {
-+	.notifier_call = xen_clock_was_set_notify,
++static struct notifier_block hrtimers_clock_was_set_nb = {
++	.notifier_call = hrtimer_clock_was_set_notify,
 +};
 +
- 
- static struct clocksource xen_clocksource __read_mostly = {
- 	.name = "xen",
-@@ -473,6 +493,10 @@ static void __init xen_time_init(void)
- 	xen_setup_runstate_info(cpu);
- 	xen_setup_timer(cpu);
- 	xen_setup_cpu_clockevents();
-+
-+	if (xen_initial_domain())
-+		atomic_notifier_chain_register(&clock_was_set_notifier_list,
-+					       &xen_clock_was_set_notifier);
+ void __init hrtimers_init(void)
+ {
+ 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+ 			  (void *)(long)smp_processor_id());
+ 	register_cpu_notifier(&hrtimers_nb);
++	atomic_notifier_chain_register(&clock_was_set_notifier_list,
++				       &hrtimers_clock_was_set_nb);
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	open_softirq(HRTIMER_SOFTIRQ, run_hrtimer_softirq);
+ #endif
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index baeeb5c..852b880 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -198,6 +198,25 @@ static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+ 	return nsec + get_arch_timeoffset();
  }
  
- void __init xen_init_time_ops(void)
++ATOMIC_NOTIFIER_HEAD(clock_was_set_notifier_list);
++EXPORT_SYMBOL_GPL(clock_was_set_notifier_list);
++
++static void timekeeping_clock_was_set(void)
++{
++	atomic_notifier_call_chain(&clock_was_set_notifier_list, 0, NULL);
++}
++
++static void timekeeping_clock_was_set_task(unsigned long d)
++{
++	timekeeping_clock_was_set();
++}
++DECLARE_TASKLET(clock_was_set_tasklet, timekeeping_clock_was_set_task, 0);
++
++static void timekeeping_clock_was_set_delayed(void)
++{
++	tasklet_schedule(&clock_was_set_tasklet);
++}
++
+ static RAW_NOTIFIER_HEAD(pvclock_gtod_chain);
+ 
+ static void update_pvclock_gtod(struct timekeeper *tk)
+@@ -513,8 +532,7 @@ int do_settimeofday(const struct timespec *tv)
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
+-	/* signal hrtimers about time change */
+-	clock_was_set();
++	timekeeping_clock_was_set();
+ 
+ 	return 0;
+ }
+@@ -557,8 +575,7 @@ error: /* even if we error out, we forwarded the time, so call update */
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
+-	/* signal hrtimers about time change */
+-	clock_was_set();
++	timekeeping_clock_was_set();
+ 
+ 	return ret;
+ }
+@@ -607,7 +624,7 @@ void timekeeping_set_tai_offset(s32 tai_offset)
+ 	__timekeeping_set_tai_offset(tk, tai_offset);
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+-	clock_was_set();
++	timekeeping_clock_was_set();
+ }
+ 
+ /**
+@@ -877,8 +894,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
+-	/* signal hrtimers about time change */
+-	clock_was_set();
++	timekeeping_clock_was_set();
+ }
+ 
+ /**
+@@ -1260,7 +1276,7 @@ static inline void accumulate_nsecs_to_secs(struct timekeeper *tk)
+ 
+ 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
+ 
+-			clock_was_set_delayed();
++			timekeeping_clock_was_set_delayed();
+ 		}
+ 	}
+ }
+@@ -1677,7 +1693,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	if (tai != orig_tai) {
+ 		__timekeeping_set_tai_offset(tk, tai);
+-		clock_was_set_delayed();
++		timekeeping_clock_was_set_delayed();
+ 	}
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
 -- 
 1.7.2.5
 
