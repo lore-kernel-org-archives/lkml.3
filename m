@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934524Ab3FSIzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:55:41 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48715 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934430Ab3FSIzf (ORCPT
+	id S934538Ab3FSIzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:55:53 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:34174 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934450Ab3FSIzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:55:35 -0400
+	Wed, 19 Jun 2013 04:55:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -14,11 +14,10 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
         Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Dave Jones <davej@redhat.com>
-Subject: [PATCH 09/13] cpufreq: pcc: call CPUFREQ_POSTCHANGE notfier in error cases
-Date: Wed, 19 Jun 2013 14:23:03 +0530
-Message-Id: <6c9bea6acc4b36e4bee42b973b0c5f66e5d12b1f.1371630975.git.viresh.kumar@linaro.org>
+        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 10/13] cpufreq: powernow-k8: call CPUFREQ_POSTCHANGE notfier in error cases
+Date: Wed, 19 Jun 2013 14:23:04 +0530
+Message-Id: <07d316c551e66b387254f0f544e18e415b9c181d.1371630975.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1371630975.git.viresh.kumar@linaro.org>
 References: <cover.1371630975.git.viresh.kumar@linaro.org>
@@ -37,25 +36,28 @@ calling notifiers is complete.
 
 This patch fixes it.
 
-Cc: Dave Jones <davej@redhat.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/pcc-cpufreq.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/cpufreq/powernow-k8.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-index 0de0008..1581fcc4 100644
---- a/drivers/cpufreq/pcc-cpufreq.c
-+++ b/drivers/cpufreq/pcc-cpufreq.c
-@@ -243,6 +243,8 @@ static int pcc_cpufreq_target(struct cpufreq_policy *policy,
- 	return 0;
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index b828efe..c916320 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -967,9 +967,9 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
  
- cmd_incomplete:
-+	freqs.new = freqs.old;
-+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 	iowrite16(0, &pcch_hdr->status);
- 	spin_unlock(&pcc_lock);
- 	return -EINVAL;
+ 	res = transition_fid_vid(data, fid, vid);
+ 	if (res)
+-		return res;
+-
+-	freqs.new = find_khz_freq_from_fid(data->currfid);
++		freqs.new = freqs.old;
++	else
++		freqs.new = find_khz_freq_from_fid(data->currfid);
+ 
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 	return res;
 -- 
 1.7.12.rc2.18.g61b472e
 
