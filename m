@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934881Ab3FSQkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:40:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8153 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934170Ab3FSQkm convert rfc822-to-8bit (ORCPT
+	id S934901Ab3FSQlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:41:50 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45252 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934780Ab3FSQlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:40:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,898,1363158000"; 
-   d="scan'208";a="319520124"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Subject: RE: [GIT PULL] Some error injection fixes to queue for 3.11
-Thread-Topic: [GIT PULL] Some error injection fixes to queue for 3.11
-Thread-Index: AQHObORFa9GDP8n+jkOFyme2gAOIipk9nywA//+diaA=
-Date: Wed, 19 Jun 2013 16:40:39 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA87F71@ORSMSX106.amr.corp.intel.com>
-References: <51b20612239358173f@agluck-desk.sc.intel.com>
- <20130619115702.GC10599@gmail.com>
- <1A7043D5F58CCB44A599DFD55ED4C948385151A1@FMSMSX106.amr.corp.intel.com>
-In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948385151A1@FMSMSX106.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Jun 2013 12:41:49 -0400
+X-Sasl-enc: WinsNBCZYCJSpOCD7BIdSP2dgbugBqbfG5VZ5JPRr+W5 1371660045
+Date: Wed, 19 Jun 2013 09:36:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+Message-ID: <20130619163628.GA28672@kroah.com>
+References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+ <CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
+ <20130619143918.GC8413@kroah.com>
+ <CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Pulled, thanks Tony!
->> 
->> Len, are you fine with this route [tip:x86/ras tree] for the
->> drivers/acpi/apei/einj.c changes?
->
-> Yes, the RAS guys basically own that code.
+On Wed, Jun 19, 2013 at 11:04:04PM +0800, Ming Lei wrote:
+> On Wed, Jun 19, 2013 at 10:39 PM, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Jun 19, 2013 at 02:58:39PM +0800, Ming Lei wrote:
+> >> On Wed, Jun 19, 2013 at 1:32 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >> > Hi Greg,
+> >> >
+> >> > Today's linux-next merge of the driver-core tree got a conflict in
+> >> > drivers/base/firmware_class.c between commit 875979368eb4 ("firmware
+> >> > loader: fix use-after-free by double abort") from the driver-core.current
+> >> > tree and commit fe304143b0c3 ("firmware: Avoid deadlock of usermodehelper
+> >> > lock at shutdown") from the driver-core tree.
+> >> >
+> >> > I fixed it up (more may be required - see below) and can carry the fix as
+> >> > necessary (no action is required).
+> >> >
+> >> > --
+> >> > Cheers,
+> >> > Stephen Rothwell                    sfr@canb.auug.org.au
+> >> >
+> >> > diff --cc drivers/base/firmware_class.c
+> >> > index 01e2103,6ede229..0000000
+> >> > --- a/drivers/base/firmware_class.c
+> >> > +++ b/drivers/base/firmware_class.c
+> >> > @@@ -446,22 -452,11 +452,18 @@@ static struct firmware_priv *to_firmwar
+> >> >         return container_of(dev, struct firmware_priv, dev);
+> >> >   }
+> >> >
+> >> > - static void fw_load_abort(struct firmware_priv *fw_priv)
+> >> > + static void fw_load_abort(struct firmware_buf *buf)
+> >> >   {
+> >> > -       struct firmware_buf *buf = fw_priv->buf;
+> >> > -
+> >> >  +      /*
+> >> >  +       * There is a small window in which user can write to 'loading'
+> >> >  +       * between loading done and disappearance of 'loading'
+> >> >  +       */
+> >> >  +      if (test_bit(FW_STATUS_DONE, &buf->status))
+> >> >  +              return;
+> >> >  +
+> >> > +       list_del_init(&buf->pending_list);
+> >> >         set_bit(FW_STATUS_ABORT, &buf->status);
+> >> >         complete_all(&buf->completion);
+> >> > -
+> >> > -       /* avoid user action after loading abort */
+> >> > -       fw_priv->buf = NULL;
+> >>
+> >> Hmm, maybe the most important part in the commit 875979368eb4
+> >> ("firmware loader: fix use-after-free by double abort") has been removed, :-)
+> >>
+> >> In fact, the commit 87597936 is for linus tree only because it is a fix,
+> >> so the conflict is caused by merging it with other firmware loader patches
+> >> in -next tree.
+> >>
+> >> Greg, I can figure out one patch for -next easily, but it depends you
+> >> push it on 3.10-rc or 3.11-rc.
+> >
+> > I'll be pushing your patch for 3.10-final to Linus as it fixes a bug,
+> > but I will need something to resolve the merge issue properly.  Can you
+> > provide me that patch/merge?
+> 
+> OK, I can send you one patch, but I am wondering the patch is against
+> today's next tree or your driver-core/driver-core-next?
+> 
+> If it is against your driver-core/driver-core-next, would you mind letting
+> me know how to generate the patch for the conflict?  Sorry for the stupid
+> question, because I seldom meet such problem, :-(
 
-These patches also got picked up by Rafael and are in his ACPI tree
-too.  I think the patches were applied identically, so there should not
-be any merge conflicts when this all comes back together in the 3.11
-merge window.
+Can you merge the two branches together (driver-core-next and
+driver-core-linus) and send me the proper merge patch that I should be
+applying when doing that?  Then I can push that out through the
+driver-core-next tree to make linux-next work properly, as well as make
+the merge sane for me when I pull in the final 3.10 release.
 
-Rafael already had a chat about who will take future apei changes
-so that we won't have this happen again.
+thanks,
 
--Tony
+greg k-h
