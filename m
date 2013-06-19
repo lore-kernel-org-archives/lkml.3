@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3FSRgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:36:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12978 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab3FSRgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:36:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,898,1363158000"; 
-   d="scan'208";a="257324465"
-Message-ID: <51C1EC32.6020204@intel.com>
-Date: Wed, 19 Jun 2013 10:36:50 -0700
-From: Dave Jiang <dave.jiang@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S934780Ab3FSRhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:37:31 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:34090 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab3FSRh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:37:28 -0400
 MIME-Version: 1.0
-To: Dan Williams <djbw@fb.com>
-CC: Jon Mason <jon.mason@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ioatdma: add DMA_PRIVATE capabilities flag
-References: <1371602813-19828-1-git-send-email-jon.mason@intel.com> <1371602813-19828-3-git-send-email-jon.mason@intel.com> <CAA9_cmeie_V0PauHBadVsg22OQmFrC_Oeg1o1FwdzQ+mVU9gTA@mail.gmail.com>
-In-Reply-To: <CAA9_cmeie_V0PauHBadVsg22OQmFrC_Oeg1o1FwdzQ+mVU9gTA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3321228.vG97AE80O6@vostro.rjw.lan>
+References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
+	<3168584.RRBYoY5UXf@vostro.rjw.lan>
+	<CA+8MBbKZBvqVA+wKTK7GpXorpBvDLGCJURc+PQz+QfDiwA1a8A@mail.gmail.com>
+	<3321228.vG97AE80O6@vostro.rjw.lan>
+Date: Wed, 19 Jun 2013 10:37:27 -0700
+Message-ID: <CA+8MBbLS9suFc4gdjbb1RQdYmEyNUUHhEKgSjMxJpQLcPPYN2g@mail.gmail.com>
+Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container
+ hotplug with other scan handlers
+From: Tony Luck <tony.luck@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 05:59 PM, Dan Williams wrote:
-> On Tue, Jun 18, 2013 at 5:46 PM, Jon Mason <jon.mason@intel.com> wrote:
->> Set the DMA_PRIVATE dma_transaction_type in the capability mask.  This
->> enables the ability to get an exclusive ioatdma DMA channel for any
->> devices that requests one via the dma_request_channel function call.
->>
->> Signed-off-by: Jon Mason <jon.mason@intel.com>
->> Acked-by: Dave Jiang <dave.jiang@intel.com>
->> ---
->>   drivers/dma/ioat/dma_v3.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
->> index ca6ea9b..ac2aeef 100644
->> --- a/drivers/dma/ioat/dma_v3.c
->> +++ b/drivers/dma/ioat/dma_v3.c
->> @@ -1883,6 +1883,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
->>                  dma->copy_align = 6;
->>
->>          dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
->> +       dma_cap_set(DMA_PRIVATE, dma->cap_mask);
->>          dma->device_prep_dma_interrupt = ioat3_prep_interrupt_lock;
-> DMA_PRIVATE here keeps all channels private, so they couldn't be used
-> elsewhere, for example raid offload.  Do you need a private allocation
-> or can you get away with a dynamically assigned channel?
-So is there no way to reserve a channel as private if no one is using 
-it? It seems the current setup is async_tx or nothing.
+> Can you please apply the appended patch on top of it and see if the system
+> still works then?
 
--- 
+Still works with this patch.
 
-Dave Jiang
-Application Engineer, Storage Divsion
-Intel Corp.
-dave.jiang@intel.com
+-Tony
 
+> ---
+>  drivers/acpi/scan.c  |    3 +++
+>  drivers/acpi/video.c |    3 ---
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -939,6 +939,9 @@ static int acpi_device_probe(struct devi
+>         struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
+>         int ret;
+>
+> +       if (acpi_dev->handler)
+> +               return -EINVAL;
+> +
+>         if (!acpi_drv->ops.add)
+>                 return -ENOSYS;
+>
+> Index: linux-pm/drivers/acpi/video.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/video.c
+> +++ linux-pm/drivers/acpi/video.c
+> @@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
+>         int error;
+>         acpi_status status;
+>
+> -       if (device->handler)
+> -               return -EINVAL;
+> -
+>         status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
+>                                 device->parent->handle, 1,
+>                                 acpi_video_bus_match, NULL,
+>
