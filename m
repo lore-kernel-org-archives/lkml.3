@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933799Ab3FSGlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 02:41:14 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:58670 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756111Ab3FSGlM (ORCPT
+	id S933823Ab3FSGpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 02:45:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42214 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933042Ab3FSGpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 02:41:12 -0400
-X-Greylist: delayed 4473 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jun 2013 02:41:10 EDT
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
-        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
-        Xiaoguang Chen <chenxg@marvell.com>
-Subject: [PATCH v8] Cpufreq: Fix governor start/stop race condition
-Date: Wed, 19 Jun 2013 14:39:54 +0800
-Message-ID: <1371623994-8439-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 19 Jun 2013 02:45:30 -0400
+Date: Wed, 19 Jun 2013 16:45:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: linux-next: manual merge of the samsung tree with the usb tree
+Message-Id: <20130619164521.f5477ccb559cc6c6f8b0a19a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Jun_2013_16_45_21_+1000__3CCRdVQ7BlCL.j+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cpufreq governor's stop and start operation should be kept in sequence.
-If not, there will be unexpected behavior, for example:
+--Signature=_Wed__19_Jun_2013_16_45_21_+1000__3CCRdVQ7BlCL.j+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There are 4 CPUs and policy->cpu=CPU0, CPU1/2/3 are linked to CPU0.
-The normal sequence is as below:
+Hi Kukjin,
 
-1) Current governor is userspace, One application tries to set
-governor to ondemand. It will call __cpufreq_set_policy in which it
-will stop userspace governor and then start ondemand governor.
+Today's linux-next merge of the samsung tree got a conflict in
+drivers/usb/Kconfig between commit d9ea21a77927 ("usb: host: make
+USB_ARCH_HAS_?HCI obsolete") from the usb tree and commit 58d5b72088cc
+("USB: Check for ARCH_EXYNOS separately") from the samsung tree.
 
-2) Current governor is userspace, Now CPU0 hotplugs in CPU3 (put CPU3 online),
-It will call cpufreq_add_policy_cpu in which it first stops userspace
-governor, and then starts userspace governor.
+I fixed it up (USB_ARCH_HAS_EHCI is no longer used) and can carry the fix
+as necessary (no action is required).
 
-Now if the sequence of above two cases interleaves, It becomes like below:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-1) Application stops userspace governor
-2)                                      Hotplug stops userspace governor
-3) Application starts ondemand governor
-4)                                      Hotplug starts a governor
+--Signature=_Wed__19_Jun_2013_16_45_21_+1000__3CCRdVQ7BlCL.j+
+Content-Type: application/pgp-signature
 
-In step 4, Hotplug is supposed to start userspace governor, But now
-the governor has been changed by application to ondemand, So hotplug
-starts ondemand governor again !!!!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-The solution is: Do not allow stop policy's governor multi-times.
-Governor should only be stopped once for one policy, After it is stopped,
-No other governor stop operation should be executed. also add one mutex to
-protect __cpufreq_governor so governor operation can be kept in sequence.
+iQIcBAEBCAAGBQJRwVOGAAoJEECxmPOUX5FED/8P/ikBJtIzlUjEVUvuTt3QUXc3
+SeAuxrXIpWubilBI9JTygnOZ0b4KLQCoQ0oPB6ZIKpTgZkyu2RxgcUBG4MnRAdp2
+U8RgI562YXFEDrRvZsbXLOWTUaclg0Qsn9f76VM7Mmner1E6HeiMZ69XsB7KE/ja
+QXRZ6G1yxQkkrRNG+BE6volKGbQyJCr+f9FtamUlCaefCNxCJzgHZABoUp070GgE
+EUbAs9v65NjgcDEn+FLimdxXUBfCUvnnGFHdtTFAp3sUIVHgj6OcW+zA3kXdI2q8
+073tY4Jg9Bdy0IyULajpZHssCTmwXyzH0OBvwgV4/x76IK7JTDNiFCMIeEyRuqRP
+4Djx/iVVnp4FdLsVoy2EEgJ92+qwlh6rcFwu8YLYeAQZRJYB4ctK5YyvyE30AOnb
+HrJlMUIN9TJDcIAxdOyfw9N3ZPv412FHxC6glT/QX3KyWVzdecI3frcQAELMufRY
+QuwTXncXuCcMKotFZ+KooIBbdAGQwatWM/Ud4wl9Hvl/dgImAScFg+9KN6jZd3s4
+iRHtsrQlNdOC+bgxWZ8r4pYVzKkRcdzrpcaOv67+aVU0cbYnutsN1E7uSTFE+OLv
+387BdZTYBSVUPVHfx9qHGc8Ncf7zRj7qigR8NNUu4JwQoe4awFesr4AJqjmnstPn
+76UB7BFW2CUV6pjP9zXY
+=QXbM
+-----END PGP SIGNATURE-----
 
-Change-Id: Ibd384d1f72c6e5e8e59059819a3cc47e914ae036
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
- include/linux/cpufreq.h   |  1 +
- 2 files changed, 25 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d53f47..6f5aa6f 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
- static DEFINE_RWLOCK(cpufreq_driver_lock);
-+static DEFINE_MUTEX(cpufreq_governor_lock);
- 
- /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-@@ -1562,6 +1563,21 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 
- 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
- 						policy->cpu, event);
-+
-+	mutex_lock(&cpufreq_governor_lock);
-+	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
-+	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
-+		mutex_unlock(&cpufreq_governor_lock);
-+		return -EBUSY;
-+	}
-+
-+	if (event == CPUFREQ_GOV_STOP)
-+		policy->governor_enabled = false;
-+	else if (event == CPUFREQ_GOV_START)
-+		policy->governor_enabled = true;
-+
-+	mutex_unlock(&cpufreq_governor_lock);
-+
- 	ret = policy->governor->governor(policy, event);
- 
- 	if (!ret) {
-@@ -1569,6 +1585,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 			policy->governor->initialized++;
- 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
- 			policy->governor->initialized--;
-+	} else {
-+		/* Restore original values */
-+		mutex_lock(&cpufreq_governor_lock);
-+		if (event == CPUFREQ_GOV_STOP)
-+			policy->governor_enabled = true;
-+		else if (event == CPUFREQ_GOV_START)
-+			policy->governor_enabled = false;
-+		mutex_unlock(&cpufreq_governor_lock);
- 	}
- 
- 	/* we keep one module reference alive for
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 037d36a..1a81b74 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,6 +107,7 @@ struct cpufreq_policy {
- 	unsigned int		policy; /* see above */
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
-+	bool			governor_enabled; /* governor start/stop flag */
- 
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
--- 
-1.8.0
-
+--Signature=_Wed__19_Jun_2013_16_45_21_+1000__3CCRdVQ7BlCL.j+--
