@@ -1,176 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab3FSHff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:35:35 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:41474 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab3FSHfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:35:33 -0400
-Date: Wed, 19 Jun 2013 11:35:27 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130619073526.GB1990@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618062623.GA20528@localhost.localdomain>
- <20130619071346.GA9545@dhcp22.suse.cz>
+	id S1756571Ab3FSHgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:36:55 -0400
+Received: from www.meduna.org ([92.240.244.38]:44467 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755576Ab3FSHgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 03:36:54 -0400
+Message-ID: <51C15F87.20100@meduna.org>
+Date: Wed, 19 Jun 2013 09:36:39 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619071346.GA9545@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <5195ED8B.7060002@meduna.org> <1369183168.6828.168.camel@gandalf.local.home> <519CBB30.3060200@redhat.com> <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com> <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org> <519F65DB.2020305@redhat.com> <51BE2F5C.8070408@meduna.org> <51C0B177.2000006@meduna.org> <CA+55aFwm-a0O-jvznYpXM4Ctf_jex+gcgELq_pqXL38Y6X-JPg@mail.gmail.com>
+In-Reply-To: <CA+55aFwm-a0O-jvznYpXM4Ctf_jex+gcgELq_pqXL38Y6X-JPg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2013-06-19 09:36:45
+X-Connected-IP: 95.105.165.4:29573
+X-Message-Linecount: 47
+X-Body-Linecount: 27
+X-Message-Size: 2499
+X-Body-Size: 856
+X-Received-Count: 1
+X-Recipient-Count: 11
+X-Local-Recipient-Count: 11
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 09:13:46AM +0200, Michal Hocko wrote:
-> On Tue 18-06-13 10:26:24, Glauber Costa wrote:
-> [...]
-> > Michal, would you mind testing the following patch?
-> >
-> > diff --git a/fs/inode.c b/fs/inode.c
-> > index 00b804e..48eafa6 100644
-> > --- a/fs/inode.c
-> > +++ b/fs/inode.c
-> > @@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
-> >  
-> >  static void inode_lru_list_del(struct inode *inode)
-> >  {
-> > +	if (inode->i_state & I_FREEING)
-> > +		return;
-> >  
-> >  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
-> >  		this_cpu_dec(nr_unused);
-> > @@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
-> >  			continue;
-> >  		}
-> >  
-> > -		inode->i_state |= I_FREEING;
-> >  		inode_lru_list_del(inode);
-> > +		inode->i_state |= I_FREEING;
-> >  		spin_unlock(&inode->i_lock);
-> >  		list_add(&inode->i_lru, &dispose);
-> >  	}
-> > @@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
-> >  			continue;
-> >  		}
-> >  
-> > -		inode->i_state |= I_FREEING;
-> >  		inode_lru_list_del(inode);
-> > +		inode->i_state |= I_FREEING;
-> >  		spin_unlock(&inode->i_lock);
-> >  		list_add(&inode->i_lru, &dispose);
-> >  	}
-> > @@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
-> >  		inode->i_state &= ~I_WILL_FREE;
-> >  	}
-> >  
-> > +	inode_lru_list_del(inode);
-> >  	inode->i_state |= I_FREEING;
-> > -	if (!list_empty(&inode->i_lru))
-> > -		inode_lru_list_del(inode);
-> >  	spin_unlock(&inode->i_lock);
-> >  
-> >  	evict(inode);
+On 19.06.2013 07:20, Linus Torvalds wrote:
+
+>> No crash in 2 days running with preempt none...
 > 
-> No luck. I have this on top of inode_lru_isolate one but still can see
-> hangs:
-> 911 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> [<ffffffff81175254>] __lookup_hash+0x34/0x40
-> [<ffffffff81179872>] path_lookupat+0x7a2/0x830
-> [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> [<ffffffff81170116>] vfs_stat+0x16/0x20
-> [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 21409 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> [<ffffffff8117815e>] do_last+0x2de/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 21745 [<ffffffff81179862>] path_lookupat+0x792/0x830
-> [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> [<ffffffff81170116>] vfs_stat+0x16/0x20
-> [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 22032 [<ffffffff81179862>] path_lookupat+0x792/0x830
-> [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> [<ffffffff81170116>] vfs_stat+0x16/0x20
-> [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 22621 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> [<ffffffff8117815e>] do_last+0x2de/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 22711 [<ffffffff81178144>] do_last+0x2c4/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 22946 [<ffffffff81178144>] do_last+0x2c4/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 23393 [<ffffffff81178144>] do_last+0x2c4/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> -- 
-Sorry if you said that before Michal.
+> Is this UP?
 
-But given the backtrace, are you sure this is LRU-related? You mentioned you bisected
-it but found nothing conclusive. I will keep looking but maybe this could benefit from
-a broader fs look
+Yes it is.
 
-In any case, the patch we suggested is obviously correct and we should apply nevertheless.
-I will write it down and send it to Andrew.
+> There's the fast_tlb race that Peter fixed in commit 29eb77825cc7
+> ("arch, mm: Remove tlb_fast_mode()"). I'm not seeing how it would
+> cause infinite TLB faults, but it definitely causes potentially
+> incoherent TLB contents. And afaik it only happens with
+> CONFIG_PREEMPT, and on UP systems. Which sounds like it might match
+> your setup...
+
+Oh, thank you for the pointer, this indeed looks interesting.
+
+Unfortunately the patch massively does not apply to 3.4 which
+I am using and I know too little what all is involved here
+to backport it. I will test it when (if) it gets to the 3.4(-rt)
+(or when I find some spare time to play with the newer kernel
+on that system).
+
+Thanks
+-- 
+                                     Stano
+
