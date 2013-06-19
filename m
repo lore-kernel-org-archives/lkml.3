@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab3FSRLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:11:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60906 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3FSRLs (ORCPT
+	id S1757083Ab3FSRMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:12:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65275 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756842Ab3FSRMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:11:48 -0400
-Message-ID: <51C1E651.9040802@wwwdotorg.org>
-Date: Wed, 19 Jun 2013 11:11:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 13:12:41 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v5 0/6] Android Binder IPC Fixes
+Date: Wed, 19 Jun 2013 18:12:30 +0100
+Message-Id: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 12/13] cpufreq: tegra: call CPUFREQ_POSTCHANGE notfier
- in error cases
-References: <cover.1371630975.git.viresh.kumar@linaro.org> <73f480a1fa0d39b1d199e598fa9f9df4a9158d11.1371630975.git.viresh.kumar@linaro.org>
-In-Reply-To: <73f480a1fa0d39b1d199e598fa9f9df4a9158d11.1371630975.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 02:53 AM, Viresh Kumar wrote:
-> PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
-> should be called or both shouldn't be.
-> 
-> In case we have started PRECHANGE notifier and found an error, we must call
-> POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
-> calling notifiers is complete.
-> 
-> This patch fixes it.
+Hi all,
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+This set of patches will clean-up and fix some of the issues that arise
+with the current binder interface when moving to a 64bit kernel. All these
+changes will not affect the existing 32bit Android interface and are meant
+to stand as the base for the 64bit binder compat layer(kernel or userpsace).
+
+The patch set has been successfully tested with a 64bit Linux userspace and
+64bit binder unit-tests.
+
+This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+kernel binder compat layer.
+
+Changes for v5:
+1 6/6: Moved patch to the end of the series; changed handle to use __u32 type
+2 4/6: Removed some of the alignment/buffer changes introduced in previous
+       versions of the patch.
+
+Changes for v4:
+1: 5/6: Fix the offset buffer alignment such that it will work for cases where
+buffer start + buffer size are not aligned to (void *)
+
+Changes for v3:
+1:  Dropped the patch that was replacing uint32_t types with unsigned int
+2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
+    staging tree)
+3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
+4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
+5:  Modified the binder command IOCTL declarations according to Arve's review
+
+Changes for v2:
+1: 1/7: Modified the commit message according to Greg's feedback;
+2: 3/7: Merged with the patch fixing the printk format specifiers.
+
+Serban Constantinescu (6):
+  staging: android: binder: modify struct binder_write_read to use
+    size_t
+  staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+  staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+  staging: android: binder: fix alignment issues
+  staging: android: binder: replace types with portable ones
+  staging: android: binder: fix binder interface for 64bit compat layer
+
+ drivers/staging/android/binder.c |   32 ++++++++++++-------------
+ drivers/staging/android/binder.h |   48 +++++++++++++++++++-------------------
+ 2 files changed, 40 insertions(+), 40 deletions(-)
+
+-- 
+1.7.9.5
 
