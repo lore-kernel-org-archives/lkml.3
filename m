@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160Ab3FSB6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:58:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40000 "EHLO
+	id S934158Ab3FSB7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:59:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39988 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934055Ab3FSBxl (ORCPT
+	with ESMTP id S934045Ab3FSBxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:53:41 -0400
+	Tue, 18 Jun 2013 21:53:39 -0400
 From: Rohit Vaswani <rvaswani@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
         Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] drivers: gpio: msm: Fix the error condition for reading ngpio
-Date: Tue, 18 Jun 2013 18:53:32 -0700
-Message-Id: <1371606813-5575-3-git-send-email-rvaswani@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ARM: msm: dts: Fix the gpio register address for msm8960
+Date: Tue, 18 Jun 2013 18:53:31 -0700
+Message-Id: <1371606813-5575-2-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1371606813-5575-1-git-send-email-rvaswani@codeaurora.org>
 References: <1371606813-5575-1-git-send-email-rvaswani@codeaurora.org>
@@ -26,27 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_property_read_u32 return 0 on success. The check was using a ! to
-return error. Fix the if condition.
+Fix the the gpio reg address for the device tree entry.
 
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- drivers/gpio/gpio-msm-v2.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/msm8960-cdp.dts |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
-index f4491a4..c2fa770 100644
---- a/drivers/gpio/gpio-msm-v2.c
-+++ b/drivers/gpio/gpio-msm-v2.c
-@@ -378,7 +378,7 @@ static int msm_gpio_probe(struct platform_device *pdev)
- 	int ret, ngpio;
- 	struct resource *res;
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index db2060c..9c1167b0 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -26,7 +26,7 @@
+ 		cpu-offset = <0x80000>;
+ 	};
  
--	if (!of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio)) {
-+	if (of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio)) {
- 		dev_err(&pdev->dev, "%s: ngpio property missing\n", __func__);
- 		return -EINVAL;
- 	}
+-	msmgpio: gpio@fd510000 {
++	msmgpio: gpio@800000 {
+ 		compatible = "qcom,msm-gpio";
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+@@ -34,7 +34,7 @@
+ 		interrupts = <0 32 0x4>;
+ 		interrupt-controller;
+ 		#interrupt-cells = <2>;
+-		reg = <0xfd510000 0x4000>;
++		reg = <0x800000 0x4000>;
+ 	};
+ 
+ 	serial@16440000 {
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
