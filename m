@@ -1,62 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934720Ab3FSQwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:52:12 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:50105 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3FSQwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:52:09 -0400
-Message-ID: <51C1E1B6.8090203@linaro.org>
-Date: Wed, 19 Jun 2013 09:52:06 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
- is stepped
-References: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com> <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934788Ab3FSQxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:53:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62322 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933869Ab3FSQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:53:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,898,1363158000"; 
+   d="scan'208";a="332228650"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130619131611.GC24957@gmail.com>
+References: <1371165992.27102.573.camel@schen9-DESK>
+	 <20130619131611.GC24957@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Jun 2013 09:53:51 -0700
+Message-ID: <1371660831.27102.663.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 08:25 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> The high resolution timer code gets notified of step changes to the
-> system time with clock_was_set() or clock_was_set_delayed() calls.  If
-> other parts of the kernel require similar notification there is no
-> clear place to hook into.
->
-> Add a clock_was_set atomic notifier chain
-> (clock_was_set_notifier_list) and call this in place of
-> clock_was_set().  If the timekeeping locks are held, the calls are
-> deferred to a new tasklet.
->
-> The hrtimer code adds a notifier block to this chain and uses it to
-> call (the now internal) clock_was_set().  Since the timekeeping code
-> does not call the chain from the timer irq clock_was_set_delayed() and
-> associated code can be removed.
+On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
 
-So on my initial quick review, this *looks* pretty reasonable. I get a 
-little worried about interface abuse (ie: random drivers trying to hook 
-into clock_was_set_notifier_list), but we can move that into 
-timekeeper_internal.h or something similar to limit that.
+> > vmstat for mutex implementation: 
+> > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+> > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+> > 
+> > vmstat for rw-sem implementation (3.10-rc4)
+> > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+> > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+> 
+> It appears the main difference is that the rwsem variant context-switches 
+> about 36% more than the mutex version, right?
+> 
+> I'm wondering how that's possible - the lock is mostly write-locked, 
+> correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
+> ought to have brought roughly the same lock-stealing behavior as mutexes 
+> do, right?
+> 
+> So the next analytical step would be to figure out why rwsem lock-stealing 
+> is not behaving in an equivalent fashion on this workload. Do readers come 
+> in frequently enough to disrupt write-lock-stealing perhaps?
+> 
+> Context-switch call-graph profiling might shed some light on where the 
+> extra context switches come from...
+> 
+> Something like:
+> 
+>   perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
+> 
+> or a variant thereof might do the trick.
+> 
 
-The other issue here is we've been burned pretty badly in the past with 
-changes to clock_was_set(), as its key to keeping timers in line with 
-timekeeping.  So this will need a fair amount of testing and run time 
-before this gets merged, so 3.12 is what we'd be targeting at the 
-earliest (its getting a bit late for taking changes for 3.11 anyway).
+Ingo,
 
-If you want to try to push patch 1/4 in for 3.11 via the Xen tree, I'll 
-see about queuing the other three for hopefully 3.12.
+It appears that we are having much more down write failure causing a process to
+block vs going to the slow path for the mutex case.
 
-thanks
--john
+Here's the profile data from
+perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
+
+3.10-rc4 (mutex implementation context switch profile)
+
+-  59.51%             exim  [kernel.kallsyms]  [k] perf_trace_sched_switch
+   - perf_trace_sched_switch
+   - __schedule
+      - 99.98% schedule
+         + 33.07% schedule_timeout
+         + 23.84% pipe_wait
+         + 20.24% do_wait
+         + 12.37% do_exit
+         + 5.34% sigsuspend
+         - 3.40% schedule_preempt_disabled
+              __mutex_lock_common.clone.8
+              __mutex_lock_slowpath
+            - mutex_lock                   <---------low rate mutex blocking
+               + 65.71% lock_anon_vma_root.clone.24
+               + 19.03% anon_vma_lock.clone.21
+               + 7.14% dup_mm
+               + 5.36% unlink_file_vma
+               + 1.71% ima_file_check
+               + 0.64% generic_file_aio_write
+         - 1.07% rwsem_down_write_failed
+              call_rwsem_down_write_failed
+              exit_shm
+              do_exit
+              do_group_exit
+              SyS_exit_group
+              system_call_fastpath
+-  27.61%           smtpbm  [kernel.kallsyms]  [k] perf_trace_sched_switch
+   - perf_trace_sched_switch
+   - __schedule
+   - schedule
+   - schedule_timeout
+      + 100.00% sk_wait_data
++   0.46%          swapper  [kernel.kallsyms]  [k] perf_trace_sched_switch
+
+
+----------------------
+3.10-rc4 implementation (rw-sem context switch profile)
+
+81.91%             exim  [kernel.kallsyms]  [k] perf_trace_sched_switch
+- perf_trace_sched_switch
+- __schedule
+   - 99.99% schedule
+      - 65.26% rwsem_down_write_failed   <------High write lock blocking
+         - call_rwsem_down_write_failed
+            - 79.36% lock_anon_vma_root.clone.27
+               + 52.64% unlink_anon_vmas
+               + 47.36% anon_vma_clone
+            + 12.16% anon_vma_fork
+            + 8.00% anon_vma_free
+      + 11.96% schedule_timeout
+      + 7.66% do_exit
+      + 7.61% do_wait
+      + 5.49% pipe_wait
+      + 1.82% sigsuspend
+13.55%           smtpbm  [kernel.kallsyms]  [k] perf_trace_sched_switch
+- perf_trace_sched_switch
+- __schedule
+- schedule
+- schedule_timeout
+ 0.11%        rcu_sched  [kernel.kallsyms]  [k] perf_trace_sched_switch
+
+
+Thanks.
+
+Tim
 
