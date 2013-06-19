@@ -1,83 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab3FSNrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:47:48 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:39913 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab3FSNrq (ORCPT
+	id S1756790Ab3FSNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:49:58 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:27694 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab3FSNty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:47:46 -0400
-Message-ID: <51C1B684.6010700@cogentembedded.com>
-Date: Wed, 19 Jun 2013 17:47:48 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Stephen Moorby <steve.moorby@ntlworld.com>
-CC: davem@davemloft.net, jiri@resnulli.us, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] drivers/net: param for lapbether for specific ethernet
- device
-References: <51C16A07.3070903@ntlworld.com>
-In-Reply-To: <51C16A07.3070903@ntlworld.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 09:49:54 -0400
+X-AuditID: cbfec7f5-b7f376d000001ec6-f9-51c1b6ff14db
+From: Tomasz Figa <t.figa@samsung.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Chander Kashyap <chander.kashyap@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_*
+ registers
+Date: Wed, 19 Jun 2013 15:49:43 +0200
+Message-id: <2791500.rs0iL4EgjJ@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.10.3 (Linux/3.8.8-gentoo; KDE/4.10.3; x86_64; ; )
+In-reply-to: <20130619132417.GB5276@e102568-lin.cambridge.arm.com>
+References: <1371569191-2364-1-git-send-email-t.figa@samsung.com>
+ <8974257.1Thh8U4Een@amdc1227>
+ <20130619132417.GB5276@e102568-lin.cambridge.arm.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t/xy7r/tx0MNPj9Tcri8ZrFTBZ/Jx1j
+	t3i4/iaLxeWFl1gtljRzW/QuuMpmcbbpDbvFpsfXWC0u75rDZjHj/D4mi9uXeS3e/H7BbjH9
+	2F82i1PXP7NZ/DjTzWKxYOMjRotVu/4wWrz8eILFQchjzbw1jB4tzT1sHr9/TWL0uNzXy+Sx
+	c9Zddo871/aweWxeUu9x5UQTq0ffllWMHp83yQVwRXHZpKTmZJalFunbJXBlzD51l61ggXrF
+	/Ik7mRoY38l2MXJySAiYSDy/eoUNwhaTuHBvPZDNxSEksJRRYv/Sc4wQTheTxMlPC8Gq2ATU
+	JD43PAKzRQQMJXpOrWYCsZkFprJJXN0i18XIwSEsECLR0WsOEmYRUJU4crKZBcTmFdCU6Nhx
+	HKyVX0Bd4t22p2CtogKuEu9XHwar4RRwkmjbvpcFYu9MRom1z3eyQjQLSvyYfI8FYpe8xL79
+	U1khbC2J9TuPM01gFJyFpGwWkrJZSMoWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJ
+	zK87GJceszrEKMDBqMTDO5PzYKAQa2JZcWXuIUYJDmYlEd6KmUAh3pTEyqrUovz4otKc1OJD
+	jEwcnFINjCsWtbk//T1p6u0pF1XyLfZNqtj9+jzf+yLVwFAHt3sMl4qbbp/5t2Eq0/udHM7u
+	0l0bnObkboif4yLssG7jNqnweVVaHl/eMlsv4v+yzW/jv91X9NX0X5cc4VGcuCKdNX97Z9fx
+	74GGWdO0rHdwpzS2zSyyvH7+4Tzp6z2rLrt2rdpmw1vffFyJpTgj0VCLuag4EQB0flm5qgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wednesday 19 of June 2013 14:24:17 Lorenzo Pieralisi wrote:
+> On Wed, Jun 19, 2013 at 01:50:57PM +0100, Tomasz Figa wrote:
+> > On Wednesday 19 of June 2013 17:39:21 Chander Kashyap wrote:
+> > > On 18 June 2013 23:29, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> > > > On 06/19/13 02:45, Tomasz Figa wrote:
+> > > >> Ccing Arnd and Olof, because I forgot to add them to git
+> > > >> send-email...
+> > > >> 
+> > > >> Sorry for the noise.
+> > > >> 
+> > > >> On Tuesday 18 of June 2013 17:26:31 Tomasz Figa wrote:
+> > > >>> S5P_ARM_CORE1_* registers affect only core 1. To control further
+> > > >>> cores
+> > > >>> properly another registers must be used.
+> > > >>> 
+> > > >>> This patch replaces S5P_ARM_CORE1_* register definitions with
+> > > >>> S5P_ARM_CORE_*(x) macro which return addresses of registers for
+> > > >>> specified core.
+> > > >>> 
+> > > >>> This fixes CPU hotplug on quad core Exynos SoCs on which
+> > > >>> currently
+> > > >>> offlining CPUs 2 or 3 caused CPU 1 to be turned off.
+> > > >> 
+> > > >> Obviously this doesn't happen currently because of the if (cpu ==
+> > > >> 1),
+> > > >> but>
+> > > > 
+> > > > Yes, not happened...and just note exynos5440 doesn't support
+> > > > hotplug :)
+> > > > so this is available on exynos4412 and added 5420.
+> > > > 
+> > > >> if logical cpu1 turned out not to be physical cpu1, then it would
+> > > >> crash.
+> > > >> 
+> > > >> Best regards,
+> > > >> Tomasz
+> > > >> 
+> > > >>> In addition,
+> > > >>> bring-up of CPU 2 and 3 is fixed on boards where bootloader
+> > > >>> powers
+> > > >>> off
+> > > >>> secondary cores by default.
+> > > > 
+> > > > I need to test on board about above...
+> > > > 
+> > > >>> Cc: stable@vger.kernel.org
+> > > >>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+> > > >>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+> > > >>> ---
+> > > >>> 
+> > > >>>   arch/arm/mach-exynos/hotplug.c               |  9 +++++----
+> > > >>>   arch/arm/mach-exynos/include/mach/regs-pmu.h | 10 +++++++---
+> > > >>>   arch/arm/mach-exynos/platsmp.c               |  9 +++++----
+> > > >>>   3 files changed, 17 insertions(+), 11 deletions(-)
+> > > >>> 
+> > > >>> diff --git a/arch/arm/mach-exynos/hotplug.c
+> > > >>> b/arch/arm/mach-exynos/hotplug.c index af90cfa..c089943 100644
+> > > >>> --- a/arch/arm/mach-exynos/hotplug.c
+> > > >>> +++ b/arch/arm/mach-exynos/hotplug.c
+> > > >>> @@ -93,10 +93,11 @@ static inline void cpu_leave_lowpower(void)
+> > > >>> 
+> > > >>>   static inline void platform_do_lowpower(unsigned int cpu, int
+> > > >>> 
+> > > >>> *spurious) {
+> > > >>> 
+> > > >>>         for (;;) {
+> > > >>> 
+> > > >>> +               void __iomem *reg_base;
+> > > >>> +               unsigned int phys_cpu = cpu_logical_map(cpu);
+> > > >>> 
+> > > >>> -               /* make cpu1 to be turned off at next WFI command
+> > > >>> */
+> > > >>> -               if (cpu == 1)
+> > > >>> -                       __raw_writel(0,
+> > > >>> S5P_ARM_CORE1_CONFIGURATION);
+> > > >>> +               reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
+> > > 
+> > > Tomasz,
+> > > This will break for non-zero, MPIDR value.  Say if MPIDR is 1 then
+> > > for
+> > > cpu0 phys_cpu value will be 0x100,
+> > > and address calculation will be   (S5P_ARM_CORE0_CONFIGURATION +
+> > > ((0x101) * 0x80)), which is wrong.
+> 
+> Honestly, I did not understand the reasoning above, please clarify.
+> 
+> > Hmm, according to the code initializing __cpu_logical_map[] array this
+> > is not true.
+> > 
+> > Here's the code:
+> > 
+> > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/a
+> > rch/arm/kernel/setup.c?id=refs/tags/next-20130619#n468
+> > 
+> > and for used macros and bitmasks:
+> > 
+> > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/a
+> > rch/arm/include/asm/cputype.h?id=refs/tags/next-20130619#n45
+> > 
+> > Now the structure of the MPIDR register:
+> > 
+> > http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0388e/CI
+> > HEBGFG.html
+> > 
+> > As you can see, the value read from the register in
+> > smp_setup_processor_id() is only the physical CPU ID, so I don't see
+> > any
+> > problem here.
+> 
+> Define "physical CPU ID" :-)
+> 
+> There is a problem here: the MPIDR is not an index, and the
+> cpu_logical_map is populated in arm_dt_init_cpu_maps in:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch
+> /arm/kernel/devtree.c?id=refs/tags/v3.10-rc6
+> 
+> with all affinity levels.
 
-On 19-06-2013 12:21, Stephen Moorby wrote:
+OK. This is what I was missing. Thanks.
 
->  From 35607dd0607bca5322860703143c31cb04377764 Mon Sep 17 00:00:00 2001
-> From: Stephen Moorby <steve.moorby@ntlworld.com>
-> Date: Wed, 19 Jun 2013 08:22:51 +0100
-> Subject: [PATCH 1/1] drivers/net: param for lapbether for specific ethernet
->   device
+> 
+> You need to perform a mapping between logical cpus and registers offset,
+> you can't use the cpu_logical_map directly for that.
 
-    No need for this header.
+Hmm, can't I just extract cluster ID and CPU ID from the MPIDR value and 
+use them appropriately to calculate register offsets?
 
-> The lapbether driver binds to the first ethernet device that comes up.
-> This causes problems in hardware with multiple ethernet interfaces,
-> potentially resulting in the LAPB traffic on the wrong interface.
-> Have added a module parameter 'eth_dev' to specify the ethernet
-> interface over which lapbether should operate.  The module behaves
-> as before if no device is specified.
->
-> Patch created on linux-next 18-Jun-2013.
-> Tested on 2.6.32-45-generic.
->
-> Signed-off-by: Stephen Moorby <steve.moorby@ntlworld.com>
-> ---
->   drivers/net/wan/lapbether.c | 15 +++++++++++++--
->   1 file changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wan/lapbether.c b/drivers/net/wan/lapbether.c
-> index a33a46f..510fc4a 100644
-> --- a/drivers/net/wan/lapbether.c
-> +++ b/drivers/net/wan/lapbether.c
-[...]
-> @@ -381,8 +382,14 @@ static int lapbeth_device_event(struct
-> notifier_block *this,
+Best regards,
+Tomasz
 
-    Your patch is line-wrapped.
-
->       switch (event) {
->       case NETDEV_UP:
->           /* New ethernet device -> new LAPB interface     */
-> -        if (lapbeth_get_x25_dev(dev) == NULL)
-> -            lapbeth_new_device(dev);
-> +        if (lapbeth_get_x25_dev(dev) == NULL) {
-> +            if (NULL != eth_dev) {
-> +                if (0 == strcmp(dev->name, eth_dev))
-> +                    lapbeth_new_device(dev);
-> +            } else {
-> +                lapbeth_new_device(dev);
-> +            }
-> +        }
-
-    It seems the patch is also white space damaged, i.e. tabs converted 
-to spaces.
-
-WBR, Sergei
-
+> Next accident waiting to happen is GIC code (CONFIG_GIC_NON_BANKED),
+> where cpu_logical_map is used erroneously as an index.
+> 
+> Lorenzo
