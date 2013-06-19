@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab3FSEpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 00:45:54 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46162 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3FSEpv (ORCPT
+	id S1752654Ab3FSEsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 00:48:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:63499 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab3FSEsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 00:45:51 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51C13768.30000@jp.fujitsu.com>
-Date: Wed, 19 Jun 2013 13:45:28 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] ACPI / PM: Fix error code path for power resources initialization
-References: <8547354.D2OPcUytEB@vostro.rjw.lan>
-In-Reply-To: <8547354.D2OPcUytEB@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Wed, 19 Jun 2013 00:48:08 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, hjk@hansjkoch.de, dhobsong@igel.co.jp,
+        sachin.kamat@linaro.org
+Subject: [PATCH Resend 1/2] drivers: uio_dmem_genirq: Use of_match_ptr() macro
+Date: Wed, 19 Jun 2013 10:02:47 +0530
+Message-Id: <1371616368-16459-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/06/18 7:37, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Commit 781d737 (ACPI: Drop power resources driver) introduced a
-> bug in the power resources initialization error code path causing
-> a NULL pointer to be referenced in acpi_release_power_resource()
-> if there's an error triggering a jump to the 'err' label in
-> acpi_add_power_resource().  This happens because the list_node
-> field of struct acpi_power_resource has not been initialized yet
-> at this point and doing a list_del() on it is a bad idea.
->
-> To prevent this problem from occuring, initialize the list_node
-> field of struct acpi_power_resource upfront.
->
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: 3.9+ <stable@vger.kernel.org>
+This eliminates having an #ifdef returning NULL for the case
+when OF is disabled.
 
-Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Acked-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+---
+This series is based on linux-next (next-20130618) and is
+compile tested.
+---
 
-Thanks,
-Yasuaki Ishimatsu
+ drivers/uio/uio_dmem_genirq.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> ---
->   drivers/acpi/power.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> Index: linux-pm/drivers/acpi/power.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/power.c
-> +++ linux-pm/drivers/acpi/power.c
-> @@ -882,6 +882,7 @@ int acpi_add_power_resource(acpi_handle
->   				ACPI_STA_DEFAULT);
->   	mutex_init(&resource->resource_lock);
->   	INIT_LIST_HEAD(&resource->dependent);
-> +	INIT_LIST_HEAD(&resource->list_node);
->   	resource->name = device->pnp.bus_id;
->   	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
->   	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+diff --git a/drivers/uio/uio_dmem_genirq.c b/drivers/uio/uio_dmem_genirq.c
+index 252434c..125d0e5 100644
+--- a/drivers/uio/uio_dmem_genirq.c
++++ b/drivers/uio/uio_dmem_genirq.c
+@@ -336,8 +336,6 @@ static const struct of_device_id uio_of_genirq_match[] = {
+ 	{ /* empty for now */ },
+ };
+ MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+-#else
+-# define uio_of_genirq_match NULL
+ #endif
+ 
+ static struct platform_driver uio_dmem_genirq = {
+@@ -347,7 +345,7 @@ static struct platform_driver uio_dmem_genirq = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+ 		.pm = &uio_dmem_genirq_dev_pm_ops,
+-		.of_match_table = uio_of_genirq_match,
++		.of_match_table = of_match_ptr(uio_of_genirq_match),
+ 	},
+ };
+ 
+-- 
+1.7.9.5
 
