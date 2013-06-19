@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934567Ab3FSKFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:05:52 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:53703 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933830Ab3FSKFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:05:50 -0400
-Date: Wed, 19 Jun 2013 12:05:45 +0200
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
-        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
-        Prarit Bhargava <prarit@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-Message-ID: <20130619100544.GB4545@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
- <CAE9FiQW2CMfNOTNM1MRCZo-ZQuQgj=JQtXLZ3eUxF7dQ8qukTA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW2CMfNOTNM1MRCZo-ZQuQgj=JQtXLZ3eUxF7dQ8qukTA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934554Ab3FSKGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:06:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46129 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933830Ab3FSKGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 06:06:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1371483967-22527-1-git-send-email-ddaney.cavm@gmail.com> <1371413189-2568-3-git-send-email-ddaney.cavm@gmail.com>
+To: ddaney.cavm@gmail.com
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, david.s.daney@gmail.com,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2] mn10300: Fix include dependency in irqflags.h et al.
+Date: Wed, 19 Jun 2013 11:05:52 +0100
+Message-ID: <899.1371636352@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 01:19:12PM -0700, Yinghai Lu wrote:
-> On Tue, Jun 18, 2013 at 10:10 AM, Vasilis Liaskovitis
-> <vasilis.liaskovitis@profitbricks.com> wrote:
-> >> could be found at:
-> >>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-> >>
-> >> and it is based on today's Linus tree.
-> >>
-> >
-> > Has this patchset been tested on various numa configs?
-> > I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
-> > boots successfully in many numa configs but while trying different memory sizes
-> > for a 2 numa node VM, I noticed that booting does not complete in all cases
-> > (bootup screen appears to hang but there is no output indicating an early panic)
-> >
-> > node0   node1    boots
-> > 1G      1G       yes
-> > 1G      2G       yes
-> > 1G      0.5G     yes
-> > 3G      2.5G     yes
-> > 3G      3G       yes
-> > 4G      0G       yes
-> > 4G      4G       yes
-> > 1.5G    1G       no
-> > 2G      1G       no
-> > 2G      2G       no
-> > 2.5G    2G       no
-> > 2.5G    2.5G     no
-> >
-> > linux-next next-20130607 boots al of these configs fine.
-> >
-> > Looks odd, perhaps I have something wrong in my setup or maybe there is a
-> > seabios/qemu interaction with this patchset. I will update if I find something.
+ddaney.cavm@gmail.com wrote:
+
+> From: David Daney <david.daney@cavium.com>
 > 
-> just tried 2g/2g, and it works on qemu-kvm:
+> We need to pick up the definition of raw_smp_processor_id() from
+> asm/smp.h.  For the !SMP case, we need to supply a definition of
+> raw_smp_processor_id().
+> 
+> Because of the include dependencies we cannot use smp_call_func_t in
+> asm/smp.h, but we do need linux/thread_info.h
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-thanks for testing. If you can also share qemu/seabios versions you use (release
-or git commits), that would be helpful.
-
-this is most likely some error on my setup, I 'll let you know if I conclude
-otherwise.
-
-thanks,
-
-- Vasilis
+Acked-by: David Howells <dhowells@redhat.com>
