@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835Ab3FSWGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:06:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4755 "EHLO mga02.intel.com"
+	id S935254Ab3FSWJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:09:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37507 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935082Ab3FSWGn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:06:43 -0400
+	id S935070Ab3FSWJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 18:09:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,900,1363158000"; 
-   d="scan'208";a="332383585"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: Joe Perches <joe@perches.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-CC: "apw@canonical.com" <apw@canonical.com>,
+   d="scan'208";a="356411872"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [net] checkpatch: modify logFunction regular expression to
- allow repeated front tags
-Thread-Topic: [net] checkpatch: modify logFunction regular expression to
- allow repeated front tags
-Thread-Index: AQHObNk8jD3IbFnhZEOX5zH10GlEU5k9gTWAgAAXdoA=
-Date: Wed, 19 Jun 2013 22:06:26 +0000
-Message-ID: <02874ECE860811409154E81DA85FBB585650A046@ORSMSX104.amr.corp.intel.com>
-References: <1371638323-20999-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <1371649323.2038.23.camel@joe-AO722>
-In-Reply-To: <1371649323.2038.23.camel@joe-AO722>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Robert Richter" <rric@kernel.org>
+Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBCAAHyTAP//kUdQgACKGAD//4yfcAAQQVUAAA5rtID//5ZQgIAAcCMg
+Date: Wed, 19 Jun 2013 22:08:53 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA885A5@ORSMSX106.amr.corp.intel.com>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130619175728.2852.73156.stgit@localhost.localdomain>
+ <20130619180441.GK28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
+ <20130619183640.GL28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
+ <20130619201438.GM28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA8838B@ORSMSX106.amr.corp.intel.com>
+ <20130619210706.GP28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA884F0@ORSMSX106.amr.corp.intel.com>
+ <20130619214145.GS28300@pd.tnic>
+In-Reply-To: <20130619214145.GS28300@pd.tnic>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JM9T54013088
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Wednesday, June 19, 2013 6:42 AM
-> To: Kirsher, Jeffrey T
-> Cc: apw@canonical.com; Keller, Jacob E; linux-kernel@vger.kernel.org;
-> netdev@vger.kernel.org
-> Subject: Re: [net] checkpatch: modify logFunction regular expression to
-> allow repeated front tags
-> 
-> On Wed, 2013-06-19 at 03:38 -0700, Jeff Kirsher wrote:
-> > From: Jacob Keller <jacob.e.keller@intel.com>
-> >
-> > The previous logFunction regular expression allowed names for log
-> functions like
-> > dev_warn or e_dbg and so forth, but some log functions are of the
-> forms
-> > similar to e_dev_warn, (adding an additional tag in front of a standard
-> name
-> > like dev_warn).
-> 
-> Perhaps names like foo_bar_baz_dev_warn are a bit long.
-> 
-> Maybe instead of
-> +	(?:[a-z0-
-> 9]+_)+(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug
-> |dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
-> use
-> +	(?:[a-z0-
-> 9]+_){0,2}(?:printk|emerg|alert|crit|err|warning|warn|notice|info|de
-> bug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
-> 
+> The above question about what to do *without* going to userspace and
+> back is maybe more interesting and we'd need a clean design there...
+> we'll see.
 
-That sounds good to me.
+Yes - this case (where the BIOS did all the threshold math and made the decision)
+should be one where Linux kernel could just implement the action directly.
+Perhaps controlled by a knob to say whether we really trust the BIOS that much.
 
-- Jake
+But we will also have cases where a smart user agent can correlate data
+from multiple sources to identify the real root cause (e.g. some temperature
+anomalies around the same time as some memory errors that occur at 10am
+on the third Tuesday each month -> cause is air conditioner maintenance guy
+that shuts down the a/c for 10 minutes to change the filter).
 
+I'll leave writing an agent that smart as an exercise for the concerned data
+center manager :-)
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
