@@ -1,114 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934161Ab3FSB6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:58:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40008 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934071Ab3FSBxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934144Ab3FSBxn (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Jun 2013 21:53:43 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+Received: from cn.fujitsu.com ([222.73.24.84]:3343 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S934071Ab3FSBxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 21:53:10 -0400
+X-IronPort-AV: E=Sophos;i="4.87,893,1363104000"; 
+   d="scan'208";a="7596292"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: containers@lists.linux-foundation.org, linux-audit@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] ARM: msm: Consolidate gpiomux for older architectures
-Date: Tue, 18 Jun 2013 18:53:33 -0700
-Message-Id: <1371606813-5575-4-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1371606813-5575-1-git-send-email-rvaswani@codeaurora.org>
-References: <1371606813-5575-1-git-send-email-rvaswani@codeaurora.org>
+Cc: eparis@redhat.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        sgrubb@redhat.com, aris@redhat.com, matthltc@linux.vnet.ibm.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH 04/22] netlink: Add compare function for netlink_table
+Date: Wed, 19 Jun 2013 09:53:36 +0800
+Message-Id: <1371606834-5802-5-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 09:51:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 09:52:00,
+	Serialize complete at 2013/06/19 09:52:00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Msm gpiomux can be used only for 7x30 and 8x50.
-Prevent compilation and fix build issues on 7X00, 8X60 and 8960.
+As we know, netlink sockets are private resource of
+net namespace, they can communicate with each other
+only when they in the same net namespace. this works
+well until we try to add namespace support for other
+subsystems which use netlink.
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+Don't like ipv4 and route table.., it is not suited to
+make these subsytems belong to net namespace, Such as
+audit and crypto subsystems,they are more suitable to
+user namespace.
+
+So we must have the ability to make the netlink sockets
+in same user namespace can communicate with each other.
+
+This patch adds a new function pointer "compare" for
+netlink_table, we can decide if the netlink sockets can
+communicate with each other through this netlink_table
+self-defined compare function.
+
+The behavior isn't changed if we don't provide the compare
+function for netlink_table.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- arch/arm/mach-msm/Kconfig      |    3 +--
- arch/arm/mach-msm/gpiomux-v1.c |   33 ---------------------------------
- arch/arm/mach-msm/gpiomux.h    |   10 ----------
- 3 files changed, 1 insertions(+), 45 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpiomux-v1.c
+ include/linux/netlink.h  |  1 +
+ net/netlink/af_netlink.c | 32 ++++++++++++++++++++++++--------
+ net/netlink/af_netlink.h |  1 +
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 614e41e..905efc8 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -121,8 +121,7 @@ config MSM_SMD
- 	bool
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 6358da5..f78b430 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -46,6 +46,7 @@ struct netlink_kernel_cfg {
+ 	void		(*input)(struct sk_buff *skb);
+ 	struct mutex	*cb_mutex;
+ 	void		(*bind)(int group);
++	bool		(*compare)(struct net *net, struct sock *sk);
+ };
  
- config MSM_GPIOMUX
--	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
--	bool "MSM V1 TLMM GPIOMUX architecture"
-+	bool
- 	help
- 	  Support for MSM V1 TLMM GPIOMUX architecture.
+ extern struct sock *__netlink_kernel_create(struct net *net, int unit,
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 57ee84d..942d429 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -854,16 +854,23 @@ netlink_unlock_table(void)
+ 		wake_up(&nl_table_wait);
+ }
  
-diff --git a/arch/arm/mach-msm/gpiomux-v1.c b/arch/arm/mach-msm/gpiomux-v1.c
-deleted file mode 100644
-index 27de2ab..0000000
---- a/arch/arm/mach-msm/gpiomux-v1.c
-+++ /dev/null
-@@ -1,33 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#include <linux/kernel.h>
--#include "gpiomux.h"
--#include "proc_comm.h"
--
--void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
--{
--	unsigned tlmm_config  = (val & ~GPIOMUX_CTL_MASK) |
--				((gpio & 0x3ff) << 4);
--	unsigned tlmm_disable = 0;
--	int rc;
--
--	rc = msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX,
--			   &tlmm_config, &tlmm_disable);
--	if (rc)
--		pr_err("%s: unexpected proc_comm failure %d: %08x %08x\n",
--		       __func__, rc, tlmm_config, tlmm_disable);
--}
-diff --git a/arch/arm/mach-msm/gpiomux.h b/arch/arm/mach-msm/gpiomux.h
-index 8e82f41..4410d77 100644
---- a/arch/arm/mach-msm/gpiomux.h
-+++ b/arch/arm/mach-msm/gpiomux.h
-@@ -73,16 +73,6 @@ extern struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS];
- int msm_gpiomux_write(unsigned gpio,
- 		      gpiomux_config_t active,
- 		      gpiomux_config_t suspended);
--
--/* Architecture-internal function for use by the framework only.
-- * This function can assume the following:
-- * - the gpio value has passed a bounds-check
-- * - the gpiomux spinlock has been obtained
-- *
-- * This function is not for public consumption.  External users
-- * should use msm_gpiomux_write.
-- */
--void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val);
- #else
- static inline int msm_gpiomux_write(unsigned gpio,
- 				    gpiomux_config_t active,
++static bool netlink_compare(struct net *net, struct sock *sk)
++{
++	return net_eq(sock_net(sk), net);
++}
++
+ static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
+ {
+-	struct nl_portid_hash *hash = &nl_table[protocol].hash;
++	struct netlink_table *table = &nl_table[protocol];
++	struct nl_portid_hash *hash = &table->hash;
+ 	struct hlist_head *head;
+ 	struct sock *sk;
+ 
+ 	read_lock(&nl_table_lock);
+ 	head = nl_portid_hashfn(hash, portid);
+ 	sk_for_each(sk, head) {
+-		if (net_eq(sock_net(sk), net) && (nlk_sk(sk)->portid == portid)) {
++		if (table->compare(net, sk) &&
++		    (nlk_sk(sk)->portid == portid)) {
+ 			sock_hold(sk);
+ 			goto found;
+ 		}
+@@ -976,7 +983,8 @@ netlink_update_listeners(struct sock *sk)
+ 
+ static int netlink_insert(struct sock *sk, struct net *net, u32 portid)
+ {
+-	struct nl_portid_hash *hash = &nl_table[sk->sk_protocol].hash;
++	struct netlink_table *table = &nl_table[sk->sk_protocol];
++	struct nl_portid_hash *hash = &table->hash;
+ 	struct hlist_head *head;
+ 	int err = -EADDRINUSE;
+ 	struct sock *osk;
+@@ -986,7 +994,8 @@ static int netlink_insert(struct sock *sk, struct net *net, u32 portid)
+ 	head = nl_portid_hashfn(hash, portid);
+ 	len = 0;
+ 	sk_for_each(osk, head) {
+-		if (net_eq(sock_net(osk), net) && (nlk_sk(osk)->portid == portid))
++		if (table->compare(net, osk) &&
++		    (nlk_sk(osk)->portid == portid))
+ 			break;
+ 		len++;
+ 	}
+@@ -1183,7 +1192,8 @@ static int netlink_autobind(struct socket *sock)
+ {
+ 	struct sock *sk = sock->sk;
+ 	struct net *net = sock_net(sk);
+-	struct nl_portid_hash *hash = &nl_table[sk->sk_protocol].hash;
++	struct netlink_table *table = &nl_table[sk->sk_protocol];
++	struct nl_portid_hash *hash = &table->hash;
+ 	struct hlist_head *head;
+ 	struct sock *osk;
+ 	s32 portid = task_tgid_vnr(current);
+@@ -1195,7 +1205,7 @@ retry:
+ 	netlink_table_grab();
+ 	head = nl_portid_hashfn(hash, portid);
+ 	sk_for_each(osk, head) {
+-		if (!net_eq(sock_net(osk), net))
++		if (!table->compare(net, osk))
+ 			continue;
+ 		if (nlk_sk(osk)->portid == portid) {
+ 			/* Bind collision, search negative portid values. */
+@@ -2285,6 +2295,8 @@ __netlink_kernel_create(struct net *net, int unit, struct module *module,
+ 		if (cfg) {
+ 			nl_table[unit].bind = cfg->bind;
+ 			nl_table[unit].flags = cfg->flags;
++			if (cfg->compare)
++				nl_table[unit].compare = cfg->compare;
+ 		}
+ 		nl_table[unit].registered = 1;
+ 	} else {
+@@ -2707,6 +2719,7 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
+ 	struct sock *s;
+ 	struct nl_seq_iter *iter;
++	struct net *net;
+ 	int i, j;
+ 
+ 	++*pos;
+@@ -2714,11 +2727,12 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 	if (v == SEQ_START_TOKEN)
+ 		return netlink_seq_socket_idx(seq, 0);
+ 
++	net = seq_file_net(seq);
+ 	iter = seq->private;
+ 	s = v;
+ 	do {
+ 		s = sk_next(s);
+-	} while (s && sock_net(s) != seq_file_net(seq));
++	} while (s && !nl_table[s->sk_protocol].compare(net, s));
+ 	if (s)
+ 		return s;
+ 
+@@ -2730,7 +2744,7 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 
+ 		for (; j <= hash->mask; j++) {
+ 			s = sk_head(&hash->table[j]);
+-			while (s && sock_net(s) != seq_file_net(seq))
++			while (s && !nl_table[s->sk_protocol].compare(net, s))
+ 				s = sk_next(s);
+ 			if (s) {
+ 				iter->link = i;
+@@ -2923,6 +2937,8 @@ static int __init netlink_proto_init(void)
+ 		hash->shift = 0;
+ 		hash->mask = 0;
+ 		hash->rehash_time = jiffies;
++
++		nl_table[i].compare = netlink_compare;
+ 	}
+ 
+ 	netlink_add_usersock_entry();
+diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
+index ed85222..eaa88d1 100644
+--- a/net/netlink/af_netlink.h
++++ b/net/netlink/af_netlink.h
+@@ -73,6 +73,7 @@ struct netlink_table {
+ 	struct mutex		*cb_mutex;
+ 	struct module		*module;
+ 	void			(*bind)(int group);
++	bool			(*compare)(struct net *net, struct sock *sock);
+ 	int			registered;
+ };
+ 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.4
 
