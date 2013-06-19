@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab3FSQKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:10:05 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.206]:11335 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756862Ab3FSQKC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:10:02 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-131.messagelabs.com!1371658164!6475732!65
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Ryan Mallon <rmallon@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "poeschel@lemonage.de" <poeschel@lemonage.de>,
-        "rob@landley.net" <rob@landley.net>
-Date: Wed, 19 Jun 2013 11:09:13 -0500
-Subject: RE: [PATCH v4] pwm: add sysfs interface
-Thread-Topic: [PATCH v4] pwm: add sysfs interface
-Thread-Index: Ac5m3KMuMOjbApe2Se61mlPYkr1NCgGKobVg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC1259B5@AUSP01VMBX24.collaborationhost.net>
-References: <201306101612.07708.hartleys@visionengravers.com>
- <20130611101432.GA932@manwe> <51B709F5.8070909@gmail.com>
- <ADE657CA350FB648AAC2C43247A983F0021DA690F61B@AUSP01VMBX24.collaborationhost.net>
- <ADE657CA350FB648AAC2C43247A983F0021DA690F63A@AUSP01VMBX24.collaborationhost.net>
- <20130611183521.GC29842@mithrandir>
- <ADE657CA350FB648AAC2C43247A983F0021DA690F6BE@AUSP01VMBX24.collaborationhost.net>
- <20130611194819.GA29980@mithrandir>
-In-Reply-To: <20130611194819.GA29980@mithrandir>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757157Ab3FSQPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:15:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58587 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757010Ab3FSQPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:15:05 -0400
+Message-ID: <1371658504.2038.25.camel@joe-AO722>
+Subject: Re: [patch -next] FMC: NULL dereference on allocation failure
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Wed, 19 Jun 2013 09:15:04 -0700
+In-Reply-To: <20130619160101.GA29108@mwanda>
+References: <20130619160101.GA29108@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 11, 2013 12:48 PM, Thierry Reding wrote:
->
-> I'm tempted to take your v5 patch and make a note to clean that up
-> separately at some point (along with similar changes for the DEBUG_FS
-> support).
+On Wed, 2013-06-19 at 19:01 +0300, Dan Carpenter wrote:
+> If we don't allocate "arr" then the cleanup path will dereference it and
+> oops.
+[]
+> diff --git a/drivers/fmc/fmc-sdb.c b/drivers/fmc/fmc-sdb.c
+[]
+> @@ -46,16 +46,17 @@ static struct sdb_array *__fmc_scan_sdb_tree(struct fmc_device *fmc,
+[]
+> -		arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
+> -		arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
+[]
+> +	arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
+> +	arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
 
-Thierry,
+n comes from the hardware no?
+Maybe make these kcalloc too.
 
-So you want a v6 of this patch or are you ok with v5?
-
-Thanks,
-Hartley
 
