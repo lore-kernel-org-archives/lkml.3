@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3FSFvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:51:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab3FSFva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:51:30 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, edumazet@google.com, hkchu@google.com, mst@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [net-next rfc 0/3] increase the limit of tuntap queues
-Date: Wed, 19 Jun 2013 13:40:49 +0800
-Message-Id: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
+	id S1756448Ab3FSFyX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:54:23 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38706 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751089Ab3FSFyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 01:54:21 -0400
+X-Sasl-enc: yDkAxZjvLKwCnAHk4IATPHOj2+WWuqloX3/OOsK8WLI1 1371621260
+Date: Tue, 18 Jun 2013 22:55:00 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+Message-ID: <20130619055500.GA5283@kroah.com>
+References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all:
+On Wed, Jun 19, 2013 at 03:32:25PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the driver-core tree got a conflict in
+> drivers/base/firmware_class.c between commit 875979368eb4 ("firmware
+> loader: fix use-after-free by double abort") from the driver-core.current
+> tree and commit fe304143b0c3 ("firmware: Avoid deadlock of usermodehelper
+> lock at shutdown") from the driver-core tree.
+> 
+> I fixed it up (more may be required - see below) and can carry the fix as
+> necessary (no action is required).
 
-This series tries to increase the limit of tuntap queues. Histrocially there're
-two reasons which prevent us from doing this:
+Thanks, the merge looks correct, Ming, any objection?
 
-- We store the hash buckets in tun_struct which results a very large size of
-  tun_struct, this high order memory allocation fail easily when the memory were
-  fragmented.
-- The netdev_queue and netdev_rx_queue array in netdevice were allocated through
-  kmalloc, which may cause a high order memory allocation too when we have
-  several queues. E.g. sizeof(netdev_queue) is 320, which means a high order
-  allocation will happens when the device has more than 12 queues.
-
-So this series tries to address those issues by switching to use flex array. All
-entries were preallocated, and since flex array always do a order-0 allocation,
-we can safely increase the limit after.
-
-Only compile test, comments or review are more than welcomed.
-
-Jason Wang (3):
-  net: avoid high order memory allocation for queues by using flex
-    array
-  tuntap: reduce the size of tun_struct by using flex array
-  tuntap: increase the max queues to 16
-
- drivers/net/tun.c         |   59 ++++++++++++++++++++++++++++++++------------
- include/linux/netdevice.h |   13 ++++++----
- net/core/dev.c            |   57 +++++++++++++++++++++++++++++++------------
- net/core/net-sysfs.c      |   15 +++++++----
- net/openvswitch/flow.c    |    2 +-
- 5 files changed, 102 insertions(+), 44 deletions(-)
-
+greg k-h
