@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933701Ab3FSEsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 00:48:15 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59033 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab3FSEsL (ORCPT
+	id S1754772Ab3FSEsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 00:48:50 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:45211 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3FSEst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 00:48:11 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, hjk@hansjkoch.de, dhobsong@igel.co.jp,
-        sachin.kamat@linaro.org
-Subject: [PATCH Resend 2/2] drivers: uio_pdrv_genirq: Use of_match_ptr() macro
-Date: Wed, 19 Jun 2013 10:02:48 +0530
-Message-Id: <1371616368-16459-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371616368-16459-1-git-send-email-sachin.kamat@linaro.org>
-References: <1371616368-16459-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 19 Jun 2013 00:48:49 -0400
+Message-ID: <51C1381A.2@huawei.com>
+Date: Wed, 19 Jun 2013 12:48:26 +0800
+From: Younger Liu <younger.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>
+CC: <linux-ext4@vger.kernel.org>, Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] fs/jbd2: t_updates should increase when start_this_handle()
+ failed in jbd2__journal_restart()
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.69.19]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This eliminates having an #ifdef returning NULL for the case
-when OF is disabled.
+jbd2_journal_restart() would restart a handle. In this function, it
+calls start_this_handle(). Before calling start_this_handle()，subtract
+1 from transaction->t_updates.
+If start_this_handle() succeeds, transaction->t_updates increases by 1
+in it. But if start_this_handle() fails, transaction->t_updates does
+not increase.
+So, when commit the handle's transaction in jbd2_journal_stop(), the
+assertion is false, and then trigger a bug.
+The assertion is as follows:
+J_ASSERT(atomic_read(&transaction->t_updates) > 0) 
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Younger Liu <younger.liu@huawei.com>
 ---
- drivers/uio/uio_pdrv_genirq.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/jbd2/transaction.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index c122bca..d7ba355 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -267,8 +267,6 @@ static const struct of_device_id uio_of_genirq_match[] = {
- 	{ /* empty for now */ },
- };
- MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
--#else
--# define uio_of_genirq_match NULL
- #endif
- 
- static struct platform_driver uio_pdrv_genirq = {
-@@ -278,7 +276,7 @@ static struct platform_driver uio_pdrv_genirq = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
- 		.pm = &uio_pdrv_genirq_dev_pm_ops,
--		.of_match_table = uio_of_genirq_match,
-+		.of_match_table = of_match_ptr(uio_of_genirq_match),
- 	},
- };
- 
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 325bc01..9ddb444 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -530,6 +530,8 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, gfp_t gfp_mask)
+ 	lock_map_release(&handle->h_lockdep_map);
+ 	handle->h_buffer_credits = nblocks;
+ 	ret = start_this_handle(journal, handle, gfp_mask);
++	if (ret < 0)
++		atomic_inc(&transaction->t_updates);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(jbd2__journal_restart);
 -- 
-1.7.9.5
+1.7.9.7
 
