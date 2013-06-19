@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934948Ab3FSRQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:16:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65287 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757110Ab3FSRMp (ORCPT
+	id S1757021Ab3FSRWD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:22:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34904 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756717Ab3FSRWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:12:45 -0400
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
-        Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v5 3/6] staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
-Date: Wed, 19 Jun 2013 18:12:33 +0100
-Message-Id: <1371661956-10894-4-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
-References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 19 Jun 2013 13:22:00 -0400
+Date: Wed, 19 Jun 2013 10:21:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH -v11 resend 10/11] arm, change reboot_mode to use enum
+ reboot_mode
+Message-Id: <20130619102141.411c8e39.akpm@linux-foundation.org>
+In-Reply-To: <12642293.RmlRtOVM54@wuerfel>
+References: <1370519244-49918-1-git-send-email-holt@sgi.com>
+	<1370519244-49918-11-git-send-email-holt@sgi.com>
+	<4169120.1k31YLDD12@wuerfel>
+	<12642293.RmlRtOVM54@wuerfel>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BinderDriverCommands mirror the ioctl usage. Thus the size of the
-structure passed through the interface should be used to generate the
-ioctl No.
+On Wed, 19 Jun 2013 15:52:02 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
 
-The change reflects the type being passed from the user space-a pointer
-to a binder_buffer. This change should not affect the existing 32bit
-user space since BC_FREE_BUFFER is computed as:
+> On Wednesday 19 June 2013 12:58:10 Arnd Bergmann wrote:
+> > On Thursday 06 June 2013 06:47:23 Robin Holt wrote:
+> > > Preparing to move the parsing of reboot= to generic kernel code
+> > > forces the change in reboot_mode handling to use the enum.
+> > > 
+> > > Signed-off-by: Robin Holt <holt@sgi.com>
+> > > To: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> > > Cc: Russ Anderson <rja@sgi.com>
+> > > Cc: Robin Holt <holt@sgi.com>
+> > > Cc: H. Peter Anvin <hpa@zytor.com>
+> > > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> > > Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> > > Cc: the arch/x86 maintainers <x86@kernel.org>
+> > > Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+> > > Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > 
+> > Should we merge this through the arm-soc tree?
+> > 
+> > I'm getting a few conflicts with new platforms getting added
+> > using the old interface.
+> 
+> Hmm, I realized after sending it that this patch depends on
+> at least one other patch to add the 'enum'. Any suggestions
+> for how to handle that?
 
-   #define _IOW(type,nr,size)         \
-      ((type) << _IOC_TYPESHIFT) |    \
-      ((nr)   << _IOC_NRSHIFT) |      \
-      ((size) << _IOC_SIZESHIFT))
-
-and for a 32bit compiler BC_FREE_BUFFER will have the same computed
-value. This change will also ease our work in differentiating
-BC_FREE_BUFFER from COMPAT_BC_FREE_BUFFER.
-
-The change does not affect existing 32bit ABI.
-
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-Acked-by: Arve Hjønnevåg <arve@android.com>
----
- drivers/staging/android/binder.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 6515dd2..b55bba9 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -265,7 +265,7 @@ enum binder_driver_command_protocol {
- 	 * Else you have acquired a primary reference on the object.
- 	 */
- 
--	BC_FREE_BUFFER = _IOW('c', 3, int),
-+	BC_FREE_BUFFER = _IOW('c', 3, void *),
- 	/*
- 	 * void *: ptr to transaction data received on a read
- 	 */
--- 
-1.7.9.5
-
+This patchset gets a lot of rejects which I keep on fixing up.  Please
+merge up early in the merge window and compile-test (and review) the
+linux-next changes to make sure I didn't muck up the reject-fixing,
+then we should be fine.
