@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933943Ab3FSBSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:18:49 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:44457 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSBSr (ORCPT
+	id S933977Ab3FSBSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:18:51 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:5401 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:18:47 -0400
+	Tue, 18 Jun 2013 21:18:49 -0400
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: akpm@linux-foundation.org, riel@redhat.com, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
 Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 00/11] sysv ipc shared mem optimizations
-Date: Tue, 18 Jun 2013 18:18:25 -0700
-Message-Id: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
+Subject: [PATCH 02/11] ipc,shm: shorten critical region in shmctl_down
+Date: Tue, 18 Jun 2013 18:18:27 -0700
+Message-Id: <1371604716-3439-3-git-send-email-davidlohr.bueso@hp.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the third and final patchset that deals with reducing the
-amount of contention we impose on the ipc lock (kern_ipc_perm.lock).
-These changes mostly deal with shared memory, previous work has already
-been done for semaphores and message queues:
+Instead of holding the ipc lock for the entire function, use the
+ipcctl_pre_down_nolock and only acquire the lock for specific commands:
+RMID and SET.
 
-http://lkml.org/lkml/2013/3/20/546 (sems)
-http://lkml.org/lkml/2013/5/15/584 (mqueues)
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ ipc/shm.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-With these patches applied, a custom shm microbenchmark stressing shmctl
-doing IPC_STAT with 4 threads a million times, reduces the execution time by 50%.
-A similar run, this time with IPC_SET, reduces the execution time from 3 mins and
-35 secs to 27 seconds.
-
-Patches 1-8: replaces blindly taking the ipc lock for a smarter combination
-of rcu and ipc_obtain_object, only acquiring the spinlock when updating.
-
-Patch 9: renames the ids rw_mutex to rwsem, which is what it already was.
-
-Patch 10: is a trivial mqueue leftover cleanup
-
-Patch 11: adds a brief lock scheme description, requested by Andrew.
-
-This patchset applies on top of linux-next (3.10.0-rc6-next-20130618).
-
-Davidlohr Bueso (11):
-  ipc,shm: introduce lockless functions to obtain the ipc object
-  ipc,shm: shorten critical region in shmctl_down
-  ipc: drop ipcctl_pre_down
-  ipc,shm: introduce shmctl_nolock
-  ipc,shm: make shmctl_nolock lockless
-  ipc,shm: shorten critical region for shmctl
-  ipc,shm: cleanup do_shmat pasta
-  ipc,shm: shorten critical region for shmat
-  ipc: rename ids->rw_mutex
-  ipc,msg: drop msg_unlock
-  ipc: document general ipc locking scheme
-
- include/linux/ipc_namespace.h |   2 +-
- ipc/msg.c                     |  25 +++--
- ipc/namespace.c               |   4 +-
- ipc/sem.c                     |  24 ++---
- ipc/shm.c                     | 239 ++++++++++++++++++++++++++----------------
- ipc/util.c                    |  57 +++++-----
- ipc/util.h                    |   7 +-
- 7 files changed, 199 insertions(+), 159 deletions(-)
-
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 216ae72..22cffd7 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -780,11 +780,10 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+ 	down_write(&shm_ids(ns).rw_mutex);
+ 	rcu_read_lock();
+ 
+-	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid, cmd,
+-			       &shmid64.shm_perm, 0);
++	ipcp = ipcctl_pre_down_nolock(ns, &shm_ids(ns), shmid, cmd,
++				      &shmid64.shm_perm, 0);
+ 	if (IS_ERR(ipcp)) {
+ 		err = PTR_ERR(ipcp);
+-		/* the ipc lock is not held upon failure */
+ 		goto out_unlock1;
+ 	}
+ 
+@@ -792,14 +791,16 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+ 
+ 	err = security_shm_shmctl(shp, cmd);
+ 	if (err)
+-		goto out_unlock0;
++		goto out_unlock1;
+ 
+ 	switch (cmd) {
+ 	case IPC_RMID:
++		ipc_lock_object(&shp->shm_perm);
+ 		/* do_shm_rmid unlocks the ipc object and rcu */
+ 		do_shm_rmid(ns, ipcp);
+ 		goto out_up;
+ 	case IPC_SET:
++		ipc_lock_object(&shp->shm_perm);
+ 		err = ipc_update_perm(&shmid64.shm_perm, ipcp);
+ 		if (err)
+ 			goto out_unlock0;
+@@ -807,6 +808,7 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+ 		break;
+ 	default:
+ 		err = -EINVAL;
++		goto out_unlock1;
+ 	}
+ 
+ out_unlock0:
 -- 
 1.7.11.7
 
