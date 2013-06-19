@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707Ab3FSMfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:35:22 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:13167 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934022Ab3FSMfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:35:20 -0400
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
-To: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@nsn.com>
-Subject: [PATCH] Documentation/cgroups/memory.txt: fix stat file documentation
-Date: Wed, 19 Jun 2013 15:34:29 +0300
-Message-Id: <1371645269-19762-1-git-send-email-aaro.koskinen@nsn.com>
-X-Mailer: git-send-email 1.7.10.4
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1197
-X-purgate-ID: 151667::1371645317-000017BA-D8DC2B02/0-0/0-0
+	id S934735Ab3FSMfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:35:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44331 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934022Ab3FSMfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:35:30 -0400
+Message-ID: <51C1A55E.9040500@ti.com>
+Date: Wed, 19 Jun 2013 07:34:38 -0500
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Roger Quadros <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <20130619122715.GA5523@atomide.com>
+In-Reply-To: <20130619122715.GA5523@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation for inactive_anon / active_anon was mixed up. Fix that.
+Hi Tony,
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
----
- Documentation/cgroups/memory.txt |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On 06/19/2013 07:27 AM, Tony Lindgren wrote:
+> * Benoit Cousson <b-cousson@ti.com> [130619 03:17]:
+>> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
+>>>
+>>> We have a similar issue with the MMC1 PBIAS. I think in the long run we
+>>> should expand regulator (and possibly pinctrl) framework(s) to handle
+>>> comparators. We could just assume that a comparatator is a regulator,
+>>> and have a comparator binding that just uses the regulator code.
+>>
+>> In the case of pbias, the pinctrl seems to be a much better fit for
+>> my point of view. pinctrl can handle pin configuration and this is
+>> what the pbias is in the case of MMC pins.
+>
+> Well just recently Linus W specifically wanted us to use regulator
+> framework for the MMC1 PBIAS rather than pinctrl. That's because
+> from consumer driver point of view, it changes voltage and there's
+> a delay involved. So I guess no conclusion yet, and it's best to
+> do stand alone drivers to deal with those that use pinctrl for the
+> pinctrl specific parts and export it as a regulator for the consumer
+> devices.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index ddf4f93..b63be03 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -490,10 +490,10 @@ pgpgin		- # of charging events to the memory cgroup. The charging
- pgpgout		- # of uncharging events to the memory cgroup. The uncharging
- 		event happens each time a page is unaccounted from the cgroup.
- swap		- # of bytes of swap usage
--inactive_anon	- # of bytes of anonymous memory and swap cache memory on
-+inactive_anon	- # of bytes of anonymous and swap cache memory on inactive
- 		LRU list.
- active_anon	- # of bytes of anonymous and swap cache memory on active
--		inactive LRU list.
-+		LRU list.
- inactive_file	- # of bytes of file-backed memory on inactive LRU list.
- active_file	- # of bytes of file-backed memory on active LRU list.
- unevictable	- # of bytes of memory that cannot be reclaimed (mlocked etc).
--- 
-1.7.10.4
+In the case of pbias, the boundary is not that clear, and it is true 
+that writing a complete pinctrl driver is really overkill.
+I've tried in the past, and gave up due to the complexity of fmwk and 
+the lack of time. I still think, it is a much better fmwk to handle pin 
+configuration than the regulator fmwk.
 
+> That's pretty much along the lines what Roger has done,
+> except the transceiver could use the pinctrl-single,bits for the
+> muxing and pinconf.
+
+Well, in that case, this is a reset line, so it does not have anything 
+to do with voltage :-)
+
+Anyway, thanks to Florian, we know that there is a real solution to that 
+problem. It is just not merged now :-(
+
+Regards,
+Benoit
