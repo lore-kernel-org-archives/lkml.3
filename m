@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3FSOvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:51:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51836 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab3FSOvn (ORCPT
+	id S1756923Ab3FSOwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:52:12 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39336 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756724Ab3FSOwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:51:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: Re: xsysace driver support on arches other than PPC/Microblaze
-Date: Wed, 19 Jun 2013 16:51:37 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "dahinds@users.sourceforge.net" <dahinds@users.sourceforge.net>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <CAHp75Vd_23-6F=U33GPwmKPrS==+a=qTodynUM12EiOBT-xBdQ@mail.gmail.com> <4881796E12491D4BB15146FE0209CE643F5F15DE@DE02WEMBXB.internal.synopsys.com>
-In-Reply-To: <4881796E12491D4BB15146FE0209CE643F5F15DE@DE02WEMBXB.internal.synopsys.com>
+	Wed, 19 Jun 2013 10:52:11 -0400
+Message-ID: <51C1C596.10405@gmail.com>
+Date: Wed, 19 Jun 2013 08:52:06 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 3/3] perf tools: include termios.h explicitly
+References: <1371603750-15053-1-git-send-email-iamjoonsoo.kim@lge.com> <1371603750-15053-3-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1371603750-15053-3-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306191651.37568.arnd@arndb.de>
-X-Provags-ID: V02:K0:7/cMCHsUtk4u4R5BsaydjraBeczbgmnwFs0Yg9qGpcp
- KF5++lS7wprZ7ja4SibKyY/vhQk4dl9/e7l2mE7SXbY2IwP39X
- 5FmKCxPTL59YYf0GFrMnpzgoWgHwVLiBC+I9UjiPiYXPgdtHOr
- cOEZdP3hrjYQ/3ffg3u9FYxV2IfPj43JPmA2Z4w4OJLmdAP6Av
- SzmHQpZpndpRd6UTAHH5J15qdBYO2X/3vb7MIvgw9PF9UZh5uE
- SI7dyD790znHqu0EmACZ3nhukfkKPuYvGUW2XNXbZJKRqXKnq9
- 668K/t6KAz2R5yWlKI/3pOvk5hjp5VCzrofBrj2R2DhSVVIyag
- kpZTXyz6rYO1i1MWfVv0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 June 2013, Alexey Brodkin wrote:
-> ============
-> static void ace_out_be16(struct ace_device *ace, int reg, u16 val)
-> {
->         out_be16(ace->baseaddr + reg, val);
-> }
-> 
-> static void ace_dataout_be16(struct ace_device *ace)
-> {
->         int i = ACE_FIFO_SIZE / 2;
->         u16 *src = ace->data_ptr;
->         while (i--)
->                 out_le16(ace->baseaddr + 0x40, *src++);
->         ace->data_ptr = src;
-> }
-> ============
-> 
->  From it you may see that one high-level big-endian accessor 
-> ("ace_out_be16") uses big-endian low-level accessor ("out_be16") while 
-> another high-level big-endian accessor ("ace_dataout_be16") uses 
-> little-endian low-level accessor ("out_be16").
-> 
-> It seems like access to 16-bit data words should be done always with LE 
-> accessors (after all it's always just a window to a device's memory).
+On 6/18/13 7:02 PM, Joonsoo Kim wrote:
+> Building perf for android is failed, because it can't find definition of
+> struct winsize. This definition is in termios.h, so I add this header
+> to util.h to solve the problem. It is missed by commit '2c803e52' which
+> moves get_term_dimensions() from builtin-top.c to util.c, but, missed to
+> move termios.h header.
 
-This is a very long story, but I think the code is right. The point is
-that ace_out_be16 accesses a single register that is defined as big-endian,
-while ace_dataout_be16 accesses a byte stream in 16-bit units but has to
-copy each byte in the same order that they are stored in memory on the
-CPU. It usually takes me half an hour to wrap my head around this,
-but yes it is this crazy and a lot of drivers do the same thing.
+Thank you for fixing this.
 
-To simplify the above, ace_dataout_be16 should just call ioread16_rep()
-which does the loop in the right endianess, while ace_out_be16
-could be changed to use iowrite16_be(), which is the similar to
-out_be16 but more portable.
+David
 
-	Arnd
+>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> index a45710b..f2c6483 100644
+> --- a/tools/perf/util/util.h
+> +++ b/tools/perf/util/util.h
+> @@ -72,6 +72,7 @@
+>   #include "types.h"
+>   #include <sys/ttydefaults.h>
+>   #include <lk/debugfs.h>
+> +#include <termios.h>
+>
+>   extern const char *graph_line;
+>   extern const char *graph_dotted_line;
+> @@ -274,6 +275,5 @@ void dump_stack(void);
+>
+>   extern unsigned int page_size;
+>
+> -struct winsize;
+>   void get_term_dimensions(struct winsize *ws);
+>   #endif /* GIT_COMPAT_UTIL_H */
+>
+
