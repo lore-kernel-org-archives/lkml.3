@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3FSTFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:05:15 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:65230 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340Ab3FSTFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:05:13 -0400
+	id S1757478Ab3FSTFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:05:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64423 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757458Ab3FSTFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 15:05:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,899,1363158000"; 
+   d="scan'208";a="319590758"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBCAAHyTAP//kUdQ
+Date: Wed, 19 Jun 2013 19:05:16 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130619175728.2852.73156.stgit@localhost.localdomain>
+ <20130619180441.GK28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
+ <20130619183640.GL28300@pd.tnic>
+In-Reply-To: <20130619183640.GL28300@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1371202532-14628-8-git-send-email-avinashphilip@ti.com>
-References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com>
-	<1371202532-14628-8-git-send-email-avinashphilip@ti.com>
-Date: Wed, 19 Jun 2013 21:05:12 +0200
-Message-ID: <CACRpkdY+6x6UyrHLrh+ya3Y+e8MjsWjZ8FS3RoQwW14mr6x6Vw@mail.gmail.com>
-Subject: Re: [PATCH v2 7/7] ARM: davinci: Start using gpiolib API inplace of
- inline functions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JJ5V2U011990
 
-On Fri, Jun 14, 2013 at 11:35 AM, Philip Avinash <avinashphilip@ti.com> wrote:
+> Why, fill out struct mce and do mce_log(mce) does not suffice?
 
-> Remove NEED_MACH_GPIO_H config select option for ARCH_DAVINCI to start
-> use gpiolib interface for davinci platforms. However with this software
-> latencies for gpio_get/set APIs will affect. Latency has increased by 18
-> microsecond with gpiolib API as compared with inline API's.
->
-> Software latency is calculated on da850 EVM for gpio_get_value API by
-> taking the printk timing for API execution with interrupts disabled.
-> Experiment has done for inline and gpiolib API interface.
->
->   inline gpio API with interrupt disabled
->   [   29.734337] before gpio_get
->   [   29.736847] after gpio_get
->
->   Time difference 0.00251
->
->   gpio library with interrupt disabled
->   [  272.876763] before gpio_get
->   [  272.879291] after gpio_get
->
->   Time difference 0.002528
->   Latency increased by (0.002528 -  0.00251) = 18 microsecond.
->
-> Also being here
-> - Moved following definitions from mach folder to include directory
->         struct davinci_gpio_controller
->         Macro GPIO(x)
->         inline function __gpio_mask
-> - Removed GPIO_TYPE_DAVINCI enum definition as GPIO Davinci is converted
->   to Linux device driver model.
-> - With removal of select option of NEED_MACH_GPIO_H for ARCH_DAVINCI,
->   gpio-tnetv107x also start using gpiolib interface. Hence removes
->   related header files
->         arch/arm/mach-davinci/include/mach/gpio-davinci.h
->         arch/arm/mach-davinci/include/mach/gpio.h
->
->   and include linux/platform_data/gpio-davinci.h header file to support
->   gpio-davinci platform definitions.
->
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> ---
-> Changes since v1:
->         - Remove inline GPIO API support for tnetv107x platforms
->         - Remove gpio header files in mach directory.
->         - Remove include of gpio header files from mach directory.
->         - Moved enum davinci_gpio_type to include folder
->         - Replace __ASM_ARCH_DAVINCI_GPIO_H with __DAVINCI_GPIO_PLATFORM_H
+There is (or should be) a lot more interesting stuff in the CPER than just the address. Stuff
+that we don't have fields for in the existing mcelog structure.  We also need to treat filtered
+records from modern APEI implementations a bit differently from the old stuff.  The original
+user of this code was Westmere-EX, which used it as a workaround for a missing address in
+MCi_ADDR for corrected errors.  So in that scenario we had every error being reported and
+mcelog(8) deamon doing the threshold analysis to decide when to take action.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-on this as well, and this whole 7-patch series.
+In this new modern world - Naveen wants to have the BIOS decide the threshold, so we'd
+like Linux to take some action as soon as it sees just one CPER.
 
-For sure things look better after this series than before it,
-even if there may be details I think need to be adressed later.
-
-Yours,
-Linus Walleij
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
