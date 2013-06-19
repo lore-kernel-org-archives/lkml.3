@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935265Ab3FSWKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:10:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49679 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935070Ab3FSWKm (ORCPT
+	id S935272Ab3FSWOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:14:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935070Ab3FSWOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:10:42 -0400
-Message-ID: <51C22C5F.5020402@wwwdotorg.org>
-Date: Wed, 19 Jun 2013 16:10:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 18:14:43 -0400
+Date: Wed, 19 Jun 2013 15:15:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: Nightly stable builds [Was: fec: Fix build for MCF5272]
+Message-ID: <20130619221519.GB9518@kroah.com>
+References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
+ <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
+ <20130619204348.GA7314@roeck-us.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 2/5] pinctrl: clarify some dt pinconfig options
-References: <201306141741.46077.heiko@sntech.de> <201306141742.49923.heiko@sntech.de>
-In-Reply-To: <201306141742.49923.heiko@sntech.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619204348.GA7314@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2013 09:42 AM, Heiko Stübner wrote:
-> The bias-pull-* options use values > 0 to indicate that the pull should
-> be activated and optionally also indicate the strength of the pull.
-> Therefore use an default value of 1 for these options.
+On Wed, Jun 19, 2013 at 01:43:48PM -0700, Guenter Roeck wrote:
+> On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
+> > Hi Guenter,
+> > 
+> > FYI
+> > 
+> > I asked Stephen to include m5272c3_defconfig as part of his daily
+> > build and now it is available:
+> > http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
+> > 
+> Nice front-end.
 > 
-> Split the low-power-mode option into low-power-enable and -disable.
+> Greg, would it be useful to set up something similar for pending stable builds ?
+> I have back-end code doing that running on one of my servers at home, but no
+> web front-end.
 > 
-> Update the documentation to describe the param arguments better.
-> 
-> Wrong default options
-> Reported-by: James Hogan <james.hogan@imgtec.com>
-> 
+> Any idea whom to talk to to set this up ? Stephen ? Michael ?
 
-That blank line should be before the Reported-by not after it.
+I have no idea.  I publish the stable build patches all publically, so a
+build-bot could easily be built using it, which would be great to have.
 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+thanks
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-
-> -low-power-mode		- low power mode
-> +low-power-enable	- enable low power mode
-> +low-power-disable	- disable low power mode
-
-Hmmm. That's changing the binding definition. What if somebody already
-wrote their device tree according previous definition?
-
-It seems to be that tri-states are preferable for pinctrl DT:
-
-no entry: do nothing
-= 0: disable
-= 1: enable
-
-> +Arguments for parameters:
-> +
-> +- bias-pull-up, -down and -pin-default take as optional argument 0 to disable
-> +  the pull, on hardware supporting it the pull strength in Ohm. bias-disable
-> +  will also disable any active pull.
-
-Does this agree with the latest definition of the kernel-internal
-meaning of 0 for pull-up/down?
-
-> +- input-schmitt takes as argument the adjustable hysteresis in a
-> +  driver-specific format
-> +
-> +- input-debounce takes the debounce time as argument or 0 to disable debouncing
-> +
-> +- power-source argument is the custom value describing the source to select
-> +
-> +- slew-rate takes as argument the target rate in a driver-specific format
-
-If those things have driver-specific (note: should be
-DT-binding-specific, not driver-specific) values, then I'm not convinced
-that having a generic parameter name for them is a good idea; it makes
-things look the same when they aren't. By forcing each binding to
-include the vendor prefix on those properties and hence define a custom
-property name, you're making it clear that the semantics may be different.
+greg k-h
