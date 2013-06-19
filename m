@@ -1,151 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934788Ab3FSQxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:53:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62322 "EHLO mga02.intel.com"
+	id S934883Ab3FSQ5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:57:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25006 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933869Ab3FSQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:53:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,898,1363158000"; 
-   d="scan'208";a="332228650"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20130619131611.GC24957@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
-	 <20130619131611.GC24957@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Jun 2013 09:53:51 -0700
-Message-ID: <1371660831.27102.663.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S934462Ab3FSQ5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:57:14 -0400
+Date: Wed, 19 Jun 2013 18:52:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <palves@redhat.com>
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
+Message-ID: <20130619165259.GA16002@redhat.com>
+References: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com> <20130619160930.GA15631@host2.jankratochvil.net> <51C1DF77.5030006@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C1DF77.5030006@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 15:16 +0200, Ingo Molnar wrote:
+On 06/19, Pedro Alves wrote:
+>
+> On 06/19/2013 05:09 PM, Jan Kratochvil wrote:
+> > On Wed, 19 Jun 2013 17:15:36 +0200, Denys Vlasenko wrote:
+> >> CCing Jan to hear his comments from gdb side.
+>
+> PTRACE_DETACH takes a signal number in the data parameter.
+> What happens to if the tracer passes a non-zero signal?
 
-> > vmstat for mutex implementation: 
-> > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> > 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> > 
-> > vmstat for rw-sem implementation (3.10-rc4)
-> > procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
-> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> > 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-> 
-> It appears the main difference is that the rwsem variant context-switches 
-> about 36% more than the mutex version, right?
-> 
-> I'm wondering how that's possible - the lock is mostly write-locked, 
-> correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-> ought to have brought roughly the same lock-stealing behavior as mutexes 
-> do, right?
-> 
-> So the next analytical step would be to figure out why rwsem lock-stealing 
-> is not behaving in an equivalent fashion on this workload. Do readers come 
-> in frequently enough to disrupt write-lock-stealing perhaps?
-> 
-> Context-switch call-graph profiling might shed some light on where the 
-> extra context switches come from...
-> 
-> Something like:
-> 
->   perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
-> 
-> or a variant thereof might do the trick.
-> 
+non-zero doesn't matter, zero is equally bad.
 
-Ingo,
+ptrace_detach() simply does child->exit_code = data, assuming
+that child will look at it after resume. This is just wrong if
+the child is not stopped.
 
-It appears that we are having much more down write failure causing a process to
-block vs going to the slow path for the mutex case.
-
-Here's the profile data from
-perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
-
-3.10-rc4 (mutex implementation context switch profile)
-
--  59.51%             exim  [kernel.kallsyms]  [k] perf_trace_sched_switch
-   - perf_trace_sched_switch
-   - __schedule
-      - 99.98% schedule
-         + 33.07% schedule_timeout
-         + 23.84% pipe_wait
-         + 20.24% do_wait
-         + 12.37% do_exit
-         + 5.34% sigsuspend
-         - 3.40% schedule_preempt_disabled
-              __mutex_lock_common.clone.8
-              __mutex_lock_slowpath
-            - mutex_lock                   <---------low rate mutex blocking
-               + 65.71% lock_anon_vma_root.clone.24
-               + 19.03% anon_vma_lock.clone.21
-               + 7.14% dup_mm
-               + 5.36% unlink_file_vma
-               + 1.71% ima_file_check
-               + 0.64% generic_file_aio_write
-         - 1.07% rwsem_down_write_failed
-              call_rwsem_down_write_failed
-              exit_shm
-              do_exit
-              do_group_exit
-              SyS_exit_group
-              system_call_fastpath
--  27.61%           smtpbm  [kernel.kallsyms]  [k] perf_trace_sched_switch
-   - perf_trace_sched_switch
-   - __schedule
-   - schedule
-   - schedule_timeout
-      + 100.00% sk_wait_data
-+   0.46%          swapper  [kernel.kallsyms]  [k] perf_trace_sched_switch
-
-
-----------------------
-3.10-rc4 implementation (rw-sem context switch profile)
-
-81.91%             exim  [kernel.kallsyms]  [k] perf_trace_sched_switch
-- perf_trace_sched_switch
-- __schedule
-   - 99.99% schedule
-      - 65.26% rwsem_down_write_failed   <------High write lock blocking
-         - call_rwsem_down_write_failed
-            - 79.36% lock_anon_vma_root.clone.27
-               + 52.64% unlink_anon_vmas
-               + 47.36% anon_vma_clone
-            + 12.16% anon_vma_fork
-            + 8.00% anon_vma_free
-      + 11.96% schedule_timeout
-      + 7.66% do_exit
-      + 7.61% do_wait
-      + 5.49% pipe_wait
-      + 1.82% sigsuspend
-13.55%           smtpbm  [kernel.kallsyms]  [k] perf_trace_sched_switch
-- perf_trace_sched_switch
-- __schedule
-- schedule
-- schedule_timeout
- 0.11%        rcu_sched  [kernel.kallsyms]  [k] perf_trace_sched_switch
-
-
-Thanks.
-
-Tim
+Oleg.
 
