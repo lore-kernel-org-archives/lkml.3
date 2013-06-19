@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934442Ab3FSKDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:03:10 -0400
-Received: from sauhun.de ([89.238.76.85]:41986 "EHLO pokefinder.org"
+	id S934502Ab3FSKEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:04:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52895 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933830Ab3FSKDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:03:08 -0400
-Date: Wed, 19 Jun 2013 12:05:09 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] i2c: omap: correct usage of the interrupt enable
- register
-Message-ID: <20130619100509.GD2950@katana>
-References: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+	id S933830Ab3FSKEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 06:04:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,895,1363158000"; 
+   d="scan'208";a="352254014"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v3 net-next 0/1] net: lls select poll support
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 19 Jun 2013 13:04:21 +0300
+Message-ID: <20130619100421.22132.99447.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wLAMOaPNJ0fu1fTG"
-Content-Disposition: inline
-In-Reply-To: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David,
 
---wLAMOaPNJ0fu1fTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here is a rework of the select/poll patch.
 
-On Mon, Jun 03, 2013 at 10:37:20AM +0300, Oleksandr Dmytryshyn wrote:
-> We've been lucky not to have any interrupts fire during the suspend
-> path, otherwise we would have unpredictable behaviour in the kernel.
->=20
-> Based on the logic of the kernel code interrupts from i2c should be
-> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
-> the omap_i2c_runtime_suspend() function. In the other side kernel
-> writes saved interrupt flags to the I2C_IE register in
-> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
-> during suspend.
->=20
-> This works for chips with version1 registers scheme. Interrupts are
-> disabled during suspend. For chips with version2 scheme registers
-> writting 0 to the I2C_IE register does nothing (because now the
-> I2C_IRQENABLE_SET register is located at this address). This register
-> is used to enable interrupts. For disabling interrupts
-> I2C_IRQENABLE_CLR register should be used.
->=20
-> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
-> addresses, the interrupt enabling procedure is unchanged.
->=20
-> I've checked that interrupts in the i2c controller are still enabled
-> after writting 0 to the I2C_IRQENABLE_SET register. With this patch
-> interrupts are disabled in the omap_i2c_runtime_suspend() function.
->=20
-> Patch is based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> tag: v3.10-rc2
+One question: do we need in sock_poll() to test that sock->sk is not null?
+(Thanks to Willem de Bruijn for pointing this out.) 
 
-Last paragraph should be below "---".
+When select or poll are used on a lot of sockets the sysctl value
+needs to be set higher than 50. For 300 sockets a setting of 100 works
+for me. For 1000 sockets a setting of 200 works well but the gain is
+very small, probably not worth it.
 
->=20
-> Verified on OMAP4430.
->=20
-> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+I should mention that unlike the version we had in v9, with this version
+of the patch, LLS always performs better than no LLS. 
 
-Applied to for-next, thanks!
+In this version I split the sysctl entries into two.
+sysctl.net.core.low_latency_read for blocking socket reads.
+sysctl.net.core.low_latency_poll for select/poll.
 
+The main reason we need two sysctl entries is that the values are different.
+For socket reads 50us is plenty of time but when polling on 300 sockets
+we need about 100us.
 
---wLAMOaPNJ0fu1fTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This also allows poll to busy poll only on some sockets.
+You set sysctl.net.core.low_latency_poll, but leave the read value 0.
+Then you use the socket option to enable SO_LL only on the sockets
+you would like to buys poll on.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Maybe what we really want is a cgroup that would allow settings
+per-process group.
 
-iQIcBAEBAgAGBQJRwYJUAAoJEBQN5MwUoCm2j4AP/1F5wnUamC3jUqG125RbwgIh
-zT2GN9bn/zV1QfLjLfECgfbhTXxtyjg9QQk+4Cl+EzaEAgRO6zYh/HmCHLNdCl7k
-7pcF6XLJQ4GSyCRlPUn8nvdk1/hRZnQRXSUbBMx8bhEaSgqSmARJxwlVAmn/HVJv
-1cPaT+WAIw/zYBWx4LtTvcimDO5K24gQMpn7GD7Ptjf3YqHzKhA/2QDVmmK6e6aC
-BI7QIj69FqfljcAPvxT3Gis/2Ph/wyamrN1SSdlmZ3U6A0Ag8A0A37pizYHETg14
-XHIJjiK5O/IIzuKlxZ/FD5Bg+hRY65NXjL08QmTbM3TYJH/WLzZ6zh7WMh4J5rtv
-KXqM1nM0r/BKpUF16jPu2Q14gU6nhnq8Ad3NupTX2o1RPPmF+mwaKKVYfOCXJSqj
-XsaJFuRvtBV10Oa2ta1ID1PZHL3yepfUbRxdDHw8ZcxMVlsQLzHEsFImo0Mkghc0
-EZNs2JIYy4tk+eIFtadntCYj43mufA9FSN/b8pWrcxWJQJl80tHIy4wdhfykUpPW
-CfjZCwsFCYb/FXaDvw0ddodjJUTDhLVEEGfO4i/KdwAJzdM1tpC17Y5aGoLn7Sjd
-zzaAQpaHkJQXaA596oEEAl98mPhsmWB/m5ohZ9rEEubOv6CE9b7xci7IpGSt/u2C
-0V7X0DGAqSpp7eF+2OqX
-=Y/pC
------END PGP SIGNATURE-----
+-Eliezer
 
---wLAMOaPNJ0fu1fTG--
+Change log:
+v3
+- split sysctl value into two separate ones, one for read and one for poll.
+- updated Documentation/sysctl/net.txt
+- fixed possible overflow (again) reported by Eric Dumazet.
+- poll/select loop optimizations by Eric Dumazet and Willem de Bruijn.
+
+v2
+- added POLL_LL flag, used to signal between the syscalls and sock_poll().
+- add a separate ll_end_time() function to be used from poll.
+- slight reorder of sk_poll_ll so the timing primitives are not used
+  when called from sock_poll().
+- select/poll stop busy polling as soon as there is something to return
+  to the user.
+
+Change log from the original LLS patch series:
+v9
+- better mask testing in sock_poll(), reported by Eric Dumazet.
+
+v8
+- split out udp and select/poll into separate patches.
+  what used to be patch 2/5 is now three patches.
+
+v5
+- added simple poll/select support
+
