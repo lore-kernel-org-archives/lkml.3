@@ -1,116 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3FSHmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:42:11 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:50483 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830Ab3FSHmJ (ORCPT
+	id S1756626Ab3FSHn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:43:58 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:34344 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755576Ab3FSHn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:42:09 -0400
-Date: Wed, 19 Jun 2013 08:42:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 21/33 v2] clk: ux500: Add Device Tree support for the
- PRCC Kernel clock
-Message-ID: <20130619074203.GD31320@laptop>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-22-git-send-email-lee.jones@linaro.org>
- <20130611110923.GB3330@laptop>
- <201306121646.30279.arnd@arndb.de>
- <20130618211735.9136.25870@quantum>
+	Wed, 19 Jun 2013 03:43:56 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
+        swarren@wwwdotorg.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
+Date: Wed, 19 Jun 2013 09:43:52 +0200
+Message-ID: <65316055.UrW2Xpt9hs@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.6-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51C13886.1050201@linaro.org>
+References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <51BE95A5.5090509@linaro.org> <51C13886.1050201@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130618211735.9136.25870@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Quoting Arnd Bergmann (2013-06-12 07:46:30)
-> > On Tuesday 11 June 2013, Lee Jones wrote:
-> > > This patch enables clocks to be specified from Device Tree via phandles
-> > > to the "prcc-kernel-clock" node.
-> > > 
-> > > Cc: Mike Turquette <mturquette@linaro.org>
-> > > Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > 
+Hi Tushar,
+
+On Wednesday 19 of June 2013 10:20:14 Tushar Behera wrote:
+> On 06/17/2013 10:20 AM, Tushar Behera wrote:
+> > On 06/11/2013 12:23 AM, Tomasz Figa wrote:
+> >> On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
+> >>> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
+> >>>> On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
+> > [ ... ]
 > > 
-> > I don't understand the design of the common clock subsystem here, but is it really
-> > necessary to hardcode all the clocks using clk_reg_prcc_kclk() here *and* register
-> > a clkdev *and* store the pointer in an array, when you can get all that information
-> > from the device tree?
+> >>>>>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
+> >>>>> 
+> >>>>> -			SRC_CPU, 16, 1, "mout_core"),
+> >>>>> +			SRC_CPU, 16, 1, "moutcore"),
+> >>>> 
+> >>>> IMHO those typo corrections are not part of this patch.
+> >>> 
+> >>> But the older drivers (before migration to CCF) were using the clock
+> >>> "moutcore" (not "mout_core").
+> >> 
+> >> I mean, this should be placed in a separate patch, as this change is
+> >> not "adding alias for cpufreq related clocks", but rather fixing a
+> >> typo.> 
+> > Is it ok if I split this patch into 2, one adding clock alias
+> > 'mout_apll' and another one fixing the alias names 'mout_mpll',
+> > 'moutcore' and 'armclk'?
+> 
+> I have to fix up another clock for exynos4x12 too. I feel all these
+> modifications are too small to justify different patches. I would modify
+> the commit message appropriately.
+
+Fine.
+
+> > [ ... ]
 > > 
-> > Mike?
-> 
-> I'm a bit confused by what is going on here too.  There are several
-> different ways to handle this.
-> 
-> 1) Since you have your own clock driver (e.g. not the basic clock types)
-> then you could expand the argument list of clk_reg_prcc_kclk to include
-> the clkdev dev_id string and toss the call to clk_register_clkdev inside
-> of clk_reg_prcc_kclk.
+> >>>> Basically I don't like the idea of those global aliases, which IMHO
+> >>>> should be completely dropped. Someone might not like it, but I'd go
+> >>>> with the conversion of our cpufreq drivers to platform drivers
+> >>>> instead, which could receive things like clocks and regulators
+> >>>> using
+> >>>> DT-based lookups.
+> >>> 
+> >>> I agree. Migration of exynos-cpufreq driver as a platform driver is
+> >>> the
+> >>> best solution. But unless someone picks up that work, cpufreq
+> >>> support
+> >>> for EXYNOS4 based systems is broken because of the incorrect clock
+> >>> aliases.
+> >> 
+> >> We have patches for this in our internal tree. I will clean them up a
+> >> bit and submit soon.
+> > 
+> > If you are going to submit the cpufreq driver patches for v3.11, then
+> > we can ignore this patchset. Otherwise, I would prefer to get these
+> > patches merged for v3.11 to get cpufreq working. Once the driver
+> > changes are incorporated, we can very well modify these later.
 
-Yes, that's actually a pretty good idea. It has nothing to do with
-this patchset, but I will add it to my TODO.
+I hope we can get my patches merged for 3.11, but just to be safe and have 
+things working for now, please proceed with yours.
 
-NB: I am away from tomorrow until after Connect, so I will continue
-with this after that.
+I need a bit more time for this, because IMHO the current design of our 
+cpufreq drivers is inappropriate (directly accessing CMU registers) with 
+common clock framework already existing and it needs to be redesigned.
 
-> 2) Move your clock data into DT and teach the driver to use of_clk_get
-> to fetch the clk phandle directly instead of using the string-matching
-> clkdev mechanisms. Of course both your clock and device bits need to be
-> converted to DT first.
+Best regards,
+Tomasz
 
-I'm sure this is the end-goal, but we still have to support the !DT
-case. At least until all of the ATAGs stuff has been completely
-removed from platform.
-
-> Can you explain what prcc_kclk[] and friends are doing? Is that a legacy
-> clock framework thing that is still hanging around? I'm curious to know
-> why your clock driver needs a list of the clocks it registers.
-
-Sure.
-
-1. So when we register a clock, we store a pointer to it in a 'struct
-clk *array[]' using known cell identifying read-ins. For peripheral
-(pclk) and kernel (kclk) clocks these are peripheral number (the
-kernel clocks have these too) and their associated 8bit register
-enable BIT(). The PRCMU clocks are read-in to the array only by their
-32bit register enable BIT().
-
-2. We then register with of_clk_add_provider() passing the array using
-the 'void *data' argument. So:
-
-  clk = clk_reg_prcc_[p|k]clk(blah, blah, blah);
-  array[(periph * PRCC_PERIPHS_PER_CLUSTER) + bit] = clk
-  of_clk_add_provider(child, ux500_twocell_get, array);
-
-3. In the DTS(I) files we request clocks using their known identifiers
-by way of tuplets for the kclks and pclks and by a 1 #cell variant for
-the PRCMU clocks. So:
-
-pclk & kclk:
-  /*        pclk/kclk       periph  BIT() */
-  clocks = <&prcc_[p|k]clk  1       9>;
-
-PRCMU:
-  /*        prcmu       BIT()             */
-  clocks = <&prcmu_clk  PRCMU_DMACLK>;
-
-The PRCMU can then use the clk framework supplied
-of_clk_src_onecell_get() call-back and the pclk and kclks use the 2
-#cell variant we provide. They both read into the aforementioned
-array[]s we populated earlier in the process to fetch the correct
-'struct clk*'.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
