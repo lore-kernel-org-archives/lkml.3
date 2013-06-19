@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934289Ab3FSIl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:41:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53089 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934194Ab3FSIlW (ORCPT
+	id S934308Ab3FSIld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:41:33 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33842 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934194Ab3FSIl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:41:22 -0400
-Date: Wed, 19 Jun 2013 10:41:21 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
+	Wed, 19 Jun 2013 04:41:27 -0400
+Date: Wed, 19 Jun 2013 01:41:24 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
- spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
-In-Reply-To: <51C11E83.8030902@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de>
-References: <51C11E83.8030902@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Cc: Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        laijs@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/kthread.c: need spin_lock_irq() for 'worker'
+ before main looping,  since it can "WARN_ON(worker->task)".
+Message-ID: <20130619084124.GF30681@mtj.dyndns.org>
+References: <51C12D9A.8030801@asianux.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C12D9A.8030801@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Chen Gang wrote:
-
+On Wed, Jun 19, 2013 at 12:03:38PM +0800, Chen Gang wrote:
 > 
-> When CONFIG_LOCKDEP is not defined, spin_lock_irqsave() is not equal to
-> spin_lock() + local_irq_save().
+> Since "WARN_ON(worker->task)", we can not assume that 'worker->task'
+> will be NULL before set 'current' to it.
 > 
-> In __mod_timer(), After call spin_lock_irqsave() with 'base->lock' in
-> lock_timer_base(), it may use spin_lock() with the 'new_base->lock'.
-> 
-> It may let original call do_raw_spin_lock_flags() with 'base->lock',
-> but new  call LOCK_CONTENDED() with 'new_base->lock'.
-> 
-> In fact, we need both of them call do_raw_spin_lock_flags(), so use
-> spin_lock_irqsave() instead of spin_lock() + local_irq_save().
+> So need let 'worker' lock protected too, just like it already lock
+> protected all time in main looping.
 
-Why do we need to do that? There is no reason to do so and it's
-totally irrelevant whether CONFIG_LOCKDEP is enabled or not.
+That synchronization is the kthread_worker user's responsibility.  The
+locking around worker->task = NULL is to prevent the worker task being
+destroyed while insert_kthread_work() is trying to wake it up.  It has
+nothing to do with the user trying to attach multiple tasks to the
+same kthread_worker.  Plus, putting locking around WARN_ON() is
+pointless.  It doesn't really fix anything.  It just makes WARN_ON()
+trigger *slightly* more reliably.
 
-The code is written intentionally this way.
+Thanks.
 
-What's the difference between:
-
-       spin_lock_irqsave(&l1, flags);
-       spin_unlock(&l1);
-       spin_lock(l2);
-       spin_unlock_irqrestore(&l2, flags);
-
-and
-
-       spin_lock_irqsave(&l1, flags);
-       spin_unlock_irqrestore(&l1);
-       spin_lock_irqsave(l2, flags);
-       spin_unlock_irqrestore(&l2, flags);
-
-The difference is that we avoid to touch the interrupt disable in the
-cpu, which might be an expensive operation depending on the cpu model.
-
-There is no point in reenabling interrupts just to disable them
-again a few instruction cycles later.
-
-And lockdep is perfectly fine with that code. All lockdep cares about
-is whether the lock context (interrupts disabled) is correct or
-not.
-
-Thanks,
-
-	tglx
+-- 
+tejun
