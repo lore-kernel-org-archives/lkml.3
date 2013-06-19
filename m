@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3FSG4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 02:56:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:23091 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3FSG4F (ORCPT
+	id S933913Ab3FSG6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 02:58:16 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:63604 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3FSG6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 02:56:05 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C155D1.3090304@asianux.com>
-Date: Wed, 19 Jun 2013 14:55:13 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, hannes@cmpxchg.org, riel@redhat.com,
-        mhocko@suse.cz
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/vmscan.c: 'lru' may be used without initialized after
- the patch "3abf380..." in next-20130607 tree
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 02:58:14 -0400
+Date: Wed, 19 Jun 2013 14:58:10 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH V1] ceph: fix sleeping function called from invalid context.
+X-Priority: 3
+X-GUID: DE2C8F38-E9AE-4650-95F2-82809A89B720
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201306191458048052860@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5J6wPax006423
 
+[ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+[ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
+[ 1121.231971] 1 lock held by mv/9831:
+[ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...},at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+[ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
+[ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
+O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+[ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
+[ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
+[ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
+[ 1121.232056] Call Trace:
+[ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
+[ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
+[ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
+[ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
+[ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
+[ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
+[ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
+[ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
+[ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
+[ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
+[ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
+[ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
+[ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
+[ 1121.232154] 1 lock held by mv/9831:
+[ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
+[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
 
-'lru' may be used without initialized, so need regressing part of the
-related patch.
+I think move the ci->i_ceph_lock down is safe because we can't free
+ceph_inode_info at there.
 
-The related patch:
-  "3abf380 mm: remove lru parameter from __lru_cache_add and lru_cache_add_lru"
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
 ---
- mm/vmscan.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/ceph/xattr.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index fe73724..e92b1858 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -595,6 +595,7 @@ redo:
- 		 * unevictable page on [in]active list.
- 		 * We know how to handle that.
- 		 */
-+		lru = !!TestClearPageActive(page) + page_lru_base_type(page);
- 		lru_cache_add(page);
- 	} else {
- 		/*
+diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
+index 9b6b2b6..be661d8 100644
+--- a/fs/ceph/xattr.c
++++ b/fs/ceph/xattr.c
+@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
+ 	if (!ceph_is_valid_xattr(name))
+ 		return -ENODATA;
+ 
+-	spin_lock(&ci->i_ceph_lock);
+-	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
+-	     ci->i_xattrs.version, ci->i_xattrs.index_version);
+ 
+ 	/* let's see if a virtual xattr was requested */
+ 	vxattr = ceph_match_vxattr(inode, name);
+ 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
+ 		err = vxattr->getxattr_cb(ci, value, size);
+-		goto out;
++		return err;
+ 	}
+ 
++	spin_lock(&ci->i_ceph_lock);
++	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
++	     ci->i_xattrs.version, ci->i_xattrs.index_version);
++
+ 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
+ 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
+ 		goto get_xattr;
 -- 
-1.7.7.6
+1.8.3.rc1.44.gb387c77
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
