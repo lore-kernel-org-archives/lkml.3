@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab3FSBDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:03:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38241 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933857Ab3FSBCd (ORCPT
+	id S933958Ab3FSBC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:02:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60111 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:02:33 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH 0/4] ARM: MSM: Consolidate GPIOMUX for 7x30 and 8x50
-Date: Tue, 18 Jun 2013 18:02:23 -0700
-Message-Id: <1371603747-27436-1-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Tue, 18 Jun 2013 21:02:32 -0400
+X-AuditID: 9c93016f-b7b6cae000007078-e1-51c10324e145
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 3/3] perf tools: include termios.h explicitly
+Date: Wed, 19 Jun 2013 10:02:30 +0900
+Message-Id: <1371603750-15053-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371603750-15053-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1371603750-15053-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous gpio clean up series left some room for consolidation
-and required a few fixes.
+Building perf for android is failed, because it can't find definition of
+struct winsize. This definition is in termios.h, so I add this header
+to util.h to solve the problem. It is missed by commit '2c803e52' which
+moves get_term_dimensions() from builtin-top.c to util.c, but, missed to
+move termios.h header.
 
-Rohit Vaswani (4):
-  ARM: msm: dts: Fix the gpio register address for msm8960
-  drivers: gpio: msm: Fix the error condition for reading ngpio
-  ARM: msm: Consolidate gpiomux for older architectures
-  drivers: gpio: msm: Remove __devinit
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
- arch/arm/boot/dts/msm8960-cdp.dts |    4 ++--
- arch/arm/mach-msm/Kconfig         |    3 +--
- arch/arm/mach-msm/gpiomux-v1.c    |   33 ---------------------------------
- arch/arm/mach-msm/gpiomux.h       |   10 ----------
- drivers/gpio/gpio-msm-v1.c        |    2 +-
- drivers/gpio/gpio-msm-v2.c        |    2 +-
- 6 files changed, 5 insertions(+), 49 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpiomux-v1.c
-
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index a45710b..f2c6483 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -72,6 +72,7 @@
+ #include "types.h"
+ #include <sys/ttydefaults.h>
+ #include <lk/debugfs.h>
++#include <termios.h>
+ 
+ extern const char *graph_line;
+ extern const char *graph_dotted_line;
+@@ -274,6 +275,5 @@ void dump_stack(void);
+ 
+ extern unsigned int page_size;
+ 
+-struct winsize;
+ void get_term_dimensions(struct winsize *ws);
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
