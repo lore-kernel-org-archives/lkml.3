@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934602Ab3FSJNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:13:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60801 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588Ab3FSJNn (ORCPT
+	id S934620Ab3FSJOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:14:31 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:51990 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934311Ab3FSJJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:13:43 -0400
-Date: Wed, 19 Jun 2013 02:13:42 -0700 (PDT)
-Message-Id: <20130619.021342.853193458609177361.davem@davemloft.net>
-To: gang.chen@asianux.com
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, sam@ravnborg.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH] arch: sparc: prom: looping issue, need additional
- length check in the outside looping
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51A6C8FA.3080408@asianux.com>
-References: <51A6C8FA.3080408@asianux.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 05:09:43 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 2/7] KVM: MMU: document clear_spte_count
+Date: Wed, 19 Jun 2013 17:09:20 +0800
+Message-Id: <1371632965-20077-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061909-1618-0000-0000-0000041C936B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gang <gang.chen@asianux.com>
-Date: Thu, 30 May 2013 11:35:22 +0800
+Document it to Documentation/virtual/kvm/mmu.txt
 
-> 
-> When "cp >= barg_buf + BARG_LEN-2", it breaks internel looping 'while',
-> but outside loop 'for' still has effect, so "*cp++ = ' '" will continue
-> repeating which may cause memory overflow.
-> 
-> So need additional length check for it in the outside looping.
-> 
-> Also beautify the related code which found by "./scripts/checkpatch.pl"
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ Documentation/virtual/kvm/mmu.txt | 4 ++++
+ arch/x86/include/asm/kvm_host.h   | 5 +++++
+ arch/x86/kvm/mmu.c                | 7 ++++---
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
-Applied.
+diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+index 869abcc..ce6df51 100644
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -210,6 +210,10 @@ Shadow pages contain the following information:
+     A bitmap indicating which sptes in spt point (directly or indirectly) at
+     pages that may be unsynchronized.  Used to quickly locate all unsychronized
+     pages reachable from a given page.
++  clear_spte_count:
++    It is only used on 32bit host which helps us to detect whether updating the
++    64bit spte is complete so that we can avoid reading the truncated value out
++    of mmu-lock.
+ 
+ Reverse map
+ ===========
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 966f265..1dac2c1 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -226,6 +226,11 @@ struct kvm_mmu_page {
+ 	DECLARE_BITMAP(unsync_child_bitmap, 512);
+ 
+ #ifdef CONFIG_X86_32
++	/*
++	 * Count after the page's spte has been cleared to avoid
++	 * the truncated value is read out of mmu-lock.
++	 * please see the comments in __get_spte_lockless().
++	 */
+ 	int clear_spte_count;
+ #endif
+ 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index c87b19d..77d516c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -464,9 +464,10 @@ static u64 __update_clear_spte_slow(u64 *sptep, u64 spte)
+ /*
+  * The idea using the light way get the spte on x86_32 guest is from
+  * gup_get_pte(arch/x86/mm/gup.c).
+- * The difference is we can not catch the spte tlb flush if we leave
+- * guest mode, so we emulate it by increase clear_spte_count when spte
+- * is cleared.
++ * The difference is we can not immediately catch the spte tlb since
++ * kvm may collapse tlb flush some times. Please see kvm_set_pte_rmapp.
++ *
++ * We emulate it by increase clear_spte_count when spte is cleared.
+  */
+ static u64 __get_spte_lockless(u64 *sptep)
+ {
+-- 
+1.8.1.4
+
