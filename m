@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab3FSFyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:54:23 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38706 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089Ab3FSFyV (ORCPT
+	id S1756471Ab3FSF6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:58:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59440 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3FSF6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:54:21 -0400
-X-Sasl-enc: yDkAxZjvLKwCnAHk4IATPHOj2+WWuqloX3/OOsK8WLI1 1371621260
-Date: Tue, 18 Jun 2013 22:55:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- driver-core.current tree
-Message-ID: <20130619055500.GA5283@kroah.com>
-References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+	Wed, 19 Jun 2013 01:58:33 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <broonie@kernel.org>, <j-keerthy@ti.com>, <ldewangan@nvidia.com>,
+        <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
+        <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <gg@slimlogic.co.uk>
+Subject: [PATCH v3 0/4] MFD: Palmas: Add TPS659038 PMIC support on Palmas
+Date: Wed, 19 Jun 2013 11:27:46 +0530
+Message-ID: <1371621470-22279-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 03:32:25PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> drivers/base/firmware_class.c between commit 875979368eb4 ("firmware
-> loader: fix use-after-free by double abort") from the driver-core.current
-> tree and commit fe304143b0c3 ("firmware: Avoid deadlock of usermodehelper
-> lock at shutdown") from the driver-core tree.
-> 
-> I fixed it up (more may be required - see below) and can carry the fix as
-> necessary (no action is required).
+From: J Keerthy <j-keerthy@ti.com>
 
-Thanks, the merge looks correct, Ming, any objection?
+The Patch series adds TPS659038 PMIC support in the palmas MFD and Regulator
+drivers. The TPS659038 has almost the same registers as of the earlier
+supported variants of PALMAS family such as the TWL6035.
 
-greg k-h
+The critical differences between TPS659038 and TWL6035 being:
+
+1) TPS659038 has nothing related to battery charging and back up battery stuff.
+2) TPS659038 does not have does not have SMPS10(Boost) step up convertor.
+3) TPS659038 does not have Battery detection and anything related to battery.
+4) SD card detection, Battery presence detection, Vibrator, USB OTG are missing
+   when compared to TWL6035.
+
+The patch series is based on the patch:
+        http://www.mail-archive.com/linux-omap@vger.kernel.org/msg90598.html
+
+V3:
+
+Implements Interrupts check using i2c->irq variable instead of DT
+"interrupts" property.
+
+Cleans ups in assiging the features variable in patch 2.
+
+V2:
+
+Implements Interrupts checking via DT instead of creating flags
+and checking based on chip ID.
+
+J Keerthy (4):
+  MFD: Palmas: Check if irq is valid
+  MFD: Palmas: Add SMPS10_BOOST feature
+  mfd: Palmas: Add TPS659038 PMIC support
+  regulator: Palmas: Add TPS659038 support
+
+ Documentation/devicetree/bindings/mfd/palmas.txt   |    2 +
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    1 +
+ drivers/mfd/palmas.c                               |   38 ++++++++++++++++----
+ drivers/regulator/palmas-regulator.c               |    4 ++
+ include/linux/mfd/palmas.h                         |   14 +++++++
+ 5 files changed, 52 insertions(+), 7 deletions(-)
+
+-- 
+1.7.5.4
+
