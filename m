@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab3FSSYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:24:19 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48366 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738Ab3FSSYS (ORCPT
+	id S1757346Ab3FSSY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:24:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16378 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab3FSSY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:24:18 -0400
-Date: Wed, 19 Jun 2013 19:23:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Girish K S <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca
-Message-ID: <20130619182354.GD1403@sirena.org.uk>
-References: <1369032694-13183-1-git-send-email-ks.giri@samsung.com>
- <1369032694-13183-3-git-send-email-ks.giri@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P4O8mEax7ExP9NSJ"
-Content-Disposition: inline
-In-Reply-To: <1369032694-13183-3-git-send-email-ks.giri@samsung.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v1 2/3] spi: s3c64xx: Added provision for dedicated cs pin
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 19 Jun 2013 14:24:56 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zqzIAArZTo8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6_eBa1HtGUEA:10 a=dA54dtIphaX0n7To6xEA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1371666293.18733.52.camel@gandalf.local.home>
+Subject: Re: [PATCH 3/3] tracing/perf: Avoid perf_trace_buf_*() in
+ perf_trace_##call() when possible
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 19 Jun 2013 14:24:53 -0400
+In-Reply-To: <20130619181211.GA28363@redhat.com>
+References: <20130618192218.GA19476@redhat.com>
+	 <1371585773.18733.45.camel@gandalf.local.home>
+	 <20130619181211.GA28363@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-06-19 at 20:12 +0200, Oleg Nesterov wrote:
 
---P4O8mEax7ExP9NSJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > Or is this your way to confuse me as much as my code has confused
+> > you? ;-)
+> 
+> Of course! this was the main reason.
 
-On Mon, May 20, 2013 at 12:21:33PM +0530, Girish K S wrote:
-> From: Girish K S <girishks2000@gmail.com>
->=20
-> The existing driver supports gpio based /cs signal.
-> For controller's that have one device per controller,
-> the slave device's /cs signal might be internally controlled
-> by the chip select bit of slave select register. They are not
-> externally asserted/deasserted using gpio pin.
->=20
-> This patch adds support for controllers with dedicated /cs pin.
-> if "cs-gpio" property doesnt exist in a spi dts node, the controller
-> would treat the /cs pin as dedicated.
+I knew it!
 
-This breaks SPI operation on my s3c64xx based system since...
+> 
+> 
+> Steven, I convinced myself the patch should be correct. If you agree with
+> this hack:
+> 
+> 	- anything else I should do apart from the change above?
+> 
+> 	- should I resend the previous "[PATCH 0/3] tracing: more
+> 	  list_empty(perf_events) checks" series?
+> 
+> 	  This series depends on "[PATCH 3/3] tracing/perf: Move the
+> 	  PERF_MAX_TRACE_SIZE check into perf_trace_buf_prepare()".
+> 
+> 	  Or I can drop this patch if you do not like it and rediff.
+> 
+> 	  Just in case, there are other pending patches in trace_kprobe.c
+> 	  which I am going to resend, but they are orthogonal.
 
->  	if (pdev->dev.of_node) {
-> +		if (of_find_property(pdev->dev.of_node, "cs-gpio", NULL))
-> +			sdd->cs_gpio =3D true;
-> +
->  		ret =3D of_alias_get_id(pdev->dev.of_node, "spi");
->  		if (ret < 0) {
->  			dev_err(&pdev->dev, "failed to get alias id, errno %d\n",
+I'll pull in the patches and play with them. I'll let you know what I
+find.
 
-sdd->cs_gpio is only set to true by this code so if you're using a board
-file then the GPIO will be ignored.
+Thanks,
 
---P4O8mEax7ExP9NSJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+-- Steve
 
-iQIcBAEBAgAGBQJRwfc3AAoJELSic+t+oim9NU8P/jXrpUOXTp9aat2xMvuqie2Q
-BsRY1zBZQdEllJEw529ahZoDbQhCZRU1VPyGJYFVSdHsqQ1xSSqIYiAXppIDGJWT
-iy/jTUNIqzZQ1Z/K1XAJGd95zrxijBm0eTIZu4YyC64c8DgWOak2vR9blYurlPwK
-R7QD7G9YYIXfe01ZPgqVsrzYnZOIdWDuI3J1QKBsFo9B3YH5Ovp56MNz1gYG8pxO
-rr9aWs9utyI5j6t8GnylBNaXCNPoLTG//rIXsLvHBOX1Q+OaAY/hdFaT8Ym7cGZ8
-1r39X7PbK1xemLFiRnxURurFeW1StrZNeWtcvXlhp1jnsAbI+BQHl8JJID7ATOzL
-+duIE9GXDln/DuDBja/cc45t8wnYAgQAu26RdXuNLLc6nB+mw3aPLbl7u9zBg74k
-ZeeHWYGd83MhQhnJ8y6jiVBLUsiHSz+5v70jpTp+GLwimUu/Fl9oGvaD8hqSWbNS
-AfltlsOJyxfoSCMl/uVxNgefD8y+42GyqpY0l9hDr7+UMKuy/K3yaKZY58PpzzXp
-WV7ScS6zc8TdtJqkYXQ8QKBcYmspN1R3B9pEFywguf7UZlxC7dns1eDg/zuXT9Yl
-i4+ehMLbpsWDymVgrJk2HE1YFvyyQCwHF5GC5QZcNmg1qDrqxFYybPKCV/+i4EEz
-Y5Jnpsndf1fRDVraLue2
-=GLNV
------END PGP SIGNATURE-----
 
---P4O8mEax7ExP9NSJ--
