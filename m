@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933913Ab3FSG6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 02:58:16 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63604 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3FSG6O (ORCPT
+	id S933950Ab3FSG6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 02:58:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33502 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933863Ab3FSG6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 02:58:14 -0400
-Date: Wed, 19 Jun 2013 14:58:10 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: sage <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH V1] ceph: fix sleeping function called from invalid context.
-X-Priority: 3
-X-GUID: DE2C8F38-E9AE-4650-95F2-82809A89B720
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201306191458048052860@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Wed, 19 Jun 2013 02:58:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+Date: Wed, 19 Jun 2013 14:58:39 +0800
+Message-ID: <CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+From: Ming Lei <ming.lei@canonical.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5J6wPax006423
 
-[ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
-[ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
-[ 1121.231971] 1 lock held by mv/9831:
-[ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...},at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
-[ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
-[ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
-O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
-[ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
-[ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
-[ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
-[ 1121.232056] Call Trace:
-[ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
-[ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
-[ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
-[ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
-[ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
-[ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
-[ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
-[ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-[ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
-[ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
-[ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
-[ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
-[ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
-[ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
-[ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
-[ 1121.232154] 1 lock held by mv/9831:
-[ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
-[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+On Wed, Jun 19, 2013 at 1:32 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Greg,
+>
+> Today's linux-next merge of the driver-core tree got a conflict in
+> drivers/base/firmware_class.c between commit 875979368eb4 ("firmware
+> loader: fix use-after-free by double abort") from the driver-core.current
+> tree and commit fe304143b0c3 ("firmware: Avoid deadlock of usermodehelper
+> lock at shutdown") from the driver-core tree.
+>
+> I fixed it up (more may be required - see below) and can carry the fix as
+> necessary (no action is required).
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/base/firmware_class.c
+> index 01e2103,6ede229..0000000
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@@ -446,22 -452,11 +452,18 @@@ static struct firmware_priv *to_firmwar
+>         return container_of(dev, struct firmware_priv, dev);
+>   }
+>
+> - static void fw_load_abort(struct firmware_priv *fw_priv)
+> + static void fw_load_abort(struct firmware_buf *buf)
+>   {
+> -       struct firmware_buf *buf = fw_priv->buf;
+> -
+>  +      /*
+>  +       * There is a small window in which user can write to 'loading'
+>  +       * between loading done and disappearance of 'loading'
+>  +       */
+>  +      if (test_bit(FW_STATUS_DONE, &buf->status))
+>  +              return;
+>  +
+> +       list_del_init(&buf->pending_list);
+>         set_bit(FW_STATUS_ABORT, &buf->status);
+>         complete_all(&buf->completion);
+> -
+> -       /* avoid user action after loading abort */
+> -       fw_priv->buf = NULL;
 
-I think move the ci->i_ceph_lock down is safe because we can't free
-ceph_inode_info at there.
+Hmm, maybe the most important part in the commit 875979368eb4
+("firmware loader: fix use-after-free by double abort") has been removed, :-)
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- fs/ceph/xattr.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+In fact, the commit 87597936 is for linus tree only because it is a fix,
+so the conflict is caused by merging it with other firmware loader patches
+in -next tree.
 
-diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
-index 9b6b2b6..be661d8 100644
---- a/fs/ceph/xattr.c
-+++ b/fs/ceph/xattr.c
-@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
- 	if (!ceph_is_valid_xattr(name))
- 		return -ENODATA;
- 
--	spin_lock(&ci->i_ceph_lock);
--	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
--	     ci->i_xattrs.version, ci->i_xattrs.index_version);
- 
- 	/* let's see if a virtual xattr was requested */
- 	vxattr = ceph_match_vxattr(inode, name);
- 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
- 		err = vxattr->getxattr_cb(ci, value, size);
--		goto out;
-+		return err;
- 	}
- 
-+	spin_lock(&ci->i_ceph_lock);
-+	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
-+	     ci->i_xattrs.version, ci->i_xattrs.index_version);
-+
- 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
- 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
- 		goto get_xattr;
--- 
-1.8.3.rc1.44.gb387c77
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Greg, I can figure out one patch for -next easily, but it depends you
+push it on 3.10-rc or 3.11-rc.
+
+
+Thanks,
+--
+Ming Lei
