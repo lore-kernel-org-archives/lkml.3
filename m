@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934846Ab3FSRMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:12:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65285 "EHLO
+	id S934948Ab3FSRQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:16:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65287 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757109Ab3FSRMo (ORCPT
+	by vger.kernel.org with ESMTP id S1757110Ab3FSRMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:12:44 -0400
+	Wed, 19 Jun 2013 13:12:45 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v5 2/6] staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
-Date: Wed, 19 Jun 2013 18:12:32 +0100
-Message-Id: <1371661956-10894-3-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v5 3/6] staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+Date: Wed, 19 Jun 2013 18:12:33 +0100
+Message-Id: <1371661956-10894-4-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
 References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
@@ -25,13 +25,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
-instead of size_t for setting the max threads. Thus using the same
-handler for 32 and 64bit kernels.
+BinderDriverCommands mirror the ioctl usage. Thus the size of the
+structure passed through the interface should be used to generate the
+ioctl No.
 
-This value is stored internally in struct binder_proc and set to 15
-on open_binder() in the libbinder API(thus no need for a 64bit size_t
-on 64bit platforms).
+The change reflects the type being passed from the user space-a pointer
+to a binder_buffer. This change should not affect the existing 32bit
+user space since BC_FREE_BUFFER is computed as:
+
+   #define _IOW(type,nr,size)         \
+      ((type) << _IOC_TYPESHIFT) |    \
+      ((nr)   << _IOC_NRSHIFT) |      \
+      ((size) << _IOC_SIZESHIFT))
+
+and for a 32bit compiler BC_FREE_BUFFER will have the same computed
+value. This change will also ease our work in differentiating
+BC_FREE_BUFFER from COMPAT_BC_FREE_BUFFER.
 
 The change does not affect existing 32bit ABI.
 
@@ -42,18 +51,18 @@ Acked-by: Arve Hjønnevåg <arve@android.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index edab249..6515dd2 100644
+index 6515dd2..b55bba9 100644
 --- a/drivers/staging/android/binder.h
 +++ b/drivers/staging/android/binder.h
-@@ -86,7 +86,7 @@ struct binder_version {
+@@ -265,7 +265,7 @@ enum binder_driver_command_protocol {
+ 	 * Else you have acquired a primary reference on the object.
+ 	 */
  
- #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
- #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
--#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
-+#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
- #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
- #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
- #define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
+-	BC_FREE_BUFFER = _IOW('c', 3, int),
++	BC_FREE_BUFFER = _IOW('c', 3, void *),
+ 	/*
+ 	 * void *: ptr to transaction data received on a read
+ 	 */
 -- 
 1.7.9.5
 
