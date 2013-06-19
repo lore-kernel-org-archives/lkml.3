@@ -1,224 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935128Ab3FSTUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:20:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49650 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935074Ab3FSTUP (ORCPT
+	id S964809Ab3FSTW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:22:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44021 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935068Ab3FSTW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:20:15 -0400
-Message-ID: <51C20465.8060302@ti.com>
-Date: Wed, 19 Jun 2013 15:20:05 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 15:22:26 -0400
+Date: Wed, 19 Jun 2013 20:22:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Padmavathi Venna <padma.v@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Message-ID: <20130619192211.GH1403@sirena.org.uk>
+References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
+ <20130619174047.GB1403@sirena.org.uk>
+ <3697657.tZFV7pR81Q@flatron>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: Amit Daniel Kachhap <amit.daniel@samsung.com>, <linux-pm@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <amit.kachhap@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, <jonghwa3.lee@samsung.com>
-Subject: Re: [PATCH V6 06/30] thermal: exynos: Move exynos_thermal.h from
- include/* to driver/* folder
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-7-git-send-email-amit.daniel@samsung.com> <51C20416.7010809@ti.com>
-In-Reply-To: <51C20416.7010809@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2MJJTXBCSOKMHHIDTSJMW"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="55pgo4yTr53jOkhk"
+Content-Disposition: inline
+In-Reply-To: <3697657.tZFV7pR81Q@flatron>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH 00/11] ARM: s3c64xx: Let amba-pl08x driver handle DMA
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2MJJTXBCSOKMHHIDTSJMW
-Content-Type: text/plain; charset=ISO-8859-1
+
+--55pgo4yTr53jOkhk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 19-06-2013 15:18, Eduardo Valentin wrote:
-> On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
->> This patch renames and moves include/linux/platform_data/exynos_therma=
-l.h to
->> drivers/thermal/samsung/exynos_tmu.h. This file movement is needed as =
-exynos
->> SOC's are not supporting non-DT based platforms and this file now just=
- contains
->> exynos tmu driver related definations.
->> Also struct freq_clip_table is now moved to exynos_thermal_common.c as=
- it fixes
->> the compilation issue occuring because now this new tmu header file is=
- included
->> in tmu driver c file and not in the common thermal header file.
->>
->> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->>  drivers/thermal/samsung/exynos_thermal_common.c    |    1 -
->>  drivers/thermal/samsung/exynos_thermal_common.h    |   15 +++++++++++=
-+
->>  drivers/thermal/samsung/exynos_tmu.c               |    2 +-
->>  .../thermal/samsung/exynos_tmu.h                   |   24 ++++-------=
---------
->>  4 files changed, 21 insertions(+), 21 deletions(-)
->>  rename include/linux/platform_data/exynos_thermal.h =3D> drivers/ther=
-mal/samsung/exynos_tmu.h (84%)
->>
->> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers=
-/thermal/samsung/exynos_thermal_common.c
->> index 92e50bc..dd49c9f 100644
->> --- a/drivers/thermal/samsung/exynos_thermal_common.c
->> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
->> @@ -21,7 +21,6 @@
->>   */
->> =20
->>  #include <linux/cpu_cooling.h>
->> -#include <linux/platform_data/exynos_thermal.h>
->>  #include <linux/slab.h>
->>  #include <linux/thermal.h>
->> =20
->> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers=
-/thermal/samsung/exynos_thermal_common.h
->> index 8df1848..068f56c 100644
->> --- a/drivers/thermal/samsung/exynos_thermal_common.h
->> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
->> @@ -44,6 +44,21 @@
->> =20
->>  #define EXYNOS_ZONE_COUNT	3
->> =20
->> +/**
->> + * struct freq_clip_table
->> + * @freq_clip_max: maximum frequency allowed for this cooling state.
->> + * @temp_level: Temperature level at which the temperature clipping w=
-ill
->> + *	happen.
->> + * @mask_val: cpumask of the allowed cpu's where the clipping will ta=
-ke place.
->> + *
->> + * This structure is required to be filled and passed to the
->> + * cpufreq_cooling_unregister function.
->> + */
->> +struct freq_clip_table {
->> +	unsigned int freq_clip_max;
->> +	unsigned int temp_level;
->> +	const struct cpumask *mask_val;
->> +};
+On Wed, Jun 19, 2013 at 08:26:12PM +0200, Tomasz Figa wrote:
+> On Wednesday 19 of June 2013 18:40:47 Mark Brown wrote:
 
-Another minor: add an empty line here.
+> > -		ret =3D pd->get_signal(plchan->cd);
+> > +		ret =3D (pd->get_signal)(plchan->cd);
 
->>  struct	thermal_trip_point_conf {
->>  	int trip_val[MAX_TRIP_COUNT];
->>  	int trip_count;
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sa=
-msung/exynos_tmu.c
->> index 22a8874..6aa2fd2 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -27,9 +27,9 @@
->>  #include <linux/module.h>
->>  #include <linux/of.h>
->>  #include <linux/platform_device.h>
->> -#include <linux/platform_data/exynos_thermal.h>
->> =20
->>  #include "exynos_thermal_common.h"
->> +#include "exynos_tmu.h"
->> =20
->>  /* Exynos generic registers */
->>  #define EXYNOS_TMU_REG_TRIMINFO		0x0
->> diff --git a/include/linux/platform_data/exynos_thermal.h b/drivers/th=
-ermal/samsung/exynos_tmu.h
->> similarity index 84%
->> rename from include/linux/platform_data/exynos_thermal.h
->> rename to drivers/thermal/samsung/exynos_tmu.h
->> index da7e627..9e0f887 100644
->> --- a/include/linux/platform_data/exynos_thermal.h
->> +++ b/drivers/thermal/samsung/exynos_tmu.h
->> @@ -1,8 +1,9 @@
->>  /*
->> - * exynos_thermal.h - Samsung EXYNOS TMU (Thermal Management Unit)
->> + * exynos_tmu.h - Samsung EXYNOS TMU (Thermal Management Unit)
->>   *
->>   *  Copyright (C) 2011 Samsung Electronics
->>   *  Donggeun Kim <dg77.kim@samsung.com>
->> + *  Amit Daniel Kachhap <amit.daniel@samsung.com>
->>   *
->>   * This program is free software; you can redistribute it and/or modi=
-fy
->>   * it under the terms of the GNU General Public License as published =
-by
->> @@ -19,8 +20,8 @@
->>   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-13=
-07  USA
->>   */
->> =20
->> -#ifndef _LINUX_EXYNOS_THERMAL_H
->> -#define _LINUX_EXYNOS_THERMAL_H
->> +#ifndef _EXYNOS_TMU_H
->> +#define _EXYNOS_TMU_H
->>  #include <linux/cpu_cooling.h>
->> =20
->>  enum calibration_type {
->> @@ -33,21 +34,6 @@ enum soc_type {
->>  	SOC_ARCH_EXYNOS4210 =3D 1,
->>  	SOC_ARCH_EXYNOS,
->>  };
->> -/**
->> - * struct freq_clip_table
->> - * @freq_clip_max: maximum frequency allowed for this cooling state.
->> - * @temp_level: Temperature level at which the temperature clipping w=
-ill
->> - *	happen.
->> - * @mask_val: cpumask of the allowed cpu's where the clipping will ta=
-ke place.
->> - *
->> - * This structure is required to be filled and passed to the
->> - * cpufreq_cooling_unregister function.
->> - */
->> -struct freq_clip_table {
->> -	unsigned int freq_clip_max;
->> -	unsigned int temp_level;
->> -	const struct cpumask *mask_val;
->> -};
->> =20
->>  /**
->>   * struct exynos_tmu_platform_data
->> @@ -116,4 +102,4 @@ struct exynos_tmu_platform_data {
->>  	struct freq_clip_table freq_tab[4];
->=20
-> Because you have this struct right here, you need still to have:
-> +#include "exynos_thermal_common.h"
->=20
-> in your include list of exynos_tmu.h (this file).
->=20
-> A part from this minor issue, you can add my acked:
->=20
-> Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
->=20
->>  	unsigned int freq_tab_count;
->>  };
->> -#endif /* _LINUX_EXYNOS_THERMAL_H */
->> +#endif /* _EXYNOS_TMU_H */
->>
->=20
->=20
+> Hmm, that's strange. The former is a completely valid piece of code...
 
+I know, hence...
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+> > to get it to build which makes me suspect the compiler a bit as well...
 
-Eduardo Valentin
+=2E..my comment about suspecting the compiler.
 
+> > I was applying this to -next, are there any other dependencies I need or
+> > anything?
 
-------enig2MJJTXBCSOKMHHIDTSJMW
+> Hmm, I've been testing this on top of my common clock framework and devic=
+e=20
+> tree patches, but I don't think this had any effect. Did you add necessar=
+y=20
+> clkdev lookups to the clock driver?
+
+No, I didn't - that's most likely it, I didn't really investigate.  I
+didn't test the watchdog stuff as the clocks didn't get sent to me.
+
+> In Samsung CCF alias notation it looks like this:
+
+> +       ALIAS(HCLK_DMA1, "dma-pl080s.1", "apb_pclk"),
+> +       ALIAS(HCLK_DMA0, "dma-pl080s.0", "apb_pclk"),
+
+> Not sure how hard it will be to add such lookups to the old clock driver,=
+=20
+> though.
+
+It's pretty much the same providing you know which clock needs to be
+used.
+
+> I will test this applied directly on top of current linux-next when I fin=
+d=20
+> some time, but for now you might check out my v3.11-devel branch on my=20
+> github:
+
+> https://github.com/tom3q/linux.git
+
+Will try to get round to it.
+
+--55pgo4yTr53jOkhk
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iF4EAREIAAYFAlHCBGUACgkQCXcVR3XQvP3eSgD+OFdPBKjyiWH0jjK5njAHOQoD
-siEDI8cWDETWNMlbW5IA/1SYwKtXpEwm9A1/N4JRDA77uMIhdR9/Vq2JlDvqU9lk
-=Xk+3
+iQIcBAEBAgAGBQJRwgTWAAoJELSic+t+oim9SHsP/3rtb/vM8kH1D/8ZuF7xSvlm
+NGS052Epjn2S0dOb19ZzZVDyPK0/P/sbGcsDFJ5xwdpg3dpE0b62+fSrFdEcCR82
+GGTYSIHGeJlg1A8HsTIv6jY/FBGnvJk7Jzg8XkQvvy9Xz30FdVRfKsBiK6tUC1tB
+ryaHlaJXOxh1dTXjvC831nywQOvw8XniapdpTm8TelQ5tnQ4BtfWOyDnbwqza/La
+Ss7DZXS2jFA9heiVk6rInQv42+iH+NBmY3R9TuXPkmZqqaliIS7M8JyIbGAZ1App
+tmeQ5WusTKjsp1G1PQiSRtPT/5c9em9/4D7vH9MEjCuvOC5qzhhnIGo5wXJywRYr
+pSz4cd0dV9M78GG07QLrisEL+fAG2R8yVxKeODdVCI2asJdAR2VxZwbpBqqEkzl5
+/AVH47KH9rlDwKCZvesMfDooRVuyQCVxHmECBSEs2fVqyFjmmaJ8vaPzx4ew5dC8
+d6TciTlBXFBRNGS7DKGxBmO7djHyY/L9T3YzoX6E1OSoiI5NxzjQM/uEtaNlbyUn
+0ug6b0+OUJsAzRNWY6DE69h2oN+MUAz5AQEHdWy7mvIzDgOvc20xCbTKaW5PNb5/
+GUafBgiBeJMjEuae8qq2C/+v2plZDivZJvp+g9JSrucEAo0klN3kBLDVSQ5HTo6G
+vHTm4CMCkKKzVJyGZtT/
+=m0Kg
 -----END PGP SIGNATURE-----
 
-------enig2MJJTXBCSOKMHHIDTSJMW--
+--55pgo4yTr53jOkhk--
