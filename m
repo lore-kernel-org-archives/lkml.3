@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964984Ab3FSSmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:42:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40230 "EHLO
+	id S964999Ab3FSSmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:42:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40238 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab3FSSmd (ORCPT
+	with ESMTP id S964914Ab3FSSmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:42:33 -0400
-Date: Wed, 19 Jun 2013 11:42:11 -0700
-From: tip-bot for Dave Jones <tipbot@zytor.com>
-Message-ID: <tip-4338774cd41a6abf72aa76585ce2184cea8ff8a2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        davej@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        davej@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        bp@suse.de
-In-Reply-To: <20130618160911.GA24487@redhat.com>
-References: <20130618160911.GA24487@redhat.com>
+	Wed, 19 Jun 2013 14:42:37 -0400
+Date: Wed, 19 Jun 2013 11:42:21 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-130768b8c93cd8d21390a136ec8cef417153ca14@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1371515812-9646-2-git-send-email-andi@firstfloor.org>
+References: <1371515812-9646-2-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/debug:
-  Only print out DR registers if they are not power-on defaults
-Git-Commit-ID: 4338774cd41a6abf72aa76585ce2184cea8ff8a2
+Subject: [tip:perf/core] perf/x86/intel: Add Haswell PEBS record support
+Git-Commit-ID: 130768b8c93cd8d21390a136ec8cef417153ca14
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,83 +29,221 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:42:18 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:42:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4338774cd41a6abf72aa76585ce2184cea8ff8a2
-Gitweb:     http://git.kernel.org/tip/4338774cd41a6abf72aa76585ce2184cea8ff8a2
-Author:     Dave Jones <davej@redhat.com>
-AuthorDate: Tue, 18 Jun 2013 12:09:11 -0400
+Commit-ID:  130768b8c93cd8d21390a136ec8cef417153ca14
+Gitweb:     http://git.kernel.org/tip/130768b8c93cd8d21390a136ec8cef417153ca14
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Mon, 17 Jun 2013 17:36:47 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 14:33:59 +0200
+CommitDate: Wed, 19 Jun 2013 14:43:32 +0200
 
-x86/debug: Only print out DR registers if they are not power-on defaults
+perf/x86/intel: Add Haswell PEBS record support
 
-The DR registers are rarely useful when decoding oopses.
-With screen real estate during oopses at a premium, we can save
-two lines by only printing out these registers when they are set
-to something other than they power-on state.
+Add support for the Haswell extended (fmt2) PEBS format.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+It has a superset of the nhm (fmt1) PEBS fields, but has a
+longer record so we need to adjust the code paths.
+
+The main advantage is the new "EventingRip" support which
+directly gives the instruction, not off-by-one instruction. So
+with precise == 2 we use that directly and don't try to use LBRs
+and walking basic blocks. This lowers the overhead of using
+precise significantly.
+
+Some other features are added in later patches.
+
+Reviewed-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <ak@linux.jf.intel.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130618160911.GA24487@redhat.com
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/r/1371515812-9646-2-git-send-email-andi@firstfloor.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/process_32.c | 11 ++++++++---
- arch/x86/kernel/process_64.c |  9 ++++++++-
- 2 files changed, 16 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c          |   3 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 110 ++++++++++++++++++++++++------
+ 2 files changed, 91 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 7305f7d..f84cfd1 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -110,11 +110,16 @@ void __show_regs(struct pt_regs *regs, int all)
- 	get_debugreg(d1, 1);
- 	get_debugreg(d2, 2);
- 	get_debugreg(d3, 3);
--	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
--			d0, d1, d2, d3);
--
- 	get_debugreg(d6, 6);
- 	get_debugreg(d7, 7);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index e52a9e5..ab33952 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -403,7 +403,8 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 		 * check that PEBS LBR correction does not conflict with
+ 		 * whatever the user is asking with attr->branch_sample_type
+ 		 */
+-		if (event->attr.precise_ip > 1) {
++		if (event->attr.precise_ip > 1 &&
++		    x86_pmu.intel_cap.pebs_format < 2) {
+ 			u64 *br_type = &event->attr.branch_sample_type;
+ 
+ 			if (has_branch_stack(event)) {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 60250f6..2a63d13 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -165,6 +165,22 @@ struct pebs_record_nhm {
+ 	u64 status, dla, dse, lat;
+ };
+ 
++/*
++ * Same as pebs_record_nhm, with two additional fields.
++ */
++struct pebs_record_hsw {
++	struct pebs_record_nhm nhm;
++	/*
++	 * Real IP of the event. In the Intel documentation this
++	 * is called eventingrip.
++	 */
++	u64 real_ip;
++	/*
++	 * TSX tuning information field: abort cycles and abort flags.
++	 */
++	u64 tsx_tuning;
++};
 +
-+	/* Only print out debug registers if they are in their non-default state. */
-+	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
-+	    (d6 == DR6_RESERVED) && (d7 == 0x400))
-+		return;
-+
-+	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
-+			d0, d1, d2, d3);
- 	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
- 			d6, d7);
- }
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 355ae06..a8b9abc 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -105,11 +105,18 @@ void __show_regs(struct pt_regs *regs, int all)
- 	get_debugreg(d0, 0);
- 	get_debugreg(d1, 1);
- 	get_debugreg(d2, 2);
--	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
- 	get_debugreg(d3, 3);
- 	get_debugreg(d6, 6);
- 	get_debugreg(d7, 7);
-+
-+	/* Only print out debug registers if they are in their non-default state. */
-+	if ((d0 == 0) && (d1 == 0) && (d2 == 0) && (d3 == 0) &&
-+	    (d6 == DR6_RESERVED) && (d7 == 0x400))
-+		return;
-+
-+	printk(KERN_DEFAULT "DR0: %016lx DR1: %016lx DR2: %016lx\n", d0, d1, d2);
- 	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
-+
+ void init_debug_store_on_cpu(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -697,6 +713,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct pebs_record_nhm *pebs = __pebs;
++	struct pebs_record_hsw *pebs_hsw = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+@@ -753,7 +770,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
+-	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
++		regs.ip = pebs_hsw->real_ip;
++		regs.flags |= PERF_EFLAGS_EXACT;
++	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
+@@ -806,35 +826,22 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 	__intel_pmu_pebs_event(event, iregs, at);
  }
  
- void release_thread(struct task_struct *dead_task)
+-static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
++					void *top)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+-	struct pebs_record_nhm *at, *top;
+ 	struct perf_event *event = NULL;
+ 	u64 status = 0;
+-	int bit, n;
+-
+-	if (!x86_pmu.pebs_active)
+-		return;
+-
+-	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+-	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++	int bit;
+ 
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
+-	n = top - at;
+-	if (n <= 0)
+-		return;
+-
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
++	for (; at < top; at += x86_pmu.pebs_record_size) {
++		struct pebs_record_nhm *p = at;
+ 
+-	for ( ; at < top; at++) {
+-		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
++		for_each_set_bit(bit, (unsigned long *)&p->status,
++				 x86_pmu.max_pebs_events) {
+ 			event = cpuc->events[bit];
+ 			if (!test_bit(bit, cpuc->active_mask))
+ 				continue;
+@@ -857,6 +864,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 	}
+ }
+ 
++static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_nhm *at, *top;
++	int n;
++
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++
++	ds->pebs_index = ds->pebs_buffer_base;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
++static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_hsw *at, *top;
++	int n;
++
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
+ /*
+  * BTS, PEBS probe and setup
+  */
+@@ -888,6 +950,12 @@ void intel_ds_init(void)
+ 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+ 			break;
+ 
++		case 2:
++			pr_cont("PEBS fmt2%c, ", pebs_type);
++			x86_pmu.pebs_record_size = sizeof(struct pebs_record_hsw);
++			x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
++			break;
++
+ 		default:
+ 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
+ 			x86_pmu.pebs = 0;
