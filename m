@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934758Ab3FSMn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:43:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934599Ab3FSMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:43:56 -0400
-Message-ID: <51C1A78A.3090904@redhat.com>
-Date: Wed, 19 Jun 2013 08:43:54 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S934781Ab3FSMoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:44:08 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53601 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934566Ab3FSMoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:44:05 -0400
+Message-ID: <51C1A78D.9050709@linux.vnet.ibm.com>
+Date: Wed, 19 Jun 2013 20:43:57 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
-References: <20130530183955.14686.89444.stgit@bling.home> <20130618172819.GA16134@google.com> <1371579648.22681.209.camel@ul30vt.home> <CAErSpo5mRKhBYun_i=iFppmQ5+7ODCY7q=sehHjBXWqPRH=ZZw@mail.gmail.com> <1371594159.22659.34.camel@ul30vt.home> <51C0E73F.1060708@redhat.com> <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>
-In-Reply-To: <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 3/7] KVM: MMU: document write_flooding_count
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <51C19CD2.3080608@redhat.com>
+In-Reply-To: <51C19CD2.3080608@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061912-0260-0000-0000-0000032F2CC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 10:52 PM, Bjorn Helgaas wrote:
-> On Tue, Jun 18, 2013 at 5:03 PM, Don Dutile<ddutile@redhat.com>  wrote:
->> On 06/18/2013 06:22 PM, Alex Williamson wrote:
->>>
->>> On Tue, 2013-06-18 at 15:31 -0600, Bjorn Helgaas wrote:
->>>>
->>>> On Tue, Jun 18, 2013 at 12:20 PM, Alex Williamson
->>>> <alex.williamson@redhat.com>   wrote:
->>>>>
->>>>> On Tue, 2013-06-18 at 11:28 -0600, Bjorn Helgaas wrote:
->>>>>>
->>>>>> On Thu, May 30, 2013 at 12:40:19PM -0600, Alex Williamson wrote:
->> ...
->>>>>> Who do you expect to decide whether to use this option?  I think it
->>>>>> requires intimate knowledge of how the device works.
->>>>>>
->>>>>> I think the benefit of using the option is that it makes assignment of
->>>>>> devices to guests more flexible, which will make it attractive to
->>>>>> users.
->>>>>> But most users have no way of knowing whether it's actually *safe* to
->>>>>> use this.  So I worry that you're adding an easy way to pretend
->>>>>> isolation
->>>>>> exists when there's no good way of being confident that it actually
->>>>>> does.
->
->> ...
->
->>>> I wonder if we should taint the kernel if this option is used (but not
->>>> for specific devices added to pci_dev_acs_enabled[]).  It would also
->>>> be nice if pci_dev_specific_acs_enabled() gave some indication in
->>>> dmesg for the specific devices you're hoping to add to
->>>> pci_dev_acs_enabled[].  It's not an enumeration-time quirk right now,
->>>> so I'm not sure how we'd limit it to one message per device.
->>>
->>> Right, setup vs use and getting single prints is a lot of extra code.
->>> Tainting is troublesome for support, Don had some objections when I
->>> suggested the same to him.
->>>
->> For RH GSS (Global Support Services), a 'taint' in the kernel printk means
->> RH doesn't support that system.  The 'non-support' due to 'taint' being
->> printed
->> out in this case may be incorrect -- RH may support that use, at least until
->> a more sufficient patched kernel is provided.
->> Thus my dissension that 'taint' be output.  WARN is ok. 'driver beware',
->> 'unleashed dog afoot'.... sure...
->
-> So ...  that's really a RH-specific support issue, and easily worked
-> around by RH adding a patch that turns off tainting.
->
-sure. what's another patch to the thousands... :-/
+On 06/19/2013 07:58 PM, Paolo Bonzini wrote:
+> Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
+>> Document write_flooding_count to Documentation/virtual/kvm/mmu.txt
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  Documentation/virtual/kvm/mmu.txt | 8 ++++++++
+>>  arch/x86/include/asm/kvm_host.h   | 5 +++++
+>>  2 files changed, 13 insertions(+)
+>>
+>> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+>> index ce6df51..5a6b2e2 100644
+>> --- a/Documentation/virtual/kvm/mmu.txt
+>> +++ b/Documentation/virtual/kvm/mmu.txt
+>> @@ -214,6 +214,14 @@ Shadow pages contain the following information:
+>>      It is only used on 32bit host which helps us to detect whether updating the
+>>      64bit spte is complete so that we can avoid reading the truncated value out
+>>      of mmu-lock.
+>> +  write_flooding_count:
+>> +    In order to sync the page table between guest and host, the page sometimes
+>> +    needs to be write-protected (see "Synchronized and unsynchronized pages"
+>> +    below), any write to the page can cause write emulation. If the emulation
+>> +    on the page is too frequent we'd better unmap the page to avoid the
+>> +    future emulation. write_flooding_count aims at this optimization which is
+>> +    increased when the page needs to be write emulated and cleared when the
+>> +    page is actually used.
+> 
+>     A guest may write to a page table many times, causing a lot of
+>     emulations if the page needs to be write-protected (see "Synchronized
+>     and unsynchronized pages" below).  Leaf pages can be unsynchronized
+>     so that they do not trigger frequent emulation, but this is not
+>     possible for non-leafs.  This field counts the number of emulations
+>     since the last time the page table was actually used; if emulation
+>     is triggered too frequently on this page, KVM will unmap the page
+>     to avoid emulation in the future.
 
-> It still sounds like a good idea to me for upstream, where use of this
-> option can very possibly lead to corruption or information leakage
-> between devices the user claimed were isolated, but in fact were not.
->
-> Bjorn
-Did I miss something?  This patch provides a user-level/chosen override;
-like all other overrides, (pci=realloc, etc.), it can lead to a failing system.
-IMO, this patch is no different.  If you want to tag this patch with taint,
-then let's audit all the (PCI) overrides and taint them appropriately.
-Taint should be reserved to changes to the kernel that were done outside
-the development of the kernel, or with the explicit intent to circumvent
-the normal operation of the kernel.  This patch provides a way to enable
-ACS checking to succeed when the devices have not provided sufficiently complete
-ACS information.  i.e., it's a growth path for PCIe-ACS and its need for
-proper support.
+very nice.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+>>  Reverse map
+>>  ===========
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 1dac2c1..5eb5382 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -234,6 +234,11 @@ struct kvm_mmu_page {
+>>  	int clear_spte_count;
+>>  #endif
+>>  
+>> +	/*
+>> +	 * Increased when the page needs to be write emulated, cleared
+>> +	 * when the page is actually used as page table to avoid frequent
+>> +	 * emulation on the page.
+>> +	 */
+> 
+>         /* Number of writes since the last time traversal visited this page.  */
+> 
+> wdyt, better or worse?
+
+I think it is better. :)
+
+Thanks for your refining.
 
