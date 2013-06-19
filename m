@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3FSFAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:00:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44293 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab3FSFAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:00:10 -0400
-Message-ID: <1371617970.21896.232.camel@pasglop>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Date: Wed, 19 Jun 2013 14:59:30 +1000
-In-Reply-To: <87txkun568.fsf@rustcorp.com.au>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
-	 <1370412673-1345-4-git-send-email-aik@ozlabs.ru>
-	 <1371422343.21896.143.camel@pasglop>
-	 <1371438800.22681.38.camel@ul30vt.home>
-	 <1371441361.21896.152.camel@pasglop>
-	 <1371522772.22681.140.camel@ul30vt.home> <87txkun568.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752825Ab3FSFOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:14:20 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:50142 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab3FSFOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 01:14:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130618095533.GI3204@twins.programming.kicks-ass.net>
+References: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
+	<20130618095533.GI3204@twins.programming.kicks-ass.net>
+Date: Wed, 19 Jun 2013 13:14:16 +0800
+Message-ID: <CALZhoSQszasaynP+Cy66vMUz+2-jRYpQ3eqLFdaC8Y9oZSQfbw@mail.gmail.com>
+Subject: Re: Question regarding put_prev_task in preempted condition
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 13:05 +0930, Rusty Russell wrote:
-> symbol_get() won't try to load a module; it'll just fail.  This is what
-> you want, since they must have vfio in the kernel to get a valid fd...
+Hi Peter,
 
-Ok, cool. I suppose what we want here Alexey is slightly higher level,
-something like:
+On Tue, Jun 18, 2013 at 5:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sun, Jun 09, 2013 at 11:59:36PM +0800, Lei Wen wrote:
+>> Hi Peter,
+>>
+>> While I am checking the preempt related code, I find a interesting part.
+>> That is when preempt_schedule is called, for its preempt_count be added
+>> PREEMPT_ACTIVE, so in __schedule() it could not be dequeued from rq
+>> by deactivate_task.
+>>
+>> Thus in put_prev_task, which is called a little later in __schedule(), it
+>> would call put_prev_task_fair, which finally calls put_prev_entity.
+>> For current task is not dequeued from rq, so in this function, it would
+>> enqueue it again to the rq by __enqueue_entity.
+>>
+>> Is there any reason to do like this, since entity already is over rq,
+>> why need to queue it again?
+>
+> Because we keep the current running task outside of the actual queue
+> structure. This is because every time we update the runtime
+> (__update_curr) the key on which the tree is sorted (vruntime) is
+> changed and we'd need to dequeue + enqueue to keep the tree in sync.
 
-	vfio_validate_iommu_id(file, iommu_id)
+I see... I didn't notice for this difference...
 
-Which verifies that the file that was passed in is allowed to use
-that iommu_id.
+>
+> By not having the actively running task in the tree we can avoid this;
+> at the cost of having to dequeue on switching to the task and enqueue
+> when switching from the task.
+>
+>> And if current rq's vruntime distribution like below, and vruntime with 8
+>> is the task that would be get preempted. So in __enqueue_entity,
+>> its rb_left/rb_right would be set as NULL and reinserted into this RB tree.
+>> Then seems to me now, the entity with vruntime of 3 would be disappeared
+>> from the RB tree.
+>>             13
+>>            /  \
+>>          8    19
+>>         /  \
+>>       3    11
+>>
+>> I am not sure whether I understand the whole process correctly...
+>> Would the example as above happen in our real life?
+>
+> No, the RB tree code will ensure we'll not loose 3. I suppose you're
+> confused by rb_link_node() which does indeed clear the left and right
+> node of the entity we're about to link.
 
-That's a simple and flexible interface (ie, it will work even if we
-support multiple iommu IDs in the future for a vfio, for example
-for DDW windows etc...), the logic to know about the ID remains
-in qemu, this is strictly a validation call.
+Yep, since 8 is not over rq, NULL its two child would lose any info.
+Thanks for detailed explanation! :)
 
-That way we also don't have to expose the containing vfio struct etc...
-just that simple function.
+Thanks,
+Lei
 
-Alex, any objection ?
-
-Do we need to make it a get/put interface instead ?
-
-	vfio_validate_and_use_iommu(file, iommu_id);
-
-	vfio_release_iommu(file, iommu_id);
-
-To ensure that the resource remains owned by the process until KVM
-is closed as well ?
-
-Or do we want to register with VFIO with a callback so that VFIO can
-call us if it needs us to give it up ?
-
-Cheers,
-Ben.
-
-
+>
+> However, we link the previously unlinked entity as a leaf node. So your
+> example is flawed; before insertion the tree would look something like:
+>
+>
+>          13
+>         /  \
+>        11  19
+>       /
+>      3
+>
+> Then the lookup in __enqueue_entity would find the place to insert 8 and
+> would select the right sibling of 3:
+>
+>          13
+>         /  \
+>        11  19
+>       /
+>      3
+>       \
+>        (8)
+>
+> We'd then link 8 as a child leaf of 3; which will indeed have NULL
+> leafs. rb_insert_color() will then fix up the tree so we conform to the
+> RB constraints. Please read lib/rbtree.c:__rb_insert() the code is quite
+> readable.
+>
