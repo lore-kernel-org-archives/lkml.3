@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab3FSPPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:15:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756706Ab3FSPPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:15:48 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        "Dmitry V. Levin" <ldv@altlinux.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
-Date: Wed, 19 Jun 2013 17:15:36 +0200
-Message-Id: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com>
+	id S934817Ab3FSPQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:16:56 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:48269 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756775Ab3FSPQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:16:55 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH] x86: fix section mismatch on load_ucode_ap
+Date: Wed, 19 Jun 2013 11:15:26 -0400
+Message-ID: <1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this change debuggers needed to jump through hoops
-if they want to detach from a running tracee.
+We are in the process of removing all the __cpuinit annotations.
+While working on making that change, an existing problem was
+made evident:
 
-Typically they just try PTRACE_DETACH, and if it fails
-with ESRCH, they make tracee enter a ptrace-stop.
-Before introduction of PTRACE_INTERRUPT, the only way to do that
-was to send a signal (which raced with real signals),
-then repeatedly call waitpid looking for (this particular)
-signal to be delivered, and finally call PTRACE_DETACH.
+  WARNING: arch/x86/kernel/built-in.o(.text+0x198f2): Section mismatch
+  in reference from the function cpu_init() to the function
+  .init.text:load_ucode_ap()   The function cpu_init() references
+  the function __init load_ucode_ap().  This is often because cpu_init
+  lacks a __init annotation or the annotation of load_ucode_ap is wrong.
 
-With PTRACE_INTERRUPT it is somewhat less ugly,
-and not racy wrt signals.
+This now appears because in my working tree, cpu_init() is no longer
+tagged as __cpuinit, and so the audit picks up the mismatch.  The 2nd
+hypothesis from the audit is the correct one, as there was an incorrect
+__init tag on the prototype in the header (but __cpuinit was used on
+the function itself.)
 
-This does not make much sense, especially that kernel code
-for detach operation already supports implicit,
-asynchronous detach which happens if tracer process exits.
+The audit is telling us that the prototype's __init annotation took
+effect and the function did land in the .init.text section.  Checking
+with objdump on a mainline tree that still has __cpuinit shows that
+the __cpuinit on the function takes precedence over the __init on the
+prototype, but that won't be true once we make __cpuinit a no-op.
 
-This change simply removes the requirement that tracee is
-in ptrace-stop for PTRACE_DETACH to work.
+Even though we are removing __cpuinit, we temporarily align both
+the function and the prototype on __cpuinit so that the changeset
+can be applied to stable trees  if desired.
 
-This is a user-visible behavior change.
-Do we really have to introduce a separate
-PTRACE_NOT_STUPID_DETACH? I hope not.
-
-If this behavior existed from the start, strace
-would not need a large, ugly chunk of code it currently has
-to handle this quirk.
-
-CCing Jan to hear his comments from gdb side.
-
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Jan Kratochvil <jan.kratochvil@redhat.com>
-CC: Dmitry V. Levin <ldv@altlinux.org>
-CC: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: stable <stable@vger.kernel.org> # 3.9+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/ptrace.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/microcode.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index fc07650..2e294bf 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -56,9 +56,7 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
-  * state.
-  *
-  * Unlinking can happen via two paths - explicit PTRACE_DETACH or ptracer
-- * exiting.  For PTRACE_DETACH, unless the ptracee has been killed between
-- * ptrace_check_attach() and here, it's guaranteed to be in TASK_TRACED.
-- * If the ptracer is exiting, the ptracee can be in any state.
-+ * exiting.  The ptracee is not necessarily ptrace-stopped.
-  *
-  * After detach, the ptracee should be in a state which conforms to the
-  * group stop.  If the group is stopped or in the process of stopping, the
-@@ -1062,7 +1060,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
- 	}
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
--				  request == PTRACE_INTERRUPT);
-+				  request == PTRACE_INTERRUPT ||
-+				  request == PTRACE_DETACH);
- 	if (ret < 0)
- 		goto out_put_task_struct;
- 
-@@ -1207,7 +1206,8 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 	}
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
--				  request == PTRACE_INTERRUPT);
-+				  request == PTRACE_INTERRUPT ||
-+				  request == PTRACE_DETACH);
- 	if (!ret) {
- 		ret = compat_arch_ptrace(child, request, addr, data);
- 		if (ret || request != PTRACE_DETACH)
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index 6825e2e..6bc3985 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -60,11 +60,11 @@ static inline void __exit exit_amd_microcode(void) {}
+ #ifdef CONFIG_MICROCODE_EARLY
+ #define MAX_UCODE_COUNT 128
+ extern void __init load_ucode_bsp(void);
+-extern __init void load_ucode_ap(void);
++extern void __cpuinit load_ucode_ap(void);
+ extern int __init save_microcode_in_initrd(void);
+ #else
+ static inline void __init load_ucode_bsp(void) {}
+-static inline __init void load_ucode_ap(void) {}
++static inline void __cpuinit load_ucode_ap(void) {}
+ static inline int __init save_microcode_in_initrd(void)
+ {
+ 	return 0;
 -- 
-1.8.1.4
+1.8.1.2
 
