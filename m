@@ -1,249 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964999Ab3FSSmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:42:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40238 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab3FSSmh (ORCPT
+	id S965013Ab3FSSmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:42:47 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33107 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964914Ab3FSSmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:42:37 -0400
-Date: Wed, 19 Jun 2013 11:42:21 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-130768b8c93cd8d21390a136ec8cef417153ca14@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1371515812-9646-2-git-send-email-andi@firstfloor.org>
-References: <1371515812-9646-2-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Add Haswell PEBS record support
-Git-Commit-ID: 130768b8c93cd8d21390a136ec8cef417153ca14
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Jun 2013 14:42:44 -0400
+Date: Wed, 19 Jun 2013 20:42:40 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/nohz: add sysctl control over
+ sched_tick_max_deferment
+Message-ID: <20130619184238.GD21522@somewhere.redhat.com>
+References: <1371599913-1232-1-git-send-email-khilman@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:42:27 -0700 (PDT)
+In-Reply-To: <1371599913-1232-1-git-send-email-khilman@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  130768b8c93cd8d21390a136ec8cef417153ca14
-Gitweb:     http://git.kernel.org/tip/130768b8c93cd8d21390a136ec8cef417153ca14
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 17 Jun 2013 17:36:47 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 14:43:32 +0200
+On Tue, Jun 18, 2013 at 04:58:28PM -0700, Kevin Hilman wrote:
+> Allow sysctl override of sched_tick_max_deferment in order to ease
+> finding/fixing the remaining issues with full nohz.
+> 
+> The value to be written is in jiffies, and -1 means the max deferment
+> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
 
-perf/x86/intel: Add Haswell PEBS record support
+This looks like a useful thing but I wonder if a debugfs file would
+be more appropriate than sysctl.
 
-Add support for the Haswell extended (fmt2) PEBS format.
+The scheduler tick max deferment is supposed to be a temporary
+hack so we probably don't want to bring a real user ABI for that.
 
-It has a superset of the nhm (fmt1) PEBS fields, but has a
-longer record so we need to adjust the code paths.
-
-The main advantage is the new "EventingRip" support which
-directly gives the instruction, not off-by-one instruction. So
-with precise == 2 we use that directly and don't try to use LBRs
-and walking basic blocks. This lowers the overhead of using
-precise significantly.
-
-Some other features are added in later patches.
-
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <ak@linux.jf.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/r/1371515812-9646-2-git-send-email-andi@firstfloor.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.c          |   3 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 110 ++++++++++++++++++++++++------
- 2 files changed, 91 insertions(+), 22 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e52a9e5..ab33952 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -403,7 +403,8 @@ int x86_pmu_hw_config(struct perf_event *event)
- 		 * check that PEBS LBR correction does not conflict with
- 		 * whatever the user is asking with attr->branch_sample_type
- 		 */
--		if (event->attr.precise_ip > 1) {
-+		if (event->attr.precise_ip > 1 &&
-+		    x86_pmu.intel_cap.pebs_format < 2) {
- 			u64 *br_type = &event->attr.branch_sample_type;
- 
- 			if (has_branch_stack(event)) {
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 60250f6..2a63d13 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -165,6 +165,22 @@ struct pebs_record_nhm {
- 	u64 status, dla, dse, lat;
- };
- 
-+/*
-+ * Same as pebs_record_nhm, with two additional fields.
-+ */
-+struct pebs_record_hsw {
-+	struct pebs_record_nhm nhm;
-+	/*
-+	 * Real IP of the event. In the Intel documentation this
-+	 * is called eventingrip.
-+	 */
-+	u64 real_ip;
-+	/*
-+	 * TSX tuning information field: abort cycles and abort flags.
-+	 */
-+	u64 tsx_tuning;
-+};
-+
- void init_debug_store_on_cpu(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -697,6 +713,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct pebs_record_nhm *pebs = __pebs;
-+	struct pebs_record_hsw *pebs_hsw = __pebs;
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
- 	u64 sample_type;
-@@ -753,7 +770,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
- 
--	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-+		regs.ip = pebs_hsw->real_ip;
-+		regs.flags |= PERF_EFLAGS_EXACT;
-+	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
- 		regs.flags |= PERF_EFLAGS_EXACT;
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
-@@ -806,35 +826,22 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	__intel_pmu_pebs_event(event, iregs, at);
- }
- 
--static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
-+					void *top)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct debug_store *ds = cpuc->ds;
--	struct pebs_record_nhm *at, *top;
- 	struct perf_event *event = NULL;
- 	u64 status = 0;
--	int bit, n;
--
--	if (!x86_pmu.pebs_active)
--		return;
--
--	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
--	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+	int bit;
- 
- 	ds->pebs_index = ds->pebs_buffer_base;
- 
--	n = top - at;
--	if (n <= 0)
--		return;
--
--	/*
--	 * Should not happen, we program the threshold at 1 and do not
--	 * set a reset value.
--	 */
--	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
-+	for (; at < top; at += x86_pmu.pebs_record_size) {
-+		struct pebs_record_nhm *p = at;
- 
--	for ( ; at < top; at++) {
--		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-+		for_each_set_bit(bit, (unsigned long *)&p->status,
-+				 x86_pmu.max_pebs_events) {
- 			event = cpuc->events[bit];
- 			if (!test_bit(bit, cpuc->active_mask))
- 				continue;
-@@ -857,6 +864,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 	}
- }
- 
-+static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_nhm *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+
-+	ds->pebs_index = ds->pebs_buffer_base;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
-+}
-+
-+static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_hsw *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
-+}
-+
- /*
-  * BTS, PEBS probe and setup
-  */
-@@ -888,6 +950,12 @@ void intel_ds_init(void)
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
- 			break;
- 
-+		case 2:
-+			pr_cont("PEBS fmt2%c, ", pebs_type);
-+			x86_pmu.pebs_record_size = sizeof(struct pebs_record_hsw);
-+			x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
-+			break;
-+
- 		default:
- 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
- 			x86_pmu.pebs = 0;
+I believe sysctl is for permanent ABIs, right?
