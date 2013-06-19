@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935164Ab3FSV6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 17:58:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43188 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934858Ab3FSV6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 17:58:32 -0400
-Message-ID: <51C22985.50106@wwwdotorg.org>
-Date: Wed, 19 Jun 2013 15:58:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S935216Ab3FSWCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:02:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42066 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934979Ab3FSWCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 18:02:34 -0400
+Message-ID: <51C22A6B.3090009@zytor.com>
+Date: Wed, 19 Jun 2013 15:02:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        James Hogan <james.hogan@imgtec.com>, linux-sh@vger.kernel.org
-Subject: Re: [RFC] pinctrl: generic: Add DT bindings
-References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-In-Reply-To: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Subject: Re: [x86] only print out DR registers if they are not power-on defaults.
+References: <20130618041132.GA23492@redhat.com> <20130618084356.GA13123@pd.tnic> <20130618140730.GA1313@redhat.com> <20130618155919.GC13123@pd.tnic> <51C225D9.8070100@zytor.com> <20130619215233.GU28300@pd.tnic>
+In-Reply-To: <20130619215233.GU28300@pd.tnic>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 04:03 PM, Laurent Pinchart wrote:
-> Document DT properties for the generic pinctrl parameters and add a
-> parser function.
+On 06/19/2013 02:52 PM, Borislav Petkov wrote:
+> On Wed, Jun 19, 2013 at 02:42:49PM -0700, H. Peter Anvin wrote:
+>> There is serious confusion with regards to DR6 about the bits which
+>> are *fixed* (forced to 1) and the ones which are *reserved* (should
+>> always have a fixed value.)
+>>
+>> There are some bits in DR6 which are used by hardware probes.
+> 
+> Haha, I knew it! HW guys don't care about the architectural documents.
+> 
+> Maybe DR6 should probably be dropped altogether from the check before
+> exiting __show_regs early?
+> 
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+Uhm... I think you're missing the point of architectural documents.
 
-> +== Generic pinconf parameters ==
-> +
-> +Pin configuration parameters are expressed by DT properties in the pin
-> +controller device state nodes and child nodes. For devices that use the generic
-> +pinconf parameters the following properties are defined.
-> +
-> +- tristate: A boolean, put the pin into high impedance state when set.
+The architectural documents describe the contract between hardware and
+software.  It doesn't mean that hardware can't go beyond it... it is in
+fact the norm.  The architectural documentation states what software may
+rely on and within what bounds it can assume safe behavior to be
+compatible both now and with any future extensions.
 
-I don't think that a Boolean is appropriate here; it's really a tri-state:
-
-* Nothing is specified about the tristate value; don't touch that aspect
-of HW.
-* Turn tristate on.
-* Turn tristate off.
-
-This can be a meaningful distinction when relying on e.g. the bootloader
-having already set up the appropriate tristate value, or when
-dynamically switching between different pinctrl states and not wanting
-to affect tristate, or when piecing together multiple DT nodes that
-describe part of a state, where one node covers just muxing and the
-other just pin config (e.g. where the mux and pin config configuration
-registers in HW affect different overlapping groups).
-
-> +- schmitt: An integer, enable or disable Schmitt trigger mode for the pins.
-> +  Valid values are
-> +    0: Schmitt trigger disabled (no hysteresis)
-> +    1: Schmitt trigger enabled
-
-A similar comment applies here.
-
-> +- slew-rate: An integer controlling the pin slew rate. Values are device-
-> +  dependent.
-> +
-> +- drive-strength: An integer representing the drive strength of pins in mA.
-> +  Valid values are device-dependent.
-
-I'm still not convinced that requiring this to be in mA is a good idea.
-Different HW will use different units for documentation, or even specify
-no units at all, so it might not always be possible to represent this in
-terms of mA. Asking for the documentation to be re-written simply to
-support the DT binding just isn't going to happen.
+	-hpa
 
