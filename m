@@ -1,221 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935371Ab3FSXL7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 19:11:59 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:44543 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934170Ab3FSXL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 19:11:58 -0400
-Message-ID: <1371683514.1783.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Wed, 19 Jun 2013 16:11:54 -0700
-In-Reply-To: <1371514081.27102.651.camel@schen9-DESK>
-References: <1371165333.27102.568.camel@schen9-DESK>
-	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BD8A77.2080201@intel.com>
-	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BF99B0.4040509@intel.com>
-	 <1371512120.1778.40.camel@buesod1.americas.hpqcorp.net>
-	 <1371514081.27102.651.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S964822Ab3FSXTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 19:19:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934170Ab3FSXTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 19:19:31 -0400
+Message-ID: <51C23C7E.8000400@redhat.com>
+Date: Thu, 20 Jun 2013 01:19:26 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jan Kratochvil <jan.kratochvil@redhat.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
+References: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com> <20130619163234.GA12029@redhat.com>
+In-Reply-To: <20130619163234.GA12029@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-17 at 17:08 -0700, Tim Chen wrote:
-> On Mon, 2013-06-17 at 16:35 -0700, Davidlohr Bueso wrote:
-> > On Tue, 2013-06-18 at 07:20 +0800, Alex Shi wrote:
-> > > On 06/18/2013 12:22 AM, Davidlohr Bueso wrote:
-> > > > After a lot of benchmarking, I finally got the ideal results for aim7,
-> > > > so far: this patch + optimistic spinning with preemption disabled. Just
-> > > > like optimistic spinning, this patch by itself makes little to no
-> > > > difference, yet combined is where we actually outperform 3.10-rc5. In
-> > > > addition, I noticed extra throughput when disabling preemption in
-> > > > try_optimistic_spin().
-> > > > 
-> > > > With i_mmap as a rwsem and these changes I could see performance
-> > > > benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-> > > > (+5%), shared (+15%) and short (+4%), most of them after around 500
-> > > > users, for fewer users, it made little to no difference.
-> > > 
-> > > A pretty good number. what's the cpu number in your machine? :)
-> > 
-> > 8-socket, 80 cores (ht off)
-> > 
-> > 
+On 06/19/2013 06:32 PM, Oleg Nesterov wrote:
+> On 06/19, Denys Vlasenko wrote:
+>>
+>> This is a user-visible behavior change.
+>> Do we really have to introduce a separate
+>> PTRACE_NOT_STUPID_DETACH? I hope not.
 > 
-> David,
+> Oh, I think yes.
 > 
-> I wonder if you are interested to try the experimental patch below.  
-> It tries to avoid unnecessary writes to the sem->count when we are 
-> going to fail the down_write by executing rwsem_down_write_failed_s
-> instead of rwsem_down_write_failed.  It should further reduce the
-> cache line bouncing.  It didn't make a difference for my 
-> workload.  Wonder if it may help yours more in addition to the 
-> other two patches.  Right now the patch is an ugly hack.  I'll merge
-> rwsem_down_write_failed_s and rwsem_down_write_failed into one
-> function if this approach actually helps things.
+>> @@ -1062,7 +1060,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+>>  	}
+>>
+>>  	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+>> -				  request == PTRACE_INTERRUPT);
+>> +				  request == PTRACE_INTERRUPT ||
+>> +				  request == PTRACE_DETACH);
 > 
+> There doesn't look right.
+> 
+> For example ptrace_disable(). See the comment set_task_blockstep().
 
-I tried this on top of the patches we've already been dealing with. It
-actually did more harm than good. Only got a slight increase in the
-five_sec workload, for the rest either no effect, or negative. So far
-the best results are still with spin on owner + preempt disable + Alex's
-patches.
+I see the comment. I think it implies that TF-induced debug
+interrupt may happen on the running task after it is detached,
+which will result in SIGTRAP being sent to it.
+Correct me if I'm wrong.
 
-Thanks,
-Davidlohr
+If so, do we have the same problem if tracer exits
+and implicit detach is performed?
 
-
-> I'll clean these three patches after we have some idea of their
-> effectiveness.
-> 
-> Thanks.
-> 
-> Tim
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
-> commit 04c8ad3f21861746d5b7fff55a6ef186a4dd0765
-> Author: Tim Chen <tim.c.chen@linux.intel.com>
-> Date:   Mon Jun 10 04:50:04 2013 -0700
-> 
->     Try skip write to rwsem->count when we have active lockers
-> 
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 0616ffe..83f9184 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -33,6 +33,7 @@ struct rw_semaphore {
->  
->  extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
->  extern struct rw_semaphore *rwsem_down_write_failed(struct rw_semaphore *sem);
-> +extern struct rw_semaphore *rwsem_down_write_failed_s(struct rw_semaphore *sem);
->  extern struct rw_semaphore *rwsem_wake(struct rw_semaphore *);
->  extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
->  
-> diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-> index cfff143..188f6ea 100644
-> --- a/kernel/rwsem.c
-> +++ b/kernel/rwsem.c
-> @@ -42,12 +42,22 @@ EXPORT_SYMBOL(down_read_trylock);
->  /*
->   * lock for writing
->   */
-> +
-> +static void ___down_write(struct rw_semaphore *sem)
-> +{
-> +	if (sem->count & RWSEM_ACTIVE_MASK) {
-> +		rwsem_down_write_failed_s(sem);
-> +		return;
-> +	}
-> +	__down_write(sem);
-> +}
-> +
->  void __sched down_write(struct rw_semaphore *sem)
->  {
->  	might_sleep();
->  	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
->  
-> -	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-> +	LOCK_CONTENDED(sem, __down_write_trylock, ___down_write);
->  }
->  
->  EXPORT_SYMBOL(down_write);
-> diff --git a/lib/rwsem.c b/lib/rwsem.c
-> index 19c5fa9..25143b5 100644
-> --- a/lib/rwsem.c
-> +++ b/lib/rwsem.c
-> @@ -248,6 +248,63 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  	return sem;
->  }
->  
-> +struct rw_semaphore __sched *rwsem_down_write_failed_s(struct rw_semaphore *sem)
-> +{
-> +	long count, adjustment = 0;
-> +	struct rwsem_waiter waiter;
-> +	struct task_struct *tsk = current;
-> +
-> +	/* set up my own style of waitqueue */
-> +	waiter.task = tsk;
-> +	waiter.type = RWSEM_WAITING_FOR_WRITE;
-> +
-> +	raw_spin_lock_irq(&sem->wait_lock);
-> +	if (list_empty(&sem->wait_list))
-> +		adjustment += RWSEM_WAITING_BIAS;
-> +	list_add_tail(&waiter.list, &sem->wait_list);
-> +
-> +	/* If there were already threads queued before us and there are no
-> +	 * active writers, the lock must be read owned; so we try to wake
-> +	 * any read locks that were queued ahead of us. */
-> +	if (adjustment == 0) {
-> +		if (sem->count > RWSEM_WAITING_BIAS)
-> +			sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
-> +	} else
-> +		count = rwsem_atomic_update(adjustment, sem);
-> +
-> +	/* wait until we successfully acquire the lock */
-> +	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> +	while (true) {
-> +		if (!(sem->count & RWSEM_ACTIVE_MASK)) {
-> +			/* Try acquiring the write lock. */
-> +			count = RWSEM_ACTIVE_WRITE_BIAS;
-> +			if (!list_is_singular(&sem->wait_list))
-> +				count += RWSEM_WAITING_BIAS;
-> +
-> +			if (sem->count == RWSEM_WAITING_BIAS &&
-> +			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-> +							RWSEM_WAITING_BIAS)
-> +				break;
-> +		}
-> +
-> +		raw_spin_unlock_irq(&sem->wait_lock);
-> +
-> +		/* Block until there are no active lockers. */
-> +		do {
-> +			schedule();
-> +			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> +		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
-> +
-> +		raw_spin_lock_irq(&sem->wait_lock);
-> +	}
-> +
-> +	list_del(&waiter.list);
-> +	raw_spin_unlock_irq(&sem->wait_lock);
-> +	tsk->state = TASK_RUNNING;
-> +
-> +	return sem;
-> +}
-> +
->  /*
->   * handle waking up a waiter on the semaphore
->   * - up_read/up_write has decremented the active part of count if we come here
-> @@ -289,5 +346,6 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
->  
->  EXPORT_SYMBOL(rwsem_down_read_failed);
->  EXPORT_SYMBOL(rwsem_down_write_failed);
-> +EXPORT_SYMBOL(rwsem_down_write_failed_s);
->  EXPORT_SYMBOL(rwsem_wake);
->  EXPORT_SYMBOL(rwsem_downgrade_wake);
-> 
-> 
-
+-- 
+vda
 
