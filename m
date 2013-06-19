@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935321Ab3FSWie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:38:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45019 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935291Ab3FSWic (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:38:32 -0400
-Date: Wed, 19 Jun 2013 23:38:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Message-ID: <20130619223828.GK1403@sirena.org.uk>
-References: <1371669474-24473-1-git-send-email-nm@ti.com>
+	id S964938Ab3FSWjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:39:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43375 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935295Ab3FSWjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 18:39:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Xiaoguang Chen <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
+Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
+Date: Thu, 20 Jun 2013 00:49:09 +0200
+Message-ID: <2925371.ZJMOdCiC6f@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=ADC_MGpXFp-QssYS70PHwBBA6qzrWhYGEqZeeaZHLDQ@mail.gmail.com>
+References: <1371114118-19488-1-git-send-email-chenxg@marvell.com> <CAFgnuDe1bUub92uE1H9Fc9U7AJCYL=WKdyDe2bg00yEr=kMEbQ@mail.gmail.com> <CAKohpo=ADC_MGpXFp-QssYS70PHwBBA6qzrWhYGEqZeeaZHLDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9HwyI31Aj78PLmNd"
-Content-Disposition: inline
-In-Reply-To: <1371669474-24473-1-git-send-email-nm@ti.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH] regulator: core: allow consumers to request to
- closes step voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, June 19, 2013 08:30:11 AM Viresh Kumar wrote:
+> On 19 June 2013 06:50, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+> > 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> On Thursday, June 13, 2013 05:01:58 PM Xiaoguang Chen wrote:
+> >>> cpufreq governor stop and start should be kept in sequence.
+> >>> If not, there will be unexpected behavior, for example:
+> >>>
+> >>> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+> >>
+> >> Please spell cpus as "CPUs".  And please start sequences from capitals.
+> >
+> > Ok, thanks for the remind
+> >
+> >>
+> >> [Yes, it *really* is a problem.]
+> 
+> Just wanted to know the reasoning behind it so that I can remind
+> others about it and then argue :)
 
---9HwyI31Aj78PLmNd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, sentences that don't start from upper-case letters don't look like
+separate sentences and when I see "cpus" written like this I tend to read
+it as "cups" with a typo.
 
-On Wed, Jun 19, 2013 at 02:17:54PM -0500, Nishanth Menon wrote:
+Generally speaking, don't make changelogs harder to read than they have to be.
 
-> Account for step size accuracy when exact voltage requests are send for
-> step based regulators.
+They usually are hard enough to read anyway.
 
-If the consumer can tolerate a different voltage why not just request
-the range that can be tolerated?  Your problem here is specifying an
-exact voltage.
+Thanks,
+Rafael
 
-> The specific example I faced was using cpufreq-cpu0 driver with voltages
-> for OPPs for MPU rail and attempting the common definitions against voltages
-> that are non-exact multiples of stepsize of PMIC.
 
-> The alternative would be implement custom set_voltage (as againsta simpler
-> set_voltage_sel and using linear map/list functions) for the regulator which
-> will account for the same.
-
-> Yet another alternative might be to introduce yet another custom function similar
-> to regulator_set_voltage_tol which accounts for this. something like:
-> regulator_set_voltage_floor(regulator, voltage, tol) or something to that effect.
-
-Or as I keep telling you guys the consumer can just do that directly
-using the existing API; the whole point in specifying the voltage as a
-range is to allow the consumer to cope with arbatrary regulators by
-giving a range of voltages that it can accept.
-
-The API is deliberately very conservative in these matters since there
-is a danger of physical damage if things really go wrong in some
-applications, it makes sure that both the drivers and the system
-integration are involved.
-
---9HwyI31Aj78PLmNd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwjLhAAoJELSic+t+oim90ikP/iLmiKIUnbr9W8hpvhNDeD1B
-TvFPj/D/eL8Q24RZ+EqDCBmGdSwD65ASZRtkUTZCi+eXyO9NKqrNRDbNh9PktVZc
-Q5dMW7Kdbq8IXAYp50wZnDyV74I5O8JFknlW4tYS35x/ZfI+8uv96QIpRX+X+MbM
-KoZy6PUkpYqQ6NxVcNEVZAdi4xOV+cCbjEtyECroCowrtUGj1Do8P706F+h9jG1/
-4ICnS5Q6Ui9O14tYMv4gaZE6IqWhqRRskeOtyLTib3oiLwS0cmj2sVeL9CDQR36y
-GxlzmNJvH75yPg80+L4nxOuQk8hpjPW0qKwzSNOTXuQJxYmUaJBt2SYPjDS4UCTw
-d5/LPihoY/OaXs7LaJU10pSYZU6WET4fhsmoZyvSLyJCG4OS2O5c7WjpqT12e6kM
-wmYYJAhokX98lfJZMJa/rX4xYblmDJIlJtkr+PclqOr299N8FgeUraLpljtf4Eus
-HYqIXaGWnDFXtGYOI0ApACCI+SLaw8hmcKiKWrLVW/LThIVJnhrs7sHjZQwEp5sG
-5nYx2k/IcnCDb7VEEZbvWbFd2PTOtSsh/e0TicUzOBWWpCVNJATpQCCsvQ+CAzWn
-G8tnTFRm4Zf8CCzwhE2bCPKj5Z2x45SplNDbJpdVj8StHiW/Vpks17RWDQuEeu0f
-RbT3gyS1DbhOJdvrTODz
-=2wBT
------END PGP SIGNATURE-----
-
---9HwyI31Aj78PLmNd--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
