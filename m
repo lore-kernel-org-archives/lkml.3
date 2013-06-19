@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934911Ab3FSPO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:14:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:61423 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934876Ab3FSPN4 (ORCPT
+	id S1756891Ab3FSPPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:15:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46309 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab3FSPPD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:13:56 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-44-51c1cab3c834
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-To: linux-security-module@vger.kernel.org
-Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH 3/4] security: smack: add kmem_cache for smack_rule allocations
-Date: Wed, 19 Jun 2013 17:13:34 +0200
-Message-id: <1371654816-20772-4-git-send-email-t.stanislaws@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1371654816-20772-1-git-send-email-t.stanislaws@samsung.com>
-References: <1371654816-20772-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e+xoO7mUwcDDXbPlbK4t+0Xm8XZpjfs
-	Fpd3zWGz+NDziM1i7ZG77BZvJ61gtpjX/pLVgd2jb8sqRo+j+xexeXzeJBfAHMVlk5Kak1mW
-	WqRvl8CV0dj6nalghXDFk+U7WBsYv/N3MXJySAiYSGy9sJodwhaTuHBvPVsXIxeHkMB0RomN
-	J3uYIJwuJok3D58wgVSxAXUcW/KZEcQWEdCUODYdooNZYBujRMeLqWBFwgL+Eg9+nWDuYuTg
-	YBFQlXjdpAcS5hXwkJj75TALxDZ5iaf3+9hAbE4BT4nr59+BzRQCqll8dR3rBEbeBYwMqxhF
-	UwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCQ+iZ1A7GlQ0WhxgFOBiVeHgbVh4IFGJNLCuuzD3E
-	KMHBrCTCu/TowUAh3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwc
-	nFINjEpbeY33NocEbN+Swnhow9rthsEMLV+5xax3pGT8OZuy7pHIh4LfJ6JKT5myzShZaiX+
-	L8FlVbx4+yn1DsG1X3/3bTD5+uvKvu1KL38EMkjPm7q1VPuK27PXh1bMTBHnjg94eOqdHYud
-	06X4y1dunP397sQCL27vDanTrvnMOCmV5sslJP5H31+JpTgj0VCLuag4EQBn5XWzHQIAAA==
+	Wed, 19 Jun 2013 11:15:03 -0400
+Message-ID: <1371654898.3173.11.camel@hornet>
+Subject: Re: [RFC PATCH v3 0/2] drivers: mfd: Versatile Express SPC support
+From: Pawel Moll <pawel.moll@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Date: Wed, 19 Jun 2013 16:14:58 +0100
+In-Reply-To: <201306191703.35182.arnd@arndb.de>
+References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
+	 <201306191437.20759.arnd@arndb.de> <1371646530.3867.12.camel@hornet>
+	 <201306191703.35182.arnd@arndb.de>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 19 Jun 2013 15:14:59.0387 (UTC) FILETIME=[C39168B0:01CE6CFF]
+X-MC-Unique: 113061916150001101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM, sizeof(struct smack_rule)==20. Allocation by kmalloc() uses a
-32-byte-long chunk to allocate 20 bytes. Just ask ksize().  It means that 40%
-of memory is simply wasted for padding bytes.
+On Wed, 2013-06-19 at 16:03 +0100, Arnd Bergmann wrote:
+> On Wednesday 19 June 2013, Pawel Moll wrote:
+> > ... but sysreg does more than just that. In particular it provides a
+> > pseudo-gpio controller (I don't think you want to hide this behind the
+> > syscon) and it can act as a bridge to the configuration bus - see
+> > below. In short - no, I don't think sysreg driver can disappear. It can
+> > be reduced in size, yes.
+> 
+> As I said, the gpio part can be a separate driver that just handles
+> gpio, 
 
-The problem is fixed in this patch by using kmem_cache. The cache allocates
-struct smack_rule using 24-byte-long chunks according to ksize(). This reduces
-amount of used memory by 25%.
+I've already promised Samuel that.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
----
- security/smack/smack.h     |    3 +++
- security/smack/smack_lsm.c |   11 ++++++++++-
- security/smack/smackfs.c   |    2 +-
- 3 files changed, 14 insertions(+), 2 deletions(-)
+> and I think the configuration bridge can be part of the
+> vexpress-config driver, building on top of syscon. I'm not completely
+> sure about the latter part.
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 8ad3095..38ba673 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -233,6 +233,9 @@ extern struct mutex	smack_known_lock;
- extern struct list_head smack_known_list;
- extern struct list_head smk_netlbladdr_list;
- 
-+/* Cache for fast and thrifty allocations */
-+extern struct kmem_cache *smack_rule_cache;
-+
- extern struct security_operations smack_ops;
- 
- /*
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index d52c780..7aa696a 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3564,6 +3564,9 @@ static __init void init_smack_known_list(void)
- 	list_add(&smack_known_web.list, &smack_known_list);
- }
- 
-+/* KMEM caches for fast and thrifty allocations */
-+struct kmem_cache *smack_rule_cache;
-+
- /**
-  * smack_init - initialize the smack system
-  *
-@@ -3577,10 +3580,16 @@ static __init int smack_init(void)
- 	if (!security_module_enable(&smack_ops))
- 		return 0;
- 
-+	smack_rule_cache = KMEM_CACHE(smack_rule, 0);
-+	if (!smack_rule_cache)
-+		return -ENOMEM;
-+
- 	tsp = new_task_smack(smack_known_floor.smk_known,
- 				smack_known_floor.smk_known, GFP_KERNEL);
--	if (tsp == NULL)
-+	if (tsp == NULL) {
-+		kmem_cache_destroy(smack_rule_cache);
- 		return -ENOMEM;
-+	}
- 
- 	printk(KERN_INFO "Smack:  Initializing.\n");
- 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 34d146b..4615242 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -217,7 +217,7 @@ static int smk_set_access(struct smack_parsed_rule *srp,
- 	}
- 
- 	if (found == 0) {
--		sp = kzalloc(sizeof(*sp), GFP_KERNEL);
-+		sp = kmem_cache_zalloc(smack_rule_cache, GFP_KERNEL);
- 		if (sp == NULL) {
- 			rc = -ENOMEM;
- 			goto out;
--- 
-1.7.9.5
+I don't think so, no. I appreciate what you are trying to say, but I
+object to mixing ideas for the sake of reducing number of files. The
+config infrastructure is completely independent from the sysreg. Each of
+them can exist on its own. The only common thing is a (slightly baroque)
+communication interface between those two.
+
+> > > > > 3. Move vexpress-config into drivers/bus as it is (however I see no one
+> > > > > in MAINTAINERS for this directory)
+> > > > ISTR that Arnd originally created that directory, so he may help here.
+> > > > Arnd also had some concerns about implementing this code as a bus,
+> > > > mostly about it not being a discoverable bus. IMHO that's a valid
+> > > > concern, and this is why you ended up putting it under MFD which can be
+> > > > seen as some sort of platform devices bus. But I still believe the bus
+> > > > API would make this code look cleaner and easier to maintain.
+> > > 
+> > > Sorry, I don't see why it would be a bus. I assume that there is code
+> > > missing somewhere that is not yet merged, right?
+> > 
+> > Well, different VE components (configuration microcontrollers on
+> > motherboard and daughterboards in particular) talk to each other over a
+> > bus (an SPI derivative, in case you were wondering). So there is a bus.
+> > A non-discoverable one, but it does 42 (approximately ;-) different
+> > things. We already have: clk, hwmon, regulator and reset drivers using
+> > it.
+> 
+> Ah, got it. In this case I think what you are looking for is a custom
+> 'regmap' interface that abstracts those devices. Regmap can already
+> cover i2c, spi and mmio based sets of registers (syscon is one example
+> for mmio), and IIRC there is a simple way of extending it to other
+> register-level interfaces like this one.
+
+This is an interesting idea. The thing that worries me the most is its
+early (pre-slab) availability, but I will give it a try.
+
+Paweł
+
 
