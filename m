@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab3FSAAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 20:00:15 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:33722 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSAAN (ORCPT
+	id S933492Ab3FSAB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 20:01:28 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:62331 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSAB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 20:00:13 -0400
-Message-ID: <1371599989.22206.6.camel@misato.fc.hp.com>
-Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Tue, 18 Jun 2013 17:59:49 -0600
-In-Reply-To: <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jun 2013 20:01:26 -0400
+Date: Tue, 18 Jun 2013 17:01:23 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Alex Thorlton <athorlton@sgi.com>
+cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org,
+        Robin Holt <holt@sgi.com>
+Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
+In-Reply-To: <20130618164537.GJ16067@sgi.com>
+Message-ID: <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
+References: <1370967244-5610-1-git-send-email-athorlton@sgi.com> <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com> <20130618164537.GJ16067@sgi.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 19:05 +0200, Vasilis Liaskovitis wrote:
-> Hi,
-> 
-> On Thu, Jun 13, 2013 at 09:03:52PM +0800, Tang Chen wrote:
-> > The following patch-set from Yinghai allocates pagetables to local nodes.
-> > v1: https://lkml.org/lkml/2013/3/7/642
-> > v2: https://lkml.org/lkml/2013/3/10/47
-> > v3: https://lkml.org/lkml/2013/4/4/639
-> > v4: https://lkml.org/lkml/2013/4/11/829
-> > 
-> > Since pagetable pages are used by the kernel, they cannot be offlined.
-> > As a result, they cannot be hot-remove.
-> > 
-> > This patch fix this problem with the following solution:
-> > 
-> >      1.   Introduce a new bootmem type LOCAL_NODE_DATAL, and register local
-> >           pagetable pages as LOCAL_NODE_DATAL by setting page->lru.next to
-> >           LOCAL_NODE_DATAL, just like we register SECTION_INFO pages.
-> > 
-> >      2.   Skip LOCAL_NODE_DATAL pages in offline/online procedures. When the
-> >           whole memory block they reside in is offlined, the kernel can
-> >           still access the pagetables.
-> >           (This changes the semantics of offline/online a little bit.)
-> 
-> This could be a design problem of part3: if we allow local pagetable memory
-> to not be offlined but allow the offlining to return successfully, then
-> hot-remove is going to succeed. But the direct mapped pagetable pages are still
-> mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
-> physical DIMMs getting disabled in real hardware, or in a VM case the
-> corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
-> system can crash as a result.
-> 
-> I think these local pagetables do need to be unmapped from kernel, offlined and
-> removed somehow - otherwise hot-remove should fail. Could they be migrated
-> alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
-> migrated, correct?
-> 
-> What is the original reason for local node pagetable allocation with regards
-> to memory hotplug? I assume we want to have hotplugged nodes use only their local
-> memory, so that there are no inter-node memory dependencies for hot-add/remove.
-> Are there other reasons that I am missing?
+On Tue, 18 Jun 2013, Alex Thorlton wrote:
 
-I second Vasilis.  The part1/2/3 series could be much simpler & less
-riskier if we focus on the SRAT changes first, and make the local node
-pagetable changes as a separate item.  Is there particular reason why
-they have to be done at a same time?
+> Thanks for your input, however, I believe the method of using a malloc
+> hook falls apart when it comes to static binaries, since we wont' have
+> any shared libraries to hook into.  Although using a malloc hook is a
+> perfectly suitable solution for most cases, we're looking to implement a
+> solution that can be used in all situations.
+> 
 
-Thanks,
--Toshi
+I guess the question would be why you don't want your malloc memory backed 
+by thp pages for certain static binaries and not others?  Is it because of 
+an increased rss due to khugepaged collapsing memory because of its 
+default max_ptes_none value?
 
+> Aside from that particular shortcoming of the malloc hook solution,
+> there are some other situations having a cpuset-based option is a
+> much simpler and more efficient solution than the alternatives.
 
+Sure, but why should this be a cpuset based solution?  What is special 
+about cpusets that make certain statically allocated binaries not want 
+memory backed by thp while others do?  This still seems based solely on 
+convenience instead of any hard requirement.
+
+> One
+> such situation that comes to mind would be an environment where a batch
+> scheduler is in use to ration system resources.  If an administrator
+> determines that a users jobs run more efficiently with thp always on,
+> the administrator can simply set the users jobs to always run with that
+> setting, instead of having to coordinate with that user to get them to
+> run their jobs in a different way.  I feel that, for cases such as this,
+> the this additional flag is in line with the other capabilities that
+> cgroups and cpusets provide.
+> 
+
+That sounds like a memcg, i.e. container, type of an issue, not a cpuset 
+issue which is more geared toward NUMA optimizations.  User jobs should 
+always run more efficiently with thp always on, the worst-case scenario 
+should be if they run with the same performance as thp set to never.  In 
+other words, there shouldn't be any regression that requires certain 
+cpusets to disable thp because of a performance regression.  If there are 
+any, we'd like to investigate that separately from this patch.
