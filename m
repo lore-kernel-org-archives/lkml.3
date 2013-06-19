@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934601Ab3FSMSC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:18:02 -0400
-Received: from mo3.mail-out.ovh.net ([178.32.228.3]:38226 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934108Ab3FSMSA (ORCPT
+	id S934669Ab3FSMTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:19:16 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38215 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934108Ab3FSMTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:18:00 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH 8/8] at91/avr32/atmel_lcdfb: prepare clk before calling enable
-Date: Wed, 19 Jun 2013 13:22:10 +0200
-Message-Id: <1371640930-9771-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-References: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 10704774839815403628
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 19 Jun 2013 08:19:15 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] xhci: Add missing unlocks on error paths
+Date: Wed, 19 Jun 2013 14:19:01 +0200
+Message-Id: <1371644341-11834-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+This patch adds missing unlocks on error paths in the
+xhci_free_streams and xhci_configure_endpoint functions.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- drivers/video/atmel_lcdfb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index 540909d..8525457 100644
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -893,14 +893,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
- 
- static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_enable(sinfo->bus_clk);
--	clk_enable(sinfo->lcdc_clk);
-+	clk_prepare_enable(sinfo->bus_clk);
-+	clk_prepare_enable(sinfo->lcdc_clk);
- }
- 
- static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_disable(sinfo->bus_clk);
--	clk_disable(sinfo->lcdc_clk);
-+	clk_disable_unprepare(sinfo->bus_clk);
-+	clk_disable_unprepare(sinfo->lcdc_clk);
- }
- 
- 
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 6779c92..2c49f00 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2603,6 +2603,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 		in_ctx = virt_dev->in_ctx;
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
+ 	if (!ctrl_ctx) {
++		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",
+ 				__func__);
+ 		return -ENOMEM;
+@@ -3298,6 +3299,7 @@ int xhci_free_streams(struct usb_hcd *hcd, struct usb_device *udev,
+ 	command = vdev->eps[ep_index].stream_info->free_streams_command;
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
+ 	if (!ctrl_ctx) {
++		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",
+ 				__func__);
+ 		return -EINVAL;
 -- 
-1.7.9.5
+1.7.10.4
 
