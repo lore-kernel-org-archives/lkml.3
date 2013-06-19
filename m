@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3FSNZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:25:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59710 "EHLO mail.skyhub.de"
+	id S1756774Ab3FSN0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:26:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39489 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756427Ab3FSNZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:25:27 -0400
-Date: Wed, 19 Jun 2013 15:25:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130619132520.GB28300@pd.tnic>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
- <20130619125243.GD11209@gmail.com>
- <20130619130225.GA28311@pd.tnic>
- <20130619130434.GB24957@gmail.com>
+	id S1756427Ab3FSN0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 09:26:17 -0400
+Date: Wed, 19 Jun 2013 15:26:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2] memcg: do not trap chargers with full callstack
+ on OOM
+Message-ID: <20130619132614.GC16457@dhcp22.suse.cz>
+References: <20130208171012.GH7557@dhcp22.suse.cz>
+ <20130208220243.EDEE0825@pobox.sk>
+ <20130210150310.GA9504@dhcp22.suse.cz>
+ <20130210174619.24F20488@pobox.sk>
+ <20130211112240.GC19922@dhcp22.suse.cz>
+ <20130222092332.4001E4B6@pobox.sk>
+ <20130606160446.GE24115@dhcp22.suse.cz>
+ <20130606181633.BCC3E02E@pobox.sk>
+ <20130607131157.GF8117@dhcp22.suse.cz>
+ <20130617122134.2E072BA8@pobox.sk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130619130434.GB24957@gmail.com>
+In-Reply-To: <20130617122134.2E072BA8@pobox.sk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 03:04:34PM +0200, Ingo Molnar wrote:
-> Do we know why?
+On Mon 17-06-13 12:21:34, azurIt wrote:
+> >Here we go. I hope I didn't screw anything (Johannes might double check)
+> >because there were quite some changes in the area since 3.2. Nothing
+> >earth shattering though. Please note that I have only compile tested
+> >this. Also make sure you remove the previous patches you have from me.
+> 
+> 
+> Hi Michal,
+> 
+> it, unfortunately, didn't work. Everything was working fine but
+> original problem is still occuring. 
 
-Well, according to mjg59 some Macs break if we don't give them a map
-which uses high addresses.
+This would be more than surprising because tasks blocked at memcg OOM
+don't hold any locks anymore. Maybe I have messed something up during
+backport but I cannot spot anything.
 
-I can imagine flipping the meaning of this option to be on by default
-and "efi=no_11_map" to disable the 1:1 map for those Macs.
+> I'm unable to send you stacks or more info because problem is taking
+> down the whole server for some time now (don't know what exactly
+> caused it to start happening, maybe newer versions of 3.2.x).
 
-> A bug I suspect?
+So you are not testing with the same kernel with just the old patch
+replaced by the new one?
 
-Probably. The problem is, it is very hard to debug the boot stub that
-early. And of course, I can't reproduce it in qemu :(. If only I had a
-hardware debugger...
+> But i'm sure of one thing - when problem occurs, nothing is able to
+> access hard drives (every process which tries it is freezed until
+> problem is resolved or server is rebooted).
 
-> But once it works reliably we can enable it, right?
+I would be really interesting to see what those tasks are blocked on.
 
-It's all the same to me - I hate EFI with passion so whatever people
-agree upon, I'll do it.
+> Problem is fixed after killing processes from cgroup which
+> caused it and everything immediatelly starts to work normally. I
+> find this out by keeping terminal opened from another server to one
+> where my problem is occuring quite often and running several apps
+> there (htop, iotop, etc.). When problem occurs, all apps which wasn't
+> working with HDD was ok. The htop proved to be very usefull here
+> because it's only reading proc filesystem and is also able to send
+> KILL signals - i was able to resolve the problem with it
+>   without rebooting the server.
+
+sysrq+t will give you the list of all tasks and their traces.
+
+> I created a special daemon (about month ago) which is able to detect
+> and fix the problem so i'm not having server outages now. The point
+> was to NOT access anything which is stored on HDDs, the daemon is
+> only reading info from cgroup filesystem and sending KILL signals to
+> processes. Maybe i should be able to also read stack files before
+> killing, i will try it.
+> 
+> Btw, which vanilla kernel includes this patch?
+
+None yet. But I hope it will be merged to 3.11 and backported to the
+stable trees.
+ 
+> Thank you and everyone involved very much for time and help.
+> 
+> azur
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Michal Hocko
+SUSE Labs
