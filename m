@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3FSSTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:19:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54751 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756845Ab3FSSTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:19:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,899,1363158000"; 
-   d="scan'208";a="257343846"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-CC: "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBA=
-Date: Wed, 19 Jun 2013 18:19:25 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
- <20130619175728.2852.73156.stgit@localhost.localdomain>
- <20130619180441.GK28300@pd.tnic>
-In-Reply-To: <20130619180441.GK28300@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1757341Ab3FSSUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:20:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52341 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756776Ab3FSSUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:20:15 -0400
+Message-ID: <51C1F42E.5090107@wwwdotorg.org>
+Date: Wed, 19 Jun 2013 12:10:54 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com> <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com> <51BA3BC1.3090109@wwwdotorg.org> <20130614091241.GA23745@ab42.lan>
+In-Reply-To: <20130614091241.GA23745@ab42.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JIJl5r011466
 
-> Interesting, why? Why would we even need such an option? My impression
-> is, if ACPI tells us FF, MCE code doesn't poll those banks anymore. So
-> where do the duplicated reports come from?
+On 06/14/2013 03:12 AM, Christian Ruppert wrote:
+> On Thu, Jun 13, 2013 at 03:38:09PM -0600, Stephen Warren wrote:
+>> On 06/13/2013 06:55 AM, Christian Ruppert wrote:
+>>> This patch adds the infrastructure required to register non-linear gpio
+>>> ranges through gpiolib and the standard GPIO device tree bindings.
+>>
+>> That's not exactly true. The existing gpio-ranges property already
+>> allows non-linear ranges to be represented quite easily; each entry in
+>> the gpio-ranges list is <gpio-base> <pinctrl-base> <count>, so you can
+>> piece together any mapping you want.
+> 
+> You're right, my description is somewhat imprecise here.
+> 
+>> The potential advantage of this patch is that the pinctrl-side of the
+>> mapping can be a group name rather than pin IDs, which might reduce the
+>> size of the mapping list if you have an extremely sparse or non-linear
+>> mapping /and/ parts of that mapping just happen to align with the pin
+>> groups in the pin controller HW, since each entry in the gpio-ranges
+>> property can be sparse/non-linear, rather than being a small linear
+>> chunk of the mapping.
+> 
+> Pin controller authors have the freedom to define pin groups just for
+> the purpose of "predefining" the pinctrl side of GPIO ranges.
 
-The option is only disabling the Linux side of firmware first ... the BIOS
-will still be doing it and generating records to feed to the OS using APEI.
-
-So Linux may see the error in a bank and report it, and BIOS may report
-the same error.  Though I'd expect that to be rare as whoever saw it first
-would most likely clear the bank before the other could see it.
-
-I asked for the option because I'm nervous about just skipping some banks
-on the say-so of the BIOS ... what if the BIOS did something wrong. This
-option gives us a way to return to the way things were before this patch.
-
-These parts are now looking good ... but we still need to tackle what Linux
-does when it does get the CPER record.  I suspect we need to preserve
-the existing "fake an mcelog entry with just the address" on old platforms,
-but need to do something smarter on new ones.
-
--Tony
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hmm. I suppose that's true. I'm not sure how enthusiastic I am about
+doing this though... The reason I'm unsure is because it starts using
+pin groups from something other than groups of pins in HW that are all
+affected by the same mux or config bits in a register, and starts using
+pin groups for something else; GPIO<->pinmux pins mapping. Perhaps it's
+OK though, considering the other abuses of pin groups that are already
+present, such as using pin groups to represent default/common uses of
+groups of pins that don't actually exist in HW.
