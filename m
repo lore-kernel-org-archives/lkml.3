@@ -1,106 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935119Ab3FSUfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:35:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51783 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934971Ab3FSUfQ (ORCPT
+	id S935092Ab3FSUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:36:26 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:57795 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934858Ab3FSUgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:35:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 19 Jun 2013 13:35:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Kevin Strasser <kevin.strasser@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Michael Brunner <Michael.Brunner@kontron.com>,
-        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
-        Dirk Hohndel <Dirk.Hohndel@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH v2 1/4] mfd: Kontron PLD mfd driver
-Message-ID: <20130619203515.GB5594@roeck-us.net>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
- <1371589469-32700-1-git-send-email-kevin.strasser@linux.intel.com>
- <1371589469-32700-2-git-send-email-kevin.strasser@linux.intel.com>
- <alpine.DEB.2.02.1306191101290.4013@ionos.tec.linutronix.de>
- <20130619180346.GA14304@wrk>
+	Wed, 19 Jun 2013 16:36:25 -0400
+Message-ID: <51C21645.3050108@google.com>
+Date: Wed, 19 Jun 2013 16:36:21 -0400
+From: Tristan Schmelcher <tschmelcher@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619180346.GA14304@wrk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: richard@nod.at, jdike@addtoit.com
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCHv2] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
+ and in other edge cases
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:03:46AM -0700, Kevin Strasser wrote:
-> On Wed, Jun 19, 2013 at 11:12:09AM +0200, Thomas Gleixner wrote:
-> > On Tue, 18 Jun 2013, Kevin Strasser wrote:
-> > 
-> > This patch set looks reasonable now, except a formal issue.
-> >  
-> > > Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> > > Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-> > 
-> > This is wrong, as it says:
-> > 
-> >  Kevin authored the code, sent it to Michael and Michael sent it to
-> >  LKML.
-> > 
-> > 
-> > The original code was authored by Michael. This version was authored
-> > by Kevin based on Michaels code.
-> > 
-> > So either you keep Michael as the author, then you want 
-> > 
-> >  From: Michael Brunner <michael.brunner@kontron.com>
-> > 
-> >  <patch description/>
-> > 
-> >  Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-> >  Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> > 
-> > or you decide that it's a major rewrite by you, then you want:
-> > 
-> >  This patch is based on the original version authored by
-> >  Michael Brunner <michael.brunner@kontron.com>.
-> > 
-> >  Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> > 
-> >  Or 
-> > 
-> >  Originally-From: Michael Brunner <michael.brunner@kontron.com>.
-> >  Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> 
-> Ok, I think this will make sense for all the patches except gpio,
-> which is a major rewrite by Guenter.
-> 
-> So maybe this would be appropriate:
-> 
->  From: Guenter Roeck <linux@roeck-us.net>
-> 
->  <patch description>
-> 
->  Originally-From: Michael Brunner <michael.brunner@kontron.com>
->  Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->  Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
->  ...
+From: Tristan Schmelcher <tschmelcher@google.com>
 
-Ok with me. Always happy to take the blame :)
+which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to /run/shm),
+if there were multiple mounts on top of each other, if the mount(s) were
+obscured by a later mount, or if /dev/shm was a prefix of another mount point.
+This fixes these cases. Applies to 3.9.6.
 
-Thanks,
-Guenter
+Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
+---
+v1 had a bug where it would misparse the file if it got a truncated path
+containing a newline after decoding. (I also mangled the patch.)
 
-> 
-> Thanks,
-> Kevin
-> 
-> > 
-> > Other than that.
-> > 
-> > Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> 
+--- linux-3.9.6/arch/um/os-Linux/mem.c.orig	2013-06-19 14:50:14.000000000 -0400
++++ linux-3.9.6/arch/um/os-Linux/mem.c	2013-06-19 16:09:39.000000000 -0400
+@@ -53,6 +53,25 @@ static void __init find_tempdir(void)
+ }
+ 
+ /*
++ * Remove bytes from the front of the buffer and refill it so that if there's a
++ * partial string that we care about, it will be completed, and we can recognize
++ * it.
++ */
++static int pop(int fd, char *buf, size_t size, size_t npop)
++{
++	ssize_t n;
++	size_t len = strlen(&buf[npop]);
++
++	memmove(buf, &buf[npop], len + 1);
++	n = read(fd, &buf[len], size - len - 1);
++	if (n < 0)
++		return -errno;
++
++	buf[len + n] = '\0';
++	return 1;
++}
++
++/*
+  * This will return 1, with the first character in buf being the
+  * character following the next instance of c in the file.  This will
+  * read the file as needed.  If there's an error, -errno is returned;
+@@ -61,7 +80,6 @@ static void __init find_tempdir(void)
+ static int next(int fd, char *buf, size_t size, char c)
+ {
+ 	ssize_t n;
+-	size_t len;
+ 	char *ptr;
+ 
+ 	while ((ptr = strchr(buf, c)) == NULL) {
+@@ -74,20 +92,116 @@ static int next(int fd, char *buf, size_
+ 		buf[n] = '\0';
+ 	}
+ 
+-	ptr++;
+-	len = strlen(ptr);
+-	memmove(buf, ptr, len + 1);
++	return pop(fd, buf, size, ptr - buf + 1);
++}
+ 
+-	/*
+-	 * Refill the buffer so that if there's a partial string that we care
+-	 * about, it will be completed, and we can recognize it.
+-	 */
+-	n = read(fd, &buf[len], size - len - 1);
+-	if (n < 0)
+-		return -errno;
++/*
++ * Decode an octal-escaped and space-terminated path of the form used by
++ * /proc/mounts. May be used to decode a path in-place. "out" must be at least
++ * as large as the input.
++ */
++static int decode_path(const char *in, char *out, size_t *ndecoded,
++		       size_t *decodedlen)
++{
++	const char *first_in = in;
++	char *first_out = out;
++	int c;
++	int i;
++	int ret = -EINVAL;
++	while (*in) {
++		switch (*in) {
++		case ' ':
++			*out = '\0';
++			*decodedlen = out - first_out;
++			ret = 0;
++			goto out;
++
++		case '\\':
++			in++;
++			c = 0;
++			for (i = 0; i < 3; i++) {
++				if (*in < '0' || *in > '7')
++					goto out;
++				c = (c << 3) | (*in++ - '0');
++			}
++			*out++ = (char) c;
++			break;
+ 
+-	buf[len + n] = '\0';
+-	return 1;
++		default:
++			*out++ = *in++;
++			break;
++		}
++	}
++
++out:
++	*ndecoded = in - first_in + 1;
++	return ret;
++}
++
++static size_t octal_encoded_length(const char *s, const char *chars)
++{
++	size_t len = strlen(s);
++	while ((s = strpbrk(s, chars)) != NULL) {
++		len += 3;
++		s++;
++	}
++
++	return len;
++}
++
++enum {
++	OUTCOME_NOT_A_MOUNT_POINT,
++	OUTCOME_TMPFS_MOUNT,
++	OUTCOME_NON_TMPFS_MOUNT,
++};
++
++/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
++static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
++		      int *outcome)
++{
++	int found;
++	int match;
++	size_t ndecoded;
++	size_t decodedlen;
++
++	enum {
++		MATCH_NONE,
++		MATCH_EXACT,
++		MATCH_PARENT,
++	};
++
++	found = next(fd, buf, bufsize, ' ');
++	if (found != 1)
++		return found;
++
++	match = MATCH_NONE;
++	if (!decode_path(buf, buf, &ndecoded, &decodedlen)) {
++		if (!strcmp(buf, path))
++			match = MATCH_EXACT;
++		else if (!strncmp(buf, path, decodedlen)
++			 && (path[decodedlen] == '/' || !strcmp(buf, "/")))
++			match = MATCH_PARENT;
++	}
++
++	found = pop(fd, buf, bufsize, ndecoded);
++	if (found != 1)
++		return found;
++
++	switch (match) {
++	case MATCH_EXACT:
++		if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
++			*outcome = OUTCOME_TMPFS_MOUNT;
++		else
++			*outcome = OUTCOME_NON_TMPFS_MOUNT;
++		break;
++
++	case MATCH_PARENT:
++		/* This mount obscures any previous ones. */
++		*outcome = OUTCOME_NOT_A_MOUNT_POINT;
++		break;
++	}
++
++	return next(fd, buf, bufsize, '\n');
+ }
+ 
+ /* which_tmpdir is called only during early boot */
+@@ -106,8 +220,12 @@ static int checked_tmpdir = 0;
+  */
+ static void which_tmpdir(void)
+ {
+-	int fd, found;
+-	char buf[128] = { '\0' };
++	int fd;
++	int found;
++	int outcome;
++	char *path;
++	char *buf;
++	size_t bufsize;
+ 
+ 	if (checked_tmpdir)
+ 		return;
+@@ -116,49 +234,66 @@ static void which_tmpdir(void)
+ 
+ 	printf("Checking for tmpfs mount on /dev/shm...");
+ 
++	path = realpath("/dev/shm", NULL);
++	if (!path) {
++		printf("failed to check real path, errno = %d\n", errno);
++		return;
++	}
++	printf("%s...", path);
++
++	/*
++	 * The buffer needs to be able to fit the full octal-escaped path, a
++	 * space, and a trailing null in order to successfully decode it.
++	 */
++	bufsize = octal_encoded_length(path, " \t\n\\") + 2;
++
++	if (bufsize < 128)
++		bufsize = 128;
++
++	buf = malloc(bufsize);
++	if (!buf) {
++		printf("malloc failed, errno = %d\n", errno);
++		goto out;
++	}
++	buf[0] = '\0';
++
+ 	fd = open("/proc/mounts", O_RDONLY);
+ 	if (fd < 0) {
+ 		printf("failed to open /proc/mounts, errno = %d\n", errno);
+-		return;
++		goto out1;
+ 	}
+ 
++	outcome = OUTCOME_NOT_A_MOUNT_POINT;
+ 	while (1) {
+-		found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+-		if (found != 1)
+-			break;
+-
+-		if (!strncmp(buf, "/dev/shm", strlen("/dev/shm")))
+-			goto found;
+-
+-		found = next(fd, buf, ARRAY_SIZE(buf), '\n');
++		found = read_mount(fd, buf, bufsize, path, &outcome);
+ 		if (found != 1)
+ 			break;
+ 	}
+ 
+-err:
+-	if (found == 0)
+-		printf("nothing mounted on /dev/shm\n");
+-	else if (found < 0)
++	if (found < 0) {
+ 		printf("read returned errno %d\n", -found);
++	} else {
++		switch (outcome) {
++		case OUTCOME_TMPFS_MOUNT:
++			printf("OK\n");
++			default_tmpdir = "/dev/shm";
++			break;
+ 
+-out:
+-	close(fd);
+-
+-	return;
+-
+-found:
+-	found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+-	if (found != 1)
+-		goto err;
++		case OUTCOME_NON_TMPFS_MOUNT:
++			printf("not tmpfs\n");
++			break;
+ 
+-	if (strncmp(buf, "tmpfs", strlen("tmpfs"))) {
+-		printf("not tmpfs\n");
+-		goto out;
++		default:
++			printf("nothing mounted on /dev/shm\n");
++			break;
++		}
+ 	}
+ 
+-	printf("OK\n");
+-	default_tmpdir = "/dev/shm";
+-	goto out;
++	close(fd);
++out1:
++	free(buf);
++out:
++	free(path);
+ }
+ 
+ static int __init make_tempfile(const char *template, char **out_tempname,
