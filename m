@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3FSHLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:11:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35165 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830Ab3FSHLX (ORCPT
+	id S1756567Ab3FSHMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:12:12 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50518 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393Ab3FSHMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:11:23 -0400
-Message-ID: <51C1595D.60706@ti.com>
-Date: Wed, 19 Jun 2013 10:10:21 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <jirislaby@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        <linux-usb@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-geode@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>, <netdev@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz>
-In-Reply-To: <51BF6BFF.7050705@suse.cz>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2HOUBHJGSQADMUMIBTWTR"
+	Wed, 19 Jun 2013 03:12:10 -0400
+Date: Wed, 19 Jun 2013 15:12:06 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] ceph: avoid meaningless calling ceph_caps_revoking if sync_mode == WB_SYNC_ALL.
+X-Priority: 3
+X-GUID: 7B38E144-81EF-413B-B8C7-D2BD0DC4372A
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201306191512024406391@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5J7CKWh006513
 
-------enig2HOUBHJGSQADMUMIBTWTR
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ fs/ceph/addr.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On 17/06/13 23:05, Jiri Slaby wrote:
-
-> The last point I inclined to the Greg's argument to remove the EXPERT
-> dependency.
->=20
-> So currently I have what is attached... Comments?
-
-The patch looks a bit odd with the USB_CHIPIDEA_IMX parts. You're not
-adding COMPILE_TEST there, but you're adding a totally new config
-option, and also changing the Makefile.
-
-Maybe that's ok, but there's no mention about this in the desc.
-
- Tomi
-
-
-
-------enig2HOUBHJGSQADMUMIBTWTR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRwVldAAoJEPo9qoy8lh71n1EP/A1yWcfkOmSPUdZ4XbOT46TD
-1cXo1qMm4BpLedIaLKdzr8A7YP+1baCqTTq68Ec+9n49irAPXwCCMCw2szxAsPNb
-ABE7meU/AO5aB5knIzu80u6oUb+NSDamLFsgGKP+on2b9WQp72rq3/1eqELH3yay
-Xp3l3T/IDsP1o7Sdtylwr/2oNAdYj1SaC6kH3Wo++NG3oD53kdg8KY5iLN1ul0wn
-DpzpP6T/1PWmPVgqAuAy1s+6l6Bk937ZiqD1KBZtR348ZfDOAxIVfZfUuAXnZoYB
-oktewrAA9CNkGLZWr/CPBDrnNQIqsLYb0wS9KkQC3UzisOhBEtWQZSVQRj4WpkmO
-trKkgXtbmqIBLMaF3tkx4ifjTTAevxcGALUoWQpG7zIeUhSmwNoKyeXxIrqFQvw8
-4oVVQZ9ehl02kMkpoiHjosVzNGTBoLgmScB3ORtJs3qlMan9Ew6/tL2rq5IgiwzD
-UacoUfC/oHc2EkvjBVHpfNaWvlxU4X6mGPCRjE8YRIybiCdiFouVP9D6Jc8YnluI
-fXyvqGb4riJGDYZXVArQWvldIw7iBRjVo0wx3xnTJGMDCxQR7zSfHDgJnD2r1B4x
-1TphGGR11T9il341zo6/11V0SHtGUDL8ECeFDB8xUWWM4W0+bmp1dpSSg+6JWpOv
-cyfUAABA3eWk0j6B4+vB
-=R8ux
------END PGP SIGNATURE-----
-
-------enig2HOUBHJGSQADMUMIBTWTR--
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 3e68ac1..25fa8b8 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -677,8 +677,8 @@ static int ceph_writepages_start(struct address_space *mapping,
+ 	 * integrity write (e.g., O_SYNC write or fsync()), or if our
+ 	 * cap is being revoked.
+ 	 */
+-	do_sync = wbc->sync_mode == WB_SYNC_ALL;
+-	if (ceph_caps_revoking(ci, CEPH_CAP_FILE_BUFFER))
++	if ((wbc->sync_mode == WB_SYNC_ALL) ||
++		ceph_caps_revoking(ci, CEPH_CAP_FILE_BUFFER))
+ 		do_sync = 1;
+ 	dout("writepages_start %p dosync=%d (mode=%s)\n",
+ 	     inode, do_sync,
+-- 
+1.8.3.rc1.44.gb387c77
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
