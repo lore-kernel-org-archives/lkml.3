@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964979Ab3FSWui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:50:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45718 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935028Ab3FSWug (ORCPT
+	id S964968Ab3FSWwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:52:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37390 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935028Ab3FSWwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:50:36 -0400
-Date: Wed, 19 Jun 2013 15:50:35 -0700 (PDT)
-Message-Id: <20130619.155035.459950131528536300.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2013-06-19
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130619194141.GH12079@tuxdriver.com>
-References: <20130619194141.GH12079@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 18:52:08 -0400
+Date: Wed, 19 Jun 2013 15:52:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anders Hammarquist <iko@iko.pp.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] USB: serial: ti_usb_3410_5052: Be explicit about the
+ Abbott product ids being product ids.
+Message-ID: <20130619225245.GA12282@kroah.com>
+References: <201306190021.r5J0LkvQ032449@eskarina.iko.pp.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306190021.r5J0LkvQ032449@eskarina.iko.pp.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 19 Jun 2013 15:41:41 -0400
-
-> One more late-breaking fix in the nl80211 code, the fix for the
-> nl80211_fam.attrbuf race Linus ran into and analysed.  Hopefully it
-> looks familiar... :-)
+On Wed, Jun 19, 2013 at 01:58:49AM +0200, Anders Hammarquist wrote:
+> Be explicit about the Abbott product ids being product ids.
 > 
-> Let me know if there are problems!
+> Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
+> ---
+>  drivers/usb/serial/ti_usb_3410_5052.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
+> index 4a2423e..ea8b273 100644
+> --- a/drivers/usb/serial/ti_usb_3410_5052.h
+> +++ b/drivers/usb/serial/ti_usb_3410_5052.h
+> @@ -52,9 +52,9 @@
+>  
+>  /* Abbott Diabetics vendor and product ids */
+>  #define ABBOTT_VENDOR_ID		0x1a61
+> -#define ABBOTT_STEREO_PLUG_ID		0x3410
+> +#define ABBOTT_STEREO_PLUG_PRODUCT_ID	0x3410
+>  #define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
 
-Easiest pull request ever :-)  Pulled, thanks John.
+Can you just delete ABBOTT_PRODUCT_ID here, because if you ever use it,
+you will get a build error, right?
+
+I'll just take the first patch for now, please resend this one.
+
+thanks,
+
+greg k-h
