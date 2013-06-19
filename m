@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935378Ab3FSXYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 19:24:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31837 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934170Ab3FSXYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 19:24:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,900,1363158000"; 
-   d="scan'208";a="332418924"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <1371683514.1783.3.camel@buesod1.americas.hpqcorp.net>
-References: <1371165333.27102.568.camel@schen9-DESK>
-	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BD8A77.2080201@intel.com>
-	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
-	 <51BF99B0.4040509@intel.com>
-	 <1371512120.1778.40.camel@buesod1.americas.hpqcorp.net>
-	 <1371514081.27102.651.camel@schen9-DESK>
-	 <1371683514.1783.3.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
+	id S935393Ab3FSXYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 19:24:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56465 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934170Ab3FSXYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 19:24:14 -0400
+X-Originating-IP: 108.223.40.66
 Date: Wed, 19 Jun 2013 16:24:15 -0700
-Message-ID: <1371684255.27102.667.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: Nightly stable builds [Was: fec: Fix build for MCF5272]
+Message-ID: <20130619232415.GA27990@roeck-us.net>
+References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
+ <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
+ <20130619204348.GA7314@roeck-us.net>
+ <20130619221519.GB9518@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619221519.GB9518@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 16:11 -0700, Davidlohr Bueso wrote:
-> On Mon, 2013-06-17 at 17:08 -0700, Tim Chen wrote:
-> > On Mon, 2013-06-17 at 16:35 -0700, Davidlohr Bueso wrote:
-> > > On Tue, 2013-06-18 at 07:20 +0800, Alex Shi wrote:
-> > > > On 06/18/2013 12:22 AM, Davidlohr Bueso wrote:
-> > > > > After a lot of benchmarking, I finally got the ideal results for aim7,
-> > > > > so far: this patch + optimistic spinning with preemption disabled. Just
-> > > > > like optimistic spinning, this patch by itself makes little to no
-> > > > > difference, yet combined is where we actually outperform 3.10-rc5. In
-> > > > > addition, I noticed extra throughput when disabling preemption in
-> > > > > try_optimistic_spin().
-> > > > > 
-> > > > > With i_mmap as a rwsem and these changes I could see performance
-> > > > > benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
-> > > > > (+5%), shared (+15%) and short (+4%), most of them after around 500
-> > > > > users, for fewer users, it made little to no difference.
-> > > > 
-> > > > A pretty good number. what's the cpu number in your machine? :)
+On Wed, Jun 19, 2013 at 03:15:19PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Jun 19, 2013 at 01:43:48PM -0700, Guenter Roeck wrote:
+> > On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
+> > > Hi Guenter,
 > > > 
-> > > 8-socket, 80 cores (ht off)
+> > > FYI
 > > > 
+> > > I asked Stephen to include m5272c3_defconfig as part of his daily
+> > > build and now it is available:
+> > > http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
 > > > 
+> > Nice front-end.
 > > 
-> > David,
+> > Greg, would it be useful to set up something similar for pending stable builds ?
+> > I have back-end code doing that running on one of my servers at home, but no
+> > web front-end.
 > > 
-> > I wonder if you are interested to try the experimental patch below.  
-> > It tries to avoid unnecessary writes to the sem->count when we are 
-> > going to fail the down_write by executing rwsem_down_write_failed_s
-> > instead of rwsem_down_write_failed.  It should further reduce the
-> > cache line bouncing.  It didn't make a difference for my 
-> > workload.  Wonder if it may help yours more in addition to the 
-> > other two patches.  Right now the patch is an ugly hack.  I'll merge
-> > rwsem_down_write_failed_s and rwsem_down_write_failed into one
-> > function if this approach actually helps things.
-> > 
+> > Any idea whom to talk to to set this up ? Stephen ? Michael ?
 > 
-> I tried this on top of the patches we've already been dealing with. It
-> actually did more harm than good. Only got a slight increase in the
-> five_sec workload, for the rest either no effect, or negative. So far
-> the best results are still with spin on owner + preempt disable + Alex's
-> patches.
+> I have no idea.  I publish the stable build patches all publically, so a
+> build-bot could easily be built using it, which would be great to have.
 > 
+The build-bot isn't the problem; as I mentioned above, I already have one
+running. I was referring to a web front-end for it.
 
-Thanks for trying it out. A little disappointed as I was expecting no
-change in performance for the worst case.
-
-Tim
-
+Thanks,
+Guenter
