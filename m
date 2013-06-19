@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab3FSQQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:16:11 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:47204 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757027Ab3FSQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:16:07 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1757159Ab3FSQSh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:18:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38056 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756845Ab3FSQSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:18:34 -0400
+Date: Wed, 19 Jun 2013 18:18:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619161827.GF28300@pd.tnic>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <20130619130434.GB24957@gmail.com>
+ <20130619160804.GB27832@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [net-next rfc 1/3] net: avoid high order memory allocation for queues by using flex array
-Date: Wed, 19 Jun 2013 17:06:21 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B729A@saturn3.aculab.com>
-In-Reply-To: <1371657511.3252.324.camel@edumazet-glaptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [net-next rfc 1/3] net: avoid high order memory allocation for queues by using flex array
-Thread-Index: Ac5tBfVZiH0s9G20S5yuVzIkWG5SaAAAKniA
-References: <1371620452-49349-1-git-send-email-jasowang@redhat.com> <1371620452-49349-2-git-send-email-jasowang@redhat.com> <1371623518.3252.267.camel@edumazet-glaptop> <20130619091132.GA2816@redhat.com> <1371635763.3252.289.camel@edumazet-glaptop> <20130619154059.GA13735@redhat.com> <1371657511.3252.324.camel@edumazet-glaptop>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Jason Wang" <jasowang@redhat.com>, <davem@davemloft.net>,
-        <edumazet@google.com>, <hkchu@google.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130619160804.GB27832@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JGGJLh010303
 
-> +static void netif_free_tx_queues(struct net_device *dev)
-> +{
-> +	if (is_vmalloc_addr(dev->_tx))
-> +		vfree(dev->_tx);
-> +	else
-> +		kfree(dev->_tx);
-> +}
-> +
->  static int netif_alloc_netdev_queues(struct net_device *dev)
->  {
->  	unsigned int count = dev->num_tx_queues;
-> @@ -5261,9 +5270,11 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
->  	BUG_ON(count < 1);
-> 
->  	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
-> -	if (!tx)
-> -		return -ENOMEM;
-> -
-> +	if (!tx) {
-> +		tx = vzalloc(count * sizeof(struct netdev_queue));
-> +		if (!tx)
-> +			return -ENOMEM;
-> +	}
->  	dev->_tx = tx;
+On Wed, Jun 19, 2013 at 05:08:04PM +0100, Matthew Garrett wrote:
+> But, as always, the only reliable thing to do here is to behave as
+> much like Windows as possible. Which means performing the 1:1 mapping
+> but maintaining the high mapping, and passing the high values via
+> SetVirtualAddressMap.
 
-Given the number of places I've seen this code added, why
-not put it in a general helper?
+We can't pass the high values via SetVirtualAddressMap and have EFI
+runtime in the kexec-ed kernel, as you and I established last week. And
+since not all would want EFI runtime in the kexec-ed kernel, I'm leaning
+more towards a boot-time option which enables the 1:1 mapping.
 
-I also thought that malloc() with GFP_KERNEL would sleep.
-Under what conditions does it fail instead?
+Btw, why would you even want the 1:1 mappings if we pass the high values
+via SetVirtualAddressMap?
 
-	David
+-- 
+Regards/Gruss,
+    Boris.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Sent from a fat crate under my desk. Formatting is fine.
+--
