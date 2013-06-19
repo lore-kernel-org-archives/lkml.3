@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935022Ab3FSSEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:04:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58061 "EHLO mail.skyhub.de"
+	id S935052Ab3FSSG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:06:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20023 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934555Ab3FSSEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:04:49 -0400
-Date: Wed, 19 Jun 2013 20:04:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Message-ID: <20130619180441.GK28300@pd.tnic>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
- <20130619175728.2852.73156.stgit@localhost.localdomain>
+	id S933869Ab3FSSG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:06:28 -0400
+Date: Wed, 19 Jun 2013 21:07:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net, edumazet@google.com,
+        hkchu@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
+ queues by using flex array
+Message-ID: <20130619180709.GA15017@redhat.com>
+References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
+ <1371620452-49349-2-git-send-email-jasowang@redhat.com>
+ <1371623518.3252.267.camel@edumazet-glaptop>
+ <20130619091132.GA2816@redhat.com>
+ <1371635763.3252.289.camel@edumazet-glaptop>
+ <20130619154059.GA13735@redhat.com>
+ <1371657511.3252.324.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130619175728.2852.73156.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1371657511.3252.324.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:27:42PM +0530, Naveen N. Rao wrote:
-> Add a boot option to disable firmware first mode for corrected errors.
+On Wed, Jun 19, 2013 at 08:58:31AM -0700, Eric Dumazet wrote:
+> On Wed, 2013-06-19 at 18:40 +0300, Michael S. Tsirkin wrote:
 > 
-> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-> ---
->  Documentation/x86/x86_64/boot-options.txt |    5 +++++
->  arch/x86/include/asm/acpi.h               |    2 ++
->  arch/x86/kernel/acpi/boot.c               |    5 +++++
->  drivers/acpi/apei/hest.c                  |    3 ++-
->  4 files changed, 14 insertions(+), 1 deletion(-)
+> > That's a good trick too - vmalloc memory is a bit slower
+> > on x86 since it's not using a huge page, but that's only
+> > when we have lots of CPUs/queues...
+> > 
+> > Short term - how about switching to vmalloc if > 32 queues?
 > 
-> diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-> index e9e8ddb..1228b22 100644
-> --- a/Documentation/x86/x86_64/boot-options.txt
-> +++ b/Documentation/x86/x86_64/boot-options.txt
-> @@ -176,6 +176,11 @@ ACPI
+> You do not have to switch "if > 32 queues"
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index fa007db..473cc9e 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -130,6 +130,7 @@
+>  #include <linux/cpu_rmap.h>
+>  #include <linux/static_key.h>
+>  #include <linux/hashtable.h>
+> +#include <linux/vmalloc.h>
 >  
->    acpi=noirq	Don't route interrupts
+>  #include "net-sysfs.h"
 >  
-> +  acpi=nocmcff	Disable firmware first mode for corrected errors. This
-> +		disables parsing the HEST CMC error source to check if
-> +		firmware has set the FF flag. This may result in
-> +		duplicate corrected error reports.
+> @@ -5253,6 +5254,14 @@ static void netdev_init_one_queue(struct net_device *dev,
+>  #endif
+>  }
+>  
+> +static void netif_free_tx_queues(struct net_device *dev)
+> +{
+> +	if (is_vmalloc_addr(dev->_tx))
+> +		vfree(dev->_tx);
+> +	else
+> +		kfree(dev->_tx);
+> +}
+> +
+>  static int netif_alloc_netdev_queues(struct net_device *dev)
+>  {
+>  	unsigned int count = dev->num_tx_queues;
+> @@ -5261,9 +5270,11 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
+>  	BUG_ON(count < 1);
+>  
+>  	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
 
-Interesting, why? Why would we even need such an option? My impression
-is, if ACPI tells us FF, MCE code doesn't poll those banks anymore. So
-where do the duplicated reports come from?
+As we have explicit code to recover, maybe set __GFP_NOWARN?
+If we are out of memory, vzalloc will warn too, we don't
+need two warnings.
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> -	if (!tx)
+> -		return -ENOMEM;
+> -
+> +	if (!tx) {
+> +		tx = vzalloc(count * sizeof(struct netdev_queue));
+> +		if (!tx)
+> +			return -ENOMEM;
+> +	}
+>  	dev->_tx = tx;
+>  
+>  	netdev_for_each_tx_queue(dev, netdev_init_one_queue, NULL);
+> @@ -5811,7 +5822,7 @@ free_all:
+>  
+>  free_pcpu:
+>  	free_percpu(dev->pcpu_refcnt);
+> -	kfree(dev->_tx);
+> +	netif_free_tx_queues(dev);
+>  #ifdef CONFIG_RPS
+>  	kfree(dev->_rx);
+>  #endif
+> @@ -5836,7 +5847,7 @@ void free_netdev(struct net_device *dev)
+>  
+>  	release_net(dev_net(dev));
+>  
+> -	kfree(dev->_tx);
+> +	netif_free_tx_queues(dev);
+>  #ifdef CONFIG_RPS
+>  	kfree(dev->_rx);
+>  #endif
+> 
