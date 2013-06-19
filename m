@@ -1,149 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934869Ab3FSQiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:38:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7353 "EHLO mx1.redhat.com"
+	id S934892Ab3FSQiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:38:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54535 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934170Ab3FSQiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:38:01 -0400
-Date: Wed, 19 Jun 2013 18:37:53 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        akpm@linux-foundation.org, hughd@google.com
-Subject: Re: [PATCH v4 15/20] ext4: use ext4_zero_partial_blocks in
- punch_hole
-In-Reply-To: <20130614030154.GA18731@thunk.org>
-Message-ID: <alpine.LFD.2.00.1306191831210.2085@localhost.localdomain>
-References: <1368549454-8930-1-git-send-email-lczerner@redhat.com> <1368549454-8930-16-git-send-email-lczerner@redhat.com> <20130614030154.GA18731@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S934170Ab3FSQiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:38:12 -0400
+Date: Wed, 19 Jun 2013 18:38:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619163804.GG28300@pd.tnic>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <20130619130434.GB24957@gmail.com>
+ <20130619160804.GB27832@srcf.ucam.org>
+ <20130619161827.GF28300@pd.tnic>
+ <20130619162115.GA28119@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130619162115.GA28119@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013, Theodore Ts'o wrote:
+On Wed, Jun 19, 2013 at 05:21:15PM +0100, Matthew Garrett wrote:
+> Yes, kexec needs a different solution.
 
-> Date: Thu, 13 Jun 2013 23:01:54 -0400
-> From: Theodore Ts'o <tytso@mit.edu>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
->     linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
->     akpm@linux-foundation.org, hughd@google.com
-> Subject: Re: [PATCH v4 15/20] ext4: use ext4_zero_partial_blocks in punch_hole
-> 
-> On Tue, May 14, 2013 at 06:37:29PM +0200, Lukas Czerner wrote:
-> > We're doing to get rid of ext4_discard_partial_page_buffers() since it is
-> > duplicating some code and also partially duplicating work of
-> > truncate_pagecache_range(), moreover the old implementation was much
-> > clearer.
-> > 
-> > Now when the truncate_inode_pages_range() can handle truncating non page
-> > aligned regions we can use this to invalidate and zero out block aligned
-> > region of the punched out range and then use ext4_block_truncate_page()
-> > to zero the unaligned blocks on the start and end of the range. This
-> > will greatly simplify the punch hole code. Moreover after this commit we
-> > can get rid of the ext4_discard_partial_page_buffers() completely.
-> > 
-> > We also introduce function ext4_prepare_punch_hole() to do come common
-> > operations before we attempt to do the actual punch hole on
-> > indirect or extent file which saves us some code duplication.
-> > 
-> > This has been tested on ppc64 with 1k block size with fsx and xfstests
-> > without any problems.
-> > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> 
-> Hi Lukas,
-> 
-> I've been seeing xfstests failures on test generic/300 in nojournal
-> mode.
-> 
-> BEGIN TEST: Ext4 4k block w/ no journal Thu Jun 13 22:38:47 EDT 2013
-> Device: /dev/vdb
-> mk2fs options: -q -O ^has_journal
-> mount options: -o block_validity,noload
-> FSTYP         -- ext4
-> PLATFORM      -- Linux/i686 candygram 3.10.0-rc2-00477-g1e1cad7
-> MKFS_OPTIONS  -- -q -O ^has_journal /dev/vdc
-> MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity,noload /dev/vdc /vdc
-> 
-> generic/300		[20:42:18][  116.877278] fio (3320) used greatest stack depth: 5580 bytes left
-> [  116.967122] fio (3321) used greatest stack depth: 5560 bytes left
-> [  117.573861] fio (3325) used greatest stack depth: 5504 bytes left
->  [20:44:01] [failed, exit status 1] - output mismatch (see /root/xfstests/results/generic/300.out.bad)
->     --- tests/generic/300.out	 2013-06-04 22:42:55.000000000 -0400
->     +++ /root/xfstests/results/generic/300.out.bad	       2013-06-13 20:44:01.306666665 -0400
->     @@ -2,3 +2,4 @@
->      
->      Run fio with random aio-dio pattern
->      
->     +_check_generic_filesystem: filesystem on /dev/vdc is inconsistent (see /root/xfstests/results/generic/300.full)
->      ...
->      (Run 'diff -u tests/generic/300.out /root/xfstests/results/generic/300.out.bad' to see the entire diff)
+No need. If we say, "efi=use_11_map", the 1:1 map will be shoved down
+SetVirtualAddressMap. Otherwise the high mappings.
 
-I think I've got this. The problem actually is in
-ext4_zero_partial_blocks() where we would attempt to zero out page
-which has been previously released by truncate_pagecache_range().
-This might happen when we're punching out just a single page because
-in ext4_zero_partial_blocks() we do not check whether we're dealing
-with the whole, or partial page. At the point we're going to zero it
-out it might have been already released and reused by someone else.
+> Because firmware images don't always update all of the pointers, and
+> so will crash if the 1:1 mappings aren't present.
 
-This patch should fix this issue. And indeed with this applied I do
-not see the problem anymore but I am still testing.
+Ok, so it sounds like we want to *always* create both mappings but,
+depending on what we want, to shove down SetVirtualAddressMap a
+different set. And the 1:1 map will be the optional one which we give
+SetVirtualAddressMap only when user wants it, i.e. when booting with
+"efi=1:1_map".
 
--Lukas
+Makes sense?
 
+-- 
+Regards/Gruss,
+    Boris.
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3acf353..ce9f926 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3698,33 +3698,36 @@ int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct address_space *mapping = inode->i_mapping;
--	unsigned partial = lstart & (sb->s_blocksize - 1);
-+	unsigned partial_start, partial_end;
- 	ext4_fsblk_t start, end;
- 	loff_t byte_end = (lstart + length - 1);
- 	int err = 0;
- 
-+	partial_start = lstart & (sb->s_blocksize - 1);
-+	partial_end = byte_end & (sb->s_blocksize - 1);
-+
- 	start = lstart >> sb->s_blocksize_bits;
- 	end = byte_end >> sb->s_blocksize_bits;
- 
- 	/* Handle partial zero within the single block */
--	if (start == end) {
-+	if (start == end &&
-+	    (partial_start || (partial_end != sb->s_blocksize - 1))) {
- 		err = ext4_block_zero_page_range(handle, mapping,
- 						 lstart, length);
- 		return err;
- 	}
- 	/* Handle partial zero out on the start of the range */
--	if (partial) {
-+	if (partial_start) {
- 		err = ext4_block_zero_page_range(handle, mapping,
- 						 lstart, sb->s_blocksize);
- 		if (err)
- 			return err;
- 	}
- 	/* Handle partial zero out on the end of the range */
--	partial = byte_end & (sb->s_blocksize - 1);
--	if (partial != sb->s_blocksize - 1)
-+	if (partial_end != sb->s_blocksize - 1)
- 		err = ext4_block_zero_page_range(handle, mapping,
--						 byte_end - partial,
--						 partial + 1);
-+						 byte_end - partial_end,
-+						 partial_end + 1);
- 	return err;
- }
- 
+Sent from a fat crate under my desk. Formatting is fine.
+--
