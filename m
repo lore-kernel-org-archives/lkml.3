@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977Ab3FSBSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:18:51 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:5401 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSBSt (ORCPT
+	id S934018Ab3FSBTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:19:00 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44495 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:18:49 -0400
+	Tue, 18 Jun 2013 21:18:55 -0400
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: akpm@linux-foundation.org, riel@redhat.com, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
 Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 02/11] ipc,shm: shorten critical region in shmctl_down
-Date: Tue, 18 Jun 2013 18:18:27 -0700
-Message-Id: <1371604716-3439-3-git-send-email-davidlohr.bueso@hp.com>
+Subject: [PATCH 06/11] ipc,shm: shorten critical region for shmctl
+Date: Tue, 18 Jun 2013 18:18:31 -0700
+Message-Id: <1371604716-3439-7-git-send-email-davidlohr.bueso@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
 References: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
@@ -21,59 +21,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of holding the ipc lock for the entire function, use the
-ipcctl_pre_down_nolock and only acquire the lock for specific commands:
-RMID and SET.
+With the *_INFO, *_STAT, IPC_RMID and IPC_SET commands already
+optimized, deal with the remaining SHM_LOCK and SHM_UNLOCK
+commands. Take the shm_perm lock after doing the initial
+auditing and security checks. The rest of the logic remains
+unchanged.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- ipc/shm.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ ipc/shm.c | 49 +++++++++++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 24 deletions(-)
 
 diff --git a/ipc/shm.c b/ipc/shm.c
-index 216ae72..22cffd7 100644
+index 43a8786..e4ac1c1 100644
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -780,11 +780,10 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
- 	down_write(&shm_ids(ns).rw_mutex);
- 	rcu_read_lock();
+@@ -940,10 +940,8 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 	int err, version;
+ 	struct ipc_namespace *ns;
  
--	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid, cmd,
--			       &shmid64.shm_perm, 0);
-+	ipcp = ipcctl_pre_down_nolock(ns, &shm_ids(ns), shmid, cmd,
-+				      &shmid64.shm_perm, 0);
- 	if (IS_ERR(ipcp)) {
- 		err = PTR_ERR(ipcp);
--		/* the ipc lock is not held upon failure */
- 		goto out_unlock1;
- 	}
+-	if (cmd < 0 || shmid < 0) {
+-		err = -EINVAL;
+-		goto out;
+-	}
++	if (cmd < 0 || shmid < 0)
++		return -EINVAL;
  
-@@ -792,14 +791,16 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+ 	version = ipc_parse_version(&cmd);
+ 	ns = current->nsproxy->ipc_ns;
+@@ -954,36 +952,40 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 	case SHM_STAT:
+ 	case IPC_STAT:
+ 		return shmctl_nolock(ns, shmid, cmd, version, buf);
++	case IPC_RMID:
++	case IPC_SET:
++		return shmctl_down(ns, shmid, cmd, buf, version);
+ 	case SHM_LOCK:
+ 	case SHM_UNLOCK:
+ 	{
+ 		struct file *shm_file;
  
- 	err = security_shm_shmctl(shp, cmd);
- 	if (err)
--		goto out_unlock0;
-+		goto out_unlock1;
+-		shp = shm_lock_check(ns, shmid);
++		rcu_read_lock();
++		shp = shm_obtain_object_check(ns, shmid);
+ 		if (IS_ERR(shp)) {
+ 			err = PTR_ERR(shp);
+-			goto out;
++			goto out_unlock1;
+ 		}
  
- 	switch (cmd) {
- 	case IPC_RMID:
+ 		audit_ipc_obj(&(shp->shm_perm));
++		err = security_shm_shmctl(shp, cmd);
++		if (err)
++			goto out_unlock1;
+ 
 +		ipc_lock_object(&shp->shm_perm);
- 		/* do_shm_rmid unlocks the ipc object and rcu */
- 		do_shm_rmid(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
-+		ipc_lock_object(&shp->shm_perm);
- 		err = ipc_update_perm(&shmid64.shm_perm, ipcp);
- 		if (err)
- 			goto out_unlock0;
-@@ -807,6 +808,7 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
- 		break;
+ 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+ 			kuid_t euid = current_euid();
+ 			err = -EPERM;
+ 			if (!uid_eq(euid, shp->shm_perm.uid) &&
+ 			    !uid_eq(euid, shp->shm_perm.cuid))
+-				goto out_unlock;
++				goto out_unlock0;
+ 			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
+-				goto out_unlock;
++				goto out_unlock0;
+ 		}
+ 
+-		err = security_shm_shmctl(shp, cmd);
+-		if (err)
+-			goto out_unlock;
+-
+ 		shm_file = shp->shm_file;
+ 		if (is_file_hugepages(shm_file))
+-			goto out_unlock;
++			goto out_unlock0;
+ 
+ 		if (cmd == SHM_LOCK) {
+ 			struct user_struct *user = current_user();
+@@ -992,32 +994,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 				shp->shm_perm.mode |= SHM_LOCKED;
+ 				shp->mlock_user = user;
+ 			}
+-			goto out_unlock;
++			goto out_unlock0;
+ 		}
+ 
+ 		/* SHM_UNLOCK */
+ 		if (!(shp->shm_perm.mode & SHM_LOCKED))
+-			goto out_unlock;
++			goto out_unlock0;
+ 		shmem_lock(shm_file, 0, shp->mlock_user);
+ 		shp->shm_perm.mode &= ~SHM_LOCKED;
+ 		shp->mlock_user = NULL;
+ 		get_file(shm_file);
+-		shm_unlock(shp);
++		ipc_unlock_object(&shp->shm_perm);
++		rcu_read_unlock();
+ 		shmem_unlock_mapping(shm_file->f_mapping);
++
+ 		fput(shm_file);
+-		goto out;
+-	}
+-	case IPC_RMID:
+-	case IPC_SET:
+-		err = shmctl_down(ns, shmid, cmd, buf, version);
+ 		return err;
++	}
  	default:
- 		err = -EINVAL;
-+		goto out_unlock1;
+ 		return -EINVAL;
  	}
  
- out_unlock0:
+-out_unlock:
+-	shm_unlock(shp);
+-out:
++out_unlock0:
++	ipc_unlock_object(&shp->shm_perm);
++out_unlock1:
++	rcu_read_unlock();
+ 	return err;
+ }
+ 
 -- 
 1.7.11.7
 
