@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934171Ab3FSCxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 22:53:07 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:52741 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933836Ab3FSCxF (ORCPT
+	id S934186Ab3FSC7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 22:59:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52652 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933861Ab3FSC7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 22:53:05 -0400
+	Tue, 18 Jun 2013 22:59:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51C11E56.2090903@jp.fujitsu.com>
+Date: Wed, 19 Jun 2013 11:58:30 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51C0E73F.1060708@redhat.com>
-References: <20130530183955.14686.89444.stgit@bling.home> <20130618172819.GA16134@google.com>
- <1371579648.22681.209.camel@ul30vt.home> <CAErSpo5mRKhBYun_i=iFppmQ5+7ODCY7q=sehHjBXWqPRH=ZZw@mail.gmail.com>
- <1371594159.22659.34.camel@ul30vt.home> <51C0E73F.1060708@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 18 Jun 2013 20:52:43 -0600
-Message-ID: <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
-To: Don Dutile <ddutile@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, <tglx@linutronix.de>,
+        <mingo@elte.hu>, <hpa@zytor.com>, <akpm@linux-foundation.org>,
+        <tj@kernel.org>, <trenn@suse.de>, <yinghai@kernel.org>,
+        <jiang.liu@huawei.com>, <wency@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <mgorman@suse.de>, <minchan@kernel.org>, <mina86@mina86.com>,
+        <gong.chen@linux.intel.com>, <lwoodman@redhat.com>, <riel@redhat.com>,
+        <jweiner@redhat.com>, <prarit@redhat.com>, <x86@kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>  <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain> <1371599989.22206.6.camel@misato.fc.hp.com>
+In-Reply-To: <1371599989.22206.6.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 5:03 PM, Don Dutile <ddutile@redhat.com> wrote:
-> On 06/18/2013 06:22 PM, Alex Williamson wrote:
+2013/06/19 8:59, Toshi Kani wrote:
+> On Tue, 2013-06-18 at 19:05 +0200, Vasilis Liaskovitis wrote:
+>> Hi,
 >>
->> On Tue, 2013-06-18 at 15:31 -0600, Bjorn Helgaas wrote:
+>> On Thu, Jun 13, 2013 at 09:03:52PM +0800, Tang Chen wrote:
+>>> The following patch-set from Yinghai allocates pagetables to local nodes.
+>>> v1: https://lkml.org/lkml/2013/3/7/642
+>>> v2: https://lkml.org/lkml/2013/3/10/47
+>>> v3: https://lkml.org/lkml/2013/4/4/639
+>>> v4: https://lkml.org/lkml/2013/4/11/829
 >>>
->>> On Tue, Jun 18, 2013 at 12:20 PM, Alex Williamson
->>> <alex.williamson@redhat.com>  wrote:
->>>>
->>>> On Tue, 2013-06-18 at 11:28 -0600, Bjorn Helgaas wrote:
->>>>>
->>>>> On Thu, May 30, 2013 at 12:40:19PM -0600, Alex Williamson wrote:
-> ...
->>>>> Who do you expect to decide whether to use this option?  I think it
->>>>> requires intimate knowledge of how the device works.
->>>>>
->>>>> I think the benefit of using the option is that it makes assignment of
->>>>> devices to guests more flexible, which will make it attractive to
->>>>> users.
->>>>> But most users have no way of knowing whether it's actually *safe* to
->>>>> use this.  So I worry that you're adding an easy way to pretend
->>>>> isolation
->>>>> exists when there's no good way of being confident that it actually
->>>>> does.
-
-> ...
-
->>> I wonder if we should taint the kernel if this option is used (but not
->>> for specific devices added to pci_dev_acs_enabled[]).  It would also
->>> be nice if pci_dev_specific_acs_enabled() gave some indication in
->>> dmesg for the specific devices you're hoping to add to
->>> pci_dev_acs_enabled[].  It's not an enumeration-time quirk right now,
->>> so I'm not sure how we'd limit it to one message per device.
+>>> Since pagetable pages are used by the kernel, they cannot be offlined.
+>>> As a result, they cannot be hot-remove.
+>>>
+>>> This patch fix this problem with the following solution:
+>>>
+>>>       1.   Introduce a new bootmem type LOCAL_NODE_DATAL, and register local
+>>>            pagetable pages as LOCAL_NODE_DATAL by setting page->lru.next to
+>>>            LOCAL_NODE_DATAL, just like we register SECTION_INFO pages.
+>>>
+>>>       2.   Skip LOCAL_NODE_DATAL pages in offline/online procedures. When the
+>>>            whole memory block they reside in is offlined, the kernel can
+>>>            still access the pagetables.
+>>>            (This changes the semantics of offline/online a little bit.)
 >>
->> Right, setup vs use and getting single prints is a lot of extra code.
->> Tainting is troublesome for support, Don had some objections when I
->> suggested the same to him.
+>> This could be a design problem of part3: if we allow local pagetable memory
+>> to not be offlined but allow the offlining to return successfully, then
+>> hot-remove is going to succeed. But the direct mapped pagetable pages are still
+>> mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
+>> physical DIMMs getting disabled in real hardware, or in a VM case the
+>> corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
+>> system can crash as a result.
 >>
-> For RH GSS (Global Support Services), a 'taint' in the kernel printk means
-> RH doesn't support that system.  The 'non-support' due to 'taint' being
-> printed
-> out in this case may be incorrect -- RH may support that use, at least until
-> a more sufficient patched kernel is provided.
-> Thus my dissension that 'taint' be output.  WARN is ok. 'driver beware',
-> 'unleashed dog afoot'.... sure...
+>> I think these local pagetables do need to be unmapped from kernel, offlined and
+>> removed somehow - otherwise hot-remove should fail. Could they be migrated
+>> alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
+>> migrated, correct?
+>>
+>> What is the original reason for local node pagetable allocation with regards
+>> to memory hotplug? I assume we want to have hotplugged nodes use only their local
+>> memory, so that there are no inter-node memory dependencies for hot-add/remove.
+>> Are there other reasons that I am missing?
+>
+> I second Vasilis.  The part1/2/3 series could be much simpler & less
+> riskier if we focus on the SRAT changes first, and make the local node
+> pagetable changes as a separate item.  Is there particular reason why
+> they have to be done at a same time?
 
-So ...  that's really a RH-specific support issue, and easily worked
-around by RH adding a patch that turns off tainting.
+If my understanding is correct:
+Main purpose of Yinghai's work is to put pagetable on local node ram.
+For this, he needs to know SRAT information before setting pagetable.
+So part1 does them same time.
 
-It still sounds like a good idea to me for upstream, where use of this
-option can very possibly lead to corruption or information leakage
-between devices the user claimed were isolated, but in fact were not.
+Thanks,
+Yasuaki Ishimatsu
 
-Bjorn
+>
+> Thanks,
+> -Toshi
+>
+>
+
+
