@@ -1,126 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3FSHC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:02:57 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:52904 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750995Ab3FSHCz (ORCPT
+	id S1756510Ab3FSHD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:03:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35732 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3FSHDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:02:55 -0400
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
-        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
-        Xiaoguang Chen <chenxg@marvell.com>
-Subject: [PATCH v9] Cpufreq: Fix governor start/stop race condition
-Date: Wed, 19 Jun 2013 15:00:07 +0800
-Message-ID: <1371625207-26702-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
+	Wed, 19 Jun 2013 03:03:54 -0400
+Date: Wed, 19 Jun 2013 00:03:32 -0700
+From: tip-bot for James Bottomley <tipbot@zytor.com>
+Message-ID: <tip-29ce3785b22da47c49f4ef6e14b9014fa5dee261@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de,
+        JBottomley@Parallels.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com,
+        JBottomley@Parallels.com
+In-Reply-To: <1371236142.2726.43.camel@dabdike>
+References: <1371236142.2726.43.camel@dabdike>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] idle:
+  Enable interrupts in the weak arch_cpu_idle() implementation
+Git-Commit-ID: 29ce3785b22da47c49f4ef6e14b9014fa5dee261
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 00:03:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cpufreq governor's stop and start operation should be kept in sequence.
-If not, there will be unexpected behavior, for example:
+Commit-ID:  29ce3785b22da47c49f4ef6e14b9014fa5dee261
+Gitweb:     http://git.kernel.org/tip/29ce3785b22da47c49f4ef6e14b9014fa5dee261
+Author:     James Bottomley <JBottomley@Parallels.com>
+AuthorDate: Wed, 8 May 2013 14:05:34 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 14 Jun 2013 23:01:05 +0200
 
-There are 4 CPUs and policy->cpu=CPU0, CPU1/2/3 are linked to CPU0.
-The normal sequence is as below:
+idle: Enable interrupts in the weak arch_cpu_idle() implementation
 
-1) Current governor is userspace, One application tries to set
-governor to ondemand. It will call __cpufreq_set_policy in which it
-will stop userspace governor and then start ondemand governor.
+PARISC bootup triggers the warning at kernel/cpu/idle.c:96. That's
+caused by the weak arch_cpu_idle() implementation, which is provided
+to avoid that architectures implement idle_poll over and over.
 
-2) Current governor is userspace, Now CPU0 hotplugs in CPU3 (put CPU3 online),
-It will call cpufreq_add_policy_cpu in which it first stops userspace
-governor, and then starts userspace governor.
+The switchover to polling mode happens in the first call of the weak
+arch_cpu_idle() implementation, but that code fails to reenable
+interrupts and therefor triggers the warning.
 
-Now if the sequence of above two cases interleaves, It becomes like below:
+Fix this by enabling interrupts in the weak arch_cpu_idle() code.
 
-1) Application stops userspace governor
-2)                                      Hotplug stops userspace governor
-3) Application starts ondemand governor
-4)                                      Hotplug starts a governor
+[ tglx: Made the changelog match the patch ]
 
-In step 4, Hotplug is supposed to start userspace governor, But now
-the governor has been changed by application to ondemand, So hotplug
-starts ondemand governor again !!!!
-
-The solution is: Do not allow stop policy's governor multi-times.
-Governor should only be stopped once for one policy, After it is stopped,
-No other governor stop operation should be executed. also add one mutex to
-protect __cpufreq_governor so governor operation can be kept in sequence.
-
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1371236142.2726.43.camel@dabdike
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
- include/linux/cpufreq.h   |  1 +
- 2 files changed, 25 insertions(+)
+ kernel/cpu/idle.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d53f47..6f5aa6f 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
- static DEFINE_RWLOCK(cpufreq_driver_lock);
-+static DEFINE_MUTEX(cpufreq_governor_lock);
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index bf2ee1a..e695c0a 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -59,6 +59,7 @@ void __weak arch_cpu_idle_dead(void) { }
+ void __weak arch_cpu_idle(void)
+ {
+ 	cpu_idle_force_poll = 1;
++	local_irq_enable();
+ }
  
  /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-@@ -1562,6 +1563,21 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 
- 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
- 						policy->cpu, event);
-+
-+	mutex_lock(&cpufreq_governor_lock);
-+	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
-+	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
-+		mutex_unlock(&cpufreq_governor_lock);
-+		return -EBUSY;
-+	}
-+
-+	if (event == CPUFREQ_GOV_STOP)
-+		policy->governor_enabled = false;
-+	else if (event == CPUFREQ_GOV_START)
-+		policy->governor_enabled = true;
-+
-+	mutex_unlock(&cpufreq_governor_lock);
-+
- 	ret = policy->governor->governor(policy, event);
- 
- 	if (!ret) {
-@@ -1569,6 +1585,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 			policy->governor->initialized++;
- 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
- 			policy->governor->initialized--;
-+	} else {
-+		/* Restore original values */
-+		mutex_lock(&cpufreq_governor_lock);
-+		if (event == CPUFREQ_GOV_STOP)
-+			policy->governor_enabled = true;
-+		else if (event == CPUFREQ_GOV_START)
-+			policy->governor_enabled = false;
-+		mutex_unlock(&cpufreq_governor_lock);
- 	}
- 
- 	/* we keep one module reference alive for
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 037d36a..1a81b74 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,6 +107,7 @@ struct cpufreq_policy {
- 	unsigned int		policy; /* see above */
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
-+	bool			governor_enabled; /* governor start/stop flag */
- 
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
--- 
-1.8.0
-
