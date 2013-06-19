@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934629Ab3FSKHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:07:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14729 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933830Ab3FSKHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:07:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,895,1363158000"; 
-   d="scan'208";a="332050035"
-Date: Wed, 19 Jun 2013 12:07:05 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, sachin.kamat@linaro.org, weiyj.lk@gmail.com
-Subject: Re: [GIT PULL] mfd: for-next from Lee
-Message-ID: <20130619100705.GA7161@zurbaran>
-References: <20130619095436.GG22998@laptop>
+	id S934613Ab3FSKIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:08:34 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34590 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933830Ab3FSKId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 06:08:33 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C182EE.5070500@asianux.com>
+Date: Wed, 19 Jun 2013 18:07:42 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619095436.GG22998@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
+ + local_irq_save, especially when CONFIG_LOCKDEP not defined
+References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On 06/19/2013 05:59 PM, Thomas Gleixner wrote:
+> Lockdep tracks lock ordering and the context in which a lock is
+> taken. The timer base lock can be taken in interrupt context, so it
+> always needs to be taken with interrupts disabled. That's what lockdep
+> cares about.
+> 
+> And 
+> 	spin_lock_irqsave(&l1, flags);
+> 	spin_unlock(&l1);
+> 	spin_lock(&l2);
+> 	spin_unlock_irqrestore(&l2, flags);
+> 
+> fulfils that for both l1 and l2.
+> 
+> It does not matter whether the code pathes are different, what matters
+> is that they are semantically the same. And that's the case.
 
-On Wed, Jun 19, 2013 at 10:54:36AM +0100, Lee Jones wrote:
-> Sam,
-> 
-> Just a small pre-vacation pull-request for MFD:
-> 
-> The following changes since commit e578438820cdca91cb5eab477ec062236433ce5f:
-> 
->   mfd: ssbi: Use devm_* and simplify code (2013-06-18 09:41:15 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.linaro.org/people/ljones/linux-3.0-ux500.git for-mfd-next
-Pulled, thanks.
+But I feel, they are not semantically the same.
 
-Cheers,
-Samuel.
+if CONFIG_LOCKDEP is not defined, spin_lock_irqsave() should call
+do_raw_spin_lock_flags(), not call LOCK_CONTENDED().
 
+
+
+Thanks.
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Chen Gang
+
+Asianux Corporation
