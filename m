@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934015Ab3FSBDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:03:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38261 "EHLO
+	id S933988Ab3FSBDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:03:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38249 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933930Ab3FSBCi (ORCPT
+	with ESMTP id S933861Ab3FSBCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:02:38 -0400
+	Tue, 18 Jun 2013 21:02:34 -0400
 From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ARM: msm: Consolidate gpiomux for older architectures
-Date: Tue, 18 Jun 2013 18:02:26 -0700
-Message-Id: <1371603747-27436-4-git-send-email-rvaswani@codeaurora.org>
+Subject: [PATCH 1/4] ARM: msm: dts: Fix the gpio register address for msm8960
+Date: Tue, 18 Jun 2013 18:02:24 -0700
+Message-Id: <1371603747-27436-2-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1371603747-27436-1-git-send-email-rvaswani@codeaurora.org>
 References: <1371603747-27436-1-git-send-email-rvaswani@codeaurora.org>
@@ -23,91 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Msm gpiomux can be used only for 7x30 and 8x50.
-Prevent compilation and fix build issues on 7X00, 8X60 and 8960.
+Fix the the gpio reg address for the device tree entry.
 
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig      |    3 +--
- arch/arm/mach-msm/gpiomux-v1.c |   33 ---------------------------------
- arch/arm/mach-msm/gpiomux.h    |   10 ----------
- 3 files changed, 1 insertions(+), 45 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpiomux-v1.c
+ arch/arm/boot/dts/msm8960-cdp.dts |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 614e41e..905efc8 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -121,8 +121,7 @@ config MSM_SMD
- 	bool
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index 52fe253..1599764 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -26,7 +26,7 @@
+ 		cpu-offset = <0x80000>;
+ 	};
  
- config MSM_GPIOMUX
--	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
--	bool "MSM V1 TLMM GPIOMUX architecture"
-+	bool
- 	help
- 	  Support for MSM V1 TLMM GPIOMUX architecture.
+-	msmgpio: gpio@fd510000 {
++	msmgpio: gpio@800000 {
+ 		compatible = "qcom,msm-gpio";
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+@@ -34,7 +34,7 @@
+ 		interrupts = <0 32 0x4>;
+ 		interrupt-controller;
+ 		#interrupt-cells = <2>;
+-		reg = <0xfd510000 0x4000>;
++		reg = <0x800000 0x4000>;
+ 	};
  
-diff --git a/arch/arm/mach-msm/gpiomux-v1.c b/arch/arm/mach-msm/gpiomux-v1.c
-deleted file mode 100644
-index 27de2ab..0000000
---- a/arch/arm/mach-msm/gpiomux-v1.c
-+++ /dev/null
-@@ -1,33 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#include <linux/kernel.h>
--#include "gpiomux.h"
--#include "proc_comm.h"
--
--void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
--{
--	unsigned tlmm_config  = (val & ~GPIOMUX_CTL_MASK) |
--				((gpio & 0x3ff) << 4);
--	unsigned tlmm_disable = 0;
--	int rc;
--
--	rc = msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX,
--			   &tlmm_config, &tlmm_disable);
--	if (rc)
--		pr_err("%s: unexpected proc_comm failure %d: %08x %08x\n",
--		       __func__, rc, tlmm_config, tlmm_disable);
--}
-diff --git a/arch/arm/mach-msm/gpiomux.h b/arch/arm/mach-msm/gpiomux.h
-index 8e82f41..4410d77 100644
---- a/arch/arm/mach-msm/gpiomux.h
-+++ b/arch/arm/mach-msm/gpiomux.h
-@@ -73,16 +73,6 @@ extern struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS];
- int msm_gpiomux_write(unsigned gpio,
- 		      gpiomux_config_t active,
- 		      gpiomux_config_t suspended);
--
--/* Architecture-internal function for use by the framework only.
-- * This function can assume the following:
-- * - the gpio value has passed a bounds-check
-- * - the gpiomux spinlock has been obtained
-- *
-- * This function is not for public consumption.  External users
-- * should use msm_gpiomux_write.
-- */
--void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val);
- #else
- static inline int msm_gpiomux_write(unsigned gpio,
- 				    gpiomux_config_t active,
+ 	serial@19c400000 {
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
