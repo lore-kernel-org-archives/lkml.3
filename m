@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab3FSBby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:31:54 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:59589 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSBbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:31:52 -0400
-Date: Tue, 18 Jun 2013 18:32:18 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130619013218.GB30262@moria.home.lan>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613020536.GA10979@localhost>
- <20130612200311.7f9d938a.akpm@linux-foundation.org>
- <20130613185318.GB12075@mtj.dyndns.org>
- <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
- <20130613191507.GB13970@mtj.dyndns.org>
- <20130613122339.239a721d097a64435817a780@linux-foundation.org>
+	id S934004Ab3FSBfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:35:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26314 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933453Ab3FSBfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 21:35:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,893,1363104000"; 
+   d="scan'208";a="7596061"
+Message-ID: <51C10A0D.9010804@cn.fujitsu.com>
+Date: Wed, 19 Jun 2013 09:31:57 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613122339.239a721d097a64435817a780@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Shewmaker <agshew@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/6] mm/pgtable: Don't accumulate addr during pgd prepopulate
+ pmd
+References: <1371599563-6424-1-git-send-email-liwanp@linux.vnet.ibm.com> <1371599563-6424-6-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1371599563-6424-6-git-send-email-liwanp@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 09:33:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/19 09:34:01,
+	Serialize complete at 2013/06/19 09:34:01
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:23:39PM -0700, Andrew Morton wrote:
-> On Thu, 13 Jun 2013 12:15:07 -0700 Tejun Heo <tj@kernel.org> wrote:
-> > Oh, I'm sure the current id[r|a] can be improved upon a lot but I'm
-> > very skeptical one can reach the level of scalability necessary for,
-> > say, pci-e attached extremely high-iops devices while still keeping
-> > the lowest number allocation, which can't be achieved without strong
-> > synchronization on each alloc/free.
-> > 
-> > Maybe we can layer things so that we have percpu layer on top of
-> > id[r|a] and, say, mapping id to point is still done by idr, or the
-> > percpu tag allocator uses ida for tag chunk allocations, but it's
-> > still gonna be something extra on top.
+On 06/19/2013 07:52 AM, Wanpeng Li wrote:
+> Changelog:
+>  v2 - > v3:
+>    * add Michal's Reviewed-by
 > 
-> It's not obvious that explicit per-cpu is needed.  Get an ID from
-> ida_get_new_above(), multiply it by 16 and store that in device-local
-> storage, along with a 16-bit bitmap.  Blam, 30 lines of code and the
-> ida_get_new_above() cost is reduced 16x and it's off the map.
+> The old codes accumulate addr to get right pmd, however,
+> currently pmds are preallocated and transfered as a parameter,
+> there is unnecessary to accumulate addr variable any more, this
+> patch remove it.
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-I was just rereading emails and realized I should've replied to this.
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-So, I started out aiming for something simpler. I don't quite follow
-what the approach you're suggesting is, but it ends up you really do
-need the percpu freelists (buffering batching/freeing from the main
-freelist) because ids/tags may not be freed on the cpu they were
-allocated on.
+> ---
+>  arch/x86/mm/pgtable.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+> index 17fda6a..dfa537a 100644
+> --- a/arch/x86/mm/pgtable.c
+> +++ b/arch/x86/mm/pgtable.c
+> @@ -240,7 +240,6 @@ static void pgd_mop_up_pmds(struct mm_struct *mm, pgd_t *pgdp)
+>  static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+>  {
+>  	pud_t *pud;
+> -	unsigned long addr;
+>  	int i;
+>  
+>  	if (PREALLOCATED_PMDS == 0) /* Work around gcc-3.4.x bug */
+> @@ -248,8 +247,7 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+>  
+>  	pud = pud_offset(pgd, 0);
+>  
+> - 	for (addr = i = 0; i < PREALLOCATED_PMDS;
+> -	     i++, pud++, addr += PUD_SIZE) {
+> +	for (i = 0; i < PREALLOCATED_PMDS; i++, pud++) {
+>  		pmd_t *pmd = pmds[i];
+>  
+>  		if (i >= KERNEL_PGD_BOUNDARY)
 
-In particular, if this is for a driver and the device doesn't implement
-per cpu queues, tags are almost always going to be freed on a different
-cpu. If you just give each cpu a fraction of the tag space they always
-allocate out of (with ida_get_new_above() or similar) - that only helps
-allocation, half the cacheline contention is freeing.
 
-I originally wrote this tag allocator to use in a driver for a device
-that didn't support multiple hardware queues at all, but it was fast
-enough that any cacheline bouncing really hurt.
-
-So that right there gets you to the basic design where you've got a
-global freelist and percpu freelists, and you just use the percpu
-freelists to batch up allocation/freeing to the global freelist.
-
-The tag allocator I was going to submit for the aio code was pretty much
-just that, nothing more. It was simple. It worked. I was happy with it.
-
-The one concern with this approach is what happens when all the percpu
-freelists except your are full of free tags. Originally, I had an easy
-solution - we calculate the size of the percpu freelists based on
-nr_tags and num_possible_cpus, so that there can't be more than half of
-the tag space stranded like this.
-
-(Keep in mind the main use case is drivers where the tag/id is used to
-talk to the device, so you're limited by whatever the hardware people
-thought was enough - 16 bits if you're lucky).
-
-But then Tejun went and pointed out, just as I was about to mail it off
-- "Hey, what happens if you've got 4096 cpus and not all that many tags?
-Youv'e got a nice divice by zero in there".
-
-After which I proceeded to swear at him a bit, but - well, it's a real
-problem. And that is what led to the tag stealing stuff and all the
-cmpxchg() shenanigans. And I'm pretty happy with the solution - there's
-an elegance to it and I bet if I cared I could come up with a proof that
-it's more or less optimal w.r.t. cacheline bounces for some decent
-fraction of workloads we might care about. But yeah, it's not as simple
-as I would've liked.
-
-Anyways, now you've got an ida/idr api cleanup/rewrite to go along with
-it, and it's all nicely integrated. Integrating the percpu tag allocator
-with regular ida really doesn't save us any code - the original global
-freelist was a stack and like 10 lines of code total.
-
-But having the apis be consistent and having it all be organized and
-pretty is nice. I think it is now, anyways :)
+-- 
+Thanks.
+Zhang Yanfei
