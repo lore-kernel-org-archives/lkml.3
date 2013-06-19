@@ -1,121 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934467Ab3FSKAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:00:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63907 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933873Ab3FSKAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:00:48 -0400
-Date: Wed, 19 Jun 2013 12:00:42 +0200
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
-Message-ID: <20130619100042.GA4545@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
- <51C15DC2.3030501@cn.fujitsu.com>
+	id S934442Ab3FSKDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:03:10 -0400
+Received: from sauhun.de ([89.238.76.85]:41986 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933830Ab3FSKDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 06:03:08 -0400
+Date: Wed, 19 Jun 2013 12:05:09 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] i2c: omap: correct usage of the interrupt enable
+ register
+Message-ID: <20130619100509.GD2950@katana>
+References: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wLAMOaPNJ0fu1fTG"
 Content-Disposition: inline
-In-Reply-To: <51C15DC2.3030501@cn.fujitsu.com>
+In-Reply-To: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-On Wed, Jun 19, 2013 at 03:29:06PM +0800, Tang Chen wrote:
-> Hi Vasilis, Yinghai,
-> 
-> On 06/19/2013 01:05 AM, Vasilis Liaskovitis wrote:
-> ......
-> >
-> >This could be a design problem of part3: if we allow local pagetable memory
-> >to not be offlined but allow the offlining to return successfully, then
-> >hot-remove is going to succeed. But the direct mapped pagetable pages are still
-> >mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
-> >physical DIMMs getting disabled in real hardware, or in a VM case the
-> >corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
-> >system can crash as a result.
-> >
-> 
-> Yes. Since the pagetable pages is only allocated to local node, a node may
-> have more than one device, hot-remove only one memory device could be
-> problematic.
-> 
-> But I think it will work if we hot-remove a whole node. I should have
-> mentioned it. And sorry for the not fully test.
 
-ok, the crash I saw was also for the partial node removal.
+--wLAMOaPNJ0fu1fTG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I think allocating pagetable pages to local device will resolve this
-> problem.
+On Mon, Jun 03, 2013 at 10:37:20AM +0300, Oleksandr Dmytryshyn wrote:
+> We've been lucky not to have any interrupts fire during the suspend
+> path, otherwise we would have unpredictable behaviour in the kernel.
+>=20
+> Based on the logic of the kernel code interrupts from i2c should be
+> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
+> the omap_i2c_runtime_suspend() function. In the other side kernel
+> writes saved interrupt flags to the I2C_IE register in
+> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
+> during suspend.
+>=20
+> This works for chips with version1 registers scheme. Interrupts are
+> disabled during suspend. For chips with version2 scheme registers
+> writting 0 to the I2C_IE register does nothing (because now the
+> I2C_IRQENABLE_SET register is located at this address). This register
+> is used to enable interrupts. For disabling interrupts
+> I2C_IRQENABLE_CLR register should be used.
+>=20
+> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
+> addresses, the interrupt enabling procedure is unchanged.
+>=20
+> I've checked that interrupts in the i2c controller are still enabled
+> after writting 0 to the I2C_IRQENABLE_SET register. With this patch
+> interrupts are disabled in the omap_i2c_runtime_suspend() function.
+>=20
+> Patch is based on:
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> tag: v3.10-rc2
 
-ok. Yes, you mentioned this approach before I think.
+Last paragraph should be below "---".
 
-> And need to restructure this patch-set.
-> 
-> >I think these local pagetables do need to be unmapped from kernel, offlined and
-> >removed somehow - otherwise hot-remove should fail. Could they be migrated
-> >alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
-> >migrated, correct?
-> 
-> I think we have unmapped the local pagetables. in functions
-> free_pud/pmd/pte_table(), we cleared pud, pmd, and pte. We just didn't
-> free the pagetable pages to buddy.
+>=20
+> Verified on OMAP4430.
+>=20
+> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
 
-ok, thanks for explaining.
+Applied to for-next, thanks!
 
-> 
-> But when we are not hot-removing the whole node, it is still problematic.
-> This is true, and it is my design problem.
-> 
-> >
-> >What is the original reason for local node pagetable allocation with regards
-> >to memory hotplug? I assume we want to have hotplugged nodes use only their local
-> >memory, so that there are no inter-node memory dependencies for hot-add/remove.
-> >Are there other reasons that I am missing?
-> 
-> I think the original reason to do local node pagetable is to improve
-> performance.
-> Using local pagetable, vmemmap and so on will be faster.
-> 
-> But actually I think there is no particular reason to implement
-> memory hot-remove
-> and local node pagetable at the same time. And before this
-> patch-set, I also
-> suggested once that implement memory hot-remove first, and then
-> improve it to
-> local pagetable. But Yinghai has done the local pagetable work in
-> has patches (part1).
-> And my work is based on his patches. So I just did it.
-> 
-> But obviously it is more complicated than I thought.
-> 
-> And now, it seems tj has some more thinking on part1.
-> 
-> So how about the following plan:
-> 1. Implement arranging hotpluggable memory with SRAT first, without
-> local pagetable.
->    (The main work in part2. And of course, need some patches in part1.)
 
-agreed (and yes, several patches from part1 will be needed to do the early srat
-parsing here)
+--wLAMOaPNJ0fu1fTG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 2. Do the local device pagetable work, not local node.
-> 3. Improve memory hotplug to support local device pagetable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-ok, I 'll think about these as well, and help out.
+iQIcBAEBAgAGBQJRwYJUAAoJEBQN5MwUoCm2j4AP/1F5wnUamC3jUqG125RbwgIh
+zT2GN9bn/zV1QfLjLfECgfbhTXxtyjg9QQk+4Cl+EzaEAgRO6zYh/HmCHLNdCl7k
+7pcF6XLJQ4GSyCRlPUn8nvdk1/hRZnQRXSUbBMx8bhEaSgqSmARJxwlVAmn/HVJv
+1cPaT+WAIw/zYBWx4LtTvcimDO5K24gQMpn7GD7Ptjf3YqHzKhA/2QDVmmK6e6aC
+BI7QIj69FqfljcAPvxT3Gis/2Ph/wyamrN1SSdlmZ3U6A0Ag8A0A37pizYHETg14
+XHIJjiK5O/IIzuKlxZ/FD5Bg+hRY65NXjL08QmTbM3TYJH/WLzZ6zh7WMh4J5rtv
+KXqM1nM0r/BKpUF16jPu2Q14gU6nhnq8Ad3NupTX2o1RPPmF+mwaKKVYfOCXJSqj
+XsaJFuRvtBV10Oa2ta1ID1PZHL3yepfUbRxdDHw8ZcxMVlsQLzHEsFImo0Mkghc0
+EZNs2JIYy4tk+eIFtadntCYj43mufA9FSN/b8pWrcxWJQJl80tHIy4wdhfykUpPW
+CfjZCwsFCYb/FXaDvw0ddodjJUTDhLVEEGfO4i/KdwAJzdM1tpC17Y5aGoLn7Sjd
+zzaAQpaHkJQXaA596oEEAl98mPhsmWB/m5ohZ9rEEubOv6CE9b7xci7IpGSt/u2C
+0V7X0DGAqSpp7eF+2OqX
+=Y/pC
+-----END PGP SIGNATURE-----
 
-thanks,
-
-- Vasilis
+--wLAMOaPNJ0fu1fTG--
