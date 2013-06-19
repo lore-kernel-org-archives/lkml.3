@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab3FSBRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:17:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58516 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932644Ab3FSBRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:17:41 -0400
-Message-ID: <51C1053F.7030607@ti.com>
-Date: Tue, 18 Jun 2013 20:11:27 -0500
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <tony@atomide.com>, <grant.likely@linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 4/6] arm: dts: add bandgap entry for OMAP4460 devices
-References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com> <1370637968-23299-5-git-send-email-eduardo.valentin@ti.com> <51C0C014.2000402@ti.com>
-In-Reply-To: <51C0C014.2000402@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S933943Ab3FSBSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:18:49 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44457 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 21:18:47 -0400
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: akpm@linux-foundation.org, riel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: [PATCH 00/11] sysv ipc shared mem optimizations
+Date: Tue, 18 Jun 2013 18:18:25 -0700
+Message-Id: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+This is the third and final patchset that deals with reducing the
+amount of contention we impose on the ipc lock (kern_ipc_perm.lock).
+These changes mostly deal with shared memory, previous work has already
+been done for semaphores and message queues:
 
-On 06/18/2013 03:16 PM, Eduardo Valentin wrote:
-> Benoit
->
-> On 07-06-2013 16:46, Eduardo Valentin wrote:
->> Include bandgap devices for OMAP4460 devices.
->>
->> Cc: "Benoît Cousson" <b-cousson@ti.com>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: linux-omap@vger.kernel.org
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->> ---
->
-> Could you please have a look on patch 3 and 4 of this series? I have
-> changed this one accordingly to your recommendation on v2. If nothing
-> else, please let me know if they can still be queued for 3.11.
+http://lkml.org/lkml/2013/3/20/546 (sems)
+http://lkml.org/lkml/2013/5/15/584 (mqueues)
 
-I've just applied both of them in my tree for 3.11. I'll send the pull 
-request to Tony tomorrow.
+With these patches applied, a custom shm microbenchmark stressing shmctl
+doing IPC_STAT with 4 threads a million times, reduces the execution time by 50%.
+A similar run, this time with IPC_SET, reduces the execution time from 3 mins and
+35 secs to 27 seconds.
 
-Regards,
-Benoit
+Patches 1-8: replaces blindly taking the ipc lock for a smarter combination
+of rcu and ipc_obtain_object, only acquiring the spinlock when updating.
 
->
-> I would need to rebase patch 01 to refresh on top of the thermal tree.
->
-> Thanks.
->
->>   arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
->>   1 file changed, 9 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
->> index 2cf227c..ea97201 100644
->> --- a/arch/arm/boot/dts/omap4460.dtsi
->> +++ b/arch/arm/boot/dts/omap4460.dtsi
->> @@ -29,4 +29,13 @@
->>   			     <0 55 0x4>;
->>   		ti,hwmods = "debugss";
->>   	};
->> +
->> +	bandgap {
->> +		reg = <0x4a002260 0x4
->> +			0x4a00232C 0x4
->> +			0x4a002378 0x18>;
->> +		compatible = "ti,omap4460-bandgap";
->> +		interrupts = <0 126 4>; /* talert */
->> +		gpios = <&gpio3 22 0>; /* tshut */
->> +	};
->>   };
->>
->
->
+Patch 9: renames the ids rw_mutex to rwsem, which is what it already was.
+
+Patch 10: is a trivial mqueue leftover cleanup
+
+Patch 11: adds a brief lock scheme description, requested by Andrew.
+
+This patchset applies on top of linux-next (3.10.0-rc6-next-20130618).
+
+Davidlohr Bueso (11):
+  ipc,shm: introduce lockless functions to obtain the ipc object
+  ipc,shm: shorten critical region in shmctl_down
+  ipc: drop ipcctl_pre_down
+  ipc,shm: introduce shmctl_nolock
+  ipc,shm: make shmctl_nolock lockless
+  ipc,shm: shorten critical region for shmctl
+  ipc,shm: cleanup do_shmat pasta
+  ipc,shm: shorten critical region for shmat
+  ipc: rename ids->rw_mutex
+  ipc,msg: drop msg_unlock
+  ipc: document general ipc locking scheme
+
+ include/linux/ipc_namespace.h |   2 +-
+ ipc/msg.c                     |  25 +++--
+ ipc/namespace.c               |   4 +-
+ ipc/sem.c                     |  24 ++---
+ ipc/shm.c                     | 239 ++++++++++++++++++++++++++----------------
+ ipc/util.c                    |  57 +++++-----
+ ipc/util.h                    |   7 +-
+ 7 files changed, 199 insertions(+), 159 deletions(-)
+
+-- 
+1.7.11.7
 
