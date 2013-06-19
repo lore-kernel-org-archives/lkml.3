@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933392Ab3FSEo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 00:44:28 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35130 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3FSEo0 (ORCPT
+	id S933773Ab3FSEoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 00:44:39 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9833 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab3FSEoh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 00:44:26 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51C13703.8040909@jp.fujitsu.com>
-Date: Wed, 19 Jun 2013 13:43:47 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 00:44:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 18 Jun 2013 21:43:02 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date: Wed, 19 Jun 2013 10:14:24 +0530
+Subject: RE: [PATCH 3.9-stable] ARM: tegra30: clocks: Fix pciex clock
+ registration
+Thread-Topic: [PATCH 3.9-stable] ARM: tegra30: clocks: Fix pciex clock
+ registration
+Thread-Index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkhkJMAQebi3wAAAo4zAAZZSxgAAJq7hA
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91CF1615D9@BGMAIL01.nvidia.com>
+References: <003501ce6c82$9be49440$d3adbcc0$%choi@samsung.com>
+In-Reply-To: <003501ce6c82$9be49440$d3adbcc0$%choi@samsung.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: Remove the use of CONFIG_ACPI_HOTPLUG_MEMORY_MODULE
-References: <1371589605-15638-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1371589605-15638-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/06/19 6:06, Toshi Kani wrote:
-> config ACPI_HOTPLUG_MEMORY has been changed to bool (y/n), and
-> its module option is no longer valid.  So, remove the use of
-> CONFIG_ACPI_HOTPLUG_MEMORY_MODULE.
++Stephen to suggest
+
+> -----Original Message-----
+> From: Jonghwan Choi [mailto:jhbird.choi@samsung.com]
+> Sent: Wednesday, June 19, 2013 5:49 AM
+> To: 'Jonghwan Choi'; linux-kernel@vger.kernel.org
+> Cc: stable@vger.kernel.org; Jay Agarwal
+> Subject: [PATCH 3.9-stable] ARM: tegra30: clocks: Fix pciex clock registration
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> This patch looks like it should be in the 3.9-stable tree, should we apply it?
+> 
+> ------------------
+> 
+> From: "Jay Agarwal <jagarwal@nvidia.com>"
+> 
+> commit ff49fad1d9bf2c49f52817b04cde8e4412434637 upstream
+> 
+> Registering pciex as peripheral clock instead of fixed clock as
+> tegra_perih_reset_assert(deassert) api of this clock api gives warning and
+> ultimately does not succeed to assert(deassert)
+> 
+> Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 > ---
->   include/linux/acpi.h |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
+>  drivers/clk/tegra/clk-tegra30.c |   11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
 > 
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 17b5b59..353ba25 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -352,8 +352,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
->   
->   /* Enable _OST when all relevant hotplug operations are enabled */
->   #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
-> -	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
-> -	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
-> +	defined(CONFIG_ACPI_HOTPLUG_MEMORY) &&		\
->   	defined(CONFIG_ACPI_CONTAINER)
->   #define ACPI_HOTPLUG_OST
->   #endif
+> diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+> index ba6f51b..1f8595b 100644
+> --- a/drivers/clk/tegra/clk-tegra30.c
+> +++ b/drivers/clk/tegra/clk-tegra30.c
+> @@ -1592,6 +1592,12 @@ static void __init tegra30_periph_clk_init(void)
+>  	clk_register_clkdev(clk, "afi", "tegra-pcie");
+>  	clks[afi] = clk;
+> 
+> +	/* pciex */
+> +	clk = tegra_clk_register_periph_gate("pciex", "pll_e", 0, clk_base,
+> 0,
+> +				    74, &periph_u_regs,
+> periph_clk_enb_refcnt);
+> +	clk_register_clkdev(clk, "pciex", "tegra-pcie");
+> +	clks[pciex] = clk;
+> +
+>  	/* kfuse */
+>  	clk = tegra_clk_register_periph_gate("kfuse", "clk_m",
+>  				    TEGRA_PERIPH_ON_APB,
+> @@ -1710,11 +1716,6 @@ static void __init tegra30_fixed_clk_init(void)
+>  				1, 0, &cml_lock);
+>  	clk_register_clkdev(clk, "cml1", NULL);
+>  	clks[cml1] = clk;
+> -
+> -	/* pciex */
+> -	clk = clk_register_fixed_rate(NULL, "pciex", "pll_e", 0, 100000000);
+> -	clk_register_clkdev(clk, "pciex", NULL);
+> -	clks[pciex] = clk;
+>  }
+> 
+>  static void __init tegra30_osc_clk_init(void)
 > --
-Good catch!!
-
-Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-Thanks,
-Yasuaki Ishimatsu
-
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+> 1.7.9.5
 
