@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3FSOpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:45:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33832 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640Ab3FSOpM (ORCPT
+	id S1756846Ab3FSOqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:46:24 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:40243 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab3FSOqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:45:12 -0400
-Message-ID: <51C1C3E6.8090000@ti.com>
-Date: Wed, 19 Jun 2013 10:44:54 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Jun 2013 10:46:23 -0400
+Date: Wed, 19 Jun 2013 16:46:21 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, acme@redhat.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130619144621.GW6123@two.firstfloor.org>
+References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
+ <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+ <20130619085159.GA25177@concordia>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <robin.randhawa@arm.com>,
-        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
-        <charles.garcia-tobin@arm.com>, <arvind.chauhan@arm.com>,
-        <dave.martin@arm.com>
-Subject: Re: [PATCH 08/13] cpufreq: omap: call CPUFREQ_POSTCHANGE notfier
- in error cases
-References: <cover.1371630975.git.viresh.kumar@linaro.org> <957838f1065ccc20b0252e0a6d37b61f6b173970.1371630975.git.viresh.kumar@linaro.org>
-In-Reply-To: <957838f1065ccc20b0252e0a6d37b61f6b173970.1371630975.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619085159.GA25177@concordia>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 June 2013 04:53 AM, Viresh Kumar wrote:
-> PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
-> should be called or both shouldn't be.
+> This hard coded list isn't going to work for us on powerpc.
 > 
-> In case we have started PRECHANGE notifier and found an error, we must call
-> POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
-> calling notifiers is complete.
+> We don't have HLE, so we won't ever have an event for el-start.
 > 
-> Omap driver was taking care of it well, but wasn't restoring freqs.new to
-> freqs.old in some cases. I wasn't required to add code for it as moving
-> PRECHANGE notifier down was a better option, so that we call it just before
-> starting frequency transition.
-> 
-> Cca: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-Looks safe to me.
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> I don't quite grok what the cycles-ct is about, checkpointed cycles?
 
+The counter is check pointed on a transaction start, and set back to
+the checkpoint when an abort happens. This allows to count the cycles
+wasted in aborts, when you subtract from cycles-t.
 
+> But I don't think we have anything equivalent.
+
+But you have cycles-t and tx-start?
+
+I can make el-start, cycles-ct optional
+
+> I guess the simplest option is to make it a per-arch list inside the
+> perf tool?
+
+I'm not sure that would be acceptable to the perf maintainers.
+Although I'm just guessing, I haven't heard any comments on
+this patch recently.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
