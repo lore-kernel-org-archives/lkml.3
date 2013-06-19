@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935176Ab3FSUoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:44:11 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:39821 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934858Ab3FSUoJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:44:09 -0400
+	id S964812Ab3FSUt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:49:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8639 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934971Ab3FSUt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 16:49:56 -0400
+Date: Wed, 19 Jun 2013 16:49:27 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, serge.hallyn@ubuntu.com,
+        eparis@redhat.com, ebiederm@xmission.com, matthltc@linux.vnet.ibm.com,
+        sgrubb@redhat.com
+Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
+Message-ID: <20130619204927.GJ3212@redhat.com>
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20130619201054.GA20996@jonmason-lab>
-References: <1371602813-19828-1-git-send-email-jon.mason@intel.com>
-	<1371602813-19828-3-git-send-email-jon.mason@intel.com>
-	<CAA9_cmeie_V0PauHBadVsg22OQmFrC_Oeg1o1FwdzQ+mVU9gTA@mail.gmail.com>
-	<20130619175206.GA20737@jonmason-lab>
-	<CAA9_cmdVfFmD5Li4b8WEtAiqCiSCKYuva_86MLV3ysAhyLXtig@mail.gmail.com>
-	<20130619201054.GA20996@jonmason-lab>
-Date: Wed, 19 Jun 2013 13:44:08 -0700
-X-Google-Sender-Auth: 7UdbVg9G0vBaATEfKKudlX8J09w
-Message-ID: <CAA9_cmeX5Daq9EZ7TGVAjzg=GcOuvpyKeyofwjXgid2c2Wf-UQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ioatdma: add DMA_PRIVATE capabilities flag
-From: Dan Williams <djbw@fb.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 1:10 PM, Jon Mason <jon.mason@intel.com> wrote:
-> On Wed, Jun 19, 2013 at 11:56:38AM -0700, Dan Williams wrote:
->> On Wed, Jun 19, 2013 at 10:52 AM, Jon Mason <jon.mason@intel.com> wrote:
->> >> DMA_PRIVATE here keeps all channels private, so they couldn't be used
->> >> elsewhere, for example raid offload.  Do you need a private allocation
->> >> or can you get away with a dynamically assigned channel?
->> >
->> > I would like to have a dedicated DMA engine.  async_tx could cause the
->> > copies to complete out of order.  Do I need to add infrastructure to
->> > allow for private channel usage, and when unused allow the channel to
->> > be used by async_tx?
->>
->> Can NTB just call dma_find_channel() once and be done?  Also, async_tx
->> will only get things out of order if you allow it to pick a new
->> channel for every operation, but as long as you specify a dependency
->> chain it will keep things in order (same as remembering the result of
->> dma_find_channel).
->
-> Neither of these allow a device exclusive access to a channel.  Is
-> this not something that is desired by other users of DMA Engines, or
-> do I have a unique usage model?
->
+On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
+> This patchset is first part of namespace support for audit.
+> in this patchset, the mainly resources of audit system have
+> been isolated. the audit filter, rules havn't been isolated
+> now. It will be implemented in Part2. We finished the isolation
+> of user audit message in this patchset.
+> 
+> I choose to assign audit to the user namespace.
+> Right now,there are six kinds of namespaces, such as
+> net, mount, ipc, pid, uts and user. the first five
+> namespaces have special usage. the audit isn't suitable to
+> belong to these five namespaces, And since the flag of system
+> call clone is in short supply, we can't provide a new flag such
+> as CLONE_NEWAUDIT to enable audit namespace separately. so the
+> user namespace may be the best choice.
 
-Yes, ioatdma has never been used in a mixed model.  Other platforms
-are either using devicetree bindings for specifying channels to their
-master devices or are exclusively slave channels.  Other slave usage
-models require use of a dedicated channel, since NTB is alternating
-between cpu and dma it seems it could get away with using a "public"
-channel.
+I thought it was said on the last submission that to tie userns and
+audit namespace would be a bad idea?
+
+-- 
+Aristeu
+
