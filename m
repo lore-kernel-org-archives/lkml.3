@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934780Ab3FSRhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:37:31 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:34090 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3FSRh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:37:28 -0400
+	id S934928Ab3FSRhn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:37:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36775 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756717Ab3FSRh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:37:29 -0400
+Date: Wed, 19 Jun 2013 19:37:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619173721.GI28300@pd.tnic>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <51C1E996.9070209@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <3321228.vG97AE80O6@vostro.rjw.lan>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
-	<3168584.RRBYoY5UXf@vostro.rjw.lan>
-	<CA+8MBbKZBvqVA+wKTK7GpXorpBvDLGCJURc+PQz+QfDiwA1a8A@mail.gmail.com>
-	<3321228.vG97AE80O6@vostro.rjw.lan>
-Date: Wed, 19 Jun 2013 10:37:27 -0700
-Message-ID: <CA+8MBbLS9suFc4gdjbb1RQdYmEyNUUHhEKgSjMxJpQLcPPYN2g@mail.gmail.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container
- hotplug with other scan handlers
-From: Tony Luck <tony.luck@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51C1E996.9070209@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you please apply the appended patch on top of it and see if the system
-> still works then?
+On Wed, Jun 19, 2013 at 12:25:42PM -0500, H. Peter Anvin wrote:
+> On 06/19/2013 08:02 AM, Borislav Petkov wrote:
+> > 
+> > And yet there are the Macs which reportedly cannot stomach this.
+> > 
+> No, the reports are that if you use the 1:1 map as the primary address
+> on Macs the drivers fail... not that you can't have a 1:1 map.
 
-Still works with this patch.
+That's what I meant: ... cannot stomach when the 1:1 map is shoved down
+SetVirtualAddressMap.
 
--Tony
+The thing is, if we want to have both the 1:1 map and the high map
+during an EFI runtime call, we would need to *always* switch the
+pagetable for an EFI runtime call and establish both mappings in
+->trampoline_pgd beforehand.
 
-> ---
->  drivers/acpi/scan.c  |    3 +++
->  drivers/acpi/video.c |    3 ---
->  2 files changed, 3 insertions(+), 3 deletions(-)
->
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -939,6 +939,9 @@ static int acpi_device_probe(struct devi
->         struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
->         int ret;
->
-> +       if (acpi_dev->handler)
-> +               return -EINVAL;
-> +
->         if (!acpi_drv->ops.add)
->                 return -ENOSYS;
->
-> Index: linux-pm/drivers/acpi/video.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/video.c
-> +++ linux-pm/drivers/acpi/video.c
-> @@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
->         int error;
->         acpi_status status;
->
-> -       if (device->handler)
-> -               return -EINVAL;
-> -
->         status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
->                                 device->parent->handle, 1,
->                                 acpi_video_bus_match, NULL,
->
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
