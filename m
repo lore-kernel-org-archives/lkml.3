@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934892Ab3FSQiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:38:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54535 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934170Ab3FSQiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:38:12 -0400
-Date: Wed, 19 Jun 2013 18:38:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130619163804.GG28300@pd.tnic>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
- <20130619125243.GD11209@gmail.com>
- <20130619130225.GA28311@pd.tnic>
- <20130619130434.GB24957@gmail.com>
- <20130619160804.GB27832@srcf.ucam.org>
- <20130619161827.GF28300@pd.tnic>
- <20130619162115.GA28119@srcf.ucam.org>
+	id S934917Ab3FSQie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:38:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56565 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934170Ab3FSQib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:38:31 -0400
+Date: Wed, 19 Jun 2013 17:38:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Michal Marek <mmarek@suse.cz>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
+Message-ID: <20130619163810.GY1403@sirena.org.uk>
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+ <20130523022327.GB6159@kroah.com>
+ <519D8876.9050405@suse.com>
+ <51BF6BFF.7050705@suse.cz>
+ <51BFE754.5080301@suse.cz>
+ <20130618081858.GD5461@arwen.pp.htv.fi>
+ <51C01948.9060708@suse.cz>
+ <20130618083425.GI5461@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mNqB7BSMRyhUYAix"
 Content-Disposition: inline
-In-Reply-To: <20130619162115.GA28119@srcf.ucam.org>
+In-Reply-To: <20130618083425.GI5461@arwen.pp.htv.fi>
+X-Cookie: Tomorrow, you can be anywhere.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] build some drivers only when compile-testing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 05:21:15PM +0100, Matthew Garrett wrote:
-> Yes, kexec needs a different solution.
 
-No need. If we say, "efi=use_11_map", the 1:1 map will be shoved down
-SetVirtualAddressMap. Otherwise the high mappings.
+--mNqB7BSMRyhUYAix
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Because firmware images don't always update all of the pointers, and
-> so will crash if the 1:1 mappings aren't present.
+On Tue, Jun 18, 2013 at 11:34:26AM +0300, Felipe Balbi wrote:
 
-Ok, so it sounds like we want to *always* create both mappings but,
-depending on what we want, to shove down SetVirtualAddressMap a
-different set. And the 1:1 map will be the optional one which we give
-SetVirtualAddressMap only when user wants it, i.e. when booting with
-"efi=1:1_map".
+> MUSB alone has 8 different arch choices. Before, it used to be that core
+> driver was dependendent on all of them, so whenever someone wanted to
+> build MUSB for another arch, they had to introdude their glue code and
+> modify the dependency of the core driver.
 
-Makes sense?
+> Also EHCI, it works on pretty much everything, so does DWC3.
 
--- 
-Regards/Gruss,
-    Boris.
+> DWC3 already has three possibilities but I know of at least 3 others
+> which could show up soonish.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+If the number of architectures supported is getting large enough then
+it's probably reasonable to just enable the driver all the time,
+probably it'll also appear on some PCI cards or something anyway.  The
+things people are complaining about here are things that are clearly
+unlikely to appear on other architectures like a particular SoC vendor's
+custom IPs that they don't license out.
+
+--mNqB7BSMRyhUYAix
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwd5vAAoJELSic+t+oim9g2YP/RYTZksBIXcg2iutJN/y3mSr
+40Ym0bnfUMTyKjWKWL0x4lFUYoC6uUQBx8X6zgPntXhgaPi11PGH0hY4rdSZuW9U
+6uKsEcsVUydl5l2PT7f2e8nSlTUIHPljw0oj7Xtvgc7t9CT/BJePmIGjo32MnWaX
+zOl0bBZKMfjUT4zhRh2/LU25Ljc8QQVD0kF/fEZ/5k8xsj1D5ljo8HPoFr8dMIUB
+23bERwJFZ1e7nrsocRBtDeOjg9FTuQ1lrTgcMQP7MyL2wxgyI9zKFhtLFFtp+Fhm
+jJfy4cnPhGurS8cWDje0ZWyKC3pJLvuywdaR/KxtDWGM96o91h6MGbJJXTJma8Sy
+T9TSXROXj5htluVt3YEbHEBl/qtreFtgvC/4l3dpBth562dT1btsUpodRBg5Kj8Y
+lwLXnSfhZdV2ao/aOZAFDkKl7vcP0iA98XM2FNmdPJTd5fVl8q7CWvg7sBRVSY2D
+nmLVI8L/oIFy+9kJXmC75CJtcmzb2S1dL6DXd3d5C5hODEpZ7eUxAHIBI+6TnY99
+cxMvGMwp/gIogO49BfBLedmRc6RTUh9W7IcRfMf7UhAlxQbMSru8eQAttK7nC/dd
+AAbIqVUa7ASGgxVbQ9BlHBuDpG5mnWDI5BYurH3fdPAfSpbhBrQfamemkxQjissI
+DSAfNx3TTLenz29EXaYq
+=+oMe
+-----END PGP SIGNATURE-----
+
+--mNqB7BSMRyhUYAix--
