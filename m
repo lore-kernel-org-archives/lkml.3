@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934884Ab3FSP06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:26:58 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42181 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934794Ab3FSP04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:26:56 -0400
-Date: Wed, 19 Jun 2013 16:26:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Oskar Schirmer <oskar@scara.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Zeng Zhaoming <zengzm.kernel@gmail.com>,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Message-ID: <20130619152648.GW1403@sirena.org.uk>
-References: <51B749F5.3010907@freescale.com>
- <1371647766-4900-1-git-send-email-oskar@scara.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8JMtXNYTIIy8Rvxv"
-Content-Disposition: inline
-In-Reply-To: <1371647766-4900-1-git-send-email-oskar@scara.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] sound/sgtl5000: fix codec register initial values and
- handling
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S934880Ab3FSP1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:27:30 -0400
+Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:37178
+	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934858Ab3FSP12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:27:28 -0400
+X-Originating-IP: [86.2.11.244]
+X-Spam: 0
+X-Authority: v=2.0 cv=RN7rhPe+ c=1 sm=1 a=n6O9K/ebToSnNVE6TGWEMw==:17
+ a=oH62K7DSUIUA:10 a=uObrxnre4hsA:10 a=NLZqzBF-AAAA:8 a=1m2CDDXWOmUA:10
+ a=wF40tRKJAAAA:8 a=p4vZysDjZFJbH7jmPloA:9 a=_dQi-Dcv4p4A:10
+ a=WZxe208khsEVdVIw:21 a=WTZQ6aMUQR_oiqzt:21 a=n6O9K/ebToSnNVE6TGWEMw==:117
+From: Stephen Moorby <steve.moorby@ntlworld.com>
+To: davem@davemloft.net, jiri@resnulli.us, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Stephen Moorby <steve.moorby@ntlworld.com>
+Subject: [PATCH 1/1] drivers/net: param for lapbether for specific ethernet device
+Date: Wed, 19 Jun 2013 16:26:53 +0100
+Message-Id: <1371655613-31969-1-git-send-email-steve.moorby@ntlworld.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The lapbether driver binds to the first ethernet device that comes up.
+This causes problems in hardware with multiple ethernet interfaces,
+potentially resulting in the LAPB traffic on the wrong interface.
+Have added a module parameter 'eth_dev' to specify the ethernet
+interface over which lapbether should operate.  The module behaves
+as before if no device is specified.
 
---8JMtXNYTIIy8Rvxv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patch created on linux-next 18-Jun-2013.
+Tested on 2.6.32-45-generic.
 
-On Wed, Jun 19, 2013 at 01:16:06PM +0000, Oskar Schirmer wrote:
+Signed-off-by: Stephen Moorby <steve.moorby@ntlworld.com>
+---
+ drivers/net/wan/lapbether.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-This is a set of three unrelated changes, they should be sent as three
-separate patches.
+diff --git a/drivers/net/wan/lapbether.c b/drivers/net/wan/lapbether.c
+index a33a46f..510fc4a 100644
+--- a/drivers/net/wan/lapbether.c
++++ b/drivers/net/wan/lapbether.c
+@@ -47,6 +47,7 @@
+ 
+ #include <net/x25device.h>
+ 
++static char *eth_dev;
+ static const u8 bcast_addr[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+ 
+ /* If this number is made larger, check that the temporary string buffer
+@@ -381,8 +382,14 @@ static int lapbeth_device_event(struct notifier_block *this,
+ 	switch (event) {
+ 	case NETDEV_UP:
+ 		/* New ethernet device -> new LAPB interface	 */
+-		if (lapbeth_get_x25_dev(dev) == NULL)
+-			lapbeth_new_device(dev);
++		if (lapbeth_get_x25_dev(dev) == NULL) {
++			if (NULL != eth_dev) {
++				if (0 == strcmp(dev->name, eth_dev))
++					lapbeth_new_device(dev);
++			} else {
++				lapbeth_new_device(dev);
++			}
++		}
+ 		break;
+ 	case NETDEV_DOWN:	
+ 		/* ethernet device closed -> close LAPB interface */
+@@ -446,6 +453,10 @@ static void __exit lapbeth_cleanup_driver(void)
+ }
+ module_exit(lapbeth_cleanup_driver);
+ 
++module_param(eth_dev, charp, S_IRUGO);
++MODULE_PARM_DESC(eth_dev, "Ethernet device to use");
++
++
+ MODULE_AUTHOR("Jonathan Naylor <g4klx@g4klx.demon.co.uk>");
+ MODULE_DESCRIPTION("The unofficial LAPB over Ethernet driver");
+ MODULE_LICENSE("GPL");
+-- 
+1.8.1.2
 
-> Further, mask computation in declarative part is obviously wrong:
-> Fix FRAC DIVISOR to provide an 11 bit mask correctly.
-
-What makes you say that this is obviously wrong?  It's not entirely
-clear.
-
-> -#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-> +#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
-
-Based on your changelog I was expecting a mask with only two bits set
-here?
-
---8JMtXNYTIIy8Rvxv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwc21AAoJELSic+t+oim9WvMP/ijace/A0w4dhmAuFiLXvObG
-73OtHF13uQG/4jrJTcmYe/3C8MuYcgcSLmHHe91+z05zXbgr7JUP7QEGqccfjwkO
-YaMx9RBuh+UsG0gfOnjCcPJ2SO1vf1tk8LrExMfqipwLxF+C0yPEI+2uqlqLRkkG
-GQwyY3+YOXFsYYdGTOUwHAvgLzGUEq208Y7Ajlbc6NZdCebIY825Njr0IlAQ6wT3
-PkYF2LZNiPPF4uc+UaqH5JCHY69LlXFLlDwPhq9Uqtj3jPYtLyeDYJ6l+eOIHjXR
-yk3yQE0lW87AH7Q2T8MF+76Io0X6oQPRVouvDYHtE8znnx1fyK9gl6g6taz4FMF1
-DYSGMlNlCIG7NzbYtoarPKyuavaKIKdjtUrqvsA2isvJmAqzbpT/WyE2i2TUPhPi
-c1ITtKdGI2qfb3Fuz2CnC/MKhn3YcFRikgN9J0tEjBGFsnhmexbccPYo8AArkqsa
-rLHBm4x0oEm1TuIu1gRhQ3mRLGF2XgonV4K7yt0q0OLgi3CDqX9oQh4iUKIuiMXN
-KmpPOjY2kyrNsm9fHedMmK9LktUfHvtTbyPzZF/SkMFr06Xlc6XNZgkEwL5oKL0e
-HTiaCo/u7fqjBFGchPAZPI6ADSRbKhim3AWkJbbmSErknKu1NccjJ2cy2KEm4AvA
-JrVnr4HqBCNAxP8OYEap
-=L+gf
------END PGP SIGNATURE-----
-
---8JMtXNYTIIy8Rvxv--
