@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934369Ab3FSJ1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:27:22 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:33595 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933947Ab3FSJ1T (ORCPT
+	id S934393Ab3FSJ2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:28:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60982 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933862Ab3FSJ2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:27:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
-References: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 19 Jun 2013 17:26:57 +0800
-Message-ID: <CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Jun 2013 05:28:48 -0400
+Date: Wed, 19 Jun 2013 02:28:47 -0700 (PDT)
+Message-Id: <20130619.022847.965827775364729887.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 4:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->
-> In file included from drivers/staging/lustre/include/linux/libcfs/libcfs.h:203:0,
->                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.h:67,
->                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c:41:
-> drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c: In function 'kiblnd_dev_need_failover':
-> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:215:16: error: implicit declaration of function 'NIPQUAD' [-Werror=implicit-function-declaration]
->   static struct libcfs_debug_msg_data msgdata;      \
->                 ^
-Thanks for reporting!
 
-It is a bug in Lustre code that it is missing NIPQUAD definition on
-Linux platform. I will send fix later.
+Various sparc bug fixes, in particular:
 
-> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:231:2: note: in expansion of macro '__CDEBUG'
->   __CDEBUG(&cdls, mask, format, ## __VA_ARGS__);\
->   ^
-> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:238:30: note: in expansion of macro 'CDEBUG_LIMIT'
->  #define CERROR(format, ...)  CDEBUG_LIMIT(D_ERROR, format, ## __VA_ARGS__)
->                               ^
-> drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c:2577:3: note: in expansion of macro 'CERROR'
->    CERROR("Failed to bind %s:%u.%u.%u.%u to device(%p): %d\n",
->    ^
->
-> I have once again disabled the building og the lustre client code.
->
-Sorry that Lustre is mostly tested only on x86 platform (and sadly I
-don't have other architectures to test on.). We sincerely thank you
-for your continuous help.
+1) TSB hashes have to be flushed before TLB on sparc64, from
+   Dave Kleikamp.
 
-Cheers,
-Tao
+2) LEON timer interrupts can get stuck, from Andreas Larsson.
+
+3) Sparc64 needs to handle lack of address-congruence devicetree
+   property, from Bob Picco.
+
+Please pull, thanks a lot!
+
+The following changes since commit 17858ca65eef148d335ffd4cfc09228a1c1cbfb5:
+
+  Merge tag 'please-pull-fixia64' of git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux (2013-06-18 06:29:19 -1000)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to 23a01138efe216f8084cfaa74b0b90dd4b097441:
+
+  sparc: tsb must be flushed before tlb (2013-06-19 02:10:30 -0700)
+
+----------------------------------------------------------------
+Andreas Larsson (2):
+      sparc32, leon: Remove separate "ticker" timer for SMP
+      sparc32, leon: Enable interrupts before going idle to avoid getting stuck
+
+Chen Gang (1):
+      arch: sparc: prom: looping issue, need additional length check in the outside looping
+
+Dave Kleikamp (1):
+      sparc: tsb must be flushed before tlb
+
+Denis Efremov (1):
+      sparc: remove inline marking of EXPORT_SYMBOL functions
+
+Geert Uytterhoeven (1):
+      sparc: Switch to asm-generic/linkage.h
+
+Tushar Behera (1):
+      sparc,leon: Convert to use devm_ioremap_resource
+
+Zhao Hongjiang (1):
+      sparc: kernel: using strlcpy() instead of strcpy()
+
+bob picco (1):
+      sparc64 address-congruence property
+
+ arch/sparc/include/asm/Kbuild       |  1 +
+ arch/sparc/include/asm/leon.h       |  2 +-
+ arch/sparc/include/asm/leon_amba.h  |  1 +
+ arch/sparc/include/asm/linkage.h    |  6 ------
+ arch/sparc/kernel/ds.c              |  3 ++-
+ arch/sparc/kernel/leon_kernel.c     | 54 +++++++++++++++++-------------------------------------
+ arch/sparc/kernel/leon_pci_grpci1.c |  8 +++-----
+ arch/sparc/kernel/leon_pmc.c        |  7 +++++++
+ arch/sparc/kernel/setup_32.c        |  2 +-
+ arch/sparc/kernel/setup_64.c        |  2 +-
+ arch/sparc/mm/init_64.c             |  9 ++++++++-
+ arch/sparc/mm/tlb.c                 |  2 +-
+ arch/sparc/prom/bootstr_32.c        | 12 +++++++-----
+ arch/sparc/prom/tree_64.c           | 16 ++++++++--------
+ 14 files changed, 58 insertions(+), 67 deletions(-)
+ delete mode 100644 arch/sparc/include/asm/linkage.h
