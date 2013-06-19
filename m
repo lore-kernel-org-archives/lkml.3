@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934845Ab3FSPTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:19:36 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:60448 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab3FSPTe (ORCPT
+	id S1756967Ab3FSPU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:20:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56486 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab3FSPUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:19:34 -0400
-Date: Wed, 19 Jun 2013 11:19:30 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
+	Wed, 19 Jun 2013 11:20:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
+Date: Wed, 19 Jun 2013 17:20:46 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michal Simek <michal.simek@xilinx.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Will Deacon <Will.Deacon@arm.com>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_*
- registers
-In-Reply-To: <24503071.R7UT57fHdP@amdc1227>
-Message-ID: <alpine.LFD.2.03.1306191110130.18597@syhkavp.arg>
-References: <1371569191-2364-1-git-send-email-t.figa@samsung.com> <1933024.UCR4mQ7fzS@amdc1227> <CANuQgHEXHgYm1-fzLfrsk66q4T-==ka0dnSKNuBVAq1kLWOOvg@mail.gmail.com> <24503071.R7UT57fHdP@amdc1227>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+        Michal Simek <monstr@monstr.eu>,
+        "Linux-Arch" <linux-arch@vger.kernel.org>
+References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com> <201306141636.29390.arnd@arndb.de> <1371226483.2726.19.camel@dabdike>
+In-Reply-To: <1371226483.2726.19.camel@dabdike>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306191720.47185.arnd@arndb.de>
+X-Provags-ID: V02:K0:Tst3BQDX3MCBUyhws/HZ7TCkaWWVMR5QGCQ50S4R0Z4
+ bes4gF8dre1ycQn3HHLJAu8YIdbiImCmiPiZmcjd96QrRHWg7B
+ SmCIiEnck8/XIJRvP1QzTBV/ue6s8tGHPo+C9GHPkRfK8LIwG+
+ jIW61Io7QjJ/mFTaMjmu6lJARW9IjuexeHCd015Pk62rGq6TVJ
+ ZjuUHTjY9zMfdp+OWxSe5tTmS2Np96Ip04Hz9itfCxASXPhqSP
+ j5xak4LVPWVJLQeHAZjeGrs1TM+ArlHoLQQgp8JbjX63iEbg6J
+ qx/9578pCZ1OnjBrxGsL001DJ7+rZL0WLD0+3WOSs0FgExaJT2
+ MEyUs9c79DqGkkKssKdk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Tomasz Figa wrote:
-> On Wednesday 19 of June 2013 20:26:50 Chander Kashyap wrote:
-> > On 19 June 2013 19:58, Tomasz Figa <t.figa@samsung.com> wrote:
-> > > I mean, calculate register offset based on two parameters - cluster ID
-> > > and> 
-> > > CPU ID, like:
-> > >         ...
-> > >         
-> > >         u32 mpidr = cpu_logical_map(cpu);
-> > >         u32 phys_cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> > >         
-> > >         if (soc_is_exynosXXXX()) {
-> > >         
-> > >                 u32 cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-> > >                 
-> > >                 phys_cpu += EXYNOSXXXX_CPUS_PER_CLUSTER * cluster;
-> > >         
-> > >         }
-> > >         
-> > >         reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
-> > >         __raw_writel(0, reg_base);
-> > 
-> > This does not seems to viable solution, as eg. clusterID for
-> > exynos4210 is 0x9 and exynos 4412 is 0xa.
+On Friday 14 June 2013, James Bottomley wrote:
+> This is the MMAP_PAGE_ZERO exploit.  The original exploit relied on a
+> leaky personality capability clearing mask and was fixed in 2.6.31 by
 > 
-> We don't need to consider cluster ID for any SoC that has just one cluster. 
-> That's why there is the if (soc_is_exynosXXXX()) clause, where exynosXXXX 
-> is the SoC that we support and has more clusters.
+> commit f9fabcb58a6d26d6efde842d1703ac7cfa9427b6
+> Author: Julien Tinnes <jt@cr0.org>
+> Date:   Fri Jun 26 20:27:40 2009 +0200
 > 
-> > But if we wass the cpu nodes
-> > thru DT, the we can comfortably rely on the logical cpu number. Also
-> > EXYNOSXXXX_CPUS_PER_CLUSTER can vary from cluster to cluster.
+>     personality: fix PER_CLEAR_ON_SETID
 > 
-> There is nothing that prevents you from specifying the CPUs in DT in 
-> different order. Moreover, even if you specify them in correct order, there 
-> is nothing that prevents you from using any of the listed CPUs as boot CPU, 
-> which will get the logical ID of 0.
+> So it's not really relevant to 3.x kernels, is it?
 
-Relying on the logical CPU number to index into hardware related 
-register space is wrong, please don't do that.
+Probably not. There is always a risk that something like this
+can turn into an exploit, but it needs a combination with a couple
+of other bugs.
 
-If the MPIDR allocation isn't linear then this cannot be used either.
-
-The best solution is probably to add this reg_base as a property of each 
-CPU node in DT, and extract it at boot time to stash it into an array 
-which can be indexed with the logical CPU number afterwards.
-
-
-Nicolas
+	Arnd
