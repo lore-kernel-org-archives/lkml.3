@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934812Ab3FSOaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:30:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934417Ab3FSOaB (ORCPT
+	id S934852Ab3FSOaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:30:55 -0400
+Received: from a10-63.smtp-out.amazonses.com ([54.240.10.63]:36590 "EHLO
+	a10-63.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934417Ab3FSOay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:30:01 -0400
-Date: Wed, 19 Jun 2013 07:30:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: akhil.goyal@freescale.com, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        pankaj.chauhan@freescale.com, "Getz, Robin" <robin.getz@analog.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
- Radio phy
-Message-ID: <20130619143042.GB8073@kroah.com>
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com>
- <51C1AAC4.3010605@metafoo.de>
+	Wed, 19 Jun 2013 10:30:54 -0400
+X-Greylist: delayed 706 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jun 2013 10:30:54 EDT
+Date: Wed, 19 Jun 2013 14:19:06 +0000
+From: Christoph Lameter <cl@gentwo.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Borislav Petkov <bp@alien8.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mats Liljegren <liljegren.mats2@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Full dynticks selftests 0.0.1
+In-Reply-To: <20130618181733.GS5146@linux.vnet.ibm.com>
+Message-ID: <0000013f5ccd9d66-616fef8f-7cf1-45ec-bd20-b1fed9264cbe-000000@email.amazonses.com>
+References: <20130612151915.GD5332@somewhere> <0000013f57a89d51-89f08a58-65d0-41f5-aaaa-b31d60c72a8e-000000@email.amazonses.com> <20130618151520.GP5146@linux.vnet.ibm.com> <20130618162256.GH17619@somewhere.redhat.com>
+ <20130618181733.GS5146@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C1AAC4.3010605@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.06.19-54.240.10.63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 02:57:40PM +0200, Lars-Peter Clausen wrote:
-> On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
-> > From: Akhil Goyal <akhil.goyal@freescale.com>
-> > 
-> > AD9361 is a radio phy(RFIC) for radio networks. This phy
-> > can support LTE-FDD/LTE-TDD and WCDMA networks. The RFIC
-> > can convert the analog radio signals from air to digital
-> > IQ samples.
-> > 
-> > AD9361 is controlled via an SPI bus and all the register
-> > read/ write can be performed via SPI transactions.
-> > 
-> > Driver provides various operations for configuring and
-> > controlling the AD PHY. These can be controlled from the
-> > user space via the rfdev framework.
-> > 
-> > Driver also binds itself to one of AIC lane using RF framework.
-> > The combination of AIC lane and PHY connected to it works
-> > as one RF device.
-> > 
-> > Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
-> > Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
-> > Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
-> > Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
-> 
-> Hi,
-> 
-> This is interesting. We at Analog Devices are currently also working on a
-> driver for this part. We are using the Linux Industrial IO (IIO) framework
-> though, since the AD9361 is more or less a multifunction device implementing
-> different functions already covered by the IIO framework, like ADCs, DACs,
-> clock chips and so on.
+On Tue, 18 Jun 2013, Paul E. McKenney wrote:
 
-That's the "proper" api for this, not a bunch of chip-custom ioctls that
-aren't documented anywhere.
+> +online to handle timekeeping tasks in order to ensure that system
+> +calls like gettimeofday() returns accurate values on adaptive-tick CPUs.
+> +(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no running
+> +user processes to observe slight drifts in clock rate.)  Therefore, the
+> +boot CPU is prohibited from entering adaptive-ticks mode.  Specifying a
+> +"nohz_full=" mask that includes the boot CPU will result in a boot-time
+> +error message, and the boot CPU will be removed from the mask.  Note that
+> +this means that your system must have at least two CPUs in order for
+> +CONFIG_NO_HZ_FULL=y to do anything for you.
 
-thanks,
+These are some important point here. Very good. Thanks.
 
-greg k-h
