@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934379Ab3FSJZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:25:16 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:60076 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933755Ab3FSJZM (ORCPT
+	id S934418Ab3FSJZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:25:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43511 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934032Ab3FSJZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:25:12 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C178C4.7030400@asianux.com>
-Date: Wed, 19 Jun 2013 17:24:20 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 19 Jun 2013 05:25:25 -0400
+Date: Wed, 19 Jun 2013 10:25:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 2/2] spi/pxa2xx: use a flag to check if the device is
+	runtime suspended
+Message-ID: <20130619092508.GJ2718@n2100.arm.linux.org.uk>
+References: <1371565785-31332-1-git-send-email-mika.westerberg@linux.intel.com> <1371565785-31332-2-git-send-email-mika.westerberg@linux.intel.com> <20130618180948.GP1403@sirena.org.uk>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, sam@ravnborg.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH] arch: sparc: prom: looping issue, need additional length
- check in the outside looping
-References: <51A6C8FA.3080408@asianux.com> <20130619.021342.853193458609177361.davem@davemloft.net>
-In-Reply-To: <20130619.021342.853193458609177361.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618180948.GP1403@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 05:13 PM, David Miller wrote:
-> From: Chen Gang <gang.chen@asianux.com>
-> Date: Thu, 30 May 2013 11:35:22 +0800
+On Tue, Jun 18, 2013 at 07:09:48PM +0100, Mark Brown wrote:
+> On Tue, Jun 18, 2013 at 05:29:45PM +0300, Mika Westerberg wrote:
+> > Current code calls pm_runtime_suspended() in the interrupt handler to check
+> > if the device is suspended or not. However, runtime PM status of the device
+> > is only set to suspended once all PM runtime suspend hooks have executed.
 > 
->>
->> When "cp >= barg_buf + BARG_LEN-2", it breaks internel looping 'while',
->> but outside loop 'for' still has effect, so "*cp++ = ' '" will continue
->> repeating which may cause memory overflow.
->>
->> So need additional length check for it in the outside looping.
->>
->> Also beautify the related code which found by "./scripts/checkpatch.pl"
+> > In our case we have the device bound to the ACPI power domain and its
+> > runtime suspend hook will put the device to D3hot (or D3cold if possible).
+> > This effectively means that the device is powered off before its state is
+> > set to runtime suspended. During this time, it might get an interrupt that
+> > is meant for another device (as the interrupt line is shared), and because
+> > the device is powered off accessing its registers will return 0xffffffff
+> > that the driver misinterprets as an invalid state. When this happens user
+> > will see messages like below on the console:
 > 
-> Applied.
-> 
-> 
+> This sounds like a problem which will affect a lot of devices and hence
+> ought to be handled better by the PM core or at least frameworks in
+> general.  Is it really device specific?
 
-Thank you very much.
+It's always been something that has been recommended to be dealt with
+by the driver.  If reading the interrupt status you read ~0, then it
+likely is because the device is powered down or removed from the system.
 
-
--- 
-Chen Gang
-
-Asianux Corporation
+PCMCIA drivers have done this for years.
