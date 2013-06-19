@@ -1,64 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934526Ab3FSKAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:00:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63035 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933873Ab3FSKAU (ORCPT
+	id S934467Ab3FSKAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:00:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63907 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933873Ab3FSKAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:00:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
-Date: Wed, 19 Jun 2013 12:01:06 +0200
-Message-ID: <2302882.NVjP8DdXWY@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com>
-References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com>
+	Wed, 19 Jun 2013 06:00:48 -0400
+Date: Wed, 19 Jun 2013 12:00:42 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
+Message-ID: <20130619100042.GA4545@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
+ <51C15DC2.3030501@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:mzmZ9+bBWurp4/xnwCM5dwHtFCAcxYpyIoJpQwkoytV
- 0VXYdcNHpridv+kXgnFk9f00byrFBKJQGQv5iJrXUWBxNyrg1K
- sy0CQMAFpPsiXF/+QHCiMWRpsVys6sGl7eyXfqVe3TWcRXnExp
- thBu9Z/Vpx8Gb33m3ZAAd/Y8f0IXo3fjneWUAUDM0FcGuL4CXg
- HvZ2KxnimvU9BQiMwDo6fy8n98NBlrKmV3SbJYeKpoNlc02+Xe
- vYArhr0lhLJHH9ww+65tBOBETojTaOSshpjIywZE0h4opxFJP8
- aAiPRSOD3jiysE75iAJ8mcl1Wit4kPvctBRpJ8U4H8AqPJ6rKo
- HcVFLZ0qFQ0wfakU8Fa4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C15DC2.3030501@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 June 2013 12:12:53 David Daney wrote:
-> +static unsigned int dw8250_serial_inq(struct uart_port *p, int offset)
-> +{
-> +       offset <<= p->regshift;
-> +
-> +       return (u8)__raw_readq(p->membase + offset);
-> +}
-> +
-> +static void dw8250_serial_outq(struct uart_port *p, int offset, int value)
-> +{
-> +       struct dw8250_data *d = p->private_data;
-> +
-> +       if (offset == UART_LCR)
-> +               d->last_lcr = value;
-> +
-> +       offset <<= p->regshift;
-> +       __raw_writeq(value, p->membase + offset);
-> +       dw8250_serial_inq(p, UART_LCR);
-> +}
+Hi Tang,
+On Wed, Jun 19, 2013 at 03:29:06PM +0800, Tang Chen wrote:
+> Hi Vasilis, Yinghai,
+> 
+> On 06/19/2013 01:05 AM, Vasilis Liaskovitis wrote:
+> ......
+> >
+> >This could be a design problem of part3: if we allow local pagetable memory
+> >to not be offlined but allow the offlining to return successfully, then
+> >hot-remove is going to succeed. But the direct mapped pagetable pages are still
+> >mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
+> >physical DIMMs getting disabled in real hardware, or in a VM case the
+> >corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
+> >system can crash as a result.
+> >
+> 
+> Yes. Since the pagetable pages is only allocated to local node, a node may
+> have more than one device, hot-remove only one memory device could be
+> problematic.
+> 
+> But I think it will work if we hot-remove a whole node. I should have
+> mentioned it. And sorry for the not fully test.
 
-This breaks building on 32 bit architectures as I found on my daily ARM
-builds: __raw_writeq cannot be defined on architectures that don't have
-native 64 bit data access instructions. It's also wrong to use the
-__raw_* variant, which is not guaranteed to be atomic and is not
-endian-safe.
+ok, the crash I saw was also for the partial node removal.
 
-	Arnd
+> I think allocating pagetable pages to local device will resolve this
+> problem.
+
+ok. Yes, you mentioned this approach before I think.
+
+> And need to restructure this patch-set.
+> 
+> >I think these local pagetables do need to be unmapped from kernel, offlined and
+> >removed somehow - otherwise hot-remove should fail. Could they be migrated
+> >alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
+> >migrated, correct?
+> 
+> I think we have unmapped the local pagetables. in functions
+> free_pud/pmd/pte_table(), we cleared pud, pmd, and pte. We just didn't
+> free the pagetable pages to buddy.
+
+ok, thanks for explaining.
+
+> 
+> But when we are not hot-removing the whole node, it is still problematic.
+> This is true, and it is my design problem.
+> 
+> >
+> >What is the original reason for local node pagetable allocation with regards
+> >to memory hotplug? I assume we want to have hotplugged nodes use only their local
+> >memory, so that there are no inter-node memory dependencies for hot-add/remove.
+> >Are there other reasons that I am missing?
+> 
+> I think the original reason to do local node pagetable is to improve
+> performance.
+> Using local pagetable, vmemmap and so on will be faster.
+> 
+> But actually I think there is no particular reason to implement
+> memory hot-remove
+> and local node pagetable at the same time. And before this
+> patch-set, I also
+> suggested once that implement memory hot-remove first, and then
+> improve it to
+> local pagetable. But Yinghai has done the local pagetable work in
+> has patches (part1).
+> And my work is based on his patches. So I just did it.
+> 
+> But obviously it is more complicated than I thought.
+> 
+> And now, it seems tj has some more thinking on part1.
+> 
+> So how about the following plan:
+> 1. Implement arranging hotpluggable memory with SRAT first, without
+> local pagetable.
+>    (The main work in part2. And of course, need some patches in part1.)
+
+agreed (and yes, several patches from part1 will be needed to do the early srat
+parsing here)
+
+> 2. Do the local device pagetable work, not local node.
+> 3. Improve memory hotplug to support local device pagetable.
+
+ok, I 'll think about these as well, and help out.
+
+thanks,
+
+- Vasilis
