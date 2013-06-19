@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934076Ab3FSBTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:19:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38967 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933979Ab3FSBTs (ORCPT
+	id S934043Ab3FSBUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:20:36 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44501 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933999Ab3FSBS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:19:48 -0400
-Message-ID: <51C10732.5040107@codeaurora.org>
-Date: Tue, 18 Jun 2013 18:19:46 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 0/4] ARM: MSM: Consolidate GPIOMUX for 7x30 and 8x50
-References: <1371603747-27436-1-git-send-email-rvaswani@codeaurora.org>
-In-Reply-To: <1371603747-27436-1-git-send-email-rvaswani@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jun 2013 21:18:57 -0400
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: akpm@linux-foundation.org, riel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: [PATCH 07/11] ipc,shm: cleanup do_shmat pasta
+Date: Tue, 18 Jun 2013 18:18:32 -0700
+Message-Id: <1371604716-3439-8-git-send-email-davidlohr.bueso@hp.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-**Please ignore this 4 patch series**
-Sorry for the inconvenience.
+Clean up some of the messy do_shmat() spaghetti code, getting
+rid of out_free and out_put_dentry labels. This makes shortening
+the critical region of this function in the next patch a little
+easier to do and read.
 
-On 6/18/2013 6:02 PM, Rohit Vaswani wrote:
-> The previous gpio clean up series left some room for consolidation
-> and required a few fixes.
->
-> Rohit Vaswani (4):
->    ARM: msm: dts: Fix the gpio register address for msm8960
->    drivers: gpio: msm: Fix the error condition for reading ngpio
->    ARM: msm: Consolidate gpiomux for older architectures
->    drivers: gpio: msm: Remove __devinit
->
->   arch/arm/boot/dts/msm8960-cdp.dts |    4 ++--
->   arch/arm/mach-msm/Kconfig         |    3 +--
->   arch/arm/mach-msm/gpiomux-v1.c    |   33 ---------------------------------
->   arch/arm/mach-msm/gpiomux.h       |   10 ----------
->   drivers/gpio/gpio-msm-v1.c        |    2 +-
->   drivers/gpio/gpio-msm-v2.c        |    2 +-
->   6 files changed, 5 insertions(+), 49 deletions(-)
->   delete mode 100644 arch/arm/mach-msm/gpiomux-v1.c
->
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ ipc/shm.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
-
-Thanks,
-Rohit Vaswani
-
+diff --git a/ipc/shm.c b/ipc/shm.c
+index e4ac1c1..d1b3ebf 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -1108,16 +1108,21 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 
+ 	err = -ENOMEM;
+ 	sfd = kzalloc(sizeof(*sfd), GFP_KERNEL);
+-	if (!sfd)
+-		goto out_put_dentry;
++	if (!sfd) {
++		path_put(&path);
++		goto out_nattch;
++	}
+ 
+ 	file = alloc_file(&path, f_mode,
+ 			  is_file_hugepages(shp->shm_file) ?
+ 				&shm_file_operations_huge :
+ 				&shm_file_operations);
+ 	err = PTR_ERR(file);
+-	if (IS_ERR(file))
+-		goto out_free;
++	if (IS_ERR(file)) {
++		kfree(sfd);
++		path_put(&path);
++		goto out_nattch;
++	}
+ 
+ 	file->private_data = sfd;
+ 	file->f_mapping = shp->shm_file->f_mapping;
+@@ -1143,7 +1148,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
+ 			goto invalid;
+ 	}
+-		
++
+ 	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate);
+ 	*raddr = addr;
+ 	err = 0;
+@@ -1167,19 +1172,12 @@ out_nattch:
+ 	else
+ 		shm_unlock(shp);
+ 	up_write(&shm_ids(ns).rw_mutex);
+-
+-out:
+ 	return err;
+ 
+ out_unlock:
+ 	shm_unlock(shp);
+-	goto out;
+-
+-out_free:
+-	kfree(sfd);
+-out_put_dentry:
+-	path_put(&path);
+-	goto out_nattch;
++out:
++	return err;
+ }
+ 
+ SYSCALL_DEFINE3(shmat, int, shmid, char __user *, shmaddr, int, shmflg)
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+1.7.11.7
 
