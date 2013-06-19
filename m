@@ -1,76 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab3FSBNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:13:33 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:61223 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSBNa (ORCPT
+	id S933912Ab3FSBN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:13:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:37437 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:13:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1371602813-19828-2-git-send-email-jon.mason@intel.com>
-References: <1371602813-19828-1-git-send-email-jon.mason@intel.com>
-	<1371602813-19828-2-git-send-email-jon.mason@intel.com>
-Date: Tue, 18 Jun 2013 18:13:28 -0700
-X-Google-Sender-Auth: UHIka6k-0tWgfGlwnzEev_NlIFo
-Message-ID: <CAA9_cmc1Gu=BnM_OpMuqL7Hcjz-kfqxJtZzGHP8Nh-hc+tCWeA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] dmadevices: dma_sync_wait undefined
-From: Dan Williams <djbw@fb.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jun 2013 21:13:24 -0400
+X-AuditID: cbfee68e-b7f276d000002279-8e-51c105adcd7b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com>
+ <7174350.I5qK0sQfHM@wuerfel> <000001ce6bd7$50146e60$f03d4b20$@samsung.com>
+ <201306181556.47656.arnd@arndb.de>
+In-reply-to: <201306181556.47656.arnd@arndb.de>
+Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
+Date: Wed, 19 Jun 2013 10:13:16 +0900
+Message-id: <002401ce6c8a$2dd1e4a0$8975ade0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIepNJd3UbA8CoBBJYQqRm0XD6uiAEK/SvjAsQxfdYDKsJr9phj+dmQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t8zfd21rAcDDX5eM7Bo/r+d1eLvpGPs
+	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
+	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
+	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8ATxWWTkpqTWZZapG+XwJWxtWc1W8FP
+	noqdp7+xNTBu5+pi5OSQEDCRWNY/jRHCFpO4cG89G4gtJLCMUeLZJmaYms0zngDZXEDxRYwS
+	OyZNgXJ+MUrs/d3KClLFJqAm8eXLYXYQW0RAWeL4yzssIEXMAodYJSa+6WaH6FjNKLF1/Xmw
+	uZwC+hINSz8xgdjCAs4SF74tAdvNIqAqsebMXbCpvAKWEgd2nmCDsAUlfky+xwJiMwtoSazf
+	eZwJwpaX2LzmLdStChI7zr5mhLjCTeLEzvPsEDUiEvtevGMEOUJC4AmHRNOFi8wQywQkvk0+
+	BDSUAyghK7HpANQcSYmDK26wTGCUmIVk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi4z0ihNz
+	i0vz0vWS83M3MUJSTN8OxpsHrA8xJgOtn8gsJZqcD0xReSXxhsZmRhamJqbGRuaWZqQJK4nz
+	qrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpg7DKZ1uCz/vaeZYVdt9TuvtWZMiNV55XD
+	6a+LVHyVtcwWX7e6Oe9cnX300ZUJciv6czY5vT4i96YyNd99Mud7raIPZkxtGzKXyrzvETw7
+	h+mOwATnTPW1b+YfLV61QWzeCo44rYcGxgqPoq/JuVTO2lN3r+zTnv2Pk2f//ZqyweZG5laB
+	K084JiuxFGckGmoxFxUnAgCjl0zWRwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEJsWRmVeSWpSXmKPExsVy+t9jAd21rAcDDSZ80rRo/r+d1eLvpGPs
+	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
+	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
+	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8AT1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQP0l5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
+	xghd35AguB4jAzSQsI4xY2vParaCnzwVO09/Y2tg3M7VxcjJISFgIrF5xhNmCFtM4sK99Wxd
+	jFwcQgKLGCV2TJrCDOH8YpTY+7uVFaSKTUBN4suXw+wgtoiAssTxl3dYQIqYBQ6xSkx8080O
+	0bGaUWLr+vNgczkF9CUaln5iArGFBZwlLnxbwgZiswioSqw5cxdsKq+ApcSBnSfYIGxBiR+T
+	77GA2MwCWhLrdx5ngrDlJTaveQt1q4LEjrOvGSGucJM4sfM8O0SNiMS+F+8YJzAKzUIyahaS
+	UbOQjJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOAU9kx6B+OqBotDjAIcjEo8
+	vI0rDwQKsSaWFVfmHmKU4GBWEuH9zHQwUIg3JbGyKrUoP76oNCe1+BBjMtCnE5mlRJPzgek1
+	ryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoY511+4BO/fJp+
+	7aLGKr/wY49+PAmocew8tjMyfsmDeWJn/6aa/BY1nHH9u1U78zzxsHWTq6aty9skl17+eJa0
+	zr2faheXOj561ns7QfM6/40pZ/I3iK3QXPeIKVfa2bhlt2Og6CGbHYnJKwrfBWtuNNEWjUsq
+	fsbZMluwfpqm/GyDE2vbP64WUmIpzkg01GIuKk4EAKsSXeGlAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 5:46 PM, Jon Mason <jon.mason@intel.com> wrote:
-> dma_sync_wait is declared regardless of whether CONFIG_DMA_ENGINE is
-> enabled, but calling the function without CONFIG_DMA_ENGINE enabled
-> results in the following gcc error.
-> ERROR: "dma_sync_wait" [drivers/ntb/ntb.ko] undefined!
->
-> To get around this, declare dma_sync_wait as an inline function if
-> CONFIG_DMA_ENGINE is undefined.
->
-> Signed-off-by: Jon Mason <jon.mason@intel.com>
-> Acked-by: Dave Jiang <dave.jiang@intel.com>
-> ---
->  include/linux/dmaengine.h |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 96d3e4a..e3652ac 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -963,8 +963,8 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
->         }
->  }
->
-> -enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  #ifdef CONFIG_DMA_ENGINE
-> +enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
->  void dma_issue_pending_all(void);
->  struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
-> @@ -972,6 +972,10 @@ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
->  struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name);
->  void dma_release_channel(struct dma_chan *chan);
->  #else
-> +static inline enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
-> +{
-> +       return DMA_SUCCESS;
-> +}
+On Tuesday, June 18, 2013 10:57 PM, Arnd Bergmann wrote:
+> On Tuesday 18 June 2013, Jingoo Han wrote:
+> > On Monday, June 17, 2013 9:45 PM, Arnd Bergmann wrote:
+> > > On Monday 17 June 2013 18:45:52 Jingoo Han wrote:
+> > > > On Friday, June 14, 2013 9:54 PM, Arnd Bergmann wrote:
+> > > > >
 
-Seems like something we should fix, but why is this not an indication
-that the code calling this is missing a "depends on DMA_ENGINE".
+[.....]
 
-On second look dma_sync_wait is a use as last resort hack that
-probably should not escape its internal use in dmaengine.c.  The other
-escape in drivers/media/platform/timblogiw.c already looks problematic
-by having a live cpu spin immediately following a sleeping wait,
-obviously something event based was wanted.  What's the use case in
-NTB?
+> >
+> > I will remove a 'remove' callback. Is it OK?
+> > Or what should I do?
+> 
+> I think you should keep the remove function, but add a comment explaining that
+> you don't allow module unload and that in order to allow it, the remove function
+> will have to remove all pci buses and devices under the host bridge.
 
---
-Dan
+Then, do you mean the following?
+
+static int __exit exynos_pcie_remove(struct platform_device *pdev)
+{
+	struct pcie_port *pp = platform_get_drvdata(pdev);
+
+	clk_disable_unprepare(pp->bus_clk);
+	clk_disable_unprepare(pp->clk);
+
+	return 0;
+}
+
+static struct platform_driver exynos_pcie_driver = {
+	.remove	= __exit_p(exynos_pcie_remove),
+
+[.....]
+
+/* Exynos PCIe driver does not allow module unload */
+
+static int __init pcie_init(void)
+{
+	hook_fault_code(16 + 6, exynos_pcie_abort, SIGBUS, 0,
+			"imprecise external abort");
+
+	platform_driver_probe(&exynos_pcie_driver, exynos_pcie_probe);
+
+	return 0;
+}
+subsys_initcall(pcie_init);
+
+MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+MODULE_DESCRIPTION("Samsung PCIe host controller driver");
+MODULE_LICENSE("GPLv2");
+
+
+> 
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
