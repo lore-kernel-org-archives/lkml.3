@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab3FSRtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:49:36 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59598 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3FSRte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:49:34 -0400
-From: Joern Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
-Cc: Joern Engel <joern@logfs.org>, Johannes Berg <johannes@sipsolutions.net>,
-        Michael Buesch <mb@bu3sch.de>,
-        David Ellingsworth <david@identd.dyndns.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH] softirq: weaken warning in local_bh_enable_ip()
-Date: Wed, 19 Jun 2013 12:19:16 -0400
-Message-Id: <1371658756-7580-1-git-send-email-joern@logfs.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1757323Ab3FSRuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:50:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43917 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756741Ab3FSRuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:50:13 -0400
+Date: Wed, 19 Jun 2013 19:50:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619175005.GJ28300@pd.tnic>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <51C1E996.9070209@zytor.com>
+ <20130619173721.GI28300@pd.tnic>
+ <51C1EC90.9030802@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51C1EC90.9030802@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reliably triggers with the following backtrace:
+On Wed, Jun 19, 2013 at 12:38:24PM -0500, H. Peter Anvin wrote:
+> I thought that was the plan?
 
-local_bh_enable_ip+0x128/0x140
-_raw_spin_unlock_bh+0x15/0x20
-iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
-iscsit_stop_session+0x1db/0x280 [iscsi_target_mod]
-lio_tpg_shutdown_session+0xb2/0xf0 [iscsi_target_mod]
-core_tpg_set_initiator_node_queue_depth+0x119/0x2f0 [target_core_mod]
-iscsit_tpg_set_initiator_node_queue_depth+0x12/0x20 [iscsi_target_mod]
-lio_target_nacl_store_cmdsn_depth+0x110/0x1e0 [iscsi_target_mod]
-target_fabric_nacl_base_attr_store+0x39/0x40 [target_core_mod]
-configfs_write_file+0xbd/0x120
-vfs_write+0xc6/0x180
-sys_write+0x51/0x90
-system_call_fastpath+0x16/0x1b
+Well, currently if I'm booted with "efi=1:1_map" I'm creating only the
+1:1 mapping in ->trampoline_pgd and switching the pagetable only then.
+Otherwise, I'm using the high, ioremapped mappings - i.e., what we have
+now.
 
-core_tpg_set_initiator_node_queue_depth() calls
-lio_tpg_shutdown_session() inside a spin_lock_irqsave-protected block.
-Calling spin_unlock_bh later in the call chain always triggers the
-warning.
+I guess I can sync the kernel address space into ->trampoline_pgd after
+having created the 1:1 mappings and always switch the pagetable later,
+after we've done SetVirtualAddressMap.
 
-Signed-off-by: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: Michael Buesch <mb@bu3sch.de>
-Cc: David Ellingsworth <david@identd.dyndns.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
----
- kernel/softirq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Which should take care of the EFI boot stub issue too, as I can define
+another set of efi_callX which switch the pagetable unconditionally.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 14d7758..d4ee1c6 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -157,7 +157,7 @@ EXPORT_SYMBOL(_local_bh_enable);
- 
- static inline void _local_bh_enable_ip(unsigned long ip)
- {
--	WARN_ON_ONCE(in_irq() || irqs_disabled());
-+	WARN_ON_ONCE(in_irq());
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	local_irq_disable();
- #endif
+Let me see how that pans out...
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
