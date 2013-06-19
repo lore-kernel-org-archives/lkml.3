@@ -1,306 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935193Ab3FSTZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:25:17 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49778 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935163Ab3FSTZO (ORCPT
+	id S935152Ab3FSTaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:30:17 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:62896 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934714Ab3FSTaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:25:14 -0400
-Date: Wed, 19 Jun 2013 15:25:08 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Yannick Brosseau <yannick.brosseau@gmail.com>,
-        Rob van der Heij <rvdheij@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
-Subject: Re: [-stable 3.8.1 performance regression] madvise
-	POSIX_FADV_DONTNEED
-Message-ID: <20130619192508.GA666@Krystal>
-References: <51BE1828.3060206@gmail.com> <20130617141357.GA6034@Krystal> <20130617142459.1d563072231ba269cdac8f11@linux-foundation.org> <20130618092925.GI1875@suse.de> <20130618101147.GA7436@suse.de>
+	Wed, 19 Jun 2013 15:30:14 -0400
+Message-ID: <51C206C2.2070404@google.com>
+Date: Wed, 19 Jun 2013 15:30:10 -0400
+From: Tristan Schmelcher <tschmelcher@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618101147.GA7436@suse.de>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: richard@nod.at, jdike@addtoit.com
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
+ and in other edge cases
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman (mgorman@suse.de) wrote:
-> On Tue, Jun 18, 2013 at 10:29:26AM +0100, Mel Gorman wrote:
-> > On Mon, Jun 17, 2013 at 02:24:59PM -0700, Andrew Morton wrote:
-> > > On Mon, 17 Jun 2013 10:13:57 -0400 Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > 
-> > > > Hi,
-> > > > 
-> > > > CCing lkml on this,
-> > > > 
-> > > > * Yannick Brosseau (yannick.brosseau@gmail.com) wrote:
-> > > > > Hi all,
-> > > > > 
-> > > > > We discovered a performance regression in recent kernels with LTTng
-> > > > > related to the use of fadvise DONTNEED.
-> > > > > A call to this syscall is present in the LTTng consumer.
-> > > > > 
-> > > > > The following kernel commit cause the call to fadvise to be sometime
-> > > > > really slower.
-> > > > > 
-> > > > > Kernel commit info:
-> > > > > mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to discard
-> > > > > all pages
-> > > > > main tree: (since 3.9-rc1)
-> > > > > commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732
-> > > > > stable tree: (since 3.8.1)
-> > > > > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit?id=bb01afe62feca1e7cdca60696f8b074416b0910d
-> > > > > 
-> > > > > On the workload test, we observe that the call to fadvise takes about
-> > > > > 4-5 us before this patch is applied. After applying the patch, The
-> > > > > syscall now takes values from 5 us up to 4 ms (4000 us) sometime. The
-> > > > > effect on lttng is that the consumer is frozen for this long period
-> > > > > which leads to dropped event in the trace.
-> > > 
-> > > That change wasn't terribly efficient - if there are any unpopulated
-> > > pages in the range (which is quite likely), fadvise() will now always
-> > > call invalidate_mapping_pages() a second time.
-> > > 
-> > 
-> > I did not view the path as being performance critical and did not anticipate
-> > a delay that severe.
-> 
-> Which I should have, schedule_on_each_cpu is documented to be slow.
-> 
-> > The original test case as well was based on
-> > sequential IO as part of a backup so I was also generally expecting the
-> > range to be populated. I looked at the other users of lru_add_drain_all()
-> > but there are fairly few. compaction uses them but only when used via sysfs
-> > or proc. ksm uses it but it's not likely to be that noticable. mlock uses
-> > it but it's unlikely it is being called frequently so I'm not going to
-> > worry performance of lru_add_drain_all() in general. I'll look closer at
-> > properly detecting when it's necessarily to call in the fadvise case.
-> > 
-> 
-> This compile-only tested prototype should detect remaining pages in the rage
-> that were not invalidated. This will at least detect unpopulated pages but
-> whether it has any impact depends on what lttng is invalidating. If it's
-> invalidating a range of per-cpu traces then I doubt this will work because
-> there will always be remaining pages. Similarly I wonder if passing down
-> the mapping will really help if a large number of cpus are tracing as we
-> end up scheduling work on every CPU regardless.
+From: Tristan Schmelcher <tschmelcher@google.com>
 
-Here is how LTTng consumerd is using POSIX_FADV_DONTNEED. Please let me
-know if we are doing something stupid. ;-)
+which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to /run/shm), if there were multiple mounts on top of each other, if the mount(s) were obscured by a later mount, or if /dev/shm was a prefix of another mount point. This fixes these cases. Applies to 3.9.6.
 
-The LTTng consumerd deals with trace packets, which consists of a set of
-pages. I'll just discuss how the pages are moved around, leaving out
-discussion about synchronization between producer/consumer.
+Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
+---
 
-Whenever the Nth trace packet is ready to be written to disk:
+--- linux-3.9.6/arch/um/os-Linux/mem.c.orig	2013-06-19 14:50:14.000000000 -0400
++++ linux-3.9.6/arch/um/os-Linux/mem.c	2013-06-19 14:53:07.000000000 -0400
+@@ -53,6 +53,25 @@ static void __init find_tempdir(void)
+  }
+  
+  /*
++ * Remove bytes from the front of the buffer and refill it so that if there's a
++ * partial string that we care about, it will be completed, and we can recognize
++ * it.
++ */
++static int pop(int fd, char *buf, size_t size, size_t npop)
++{
++	ssize_t n;
++	size_t len = strlen(&buf[npop]);
++
++	memmove(buf, &buf[npop], len + 1);
++	n = read(fd, &buf[len], size - len - 1);
++	if (n < 0)
++		return -errno;
++
++	buf[len + n] = '\0';
++	return 1;
++}
++
++/*
+   * This will return 1, with the first character in buf being the
+   * character following the next instance of c in the file.  This will
+   * read the file as needed.  If there's an error, -errno is returned;
+@@ -61,7 +80,6 @@ static void __init find_tempdir(void)
+  static int next(int fd, char *buf, size_t size, char c)
+  {
+  	ssize_t n;
+-	size_t len;
+  	char *ptr;
+  
+  	while ((ptr = strchr(buf, c)) == NULL) {
+@@ -74,20 +92,113 @@ static int next(int fd, char *buf, size_
+  		buf[n] = '\0';
+  	}
+  
+-	ptr++;
+-	len = strlen(ptr);
+-	memmove(buf, ptr, len + 1);
++	return pop(fd, buf, size, ptr - buf + 1);
++}
+  
+-	/*
+-	 * Refill the buffer so that if there's a partial string that we care
+-	 * about, it will be completed, and we can recognize it.
+-	 */
+-	n = read(fd, &buf[len], size - len - 1);
+-	if (n < 0)
+-		return -errno;
++/*
++ * Decode an octal-escaped and space-terminated path of the form used by
++ * /proc/mounts. May be used to decode a path in-place. "out" must be at least
++ * as large as the input.
++ */
++static int decode_path(const char *in, char *out, size_t *ndecoded,
++		       size_t *decodedlen)
++{
++	const char *first_in = in;
++	char *first_out = out;
++	int c;
++	int i;
++	while (*in) {
++		switch (*in) {
++		case ' ':
++			*out = '\0';
++			*ndecoded = in - first_in + 1;
++			*decodedlen = out - first_out;
++			return 0;
+  
+-	buf[len + n] = '\0';
+-	return 1;
++		case '\\':
++			in++;
++			c = 0;
++			for (i = 0; i < 3; i++) {
++				if (*in < '0' || *in > '7')
++					return -EINVAL;
++				c = (c << 3) | (*in++ - '0');
++			}
++			*out++ = (char) c;
++			break;
++
++		default:
++			*out++ = *in++;
++			break;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static size_t octal_encoded_length(const char *s, const char *chars)
++{
++	size_t len = strlen(s);
++	while ((s = strpbrk(s, chars)) != NULL) {
++		len += 3;
++		s++;
++	}
++
++	return len;
++}
++
++enum {
++	OUTCOME_NOT_A_MOUNT_POINT,
++	OUTCOME_TMPFS_MOUNT,
++	OUTCOME_NON_TMPFS_MOUNT,
++};
++
++/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
++static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
++		      int *outcome)
++{
++	int found;
++	int match;
++	size_t ndecoded;
++	size_t decodedlen;
++
++	enum {
++		MATCH_NONE,
++		MATCH_EXACT,
++		MATCH_PARENT,
++	};
++
++	found = next(fd, buf, bufsize, ' ');
++	if (found != 1)
++		return found;
++
++	if (!decode_path(buf, buf, &ndecoded, &decodedlen)) {
++		match = MATCH_NONE;
++		if (!strcmp(buf, path))
++			match = MATCH_EXACT;
++		else if (!strncmp(buf, path, decodedlen)
++			 && (path[decodedlen] == '/' || !strcmp(buf, "/")))
++			match = MATCH_PARENT;
++
++		found = pop(fd, buf, bufsize, ndecoded);
++		if (found != 1)
++			return found;
++
++		switch (match) {
++		case MATCH_EXACT:
++			if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
++				*outcome = OUTCOME_TMPFS_MOUNT;
++			else
++				*outcome = OUTCOME_NON_TMPFS_MOUNT;
++			break;
++
++		case MATCH_PARENT:
++			/* This mount obscures any previous ones. */
++			*outcome = OUTCOME_NOT_A_MOUNT_POINT;
++			break;
++		}
++	}
++
++	return next(fd, buf, bufsize, '\n');
+  }
+  
+  /* which_tmpdir is called only during early boot */
+@@ -106,8 +217,12 @@ static int checked_tmpdir = 0;
+   */
+  static void which_tmpdir(void)
+  {
+-	int fd, found;
+-	char buf[128] = { '\0' };
++	int fd;
++	int found;
++	int outcome;
++	char *path;
++	char *buf;
++	size_t bufsize;
+  
+  	if (checked_tmpdir)
+  		return;
+@@ -116,49 +231,66 @@ static void which_tmpdir(void)
+  
+  	printf("Checking for tmpfs mount on /dev/shm...");
+  
++	path = realpath("/dev/shm", NULL);
++	if (!path) {
++		printf("failed to check real path, errno = %d\n", errno);
++		return;
++	}
++	printf("%s...", path);
++
++	/*
++	 * The buffer needs to be able to fit the full octal-escaped path, a
++	 * space, and a trailing null in order to successfully decode it.
++	 */
++	bufsize = octal_encoded_length(path, " \t\n\\") + 2;
++
++	if (bufsize < 128)
++		bufsize = 128;
++
++	buf = malloc(bufsize);
++	if (!buf) {
++		printf("malloc failed, errno = %d\n", errno);
++		goto out;
++	}
++	buf[0] = '\0';
++
+  	fd = open("/proc/mounts", O_RDONLY);
+  	if (fd < 0) {
+  		printf("failed to open /proc/mounts, errno = %d\n", errno);
+-		return;
++		goto out1;
+  	}
+  
++	outcome = OUTCOME_NOT_A_MOUNT_POINT;
+  	while (1) {
+-		found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+-		if (found != 1)
+-			break;
+-
+-		if (!strncmp(buf, "/dev/shm", strlen("/dev/shm")))
+-			goto found;
+-
+-		found = next(fd, buf, ARRAY_SIZE(buf), '\n');
++		found = read_mount(fd, buf, bufsize, path, &outcome);
+  		if (found != 1)
+  			break;
+  	}
+  
+-err:
+-	if (found == 0)
+-		printf("nothing mounted on /dev/shm\n");
+-	else if (found < 0)
++	if (found < 0) {
+  		printf("read returned errno %d\n", -found);
++	} else {
++		switch (outcome) {
++		case OUTCOME_TMPFS_MOUNT:
++			printf("OK\n");
++			default_tmpdir = "/dev/shm";
++			break;
+  
+-out:
+-	close(fd);
+-
+-	return;
+-
+-found:
+-	found = next(fd, buf, ARRAY_SIZE(buf), ' ');
+-	if (found != 1)
+-		goto err;
++		case OUTCOME_NON_TMPFS_MOUNT:
++			printf("not tmpfs\n");
++			break;
+  
+-	if (strncmp(buf, "tmpfs", strlen("tmpfs"))) {
+-		printf("not tmpfs\n");
+-		goto out;
++		default:
++			printf("nothing mounted on /dev/shm\n");
++			break;
++		}
+  	}
+  
+-	printf("OK\n");
+-	default_tmpdir = "/dev/shm";
+-	goto out;
++	close(fd);
++out1:
++	free(buf);
++out:
++	free(path);
+  }
+  
+  static int __init make_tempfile(const char *template, char **out_tempname,
 
-1) splice the entire set of pages of trace packet N to disk through a
-   pipe,
-2) sync_file_range on trace packet N-1 with the following flags:
-   SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE | SYNC_FILE_RANGE_WAIT_AFTER
-   so we wait (blocking) on the _previous_ trace packet to be completely
-   written to disk.
-3) posix_fadvise POSIX_FADV_DONTNEED on trace packet N-1.
-
-There are a couple of comments in my consumerd code explaining why we do
-this sequence of steps:
-
-        /*
-         * Give hints to the kernel about how we access the file:
-         * POSIX_FADV_DONTNEED : we won't re-access data in a near future after
-         * we write it.
-         *
-         * We need to call fadvise again after the file grows because the
-         * kernel does not seem to apply fadvise to non-existing parts of the
-         * file.
-         *
-         * Call fadvise _after_ having waited for the page writeback to
-         * complete because the dirty page writeback semantic is not well
-         * defined. So it can be expected to lead to lower throughput in
-         * streaming.
-         */
-
-Currently, the lttng-consumerd is single-threaded, but we plan to
-re-introduce multi-threading, and per-cpu affinity, in a near future.
-
-Yannick will try your patch tomorrow and report whether it improves
-performance or not,
-
-Thanks!
-
-Mathieu
-
-> 
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 2c28271..e2bb47e 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2176,6 +2176,8 @@ extern int invalidate_partition(struct gendisk *, int);
->  #endif
->  unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  					pgoff_t start, pgoff_t end);
-> +unsigned long invalidate_mapping_pages_check(struct address_space *mapping,
-> +					pgoff_t start, pgoff_t end);
->  
->  static inline void invalidate_remote_inode(struct inode *inode)
->  {
-> diff --git a/mm/fadvise.c b/mm/fadvise.c
-> index 7e09268..0579e60 100644
-> --- a/mm/fadvise.c
-> +++ b/mm/fadvise.c
-> @@ -122,7 +122,9 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->  		end_index = (endbyte >> PAGE_CACHE_SHIFT);
->  
->  		if (end_index >= start_index) {
-> -			unsigned long count = invalidate_mapping_pages(mapping,
-> +			unsigned long nr_remaining;
-> +
-> +			nr_remaining = invalidate_mapping_pages_check(mapping,
->  						start_index, end_index);
->  
->  			/*
-> @@ -131,7 +133,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->  			 * a per-cpu pagevec for a remote CPU. Drain all
->  			 * pagevecs and try again.
->  			 */
-> -			if (count < (end_index - start_index + 1)) {
-> +			if (nr_remaining) {
->  				lru_add_drain_all();
->  				invalidate_mapping_pages(mapping, start_index,
->  						end_index);
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index c75b736..86cfc2e 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -312,26 +312,16 @@ void truncate_inode_pages(struct address_space *mapping, loff_t lstart)
->  }
->  EXPORT_SYMBOL(truncate_inode_pages);
->  
-> -/**
-> - * invalidate_mapping_pages - Invalidate all the unlocked pages of one inode
-> - * @mapping: the address_space which holds the pages to invalidate
-> - * @start: the offset 'from' which to invalidate
-> - * @end: the offset 'to' which to invalidate (inclusive)
-> - *
-> - * This function only removes the unlocked pages, if you want to
-> - * remove all the pages of one inode, you must call truncate_inode_pages.
-> - *
-> - * invalidate_mapping_pages() will not block on IO activity. It will not
-> - * invalidate pages which are dirty, locked, under writeback or mapped into
-> - * pagetables.
-> - */
-> -unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> -		pgoff_t start, pgoff_t end)
-> +static void __invalidate_mapping_pages(struct address_space *mapping,
-> +		pgoff_t start, pgoff_t end,
-> +		unsigned long *ret_nr_invalidated,
-> +		unsigned long *ret_nr_remaining)
->  {
->  	struct pagevec pvec;
->  	pgoff_t index = start;
->  	unsigned long ret;
-> -	unsigned long count = 0;
-> +	unsigned long nr_invalidated = 0;
-> +	unsigned long nr_remaining = 0;
->  	int i;
->  
->  	/*
-> @@ -354,8 +344,10 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  			if (index > end)
->  				break;
->  
-> -			if (!trylock_page(page))
-> +			if (!trylock_page(page)) {
-> +				nr_remaining++;
->  				continue;
-> +			}
->  			WARN_ON(page->index != index);
->  			ret = invalidate_inode_page(page);
->  			unlock_page(page);
-> @@ -365,17 +357,73 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  			 */
->  			if (!ret)
->  				deactivate_page(page);
-> -			count += ret;
-> +			else
-> +				nr_remaining++;
-> +			nr_invalidated += ret;
->  		}
->  		pagevec_release(&pvec);
->  		mem_cgroup_uncharge_end();
->  		cond_resched();
->  		index++;
->  	}
-> -	return count;
-> +
-> +	*ret_nr_invalidated = nr_invalidated;
-> +	*ret_nr_remaining = nr_remaining;
->  }
->  EXPORT_SYMBOL(invalidate_mapping_pages);
->  
-> +/**
-> + * invalidate_mapping_pages - Invalidate all the unlocked pages of one inode
-> + * @mapping: the address_space which holds the pages to invalidate
-> + * @start: the offset 'from' which to invalidate
-> + * @end: the offset 'to' which to invalidate (inclusive)
-> + *
-> + * This function only removes the unlocked pages, if you want to
-> + * remove all the pages of one inode, you must call truncate_inode_pages.
-> + *
-> + * invalidate_mapping_pages() will not block on IO activity. It will not
-> + * invalidate pages which are dirty, locked, under writeback or mapped into
-> + * pagetables.
-> + *
-> + * Returns the number of pages invalidated
-> + */
-> +unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> +		pgoff_t start, pgoff_t end)
-> +{
-> +	unsigned long nr_invalidated, nr_remaining;
-> +
-> +	__invalidate_mapping_pages(mapping, start, end,
-> +				   &nr_invalidated, &nr_remaining);
-> +
-> +	return nr_invalidated;
-> +}
-> +
-> +/**
-> + * invalidate_mapping_pages_check - Invalidate all the unlocked pages of one inode and check for remaining pages.
-> + * @mapping: the address_space which holds the pages to invalidate
-> + * @start: the offset 'from' which to invalidate
-> + * @end: the offset 'to' which to invalidate (inclusive)
-> + *
-> + * This function only removes the unlocked pages, if you want to
-> + * remove all the pages of one inode, you must call truncate_inode_pages.
-> + *
-> + * invalidate_mapping_pages() will not block on IO activity. It will not
-> + * invalidate pages which are dirty, locked, under writeback or mapped into
-> + * pagetables.
-> + *
-> + * Returns the number of pages remaining in the invalidated range
-> + */
-> +unsigned long invalidate_mapping_pages_check(struct address_space *mapping,
-> +		pgoff_t start, pgoff_t end)
-> +{
-> +	unsigned long nr_invalidated, nr_remaining;
-> +
-> +	__invalidate_mapping_pages(mapping, start, end,
-> +				   &nr_invalidated, &nr_remaining);
-> +
-> +	return nr_remaining;
-> +}
-> +
->  /*
->   * This is like invalidate_complete_page(), except it ignores the page's
->   * refcount.  We do this because invalidate_inode_pages2() needs stronger
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
