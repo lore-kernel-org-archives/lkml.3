@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3FSOZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:25:48 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:47332 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756731Ab3FSOZr (ORCPT
+	id S934809Ab3FSO0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:26:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33530 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab3FSO0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:25:47 -0400
-Date: Wed, 19 Jun 2013 14:25:46 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slub: do not put a slab to cpu partial list when
- cpu_partial is 0
-In-Reply-To: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <0000013f5cd3b621-8f7f97fb-f97e-4498-9e1e-40feaa7be0b7-000000@email.amazonses.com>
-References: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Jun 2013 10:26:50 -0400
+Date: Wed, 19 Jun 2013 07:27:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, Jeff Mahoney <jeffm@suse.com>,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] build some drivers only when compile-testing
+Message-ID: <20130619142731.GA7979@kroah.com>
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+ <20130523022327.GB6159@kroah.com>
+ <519D8876.9050405@suse.com>
+ <51BF6BFF.7050705@suse.cz>
+ <51C1595D.60706@ti.com>
+ <51C159F8.8090604@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.19-54.240.9.78
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C159F8.8090604@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Joonsoo Kim wrote:
+On Wed, Jun 19, 2013 at 09:12:56AM +0200, Jiri Slaby wrote:
+> On 06/19/2013 09:10 AM, Tomi Valkeinen wrote:
+> > On 17/06/13 23:05, Jiri Slaby wrote:
+> > 
+> >> The last point I inclined to the Greg's argument to remove the
+> >> EXPERT dependency.
+> >> 
+> >> So currently I have what is attached... Comments?
+> > 
+> > The patch looks a bit odd with the USB_CHIPIDEA_IMX parts. You're
+> > not adding COMPILE_TEST there, but you're adding a totally new
+> > config option, and also changing the Makefile.
+> 
+> Look:
+> 
+> +config USB_CHIPIDEA_IMX
+> +       bool "ChipIdea IMX support"
+> +       depends on OF_DEVICE && (ARM || COMPILE_TEST)
 
-> In free path, we don't check number of cpu_partial, so one slab can
-> be linked in cpu partial list even if cpu_partial is 0. To prevent this,
-> we should check number of cpu_partial in put_cpu_partial().
+Ah, what about all of the chipidea chips on x86 boxes (yes, they are
+rare, but they are present, so you can't just turn them off for that
+whole platform here.
 
-Acked-by: Christoph Lameeter <cl@linux.com>
+I'd leave chipidea alone, it's getting more prelevant, not on a desktop
+or server, but in SoC systems, which is x86 for a lot of devices.
 
+thanks,
+
+greg k-h
