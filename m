@@ -1,31 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3FSRXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:23:18 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:37518 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3FSRXR (ORCPT
+	id S1757197Ab3FSRYC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:24:02 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:60345 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756896Ab3FSRX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:23:17 -0400
-Date: Wed, 19 Jun 2013 14:23:10 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-Cc: namhyung@kernel.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix bench numa compilation
-Message-ID: <20130619172310.GA2818@ghostprotocols.net>
-References: <8761xd2k1c.fsf@sejong.aot.lge.com>
- <1371466499-28291-1-git-send-email-riccardo.magliocchetti@gmail.com>
+	Wed, 19 Jun 2013 13:23:59 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RFC PATCH 2/6] mfd: omap-usb-host: Put pins in IDLE state on suspend
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
+	<1371650753-11452-3-git-send-email-rogerq@ti.com>
+Date: Wed, 19 Jun 2013 10:23:55 -0700
+In-Reply-To: <1371650753-11452-3-git-send-email-rogerq@ti.com> (Roger
+	Quadros's message of "Wed, 19 Jun 2013 17:05:49 +0300")
+Message-ID: <878v26815g.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371466499-28291-1-git-send-email-riccardo.magliocchetti@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
-> +				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016llx]\n",
-> +					process_nr, thread_nr, runtime_ns_max / bytes_done, (unsigned long long)val);
+Hi Roger,
 
-Shouldn't this use PRIu64?
+Roger Quadros <rogerq@ti.com> writes:
+
+> In order to support wake up from suspend use the pinctrl
+> framework to put the USB host pins in IDLE state during suspend.
+>
+> CC: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+
+You should use helpers for this now in the pinctrl core:
+
+    http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html
+
+Kevin
