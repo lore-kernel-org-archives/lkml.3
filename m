@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934917Ab3FSQie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:38:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56565 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934170Ab3FSQib (ORCPT
+	id S934881Ab3FSQkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:40:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8153 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934170Ab3FSQkm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:38:31 -0400
-Date: Wed, 19 Jun 2013 17:38:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Michal Marek <mmarek@suse.cz>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>, tomi.valkeinen@ti.com
-Message-ID: <20130619163810.GY1403@sirena.org.uk>
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
- <20130523022327.GB6159@kroah.com>
- <519D8876.9050405@suse.com>
- <51BF6BFF.7050705@suse.cz>
- <51BFE754.5080301@suse.cz>
- <20130618081858.GD5461@arwen.pp.htv.fi>
- <51C01948.9060708@suse.cz>
- <20130618083425.GI5461@arwen.pp.htv.fi>
+	Wed, 19 Jun 2013 12:40:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,898,1363158000"; 
+   d="scan'208";a="319520124"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+Subject: RE: [GIT PULL] Some error injection fixes to queue for 3.11
+Thread-Topic: [GIT PULL] Some error injection fixes to queue for 3.11
+Thread-Index: AQHObORFa9GDP8n+jkOFyme2gAOIipk9nywA//+diaA=
+Date: Wed, 19 Jun 2013 16:40:39 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA87F71@ORSMSX106.amr.corp.intel.com>
+References: <51b20612239358173f@agluck-desk.sc.intel.com>
+ <20130619115702.GC10599@gmail.com>
+ <1A7043D5F58CCB44A599DFD55ED4C948385151A1@FMSMSX106.amr.corp.intel.com>
+In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948385151A1@FMSMSX106.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mNqB7BSMRyhUYAix"
-Content-Disposition: inline
-In-Reply-To: <20130618083425.GI5461@arwen.pp.htv.fi>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] build some drivers only when compile-testing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> Pulled, thanks Tony!
+>> 
+>> Len, are you fine with this route [tip:x86/ras tree] for the
+>> drivers/acpi/apei/einj.c changes?
+>
+> Yes, the RAS guys basically own that code.
 
---mNqB7BSMRyhUYAix
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+These patches also got picked up by Rafael and are in his ACPI tree
+too.  I think the patches were applied identically, so there should not
+be any merge conflicts when this all comes back together in the 3.11
+merge window.
 
-On Tue, Jun 18, 2013 at 11:34:26AM +0300, Felipe Balbi wrote:
+Rafael already had a chat about who will take future apei changes
+so that we won't have this happen again.
 
-> MUSB alone has 8 different arch choices. Before, it used to be that core
-> driver was dependendent on all of them, so whenever someone wanted to
-> build MUSB for another arch, they had to introdude their glue code and
-> modify the dependency of the core driver.
-
-> Also EHCI, it works on pretty much everything, so does DWC3.
-
-> DWC3 already has three possibilities but I know of at least 3 others
-> which could show up soonish.
-
-If the number of architectures supported is getting large enough then
-it's probably reasonable to just enable the driver all the time,
-probably it'll also appear on some PCI cards or something anyway.  The
-things people are complaining about here are things that are clearly
-unlikely to appear on other architectures like a particular SoC vendor's
-custom IPs that they don't license out.
-
---mNqB7BSMRyhUYAix
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRwd5vAAoJELSic+t+oim9g2YP/RYTZksBIXcg2iutJN/y3mSr
-40Ym0bnfUMTyKjWKWL0x4lFUYoC6uUQBx8X6zgPntXhgaPi11PGH0hY4rdSZuW9U
-6uKsEcsVUydl5l2PT7f2e8nSlTUIHPljw0oj7Xtvgc7t9CT/BJePmIGjo32MnWaX
-zOl0bBZKMfjUT4zhRh2/LU25Ljc8QQVD0kF/fEZ/5k8xsj1D5ljo8HPoFr8dMIUB
-23bERwJFZ1e7nrsocRBtDeOjg9FTuQ1lrTgcMQP7MyL2wxgyI9zKFhtLFFtp+Fhm
-jJfy4cnPhGurS8cWDje0ZWyKC3pJLvuywdaR/KxtDWGM96o91h6MGbJJXTJma8Sy
-T9TSXROXj5htluVt3YEbHEBl/qtreFtgvC/4l3dpBth562dT1btsUpodRBg5Kj8Y
-lwLXnSfhZdV2ao/aOZAFDkKl7vcP0iA98XM2FNmdPJTd5fVl8q7CWvg7sBRVSY2D
-nmLVI8L/oIFy+9kJXmC75CJtcmzb2S1dL6DXd3d5C5hODEpZ7eUxAHIBI+6TnY99
-cxMvGMwp/gIogO49BfBLedmRc6RTUh9W7IcRfMf7UhAlxQbMSru8eQAttK7nC/dd
-AAbIqVUa7ASGgxVbQ9BlHBuDpG5mnWDI5BYurH3fdPAfSpbhBrQfamemkxQjissI
-DSAfNx3TTLenz29EXaYq
-=+oMe
------END PGP SIGNATURE-----
-
---mNqB7BSMRyhUYAix--
+-Tony
