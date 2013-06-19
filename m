@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935216Ab3FSWCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:02:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42066 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934979Ab3FSWCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:02:34 -0400
-Message-ID: <51C22A6B.3090009@zytor.com>
-Date: Wed, 19 Jun 2013 15:02:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S935244Ab3FSWDH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:03:07 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35550 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934979Ab3FSWDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 18:03:05 -0400
+Message-ID: <51C22A95.4050703@wwwdotorg.org>
+Date: Wed, 19 Jun 2013 16:03:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Subject: Re: [x86] only print out DR registers if they are not power-on defaults.
-References: <20130618041132.GA23492@redhat.com> <20130618084356.GA13123@pd.tnic> <20130618140730.GA1313@redhat.com> <20130618155919.GC13123@pd.tnic> <51C225D9.8070100@zytor.com> <20130619215233.GU28300@pd.tnic>
-In-Reply-To: <20130619215233.GU28300@pd.tnic>
-X-Enigmail-Version: 1.5.1
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        =?UTF-8?B?77+9?= <heiko@sntech.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 02:52 PM, Borislav Petkov wrote:
-> On Wed, Jun 19, 2013 at 02:42:49PM -0700, H. Peter Anvin wrote:
->> There is serious confusion with regards to DR6 about the bits which
->> are *fixed* (forced to 1) and the ones which are *reserved* (should
->> always have a fixed value.)
->>
->> There are some bits in DR6 which are used by hardware probes.
+On 06/16/2013 04:45 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Haha, I knew it! HW guys don't care about the architectural documents.
+> It is counter-intuitive to have "0" mean disable in a boolean
+> manner for electronic properties of pins such as pull-up and
+> pull-down. Therefore, define that a pull-up/pull-down argument
+> of 0 to such a generic option means that the pin is
+> short-circuited to VDD or GROUND. Pull disablement shall be
+> done using PIN_CONFIG_BIAS_DISABLE.
 > 
-> Maybe DR6 should probably be dropped altogether from the check before
-> exiting __show_regs early?
+> Cc: Heiko St�bner <heiko@sntech.de>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
+>  1 file changed, 7 insertions(+), 6 deletions(-)
 > 
+> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+> index d414a77..67780f5 100644
+> --- a/include/linux/pinctrl/pinconf-generic.h
+> +++ b/include/linux/pinctrl/pinconf-generic.h
+> @@ -36,14 +36,15 @@
+>   *	tristate. The argument is ignored.
+>   * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
+>   *	impedance to VDD). If the argument is != 0 pull-up is enabled,
+> - *	if it is 0, pull-up is disabled.
+> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
+>   * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
+>   *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
+> - *	if it is 0, pull-down is disabled.
+> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
+>   * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+>   *	on embedded knowledge of the controller, like current mux function.
+> - *	If the argument is != 0 pull up/down is enabled, if it is 0,
+> - *	the pull is disabled.
+> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
+> + *	configuration is ignored. The proper way to disable it is to use
+> + *	@PIN_CONFIG_BIAS_DISABLE.
 
-Uhm... I think you're missing the point of architectural documents.
-
-The architectural documents describe the contract between hardware and
-software.  It doesn't mean that hardware can't go beyond it... it is in
-fact the norm.  The architectural documentation states what software may
-rely on and within what bounds it can assume safe behavior to be
-compatible both now and with any future extensions.
-
-	-hpa
+Why treat PULL_UP/PULL_DOWN differently from PULL_PIN_DEFAULT?
+PULL_PIN_DEFAULT is logically simply a macro that selects PULL_UP/DOWN
+based on what's "normal" for the pin's expected usage, so surely the
+value associated with that option should behave identically?
 
