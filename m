@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934622Ab3FSMb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:31:28 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:49859 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab3FSMb1 (ORCPT
+	id S934673Ab3FSMcY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:32:24 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14862 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934022Ab3FSMcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:31:27 -0400
-Date: Wed, 19 Jun 2013 21:31:23 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, john stultz <johnstul@us.ibm.com>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: sh_cmt: 32-bit control register support
-Message-ID: <20130619123122.GF32292@verge.net.au>
-References: <20130617064052.3573.68839.sendpatchset@w520>
- <1531456.g1EpKAjrma@avalon>
- <CANqRtoTRcpEH13GY4jvmX5POFEZf2B6+vu0-ZGCMCk+sAeF7Ww@mail.gmail.com>
- <6180605.R3OXnJCA3O@avalon>
- <CANqRtoSqFPcwq0Wt7fj13izay14X_bi+UyUQe=4OGaNThsQt6Q@mail.gmail.com>
+	Wed, 19 Jun 2013 08:32:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+E8EJvGmk/ifnBdkiDe2gT
+Date: Wed, 19 Jun 2013 05:32:18 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: florian.vaussard@epfl.ch, Roger Quadros <rogerq@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+Message-ID: <20130619123217.GB5523@atomide.com>
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com>
+ <1371571487-14389-2-git-send-email-rogerq@ti.com>
+ <51C106A1.9030001@ti.com>
+ <51C15F7E.5020305@ti.com>
+ <20130619074605.GW5523@atomide.com>
+ <51C183AC.8040801@ti.com>
+ <51C19011.5050107@ti.com>
+ <51C19E6C.4040802@epfl.ch>
+ <51C1A2AE.2020506@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANqRtoSqFPcwq0Wt7fj13izay14X_bi+UyUQe=4OGaNThsQt6Q@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C1A2AE.2020506@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:27:44PM +0900, Magnus Damm wrote:
-> Hi Laurent,
-> 
-> On Tue, Jun 18, 2013 at 9:30 PM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
-> > Hi Magnus,
-> >
-> > On Tuesday 18 June 2013 20:54:47 Magnus Damm wrote:
-> >> On Tue, Jun 18, 2013 at 7:35 PM, Laurent Pinchart wrote:
-> >> > On Tuesday 18 June 2013 14:39:38 Magnus Damm wrote:
-> >> >> On Tue, Jun 18, 2013 at 3:37 AM, Laurent Pinchart wrote:
-> >> >> > On Monday 17 June 2013 15:40:52 Magnus Damm wrote:
-> >> >> >> From: Magnus Damm <damm@opensource.se>
-> >> >> >>
-> >> >> >> Add support for CMT hardware with 32-bit control and counter
-> >> >> >> registers, as found on r8a73a4 and r8a7790. To use the CMT
-> >> >> >> with 32-bit hardware a second I/O memory resource needs to
-> >> >> >> point out the CMSTR register and it needs to be 32 bit wide.
-> >> >> >
-> >> >> > Is a memory second resource required ? Can't we use a single resource
-> >> >> > that will contain all the registers ?
-> >> >>
-> >> >> The CMT hardware block comes with a shared timer start stop register
-> >> >> that historically has been left out of the resource. The location of
-> >> >> this register has so far been pointed out by the "channel offset"
-> >> >> platform data member, together with information about which bit that
-> >> >> happens to be assigned to the timer channel. This start stop register
-> >> >> has happened to be kept in the same page of I/O memory as the main
-> >> >> timer channel resource, so at this point we're sort of "lucky" that a
-> >> >> single ioremap() has covered all cases.
-> >> >>
-> >> >> With this patch it becomes optional to instead of platform data use a
-> >> >> second resource to point out the timer start/stop register. While we
-> >> >> do that we can also use the size of that resource to determine the I/O
-> >> >> access width, which happens to be something that is needed to enable
-> >> >> the driver on certain SoCs.
-> >> >
-> >> > OK, I get it now. I've had a quick look at the documentation, and I'm
-> >> > wondering whether we shouldn't register a single platform device that span
-> >> > all the channels contained in the CMT, instead of registering one
-> >> > platform device per channel.
-> >>
-> >> I both agree with you and disagree because of the current state of timers in
-> >> the linux kernel. I would have liked a single platform device with all
-> >> channles if this would be a generic timer driver that from user space could
-> >> be configured to associate channels with various subsystems like PWM,
-> >> clocksource, clockevent.
-> >>
-> >> At this point the driver is doing clockevent and clocksource only, and no
-> >> sane user wants 84 channels of equivalent hardware blocks for those two.
-> >
-> > Of course, but we could always select which channels to register clockevents
-> > and clocksources for in platform data. That won't fix the overall problem, but
-> > it's one step forward.
-> 
-> But that's pretty much what we're doing, but only listing timer
-> channels that will be used. Of course, moving around things can be
-> done but I can't see why we want to do that if we have no selection of
-> drivers for the actual timer channels. Also, each timer channel may
-> have it's own unique set of possible parent clocks. That's something
-> we want to tie in to DT together with CCF. Solving those things
-> together makes sense IMO.
-> 
-> >> So based on that I'd rather do it like today and let people write custom
-> >> drivers for whatever applications they may use the other channels for.
-> >>
-> >> So if you're in hacking mode, why don't you figure out some way timers can
-> >> be configured from user space? =)
-> >
-> > I don't have *that* much free time at the moment I'm afraid, and I'm sure you
-> > know why :-)
-> 
-> Yes I do, and that's why I asked. =)
-> 
-> >> If so then we can use DT to describe the actual hardware and let the
-> >> software policy be decided via some configuration mechanism.
-> >
-> > Don't we also need timers during early boot, when userspace isn't available
-> > yet ?
-> 
-> It depends on the rest of the system. It is possible to boot to user
-> space without a timer, but I don't recommend it. =)
+* Benoit Cousson <b-cousson@ti.com> [130619 05:30]:
+> On 06/19/2013 07:05 AM, Florian Vaussard wrote:
+> >>>>>>>+
+> >>>>>>>+    /* HS USB Port 1 RESET */
+> >>>>>>>+    hsusb1_reset: hsusb1_reset_reg {
+> >>>>>>>+        compatible = "regulator-fixed";
+> >>>>>>>+        regulator-name = "hsusb1_reset";
+> >>>>>>>+        regulator-min-microvolt = <3300000>;
+> >>>>>>>+        regulator-max-microvolt = <3300000>;
+> >>>>>>>+        gpio = <&gpio2 30 0>;    /* gpio_62 */
+> >>>>>>>+        startup-delay-us = <70000>;
+> >>>>>>>+        enable-active-high;
+> >>>>>>>+    };
+> >>>>>>
+> >>>>>>Is this really a regulator? Or just a GPIO line used to reset the
+> >>>>>>USB PHY?
+> >>>>>
+> >>>>>It is in fact a GPIO line used as reset.
+> >>>>>>
+> >>>>>>If this is the case, I don't think it should be represented as a
+> >>>>>>regulator.
+> >>>>>
+> >>>>>Why not? I think it fits very well in the regulator device model.
+> >>>
+> >>>I'm not sure fitting very well is the correct term.
+> >>>It works, for sure, but it is no different than when we were trying
+> >>>to abuse the regulator fmwk to enable the 32k clock in phoenix.
+> >>>It is just a hack.
 
-Hi,
+If it's a reset, then yeah it's not a regulator. If the GPIO line is
+really used to control the regulator in the external device, then it
+makes sense to set it up as a regulator.
 
-I am holding off on this patch until some consensus is reached.
+> >>The only difference is there is a dedicated framework for clocks.
+> >>Since there is nothing specific to
+> >>handle reset lines it is left to the driver writer how he wants to
+> >>manage it.
+> >>
+> >
+> >There is a proposed binding for gpio-controlled reset lines, but it is
+> >not yet merged [1].
+> >I guess it can fit most usage patterns, and it can be an interesting
+> >move in the future.
+> 
+> I'm glad to see that I was not the only one thinking that the
+> regulator was not the right fmwk to do that :-)
+> 
+> Thanks for the pointer Florian.
+
+Good to hear about the gpio-controlled reset lines :)
+ 
+> I guess that series should be merged for 3.11? Based on the thread,
+> it should to through arm-soc.
+> 
+> Roger,
+> 
+> It might be tricky to have dependency on that series, but if this is
+> possible, you should try. Otherwise, just keep the existing one,
+> adding that a new solution will be available soon as a disclaimer.
+
+We need some solution for v3.11 for omap4 USB on panda so people can
+use it with DT.
+
+Regards,
+
+Tony
