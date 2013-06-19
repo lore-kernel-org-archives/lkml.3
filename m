@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab3FSRYC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:24:02 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60345 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab3FSRX7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:23:59 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
-        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC PATCH 2/6] mfd: omap-usb-host: Put pins in IDLE state on suspend
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
-	<1371650753-11452-3-git-send-email-rogerq@ti.com>
-Date: Wed, 19 Jun 2013 10:23:55 -0700
-In-Reply-To: <1371650753-11452-3-git-send-email-rogerq@ti.com> (Roger
-	Quadros's message of "Wed, 19 Jun 2013 17:05:49 +0300")
-Message-ID: <878v26815g.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S934879Ab3FSR0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:26:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39255 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934731Ab3FSR0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:26:12 -0400
+Message-ID: <51C1E996.9070209@zytor.com>
+Date: Wed, 19 Jun 2013 12:25:42 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+References: <1371491416-11037-1-git-send-email-bp@alien8.de> <20130619125243.GD11209@gmail.com> <20130619130225.GA28311@pd.tnic>
+In-Reply-To: <20130619130225.GA28311@pd.tnic>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On 06/19/2013 08:02 AM, Borislav Petkov wrote:
+> 
+> And yet there are the Macs which reportedly cannot stomach this.
+> 
 
-Roger Quadros <rogerq@ti.com> writes:
+No, the reports are that if you use the 1:1 map as the primary address
+on Macs the drivers fail... not that you can't have a 1:1 map.
 
-> In order to support wake up from suspend use the pinctrl
-> framework to put the USB host pins in IDLE state during suspend.
->
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+	-hpa
 
-You should use helpers for this now in the pinctrl core:
-
-    http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html
-
-Kevin
