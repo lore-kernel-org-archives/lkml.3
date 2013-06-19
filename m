@@ -1,131 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934775Ab3FSOIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:08:53 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49145 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933833Ab3FSOIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:08:50 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-4a-51c1bb7082ff
-To: undisclosed-recipients:;
-Message-id: <51C1BB6C.8010105@samsung.com>
-Date: Wed, 19 Jun 2013 16:08:44 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510
- Thunderbird/17.0.6
-MIME-version: 1.0
-Newsgroups: gmane.linux.kernel.lsm,gmane.linux.kernel
-Cc: linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org, casey@schaufler-ca.com
-Subject: [PATCH] security: smack: fix memleak in smk_write_rules_list()
-References: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
-In-reply-to: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t/xy7oFuw8GGixpUrK4t+0Xm8XZpjfs
-	Fpd3zWGz+NDziM1i7ZG77BZvJ61gdmDz6NuyitHj6P5FbB6fN8kFMEdx2aSk5mSWpRbp2yVw
-	ZSyYu4qpYKtIxaL+e4wNjBMFuhg5OSQETCR2Xb3GDmGLSVy4t56ti5GLQ0hgKaPE0b5OVpCE
-	iICMxNzZj1khEp8ZJZaeuwyW4BXQkljw5h9QNwcHi4CqxOHv1SBhNqChx5Z8ZgQJiwpESDSd
-	LoOoFpT4MfkeC4jNJ2Aq0XhxM9gUZoG1jBIrVlSB2MIC7hJHO98xgthCAh4SR58sZgaxOQU8
-	Jd7e2sgCUa8jsb91GhuELS+xec1b5gmMgrOQrJiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNz
-	i0vz0vWS83M3MUKC++sOxqXHrA4xCnAwKvHwzuQ8GCjEmlhWXJl7iFGCg1lJhLdrF1CINyWx
-	siq1KD++qDQntfgQIxMHp1QDo4E527Lsxc5zLnZ/m7w5+viXjzz8exJaWmpr7gS9WiVwj/30
-	55N3S+8d/Cn60e6W+aMV8iHvty+6d7papPFmqkBNz+IJt96efnh49oeXr6MXbOyavLhqTm06
-	P1d4G8vEiJVXjMOiquJOW/0TfRs3IVI+3kNrvduTggvv/jMwyhdwHlX6urz00DwlluKMREMt
-	5qLiRADhHMdHTAIAAA==
+	id S934723Ab3FSOKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:10:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59179 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab3FSOKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 10:10:50 -0400
+Date: Wed, 19 Jun 2013 09:09:20 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv13 3/4] zswap: add to mm/
+Message-ID: <20130619140920.GA11843@cerebellum>
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061914-7182-0000-0000-00000768B25B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8497987bedf8821db3dce47a6205dfce2b0895c5 Mon Sep 17 00:00:00 2001
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Date: Thu, 6 Jun 2013 09:30:50 +0200
-Subject: [PATCH] security: smack: fix memleak in smk_write_rules_list()
+On Mon, Jun 17, 2013 at 02:20:05PM +0800, Bob Liu wrote:
+> Hi Seth,
+> 
+> On Tue, Jun 4, 2013 at 4:33 AM, Seth Jennings
+> <sjenning@linux.vnet.ibm.com> wrote:
+> > zswap is a thin backend for frontswap that takes pages that are in the process
+> > of being swapped out and attempts to compress them and store them in a
+> > RAM-based memory pool.  This can result in a significant I/O reduction on the
+> > swap device and, in the case where decompressing from RAM is faster than
+> > reading from the swap device, can also improve workload performance.
+> >
+> > It also has support for evicting swap pages that are currently compressed in
+> > zswap to the swap device on an LRU(ish) basis. This functionality makes zswap a
+> > true cache in that, once the cache is full, the oldest pages can be moved out
+> > of zswap to the swap device so newer pages can be compressed and stored in
+> > zswap.
+> >
+> > This patch adds the zswap driver to mm/
+> >
+> 
+> Do you have any more benchmark can share with me ? To figure out that
+> we can benefit from zswap.
 
-The smack_parsed_rule structure is allocated.  If a rule is successfully
-installed then the last reference to the object is lost.  This patch fixes this
-leak. Moreover smack_parsed_rule is allocated on stack because it no longer
-needed ofter smk_write_rules_list() is finished.
+The two I've done or kernbench and SPECjbb.  I'm trying out the memtests
+now.  I'd like to be able to explain the numbers you are seeing at least.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
----
- security/smack/smackfs.c |   30 ++++++++++--------------------
- 1 file changed, 10 insertions(+), 20 deletions(-)
+Sorry for the delay.  I'll get back to you once I've figured out how
+to using mmtests and get some results/explanations.
 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 53a08b8..08aebc2 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -446,7 +446,7 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 					struct mutex *rule_lock, int format)
- {
- 	struct smack_known *skp;
--	struct smack_parsed_rule *rule;
-+	struct smack_parsed_rule rule;
- 	char *data;
- 	int datalen;
- 	int rc = -EINVAL;
-@@ -478,49 +478,39 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 		goto out;
- 	}
+Also, how much physical RAM did this box have? I see 2G in the profile name
+but not sure if that is the workload size or the RAM size.  I seems that the
+test is overcommitted from the beginning as indicated by the swap activity.
+I know that the parallelio-memcachetest default profile only uses 80% of
+physical memory, so you have apparently made a change yes?
 
--	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
--	if (rule == NULL) {
--		rc = -ENOMEM;
--		goto out;
--	}
--
- 	if (format == SMK_LONG_FMT) {
- 		/*
- 		 * Be sure the data string is terminated.
- 		 */
- 		data[count] = '\0';
--		if (smk_parse_long_rule(data, rule, 1, 0))
--			goto out_free_rule;
-+		if (smk_parse_long_rule(data, &rule, 1, 0))
-+			goto out;
- 	} else if (format == SMK_CHANGE_FMT) {
- 		data[count] = '\0';
--		if (smk_parse_long_rule(data, rule, 1, 1))
--			goto out_free_rule;
-+		if (smk_parse_long_rule(data, &rule, 1, 1))
-+			goto out;
- 	} else {
- 		/*
- 		 * More on the minor hack for backward compatibility
- 		 */
- 		if (count == (SMK_OLOADLEN))
- 			data[SMK_OLOADLEN] = '-';
--		if (smk_parse_rule(data, rule, 1))
--			goto out_free_rule;
-+		if (smk_parse_rule(data, &rule, 1))
-+			goto out;
- 	}
+Seth
 
-
- 	if (rule_list == NULL) {
- 		load = 1;
--		skp = smk_find_entry(rule->smk_subject);
-+		skp = smk_find_entry(rule.smk_subject);
- 		rule_list = &skp->smk_rules;
- 		rule_lock = &skp->smk_rules_lock;
- 	}
-
--	rc = smk_set_access(rule, rule_list, rule_lock, load);
--	if (rc == 0) {
-+	rc = smk_set_access(&rule, rule_list, rule_lock, load);
-+	if (rc == 0)
- 		rc = count;
--		goto out;
--	}
-
--out_free_rule:
--	kfree(rule);
- out:
- 	kfree(data);
- 	return rc;
--- 
-1.7.9.5
+> 
+> I found zswap will cause performance drop when using mmtests-0.10 to test it.
+> The config file I'm using is: config-global-dhp__parallelio-memcachetest
+> 
+> The result is:
+> (v3.10-rc4-2G-nozswap was without zswap but the performance is better.)
+> 
+>                                          v3.10-rc4                   v3.10-rc4
+>                                      2G-zswap-base                  2G-nozswap
+> Ops memcachetest-0M               604.00 (  0.00%)           1077.00 ( 78.31%)
+> Ops memcachetest-198M             630.00 (  0.00%)           1007.00 ( 59.84%)
+> Ops memcachetest-430M             609.00 (  0.00%)            939.00 ( 54.19%)
+> Ops memcachetest-661M             604.00 (  0.00%)            845.00 ( 39.90%)
+> Ops memcachetest-893M             591.00 (  0.00%)            839.00 ( 41.96%)
+> Ops memcachetest-1125M            599.00 (  0.00%)            781.00 ( 30.38%)
+> Ops memcachetest-1356M            588.00 (  0.00%)            771.00 ( 31.12%)
+> Ops io-duration-0M                  0.00 (  0.00%)              1.00 (-99.00%)
+> Ops io-duration-198M              177.00 (  0.00%)             21.00 ( 88.14%)
+> Ops io-duration-430M              168.00 (  0.00%)             25.00 ( 85.12%)
+> Ops io-duration-661M              214.00 (  0.00%)             30.00 ( 85.98%)
+> Ops io-duration-893M              186.00 (  0.00%)             32.00 ( 82.80%)
+> Ops io-duration-1125M             175.00 (  0.00%)             42.00 ( 76.00%)
+> Ops io-duration-1356M             245.00 (  0.00%)             51.00 ( 79.18%)
+> Ops swaptotal-0M               487760.00 (  0.00%)         459754.00 (  5.74%)
+> Ops swaptotal-198M             563581.00 (  0.00%)         485194.00 ( 13.91%)
+> Ops swaptotal-430M             579472.00 (  0.00%)         500817.00 ( 13.57%)
+> Ops swaptotal-661M             568086.00 (  0.00%)         524209.00 (  7.72%)
+> Ops swaptotal-893M             584405.00 (  0.00%)         509846.00 ( 12.76%)
+> Ops swaptotal-1125M            572992.00 (  0.00%)         534115.00 (  6.78%)
+> Ops swaptotal-1356M            573259.00 (  0.00%)         529814.00 (  7.58%)
+> Ops swapin-0M                  231250.00 (  0.00%)         236069.00 ( -2.08%)
+> Ops swapin-198M                312259.00 (  0.00%)         239149.00 ( 23.41%)
+> Ops swapin-430M                327178.00 (  0.00%)         246803.00 ( 24.57%)
+> Ops swapin-661M                319575.00 (  0.00%)         273644.00 ( 14.37%)
+> Ops swapin-893M                328195.00 (  0.00%)         257327.00 ( 21.59%)
+> Ops swapin-1125M               317345.00 (  0.00%)         271109.00 ( 14.57%)
+> Ops swapin-1356M               312858.00 (  0.00%)         266050.00 ( 14.96%)
+> Ops minorfaults-0M             592150.00 (  0.00%)         646076.00 ( -9.11%)
+> Ops minorfaults-198M           637339.00 (  0.00%)         676441.00 ( -6.14%)
+> Ops minorfaults-430M           626228.00 (  0.00%)         684715.00 ( -9.34%)
+> Ops minorfaults-661M           625089.00 (  0.00%)         670639.00 ( -7.29%)
+> Ops minorfaults-893M           612877.00 (  0.00%)         669723.00 ( -9.28%)
+> Ops minorfaults-1125M          624800.00 (  0.00%)         667025.00 ( -6.76%)
+> Ops minorfaults-1356M          618800.00 (  0.00%)         657600.00 ( -6.27%)
+> Ops majorfaults-0M              67664.00 (  0.00%)          40060.00 ( 40.80%)
+> Ops majorfaults-198M            72377.00 (  0.00%)          39517.00 ( 45.40%)
+> Ops majorfaults-430M            71822.00 (  0.00%)          38895.00 ( 45.85%)
+> Ops majorfaults-661M            70009.00 (  0.00%)          39625.00 ( 43.40%)
+> Ops majorfaults-893M            74988.00 (  0.00%)          38073.00 ( 49.23%)
+> Ops majorfaults-1125M           72458.00 (  0.00%)          38206.00 ( 47.27%)
+> Ops majorfaults-1356M           70549.00 (  0.00%)          37430.00 ( 46.94%)
+> 
+> Regards,
+> -Bob
 
