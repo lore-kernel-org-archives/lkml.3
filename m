@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934824Ab3FSOLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:11:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41729 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756427Ab3FSOKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:10:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,896,1363158000"; 
-   d="scan'208";a="356172777"
-Date: Wed, 19 Jun 2013 17:10:08 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
-Message-ID: <20130619141008.GA32331@xps8300>
-References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com>
- <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com>
+	id S1756815Ab3FSORT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:17:19 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:35676 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934521Ab3FSORP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 10:17:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130619140920.GA11843@cerebellum>
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	<CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
+	<20130619140920.GA11843@cerebellum>
+Date: Wed, 19 Jun 2013 22:17:14 +0800
+Message-ID: <CAA_GA1dm=tsFotB3mFemKEpk5arONfD6+LMkC-G6tBhBR5wAsg@mail.gmail.com>
+Subject: Re: [PATCHv13 3/4] zswap: add to mm/
+From: Bob Liu <lliubbo@gmail.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 12:12:53PM -0700, David Daney wrote:
-> A few differences needed by OCTEON:
-> 
-> o These are DWC UARTS, but have USR at a different offset.
-> 
-> o OCTEON must have 64-bit wide register accesses, so we have OCTEON
->   specific register accessors.
-> 
-> o No UCV register, so we hard code some properties.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
+On Wed, Jun 19, 2013 at 10:09 PM, Seth Jennings
+<sjenning@linux.vnet.ibm.com> wrote:
+> On Mon, Jun 17, 2013 at 02:20:05PM +0800, Bob Liu wrote:
+>> Hi Seth,
+>>
+>> On Tue, Jun 4, 2013 at 4:33 AM, Seth Jennings
+>> <sjenning@linux.vnet.ibm.com> wrote:
+>> > zswap is a thin backend for frontswap that takes pages that are in the process
+>> > of being swapped out and attempts to compress them and store them in a
+>> > RAM-based memory pool.  This can result in a significant I/O reduction on the
+>> > swap device and, in the case where decompressing from RAM is faster than
+>> > reading from the swap device, can also improve workload performance.
+>> >
+>> > It also has support for evicting swap pages that are currently compressed in
+>> > zswap to the swap device on an LRU(ish) basis. This functionality makes zswap a
+>> > true cache in that, once the cache is full, the oldest pages can be moved out
+>> > of zswap to the swap device so newer pages can be compressed and stored in
+>> > zswap.
+>> >
+>> > This patch adds the zswap driver to mm/
+>> >
+>>
+>> Do you have any more benchmark can share with me ? To figure out that
+>> we can benefit from zswap.
+>
+> The two I've done or kernbench and SPECjbb.  I'm trying out the memtests
 
-<snip>
+Thanks, I'll try to setup them.
 
-> @@ -270,10 +301,8 @@ static int dw8250_probe(struct platform_device *pdev)
->  	uart.port.serial_out = dw8250_serial_out;
->  	uart.port.private_data = data;
->  
-> -	dw8250_setup_port(&uart);
-> -
->  	if (pdev->dev.of_node) {
-> -		err = dw8250_probe_of(&uart.port);
-> +		err = dw8250_probe_of(&uart.port, data);
->  		if (err)
->  			return err;
->  	} else if (ACPI_HANDLE(&pdev->dev)) {
-> @@ -284,6 +313,9 @@ static int dw8250_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> +	if (!data->no_ucv)
-> +		dw8250_setup_port(&uart);
+> now.  I'd like to be able to explain the numbers you are seeing at least.
+>
+> Sorry for the delay.  I'll get back to you once I've figured out how
+> to using mmtests and get some results/explanations.
+>
+> Also, how much physical RAM did this box have? I see 2G in the profile name
+> but not sure if that is the workload size or the RAM size.  I seems that the
 
-Moving the dw8250_setup_port() call here breaks dw8250_probe_acpi(). It
-expects values from the CPR register for the DMA burst size calculation.
+2G RAM size.
 
-The DMA support can be moved to a separate function. This way it can
-be called after this point, and it will then be available for both DT
-and ACPI. I can make a patch tomorrow. That should solve this issue.
+> test is overcommitted from the beginning as indicated by the swap activity.
+> I know that the parallelio-memcachetest default profile only uses 80% of
+> physical memory, so you have apparently made a change yes?
+>
 
-Thanks,
+No, I just "cp configs/config-global-dhp__parallelio-memcachetest
+config" and then run mmtests.sh with monitor.
+I'm using mmtests version 0.10.
 
--- 
-heikki
+--
+Regards,
+--Bob
