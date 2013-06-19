@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab3FSQpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757047Ab3FSQpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:45:49 -0400
-Date: Wed, 19 Jun 2013 12:45:40 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: frequent softlockups with 3.10rc6.
-Message-ID: <20130619164540.GB22483@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S1756862Ab3FSQrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:47:14 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:59571 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3FSQrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:47:12 -0400
+Message-ID: <51C1E08C.9040900@gmail.com>
+Date: Wed, 19 Jun 2013 09:47:08 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
+References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com> <20130619141008.GA32331@xps8300>
+In-Reply-To: <20130619141008.GA32331@xps8300>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been hitting this a lot the last few days.
-This is the same machine that I was also seeing lockups during sync()
+On 06/19/2013 07:10 AM, Heikki Krogerus wrote:
+> On Tue, Jun 18, 2013 at 12:12:53PM -0700, David Daney wrote:
+>> A few differences needed by OCTEON:
+>>
+>> o These are DWC UARTS, but have USR at a different offset.
+>>
+>> o OCTEON must have 64-bit wide register accesses, so we have OCTEON
+>>    specific register accessors.
+>>
+>> o No UCV register, so we hard code some properties.
+>>
+>> Signed-off-by: David Daney <david.daney@cavium.com>
+>
+> <snip>
+>
+>> @@ -270,10 +301,8 @@ static int dw8250_probe(struct platform_device *pdev)
+>>   	uart.port.serial_out = dw8250_serial_out;
+>>   	uart.port.private_data = data;
+>>
+>> -	dw8250_setup_port(&uart);
+>> -
+>>   	if (pdev->dev.of_node) {
+>> -		err = dw8250_probe_of(&uart.port);
+>> +		err = dw8250_probe_of(&uart.port, data);
+>>   		if (err)
+>>   			return err;
+>>   	} else if (ACPI_HANDLE(&pdev->dev)) {
+>> @@ -284,6 +313,9 @@ static int dw8250_probe(struct platform_device *pdev)
+>>   		return -ENODEV;
+>>   	}
+>>
+>> +	if (!data->no_ucv)
+>> +		dw8250_setup_port(&uart);
+>
+> Moving the dw8250_setup_port() call here breaks dw8250_probe_acpi(). It
+> expects values from the CPR register for the DMA burst size calculation.
+>
+> The DMA support can be moved to a separate function. This way it can
+> be called after this point, and it will then be available for both DT
+> and ACPI. I can make a patch tomorrow. That should solve this issue.
+>
 
-	Dave
+I am reworking the patch because other problems were found.  I will try 
+to get this part right in the next version.
 
-BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child9:6902]
-Modules linked in: bridge snd_seq_dummy dlci bnep fuse 8021q garp stp hidp tun rfcomm can_raw ipt_ULOG nfnetlink rose scsi_transport_iscsi ipx p8023 p8022 phonet llc2 irda rds pppoe pppox caif_socket caif ppp_generic af_key slhc crc_ccitt bluetooth netrom can_bcm x25 appletalk psnap can llc af_rxrpc atm ax25 af_802154 nfc rfkill coretemp hwmon kvm_intel kvm snd_hda_codec_realtek snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel snd_hda_intel microcode snd_hda_codec pcspkr snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
-irq event stamp: 2057909
-hardirqs last  enabled at (2057908): [<ffffffff816ed220>] restore_args+0x0/0x30
-hardirqs last disabled at (2057909): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
-softirqs last  enabled at (1444600): [<ffffffff810542d4>] __do_softirq+0x194/0x440
-softirqs last disabled at (1444851): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
-CPU: 1 PID: 6902 Comm: trinity-child9 Not tainted 3.10.0-rc6+ #16
-task: ffff880243212520 ti: ffff88015c1fa000 task.ti: ffff88015c1fa000
-RIP: 0010:[<ffffffff810541f1>]  [<ffffffff810541f1>] __do_softirq+0xb1/0x440
-RSP: 0000:ffff880244a03f08  EFLAGS: 00000202
-RAX: ffff880243212520 RBX: ffffffff816ed220 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880243212520
-RBP: ffff880244a03f70 R08: 0000000010000003 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff880244a03e78
-R13: ffffffff816f5d2f R14: ffff880244a03f70 R15: 0000000000000000
-FS:  00007f2e89fa1740(0000) GS:ffff880244a00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 000000000351a000 CR3: 00000001f6b7d000 CR4: 00000000001407e0
-DR0: 00007f2e898d2000 DR1: 0000000001c59000 DR2: 0000000001c5c000
-DR3: 0000000000008000 DR6: 00000000fffe0ff0 DR7: 00000000000b0602
-Stack:
- 0000000a00406040 00000001008fead4 ffff88015c1fbfd8 ffff88015c1fbfd8
- ffff88015c1fbfd8 0000000010010002 ffff88015c1fbfd8 ffffffff00000001
- ffff880243212520 0000000000000000 ffff88023bbf0c80 0000000000000001
-Call Trace:
- <IRQ> 
-
- [<ffffffff8105473d>] irq_exit+0xcd/0xe0
- [<ffffffff816f6bcb>] smp_apic_timer_interrupt+0x6b/0x9b
- [<ffffffff816f5d2f>] apic_timer_interrupt+0x6f/0x80
- <EOI> 
-
- [<ffffffff816ed220>] ? retint_restore_args+0xe/0xe
- [<ffffffff816ec642>] ? _raw_spin_unlock_irq+0x32/0x60
- [<ffffffff816ec63c>] ? _raw_spin_unlock_irq+0x2c/0x60
- [<ffffffff81086c95>] finish_task_switch+0x85/0x130
- [<ffffffff81086c57>] ? finish_task_switch+0x47/0x130
- [<ffffffff816ea734>] __schedule+0x444/0x9c0
- [<ffffffff816eb313>] preempt_schedule_irq+0x53/0x90
- [<ffffffff816ed336>] retint_kernel+0x26/0x30
- [<ffffffff81145297>] ? user_enter+0x87/0xd0
- [<ffffffff8100f6f8>] syscall_trace_leave+0x78/0x140
- [<ffffffff816f53af>] int_check_syscall_exit_work+0x34/0x3d
-Code: 48 89 45 b8 48 89 45 b0 48 89 45 a8 66 0f 1f 44 00 00 65 c7 04 25 80 0f 1d 00 00 00 00 00 e8 b7 31 06 00 fb 49 c7 c6 00 41 c0 81 <eb> 0e 0f 1f 44 00 00 49 83 c6 08 41 d1 ef 74 6c 41 f6 c7 01 74 
+David Daney
 
