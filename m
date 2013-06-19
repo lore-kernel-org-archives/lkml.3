@@ -1,106 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3FSFOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:14:20 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:50142 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab3FSFOS (ORCPT
+	id S1753682Ab3FSFPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:15:12 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:52167 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab3FSFPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:14:18 -0400
+	Wed, 19 Jun 2013 01:15:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130618095533.GI3204@twins.programming.kicks-ass.net>
-References: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
-	<20130618095533.GI3204@twins.programming.kicks-ass.net>
-Date: Wed, 19 Jun 2013 13:14:16 +0800
-Message-ID: <CALZhoSQszasaynP+Cy66vMUz+2-jRYpQ3eqLFdaC8Y9oZSQfbw@mail.gmail.com>
-Subject: Re: Question regarding put_prev_task in preempted condition
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <CAKohpont42JcdLH-TawNWVDJeiLNHeAWx4fgvAkyerOD=64MLQ@mail.gmail.com>
+References: <1371606191-5618-1-git-send-email-chenxg@marvell.com>
+	<CAKohpont42JcdLH-TawNWVDJeiLNHeAWx4fgvAkyerOD=64MLQ@mail.gmail.com>
+Date: Wed, 19 Jun 2013 13:15:08 +0800
+Message-ID: <CAFgnuDcxS53FS0w31w8k4JzyhKadfO+P12jOy5hyfVKf6pEPWg@mail.gmail.com>
+Subject: Re: [PATCH v6] Cpufreq: Fix governor start/stop race condition
+From: Xiaoguang Chen <chenxg.marvell@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Xiaoguang Chen <chenxg@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+2013/6/19 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 19 June 2013 07:13, Xiaoguang Chen <chenxg@marvell.com> wrote:
+>> There are 4 CPUs and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+>> The normal sequence is as below:
+>
+> I thought Rafael asked to write cpu0 as CPU0, ...
 
-On Tue, Jun 18, 2013 at 5:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sun, Jun 09, 2013 at 11:59:36PM +0800, Lei Wen wrote:
->> Hi Peter,
->>
->> While I am checking the preempt related code, I find a interesting part.
->> That is when preempt_schedule is called, for its preempt_count be added
->> PREEMPT_ACTIVE, so in __schedule() it could not be dequeued from rq
->> by deactivate_task.
->>
->> Thus in put_prev_task, which is called a little later in __schedule(), it
->> would call put_prev_task_fair, which finally calls put_prev_entity.
->> For current task is not dequeued from rq, so in this function, it would
->> enqueue it again to the rq by __enqueue_entity.
->>
->> Is there any reason to do like this, since entity already is over rq,
->> why need to queue it again?
->
-> Because we keep the current running task outside of the actual queue
-> structure. This is because every time we update the runtime
-> (__update_curr) the key on which the tree is sorted (vruntime) is
-> changed and we'd need to dequeue + enqueue to keep the tree in sync.
-
-I see... I didn't notice for this difference...
-
->
-> By not having the actively running task in the tree we can avoid this;
-> at the cost of having to dequeue on switching to the task and enqueue
-> when switching from the task.
->
->> And if current rq's vruntime distribution like below, and vruntime with 8
->> is the task that would be get preempted. So in __enqueue_entity,
->> its rb_left/rb_right would be set as NULL and reinserted into this RB tree.
->> Then seems to me now, the entity with vruntime of 3 would be disappeared
->> from the RB tree.
->>             13
->>            /  \
->>          8    19
->>         /  \
->>       3    11
->>
->> I am not sure whether I understand the whole process correctly...
->> Would the example as above happen in our real life?
->
-> No, the RB tree code will ensure we'll not loose 3. I suppose you're
-> confused by rb_link_node() which does indeed clear the left and right
-> node of the entity we're about to link.
-
-Yep, since 8 is not over rq, NULL its two child would lose any info.
-Thanks for detailed explanation! :)
-
-Thanks,
-Lei
-
->
-> However, we link the previously unlinked entity as a leaf node. So your
-> example is flawed; before insertion the tree would look something like:
->
->
->          13
->         /  \
->        11  19
->       /
->      3
->
-> Then the lookup in __enqueue_entity would find the place to insert 8 and
-> would select the right sibling of 3:
->
->          13
->         /  \
->        11  19
->       /
->      3
->       \
->        (8)
->
-> We'd then link 8 as a child leaf of 3; which will indeed have NULL
-> leafs. rb_insert_color() will then fix up the tree so we conform to the
-> RB constraints. Please read lib/rbtree.c:__rb_insert() the code is quite
-> readable.
->
+I changed "cpus" to "CPUs" as Rafael suggested(Please spell cpus as
+"CPUs".  And please start sequences from capitals.)
+do I need to change other "cpu" to "CPU"?
