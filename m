@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3FSNmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:42:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40929 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756427Ab3FSNmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:42:05 -0400
-Message-ID: <1371649323.2038.23.camel@joe-AO722>
-Subject: Re: [net] checkpatch: modify logFunction regular expression to
- allow repeated front tags
-From: Joe Perches <joe@perches.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: apw@canonical.com, Jacob Keller <jacob.e.keller@intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Wed, 19 Jun 2013 06:42:03 -0700
-In-Reply-To: <1371638323-20999-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1371638323-20999-1-git-send-email-jeffrey.t.kirsher@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756748Ab3FSNo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:44:27 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63056 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab3FSNoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 09:44:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369914361-4237-1-git-send-email-ratbert.chuang@gmail.com>
+References: <CANutaR_ZHWdXQrZNBN91K==n3taMKBptmyU0+8DT1RzBStNCyA@mail.gmail.com>
+	<1369914361-4237-1-git-send-email-ratbert.chuang@gmail.com>
+Date: Wed, 19 Jun 2013 15:44:23 +0200
+Message-ID: <CACmBeS3jtkdaREQ7hc2KHzsuR5OULXRMvMiO_fz0ggnYTHJvQA@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: map_init_section flushes incorrect pmd
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, will.deacon@arm.com,
+        rob.herring@calxeda.com, catalin.marinas@arm.com, nico@linaro.org,
+        r.sricharan@ti.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 03:38 -0700, Jeff Kirsher wrote:
-> From: Jacob Keller <jacob.e.keller@intel.com>
-> 
-> The previous logFunction regular expression allowed names for log functions like
-> dev_warn or e_dbg and so forth, but some log functions are of the forms
-> similar to e_dev_warn, (adding an additional tag in front of a standard name
-> like dev_warn).
+On 30 May 2013 13:46, Po-Yu Chuang <ratbert.chuang@gmail.com> wrote:
+> This bug was introduced in commit e651eab0.
+> Some v4/v5 platforms failed to boot due to this.
 
-Perhaps names like foo_bar_baz_dev_warn are a bit long.
+Thanks!
 
-Maybe instead of
-+	(?:[a-z0-9]+_)+(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
-use
-+	(?:[a-z0-9]+_){0,2}(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
+Confirming that this fixes boot on MOXA ART (FA526).
 
-
+Best regards,
+Jonas
