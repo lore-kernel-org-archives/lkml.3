@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933876Ab3FSHVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:21:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33620 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab3FSHVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:21:54 -0400
+	id S1756592Ab3FSHZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:25:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45529 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756549Ab3FSHZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 03:25:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,895,1363158000"; 
+   d="scan'208";a="331980294"
+Date: Wed, 19 Jun 2013 10:29:56 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / PM: Fix error code path for power resources
+ initialization
+Message-ID: <20130619072956.GE11878@intel.com>
+References: <8547354.D2OPcUytEB@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20130619171221.bedfb8f5c3c9819decc01edc@canb.auug.org.au>
-References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
-	<20130619171221.bedfb8f5c3c9819decc01edc@canb.auug.org.au>
-Date: Wed, 19 Jun 2013 15:21:52 +0800
-Message-ID: <CACVXFVNkbOjNMc+-WKBCuyYQHn=APTodTP1L_00TzQN59o4SCw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- driver-core.current tree
-From: Ming Lei <ming.lei@canonical.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8547354.D2OPcUytEB@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 3:12 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Greg,
->
-> On Wed, 19 Jun 2013 15:32:25 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> Today's linux-next merge of the driver-core tree got a conflict in
->> drivers/base/firmware_class.c between commit 875979368eb4 ("firmware
->> loader: fix use-after-free by double abort") from the driver-core.current
->> tree and commit fe304143b0c3 ("firmware: Avoid deadlock of usermodehelper
->> lock at shutdown") from the driver-core tree.
->>
->> I fixed it up (more may be required - see below) and can carry the fix as
->> necessary (no action is required).
->
-> I missed the bit below (at least) and have now added this as a merge fix
-> for the driver-core tree.
+On Tue, Jun 18, 2013 at 12:37:45AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Commit 781d737 (ACPI: Drop power resources driver) introduced a
+> bug in the power resources initialization error code path causing
+> a NULL pointer to be referenced in acpi_release_power_resource()
+> if there's an error triggering a jump to the 'err' label in
+> acpi_add_power_resource().  This happens because the list_node
+> field of struct acpi_power_resource has not been initialized yet
+> at this point and doing a list_del() on it is a bad idea.
+> 
+> To prevent this problem from occuring, initialize the list_node
+> field of struct acpi_power_resource upfront.
+> 
+> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-I think it is OK to merge, then I can add the 'more' part about the original
-fix(875979368eb4) against today's change.
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 19 Jun 2013 17:08:01 +1000
-> Subject: [PATCH] fix up for fw_load_abort API change
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: 3.9+ <stable@vger.kernel.org>
 > ---
->  drivers/base/firmware_class.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 57aa842..fdacd77 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -812,7 +812,7 @@ static void firmware_class_timeout_work(struct work_struct *work)
->                         struct firmware_priv, timeout_work.work);
->
->         mutex_lock(&fw_lock);
-> -       fw_load_abort(fw_priv);
-> +       fw_load_abort(fw_priv->buf);
->         mutex_unlock(&fw_lock);
->  }
->
-> --
-> 1.8.1
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+>  drivers/acpi/power.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> Index: linux-pm/drivers/acpi/power.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/power.c
+> +++ linux-pm/drivers/acpi/power.c
+> @@ -882,6 +882,7 @@ int acpi_add_power_resource(acpi_handle
+>  				ACPI_STA_DEFAULT);
+>  	mutex_init(&resource->resource_lock);
+>  	INIT_LIST_HEAD(&resource->dependent);
+> +	INIT_LIST_HEAD(&resource->list_node);
+>  	resource->name = device->pnp.bus_id;
+>  	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
+>  	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
