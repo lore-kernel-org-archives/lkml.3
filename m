@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625Ab3FSMWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:22:10 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:60393 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934108Ab3FSMWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:22:07 -0400
-Date: Wed, 19 Jun 2013 21:22:02 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com
-Subject: Re: [PATCH 05/13] cpufreq: e_powersave: call CPUFREQ_POSTCHANGE
- notfier in error cases
-Message-ID: <20130619122202.GB32292@verge.net.au>
-References: <cover.1371630975.git.viresh.kumar@linaro.org>
- <859db6d3cfc0efbd5b96783967c10cfcb8b5a51a.1371630975.git.viresh.kumar@linaro.org>
+	id S934640Ab3FSMYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:24:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51146 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934108Ab3FSMYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:24:05 -0400
+Message-ID: <51C1A2AE.2020506@ti.com>
+Date: Wed, 19 Jun 2013 07:23:10 -0500
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <859db6d3cfc0efbd5b96783967c10cfcb8b5a51a.1371630975.git.viresh.kumar@linaro.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <florian.vaussard@epfl.ch>, Roger Quadros <rogerq@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <51C19011.5050107@ti.com> <51C19E6C.4040802@epfl.ch>
+In-Reply-To: <51C19E6C.4040802@epfl.ch>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 02:22:59PM +0530, Viresh Kumar wrote:
-> PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
-> should be called or both shouldn't be.
-> 
-> In case we have started PRECHANGE notifier and found an error, we must call
-> POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
-> calling notifiers is complete.
-> 
-> This driver was taking care of it but frequency isn't restored to freqs.old.
-> 
-> This patch fixes it.
-> 
-> Cc: Simon Horman <horms@verge.net.au>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 06/19/2013 07:05 AM, Florian Vaussard wrote:
+> Hello,
+>
+> On 06/19/2013 01:03 PM, Roger Quadros wrote:
+>> On 06/19/2013 01:10 PM, Benoit Cousson wrote:
+>>> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
+>>>> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
+>>>>> Hi Benoit,
+>>>>>
+>>>>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
+>>>>>> Hi Roger,
+>>>>>>
+>>>>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
+>>>>>>> Provide the RESET and Power regulators for the USB PHY,
+>>>>>>> the USB Host port mode and the PHY device.
+>>>>>>>
+>>>>>>> Also provide pin multiplexer information for the USB host
+>>>>>>> pins.
+>>>>>>>
+>>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>>> ---
+>>>>>>>     arch/arm/boot/dts/omap4-panda-common.dtsi |   62
+>>>>>>> +++++++++++++++++++++++++++++
+>>>>>>>     1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>> b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>> index 00cbaa5..7a21e8e 100644
+>>>>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>> @@ -59,6 +59,42 @@
+>>>>>>>                 "AFML", "Line In",
+>>>>>>>                 "AFMR", "Line In";
+>>>>>>>         };
+>>>>>>> +
+>>>>>>> +    /* HS USB Port 1 RESET */
+>>>>>>> +    hsusb1_reset: hsusb1_reset_reg {
+>>>>>>> +        compatible = "regulator-fixed";
+>>>>>>> +        regulator-name = "hsusb1_reset";
+>>>>>>> +        regulator-min-microvolt = <3300000>;
+>>>>>>> +        regulator-max-microvolt = <3300000>;
+>>>>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
+>>>>>>> +        startup-delay-us = <70000>;
+>>>>>>> +        enable-active-high;
+>>>>>>> +    };
+>>>>>>
+>>>>>> Is this really a regulator? Or just a GPIO line used to reset the
+>>>>>> USB PHY?
+>>>>>
+>>>>> It is in fact a GPIO line used as reset.
+>>>>>>
+>>>>>> If this is the case, I don't think it should be represented as a
+>>>>>> regulator.
+>>>>>
+>>>>> Why not? I think it fits very well in the regulator device model.
+>>>
+>>> I'm not sure fitting very well is the correct term.
+>>> It works, for sure, but it is no different than when we were trying
+>>> to abuse the regulator fmwk to enable the 32k clock in phoenix.
+>>> It is just a hack.
+>>>
+>>
+>> The only difference is there is a dedicated framework for clocks.
+>> Since there is nothing specific to
+>> handle reset lines it is left to the driver writer how he wants to
+>> manage it.
+>>
+>
+> There is a proposed binding for gpio-controlled reset lines, but it is
+> not yet merged [1].
+> I guess it can fit most usage patterns, and it can be an interesting
+> move in the future.
 
-I have no objections to this change but at the same time I don't
-feel that I know the code well enough to review it.
+I'm glad to see that I was not the only one thinking that the regulator 
+was not the right fmwk to do that :-)
 
-> ---
->  drivers/cpufreq/e_powersaver.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
-> index 37380fb..3d03626 100644
-> --- a/drivers/cpufreq/e_powersaver.c
-> +++ b/drivers/cpufreq/e_powersaver.c
-> @@ -161,6 +161,9 @@ postchange:
->  		current_multiplier);
->  	}
->  #endif
-> +	if (err)
-> +		freqs.new = freqs.old;
-> +
->  	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
->  	return err;
->  }
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
+Thanks for the pointer Florian.
+
+I guess that series should be merged for 3.11? Based on the thread, it 
+should to through arm-soc.
+
+Roger,
+
+It might be tricky to have dependency on that series, but if this is 
+possible, you should try. Otherwise, just keep the existing one, adding 
+that a new solution will be available soon as a disclaimer.
+
+Regards,
+Benoit
+
