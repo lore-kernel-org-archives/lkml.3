@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935198Ab3FSTil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:38:41 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:57938 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935148Ab3FSTik (ORCPT
+	id S964823Ab3FSTi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:38:58 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:41144 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935094Ab3FSTi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:38:40 -0400
+	Wed, 19 Jun 2013 15:38:57 -0400
+Date: Wed, 19 Jun 2013 21:38:55 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: Basic perf PMU support for Haswell v14
+Message-ID: <20130619193855.GY6123@two.firstfloor.org>
+References: <1371515812-9646-1-git-send-email-andi@firstfloor.org>
+ <20130619124822.GC11209@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51BEF6FD.3070108@ti.com>
-References: <1370527523-1030-1-git-send-email-archit@ti.com>
-	<CACRpkdY-HZ4AGqKr-DA1pvfnaVYEGZoEDn_wfDr8=9Qr+6dpiw@mail.gmail.com>
-	<51BEF6FD.3070108@ti.com>
-Date: Wed, 19 Jun 2013 21:38:39 +0200
-Message-ID: <CACRpkdYTjQ9k=FCC0gG-REJxutSHn98uS9viMYLzywYx3KLCWA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Enable pcf857x GPIO expander for Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Archit Taneja <archit@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619124822.GC11209@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 1:46 PM, Archit Taneja <archit@ti.com> wrote:
-> On Monday 17 June 2013 02:35 PM, Linus Walleij wrote:
+> Ok, this series looks good at first sight: you've slightly overdone the 
+> checkpatch style changes without checking that the result is actually an 
+> improvement - I've fixed those few places.
+> 
+> I'll give it a bit of testing.
 
->Just a query, there is an example in gpio.txt in the gpio
-> bindings documentation which sets #gpio-cells as 1. Is this is a wrong
-> example, or are 1 cell gpio controllers valid?
+Thanks for testing and merging.
 
-I don't think so. Try it and see if it works!
+I still have some other patches to enable other features,
+on top of this.
 
-(If you want it, you may have to go in and fix drivers/gpio/gpiolib-of.c.)
+I'll repost them in hopefully logical groups. 
 
-> About this chip, a change in any of it's GPIOs configured as inputs will
-> generate an interrupt, then it's up to the driver to figure out which GPIOs
-> changed and handle their corresponding irqs. So shouldn't a device connected
-> to the chip describe the gpio number within the pcf857x chip as it's first
-> cell?
+If you want them grouped in some particular way or other
+requirements please let me know.
 
-I guess so...
+https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/log/?h=hsw/pmu6
 
-> I've made a hypothetical example of a pcf8575 chip, which has it's interrupt
-> line connected to an omap gpio, and pcf8575's 7th gpio is connected to
-> 'pcf_slave'. The pcf_slave's driver requests for an interrupt. Is this the
-> correct way to describe this? :
->
-> pcf: pcf8575@23 {
->         compatible = "ti,pcf8575";
->         reg = <0x23>;
->         gpio-controller;
->         #gpio-cells = <2>;
->         #interrupt-controller;
->         #interrupt-cells = <1>;
->         interrupt-parent = <&gpio2>;    /* an omap gpio bank */
->         interrupts = <2 8>;             /* gpio line 34, low triggered*/
-> };
->
-> pcf_slave: slave {
->         ...
->         ...
->         #interrupt-parent = <&pcf>;
->         interrupts = <7>;       /* connected to 7th IO pin of pcf857x*/
-> };
+FWIW the outstanding patches do:
 
-There are two paths for dereferencing GPIOs and IRQs.
+- Some changes to make CPU event aliases more user friendly:
 
-Simple approach:
+print aliases in perf list, avoid the need to specify cpu//,
+automatically enable PEBS for mem-loads/stores,
+Allow aliases to specify "precise"
 
-give your slave a gpios = <...>;
+This is all not Haswell specific, but makes
+the TSX changes below a lot more user friendly.
 
-and in the driver use gpio_to_irq() to dereference an IRQ number
-from the GPIO number you get. The IRQdomain etc in the
-GPIO driver will take care of the rest.
+Most of this is actually user mode only, except for the
+"precise" alias changes.
 
-How to code up a driver so that it can use irqs directly from a GPIO
-controller without referring to the GPIO line it is tied into is currently
-quite unclear. Atleast to me. It's been discussed for the OMAP
-case so search the archives...
+- TSX changes: perf stat -T, TSX event aliases, support for 
+reporting the abort cause from PEBS, plus the user tools
+support for all of this
 
-Yours,
-Linus Walleij
+- Full width counting (generally useful, but also avoids
+a TSX checkpoint problem)
+
+- Support TSX filtering in the the LBR, plus a workaround
+for the duplicated abort record.
+
+Plus also on top (not in my git tree):
+
+- Zheng's call graph lbr mode patches, to allow user mode -g without
+frame pointers or full dwarf. This has a few known problems, but is still
+useful enough that it should be available as a option.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
