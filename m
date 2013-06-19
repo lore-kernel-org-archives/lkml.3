@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab3FSDXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 23:23:04 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:48714 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933990Ab3FSDXB (ORCPT
+	id S934250Ab3FSD0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 23:26:17 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:64112 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933941Ab3FSD0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 23:23:01 -0400
+	Tue, 18 Jun 2013 23:26:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130619024839.GA1987@kroah.com>
-References: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
-	<20130619024839.GA1987@kroah.com>
-Date: Wed, 19 Jun 2013 11:23:00 +0800
-Message-ID: <CADApbeikx1yrjVKOREHq45qZDmxF872FY2tN7WBkhPYY=Uxkcw@mail.gmail.com>
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Chao Xie <chao.xie@marvell.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "balbi@ti.com" <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+In-Reply-To: <CAKohpokN_iJ5in0t3Mo68Tost0u2WT65PQtynQ7-wxGZr0LDQQ@mail.gmail.com>
+References: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
+	<1912850.KuRKhn87Nf@vostro.rjw.lan>
+	<CAFgnuDe1bUub92uE1H9Fc9U7AJCYL=WKdyDe2bg00yEr=kMEbQ@mail.gmail.com>
+	<CAKohpoktu5+h0YOCtoS6sq2UP2iU+z+nYjwB6rH7cRWDAOhRSA@mail.gmail.com>
+	<CAKohpokN_iJ5in0t3Mo68Tost0u2WT65PQtynQ7-wxGZr0LDQQ@mail.gmail.com>
+Date: Wed, 19 Jun 2013 11:26:13 +0800
+Message-ID: <CAFgnuDdN6CoLCvH6-d9YB=-jm-ESC1s__si970pa10mC3wsCdw@mail.gmail.com>
+Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
+From: Xiaoguang Chen <chenxg.marvell@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Xiaoguang Chen <chenxg@marvell.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 10:48 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jun 18, 2013 at 10:31:20PM -0400, Chao Xie wrote:
->> Some controller need software to initialize PHY before add
->> host controller, and shut down PHY after remove host controller.
->> Add the generic code for these controllers so they do not need
->> do it in its own host controller driver.
->
-> Why?  What breaks if we add this patch, and what gets fixed?  I'm
-> guessing you can then remove code?
->
-> What out-of-tree code now works properly?  Or gets broken?
->
-> we need more info here please...
->
-The patch does not fix any bug.
-Some echi-xxx driver will need initialize the phy before it do
-usb_add_hcd, and shut down phy after
-do usb_remove_hcd, and i did a patch for ehci-mv.c to do above thing.
-Alan and Felipe comments on my patch, and they think it is a peice of
-generic code, and it can be
-moved to hcd to handle it, so other ehci-xxx will not do the same thing again.
-So i add the patch to add the generic code in hcd to handle phy
-initialization and shut down.
+2013/6/19 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 19 June 2013 08:43, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 19 June 2013 06:50, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+>>> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+>>
+>>>>> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+>>>>
+>>>> Can you please tell me what the above is supposed to mean?  Is it supposed to
+>>>> mean "the online of cpu3 is being run on cpu0" or something different?  If
+>>>> something different, then what?
 
-> thanks,
+Sorry I missed this question, Let me explain it in detail
+Suppose we are in such condtition, current cpufreq goveror is
+userspace governor. cpu3 is offline.
+and two things happen as above two cases, first thing is application
+tries to change current governor to ondemand governor,
+second thing is cpu0 tries to make cpu3 online which is off line
+before. both of these two cases will try to stop current governor and
+start a governor. if above two things interleave, unexpected behavior
+will happen.
+
+
+>>
+>> Please read all the questions carefully. You missed this one.
+>>
+>> Actually you should write: Current governor is userspace, now cpu0 hot-unplugs
+>> cpu3, it will **
 >
-> greg k-h
+> Ahh I am mistaken, you are actually bringing cpu3 back to the system. Then you
+> must have mentioned earlier that cpu3 wasn't online.
