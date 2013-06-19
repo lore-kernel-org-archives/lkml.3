@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3FSIWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:22:09 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57371 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab3FSIV1 (ORCPT
+	id S1756783Ab3FSIW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:22:58 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:36789 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab3FSIWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:21:27 -0400
-Date: Wed, 19 Jun 2013 01:21:23 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH percpu/for-3.11 1/2] percpu-refcount: add __must_check to
- percpu_ref_init() and don't use ACCESS_ONCE() in percpu_ref_kill_rcu()
-Message-ID: <20130619082123.GD30681@mtj.dyndns.org>
-References: <20130613035201.GD9451@mtj.dyndns.org>
- <87y5a6n71o.fsf@rustcorp.com.au>
+	Wed, 19 Jun 2013 04:22:55 -0400
+X-Auth-Info: ofoLB7DmV8pzUe9I8lxpGdqOOjP+w9LRC7CzEP1H5hQ=
+From: Marek Vasut <marex@denx.de>
+To: Chao Xie <chao.xie@marvell.com>
+Subject: Re: [PATCH V3 5/5] input: pxa27x-keypad: add device tree support
+Date: Wed, 19 Jun 2013 10:22:51 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: dmitry.torokhov@gmail.com, arnd@arndb.de, eric.y.miao@gmail.com,
+        haojian.zhuang@gmail.com, drwyrm@gmail.com, stefan@openezx.org,
+        laforge@openezx.org, robert.jarzmik@free.fr, sleep_walker@suse.cz,
+        slapin@ossfans.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        xiechao.mail@gmail.com
+References: <1371527778-5236-1-git-send-email-chao.xie@marvell.com> <1371527778-5236-6-git-send-email-chao.xie@marvell.com>
+In-Reply-To: <1371527778-5236-6-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5a6n71o.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306191022.51630.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 12:25:14PM +0930, Rusty Russell wrote:
-> But it's quite OK to ignore OOM errors in builtin init functions.
+Dear Chao Xie,
 
-I think it'd be cleaner to let those use cases use BUG_ON() around it.
-We really want most users to be checking its return value.
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  .../devicetree/bindings/input/pxa27x-keypad.txt    |   60 +++++
+>  drivers/input/keyboard/pxa27x_keypad.c             |  232
+> +++++++++++++++++++- 2 files changed, 288 insertions(+), 4 deletions(-)
+>  create mode 100644
+> Documentation/devicetree/bindings/input/pxa27x-keypad.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/pxa27x-keypad.txt
+> b/Documentation/devicetree/bindings/input/pxa27x-keypad.txt new file mode
+> 100644
+> index 0000000..f8674f7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/pxa27x-keypad.txt
+> @@ -0,0 +1,60 @@
+> +* Marvell PXA Keypad controller
+> +
+> +Required Properties
+> +- compatible : should be "marvell,pxa27x-keypad"
+> +- reg : Address and length of the register set for the device
+> +- interrupts : The interrupt for the keypad controller
+> +- marvell,debounce-interval : How long time the key will be
 
-> It would be neatest to have it fail into slow mode, of course, but it's
-> probably not worth the pain.
+Is there no generic prop name for this debounce interval?
 
-percpu allocation is always GFP_KERNEL, so it can't get any slower
-without deadlocking.
-
-Thanks.
-
--- 
-tejun
+Best regards,
+Marek Vasut
