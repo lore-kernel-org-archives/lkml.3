@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934454Ab3FSJKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:10:12 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41535 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934408Ab3FSJJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:09:50 -0400
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-To: gleb@redhat.com
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 7/7] KVM: MMU: document fast invalidate all mmio sptes
-Date: Wed, 19 Jun 2013 17:09:25 +0800
-Message-Id: <1371632965-20077-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061909-2000-0000-0000-00000C8DB657
+	id S934493Ab3FSJK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:10:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35399 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934299Ab3FSJKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 05:10:50 -0400
+Date: Wed, 19 Jun 2013 12:11:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net, edumazet@google.com,
+        hkchu@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
+ queues by using flex array
+Message-ID: <20130619091132.GA2816@redhat.com>
+References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
+ <1371620452-49349-2-git-send-email-jasowang@redhat.com>
+ <1371623518.3252.267.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371623518.3252.267.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document it to Documentation/virtual/kvm/mmu.txt
+On Tue, Jun 18, 2013 at 11:31:58PM -0700, Eric Dumazet wrote:
+> On Wed, 2013-06-19 at 13:40 +0800, Jason Wang wrote:
+> > Currently, we use kcalloc to allocate rx/tx queues for a net device which could
+> > be easily lead to a high order memory allocation request when initializing a
+> > multiqueue net device. We can simply avoid this by switching to use flex array
+> > which always allocate at order zero.
+> > 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > ---
+> >  include/linux/netdevice.h |   13 ++++++----
+> >  net/core/dev.c            |   57 ++++++++++++++++++++++++++++++++------------
+> >  net/core/net-sysfs.c      |   15 +++++++----
+> >  3 files changed, 58 insertions(+), 27 deletions(-)
+> > 
+> > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> > index 09b4188..c0b5d04 100644
+> > --- a/include/linux/netdevice.h
+> > +++ b/include/linux/netdevice.h
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/atomic.h>
+> >  #include <asm/cache.h>
+> >  #include <asm/byteorder.h>
+> > +#include <linux/flex_array.h>
+> >  
+> >  #include <linux/percpu.h>
+> >  #include <linux/rculist.h>
+> > @@ -1230,7 +1231,7 @@ struct net_device {
+> >  
+> > 
+> >  #ifdef CONFIG_RPS
+> > -	struct netdev_rx_queue	*_rx;
+> > +	struct flex_array	*_rx;
+> >  
+> >  	/* Number of RX queues allocated at register_netdev() time */
+> >  	unsigned int		num_rx_queues;
+> > @@ -1250,7 +1251,7 @@ struct net_device {
+> >  /*
+> >   * Cache lines mostly used on transmit path
+> >   */
+> > -	struct netdev_queue	*_tx ____cacheline_aligned_in_smp;
+> > +	struct flex_array	*_tx ____cacheline_aligned_in_smp;
+> >  
+> 
+> Using flex_array and adding overhead in this super critical part of
+> network stack, only to avoid order-1 allocations done in GFP_KERNEL
+> context is simply insane.
+> 
+> We can revisit this in 2050 if we ever need order-4 allocations or so,
+> and still use 4K pages.
+> 
+> 
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- Documentation/virtual/kvm/mmu.txt | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+Well KVM supports up to 160 VCPUs on x86.
 
-diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
-index f5c4de9..9b7cfb3 100644
---- a/Documentation/virtual/kvm/mmu.txt
-+++ b/Documentation/virtual/kvm/mmu.txt
-@@ -396,6 +396,31 @@ ensures the old pages are not used any more. The invalid-gen pages
- (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen) are zapped by using lock-break
- technique.
- 
-+Fast invalidate all mmio sptes
-+===========
-+As mentioned in "Reaction to events" above, kvm will cache the mmio information
-+to the last sptes so that we should zap all mmio sptes when the guest mmio info
-+is changed. This will happen when a new memslot is added or the existing
-+memslot is moved.
-+
-+Zapping mmio spte is also a scalability issue for the large memory and large
-+vcpus guests since it needs to hold hot mmu-lock and walk all shadow pages to
-+find all the mmio spte out.
-+
-+We fix this issue by using the similar way of "Fast invalidate all pages".
-+The global mmio valid generation-number is stored in kvm->memslots.generation
-+and every mmio spte stores the current global generation-number into his
-+available bits when it is created
-+
-+The global mmio valid generation-number is increased whenever the gust memory
-+info is changed. When guests do mmio access, kvm intercepts a MMIO #PF then it
-+walks the shadow page table and get the mmio spte. If the generation-number on
-+the spte does not equal the global generation-number, it will go to the normal
-+#PF handler to update the mmio spte.
-+
-+Since 19 bits are used to store generation-number on mmio spte, we zap all pages
-+when the number is round.
-+
- Further reading
- ===============
- 
+Creating a queue per CPU is very reasonable, and
+assuming cache line size of 64 bytes, netdev_queue seems to be 320
+bytes, that's 320*160 = 51200. So 12.5 pages, order-4 allocation.
+I agree most people don't have such systems yet, but
+they do exist.
+
+We can cut the size of netdev_queue, moving out kobj - which
+does not seem to be used on data path to a separate structure.
+It's 64 byte in size so exactly 256 bytes.
+That will get us an order-3 allocation, and there's
+some padding there so we won't immediately increase it
+the moment we add some fields.
+
+Comments on this idea?
+
+Instead of always using a flex array, we could have
++	struct netdev_queue     *_tx; /* Used with small # of queues */
++#ifdef CONFIG_NETDEV_HUGE_NUMBER_OR_QUEUES
++	struct flex_array     *_tx_large; /* Used with large # of queues */
++#endif
+
+And fix wrappers to use _tx if not NULL, otherwise _tx_large.
+
+If configured in, it's an extra branch on data path but probably less
+costly than the extra indirection.
+
 -- 
-1.8.1.4
-
+MST
