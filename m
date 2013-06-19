@@ -1,22 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935288Ab3FSWO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 18:14:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43330 "EHLO hydra.sisk.pl"
+	id S935280Ab3FSWQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 18:16:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43341 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935070Ab3FSWOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 18:14:53 -0400
+	id S935070Ab3FSWQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 18:16:17 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
-Date: Thu, 20 Jun 2013 00:24:11 +0200
-Message-ID: <11631311.zzmyWFE0GU@vostro.rjw.lan>
+To: Lukasz Majewski <l.majewski@majess.pl>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH v4 2/7] cpufreq: Add boost frequency support in core
+Date: Thu, 20 Jun 2013 00:25:38 +0200
+Message-ID: <6633375.dICiDrHJgK@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+8MBbLS9suFc4gdjbb1RQdYmEyNUUHhEKgSjMxJpQLcPPYN2g@mail.gmail.com>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan> <3321228.vG97AE80O6@vostro.rjw.lan> <CA+8MBbLS9suFc4gdjbb1RQdYmEyNUUHhEKgSjMxJpQLcPPYN2g@mail.gmail.com>
+In-Reply-To: <20130619223102.70c2e359@jawa>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <51C1EF05.90402@gmail.com> <20130619223102.70c2e359@jawa>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,55 +34,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 19, 2013 10:37:27 AM Tony Luck wrote:
-> > Can you please apply the appended patch on top of it and see if the system
-> > still works then?
+On Wednesday, June 19, 2013 10:31:02 PM Lukasz Majewski wrote:
+> On Wed, 19 Jun 2013 10:48:53 -0700
+> Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
 > 
-> Still works with this patch.
+> > On 06/19/2013 10:12 AM, Lukasz Majewski wrote:
+> > > This commit adds boost frequency support in cpufreq core (Hardware &
+> > 
+> > > +/*********************************************************************
+> > >    *               REGISTER / UNREGISTER CPUFREQ
+> > > DRIVER                *
+> > > *********************************************************************/
+> > >
+> > > @@ -1936,6 +2019,16 @@ int cpufreq_register_driver(struct
+> > > cpufreq_driver *driver_data) cpufreq_driver = driver_data;
+> > >   	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> > >
+> > > +	if (!cpufreq_driver->boost_supported)
+> > > +		boost.attr.mode = 0444;
+> > > +
+> > > +	ret = cpufreq_sysfs_create_file(&(boost.attr));
+> > > +	if (ret) {
+> > > +		pr_err("%s: cannot register global boost sysfs
+> > > file\n",
+> > > +		       __func__);
+> > > +		goto err_null_driver;
+> > > +	}
+> > > +
+> > 
+> > I do not think the boost sysfs should be created at all if boost is
+> > not supported.
+> 
+> This was my first thought. But unfortunately this "boost" attribute is
+> always exported at acpi-cpufreq.c and in my opinion is part of a
+> legacy API.
+> 
+> I totally agree with the idea of exporting boost only when supported,
+> but I would like to know the community opinion about this (especially
+> Viresh and Rafael shall speak up).
 
-Cool, thanks! :-)
-
-If you don't mind, I'll queue up https://patchwork.kernel.org/patch/2712741/ and
-this for 3.11.
+Simple: Export it only when supported.
 
 Thanks,
 Rafael
 
 
-> > ---
-> >  drivers/acpi/scan.c  |    3 +++
-> >  drivers/acpi/video.c |    3 ---
-> >  2 files changed, 3 insertions(+), 3 deletions(-)
-> >
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -939,6 +939,9 @@ static int acpi_device_probe(struct devi
-> >         struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
-> >         int ret;
-> >
-> > +       if (acpi_dev->handler)
-> > +               return -EINVAL;
-> > +
-> >         if (!acpi_drv->ops.add)
-> >                 return -ENOSYS;
-> >
-> > Index: linux-pm/drivers/acpi/video.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/video.c
-> > +++ linux-pm/drivers/acpi/video.c
-> > @@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
-> >         int error;
-> >         acpi_status status;
-> >
-> > -       if (device->handler)
-> > -               return -EINVAL;
-> > -
-> >         status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
-> >                                 device->parent->handle, 1,
-> >                                 acpi_video_bus_match, NULL,
-> >
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
