@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934397Ab3FSJAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:00:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60070 "EHLO comal.ext.ti.com"
+	id S934339Ab3FSIxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:53:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52407 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934361Ab3FSIxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:20 -0400
+	id S934297Ab3FSIxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:53:14 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
         <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>
-Subject: [PATCH 3/4] usb: musb: omap: use the new API to get PHY reference by label
-Date: Wed, 19 Jun 2013 14:22:30 +0530
-Message-ID: <1371631951-369-4-git-send-email-kishon@ti.com>
+Subject: [PATCH 2/4] usb: phy: add a new API to get PHY ref by label
+Date: Wed, 19 Jun 2013 14:22:29 +0530
+Message-ID: <1371631951-369-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1371631951-369-1-git-send-email-kishon@ti.com>
 References: <1371631951-369-1-git-send-email-kishon@ti.com>
@@ -26,55 +26,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 After the devices are created using PLATFORM_DEVID_AUTO,
 devm_usb_get_phy_dev and usb_get_phy_dev can't be used reliably
-as it relies on the device_names passed in usb_bind_phy. So used the
-new API devm_usb_get_phy_by_name to get the PHY reference.
+as it relies on the device_names passed in usb_bind_phy. So
+added a new API to get the PHY reference by PHY label (PHY label
+should be filled which creating the PHY).
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 ---
- drivers/usb/musb/musb_core.c |    1 +
- drivers/usb/musb/musb_core.h |    1 +
- drivers/usb/musb/omap2430.c  |    2 +-
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/phy/phy.c   |   77 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/phy.h |   14 +++++++++
+ 2 files changed, 91 insertions(+)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 37a261a..00fbaf4 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1864,6 +1864,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	musb->board_set_power = plat->set_power;
- 	musb->min_power = plat->min_power;
- 	musb->ops = plat->platform_ops;
-+	musb->phy_name = plat->phy_name;
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index a9984c7..92bba2f 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -55,6 +55,21 @@ static struct usb_phy *__usb_find_phy_dev(struct device *dev,
+ 	return ERR_PTR(-ENODEV);
+ }
  
- 	/* The musb_platform_init() call:
- 	 *   - adjusts musb->mregs
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7fb4819..e9a9339 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -434,6 +434,7 @@ struct musb {
- 	unsigned                double_buffer_not_ok:1;
++static struct usb_phy *__usb_find_phy_by_name(struct list_head *list,
++	const char *name)
++{
++	struct usb_phy	*phy = NULL;
++
++	list_for_each_entry(phy, list, head) {
++		if (strcmp(name, phy->label))
++			continue;
++
++		return phy;
++	}
++
++	return ERR_PTR(-ENODEV);
++}
++
+ static struct usb_phy *__of_usb_find_phy(struct device_node *node)
+ {
+ 	struct usb_phy  *phy;
+@@ -272,6 +287,68 @@ struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
+ EXPORT_SYMBOL_GPL(devm_usb_get_phy_dev);
  
- 	struct musb_hdrc_config	*config;
-+	const char		*phy_name;
+ /**
++ * usb_get_phy_by_name - find the USB PHY using device ptr and phy label
++ * @name - the name of the phy
++ *
++ * Returns the phy driver, after getting a refcount to it; or
++ * -ENODEV if there is no such phy.  The caller is responsible for
++ * calling usb_put_phy() to release that count.
++ *
++ * For use by USB host and peripheral drivers.
++ */
++struct usb_phy *usb_get_phy_by_name(const char *name)
++{
++	struct usb_phy	*phy = NULL;
++	unsigned long	flags;
++
++	spin_lock_irqsave(&phy_lock, flags);
++
++	phy = __usb_find_phy_by_name(&phy_list, name);
++	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
++		pr_err("unable to find transceiver\n");
++		goto err0;
++	}
++
++	get_device(phy->dev);
++
++err0:
++	spin_unlock_irqrestore(&phy_lock, flags);
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(usb_get_phy_by_name);
++
++/**
++ * devm_usb_get_phy_by_name - find the USB PHY using device ptr and phy label
++ * @dev - device that requests this phy
++ * @name - the label of the phy
++ *
++ * Gets the phy using usb_get_phy_by_name(), and associates a device with it
++ * using devres. On driver detach, release function is invoked on the devres
++ * data, then, devres data is freed.
++ *
++ * For use by USB host and peripheral drivers.
++ */
++struct usb_phy *devm_usb_get_phy_by_name(struct device *dev, const char *name)
++{
++	struct usb_phy **ptr, *phy;
++
++	ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return NULL;
++
++	phy = usb_get_phy_by_name(name);
++	if (!IS_ERR(phy)) {
++		*ptr = phy;
++		devres_add(dev, ptr);
++	} else
++		devres_free(ptr);
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(devm_usb_get_phy_by_name);
++
++/**
+  * devm_usb_put_phy - release the USB PHY
+  * @dev - device that wants to release this phy
+  * @phy - the phy returned by devm_usb_get_phy()
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 6b5978f..8272cba 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -188,6 +188,9 @@ extern struct usb_phy *devm_usb_get_phy(struct device *dev,
+ 	enum usb_phy_type type);
+ extern struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index);
+ extern struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index);
++extern struct usb_phy *usb_get_phy_by_name(const char *name);
++extern struct usb_phy *devm_usb_get_phy_by_name(struct device *dev,
++	const char *name);
+ extern struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+ 	const char *phandle, u8 index);
+ extern void usb_put_phy(struct usb_phy *);
+@@ -216,6 +219,17 @@ static inline struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
+ 	return ERR_PTR(-ENXIO);
+ }
  
- #ifdef MUSB_CONFIG_PROC_FS
- 	struct proc_dir_entry *proc_entry;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 628b93f..f872ebc 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -352,7 +352,7 @@ static int omap2430_musb_init(struct musb *musb)
- 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
- 		    "usb-phy", 0);
- 	else
--		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+		musb->xceiv = devm_usb_get_phy_by_name(dev, musb->phy_name);
- 
- 	if (IS_ERR(musb->xceiv)) {
- 		status = PTR_ERR(musb->xceiv);
++static inline struct usb_phy *usb_get_phy_by_name(const char *name)
++{
++	return ERR_PTR(-ENXIO);
++}
++
++static inline struct usb_phy *devm_usb_get_phy_by_name(struct device *dev,
++	const char *name)
++{
++	return ERR_PTR(-ENXIO);
++}
++
+ static inline struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+ 	const char *phandle, u8 index)
+ {
 -- 
 1.7.10.4
 
