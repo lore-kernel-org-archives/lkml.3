@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934261Ab3FSDR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 23:17:56 -0400
-Received: from mail-ye0-f176.google.com ([209.85.213.176]:36314 "EHLO
-	mail-ye0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934127Ab3FSDRy (ORCPT
+	id S934236Ab3FSDXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 23:23:04 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:48714 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933990Ab3FSDXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 23:17:54 -0400
-From: "John B. Wyatt IV" <sageofredondo@gmail.com>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "John B. Wyatt IV" <sageofredondo@gmail.com>
-Subject: [PATCH] Acpi: acpica: acmacros: fixed a semicolon formatting issue.
-Date: Tue, 18 Jun 2013 20:17:40 -0700
-Message-Id: <1371611860-21056-1-git-send-email-sageofredondo@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 18 Jun 2013 23:23:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130619024839.GA1987@kroah.com>
+References: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
+	<20130619024839.GA1987@kroah.com>
+Date: Wed, 19 Jun 2013 11:23:00 +0800
+Message-ID: <CADApbeikx1yrjVKOREHq45qZDmxF872FY2tN7WBkhPYY=Uxkcw@mail.gmail.com>
+Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
+ host controller
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Chao Xie <chao.xie@marvell.com>, Alan Stern <stern@rowland.harvard.edu>,
+        "balbi@ti.com" <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John B. Wyatt IV" <sageofredondo@gmail.com>
+On Wed, Jun 19, 2013 at 10:48 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jun 18, 2013 at 10:31:20PM -0400, Chao Xie wrote:
+>> Some controller need software to initialize PHY before add
+>> host controller, and shut down PHY after remove host controller.
+>> Add the generic code for these controllers so they do not need
+>> do it in its own host controller driver.
+>
+> Why?  What breaks if we add this patch, and what gets fixed?  I'm
+> guessing you can then remove code?
+>
+> What out-of-tree code now works properly?  Or gets broken?
+>
+> we need more info here please...
+>
+The patch does not fix any bug.
+Some echi-xxx driver will need initialize the phy before it do
+usb_add_hcd, and shut down phy after
+do usb_remove_hcd, and i did a patch for ehci-mv.c to do above thing.
+Alan and Felipe comments on my patch, and they think it is a peice of
+generic code, and it can be
+moved to hcd to handle it, so other ehci-xxx will not do the same thing again.
+So i add the patch to add the generic code in hcd to handle phy
+initialization and shut down.
 
-Formatting patch: fixes all "space required after that ';'" errors in
-acmarcos.h.
-
-Please note this only fixes 12 out of 64 errors as reported by
-./scripts/checkpatch.pl
----
- drivers/acpi/acpica/acmacros.h | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/acpi/acpica/acmacros.h b/drivers/acpi/acpica/acmacros.h
-index 53666bd..b916eed 100644
---- a/drivers/acpi/acpica/acmacros.h
-+++ b/drivers/acpi/acpica/acmacros.h
-@@ -93,15 +93,15 @@
- /* 16-bit source, 16/32/64 destination */
- 
- #define ACPI_MOVE_16_TO_16(d, s)        {((  u8 *)(void *)(d))[0] = ((u8 *)(void *)(s))[1];\
--			  ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[0];}
-+			  ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[0]; }
- 
- #define ACPI_MOVE_16_TO_32(d, s)        {(*(u32 *)(void *)(d))=0;\
- 					  ((u8 *)(void *)(d))[2] = ((u8 *)(void *)(s))[1];\
--					  ((u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[0];}
-+					  ((u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[0]; }
- 
- #define ACPI_MOVE_16_TO_64(d, s)        {(*(u64 *)(void *)(d))=0;\
- 							   ((u8 *)(void *)(d))[6] = ((u8 *)(void *)(s))[1];\
--							   ((u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0];}
-+							   ((u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0]; }
- 
- /* 32-bit source, 16/32/64 destination */
- 
-@@ -110,13 +110,13 @@
- #define ACPI_MOVE_32_TO_32(d, s)        {((  u8 *)(void *)(d))[0] = ((u8 *)(void *)(s))[3];\
- 									  ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[2];\
- 									  ((  u8 *)(void *)(d))[2] = ((u8 *)(void *)(s))[1];\
--									  ((  u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[0];}
-+									  ((  u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[0]; }
- 
- #define ACPI_MOVE_32_TO_64(d, s)        {(*(u64 *)(void *)(d))=0;\
- 										   ((u8 *)(void *)(d))[4] = ((u8 *)(void *)(s))[3];\
- 										   ((u8 *)(void *)(d))[5] = ((u8 *)(void *)(s))[2];\
- 										   ((u8 *)(void *)(d))[6] = ((u8 *)(void *)(s))[1];\
--										   ((u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0];}
-+										   ((u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0]; }
- 
- /* 64-bit source, 16/32/64 destination */
- 
-@@ -131,7 +131,7 @@
- 										 ((  u8 *)(void *)(d))[4] = ((u8 *)(void *)(s))[3];\
- 										 ((  u8 *)(void *)(d))[5] = ((u8 *)(void *)(s))[2];\
- 										 ((  u8 *)(void *)(d))[6] = ((u8 *)(void *)(s))[1];\
--										 ((  u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0];}
-+										 ((  u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[0]; }
- #else
- /*
-  * Macros for little-endian machines
-@@ -169,10 +169,10 @@
- /* 16-bit source, 16/32/64 destination */
- 
- #define ACPI_MOVE_16_TO_16(d, s)        {((  u8 *)(void *)(d))[0] = ((u8 *)(void *)(s))[0];\
--										 ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[1];}
-+										 ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[1]; }
- 
--#define ACPI_MOVE_16_TO_32(d, s)        {(*(u32 *)(void *)(d)) = 0; ACPI_MOVE_16_TO_16(d, s);}
--#define ACPI_MOVE_16_TO_64(d, s)        {(*(u64 *)(void *)(d)) = 0; ACPI_MOVE_16_TO_16(d, s);}
-+#define ACPI_MOVE_16_TO_32(d, s)        {(*(u32 *)(void *)(d)) = 0; ACPI_MOVE_16_TO_16(d, s); }
-+#define ACPI_MOVE_16_TO_64(d, s)        {(*(u64 *)(void *)(d)) = 0; ACPI_MOVE_16_TO_16(d, s); }
- 
- /* 32-bit source, 16/32/64 destination */
- 
-@@ -181,9 +181,9 @@
- #define ACPI_MOVE_32_TO_32(d, s)        {((  u8 *)(void *)(d))[0] = ((u8 *)(void *)(s))[0];\
- 										 ((  u8 *)(void *)(d))[1] = ((u8 *)(void *)(s))[1];\
- 										 ((  u8 *)(void *)(d))[2] = ((u8 *)(void *)(s))[2];\
--										 ((  u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[3];}
-+										 ((  u8 *)(void *)(d))[3] = ((u8 *)(void *)(s))[3]; }
- 
--#define ACPI_MOVE_32_TO_64(d, s)        {(*(u64 *)(void *)(d)) = 0; ACPI_MOVE_32_TO_32(d, s);}
-+#define ACPI_MOVE_32_TO_64(d, s)        {(*(u64 *)(void *)(d)) = 0; ACPI_MOVE_32_TO_32(d, s); }
- 
- /* 64-bit source, 16/32/64 destination */
- 
-@@ -196,7 +196,7 @@
- 										 ((  u8 *)(void *)(d))[4] = ((u8 *)(void *)(s))[4];\
- 										 ((  u8 *)(void *)(d))[5] = ((u8 *)(void *)(s))[5];\
- 										 ((  u8 *)(void *)(d))[6] = ((u8 *)(void *)(s))[6];\
--										 ((  u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[7];}
-+										 ((  u8 *)(void *)(d))[7] = ((u8 *)(void *)(s))[7]; }
- #endif
- #endif
- 
--- 
-1.8.1.2
-
+> thanks,
+>
+> greg k-h
