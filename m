@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934951Ab3FSRxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:53:36 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:38147 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934815Ab3FSRxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:53:34 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 2/2] arm: multi_v7_defconfig: Enable initrd/initramfs support
-Date: Wed, 19 Jun 2013 10:53:04 -0700
-Message-Id: <1371664384-24974-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1371664384-24974-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1371664384-24974-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S934943Ab3FSRyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:54:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933869Ab3FSRyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:54:10 -0400
+Date: Wed, 19 Jun 2013 13:53:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130619175356.GA23673@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	paulmck@linux.vnet.ibm.com
+References: <20130619164540.GB22483@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619164540.GB22483@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_BLK_DEV_INITRD to the defconfig to support
-initramfs and initrd.
+On Wed, Jun 19, 2013 at 12:45:40PM -0400, Dave Jones wrote:
+ > I've been hitting this a lot the last few days.
+ > This is the same machine that I was also seeing lockups during sync()
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+On a whim, I reverted 971394f389992f8462c4e5ae0e3b49a10a9534a3
+(As I started seeing these just after that rcu merge).
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index d5f0d76..2deda6d 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -83,3 +83,4 @@ CONFIG_DMADEVICES=y
- CONFIG_PL330_DMA=y
- CONFIG_SIRF_DMA=y
- CONFIG_DW_DMAC=y
-+CONFIG_BLK_DEV_INITRD=y
--- 
-1.8.3.1
+It's only been 30 minutes, but it seems stable again. Normally I would
+hit these within 5 minutes.
 
+I think this may be the same root cause for http://www.spinics.net/lists/kernel/msg1551503.html too.
+
+Paul ?
+
+	Dave
+
+
+
+ > BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child9:6902]
+ > Modules linked in: bridge snd_seq_dummy dlci bnep fuse 8021q garp stp hidp tun rfcomm can_raw ipt_ULOG nfnetlink rose scsi_transport_iscsi ipx p8023 p8022 phonet llc2 irda rds pppoe pppox caif_socket caif ppp_generic af_key slhc crc_ccitt bluetooth netrom can_bcm x25 appletalk psnap can llc af_rxrpc atm ax25 af_802154 nfc rfkill coretemp hwmon kvm_intel kvm snd_hda_codec_realtek snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel snd_hda_intel microcode snd_hda_codec pcspkr snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+ > irq event stamp: 2057909
+ > hardirqs last  enabled at (2057908): [<ffffffff816ed220>] restore_args+0x0/0x30
+ > hardirqs last disabled at (2057909): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
+ > softirqs last  enabled at (1444600): [<ffffffff810542d4>] __do_softirq+0x194/0x440
+ > softirqs last disabled at (1444851): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+ > CPU: 1 PID: 6902 Comm: trinity-child9 Not tainted 3.10.0-rc6+ #16
+ > task: ffff880243212520 ti: ffff88015c1fa000 task.ti: ffff88015c1fa000
+ > RIP: 0010:[<ffffffff810541f1>]  [<ffffffff810541f1>] __do_softirq+0xb1/0x440
+ > RSP: 0000:ffff880244a03f08  EFLAGS: 00000202
+ > RAX: ffff880243212520 RBX: ffffffff816ed220 RCX: 0000000000000000
+ > RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880243212520
+ > RBP: ffff880244a03f70 R08: 0000000010000003 R09: 0000000000000000
+ > R10: 0000000000000001 R11: 0000000000000000 R12: ffff880244a03e78
+ > R13: ffffffff816f5d2f R14: ffff880244a03f70 R15: 0000000000000000
+ > FS:  00007f2e89fa1740(0000) GS:ffff880244a00000(0000) knlGS:0000000000000000
+ > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ > CR2: 000000000351a000 CR3: 00000001f6b7d000 CR4: 00000000001407e0
+ > DR0: 00007f2e898d2000 DR1: 0000000001c59000 DR2: 0000000001c5c000
+ > DR3: 0000000000008000 DR6: 00000000fffe0ff0 DR7: 00000000000b0602
+ > Stack:
+ >  0000000a00406040 00000001008fead4 ffff88015c1fbfd8 ffff88015c1fbfd8
+ >  ffff88015c1fbfd8 0000000010010002 ffff88015c1fbfd8 ffffffff00000001
+ >  ffff880243212520 0000000000000000 ffff88023bbf0c80 0000000000000001
+ > Call Trace:
+ >  <IRQ> 
+ > 
+ >  [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+ >  [<ffffffff816f6bcb>] smp_apic_timer_interrupt+0x6b/0x9b
+ >  [<ffffffff816f5d2f>] apic_timer_interrupt+0x6f/0x80
+ >  <EOI> 
+ > 
+ >  [<ffffffff816ed220>] ? retint_restore_args+0xe/0xe
+ >  [<ffffffff816ec642>] ? _raw_spin_unlock_irq+0x32/0x60
+ >  [<ffffffff816ec63c>] ? _raw_spin_unlock_irq+0x2c/0x60
+ >  [<ffffffff81086c95>] finish_task_switch+0x85/0x130
+ >  [<ffffffff81086c57>] ? finish_task_switch+0x47/0x130
+ >  [<ffffffff816ea734>] __schedule+0x444/0x9c0
+ >  [<ffffffff816eb313>] preempt_schedule_irq+0x53/0x90
+ >  [<ffffffff816ed336>] retint_kernel+0x26/0x30
+ >  [<ffffffff81145297>] ? user_enter+0x87/0xd0
+ >  [<ffffffff8100f6f8>] syscall_trace_leave+0x78/0x140
+ >  [<ffffffff816f53af>] int_check_syscall_exit_work+0x34/0x3d
+ > Code: 48 89 45 b8 48 89 45 b0 48 89 45 a8 66 0f 1f 44 00 00 65 c7 04 25 80 0f 1d 00 00 00 00 00 e8 b7 31 06 00 fb 49 c7 c6 00 41 c0 81 <eb> 0e 0f 1f 44 00 00 49 83 c6 08 41 d1 ef 74 6c 41 f6 c7 01 74 
+ > 
+ > --
+ > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+ > the body of a message to majordomo@vger.kernel.org
+ > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ > Please read the FAQ at  http://www.tux.org/lkml/
+---end quoted text---
