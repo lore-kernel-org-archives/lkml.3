@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901Ab3FSSlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:41:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40184 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340Ab3FSSlo (ORCPT
+	id S964912Ab3FSSur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:50:47 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:43780 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964843Ab3FSSuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:41:44 -0400
-Date: Wed, 19 Jun 2013 11:39:42 -0700
-From: tip-bot for Michael Wang <tipbot@zytor.com>
-Message-ID: <tip-22b958d8cc5127d22d2ad2141277d312d93fad6c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <51AD87EB.1070605@linux.vnet.ibm.com>
-References: <51AD87EB.1070605@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Refine the code in unthrottle_cfs_rq()
-Git-Commit-ID: 22b958d8cc5127d22d2ad2141277d312d93fad6c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Jun 2013 14:50:44 -0400
+Message-ID: <51C1FD7F.9090606@gmail.com>
+Date: Wed, 19 Jun 2013 12:50:39 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:39:48 -0700 (PDT)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
+References: <20130618192147.GA19443@redhat.com> <20130619121039.GA19225@twins.programming.kicks-ass.net> <20130619152844.GA9176@redhat.com> <20130619175139.GA20454@redhat.com>
+In-Reply-To: <20130619175139.GA20454@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22b958d8cc5127d22d2ad2141277d312d93fad6c
-Gitweb:     http://git.kernel.org/tip/22b958d8cc5127d22d2ad2141277d312d93fad6c
-Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Tue, 4 Jun 2013 14:23:39 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 12:58:41 +0200
+On 6/19/13 11:51 AM, Oleg Nesterov wrote:
+> On 06/19, Oleg Nesterov wrote:
+>>
+>> On 06/19, Peter Zijlstra wrote:
+>>>
+>>> I'm probably missing something obviuos, but what are we trying to do?
+>>
+>> Say, "perf record -e sched:sched_switch -p1".
+>>
+>> Every task except /sbin/init will do perf_trace_sched_switch() and
+>> perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
+>> it doesn't have a counter.
+>
+> I did some testing under kvm, not sure these numbers actually mean
+> something, but still.
+>
+> So, the test-case:
+>
+> 	int pipe1[2], pipe2[2];
+>
+> 	void *tfunc(void *arg)
+> 	{
+> 		for (;;) {
+> 			char c;
+> 			assert(read(pipe1[0], &c, 1) == 1);
+> 			assert(write(pipe2[1], &c, 1) == 1);
+> 		}
+> 	}
+>
+> 	int main(void)
+> 	{
+> 		pthread_t thr;
+> 		int nr;
+>
+> 		assert(pipe(pipe1) == 0);
+> 		assert(pipe(pipe2) == 0);
+>
+> 		assert(pthread_create(&thr, NULL, tfunc, NULL) == 0);
+>
+> 		for (nr = 0; nr < 1000 * 1000; ++nr) {
+> 			char c;
+>
+> 			assert(write(pipe1[1], &c, 1) == 1);
+> 			assert(read(pipe2[0], &c, 1) == 1);
+> 		}
+>
+> 		return 0;
+> 	}
 
-sched: Refine the code in unthrottle_cfs_rq()
+Same as "perf bench sched pipe"
 
-Directly use rq to save some code.
+David
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/51AD87EB.1070605@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 143dcdb..47a30be 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2315,7 +2315,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- 	int enqueue = 1;
- 	long task_delta;
- 
--	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-+	se = cfs_rq->tg->se[cpu_of(rq)];
- 
- 	cfs_rq->throttled = 0;
- 
+>
+> Idle machine, "/usr/bin/time -f "%e %S %U" taskset 1 ./pf" 3 times:
+>
+> 	20.73 20.05 0.66
+> 	20.68 20.04 0.63
+> 	20.68 20.02 0.65
+>
+> Now with "perf record -e sched:sched_switch -p1" running,
+>
+> before 3/3:
+>
+> 	21.59 20.77 0.80
+> 	21.40 20.70 0.68
+> 	21.50 20.72 0.78
+>
+> after 3/3:
+>
+> 	21.00 20.23 0.76
+> 	20.89 20.19 0.69
+> 	20.94 20.26 0.66
+>
+> Oleg.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
