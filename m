@@ -1,243 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab3FSSoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:44:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40290 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965047Ab3FSSnK (ORCPT
+	id S965015Ab3FSSmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:42:54 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47013 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964932Ab3FSSmt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:43:10 -0400
-Date: Wed, 19 Jun 2013 11:42:55 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-135c5612c460f89657c4698fe2ea753f6f667963@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, ak@linux.jf.intel.com,
-        ak@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1371515812-9646-6-git-send-email-andi@firstfloor.org>
-References: <1371515812-9646-6-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Support Haswell/v4 LBR format
-Git-Commit-ID: 135c5612c460f89657c4698fe2ea753f6f667963
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Jun 2013 14:42:49 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>
+Subject: Re: [RFC PATCH 5/6] ARM: dts: omap3beagle-xm: Add idle state pins for USB host
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
+	<1371650753-11452-6-git-send-email-rogerq@ti.com>
+Date: Wed, 19 Jun 2013 11:42:45 -0700
+In-Reply-To: <1371650753-11452-6-git-send-email-rogerq@ti.com> (Roger
+	Quadros's message of "Wed, 19 Jun 2013 17:05:52 +0300")
+Message-ID: <87obb26ixm.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:43:01 -0700 (PDT)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  135c5612c460f89657c4698fe2ea753f6f667963
-Gitweb:     http://git.kernel.org/tip/135c5612c460f89657c4698fe2ea753f6f667963
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 17 Jun 2013 17:36:51 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 14:43:35 +0200
+Roger Quadros <rogerq@ti.com> writes:
 
-perf/x86/intel: Support Haswell/v4 LBR format
+> Add the Idle state pins for USB host and enable WAKEUP on
+> DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
+> sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
+>
+> CC: Benoît Cousson <b-cousson@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Haswell has two additional LBR from flags for TSX: in_tx and
-abort_tx, implemented as a new "v4" version of the LBR format.
+This one doesn't apply...
 
-Handle those in and adjust the sign extension code to still
-correctly extend. The flags are exported similarly in the LBR
-record to the existing misprediction flag
+> ---
+>  arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
+>  1 files changed, 23 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> index d3808ed..f1d56c2 100644
+> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> @@ -89,12 +89,7 @@
+>  };
+>  
+>  &omap3_pmx_core {
+> -	pinctrl-names = "default";
+> -	pinctrl-0 = <
+> -			&hsusbb2_pins
+> -	>;
+> -
+> -	hsusbb2_pins: pinmux_hsusbb2_pins {
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <ak@linux.jf.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/r/1371515812-9646-6-git-send-email-andi@firstfloor.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 56 +++++++++++++++++++++++++++---
- include/linux/perf_event.h                 |  7 +++-
- include/uapi/linux/perf_event.h            |  5 ++-
- 3 files changed, 61 insertions(+), 7 deletions(-)
+This omap3_pmx_core section doesn't exist upstream in the xM DTS file
+(but does in omap3-beagle.dts.)  
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index de341d4..d5be06a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,6 +12,16 @@ enum {
- 	LBR_FORMAT_LIP		= 0x01,
- 	LBR_FORMAT_EIP		= 0x02,
- 	LBR_FORMAT_EIP_FLAGS	= 0x03,
-+	LBR_FORMAT_EIP_FLAGS2	= 0x04,
-+	LBR_FORMAT_MAX_KNOWN    = LBR_FORMAT_EIP_FLAGS2,
-+};
-+
-+static enum {
-+	LBR_EIP_FLAGS		= 1,
-+	LBR_TSX			= 2,
-+} lbr_desc[LBR_FORMAT_MAX_KNOWN + 1] = {
-+	[LBR_FORMAT_EIP_FLAGS]  = LBR_EIP_FLAGS,
-+	[LBR_FORMAT_EIP_FLAGS2] = LBR_EIP_FLAGS | LBR_TSX,
- };
- 
- /*
-@@ -56,6 +66,8 @@ enum {
- 	 LBR_FAR)
- 
- #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+#define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
-+#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
- 
- #define for_each_branch_sample_type(x) \
- 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
-@@ -81,9 +93,13 @@ enum {
- 	X86_BR_JMP      = 1 << 9, /* jump */
- 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
- 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
-+	X86_BR_ABORT    = 1 << 12,/* transaction abort */
-+	X86_BR_IN_TX    = 1 << 13,/* in transaction */
-+	X86_BR_NO_TX    = 1 << 14,/* not in transaction */
- };
- 
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-+#define X86_BR_ANYTX (X86_BR_NO_TX | X86_BR_IN_TX)
- 
- #define X86_BR_ANY       \
- 	(X86_BR_CALL    |\
-@@ -95,6 +111,7 @@ enum {
- 	 X86_BR_JCC     |\
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
-+	 X86_BR_ABORT	 |\
- 	 X86_BR_IND_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-@@ -270,21 +287,31 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, mis = 0, pred = 0;
-+		u64 from, to, mis = 0, pred = 0, in_tx = 0, abort = 0;
-+		int skip = 0;
-+		int lbr_flags = lbr_desc[lbr_format];
- 
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
- 
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-+		if (lbr_flags & LBR_EIP_FLAGS) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			from = (u64)((((s64)from) << 1) >> 1);
-+			skip = 1;
-+		}
-+		if (lbr_flags & LBR_TSX) {
-+			in_tx = !!(from & LBR_FROM_FLAG_IN_TX);
-+			abort = !!(from & LBR_FROM_FLAG_ABORT);
-+			skip = 3;
- 		}
-+		from = (u64)((((s64)from) << skip) >> skip);
- 
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
- 		cpuc->lbr_entries[i].mispred	= mis;
- 		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].in_tx	= in_tx;
-+		cpuc->lbr_entries[i].abort	= abort;
- 		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
-@@ -334,6 +361,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 
- 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		mask |= X86_BR_IND_CALL;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ABORT_TX)
-+		mask |= X86_BR_ABORT;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_IN_TX)
-+		mask |= X86_BR_IN_TX;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_NO_TX)
-+		mask |= X86_BR_NO_TX;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -408,7 +445,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
-  * decoded (e.g., text page not present), then X86_BR_NONE is
-  * returned.
-  */
--static int branch_type(unsigned long from, unsigned long to)
-+static int branch_type(unsigned long from, unsigned long to, int abort)
- {
- 	struct insn insn;
- 	void *addr;
-@@ -428,6 +465,9 @@ static int branch_type(unsigned long from, unsigned long to)
- 	if (from == 0 || to == 0)
- 		return X86_BR_NONE;
- 
-+	if (abort)
-+		return X86_BR_ABORT | to_plm;
-+
- 	if (from_plm == X86_BR_USER) {
- 		/*
- 		 * can happen if measuring at the user level only
-@@ -574,7 +614,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 		from = cpuc->lbr_entries[i].from;
- 		to = cpuc->lbr_entries[i].to;
- 
--		type = branch_type(from, to);
-+		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
-+		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
-+			if (cpuc->lbr_entries[i].in_tx)
-+				type |= X86_BR_IN_TX;
-+			else
-+				type |= X86_BR_NO_TX;
-+		}
- 
- 		/* if type does not correspond, then discard */
- 		if (type == X86_BR_NONE || (br_sel & type) != type) {
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 33e8d65..056f93a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -73,13 +73,18 @@ struct perf_raw_record {
-  *
-  * support for mispred, predicted is optional. In case it
-  * is not supported mispred = predicted = 0.
-+ *
-+ *     in_tx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-  */
- struct perf_branch_entry {
- 	__u64	from;
- 	__u64	to;
- 	__u64	mispred:1,  /* target mispredicted */
- 		predicted:1,/* target predicted */
--		reserved:62;
-+		in_tx:1,    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
- };
- 
- /*
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index fb104e5..0b1df41 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -157,8 +157,11 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
- 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
- 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
-+	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
-+	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
- 
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
+Is there a dependency patch missing?
+
+Kevin
