@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3FSOrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:47:41 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:5440 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab3FSOrj (ORCPT
+	id S1756897Ab3FSOt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:49:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20382 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab3FSOtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:47:39 -0400
-Message-ID: <1371653237.22206.12.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Remove the use of
- CONFIG_ACPI_HOTPLUG_MEMORY_MODULE
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 19 Jun 2013 08:47:17 -0600
-In-Reply-To: <51C13703.8040909@jp.fujitsu.com>
-References: <1371589605-15638-1-git-send-email-toshi.kani@hp.com>
-	 <51C13703.8040909@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 10:49:25 -0400
+Date: Wed, 19 Jun 2013 17:49:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] FMC: NULL dereference on allocation failure
+Message-ID: <20130619144904.GA10484@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 13:43 +0900, Yasuaki Ishimatsu wrote:
-> 2013/06/19 6:06, Toshi Kani wrote:
-> > config ACPI_HOTPLUG_MEMORY has been changed to bool (y/n), and
-> > its module option is no longer valid.  So, remove the use of
-> > CONFIG_ACPI_HOTPLUG_MEMORY_MODULE.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
-> >   include/linux/acpi.h |    3 +--
-> >   1 file changed, 1 insertion(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> > index 17b5b59..353ba25 100644
-> > --- a/include/linux/acpi.h
-> > +++ b/include/linux/acpi.h
-> > @@ -352,8 +352,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
-> >   
-> >   /* Enable _OST when all relevant hotplug operations are enabled */
-> >   #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
-> > -	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
-> > -	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
-> > +	defined(CONFIG_ACPI_HOTPLUG_MEMORY) &&		\
-> >   	defined(CONFIG_ACPI_CONTAINER)
-> >   #define ACPI_HOTPLUG_OST
-> >   #endif
-> > --
-> Good catch!!
-> 
-> Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+If we don't allocate "arr" then the cleanup path will dereference it and
+oops.
 
-Thanks Yasuaki!
--Toshi
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-
+diff --git a/drivers/fmc/fmc-sdb.c b/drivers/fmc/fmc-sdb.c
+index 74fb326..79adc39 100644
+--- a/drivers/fmc/fmc-sdb.c
++++ b/drivers/fmc/fmc-sdb.c
+@@ -46,16 +46,17 @@ static struct sdb_array *__fmc_scan_sdb_tree(struct fmc_device *fmc,
+ 	onew = __sdb_rd(fmc, sdb_addr + 4, convert);
+ 	n = __be16_to_cpu(*(uint16_t *)&onew);
+ 	arr = kzalloc(sizeof(*arr), GFP_KERNEL);
+-	if (arr) {
+-		arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
+-		arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
+-	}
+-	if (!arr || !arr->record || !arr->subtree) {
++	if (!arr)
++		return ERR_PTR(-ENOMEM);
++	arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
++	arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
++	if (!arr->record || !arr->subtree) {
+ 		kfree(arr->record);
+ 		kfree(arr->subtree);
+ 		kfree(arr);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
++
+ 	arr->len = n;
+ 	arr->level = level;
+ 	arr->fmc = fmc;
