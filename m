@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934920Ab3FSRMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:12:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65281 "EHLO
+	id S934846Ab3FSRMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:12:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65285 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756842Ab3FSRMn (ORCPT
+	by vger.kernel.org with ESMTP id S1757109Ab3FSRMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:12:43 -0400
+	Wed, 19 Jun 2013 13:12:44 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v5 1/6] staging: android: binder: modify struct binder_write_read to use size_t
-Date: Wed, 19 Jun 2013 18:12:31 +0100
-Message-Id: <1371661956-10894-2-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v5 2/6] staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+Date: Wed, 19 Jun 2013 18:12:32 +0100
+Message-Id: <1371661956-10894-3-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
 References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
@@ -25,83 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change mirrors the userspace operation where struct binder_write_read
-members that specify the buffer size and consumed size are size_t elements.
+This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
+instead of size_t for setting the max threads. Thus using the same
+handler for 32 and 64bit kernels.
 
-The patch also fixes the binder_thread_write() and binder_thread_read()
-functions prototypes to conform with the definition of binder_write_read.
+This value is stored internally in struct binder_proc and set to 15
+on open_binder() in the libbinder API(thus no need for a 64bit size_t
+on 64bit platforms).
 
-The changes do not affect existing 32bit ABI.
+The change does not affect existing 32bit ABI.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 Acked-by: Arve Hjønnevåg <arve@android.com>
 ---
- drivers/staging/android/binder.c |   10 +++++-----
- drivers/staging/android/binder.h |    8 ++++----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/android/binder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 1567ac2..ce70909 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
- }
- 
- int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
--			void __user *buffer, int size, signed long *consumed)
-+			void __user *buffer, size_t size, size_t *consumed)
- {
- 	uint32_t cmd;
- 	void __user *ptr = buffer + *consumed;
-@@ -2080,8 +2080,8 @@ static int binder_has_thread_work(struct binder_thread *thread)
- 
- static int binder_thread_read(struct binder_proc *proc,
- 			      struct binder_thread *thread,
--			      void  __user *buffer, int size,
--			      signed long *consumed, int non_block)
-+			      void  __user *buffer, size_t size,
-+			      size_t *consumed, int non_block)
- {
- 	void __user *ptr = buffer + *consumed;
- 	void __user *end = buffer + size;
-@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d write %ld at %08lx, read %ld at %08lx\n",
-+			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
- 			     proc->pid, thread->pid, bwr.write_size,
- 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
- 
-@@ -2604,7 +2604,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d wrote %ld of %ld, read return %ld of %ld\n",
-+			     "%d:%d wrote %zd of %zd, read return %zd of %zd\n",
- 			     proc->pid, thread->pid, bwr.write_consumed, bwr.write_size,
- 			     bwr.read_consumed, bwr.read_size);
- 		if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
 diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index dbe81ce..edab249 100644
+index edab249..6515dd2 100644
 --- a/drivers/staging/android/binder.h
 +++ b/drivers/staging/android/binder.h
-@@ -67,11 +67,11 @@ struct flat_binder_object {
-  */
+@@ -86,7 +86,7 @@ struct binder_version {
  
- struct binder_write_read {
--	signed long	write_size;	/* bytes to write */
--	signed long	write_consumed;	/* bytes consumed by driver */
-+	size_t write_size;	/* bytes to write */
-+	size_t write_consumed;	/* bytes consumed by driver */
- 	unsigned long	write_buffer;
--	signed long	read_size;	/* bytes to read */
--	signed long	read_consumed;	/* bytes consumed by driver */
-+	size_t read_size;	/* bytes to read */
-+	size_t read_consumed;	/* bytes consumed by driver */
- 	unsigned long	read_buffer;
- };
- 
+ #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
+ #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
+-#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
++#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
+ #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
+ #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
+ #define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
 -- 
 1.7.9.5
 
