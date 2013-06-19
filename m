@@ -1,211 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294Ab3FSIxN (ORCPT <rfc822;w@1wt.eu>);
+	id S934371Ab3FSIxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:53:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52403 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934159Ab3FSIxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Jun 2013 04:53:13 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63435 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933755Ab3FSIxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:06 -0400
-Date: Wed, 19 Jun 2013 12:52:54 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130619085252.GD1990@localhost.localdomain>
-References: <20130617141822.GF5018@dhcp22.suse.cz>
- <20130617151403.GA25172@localhost.localdomain>
- <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
- <20130617223004.GB2538@localhost.localdomain>
- <20130618062623.GA20528@localhost.localdomain>
- <20130619071346.GA9545@dhcp22.suse.cz>
- <20130619073526.GB1990@localhost.localdomain>
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>
+Subject: [PATCH 0/4] usb: musb: fix USB enumeration issue in OMAP3 platform
+Date: Wed, 19 Jun 2013 14:22:27 +0530
+Message-ID: <1371631951-369-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619073526.GB1990@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:35:27AM +0400, Glauber Costa wrote:
-> On Wed, Jun 19, 2013 at 09:13:46AM +0200, Michal Hocko wrote:
-> > On Tue 18-06-13 10:26:24, Glauber Costa wrote:
-> > [...]
-> > > Michal, would you mind testing the following patch?
-> > >
-> > > diff --git a/fs/inode.c b/fs/inode.c
-> > > index 00b804e..48eafa6 100644
-> > > --- a/fs/inode.c
-> > > +++ b/fs/inode.c
-> > > @@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
-> > >  
-> > >  static void inode_lru_list_del(struct inode *inode)
-> > >  {
-> > > +	if (inode->i_state & I_FREEING)
-> > > +		return;
-> > >  
-> > >  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
-> > >  		this_cpu_dec(nr_unused);
-> > > @@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
-> > >  			continue;
-> > >  		}
-> > >  
-> > > -		inode->i_state |= I_FREEING;
-> > >  		inode_lru_list_del(inode);
-> > > +		inode->i_state |= I_FREEING;
-> > >  		spin_unlock(&inode->i_lock);
-> > >  		list_add(&inode->i_lru, &dispose);
-> > >  	}
-> > > @@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
-> > >  			continue;
-> > >  		}
-> > >  
-> > > -		inode->i_state |= I_FREEING;
-> > >  		inode_lru_list_del(inode);
-> > > +		inode->i_state |= I_FREEING;
-> > >  		spin_unlock(&inode->i_lock);
-> > >  		list_add(&inode->i_lru, &dispose);
-> > >  	}
-> > > @@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
-> > >  		inode->i_state &= ~I_WILL_FREE;
-> > >  	}
-> > >  
-> > > +	inode_lru_list_del(inode);
-> > >  	inode->i_state |= I_FREEING;
-> > > -	if (!list_empty(&inode->i_lru))
-> > > -		inode_lru_list_del(inode);
-> > >  	spin_unlock(&inode->i_lock);
-> > >  
-> > >  	evict(inode);
-> > 
-> > No luck. I have this on top of inode_lru_isolate one but still can see
-> > hangs:
-> > 911 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > [<ffffffff81175254>] __lookup_hash+0x34/0x40
-> > [<ffffffff81179872>] path_lookupat+0x7a2/0x830
-> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> > [<ffffffff81170116>] vfs_stat+0x16/0x20
-> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 21409 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > [<ffffffff8117815e>] do_last+0x2de/0x780
-> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 21745 [<ffffffff81179862>] path_lookupat+0x792/0x830
-> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> > [<ffffffff81170116>] vfs_stat+0x16/0x20
-> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 22032 [<ffffffff81179862>] path_lookupat+0x792/0x830
-> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
-> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
-> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
-> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
-> > [<ffffffff81170116>] vfs_stat+0x16/0x20
-> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 22621 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
-> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
-> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
-> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
-> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > [<ffffffff8117815e>] do_last+0x2de/0x780
-> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 22711 [<ffffffff81178144>] do_last+0x2c4/0x780
-> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 22946 [<ffffffff81178144>] do_last+0x2c4/0x780
-> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 23393 [<ffffffff81178144>] do_last+0x2c4/0x780
-> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
-> > [<ffffffffffffffff>] 0xffffffffffffffff
-> > -- 
-> Sorry if you said that before Michal.
-> 
-> But given the backtrace, are you sure this is LRU-related? You mentioned you bisected
-> it but found nothing conclusive. I will keep looking but maybe this could benefit from
-> a broader fs look
-> 
-> In any case, the patch we suggested is obviously correct and we should apply nevertheless.
-> I will write it down and send it to Andrew.
+In the case of non-dt boot, the platform specific initialization file
+(board file) will do usb_bind_phy that binds the usb controller with the
+PHY using device names. After the device names are created using 
+PLATFORM_DEVID_AUTO, our original method of binding by device names doesn't
+work reliably (since the device name changes). Hence the usb controller
+is made to use labels for getting the PHY.
 
-My analysis of the LRU side code so far is:
+Here the PHY name is added in the plat data of USB controller device which
+should be used by the controller driver to get the PHY.
+Two new APIs usb_get_phy_by_name and devm_usb_get_phy_by_name are added to
+be used by the controller to get the PHY by name.
 
-* Assuming we are not hanging because of held locks, the fact that we
-are hung at __wait_on_freeing_inode() means that someone who should
-be waking us up is not. This would indicate that an inode is marked
-as to-be-freed, but later on not freed.
+Changes from RFC
+*) Changed the signature of usb_get_phy_by_name() not to use struct device *
 
-* We will wait for free inodes if the state is I_FREEING or I_WILL_FREE.
+Kishon Vijay Abraham I (4):
+  arm: omap: Add phy binding info for musb in plat data
+  usb: phy: add a new API to get PHY ref by label
+  usb: musb: omap: use the new API to get PHY reference by label
+  arm: omap: remove using usb_bind_phy for binding musb and phy
 
-* I_WILL_FREE is only set for a very short time during iput_final, and
-the code path leads unconditionally to evict(), which wakes up any
-waiters.
+ arch/arm/mach-omap2/board-2430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-3430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-4430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-cm-t35.c           |    1 -
+ arch/arm/mach-omap2/board-devkit8000.c       |    1 -
+ arch/arm/mach-omap2/board-igep0020.c         |    1 -
+ arch/arm/mach-omap2/board-ldp.c              |    1 -
+ arch/arm/mach-omap2/board-omap3beagle.c      |    1 -
+ arch/arm/mach-omap2/board-omap3evm.c         |    1 -
+ arch/arm/mach-omap2/board-omap3logic.c       |    1 -
+ arch/arm/mach-omap2/board-omap3pandora.c     |    1 -
+ arch/arm/mach-omap2/board-omap3stalker.c     |    1 -
+ arch/arm/mach-omap2/board-omap3touchbook.c   |    1 -
+ arch/arm/mach-omap2/board-omap4panda.c       |    1 -
+ arch/arm/mach-omap2/board-overo.c            |    1 -
+ arch/arm/mach-omap2/board-rm680.c            |    1 -
+ arch/arm/mach-omap2/board-rx51.c             |    1 -
+ arch/arm/mach-omap2/board-zoom-peripherals.c |    1 -
+ arch/arm/mach-omap2/usb-musb.c               |    6 +-
+ drivers/usb/musb/musb_core.c                 |    1 +
+ drivers/usb/musb/musb_core.h                 |    1 +
+ drivers/usb/musb/omap2430.c                  |    2 +-
+ drivers/usb/phy/phy.c                        |   77 ++++++++++++++++++++++++++
+ include/linux/usb/musb.h                     |    3 +
+ include/linux/usb/phy.h                      |   14 +++++
+ 25 files changed, 102 insertions(+), 20 deletions(-)
 
-* clear_inode sets I_FREEING but it is only called from within evict,
-which means we will wake up the waiters shortly.
+-- 
+1.7.10.4
 
-* The LRU will not necessarily put the element into those states, but when
-it does, it moves them to the dispose list. We will call evict() for all
-ements in the dispose list, and that will unconditionally call wake_up_bit.
-So it seems that if the LRU sets I_FREEING (we never set I_WILL_FREE)
-
-* The same is true for evict_inodes and invalidate_inodes. They test
-for the freeing bits and will skip the inodes marked as such. This seems
-okay, since this means someone else marked them as freeing and it should
-be their responsibility to wake up the callers.
-
-So this shows that strangely enough, the code seems very safe and fine.
-Still you are seeing hangs... Any chance we are hanging on the acquisition
-of inode_hash_lock?
-
-I need to be away for some hours, but I will be back to it soon. Meanwhile,
-if Dave could take a look into it, that would be trully great.
