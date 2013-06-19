@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933992Ab3FSBmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:42:19 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:46056 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173Ab3FSBmR (ORCPT
+	id S934048Ab3FSBqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:46:32 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:48652 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932860Ab3FSBqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:42:17 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linux-doc@vger.kernel.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Gleb Natapov <gleb@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rob Landley <rob@landley.net>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm api doc: fix section numbers
-Date: Wed, 19 Jun 2013 11:42:07 +1000
-Message-Id: <1371606127-1192-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 18 Jun 2013 21:46:31 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
+        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH v6] Cpufreq: Fix governor start/stop race condition
+Date: Wed, 19 Jun 2013 09:43:11 +0800
+Message-ID: <1371606191-5618-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- Documentation/virtual/kvm/api.txt |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Cpufreq governor's stop and start operation should be kept in sequence.
+If not, there will be unexpected behavior, for example:
 
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 5f91eda..6365fef 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -2261,7 +2261,7 @@ return indicates the attribute is implemented.  It does not necessarily
- indicate that the attribute can be read or written in the device's
- current state.  "addr" is ignored.
+There are 4 CPUs and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+The normal sequence is as below:
+
+1) Current governor is userspace, One application tries to set
+governor to ondemand. It will call __cpufreq_set_policy in which it
+will stop userspace governor and then start ondemand governor.
+
+2) Current governor is userspace, Now cpu0 hotplugs in cpu3, It will
+call cpufreq_add_policy_cpu in which it first stops userspace
+governor, and then starts userspace governor.
+
+Now if the sequence of above two cases interleaves, It becames
+below sequence:
+
+1) Application stops userspace governor
+2)                                      Hotplug stops userspace governor
+3) Application starts ondemand governor
+4)                                      Hotplug starts a governor
+
+In step 4, hotplug is supposed to start userspace governor, But now
+the governor has been changed by application to ondemand, So hotplug
+starts ondemand governor again !!!!
+
+The solution is: Do not allow stop one policy's governor multi-times.
+Governor stop should only do once for one policy, After it is stopped,
+No other governor stop should be executed. also add one mutext to
+protect __cpufreq_governor so governor operation can be kept in sequence.
+
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+---
+ drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  1 +
+ 2 files changed, 25 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2d53f47..6f5aa6f 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
++static DEFINE_MUTEX(cpufreq_governor_lock);
  
--4.77 KVM_ARM_VCPU_INIT
-+4.82 KVM_ARM_VCPU_INIT
+ /*
+  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
+@@ -1562,6 +1563,21 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
  
- Capability: basic
- Architectures: arm
-@@ -2285,7 +2285,7 @@ Possible features:
- 	  Depends on KVM_CAP_ARM_PSCI.
+ 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+ 						policy->cpu, event);
++
++	mutex_lock(&cpufreq_governor_lock);
++	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
++	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
++		mutex_unlock(&cpufreq_governor_lock);
++		return -EBUSY;
++	}
++
++	if (event == CPUFREQ_GOV_STOP)
++		policy->governor_enabled = false;
++	else if (event == CPUFREQ_GOV_START)
++		policy->governor_enabled = true;
++
++	mutex_unlock(&cpufreq_governor_lock);
++
+ 	ret = policy->governor->governor(policy, event);
  
+ 	if (!ret) {
+@@ -1569,6 +1585,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			policy->governor->initialized++;
+ 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+ 			policy->governor->initialized--;
++	} else {
++		/* Restore original values */
++		mutex_lock(&cpufreq_governor_lock);
++		if (event == CPUFREQ_GOV_STOP)
++			policy->governor_enabled = true;
++		else if (event == CPUFREQ_GOV_START)
++			policy->governor_enabled = false;
++		mutex_unlock(&cpufreq_governor_lock);
+ 	}
  
--4.78 KVM_GET_REG_LIST
-+4.83 KVM_GET_REG_LIST
+ 	/* we keep one module reference alive for
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 037d36a..1a81b74 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -107,6 +107,7 @@ struct cpufreq_policy {
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
++	bool			governor_enabled; /* governor start/stop flag */
  
- Capability: basic
- Architectures: arm
-@@ -2305,7 +2305,7 @@ This ioctl returns the guest registers that are supported for the
- KVM_GET_ONE_REG/KVM_SET_ONE_REG calls.
- 
- 
--4.80 KVM_ARM_SET_DEVICE_ADDR
-+4.84 KVM_ARM_SET_DEVICE_ADDR
- 
- Capability: KVM_CAP_ARM_SET_DEVICE_ADDR
- Architectures: arm
-@@ -2342,7 +2342,7 @@ and distributor interface, the ioctl must be called after calling
- KVM_CREATE_IRQCHIP, but before calling KVM_RUN on any of the VCPUs.  Calling
- this ioctl twice for any of the base addresses will return -EEXIST.
- 
--4.82 KVM_PPC_RTAS_DEFINE_TOKEN
-+4.85 KVM_PPC_RTAS_DEFINE_TOKEN
- 
- Capability: KVM_CAP_PPC_RTAS
- Architectures: ppc
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
 -- 
-1.7.10.4
+1.8.0
 
