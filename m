@@ -1,60 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab3FSQuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:50:44 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52103 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756817Ab3FSQum (ORCPT
+	id S1757118Ab3FSQue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:50:34 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:40120 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756741Ab3FSQuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:50:42 -0400
-Message-ID: <1371660640.2409.44.camel@dabdike>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Date: Wed, 19 Jun 2013 09:50:40 -0700
-In-Reply-To: <20130619163804.GG28300@pd.tnic>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
-	 <20130619125243.GD11209@gmail.com> <20130619130225.GA28311@pd.tnic>
-	 <20130619130434.GB24957@gmail.com> <20130619160804.GB27832@srcf.ucam.org>
-	 <20130619161827.GF28300@pd.tnic> <20130619162115.GA28119@srcf.ucam.org>
-	 <20130619163804.GG28300@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 12:50:32 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH RFC 1/2] spinlock: New spinlock_refcount.h for lockless update of refcount
+Date: Wed, 19 Jun 2013 12:50:04 -0400
+Message-Id: <1371660605-19225-2-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
+References: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 18:38 +0200, Borislav Petkov wrote:
-> On Wed, Jun 19, 2013 at 05:21:15PM +0100, Matthew Garrett wrote:
-> > Yes, kexec needs a different solution.
-> 
-> No need. If we say, "efi=use_11_map", the 1:1 map will be shoved down
-> SetVirtualAddressMap. Otherwise the high mappings.
-> 
-> > Because firmware images don't always update all of the pointers, and
-> > so will crash if the 1:1 mappings aren't present.
-> 
-> Ok, so it sounds like we want to *always* create both mappings but,
-> depending on what we want, to shove down SetVirtualAddressMap a
-> different set. And the 1:1 map will be the optional one which we give
-> SetVirtualAddressMap only when user wants it, i.e. when booting with
-> "efi=1:1_map".
-> 
-> Makes sense?
+This patch introduces a new spinlock_refcount.h header file to be
+included by kernel code that want to do a lockless update of reference
+count protected by a spinlock.
 
-I think it will work.  The only thing I'd worry about is aliasing.  This
-scheme clearly won't work for any virtually indexed processor (so it's
-basically x86 only) but even on Physically Indexed, you do have to make
-sure the cache attributes of any given page are the same for all virtual
-address aliases.  As long as the 1:1 mapping is writeback, I think this
-is satisfied.
+To try to locklessly update the reference count while lock isn't
+acquired by others, the 32-bit count and 32-bit raw spinlock can be
+combined into a single 64-bit word to be updated atomically whenever
+the following conditions are true:
 
-James
+1. The lock is not taken, i.e. spin_can_lock() returns true.
+2. The value of the count isn't equal to the given non-negative
+   threshold value.
 
+To maximize the chance of doing lockless update, the inlined
+__lockcnt_add_unless() function calls spin_unlock_wait() before trying
+to do the update.
+
+The new code also attempts to do lockless atomic update twice before
+falling back to the old code path of acquring a lock before doing
+the update. It is because there will still be some fair amount of
+contention with only one attempt.
+
+After including the header file, the LOCK_WITH_REFCOUNT() macro
+should be used to define the spinlock with reference count combo in
+an embedding data structure.  Then the __lockcnt_add_unless() inlined
+function can be used to locklessly update the reference count if the
+lock hasn't be acquired by others.
+
+Build and boot tests of the new code and the associated dcache changes
+were conducted for the following configurations:
+1. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=n
+2. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=y
+3. x86 32-bit UP , CONFIG_DEBUG_SPINLOCK=n
+4. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=n
+5. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=y
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ include/linux/spinlock_refcount.h |  145 +++++++++++++++++++++++++++++++++++++
+ include/linux/spinlock_types.h    |   19 +++++
+ 2 files changed, 164 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/spinlock_refcount.h
+
+diff --git a/include/linux/spinlock_refcount.h b/include/linux/spinlock_refcount.h
+new file mode 100644
+index 0000000..eaf4897
+--- /dev/null
++++ b/include/linux/spinlock_refcount.h
+@@ -0,0 +1,145 @@
++/*
++ * Spinlock with reference count combo
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#include <linux/spinlock.h>
++
++/*
++ * The LOCK_WITH_REFCOUNT() macro defines the combined spinlock with reference
++ * count data structure to be embedded in a larger structure. With unnamed
++ * structure, the lock and count names can be accessed directly if no field
++ * name is assigned to the structure. Otherwise, they will have to be accessed
++ * indirectly via the assigned field name of the combined structure.
++ *
++ * The combined data structure is 8-byte aligned. So proper placement of this
++ * structure in the larger embedding data structure is needed to ensure that
++ * there is no hole in it.
++ *
++ * @lock:   Name of the spinlock
++ * @count:  Name of the reference count
++ * @u_name: Name of combined data structure union (can be empty for unnamed
++ *	    union)
++ */
++#ifndef	CONFIG_SMP
++#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
++	unsigned int count;				\
++	spinlock_t   lock
++
++#elif defined(__SPINLOCK_HAS_REFCOUNT)
++#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
++	union u_name {					\
++		u64		__lock_count;		\
++		spinlock_t	lock;			\
++		struct {				\
++			arch_spinlock_t __raw_lock;	\
++			unsigned int	count;		\
++		};					\
++	}
++
++#else /* __SPINLOCK_HAS_REFCOUNT */
++#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
++	union u_name {					\
++		u64		__lock_count;		\
++		struct {				\
++			unsigned int	count;		\
++			spinlock_t	lock;		\
++		};					\
++	}
++
++#endif /* __SPINLOCK_HAS_REFCOUNT */
++
++#ifdef CONFIG_SMP
++#define	LOCKCNT_COMBO_PTR(s)	(&(s)->__lock_count)
++
++/*
++ * Define a "union _lock_refcnt" structure to be used by the helper function
++ */
++LOCK_WITH_REFCOUNT(lock, count, __lock_refcnt);
++
++/**
++ *
++ * __lockcnt_add_unless - atomically add the given value to the count unless
++ *			  the lock was acquired or the count equals to the
++ *			  given threshold value.
++ *
++ * @plockcnt : pointer to the combined lock and count 8-byte data
++ * @plock    : pointer to the spinlock
++ * @pcount   : pointer to the reference count
++ * @value    : value to be added
++ * @threshold: threshold value for acquiring the lock
++ * Return    : 1 if operation succeed, 0 otherwise
++ *
++ * If the lock was not acquired, __lockcnt_add_unless() atomically adds the
++ * given value to the reference count unless the given threshold is reached.
++ * If the lock was acquired or the threshold was reached, 0 is returned and
++ * the caller will have to acquire the lock and update the count accordingly
++ * (can be done in a non-atomic way).
++ */
++static inline int __lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock,
++				       unsigned int *pcount, int value,
++				       int threshold)
++{
++	union __lock_refcnt old, new;
++	int   get_lock;
++
++	/*
++	 * Code doesn't work if raw spinlock is larger than 4 bytes
++	 * or is empty.
++	 */
++	BUG_ON((sizeof(arch_spinlock_t) > 4) || (sizeof(arch_spinlock_t) == 0));
++
++	spin_unlock_wait(plock);	/* Wait until lock is released */
++	old.__lock_count = ACCESS_ONCE(*plockcnt);
++	get_lock = ((threshold >= 0) && (old.count == threshold));
++	if (likely(!get_lock && spin_can_lock(&old.lock))) {
++		new.__lock_count = old.__lock_count;
++		new.count += value;
++		if (cmpxchg64(plockcnt, old.__lock_count, new.__lock_count)
++		    == old.__lock_count)
++			return 1;
++		cpu_relax();
++		/*
++		 * Try one more time
++		 */
++		old.__lock_count = ACCESS_ONCE(*plockcnt);
++		get_lock = ((threshold >= 0) && (old.count == threshold));
++		if (likely(!get_lock && spin_can_lock(&old.lock))) {
++			new.__lock_count = old.__lock_count;
++			new.count += value;
++			if (cmpxchg64(plockcnt, old.__lock_count,
++				      new.__lock_count) == old.__lock_count)
++				return 1;
++			cpu_relax();
++		}
++	}
++	return 0;	/* The caller will need to acquire the lock */
++}
++#else /* CONFIG_SMP */
++#define	LOCKCNT_COMBO_PTR(s)	NULL
++
++/*
++ * Just add the value as the spinlock is a no-op
++ */
++static inline int __lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock,
++				       unsigned int *pcount, int value,
++				       int threshold)
++{
++	if ((threshold >= 0) && (*pcount == threshold))
++		return 0;
++	(*pcount) += value;
++	return 1;
++}
++#endif /* CONFIG_SMP */
+diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
+index 73548eb..cc107ad 100644
+--- a/include/linux/spinlock_types.h
++++ b/include/linux/spinlock_types.h
+@@ -17,8 +17,27 @@
+ 
+ #include <linux/lockdep.h>
+ 
++/*
++ * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
++ * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
++ * spinlock_t structure to be 8-byte aligned.
++ *
++ * To support the spinlock/reference count combo data type for 64-bit SMP
++ * environment with spinlock debugging turned on, the reference count has
++ * to be integrated into the spinlock_t data structure in this special case.
++ * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
++ * is also defined.
++ */
++#if defined(CONFIG_64BIT) && (defined(CONFIG_DEBUG_SPINLOCK) ||\
++			      defined(CONFIG_DEBUG_LOCK_ALLOC))
++#define	__SPINLOCK_HAS_REFCOUNT	1
++#endif
++
+ typedef struct raw_spinlock {
+ 	arch_spinlock_t raw_lock;
++#ifdef __SPINLOCK_HAS_REFCOUNT
++	unsigned int count;
++#endif
+ #ifdef CONFIG_GENERIC_LOCKBREAK
+ 	unsigned int break_lock;
+ #endif
+-- 
+1.7.1
 
