@@ -1,71 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934201Ab3FSIim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:38:42 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:61106 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933755Ab3FSIij (ORCPT
+	id S934238Ab3FSIkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:40:09 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35052 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933755Ab3FSIkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:38:39 -0400
+	Wed, 19 Jun 2013 04:40:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <201306191022.51630.marex@denx.de>
-References: <1371527778-5236-1-git-send-email-chao.xie@marvell.com>
-	<1371527778-5236-6-git-send-email-chao.xie@marvell.com>
-	<201306191022.51630.marex@denx.de>
-Date: Wed, 19 Jun 2013 16:38:38 +0800
-Message-ID: <CADApbeiQWOi8SYEFf0bOsf1yn+TgXhwgDWaWFpGk7+nbC9bNDg@mail.gmail.com>
-Subject: Re: [PATCH V3 5/5] input: pxa27x-keypad: add device tree support
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Marek Vasut <marex@denx.de>
-Cc: Chao Xie <chao.xie@marvell.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, drwyrm@gmail.com,
-        stefan@openezx.org, laforge@openezx.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>, sleep_walker@suse.cz,
-        slapin@ossfans.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
+In-Reply-To: <1371589469-32700-2-git-send-email-kevin.strasser@linux.intel.com>
+References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
+	<1371589469-32700-1-git-send-email-kevin.strasser@linux.intel.com>
+	<1371589469-32700-2-git-send-email-kevin.strasser@linux.intel.com>
+Date: Wed, 19 Jun 2013 10:40:04 +0200
+Message-ID: <CACRpkdap753rf82jqDx4CGRcsNRUYwsrsfpJe4=331NQom6SuA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] mfd: Kontron PLD mfd driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kevin Strasser <kevin.strasser@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Michael Brunner <Michael.Brunner@kontron.com>,
+        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dirk Hohndel <Dirk.Hohndel@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wim Van Sebroeck <wim@iguana.be>, Mark Brown <broonie@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 4:22 PM, Marek Vasut <marex@denx.de> wrote:
-> Dear Chao Xie,
+On Tue, Jun 18, 2013 at 11:04 PM, Kevin Strasser
+<kevin.strasser@linux.intel.com> wrote:
+> Add core MFD driver for the on-board PLD found on some Kontron embedded
+> modules. The PLD device may provide functions like watchdog, GPIO, UART
+> and I2C bus.
 >
->> Signed-off-by: Chao Xie <chao.xie@marvell.com>
->> ---
->>  .../devicetree/bindings/input/pxa27x-keypad.txt    |   60 +++++
->>  drivers/input/keyboard/pxa27x_keypad.c             |  232
->> +++++++++++++++++++- 2 files changed, 288 insertions(+), 4 deletions(-)
->>  create mode 100644
->> Documentation/devicetree/bindings/input/pxa27x-keypad.txt
->>
->> diff --git a/Documentation/devicetree/bindings/input/pxa27x-keypad.txt
->> b/Documentation/devicetree/bindings/input/pxa27x-keypad.txt new file mode
->> 100644
->> index 0000000..f8674f7
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/input/pxa27x-keypad.txt
->> @@ -0,0 +1,60 @@
->> +* Marvell PXA Keypad controller
->> +
->> +Required Properties
->> +- compatible : should be "marvell,pxa27x-keypad"
->> +- reg : Address and length of the register set for the device
->> +- interrupts : The interrupt for the keypad controller
->> +- marvell,debounce-interval : How long time the key will be
+> The following modules are supported:
+>         * COMe-bIP#
+>         * COMe-bPC2 (ETXexpress-PC)
+>         * COMe-bSC# (ETXexpress-SC T#)
+>         * COMe-cCT6
+>         * COMe-cDC2 (microETXexpress-DC)
+>         * COMe-cPC2 (microETXexpress-PC)
+>         * COMe-mCT10
+>         * ETX-OH
 >
-> Is there no generic prop name for this debounce interval?
->
-I searched at drivers/input and Documents.
-Two drivers use "debounce-interval", gpio-keys.c and stmpe-keypad.c.
-They describe the meanings of "debounce-interval" at its own document file.
-Some other drivers uses "xxx,debounce-delay-ms" or "debounce-delay-ms"
-So it seems that there is no generic prop name for this debounce interval.
+> Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
+> Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+> Acked-by: Guenter Roeck <linux@roeck-us.net>
+> Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-> Best regards,
-> Marek Vasut
+(...)
+> +/**
+> + * kempld_read8 - read 8 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +u8 kempld_read8(struct kempld_device_data *pld, u8 index)
+> +{
+> +       iowrite8(index, pld->io_index);
+> +       return ioread8(pld->io_data);
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_read8);
+> +
+> +/**
+> + * kempld_write8 - write 8 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + * @data: new register value
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +void kempld_write8(struct kempld_device_data *pld, u8 index, u8 data)
+> +{
+> +       iowrite8(index, pld->io_index);
+> +       iowrite8(data, pld->io_data);
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_write8);
+> +
+> +/**
+> + * kempld_read16 - read 16 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +u16 kempld_read16(struct kempld_device_data *pld, u8 index)
+> +{
+> +       return kempld_read8(pld, index) | kempld_read8(pld, index + 1) << 8;
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_read16);
+> +
+> +/**
+> + * kempld_write16 - write 16 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + * @data: new register value
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +void kempld_write16(struct kempld_device_data *pld, u8 index, u16 data)
+> +{
+> +       kempld_write8(pld, index, (u8)data);
+> +       kempld_write8(pld, index + 1, (u8)(data >> 8));
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_write16);
+> +
+> +/**
+> + * kempld_read32 - read 32 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +u32 kempld_read32(struct kempld_device_data *pld, u8 index)
+> +{
+> +       return kempld_read16(pld, index) | kempld_read16(pld, index + 2) << 16;
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_read32);
+> +
+> +/**
+> + * kempld_write32 - write 32 bit register
+> + * @pld: kempld_device_data structure describing the PLD
+> + * @index: register index on the chip
+> + * @data: new register value
+> + *
+> + * kempld_get_mutex must be called prior to calling this function.
+> + */
+> +void kempld_write32(struct kempld_device_data *pld, u8 index, u32 data)
+> +{
+> +       kempld_write16(pld, index, (u16)data);
+> +       kempld_write16(pld, index + 2, (u16)(data >> 16));
+> +}
+> +EXPORT_SYMBOL_GPL(kempld_write32);
+(...)
+> +extern u8 kempld_read8(struct kempld_device_data *pld, u8 index);
+> +extern void kempld_write8(struct kempld_device_data *pld, u8 index, u8 data);
+> +extern u16 kempld_read16(struct kempld_device_data *pld, u8 index);
+> +extern void kempld_write16(struct kempld_device_data *pld, u8 index, u16 data);
+> +extern u32 kempld_read32(struct kempld_device_data *pld, u8 index);
+> +extern void kempld_write32(struct kempld_device_data *pld, u8 index, u32 data);
+
+Not really my business, but I think if I was to implement this
+inter-module API I would use regmap for this read/write marshalling
+right here.
+
+Yours,
+Linus Walleij
