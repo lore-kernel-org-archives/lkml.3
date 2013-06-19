@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934608Ab3FSL6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:58:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934052Ab3FSL6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:58:19 -0400
-Message-ID: <51C19CD2.3080608@redhat.com>
-Date: Wed, 19 Jun 2013 13:58:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S934549Ab3FSMDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:03:06 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39644 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934286Ab3FSMDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:03:03 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 3/7] KVM: MMU: document write_flooding_count
-References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-In-Reply-To: <1371632965-20077-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1371547751-13873-1-git-send-email-christian.ruppert@abilis.com>
+References: <20130618092516.GC18663@ab42.lan>
+	<1371547751-13873-1-git-send-email-christian.ruppert@abilis.com>
+Date: Wed, 19 Jun 2013 14:03:02 +0200
+Message-ID: <CACRpkdbhTsRAGSkxQURd01_yd5arw7=ktVXAmeEo22gFg4U38Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
-> Document write_flooding_count to Documentation/virtual/kvm/mmu.txt
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  Documentation/virtual/kvm/mmu.txt | 8 ++++++++
->  arch/x86/include/asm/kvm_host.h   | 5 +++++
->  2 files changed, 13 insertions(+)
-> 
-> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
-> index ce6df51..5a6b2e2 100644
-> --- a/Documentation/virtual/kvm/mmu.txt
-> +++ b/Documentation/virtual/kvm/mmu.txt
-> @@ -214,6 +214,14 @@ Shadow pages contain the following information:
->      It is only used on 32bit host which helps us to detect whether updating the
->      64bit spte is complete so that we can avoid reading the truncated value out
->      of mmu-lock.
-> +  write_flooding_count:
-> +    In order to sync the page table between guest and host, the page sometimes
-> +    needs to be write-protected (see "Synchronized and unsynchronized pages"
-> +    below), any write to the page can cause write emulation. If the emulation
-> +    on the page is too frequent we'd better unmap the page to avoid the
-> +    future emulation. write_flooding_count aims at this optimization which is
-> +    increased when the page needs to be write emulated and cleared when the
-> +    page is actually used.
+On Tue, Jun 18, 2013 at 11:29 AM, Christian Ruppert
+<christian.ruppert@abilis.com> wrote:
 
-    A guest may write to a page table many times, causing a lot of
-    emulations if the page needs to be write-protected (see "Synchronized
-    and unsynchronized pages" below).  Leaf pages can be unsynchronized
-    so that they do not trigger frequent emulation, but this is not
-    possible for non-leafs.  This field counts the number of emulations
-    since the last time the page table was actually used; if emulation
-    is triggered too frequently on this page, KVM will unmap the page
-    to avoid emulation in the future.
+> This patch adds the infrastructure required to register non-linear gpio
+> ranges through gpiolib and the standard GPIO device tree bindings.
+>
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 
->  Reverse map
->  ===========
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 1dac2c1..5eb5382 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -234,6 +234,11 @@ struct kvm_mmu_page {
->  	int clear_spte_count;
->  #endif
->  
-> +	/*
-> +	 * Increased when the page needs to be write emulated, cleared
-> +	 * when the page is actually used as page table to avoid frequent
-> +	 * emulation on the page.
-> +	 */
+I'm basically fine with this, but would like Stephen's ACK if possible.
 
-        /* Number of writes since the last time traversal visited this page.  */
+> +In addition, named groups of pins can be mapped to pin groups of a given
+> +pin controller:
+> +
+> +       gpio_pio_g: gpio-controller@1480 {
+> +               #gpio-cells = <2>;
+> +               compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
+> +               reg = <0x1480 0x18>;
+> +               gpio-controller;
+> +               gpio-ranges = <&pinctrl1 0 0 0>, <&pinctrl2 3 0 0>;
+> +               gpio-ranges-group-names = "foo", "bar";
+> +       };
+> +
+> +where,
+> +   &pinctrl1 and &pinctrl2 is the phandle to the pinctrl DT node.
+> +
+> +   The following value specifies the base GPIO offset of the pin range with
+> +   respect to the GPIO controller's base. The remaining two values must be
+> +   0 to indicate that a named pin group should be used for the respective
+> +   range. The number of pins in the range is the number of pins in the pin
+> +   group.
 
-wdyt, better or worse?
+So while this works, these zeroes seem a bit awkward, but maybe
+it's the only way?
 
-Paolo
+I'm not good enough on device tree conventions, but isn't this possible:
 
->  	int write_flooding_count;
->  };
->  
-> 
+              gpio-ranges = <&pinctrl1 0>, <&pinctrl2 3>;
+              gpio-ranges-group-names = "foo", "bar";
 
+Since we don't have any #gpio-ranges-cells or anything like that I
+guess we can define this to have a flexible number of cells
+depending on use case?
+
+In the mixed case the blank groups does not look
+good eitherm, wouldn't this be possible:
+
+
+        gpio-ranges =           <&pinctrl1 0 20 10>,
+                                        <&pinctrl2 10>,
+                                        <&pinctrl1 15 0 10>,
+                                        <&pinctrl2 25>;
+        // Matches the two ranges without pins
+        gpio-ranges-group-names = "foo", "bar";
+
+Or is this just making things complicated?
+
+Yours,
+Linus Walleij
