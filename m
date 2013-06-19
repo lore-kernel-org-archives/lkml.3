@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934358Ab3FSJBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:01:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40492 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933833Ab3FSIxL (ORCPT
+	id S934165Ab3FSJDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:03:09 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:55688 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933833Ab3FSJDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:11 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kishon@ti.com>
-Subject: [PATCH 1/4] arm: omap: Add phy binding info for musb in plat data
-Date: Wed, 19 Jun 2013 14:22:28 +0530
-Message-ID: <1371631951-369-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371631951-369-1-git-send-email-kishon@ti.com>
-References: <1371631951-369-1-git-send-email-kishon@ti.com>
+	Wed, 19 Jun 2013 05:03:05 -0400
+Message-ID: <51C173C2.3030402@message-id.googlemail.com>
+Date: Wed, 19 Jun 2013 11:02:58 +0200
+From: Stefan Seyfried <stefan.seyfried@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: INTEL_MEI_ME=y breaks suspend on 3.10-rc3
+References: <51ACD4B2.7070107@message-id.googlemail.com> <51ACD600.2020805@message-id.googlemail.com> <CA+i0qc4eEDjygde4+frqd51JutTDeoJ8mTp-K==gwG_7ghJwcw@mail.gmail.com> <51C0A684.8030405@message-id.googlemail.com> <5B8DA87D05A7694D9FA63FD143655C1B028D67D0@HASMSX106.ger.corp.intel.com>
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B028D67D0@HASMSX106.ger.corp.intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order for controllers to get PHY in case of non dt boot, the phy
-binding information (phy label) should be added in the platform
-data of the controller.
+Hi Tomas,
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
----
- arch/arm/mach-omap2/usb-musb.c |    6 +++++-
- include/linux/usb/musb.h       |    3 +++
- 2 files changed, 8 insertions(+), 1 deletion(-)
+Am 19.06.2013 10:52, schrieb Winkler, Tomas:
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 3242a55..5ddbe39 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -85,8 +85,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
- 
--	if (cpu_is_omap44xx())
-+	if (cpu_is_omap44xx()) {
- 		musb_plat.has_mailbox = true;
-+		musb_plat.phy_name = "omap-usb2";
-+	} else if (cpu_is_omap34xx()) {
-+		musb_plat.phy_name = "twl4030";
-+	}
- 
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
-diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
-index 053c268..c05d46d 100644
---- a/include/linux/usb/musb.h
-+++ b/include/linux/usb/musb.h
-@@ -104,6 +104,9 @@ struct musb_hdrc_platform_data {
- 	/* for clk_get() */
- 	const char	*clock;
- 
-+	/* phy device label */
-+	const char	*phy_name;
-+
- 	/* (HOST or OTG) switch VBUS on/off */
- 	int		(*set_vbus)(struct device *dev, int is_on);
- 
+>> So it is not yet fixed, unfortunately.
+> 
+> Not sure I understand how to reproduce it.  it is still falling on suspend/resume or just unbind/bind?
+> Would you be so kind and send me the whole log.
+
+Both is still broken. I'm actually not really sure if the unbind / bind
+stuff is really related to the suspend / resume failure. The messages
+just looked similar to me, but that might not mean anything.
+
+Sending the whole log is not easy, since it overflows the dmesg buffer
+(I have CONFIG_LOG_BUF_SHIFT=18 which is "big enough" usually) and the
+journald just exits and restarts itself under such flooding, but I'll try.
+
+Since the resume from suspend to RAM hangs, it is hard to get any logs
+-- I never got the mei serial working before and a "real" serial port is
+not present on this Thinkpad -- since the resume does not seem to
+restart userspace before killing the machine, so nothing gets into the logs.
+
+The suspend/resume failure is easily reproduced by
+
+* booting with "init=/bin/bash no_console_suspend"
+* mount /sys
+* echo mem > /sys/power/state
+* resume => lots of messages, finally kernel panic.
+
+For the bind/unbind: the driver is built in (this is the openSUSE
+kernel-of-the-day), but unbinding / rebinding also reproducibly floods
+the logs. It does not seem to have additional side effects, but I cannot
+test if mei actually still works afterwards.
+
+I could try to take a picture of the panic, but it looked not really
+directly related, more like a stack overflow after too many errors or
+something like that (it also takes a few seconds after resume for the
+machine to panic).
+
+Best regards,
+
+	Stefan
 -- 
-1.7.10.4
+Stefan Seyfried
+Linux Consultant & Developer -- GPG Key: 0x731B665B
 
+B1 Systems GmbH
+Osterfeldstraße 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
