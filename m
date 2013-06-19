@@ -1,134 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934905Ab3FSPOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:14:03 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:61425 "EHLO
+	id S934889Ab3FSPN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:13:57 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61422 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934860Ab3FSPN7 (ORCPT
+	with ESMTP id S934860Ab3FSPNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:13:59 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-49-51c1cab6ac6a
+	Wed, 19 Jun 2013 11:13:53 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-42-51c1cab083b4
 From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 To: linux-security-module@vger.kernel.org
 Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
         linux-kernel@vger.kernel.org, casey@schaufler-ca.com,
         Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH 4/4] security: smack: add kmem_cache for smack_master_list
- allocations
-Date: Wed, 19 Jun 2013 17:13:35 +0200
-Message-id: <1371654816-20772-5-git-send-email-t.stanislaws@samsung.com>
+Subject: [PATCH 2/4] security: smack: avoid kmalloc() in smk_parse_long_rule()
+Date: Wed, 19 Jun 2013 17:13:33 +0200
+Message-id: <1371654816-20772-3-git-send-email-t.stanislaws@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1371654816-20772-1-git-send-email-t.stanislaws@samsung.com>
 References: <1371654816-20772-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e+xoO62UwcDDa5vEbC4t+0Xm8XZpjfs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e+xoO6GUwcDDY7/U7a4t+0Xm8XZpjfs
 	Fpd3zWGz+NDziM1i7ZG77BZvJ61gtpjX/pLVgd2jb8sqRo+j+xexeXzeJBfAHMVlk5Kak1mW
-	WqRvl8CVsW6JesEtiYrHV2czNzAuE+li5OSQEDCRWLPuOxuELSZx4d56IJuLQ0hgOqPEx3mv
-	mCCcLiaJG+e3MINUsQF1HFvymRHEFhHQlDg2HaKDWWAbo0THi6lMIAlhgQiJFSdWgtksAqoS
-	Ky8+YQexeQU8JObtXsQOsU5e4un9PrDVnAKeEtfPvwMbKgRUs/jqOtYJjLwLGBlWMYqmFiQX
-	FCel5xrqFSfmFpfmpesl5+duYgSH0DOpHYwrGywOMQpwMCrx8DasPBAoxJpYVlyZe4hRgoNZ
-	SYR36dGDgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoY
-	Nyk1PYm/0yFa/io9+saNgrV8fg5qa8KkWZYdbmSeqWbrfMfz27+MopnBU8vucogoLSmeoRRx
-	qGlnsN/U2Zfmf9W6de6akU4dj4WudtlyoYP/JCdfjbdt2m3c6Jquk/rnApeDy/uZh6Ye1IpW
-	LixKV5hirWO6+W373+mFF1PPb9x1OHh9lkSBEktxRqKhFnNRcSIAt0HnUB0CAAA=
+	WqRvl8CVcaDlIEvBSemKvQfPsDQwfhPtYuTkkBAwkZjdtYsVwhaTuHBvPVsXIxeHkMB0RolZ
+	y14wQzhdTBIXl65jA6liA+o4tuQzI4gtIqApcWw6RAezwDZGiY4XU5lAEsICfhIPVxxjBrFZ
+	BFQlVh79CxbnFfCQaHz0mQlinbzE0/t9YEM5BTwlrp9/BzZUCKhm8dV1rBMYeRcwMqxiFE0t
+	SC4oTkrPNdQrTswtLs1L10vOz93ECA6iZ1I7GFc2WBxiFOBgVOLhbVh5IFCINbGsuDL3EKME
+	B7OSCO/SowcDhXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
+	NTCuWqp02yM7p3uf9YU5W++YHotdqpT23+SLQtKeMPPM7cd3fZ08XeigV4WQbWFJx+8Ze8M1
+	E404qpQvfcmY42/sJFwt8+7bIV++rcvLVr+NK10snx3FFd1Yxcl91Ep3y8c4lc6mnhP6dnaL
+	OM1mGvXtrxHhyhE+Lu+yKObizryf97u2bVqjwqDEUpyRaKjFXFScCAC5ecpPHgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM, sizeof(struct smack_master_list) == 12. Allocation by kmalloc() uses a
-32-byte-long chunk to allocate 12 bytes. Just ask ksize().  It means that 63%
-of memory is simply wasted for padding bytes.
+Function smk_parse_long_rule() allocates a number of temporary strings on heap
+(kmalloc cache). Moreover, the sizes of those allocations might be large if
+user calls write() for a long chunk. A big kmalloc triggers a heavy reclaim
+havoc and it is very likely to fail.
 
-The problem is fixed in this patch by using kmem_cache. The cache allocates
-struct smack_master_list using 16-byte-long chunks according to ksize(). This
-reduces amount of used memory by 50%.
+This patch introduces smk_parse_substrings() function that parses a string into
+substring separated by whitespaces.  The buffer for substring is preallocated.
+It must store substring the worst case scenario which is SMK_LOAD2LEN in case
+of long rule parsing.
 
 Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
- security/smack/smack.h     |    7 +++++++
- security/smack/smack_lsm.c |    8 ++++++++
- security/smack/smackfs.c   |    8 ++------
- 3 files changed, 17 insertions(+), 6 deletions(-)
+ security/smack/smackfs.c |   68 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 38 insertions(+), 30 deletions(-)
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 38ba673..463f818 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -194,6 +194,12 @@ struct smk_audit_info {
- 	struct smack_audit_data sad;
- #endif
- };
-+
-+struct smack_master_list {
-+	struct list_head	list;
-+	struct smack_rule	*smk_rule;
-+};
-+
- /*
-  * These functions are in smack_lsm.c
-  */
-@@ -235,6 +241,7 @@ extern struct list_head smk_netlbladdr_list;
- 
- /* Cache for fast and thrifty allocations */
- extern struct kmem_cache *smack_rule_cache;
-+extern struct kmem_cache *smack_master_list_cache;
- 
- extern struct security_operations smack_ops;
- 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 7aa696a..1d4a1b0 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3566,6 +3566,7 @@ static __init void init_smack_known_list(void)
- 
- /* KMEM caches for fast and thrifty allocations */
- struct kmem_cache *smack_rule_cache;
-+struct kmem_cache *smack_master_list_cache;
- 
- /**
-  * smack_init - initialize the smack system
-@@ -3584,9 +3585,16 @@ static __init int smack_init(void)
- 	if (!smack_rule_cache)
- 		return -ENOMEM;
- 
-+	smack_master_list_cache = KMEM_CACHE(smack_master_list, 0);
-+	if (!smack_master_list_cache) {
-+		kmem_cache_destroy(smack_rule_cache);
-+		return -ENOMEM;
-+	}
-+
- 	tsp = new_task_smack(smack_known_floor.smk_known,
- 				smack_known_floor.smk_known, GFP_KERNEL);
- 	if (tsp == NULL) {
-+		kmem_cache_destroy(smack_master_list_cache);
- 		kmem_cache_destroy(smack_rule_cache);
- 		return -ENOMEM;
- 	}
 diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 4615242..7ffce7e 100644
+index 5dcd520..34d146b 100644
 --- a/security/smack/smackfs.c
 +++ b/security/smack/smackfs.c
-@@ -104,11 +104,6 @@ LIST_HEAD(smk_netlbladdr_list);
-  * Rule lists are maintained for each label.
-  * This master list is just for reading /smack/load and /smack/load2.
-  */
--struct smack_master_list {
--	struct list_head	list;
--	struct smack_rule	*smk_rule;
--};
--
- LIST_HEAD(smack_rule_list);
+@@ -364,6 +364,33 @@ static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
+ }
  
- struct smack_parsed_rule {
-@@ -233,7 +228,8 @@ static int smk_set_access(struct smack_parsed_rule *srp,
- 		 * it needs to get added for reporting.
- 		 */
- 		if (global) {
--			smlp = kzalloc(sizeof(*smlp), GFP_KERNEL);
-+			smlp = kmem_cache_zalloc(smack_master_list_cache,
-+							GFP_KERNEL);
- 			if (smlp != NULL) {
- 				smlp->smk_rule = sp;
- 				list_add_rcu(&smlp->list, &smack_rule_list);
+ /**
++ * smk_parse_strings - parse white-space separated substring from a string
++ * @src: a long string to be parsed, null terminated
++ * @dst: a buffer for substrings, should be at least strlen(src)+1 bytes
++ * @args: table for parsed substring
++ * @size: number of slots in args table
++ *
++ * Returns number of parsed substrings
++ */
++static int smk_parse_substrings(const char *src, char *dst,
++	char *args[], int size)
++{
++	int cnt;
++
++	for (cnt = 0; cnt < size; ++cnt) {
++		src = skip_spaces(src);
++		if (*src == 0)
++			break;
++		args[cnt] = dst;
++		for (; *src && !isspace(*src); ++src, ++dst)
++			*dst = *src;
++		*(dst++) = 0;
++	}
++
++	return cnt;
++}
++
++/**
+  * smk_parse_long_rule - parse Smack rule from rule string
+  * @data: string to be parsed, null terminated
+  * @rule: Will be filled with Smack parsed rule
+@@ -375,48 +402,29 @@ static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
+ static int smk_parse_long_rule(const char *data, struct smack_parsed_rule *rule,
+ 				int import, int change)
+ {
+-	char *subject;
+-	char *object;
+-	char *access1;
+-	char *access2;
+ 	int datalen;
++	char *buffer;
++	char *args[4];
+ 	int rc = -1;
+ 
+-	/* This is inefficient */
+-	datalen = strlen(data);
++	datalen = strlen(data) + 1;
+ 
+-	/* Our first element can be 64 + \0 with no spaces */
+-	subject = kzalloc(datalen + 1, GFP_KERNEL);
+-	if (subject == NULL)
++	buffer = kmalloc(datalen, GFP_KERNEL);
++	if (!buffer)
+ 		return -1;
+-	object = kzalloc(datalen, GFP_KERNEL);
+-	if (object == NULL)
+-		goto free_out_s;
+-	access1 = kzalloc(datalen, GFP_KERNEL);
+-	if (access1 == NULL)
+-		goto free_out_o;
+-	access2 = kzalloc(datalen, GFP_KERNEL);
+-	if (access2 == NULL)
+-		goto free_out_a;
+ 
+ 	if (change) {
+-		if (sscanf(data, "%s %s %s %s",
+-			subject, object, access1, access2) == 4)
+-			rc = smk_fill_rule(subject, object, access1, access2,
++		if (smk_parse_substrings(data, buffer, args, 4) == 4)
++			rc = smk_fill_rule(args[0], args[1], args[2], args[3],
+ 				rule, import, 0);
+ 	} else {
+-		if (sscanf(data, "%s %s %s", subject, object, access1) == 3)
+-			rc = smk_fill_rule(subject, object, access1, NULL,
++		if (smk_parse_substrings(data, buffer, args, 3) == 3)
++			rc = smk_fill_rule(args[0], args[1], args[2], NULL,
+ 				rule, import, 0);
+ 	}
+ 
+-	kfree(access2);
+-free_out_a:
+-	kfree(access1);
+-free_out_o:
+-	kfree(object);
+-free_out_s:
+-	kfree(subject);
++	kfree(buffer);
++
+ 	return rc;
+ }
+ 
 -- 
 1.7.9.5
 
