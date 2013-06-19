@@ -1,85 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934276Ab3FSIwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:52:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:40074 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933755Ab3FSIwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:52:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,895,1363158000"; 
-   d="scan'208";a="352225820"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Stefan Seyfried <stefan.seyfried@googlemail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: INTEL_MEI_ME=y breaks suspend on 3.10-rc3
-Thread-Topic: INTEL_MEI_ME=y breaks suspend on 3.10-rc3
-Thread-Index: AQHObFGFS521D9lhe0OuLxJicUIio5k8u1SA
-Date: Wed, 19 Jun 2013 08:52:21 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B028D67D0@HASMSX106.ger.corp.intel.com>
-References: <51ACD4B2.7070107@message-id.googlemail.com>
- <51ACD600.2020805@message-id.googlemail.com>
- <CA+i0qc4eEDjygde4+frqd51JutTDeoJ8mTp-K==gwG_7ghJwcw@mail.gmail.com>
- <51C0A684.8030405@message-id.googlemail.com>
-In-Reply-To: <51C0A684.8030405@message-id.googlemail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="utf-8"
+	id S934294Ab3FSIxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:53:13 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:63435 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933755Ab3FSIxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:53:06 -0400
+Date: Wed, 19 Jun 2013 12:52:54 +0400
+From: Glauber Costa <glommer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130619085252.GD1990@localhost.localdomain>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+ <20130618062623.GA20528@localhost.localdomain>
+ <20130619071346.GA9545@dhcp22.suse.cz>
+ <20130619073526.GB1990@localhost.localdomain>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619073526.GB1990@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5J8qrq2007136
 
+On Wed, Jun 19, 2013 at 11:35:27AM +0400, Glauber Costa wrote:
+> On Wed, Jun 19, 2013 at 09:13:46AM +0200, Michal Hocko wrote:
+> > On Tue 18-06-13 10:26:24, Glauber Costa wrote:
+> > [...]
+> > > Michal, would you mind testing the following patch?
+> > >
+> > > diff --git a/fs/inode.c b/fs/inode.c
+> > > index 00b804e..48eafa6 100644
+> > > --- a/fs/inode.c
+> > > +++ b/fs/inode.c
+> > > @@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
+> > >  
+> > >  static void inode_lru_list_del(struct inode *inode)
+> > >  {
+> > > +	if (inode->i_state & I_FREEING)
+> > > +		return;
+> > >  
+> > >  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
+> > >  		this_cpu_dec(nr_unused);
+> > > @@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
+> > >  			continue;
+> > >  		}
+> > >  
+> > > -		inode->i_state |= I_FREEING;
+> > >  		inode_lru_list_del(inode);
+> > > +		inode->i_state |= I_FREEING;
+> > >  		spin_unlock(&inode->i_lock);
+> > >  		list_add(&inode->i_lru, &dispose);
+> > >  	}
+> > > @@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
+> > >  			continue;
+> > >  		}
+> > >  
+> > > -		inode->i_state |= I_FREEING;
+> > >  		inode_lru_list_del(inode);
+> > > +		inode->i_state |= I_FREEING;
+> > >  		spin_unlock(&inode->i_lock);
+> > >  		list_add(&inode->i_lru, &dispose);
+> > >  	}
+> > > @@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
+> > >  		inode->i_state &= ~I_WILL_FREE;
+> > >  	}
+> > >  
+> > > +	inode_lru_list_del(inode);
+> > >  	inode->i_state |= I_FREEING;
+> > > -	if (!list_empty(&inode->i_lru))
+> > > -		inode_lru_list_del(inode);
+> > >  	spin_unlock(&inode->i_lock);
+> > >  
+> > >  	evict(inode);
+> > 
+> > No luck. I have this on top of inode_lru_isolate one but still can see
+> > hangs:
+> > 911 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
+> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > [<ffffffff81175254>] __lookup_hash+0x34/0x40
+> > [<ffffffff81179872>] path_lookupat+0x7a2/0x830
+> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
+> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
+> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+> > [<ffffffff81170116>] vfs_stat+0x16/0x20
+> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 21409 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
+> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> > [<ffffffff8117815e>] do_last+0x2de/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 21745 [<ffffffff81179862>] path_lookupat+0x792/0x830
+> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
+> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
+> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+> > [<ffffffff81170116>] vfs_stat+0x16/0x20
+> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 22032 [<ffffffff81179862>] path_lookupat+0x792/0x830
+> > [<ffffffff81179933>] filename_lookup+0x33/0xd0
+> > [<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+> > [<ffffffff8117ab4c>] user_path_at+0xc/0x10
+> > [<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+> > [<ffffffff81170116>] vfs_stat+0x16/0x20
+> > [<ffffffff8117013f>] sys_newstat+0x1f/0x50
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 22621 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+> > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+> > [<ffffffff8118529f>] iget_locked+0x4f/0x180
+> > [<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+> > [<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> > [<ffffffff8117815e>] do_last+0x2de/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 22711 [<ffffffff81178144>] do_last+0x2c4/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 22946 [<ffffffff81178144>] do_last+0x2c4/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 23393 [<ffffffff81178144>] do_last+0x2c4/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > -- 
+> Sorry if you said that before Michal.
 > 
-> However, it still does not work, commit
-> 42f132febff3b7b42c6c9dbfc151f29233be3132 does not seem to help enough
-> on my hardware.
+> But given the backtrace, are you sure this is LRU-related? You mentioned you bisected
+> it but found nothing conclusive. I will keep looking but maybe this could benefit from
+> a broader fs look
 > 
-> Still just unbinding and rebinding with
-> echo 0000:00:03.0 > /sys/bus/pci/drivers/mei_me/unbind
-> echo 0000:00:03.0 > /sys/bus/pci/drivers/mei_me/bind
-> 
-> triggers lots of
-> [  318.330981] mei_me 0000:00:03.0: reset: wrong host start response [
-> 318.330984] mei_me 0000:00:03.0: unexpected reset: dev_state = RESETTING
-> [  318.330990] mei_me 0000:00:03.0: reset: unexpected enumeration
-> response hbm.
-> [  318.330993] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING [  318.331016] mei_me 0000:00:03.0: reset: wrong host start
-> response [  318.331019] mei_me 0000:00:03.0: unexpected reset: dev_state
-> = RESETTING [  346.571031] mei_me 0000:00:03.0: reset: init clients timeout
-> hbm_state = 1.
-> [  346.571047] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING [  376.631030] mei_me 0000:00:03.0: reset: init clients timeout
-> hbm_state = 1.
-> [  376.631044] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING
-> 
-> It does, however, calm down after a few seconds, only to spew a few lines
-> once every 30 seconds:
-> 
-> [  406.691032] mei_me 0000:00:03.0: reset: init clients timeout hbm_state = 1.
-> [  406.691048] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING [  436.751033] mei_me 0000:00:03.0: reset: init clients timeout
-> hbm_state = 1.
-> [  436.751047] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING [  466.811030] mei_me 0000:00:03.0: reset: init clients timeout
-> hbm_state = 1.
-> [  466.811044] mei_me 0000:00:03.0: unexpected reset: dev_state =
-> RESETTING
-> 
-> So it is not yet fixed, unfortunately.
+> In any case, the patch we suggested is obviously correct and we should apply nevertheless.
+> I will write it down and send it to Andrew.
 
-Not sure I understand how to reproduce it.  it is still falling on suspend/resume or just unbind/bind?
-Would you be so kind and send me the whole log.
+My analysis of the LRU side code so far is:
 
-Thanks
-Tomas
+* Assuming we are not hanging because of held locks, the fact that we
+are hung at __wait_on_freeing_inode() means that someone who should
+be waking us up is not. This would indicate that an inode is marked
+as to-be-freed, but later on not freed.
 
+* We will wait for free inodes if the state is I_FREEING or I_WILL_FREE.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+* I_WILL_FREE is only set for a very short time during iput_final, and
+the code path leads unconditionally to evict(), which wakes up any
+waiters.
+
+* clear_inode sets I_FREEING but it is only called from within evict,
+which means we will wake up the waiters shortly.
+
+* The LRU will not necessarily put the element into those states, but when
+it does, it moves them to the dispose list. We will call evict() for all
+ements in the dispose list, and that will unconditionally call wake_up_bit.
+So it seems that if the LRU sets I_FREEING (we never set I_WILL_FREE)
+
+* The same is true for evict_inodes and invalidate_inodes. They test
+for the freeing bits and will skip the inodes marked as such. This seems
+okay, since this means someone else marked them as freeing and it should
+be their responsibility to wake up the callers.
+
+So this shows that strangely enough, the code seems very safe and fine.
+Still you are seeing hangs... Any chance we are hanging on the acquisition
+of inode_hash_lock?
+
+I need to be away for some hours, but I will be back to it soon. Meanwhile,
+if Dave could take a look into it, that would be trully great.
