@@ -1,118 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab3FSNQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:16:20 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:54208 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468Ab3FSNQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:16:17 -0400
-Date: Wed, 19 Jun 2013 15:16:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-Message-ID: <20130619131611.GC24957@gmail.com>
-References: <1371165992.27102.573.camel@schen9-DESK>
+	id S1756727Ab3FSNTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:19:08 -0400
+Received: from etezian.org ([198.101.225.253]:53597 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab3FSNTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 09:19:06 -0400
+Date: Wed, 19 Jun 2013 15:20:28 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Joseph CHANG <josright123@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, joseph_chang@davicom.com.tw,
+        josright@hotmail.com
+Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
+Message-ID: <20130619132028.GC13898@jack.whiskey>
+References: <1371645407-31387-1-git-send-email-josright123@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371165992.27102.573.camel@schen9-DESK>
+In-Reply-To: <1371645407-31387-1-git-send-email-josright123@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joseph,
 
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+had a fast look...
 
-> Ingo,
-> 
-> At the time of switching the anon-vma tree's lock from mutex to 
-> rw-sem (commit 5a505085), we encountered regressions for fork heavy workload. 
-> A lot of optimizations to rw-sem (e.g. lock stealing) helped to 
-> mitigate the problem.  I tried an experiment on the 3.10-rc4 kernel 
-> to compare the performance of rw-sem to one that uses mutex. I saw 
-> a 8% regression in throughput for rw-sem vs a mutex implementation in
-> 3.10-rc4.
-> 
-> For the experiments, I used the exim mail server workload in 
-> the MOSBENCH test suite on 4 socket (westmere) and a 4 socket 
-> (ivy bridge) with the number of clients sending mail equal 
-> to number of cores.  The mail server will
-> fork off a process to handle an incoming mail and put it into mail
-> spool. The lock protecting the anon-vma tree is stressed due to
-> heavy forking. On both machines, I saw that the mutex implementation 
-> has 8% more throughput.  I've pinned the cpu frequency to maximum
-> in the experiments.
-> 
-> I've tried two separate tweaks to the rw-sem on 3.10-rc4.  I've tested 
-> each tweak individually.
-> 
-> 1) Add an owner field when a writer holds the lock and introduce 
-> optimistic spinning when an active writer is holding the semaphore.  
-> It reduced the context switching by 30% to a level very close to the
-> mutex implementation.  However, I did not see any throughput improvement
-> of exim.
-> 
-> 2) When the sem->count's active field is non-zero (i.e. someone
-> is holding the lock), we can skip directly to the down_write_failed
-> path, without adding the RWSEM_DOWN_WRITE_BIAS and taking
-> it off again from sem->count, saving us two atomic operations.
-> Since we will try the lock stealing again later, this should be okay.
-> Unfortunately it did not improve the exim workload either.  
-> 
-> Any suggestions on the difference between rwsem and mutex performance
-> and possible improvements to recover this regression?
-> 
-> Thanks.
-> 
-> Tim
-> 
-> vmstat for mutex implementation: 
-> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
->  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-> 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-> 
-> vmstat for rw-sem implementation (3.10-rc4)
-> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
->  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-> 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
+[ ... ]
 
-It appears the main difference is that the rwsem variant context-switches 
-about 36% more than the mutex version, right?
+> +static int dm9620_set_eeprom(struct net_device *net,
+> +		struct ethtool_eeprom *eeprom, u8 *data)
+> +{
+> +	struct usbnet *dev = netdev_priv(net);
+> +	int offset = eeprom->offset;
+> +	int len = eeprom->len;
+> +	int done;
+> +
+> +	if (eeprom->magic != MD96XX_EEPROM_MAGIC) {
+> +		netdev_err(dev->net, "EEPROM: magic value mismatch, magic = 0x%x\n",
+> +			eeprom->magic);
+> +		return -EINVAL;
+> +	}
+> +
+> +	while (len > 0) {
+> +		if (len & 1 || offset & 1) {
+> +			int which = offset & 1;
+> +			u8 tmp[2];
+> +			dm_read_eeprom_word(dev, offset / 2, tmp);
+> +			tmp[which] = *data;
+> +			dm_write_eeprom_word(dev, offset / 2, tmp);
+> +			mdelay(10);
 
-I'm wondering how that's possible - the lock is mostly write-locked, 
-correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
-ought to have brought roughly the same lock-stealing behavior as mutexes 
-do, right?
+Please don't use mdelay, use msleep or possibly
+msleep_interruptable
 
-So the next analytical step would be to figure out why rwsem lock-stealing 
-is not behaving in an equivalent fashion on this workload. Do readers come 
-in frequently enough to disrupt write-lock-stealing perhaps?
+> +			done = 1;
+> +		} else {
+> +			dm_write_eeprom_word(dev, offset / 2, data);
+> +			done = 2;
+> +		}
+> +		data += done;
+> +		offset += done;
+> +		len -= done;
+> +	}
+> +	return 0;
+> +}
 
-Context-switch call-graph profiling might shed some light on where the 
-extra context switches come from...
+[ ... ]
 
-Something like:
+> +static int dm9620_bind(struct usbnet *dev, struct usb_interface *intf)
+> +{
+> +	int ret;
+> +	u8 mac[ETH_ALEN], id;
+> +	u16 value;
+> +
+> +	ret = usbnet_get_endpoints(dev, intf);
+> +	if (ret)
+> +		goto out;
 
-  perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
+maybe here is better
 
-or a variant thereof might do the trick.
+	if (ret)
+		return ret;
 
-Thanks,
+> +
+> +	dev->net->netdev_ops = &dm9620_netdev_ops;
+> +	dev->net->ethtool_ops = &dm9620_ethtool_ops;
+> +	dev->net->hard_header_len += DM_TX_OVERHEAD;
+> +	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
+> +
+> +	/* ftp fail fixed */
+> +	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD+1;
+> +
+> +	dev->mii.dev = dev->net;
+> +	dev->mii.mdio_read = dm9620_mdio_read;
+> +	dev->mii.mdio_write = dm9620_mdio_write;
+> +	dev->mii.phy_id_mask = 0x1f;
+> +	dev->mii.reg_num_mask = 0x1f;
+> +	dev->mii.phy_id = DM9620_PHY_ID;
+> +
+> +	/* reset */
+> +	dm_write_reg(dev, DM_NET_CTRL, 1);
+> +	udelay(20);
 
-	Ingo
+from Documentation/timers/timers-howto.txt:
+
+        SLEEPING FOR "A FEW" USECS ( < ~10us? ):
+                * Use udelay
+
+use udelay if you want to sleep for less than 10us, otherwise use
+usleep_range
+
+> +
+> +	/* read MAC */
+> +	if (dm_read(dev, DM_PHY_ADDR, ETH_ALEN, mac) < 0) {
+> +		netdev_err(dev->net, "Error reading MAC address\n");
+> +		ret = -ENODEV;
+> +		goto out;
+> +	}
+
+you can get read of the 'out' label if in all the goto you use
+you just 'return -ENODEV;' instead of 'goto out;'
+
+> +
+> +	/* Overwrite the auto-generated address only with good ones */
+> +	if (is_valid_ether_addr(mac))
+> +		memcpy(dev->net->dev_addr, mac, ETH_ALEN);
+> +	else {
+> +		netdev_warn(dev->net,
+> +			"dm9620: No valid MAC address in EEPROM, using %pM\n",
+> +			dev->net->dev_addr);
+> +		__dm9620_set_mac_address(dev);
+> +	}
+> +
+> +	if (dm_read_reg(dev, DM_CHIP_ID, &id) < 0) {
+> +		netdev_err(dev->net, "Error reading chip ID\n");
+> +		ret = -ENODEV;
+> +		goto out;
+
+same here
+
+> +	}
+> +
+> +	dm_read(dev, DM_PID, 2, &value);
+> +
+> +	/* Add for check Product dm9620a/21a */
+> +	if (value == 0x1269 || value == 0x0269)
+> +		dm_write_reg(dev, DM_MODE_CTRL, DM_MODE9620 | DM_MODE_CDC_DES);
+> +	else
+> +		dm_write_reg(dev, DM_MODE_CTRL, DM_MODE9620);
+> +
+> +	dm_write_reg(dev, DM_RX_CRC_CTRL, DM_RX_RCSEN);
+> +
+> +	/* power up phy */
+> +	dm_write_reg(dev, DM_GPR_CTRL, 1);
+> +	dm_write_reg(dev, DM_GPR_DATA, 0);
+> +
+> +	/* receive broadcast packets */
+> +	dm9620_set_multicast(dev->net);
+> +
+> +	dm9620_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
+> +
+> +	/* TX Pause Packet Enable */
+> +	dm_write_reg(dev, DM_FCR, DM_FCR_TXPEN | DM_FCR_BKPM | DM_FCR_FLCE);
+> +
+> +	/* ADVERTISE_PAUSE_CAP */
+> +	dm9620_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
+> +		ADVERTISE_ALL | ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
+> +
+> +	dm_write_reg(dev, DM_USB_CTRL, DM_USB_EP3ACK);
+> +
+> +	mii_nway_restart(&dev->mii);
+> +
+> +out:
+> +	return ret;
+
+yeah... you wouldn't need this anymore
+
+> +}
+> +
+> +void dm9620_unbind(struct usbnet *dev, struct usb_interface *intf)
+
+Should this be static?
+
+> +{
+> +	netdev_warn(dev->net, "[dm962] Linux Driver = V2.6 - unbind\n");
+> +}
+> +
+> +static int dm9620_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+> +{
+> +	u8 status;
+> +	int len;
+> +
+> +	/* format:
+> +	   b0: rx_flag
+> +	   b1: rx status
+> +	   b2: packet length (incl crc) low
+> +	   b3: packet length (incl crc) high
+> +	   b4..n-4: packet data
+> +	   bn-3..bn: ethernet crc
+> +	 */
+
+Allow me this nitpick please check the coding style for comments
+in Documentation/CodyngStyle:
+
+For files in net/ and drivers/net/ the preferred style for long (multi-line)
+comments is a little different.
+
+	/* The preferred comment style for files in net/ and
+	 * drivers/net
+	 * looks like this.
+	 *
+	 * It is nearly the same as the generally preferred
+	 * comment style,
+	 * but there is no initial almost-blank line.
+	 */
+
+> +	if (unlikely(skb->len < DM_RX_OVERHEAD)) {
+> +		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
+> +		return 0;
+> +	}
+> +
+> +	status = skb->data[1];
+> +	len = (skb->data[2] | (skb->data[3] << 8)) - 4;
+> +
+> +	if (unlikely(status & 0xbf)) {
+> +		if (status & 0x01)
+> +			dev->net->stats.rx_fifo_errors++;
+> +		if (status & 0x02)
+> +			dev->net->stats.rx_crc_errors++;
+> +		if (status & 0x04)
+> +			dev->net->stats.rx_frame_errors++;
+> +		if (status & 0x20)
+> +			dev->net->stats.rx_missed_errors++;
+> +		if (status & 0x90)
+> +			dev->net->stats.rx_length_errors++;
+> +		return 0;
+> +	}
+> +
+> +	skb_pull(skb, 4);
+> +	skb_trim(skb, len);
+> +
+> +	return 1;
+> +}
+> +
+> +static bool davicom_bulkout_fix(int len, unsigned fullp)
+> +{
+> +	len = ((len+1)/2)*2;
+> +	len += 2;
+> +	if ((len % fullp) == 0)
+> +		return true;
+> +	return false;
+
+personally here I like more the form
+
+	return !(len % fullp) ? true : false;
+
+But this is more a nitpick, you don't really need to change
+
+> +}
+> +
+> +static int dm9620_tx_oddadd_len(int len)
+> +{
+> +	if (len & 1)
+> +		return 1;
+> +	return 0;
+
+(len & 1) is the same as (len == 1), personally I find it a bit
+ugly, I would rather write it differently:
+
+	return (len == 1) ? 1 : 0;
+
+or if you like the '&'
+
+	return len & 1;
+
+> +}
+> +
+> +static const struct usb_device_id products[] = {
+> +	{
+> +	 USB_DEVICE(0x0a46, 0x9620),	/* dm9620 */
+> +	 .driver_info = (unsigned long)&dm9620_info,
+> +	 },
+> +	{
+> +	 USB_DEVICE(0x0a46, 0x9621),	/* dm9621 */
+> +	 .driver_info = (unsigned long)&dm9620_info,
+> +	 },
+> +	{
+> +	 USB_DEVICE(0x0a46, 0x9622),	/* dm9622 */
+> +	 .driver_info = (unsigned long)&dm9620_info,
+> +	 },
+> +	{
+> +	 USB_DEVICE(0x0a46, 0x0269),	/* dm9620a */
+> +	 .driver_info = (unsigned long)&dm9620_info,
+> +	 },
+> +	{
+> +	 USB_DEVICE(0x0a46, 0x1269),	/* dm9621a */
+> +	 .driver_info = (unsigned long)&dm9620_info,
+> +	 },
+> +	{},
+> +};
+
+It would be cool if in the code we could have some logical
+defines for all the hexadecimal values you are using all around
+the code ;)
+
+Andi
