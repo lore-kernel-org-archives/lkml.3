@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab3FSP5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:57:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35122 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3FSP5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:57:46 -0400
-Date: Wed, 19 Jun 2013 18:57:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alessandro Rubini <rubini@gnudd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] FMC: NULL dereference on allocation failure
-Message-ID: <20130619155731.GA4957@mwanda>
-References: <20130619144904.GA10484@elgon.mountain>
- <20130619152528.GA16430@mail.gnudd.com>
+	id S1757130Ab3FSP6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:58:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757039Ab3FSP6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:58:39 -0400
+Date: Wed, 19 Jun 2013 17:54:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] hw_breakpoint: Introduce "struct bp_cpuinfo"
+Message-ID: <20130619155404.GB9176@redhat.com>
+References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130602194912.GA3277@redhat.com> <20130602195057.GC3277@redhat.com> <20130618123741.GC17619@somewhere.redhat.com> <20130618144225.GA26920@redhat.com> <20130618170145.GI17619@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130619152528.GA16430@mail.gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130618170145.GI17619@somewhere.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 05:25:28PM +0200, Alessandro Rubini wrote:
-> > If we don't allocate "arr" then the cleanup path will dereference it and
-> > oops.
-> 
-> You are right, thanks (acked).
-> 
-> How is the procedure here? I don't have my own git tree on
-> kernel.org for pull requests. Can this go through the janitors?
-> 
-> (if it makes sense, I can try the procedure to have a tree, but last
-> time I checked it was strictly denied to anyone).
+On 06/18, Frederic Weisbecker wrote:
+>
+> On Tue, Jun 18, 2013 at 04:42:25PM +0200, Oleg Nesterov wrote:
+> >
+> > Simplest example,
+> >
+> > 	for_each_possible_cpu(cpu)
+> > 		total_count = per_cpu(per_cpu_count, cpu);
+> >
+> > Every per_cpu() likely means the cache miss. Not to mention we need the
+> > additional math to calculate the address of the local counter.
+> >
+> > 	for_each_possible_cpu(cpu)
+> > 		total_count = bootmem_or_kmalloc_array[cpu];
+> >
+> > is much better in this respect.
+> >
+> > And note also that per_cpu_count above can share the cacheline with
+> > another "hot" per-cpu variable.
+>
+> Ah I see, that's good to know.
+>
+> But these variables are supposed to only be touched from slow path
+> (perf events syscall, ptrace breakpoints creation, etc...), right?
+> So this is probably not a problem?
 
+Yes, sure. But please note that this can also penalize other CPUs.
+For example, toggle_bp_slot() writes to per_cpu(nr_cpu_bp_pinned),
+this invalidates the cachline which can contain another per-cpu
+variable.
 
-Apparently these are going through Greg K-H.  I'll resend, with Greg
-CC'd so he can pick it up from the mailing list.
+But let me clarify. I agree, this all is minor, I am not trying to
+say this change can actually improve the performance.
 
-Could you add an entry to the MAINTAINERS file so that Greg will be
-CC'd automatically using get_maintainer.pl?  Is there a dedicated
-list for FMC development?  That would go in the MAINTAINERS file as
-well.
+The main point of this patch is to make the code look a bit better,
+and you seem to agree. The changelog mentions s/percpu/array/ only
+as a potential change which obviously needs more discussion, I didnt
+mean that we should necessarily do this.
 
-regards,
-dan carpenter
+Although yes, personally I really dislike per-cpu in this case, but
+of course this is subjective and I won't argue ;)
+
+Oleg.
 
