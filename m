@@ -1,61 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902Ab3FSHNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:13:05 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:40746 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab3FSHNB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:13:01 -0400
-Message-ID: <51C159F8.8090604@suse.cz>
-Date: Wed, 19 Jun 2013 09:12:56 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S933957Ab3FSHNt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:13:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47894 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933081Ab3FSHNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 03:13:48 -0400
+Date: Wed, 19 Jun 2013 09:13:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130619071346.GA9545@dhcp22.suse.cz>
+References: <20130617141822.GF5018@dhcp22.suse.cz>
+ <20130617151403.GA25172@localhost.localdomain>
+ <20130617143508.7417f1ac9ecd15d8b2877f76@linux-foundation.org>
+ <20130617223004.GB2538@localhost.localdomain>
+ <20130618062623.GA20528@localhost.localdomain>
 MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz> <20130523022327.GB6159@kroah.com> <519D8876.9050405@suse.com> <51BF6BFF.7050705@suse.cz> <51C1595D.60706@ti.com>
-In-Reply-To: <51C1595D.60706@ti.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618062623.GA20528@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 09:10 AM, Tomi Valkeinen wrote:
-> On 17/06/13 23:05, Jiri Slaby wrote:
-> 
->> The last point I inclined to the Greg's argument to remove the
->> EXPERT dependency.
->> 
->> So currently I have what is attached... Comments?
-> 
-> The patch looks a bit odd with the USB_CHIPIDEA_IMX parts. You're
-> not adding COMPILE_TEST there, but you're adding a totally new
-> config option, and also changing the Makefile.
+On Tue 18-06-13 10:26:24, Glauber Costa wrote:
+[...]
+> Michal, would you mind testing the following patch?
+>
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 00b804e..48eafa6 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -419,6 +419,8 @@ void inode_add_lru(struct inode *inode)
+>  
+>  static void inode_lru_list_del(struct inode *inode)
+>  {
+> +	if (inode->i_state & I_FREEING)
+> +		return;
+>  
+>  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
+>  		this_cpu_dec(nr_unused);
+> @@ -609,8 +611,8 @@ void evict_inodes(struct super_block *sb)
+>  			continue;
+>  		}
+>  
+> -		inode->i_state |= I_FREEING;
+>  		inode_lru_list_del(inode);
+> +		inode->i_state |= I_FREEING;
+>  		spin_unlock(&inode->i_lock);
+>  		list_add(&inode->i_lru, &dispose);
+>  	}
+> @@ -653,8 +655,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
+>  			continue;
+>  		}
+>  
+> -		inode->i_state |= I_FREEING;
+>  		inode_lru_list_del(inode);
+> +		inode->i_state |= I_FREEING;
+>  		spin_unlock(&inode->i_lock);
+>  		list_add(&inode->i_lru, &dispose);
+>  	}
+> @@ -1381,9 +1383,8 @@ static void iput_final(struct inode *inode)
+>  		inode->i_state &= ~I_WILL_FREE;
+>  	}
+>  
+> +	inode_lru_list_del(inode);
+>  	inode->i_state |= I_FREEING;
+> -	if (!list_empty(&inode->i_lru))
+> -		inode_lru_list_del(inode);
+>  	spin_unlock(&inode->i_lock);
+>  
+>  	evict(inode);
 
-Look:
-
-+config USB_CHIPIDEA_IMX
-+       bool "ChipIdea IMX support"
-+       depends on OF_DEVICE && (ARM || COMPILE_TEST)
-
-COMPILE_TEST added here ----------------^^^^^^^^^^^^
-
+No luck. I have this on top of inode_lru_isolate one but still can see
+hangs:
+911 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118529f>] iget_locked+0x4f/0x180
+[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81175254>] __lookup_hash+0x34/0x40
+[<ffffffff81179872>] path_lookupat+0x7a2/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+21409 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118529f>] iget_locked+0x4f/0x180
+[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81177e25>] lookup_open+0x175/0x1d0
+[<ffffffff8117815e>] do_last+0x2de/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+21745 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+22032 [<ffffffff81179862>] path_lookupat+0x792/0x830
+[<ffffffff81179933>] filename_lookup+0x33/0xd0
+[<ffffffff8117ab0b>] user_path_at_empty+0x7b/0xb0
+[<ffffffff8117ab4c>] user_path_at+0xc/0x10
+[<ffffffff8116ff91>] vfs_fstatat+0x51/0xb0
+[<ffffffff81170116>] vfs_stat+0x16/0x20
+[<ffffffff8117013f>] sys_newstat+0x1f/0x50
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+22621 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0
+[<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+[<ffffffff8118529f>] iget_locked+0x4f/0x180
+[<ffffffff811efa23>] ext4_iget+0x33/0x9f0
+[<ffffffff811f6a5c>] ext4_lookup+0xbc/0x160
+[<ffffffff81174ad0>] lookup_real+0x20/0x60
+[<ffffffff81177e25>] lookup_open+0x175/0x1d0
+[<ffffffff8117815e>] do_last+0x2de/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+22711 [<ffffffff81178144>] do_last+0x2c4/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+22946 [<ffffffff81178144>] do_last+0x2c4/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+23393 [<ffffffff81178144>] do_last+0x2c4/0x780
+[<ffffffff8117ae9a>] path_openat+0xda/0x400
+[<ffffffff8117b303>] do_filp_open+0x43/0xa0
+[<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+[<ffffffff81168f9c>] sys_open+0x1c/0x20
+[<ffffffff81583129>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
 -- 
-js
-suse labs
+Michal Hocko
+SUSE Labs
