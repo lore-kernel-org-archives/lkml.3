@@ -1,232 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3FSF0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:26:36 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:39971 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3FSF0e (ORCPT
+	id S1756297Ab3FSF16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:27:58 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:41283 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752338Ab3FSF14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:26:34 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-67-51c14108d886
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kishon@ti.com, balbi@ti.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: gregkh@linuxfoundation.org, cw00.choi@samsung.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com
-Subject: [PATCH v3] extcon: Add an API to get extcon device from dt node
-Date: Wed, 19 Jun 2013 14:26:16 +0900
-Message-id: <1371619576-23628-1-git-send-email-cw00.choi@samsung.com>
+	Wed, 19 Jun 2013 01:27:56 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
+        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH v7] Cpufreq: Fix governor start/stop race condition
+Date: Wed, 19 Jun 2013 13:24:39 +0800
+Message-ID: <1371619479-21386-1-git-send-email-chenxg@marvell.com>
 X-Mailer: git-send-email 1.8.0
-In-reply-to: <1370276020-17446-2-git-send-email-kishon@ti.com>
-References: <1370276020-17446-2-git-send-email-kishon@ti.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsWyRsSkWJfT8WCgwYR3rBYH79dbXP/ynNXi
-	wOyHrBbNi9ezWVx42sNmcbbpDbvF5V1z2CxuN65gc+Dw2D93DbvH+RkLGT36tqxi9Dh+YzuT
-	x+dNcgGsUVw2Kak5mWWpRfp2CVwZyy7dYy+Yr1txYNtT9gbG46pdjJwcEgImEg+vHGCDsMUk
-	LtxbD2RzcQgJLGWUODjlEQtM0fl711ghEosYJY5N3wVV9Z9RonHJe7AqNgEtif0vboCNEhFI
-	kVi7di47iM0skCPx78F9MFtYwENiyoPfYDaLgKrE83YIm1fAVeJQ6yR2iG1yEh/2PAKzOQXs
-	JPYt6APazAG0zBZoFwvIXgmBeewSv5a3skDMEZD4NvkQC0iNhICsxKYDzBBjJCUOrrjBMoFR
-	eAEjwypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MwHA//e/ZxB2M9w9YH2JMBho3kVlKNDkf
-	GC95JfGGxmZGFqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDk
-	/FwttGpC5vtDgnezEyNLnp3e+FRzjvwtHealZ1aWVEXu/Gyev9yxfk0wc9Ih668RW7WfB3eH
-	lJWYe13TW6Xv3Vt0MzVWL0bUZtGKGZ0lyycprZvtOP/zh+UZ+/wL+Pzk5XfeeNvXb32Sq2n/
-	x6e6Wje7bmd3nCp2MWmNWLBCsYzx8CfLmalKLMUZiYZazEXFiQDy/TF2jQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jAV0Ox4OBBv/aLS0O3q+3uP7lOavF
-	gdkPWS2aF69ns7jwtIfN4mzTG3aLy7vmsFncblzB5sDhsX/uGnaP8zMWMnr0bVnF6HH8xnYm
-	j8+b5AJYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTd
-	MnOAblFSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZiy7dI+9YL5uxYFt
-	T9kbGI+rdjFyckgImEicv3eNFcIWk7hwbz1bFyMXh5DAIkaJY9N3QTn/GSUal7xnAaliE9CS
-	2P/iBhuILSKQIrF27Vx2EJtZIEfi34P7YLawgIfElAe/wWwWAVWJ5+0QNq+Aq8Sh1knsENvk
-	JD7seQRmcwrYSexb0Ad0BQfQMlugXSwTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAiOpmdSOxhXNlgcYhTgYFTi4W1YeSBQiDWxrLgy9xCjBAezkgivnsPBQCHelMTKqtSi/Pii
-	0pzU4kOMyUBHTWSWEk3OB0Z6Xkm8obGJmZGlkbmhhZGxOWnCSuK8B1qtA4UE0hNLUrNTUwtS
-	i2C2MHFwSjUwHj7Z55TScu7sba6Ju5KPVD3d03bI8jb3k1bD/dG52RKybD7RC4Mj9OuteFbO
-	bp8rfWpvwFc5JyPx6LvPs09uXe3reu6f6sWF6wSeM9YYdzypSuFNOCGRp1PjLtJgsMBSq/BC
-	6GWP13e6lij5cf4OCD8w/+7t5Xr9ojqV3eESJd6XtHuVSvuVWIozEg21mIuKEwGsSl2G6gIA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kishon Vijay Abraham I <kishon@ti.com>
+Cpufreq governor's stop and start operation should be kept in sequence.
+If not, there will be unexpected behavior, for example:
 
-Added an API of_extcon_get_extcon_dev() to be used by drivers to get
-extcon device in the case of dt boot (this can be used instead of
-extcon_get_extcon_dev()).
+There are 4 CPUs and policy->cpu=CPU0, CPU1/2/3 are linked to CPU0.
+The normal sequence is as below:
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+1) Current governor is userspace, One application tries to set
+governor to ondemand. It will call __cpufreq_set_policy in which it
+will stop userspace governor and then start ondemand governor.
+
+2) Current governor is userspace, Now CPU0 hotplugs in CPU3(put CPU3 online),
+It will call cpufreq_add_policy_cpu in which it first stops userspace
+governor, and then starts userspace governor.
+
+Now if the sequence of above two cases interleaves, It becames
+below sequence:
+
+1) Application stops userspace governor
+2)                                      Hotplug stops userspace governor
+3) Application starts ondemand governor
+4)                                      Hotplug starts a governor
+
+In step 4, hotplug is supposed to start userspace governor, But now
+the governor has been changed by application to ondemand, So hotplug
+starts ondemand governor again !!!!
+
+The solution is: Do not allow stop one policy's governor multi-times.
+Governor stop should only do once for one policy, After it is stopped,
+No other governor stop should be executed. also add one mutex to
+protect __cpufreq_governor so governor operation can be kept in sequence.
+
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
 ---
-Changes since v2:
-- Add CONFIG_OF_EXTCON to Kconfig
-- Use IS_ENABLED() macro to check both CONFIG_EXTCON and CONFIG_EXTCON_MODULE
+ drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  1 +
+ 2 files changed, 25 insertions(+)
 
-Changes since v1:
-- If edev->name is NULL, dev_name(dev) is used as edev->name.
-- Change filename from of-extcon.* to of_extcon.*
-- Fix build error when CONFIG_OF is not set
-- Add header file(linux/err.h) to of_extcon.c
-
- drivers/extcon/Kconfig           |  4 +++
- drivers/extcon/Makefile          |  2 ++
- drivers/extcon/extcon-class.c    |  3 +-
- drivers/extcon/of_extcon.c       | 64 ++++++++++++++++++++++++++++++++++++++++
- include/linux/extcon/of_extcon.h | 31 +++++++++++++++++++
- 5 files changed, 103 insertions(+), 1 deletion(-)
- create mode 100644 drivers/extcon/of_extcon.c
- create mode 100644 include/linux/extcon/of_extcon.h
-
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-index 63f454e..f1d54a3 100644
---- a/drivers/extcon/Kconfig
-+++ b/drivers/extcon/Kconfig
-@@ -14,6 +14,10 @@ if EXTCON
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2d53f47..6f5aa6f 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
++static DEFINE_MUTEX(cpufreq_governor_lock);
  
- comment "Extcon Device Drivers"
+ /*
+  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
+@@ -1562,6 +1563,21 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
  
-+config OF_EXTCON
-+	def_tristate y
-+	depends on OF
+ 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+ 						policy->cpu, event);
 +
- config EXTCON_GPIO
- 	tristate "GPIO extcon support"
- 	depends on GPIOLIB
-diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-index 540e2c3..759fdae 100644
---- a/drivers/extcon/Makefile
-+++ b/drivers/extcon/Makefile
-@@ -2,6 +2,8 @@
- # Makefile for external connector class (extcon) devices
- #
- 
-+obj-$(CONFIG_OF_EXTCON)		+= of_extcon.o
-+
- obj-$(CONFIG_EXTCON)		+= extcon-class.o
- obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
- obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 23f11ea..08509ea 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -602,7 +602,8 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 	edev->dev->class = extcon_class;
- 	edev->dev->release = extcon_dev_release;
- 
--	dev_set_name(edev->dev, edev->name ? edev->name : dev_name(dev));
-+	edev->name = edev->name ? edev->name : dev_name(dev);
-+	dev_set_name(edev->dev, edev->name);
- 
- 	if (edev->max_supported) {
- 		char buf[10];
-diff --git a/drivers/extcon/of_extcon.c b/drivers/extcon/of_extcon.c
-new file mode 100644
-index 0000000..72173ec
---- /dev/null
-+++ b/drivers/extcon/of_extcon.c
-@@ -0,0 +1,64 @@
-+/*
-+ * OF helpers for External connector (extcon) framework
-+ *
-+ * Copyright (C) 2013 Texas Instruments, Inc.
-+ * Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * Copyright (C) 2013 Samsung Electronics
-+ * Chanwoo Choi <cw00.choi@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/extcon.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/extcon/of_extcon.h>
-+
-+/*
-+ * of_extcon_get_extcon_dev - Get the name of extcon device from devicetree
-+ * @dev - instance to the given device
-+ * @index - index into list of extcon_dev
-+ *
-+ * return the instance of extcon device
-+ */
-+struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
-+{
-+	struct device_node *node;
-+	struct extcon_dev *edev;
-+	struct platform_device *extcon_parent_dev;
-+
-+	if (!dev->of_node) {
-+		dev_dbg(dev, "device does not have a device node entry\n");
-+		return ERR_PTR(-EINVAL);
++	mutex_lock(&cpufreq_governor_lock);
++	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
++	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
++		mutex_unlock(&cpufreq_governor_lock);
++		return -EBUSY;
 +	}
 +
-+	node = of_parse_phandle(dev->of_node, "extcon", index);
-+	if (!node) {
-+		dev_dbg(dev, "failed to get phandle in %s node\n",
-+			dev->of_node->full_name);
-+		return ERR_PTR(-ENODEV);
-+	}
++	if (event == CPUFREQ_GOV_STOP)
++		policy->governor_enabled = false;
++	else if (event == CPUFREQ_GOV_START)
++		policy->governor_enabled = true;
 +
-+	extcon_parent_dev = of_find_device_by_node(node);
-+	if (!extcon_parent_dev) {
-+		dev_dbg(dev, "unable to find device by node\n");
-+		return ERR_PTR(-EPROBE_DEFER);
-+	}
++	mutex_unlock(&cpufreq_governor_lock);
 +
-+	edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
-+	if (!edev) {
-+		dev_dbg(dev, "unable to get extcon device : %s\n",
-+				dev_name(&extcon_parent_dev->dev));
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	return edev;
-+}
-+EXPORT_SYMBOL_GPL(of_extcon_get_extcon_dev);
-diff --git a/include/linux/extcon/of_extcon.h b/include/linux/extcon/of_extcon.h
-new file mode 100644
-index 0000000..0ebfeff
---- /dev/null
-+++ b/include/linux/extcon/of_extcon.h
-@@ -0,0 +1,31 @@
-+/*
-+ * OF helpers for External connector (extcon) framework
-+ *
-+ * Copyright (C) 2013 Texas Instruments, Inc.
-+ * Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * Copyright (C) 2013 Samsung Electronics
-+ * Chanwoo Choi <cw00.choi@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __LINUX_OF_EXTCON_H
-+#define __LINUX_OF_EXTCON_H
-+
-+#include <linux/err.h>
-+
-+#if IS_ENABLED(CONFIG_OF_EXTCON)
-+extern struct extcon_dev
-+	*of_extcon_get_extcon_dev(struct device *dev, int index);
-+#else
-+static inline struct extcon_dev
-+	*of_extcon_get_extcon_dev(struct device *dev, int index)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+#endif /* CONFIG_OF_EXTCON */
-+#endif /* __LINUX_OF_EXTCON_H */
+ 	ret = policy->governor->governor(policy, event);
+ 
+ 	if (!ret) {
+@@ -1569,6 +1585,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			policy->governor->initialized++;
+ 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+ 			policy->governor->initialized--;
++	} else {
++		/* Restore original values */
++		mutex_lock(&cpufreq_governor_lock);
++		if (event == CPUFREQ_GOV_STOP)
++			policy->governor_enabled = true;
++		else if (event == CPUFREQ_GOV_START)
++			policy->governor_enabled = false;
++		mutex_unlock(&cpufreq_governor_lock);
+ 	}
+ 
+ 	/* we keep one module reference alive for
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 037d36a..1a81b74 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -107,6 +107,7 @@ struct cpufreq_policy {
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
++	bool			governor_enabled; /* governor start/stop flag */
+ 
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
 -- 
 1.8.0
 
