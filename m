@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab3FSP0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:26:13 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46366 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757028Ab3FSPZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:25:51 -0400
-X-IronPort-AV: E=Sophos;i="4.87,898,1363132800"; 
-   d="scan'208";a="32137912"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <xen-devel@lists.xen.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv4 0/4] xen: maintain an accurate persistent clock in more cases
-Date: Wed, 19 Jun 2013 16:25:19 +0100
-Message-ID: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S934884Ab3FSP06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:26:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42181 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934794Ab3FSP04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:26:56 -0400
+Date: Wed, 19 Jun 2013 16:26:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Oskar Schirmer <oskar@scara.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Zeng Zhaoming <zengzm.kernel@gmail.com>,
+        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Message-ID: <20130619152648.GW1403@sirena.org.uk>
+References: <51B749F5.3010907@freescale.com>
+ <1371647766-4900-1-git-send-email-oskar@scara.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8JMtXNYTIIy8Rvxv"
+Content-Disposition: inline
+In-Reply-To: <1371647766-4900-1-git-send-email-oskar@scara.com>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] sound/sgtl5000: fix codec register initial values and
+ handling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen guests use the Xen wallclock as their persistent clock.  This is a
-software only clock in the hypervisor that is used by guests instead
-of a real hardware RTC.
 
-The kernel has limited support for updating the persistent clock or
-RTC when NTP is synced.  This has the following limitations:
+--8JMtXNYTIIy8Rvxv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-* The persistent clock is not updated on step changes.  This leaves a
-  window where it will be incorrect (while NTP resyncs).
+On Wed, Jun 19, 2013 at 01:16:06PM +0000, Oskar Schirmer wrote:
 
-* Xen guests use the Xen wallclock as their persistent clock.  dom0
-  maintains this clock so it is persistent for domUs but not dom0
-  itself.
+This is a set of three unrelated changes, they should be sent as three
+separate patches.
 
-These limitations mean that guests started before NTP is synchronized
-will start with an incorrect wallclock time and the hardware RTC will
-not be updated (as on bare metal).
+> Further, mask computation in declarative part is obviously wrong:
+> Fix FRAC DIVISOR to provide an 11 bit mask correctly.
 
-These series fixes the above limitations and depends on "x86: increase
-precision of x86_platform.get/set_wallclock()" which was previously
-posted.
+What makes you say that this is obviously wrong?  It's not entirely
+clear.
 
-Patch 1 is a prerequisite.  It removes a call to clock_was_set() from
-the Xen suspend/resume code.
+> -#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
+> +#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
 
-Changes since v3:
+Based on your changelog I was expecting a mask with only two bits set
+here?
 
-Add a new clock_was_set notifier chain. Use this instead of direct
-calls to clock_was_set() from the timekeeping code.  Use this notifier
-and a new timer to synchronize the Xen wallclock.
+--8JMtXNYTIIy8Rvxv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Changes since v2:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Don't peek at the timekeeper internals (use __current_kernel_time()
-instead).  Use the native set_wallclock hook in dom0.
+iQIcBAEBAgAGBQJRwc21AAoJELSic+t+oim9WvMP/ijace/A0w4dhmAuFiLXvObG
+73OtHF13uQG/4jrJTcmYe/3C8MuYcgcSLmHHe91+z05zXbgr7JUP7QEGqccfjwkO
+YaMx9RBuh+UsG0gfOnjCcPJ2SO1vf1tk8LrExMfqipwLxF+C0yPEI+2uqlqLRkkG
+GQwyY3+YOXFsYYdGTOUwHAvgLzGUEq208Y7Ajlbc6NZdCebIY825Njr0IlAQ6wT3
+PkYF2LZNiPPF4uc+UaqH5JCHY69LlXFLlDwPhq9Uqtj3jPYtLyeDYJ6l+eOIHjXR
+yk3yQE0lW87AH7Q2T8MF+76Io0X6oQPRVouvDYHtE8znnx1fyK9gl6g6taz4FMF1
+DYSGMlNlCIG7NzbYtoarPKyuavaKIKdjtUrqvsA2isvJmAqzbpT/WyE2i2TUPhPi
+c1ITtKdGI2qfb3Fuz2CnC/MKhn3YcFRikgN9J0tEjBGFsnhmexbccPYo8AArkqsa
+rLHBm4x0oEm1TuIu1gRhQ3mRLGF2XgonV4K7yt0q0OLgi3CDqX9oQh4iUKIuiMXN
+KmpPOjY2kyrNsm9fHedMmK9LktUfHvtTbyPzZF/SkMFr06Xlc6XNZgkEwL5oKL0e
+HTiaCo/u7fqjBFGchPAZPI6ADSRbKhim3AWkJbbmSErknKu1NccjJ2cy2KEm4AvA
+JrVnr4HqBCNAxP8OYEap
+=L+gf
+-----END PGP SIGNATURE-----
 
-Changes since v1:
-
-Reworked to use the pvclock_gtod notifier to sync the wallclock (this
-looked similar to what a KVM host does).  update_persistent_clock()
-will now only update the CMOS RTC.
-
-David
-
+--8JMtXNYTIIy8Rvxv--
