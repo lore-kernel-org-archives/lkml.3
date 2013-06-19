@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab3FSA2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 20:28:06 -0400
-Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:43550
-	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932824Ab3FSA2D (ORCPT
+	id S933732Ab3FSAiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 20:38:09 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:62006 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824Ab3FSAiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 20:28:03 -0400
-Message-Id: <201306190016.r5J0Gosh032063@eskarina.iko.pp.se>
-From: Anders Hammarquist <iko@iko.pp.se>
-Date: Wed, 19 Jun 2013 01:45:48 +0200
-Subject: [PATCH 1/2] Add product id for Abbott strip port cable for Precision
- meter which uses the TI 3410 chip.
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Wed, 19 Jun 2013 02:16:52 +0200 (MEST)
+	Tue, 18 Jun 2013 20:38:06 -0400
+Date: Wed, 19 Jun 2013 08:38:02 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: [PATCH] ceph: fix sleeping function called from invalid context.
+References: <201306181930448773810@gmail.com>, 
+	<alpine.DEB.2.00.1306180807210.23632@cobra.newdream.net>
+X-Priority: 3
+X-GUID: F08EB29F-F164-4E2A-ADF1-17D2BE0C32E6
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201306190837590546663@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5J0cfp3004852
 
-Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
----
- drivers/usb/serial/ti_usb_3410_5052.c |    3 ++-
- drivers/usb/serial/ti_usb_3410_5052.h |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+>On Tue, 18 Jun 2013, majianpeng wrote:
+>> [ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+>> [ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
+>> [ 1121.231971] 1 lock held by mv/9831:
+>> [ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+>> [ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
+>> [ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
+>> O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+>> [ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
+>> [ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
+>> [ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
+>> [ 1121.232056] Call Trace:
+>> [ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
+>> [ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
+>> [ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
+>> [ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
+>> [ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
+>> [ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
+>> [ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
+>> [ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+>> [ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
+>> [ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+>> [ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
+>> [ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
+>> [ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
+>> [ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
+>> [ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
+>> [ 1121.232154] 1 lock held by mv/9831:
+>> [ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
+>> [<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+>> 
+>> I think move the ci->i_ceph_lock down is safe because we can't free
+>> ceph_inode_info at there.
+>> 
+>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>> ---
+>>  fs/ceph/xattr.c | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
+>> index 9b6b2b6..4efde06 100644
+>> --- a/fs/ceph/xattr.c
+>> +++ b/fs/ceph/xattr.c
+>> @@ -675,7 +675,6 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
+>>         if (!ceph_is_valid_xattr(name))
+>>                 return -ENODATA;
+>>  
+>> -       spin_lock(&ci->i_ceph_lock);
+>>         dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
+>>              ci->i_xattrs.version, ci->i_xattrs.index_version);
+>
+>Unfortunately these intervening lines neext i_ceph_lock to prevent the 
+>i_xattrs struct contents from shifting underneath us.  It is more 
+IMHO,for those line
+>         vxattr = ceph_match_vxattr(inode, name);
+>         if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
+>                 err = vxattr->getxattr_cb(ci, value, size);
+It's no need to protect by i_ceph_lock.
+Can you expalin in detail?
+>expensive for the general getxattr case, but a simpler fix is to take 
+>map_sem outside of i_ceph_lock.
+[snip]
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index c92c5ed..e581c25 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -172,7 +172,8 @@ static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
--	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STEREO_PLUG_ID) },
-+	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
- 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
-index b353e7e..4a2423e 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -52,7 +52,9 @@
- 
- /* Abbott Diabetics vendor and product ids */
- #define ABBOTT_VENDOR_ID		0x1a61
--#define ABBOTT_PRODUCT_ID		0x3410
-+#define ABBOTT_STEREO_PLUG_ID		0x3410
-+#define ABBOTT_PRODUCT_ID		ABBOTT_STEREO_PLUG_ID
-+#define ABBOTT_STRIP_PORT_ID		0x3420
- 
- /* Commands */
- #define TI_GET_VERSION			0x01
--- 
-1.7.10.4
 
+Thanks
+Jianpeng MaˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
