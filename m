@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935083Ab3FSS1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:27:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37441 "EHLO comal.ext.ti.com"
+	id S935100Ab3FSS1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:27:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935067Ab3FSS1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:27:09 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: [RFC 2/2] i2c: gpio: drop class based instantiation of slaves
-Date: Wed, 19 Jun 2013 21:22:12 +0300
-Message-ID: <1371666132-29655-2-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371666132-29655-1-git-send-email-grygorii.strashko@ti.com>
-References: <1370596166-12404-1-git-send-email-wsa@the-dreams.de>
- <1371666132-29655-1-git-send-email-grygorii.strashko@ti.com>
+	id S934963Ab3FSS13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:27:29 -0400
+Date: Wed, 19 Jun 2013 21:28:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] virtio-pci: fix leaks of msix_affinity_masks
+Message-ID: <20130619182809.GC15017@redhat.com>
+References: <1371657588-2782922-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371657588-2782922-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Class based instantiation mechanism can cause huge delays when booting.
-For example: when CONFIG_SENSORS_LM75 option is enabled for or omap5-uevm board,
-where i2c-gpio is used for HDMI edid reading - it introduces up to 5 sec boot
-delay.
-It's not recommended to use this mechanism with embedded I2C, so disable it by
-leaving I2C adapter "class" field undefined (remove I2C_CLASS_HWMON and
-I2C_CLASS_SPD) and add a deprecation warning to allow users, relying on this
-mechanism, to switch to something better.
+On Wed, Jun 19, 2013 at 07:59:48PM +0400, Andrew Vagin wrote:
+> vp_dev->msix_vectors should be initialized before allocating
+> msix_affinity_masks, otherwise vp_free_vectors will not free these
+> objects.
+> 
+> unreferenced object 0xffff88010f969d88 (size 512):
+>   comm "systemd-udevd", pid 158, jiffies 4294673645 (age 80.545s)
+>   hex dump (first 32 bytes):
+>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>   backtrace:
+>     [<ffffffff816e455e>] kmemleak_alloc+0x5e/0xc0
+>     [<ffffffff811aa7f1>] kmem_cache_alloc_node_trace+0x141/0x2c0
+>     [<ffffffff8133ba23>] alloc_cpumask_var_node+0x23/0x80
+>     [<ffffffff8133ba8e>] alloc_cpumask_var+0xe/0x10
+>     [<ffffffff813fdb3d>] vp_try_to_find_vqs+0x25d/0x810
+>     [<ffffffff813fe171>] vp_find_vqs+0x81/0xb0
+>     [<ffffffffa00d2a05>] init_vqs+0x85/0x120 [virtio_balloon]
+>     [<ffffffffa00d2c29>] virtballoon_probe+0xf9/0x1a0 [virtio_balloon]
+>     [<ffffffff813fb61e>] virtio_dev_probe+0xde/0x140
+>     [<ffffffff814452b8>] driver_probe_device+0x98/0x3a0
+>     [<ffffffff8144566b>] __driver_attach+0xab/0xb0
+>     [<ffffffff814432f4>] bus_for_each_dev+0x94/0xb0
+>     [<ffffffff81444f4e>] driver_attach+0x1e/0x20
+>     [<ffffffff81444910>] bus_add_driver+0x200/0x280
+>     [<ffffffff81445c14>] driver_register+0x74/0x160
+>     [<ffffffff813fb7d0>] register_virtio_driver+0x20/0x40
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  drivers/virtio/virtio_pci.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index a7ce730..3c0a6ef 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -309,6 +309,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
+>  	unsigned i, v;
+>  	int err = -ENOMEM;
+>  
+> +	vp_dev->msix_vectors = nvectors;
+> +
+>  	vp_dev->msix_entries = kmalloc(nvectors * sizeof *vp_dev->msix_entries,
+>  				       GFP_KERNEL);
+>  	if (!vp_dev->msix_entries)
+> @@ -336,7 +338,6 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
+>  		err = -ENOSPC;
+>  	if (err)
+>  		goto error;
+> -	vp_dev->msix_vectors = nvectors;
+>  	vp_dev->msix_enabled = 1;
+>  
+>  	/* Set the vector used for configuration */
 
-CC: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/i2c/busses/i2c-gpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This introduces a bug.
+The assumption was that vp_free_vectors is only set if
+msix is successfully enabled, so it's not cleared
+by vp_free_vectors.
+So there are places like vp_synchronize_vectors
+that assume that msix_vectors is only set if msix works
+fine.
 
-diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
-index bc6e139..33e3d0e 100644
---- a/drivers/i2c/busses/i2c-gpio.c
-+++ b/drivers/i2c/busses/i2c-gpio.c
-@@ -215,7 +215,7 @@ static int i2c_gpio_probe(struct platform_device *pdev)
- 		snprintf(adap->name, sizeof(adap->name), "i2c-gpio%d", pdev->id);
+If you change the assumption, and assign msix_vectors even
+if msix can later fail, need too clear it unconditionally.
+Like this (untested)
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index 03564fe..4236d92 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -289,9 +289,9 @@ static void vp_free_vectors(struct virtio_device *vdev)
  
- 	adap->algo_data = bit_data;
--	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
-+	adap->class = I2C_CLASS_DEPRECATED;
- 	adap->dev.parent = &pdev->dev;
- 	adap->dev.of_node = pdev->dev.of_node;
+ 		pci_disable_msix(vp_dev->pci_dev);
+ 		vp_dev->msix_enabled = 0;
+-		vp_dev->msix_vectors = 0;
+ 	}
  
--- 
-1.7.9.5
++	vp_dev->msix_vectors = 0;
+ 	vp_dev->msix_used_vectors = 0;
+ 	kfree(vp_dev->msix_names);
+ 	vp_dev->msix_names = NULL;
 
+
+> -- 
+> 1.7.1
