@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803Ab3FSVZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 17:25:43 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:50933 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934566Ab3FSVZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 17:25:41 -0400
+	id S935156Ab3FSV3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 17:29:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20365 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934566Ab3FSV27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 17:28:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,899,1363158000"; 
+   d="scan'208";a="356311109"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Robert Richter" <rric@kernel.org>
+Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBCAAHyTAP//kUdQgACKGAD//4yfcAAQQVUAAA5rtIA=
+Date: Wed, 19 Jun 2013 21:28:50 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA884F0@ORSMSX106.amr.corp.intel.com>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130619175728.2852.73156.stgit@localhost.localdomain>
+ <20130619180441.GK28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
+ <20130619183640.GL28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
+ <20130619201438.GM28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA8838B@ORSMSX106.amr.corp.intel.com>
+ <20130619210706.GP28300@pd.tnic>
+In-Reply-To: <20130619210706.GP28300@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVVGdDMxO5RmHSzAcB_cu49EQFiNLxswS7U0Nt5-J774w@mail.gmail.com>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1371128589-8953-17-git-send-email-tangchen@cn.fujitsu.com>
-	<20130618015806.GY32663@mtj.dyndns.org>
-	<CAE9FiQVVGdDMxO5RmHSzAcB_cu49EQFiNLxswS7U0Nt5-J774w@mail.gmail.com>
-Date: Wed, 19 Jun 2013 14:25:41 -0700
-X-Google-Sender-Auth: PKzN43341fU31h_V6Bi1Byrts3Q
-Message-ID: <CAE9FiQVYwiFXanN0tbR=_=VDUn75DvfGsFPHbrYsPM3CWBaaQg@mail.gmail.com>
-Subject: Re: [Part1 PATCH v5 16/22] x86, mm, numa: Move numa emulation
- handling down.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, Prarit Bhargava <prarit@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JLTBJQ012889
 
-On Mon, Jun 17, 2013 at 11:22 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Jun 17, 2013 at 6:58 PM, Tejun Heo <tj@kernel.org> wrote:
->> On Thu, Jun 13, 2013 at 09:03:03PM +0800, Tang Chen wrote:
->>> From: Yinghai Lu <yinghai@kernel.org>
->>>
->>> numa_emulation() needs to allocate buffer for new numa_meminfo
->>> and distance matrix, so execute it later in x86_numa_init().
->>>
->>> Also we change the behavoir:
->>>       - before this patch, if user input wrong data in command
->>>         line, it will fall back to next numa probing or disabling
->>>         numa.
->>>       - after this patch, if user input wrong data in command line,
->>>         it will stay with numa info probed from previous probing,
->>>         like ACPI SRAT or amd_numa.
->>>
->>> We need to call numa_check_memblks to reject wrong user inputs early
->>> so that we can keep the original numa_meminfo not changed.
->>
->> So, this is another very subtle ordering you're adding without any
->> comment and I'm not sure it even makes sense because the function can
->> fail after that point.
+> Ok, where is that semantics? What in a CPER record does say "this error
+> should tell you that you need to offline the containing page and I'm
+> telling you this exactly only once"? Error Severity 0, i.e. Recoverable?
 
-the new numa_emulation will call numa_check_memblks at first before
-touch numa_meminfo.
-if it fails, numa_meminfo is not touched, so that should not a problem.
+Naveen - this one is for you (or for your BIOS team).  Can you get us a sample
+CPER that you plan to provide when the BIOS decides that its threshold has
+been exceeded?  How will it be different from what old WSM-EX platforms
+were sending to us?  Hopefully the answer is encoded in the CPER record
+and not in some code we have to put in Linux to say "if (IBMplatform) do_thing_1(); else ... "
 
->
-> Yes, if it fail, we will stay with current numa info from firmware.
-> That looks like right behavior.
->
-> Before this patch, it will fail to next numa way like if acpi srat + user
-> input fail, it will try to go with amd_numa then try apply user info.
+> Ok, we're talking about the S in RAS now. Do we have error recovery
+> strategies specified anywhere? Are they per-platform or generic? Is this
+> CPER strategy above, for example, only valid for some platforms or for
+> all APEI-using hardware?
 
-For numa emulation fail sequence, want to double check what should be
-right seuence:
+mcelog(8) daemon has been doing this for years ... but it used the "predictive
+failure analysis" buzzwords that were popular way back then (today the
+marketing people seem to prefer "self healing" ). Whatever the name, the
+concept is the same ... take some set of corrected event reports and infer
+from them that something worse may happen soon, and use that information
+to try to avoid the (possibly) impending crash.
 
-on and before 2.6.38:
-   emulation ==> acpi ==> amd ==> dummy
-so if emulation with wrong input, will fall back to acpi numa.
+> Questions over questions...
 
-from 2.6.39
-   acpi (emulation) ==> amd (emulation) ==> dummy (emulation)
-if emulation with wrong input, it will fall back to next numa discovery.
+Questions are good - they help fill out gaps
 
-after my patchset
-will be acpi ==> amd ==> dummy
-          emulation.
-the new emulation will call numa_check_memblks at first before touch
-numa_meminfo.
-anyway if emulation fails, numa_meminfo is not touched.
-
-so this change looks like right change.
-
-Thanks
-
-Yinghai
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
