@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3FSOqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:46:24 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:40243 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab3FSOqX (ORCPT
+	id S1756865Ab3FSOrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:47:41 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:5440 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab3FSOrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:46:23 -0400
-Date: Wed, 19 Jun 2013 16:46:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, acme@redhat.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
-Message-ID: <20130619144621.GW6123@two.firstfloor.org>
-References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
- <1366485563-16209-16-git-send-email-andi@firstfloor.org>
- <20130619085159.GA25177@concordia>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619085159.GA25177@concordia>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 19 Jun 2013 10:47:39 -0400
+Message-ID: <1371653237.22206.12.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Remove the use of
+ CONFIG_ACPI_HOTPLUG_MEMORY_MODULE
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 19 Jun 2013 08:47:17 -0600
+In-Reply-To: <51C13703.8040909@jp.fujitsu.com>
+References: <1371589605-15638-1-git-send-email-toshi.kani@hp.com>
+	 <51C13703.8040909@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This hard coded list isn't going to work for us on powerpc.
+On Wed, 2013-06-19 at 13:43 +0900, Yasuaki Ishimatsu wrote:
+> 2013/06/19 6:06, Toshi Kani wrote:
+> > config ACPI_HOTPLUG_MEMORY has been changed to bool (y/n), and
+> > its module option is no longer valid.  So, remove the use of
+> > CONFIG_ACPI_HOTPLUG_MEMORY_MODULE.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > ---
+> >   include/linux/acpi.h |    3 +--
+> >   1 file changed, 1 insertion(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> > index 17b5b59..353ba25 100644
+> > --- a/include/linux/acpi.h
+> > +++ b/include/linux/acpi.h
+> > @@ -352,8 +352,7 @@ extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
+> >   
+> >   /* Enable _OST when all relevant hotplug operations are enabled */
+> >   #if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
+> > -	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
+> > -	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
+> > +	defined(CONFIG_ACPI_HOTPLUG_MEMORY) &&		\
+> >   	defined(CONFIG_ACPI_CONTAINER)
+> >   #define ACPI_HOTPLUG_OST
+> >   #endif
+> > --
+> Good catch!!
 > 
-> We don't have HLE, so we won't ever have an event for el-start.
-> 
-> I don't quite grok what the cycles-ct is about, checkpointed cycles?
+> Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-The counter is check pointed on a transaction start, and set back to
-the checkpoint when an abort happens. This allows to count the cycles
-wasted in aborts, when you subtract from cycles-t.
+Thanks Yasuaki!
+-Toshi
 
-> But I don't think we have anything equivalent.
 
-But you have cycles-t and tx-start?
-
-I can make el-start, cycles-ct optional
-
-> I guess the simplest option is to make it a per-arch list inside the
-> perf tool?
-
-I'm not sure that would be acceptable to the perf maintainers.
-Although I'm just guessing, I haven't heard any comments on
-this patch recently.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
