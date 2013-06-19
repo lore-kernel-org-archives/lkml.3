@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282Ab3FSDos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 23:44:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:46955 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933990Ab3FSDop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 23:44:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-In-Reply-To: <1371522772.22681.140.camel@ul30vt.home>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru> <1370412673-1345-4-git-send-email-aik@ozlabs.ru> <1371422343.21896.143.camel@pasglop> <1371438800.22681.38.camel@ul30vt.home> <1371441361.21896.152.camel@pasglop> <1371522772.22681.140.camel@ul30vt.home>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 19 Jun 2013 13:05:43 +0930
-Message-ID: <87txkun568.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934235Ab3FSDrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 23:47:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52556 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933861Ab3FSDro (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 23:47:44 -0400
+Date: Wed, 19 Jun 2013 13:47:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: linux-next: manual merge of the block tree with the cgroup tree
+Message-Id: <20130619134733.fcb49f4df20ec60cf51d6588@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Jun_2013_13_47_33_+1000_O3Z.pyPrY.Kh1jbZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Williamson <alex.williamson@redhat.com> writes:
-> On Mon, 2013-06-17 at 13:56 +1000, Benjamin Herrenschmidt wrote:
->> On Sun, 2013-06-16 at 21:13 -0600, Alex Williamson wrote:
->> 
->> > IOMMU groups themselves don't provide security, they're accessed by
->> > interfaces like VFIO, which provide the security.  Given a brief look, I
->> > agree, this looks like a possible backdoor.  The typical VFIO way to
->> > handle this would be to pass a VFIO file descriptor here to prove that
->> > the process has access to the IOMMU group.  This is how /dev/vfio/vfio
->> > gains the ability to setup an IOMMU domain an do mappings with the
->> > SET_CONTAINER ioctl using a group fd.  Thanks,
->> 
->> How do you envision that in the kernel ? IE. I'm in KVM code, gets that
->> vfio fd, what do I do with it ?
->> 
->> Basically, KVM needs to know that the user is allowed to use that iommu
->> group. I don't think we want KVM however to call into VFIO directly
->> right ?
->
-> Right, we don't want to create dependencies across modules.  I don't
-> have a vision for how this should work.  This is effectively a complete
-> side-band to vfio, so we're really just dealing in the iommu group
-> space.  Maybe there needs to be some kind of registration of ownership
-> for the group using some kind of token.  It would need to include some
-> kind of notification when that ownership ends.  That might also be a
-> convenient tag to toggle driver probing off for devices in the group.
-> Other ideas?  Thanks,
+--Signature=_Wed__19_Jun_2013_13_47_33_+1000_O3Z.pyPrY.Kh1jbZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's actually not that bad.
+Hi Jens,
 
-eg. 
+Today's linux-next merge of the block tree got a conflict in
+include/linux/cgroup.h between commit f63674fd0d6a ("cgroup: update
+sane_behavior documentation") from the cgroup tree and commit
+9138125beabb ("blk-throttle: implement proper hierarchy support") from
+the block tree.
 
-struct vfio_container *vfio_container_from_file(struct file *filp)
-{
-        if (filp->f_op != &vfio_device_fops)
-                return ERR_PTR(-EINVAL);
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-        /* OK it really is a vfio fd, return the data. */
-        ....
-}
-EXPORT_SYMBOL_GPL(vfio_container_from_file);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-...
+diff --cc include/linux/cgroup.h
+index e92e647,09f1a14..0000000
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@@ -261,23 -269,15 +261,25 @@@ enum=20
+  	 *
+  	 * - Remount is disallowed.
+  	 *
+ +	 * - "tasks" is removed.  Everything should be at process
+ +	 *   granularity.  Use "cgroup.procs" instead.
+ +	 *
+ +	 * - "release_agent" and "notify_on_release" are removed.
+ +	 *   Replacement notification mechanism will be implemented.
+ +	 *
+ +	 * - rename(2) is disallowed.
+ +	 *
+ +	 * - cpuset: tasks will be kept in empty cpusets when hotplug happens
+ +	 *   and take masks of ancestors with non-empty cpus/mems, instead of
+ +	 *   being moved to an ancestor.
+ +	 *
+ +	 * - cpuset: a task can be moved into an empty cpuset, and again it
+ +	 *   takes masks of ancestors.
+ +	 *
+  	 * - memcg: use_hierarchy is on by default and the cgroup file for
+  	 *   the flag is not created.
++ 	 *
++ 	 * - blkcg: blk-throttle becomes properly hierarchical.
+ -	 *
+ -	 * The followings are planned changes.
+ -	 *
+ -	 * - release_agent will be disallowed once replacement notification
+ -	 *   mechanism is implemented.
+  	 */
+  	CGRP_ROOT_SANE_BEHAVIOR	=3D (1 << 0),
+ =20
 
-inside KVM_CREATE_SPAPR_TCE_IOMMU:
+--Signature=_Wed__19_Jun_2013_13_47_33_+1000_O3Z.pyPrY.Kh1jbZ
+Content-Type: application/pgp-signature
 
-        struct file *vfio_filp;
-        struct vfio_container *(lookup)(struct file *filp);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-        vfio_filp = fget(create_tce_iommu.fd);
-        if (!vfio)
-                ret = -EBADF;
-        lookup = symbol_get(vfio_container_from_file);
-        if (!lookup)
-                ret = -EINVAL;
-        else {
-                container = lookup(vfio_filp);
-                if (IS_ERR(container))
-                        ret = PTR_ERR(container);
-                else
-                        ...
-                symbol_put(vfio_container_from_file);
-        }
+iQIcBAEBCAAGBQJRwSnaAAoJEECxmPOUX5FEC1wP+wd/r0KElsYpxAw/ojU3uuos
+R0KzJO51kkrU6GomVmCIJQlMjeIbsg0W2P0aGedCyuTPvN6vDoHqYOtzumrI5M+F
+bdyh+q0zm5kIjLJtCCYMZsKssfIeckO6q94sC260z8eyLG7fdfLRNkatGXeXF4ZE
+dii0FCbsMTderrPvbCxNlQjsRtXubgp4YOc3jBH7D8+UNYCJSKI2cZ8BagG8Jcqt
+PNnIS/Jfu9stTx9J/1RQQI3gNcIjek4WsBrfq8Sit1CDbmCXHNEVxZd4LyUXCAFV
+EW9GGDFSut1rUakBhD94Hb8iWdxEnriBSSmnvAmOE4nXiChhIrltYpbFmqwQlncE
+cwML5LMDAF4XyApsuHLPubPnC+i9I49nWoHWQWrKpNPgNq+/h3hKEOijhGixnLys
+lyXY3tlQCuC+OhumV7ZyKU128nrwpCg/Qh5SZ+bKRaPVSPxFsjDL7rZ4bNbSFj26
+ug/tRQYSFWxgOEvO8qm1UPXA4sRF0fRT26lblxNYdAvZOZf3vq6NKkgxEp4g2iYw
+Wpyeyg1rIDuXz6Vr7jTHA+VJylfM2iTTihPNJXo2YDFBW9CNq231+hKeDE/n1SWP
+1PeixFgUbpErLvDUm4VVFQjuoXDR4fmCXfIYQvSiUOkwMTqQb9SSDt3ljaKjaOp2
+zbz9QgmnNg0Di3GpuT9V
+=bXEQ
+-----END PGP SIGNATURE-----
 
-symbol_get() won't try to load a module; it'll just fail.  This is what
-you want, since they must have vfio in the kernel to get a valid fd...
-
-Hope that helps,
-Rusty.
-                
+--Signature=_Wed__19_Jun_2013_13_47_33_+1000_O3Z.pyPrY.Kh1jbZ--
