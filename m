@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122Ab3FSB7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:59:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59195 "EHLO song.cn.fujitsu.com"
+	id S934109Ab3FSCAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 22:00:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:45515 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933979Ab3FSBxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933792Ab3FSBxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Jun 2013 21:53:07 -0400
 X-IronPort-AV: E=Sophos;i="4.87,893,1363104000"; 
-   d="scan'208";a="7596286"
+   d="scan'208";a="7596284"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: containers@lists.linux-foundation.org, linux-audit@redhat.com,
         linux-kernel@vger.kernel.org
 Cc: eparis@redhat.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
         sgrubb@redhat.com, aris@redhat.com, matthltc@linux.vnet.ibm.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 02/22] Audit: remove duplicate comments
-Date: Wed, 19 Jun 2013 09:53:34 +0800
-Message-Id: <1371606834-5802-3-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH 05/22] Audit: implement audit self-defined compare function
+Date: Wed, 19 Jun 2013 09:53:37 +0800
+Message-Id: <1371606834-5802-6-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
@@ -29,31 +29,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove it.
+After this patch, audit netlink sockets can
+communicate with each other when they belong
+to the same user namespace.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- kernel/audit.c | 7 -------
- 1 file changed, 7 deletions(-)
+ kernel/audit.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/kernel/audit.c b/kernel/audit.c
-index ad3084c..843e7a2 100644
+index 11b56b7..a411b02 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -1067,13 +1067,6 @@ static void wait_for_auditd(unsigned long sleep_time)
- 	remove_wait_queue(&audit_backlog_wait, &wait);
+@@ -895,6 +895,11 @@ static void audit_receive(struct sk_buff  *skb)
+ 	mutex_unlock(&audit_cmd_mutex);
  }
  
--/* Obtain an audit buffer.  This routine does locking to obtain the
-- * audit buffer, but then no locking is required for calls to
-- * audit_log_*format.  If the tsk is a task that is currently in a
-- * syscall, then the syscall is marked as auditable and an audit record
-- * will be written at syscall exit.  If there is no associated task, tsk
-- * should be NULL. */
--
- /**
-  * audit_log_start - obtain an audit buffer
-  * @ctx: audit_context (may be NULL)
++static bool audit_compare(struct net *net, struct sock *sk)
++{
++	return (sock_net(sk)->user_ns == net->user_ns);
++}
++
+ static int __net_init audit_net_init(struct net *net)
+ {
+ 	struct user_namespace *ns = net->user_ns;
+@@ -907,6 +912,7 @@ static int __net_init audit_net_init(struct net *net)
+ 		 */
+ 		struct netlink_kernel_cfg cfg = {
+ 			.input	= audit_receive,
++			.compare = audit_compare,
+ 		};
+ 
+ 		sk = netlink_kernel_create(net, NETLINK_AUDIT, &cfg);
 -- 
 1.8.1.4
 
