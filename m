@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934144Ab3FSBxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:53:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:3343 "EHLO song.cn.fujitsu.com"
+	id S934129Ab3FSBxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:53:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59195 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934071Ab3FSBxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:53:10 -0400
+	id S934055Ab3FSBxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jun 2013 21:53:08 -0400
 X-IronPort-AV: E=Sophos;i="4.87,893,1363104000"; 
-   d="scan'208";a="7596292"
+   d="scan'208";a="7596289"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: containers@lists.linux-foundation.org, linux-audit@redhat.com,
         linux-kernel@vger.kernel.org
 Cc: eparis@redhat.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
         sgrubb@redhat.com, aris@redhat.com, matthltc@linux.vnet.ibm.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 04/22] netlink: Add compare function for netlink_table
-Date: Wed, 19 Jun 2013 09:53:36 +0800
-Message-Id: <1371606834-5802-5-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH 11/22] Audit: make audit_ever_enabled per user namespace
+Date: Wed, 19 Jun 2013 09:53:43 +0800
+Message-Id: <1371606834-5802-12-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/19 09:51:55,
+ 2013/06/19 09:51:56,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/06/19 09:52:00,
 	Serialize complete at 2013/06/19 09:52:00
@@ -29,177 +29,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we know, netlink sockets are private resource of
-net namespace, they can communicate with each other
-only when they in the same net namespace. this works
-well until we try to add namespace support for other
-subsystems which use netlink.
+We set audit_ever_enabled true after we enabled audit once.
+and if audit_ever_enabled is true, we will allocate audit
+context for task.
 
-Don't like ipv4 and route table.., it is not suited to
-make these subsytems belong to net namespace, Such as
-audit and crypto subsystems,they are more suitable to
-user namespace.
-
-So we must have the ability to make the netlink sockets
-in same user namespace can communicate with each other.
-
-This patch adds a new function pointer "compare" for
-netlink_table, we can decide if the netlink sockets can
-communicate with each other through this netlink_table
-self-defined compare function.
-
-The behavior isn't changed if we don't provide the compare
-function for netlink_table.
+We should decide if to allocate audit context for tasks based on
+if the audit is enabled once in the user namespace which the
+task belongs to.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- include/linux/netlink.h  |  1 +
- net/netlink/af_netlink.c | 32 ++++++++++++++++++++++++--------
- net/netlink/af_netlink.h |  1 +
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ include/linux/user_namespace.h | 1 +
+ kernel/audit.c                 | 7 +++----
+ kernel/auditsc.c               | 5 ++++-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 6358da5..f78b430 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -46,6 +46,7 @@ struct netlink_kernel_cfg {
- 	void		(*input)(struct sk_buff *skb);
- 	struct mutex	*cb_mutex;
- 	void		(*bind)(int group);
-+	bool		(*compare)(struct net *net, struct sock *sk);
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 9972f0f..a2c0a79 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -27,6 +27,7 @@ struct audit_ctrl {
+ 	struct sk_buff_head	queue;
+ 	struct sk_buff_head	hold_queue;
+ 	struct task_struct	*kauditd_task;
++	bool			ever_enabled;
  };
+ #endif
  
- extern struct sock *__netlink_kernel_create(struct net *net, int unit,
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 57ee84d..942d429 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -854,16 +854,23 @@ netlink_unlock_table(void)
- 		wake_up(&nl_table_wait);
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 758b1e8..923fe27 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -78,7 +78,6 @@ static int	audit_initialized;
+ #define AUDIT_OFF	0
+ #define AUDIT_ON	1
+ #define AUDIT_LOCKED	2
+-bool		audit_ever_enabled;
+ 
+ /* Default state when kernel boots without any parameters. */
+ static int	audit_default;
+@@ -313,7 +312,7 @@ static int audit_set_enabled(struct user_namespace *ns, int state)
+ 	rc =  audit_do_config_change("audit_enabled", &ns->audit.enabled,
+ 				     state);
+ 	if (!rc)
+-		audit_ever_enabled |= !!state;
++		ns->audit.ever_enabled |= !!state;
+ 
+ 	return rc;
+ }
+@@ -965,7 +964,6 @@ static int __init audit_init(void)
+ 
+ 	audit_set_user_ns(&init_user_ns);
+ 	audit_initialized = AUDIT_INITIALIZED;
+-	audit_ever_enabled |= !!audit_default;
+ 
+ 	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
+ 
+@@ -987,7 +985,7 @@ static int __init audit_enable(char *str)
+ 
+ 	if (audit_initialized == AUDIT_INITIALIZED) {
+ 		init_user_ns.audit.enabled = audit_default;
+-		audit_ever_enabled |= !!audit_default;
++		init_user_ns.audit.ever_enabled |= !!audit_default;
+ 	} else if (audit_initialized == AUDIT_UNINITIALIZED) {
+ 		printk(" (after initialization)");
+ 	} else {
+@@ -1792,6 +1790,7 @@ void audit_set_user_ns(struct user_namespace *ns)
+ 	skb_queue_head_init(&ns->audit.queue);
+ 	skb_queue_head_init(&ns->audit.hold_queue);
+ 	ns->audit.enabled = audit_default;
++	ns->audit.ever_enabled |= !!audit_default;
  }
  
-+static bool netlink_compare(struct net *net, struct sock *sk)
-+{
-+	return net_eq(sock_net(sk), net);
-+}
-+
- static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
- {
--	struct nl_portid_hash *hash = &nl_table[protocol].hash;
-+	struct netlink_table *table = &nl_table[protocol];
-+	struct nl_portid_hash *hash = &table->hash;
- 	struct hlist_head *head;
- 	struct sock *sk;
+ void audit_free_user_ns(struct user_namespace *ns)
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 8ba8684..3fa69cb 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -938,8 +938,11 @@ int audit_alloc(struct task_struct *tsk)
+ 	struct audit_context *context;
+ 	enum audit_state     state;
+ 	char *key = NULL;
++	struct user_namespace *ns = current_user_ns();
++	/* Use current_user_ns, since this new task may run
++	 * in new user namespace */
  
- 	read_lock(&nl_table_lock);
- 	head = nl_portid_hashfn(hash, portid);
- 	sk_for_each(sk, head) {
--		if (net_eq(sock_net(sk), net) && (nlk_sk(sk)->portid == portid)) {
-+		if (table->compare(net, sk) &&
-+		    (nlk_sk(sk)->portid == portid)) {
- 			sock_hold(sk);
- 			goto found;
- 		}
-@@ -976,7 +983,8 @@ netlink_update_listeners(struct sock *sk)
+-	if (likely(!audit_ever_enabled))
++	if (likely(!ns->audit.ever_enabled))
+ 		return 0; /* Return if not auditing. */
  
- static int netlink_insert(struct sock *sk, struct net *net, u32 portid)
- {
--	struct nl_portid_hash *hash = &nl_table[sk->sk_protocol].hash;
-+	struct netlink_table *table = &nl_table[sk->sk_protocol];
-+	struct nl_portid_hash *hash = &table->hash;
- 	struct hlist_head *head;
- 	int err = -EADDRINUSE;
- 	struct sock *osk;
-@@ -986,7 +994,8 @@ static int netlink_insert(struct sock *sk, struct net *net, u32 portid)
- 	head = nl_portid_hashfn(hash, portid);
- 	len = 0;
- 	sk_for_each(osk, head) {
--		if (net_eq(sock_net(osk), net) && (nlk_sk(osk)->portid == portid))
-+		if (table->compare(net, osk) &&
-+		    (nlk_sk(osk)->portid == portid))
- 			break;
- 		len++;
- 	}
-@@ -1183,7 +1192,8 @@ static int netlink_autobind(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
- 	struct net *net = sock_net(sk);
--	struct nl_portid_hash *hash = &nl_table[sk->sk_protocol].hash;
-+	struct netlink_table *table = &nl_table[sk->sk_protocol];
-+	struct nl_portid_hash *hash = &table->hash;
- 	struct hlist_head *head;
- 	struct sock *osk;
- 	s32 portid = task_tgid_vnr(current);
-@@ -1195,7 +1205,7 @@ retry:
- 	netlink_table_grab();
- 	head = nl_portid_hashfn(hash, portid);
- 	sk_for_each(osk, head) {
--		if (!net_eq(sock_net(osk), net))
-+		if (!table->compare(net, osk))
- 			continue;
- 		if (nlk_sk(osk)->portid == portid) {
- 			/* Bind collision, search negative portid values. */
-@@ -2285,6 +2295,8 @@ __netlink_kernel_create(struct net *net, int unit, struct module *module,
- 		if (cfg) {
- 			nl_table[unit].bind = cfg->bind;
- 			nl_table[unit].flags = cfg->flags;
-+			if (cfg->compare)
-+				nl_table[unit].compare = cfg->compare;
- 		}
- 		nl_table[unit].registered = 1;
- 	} else {
-@@ -2707,6 +2719,7 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
- 	struct sock *s;
- 	struct nl_seq_iter *iter;
-+	struct net *net;
- 	int i, j;
- 
- 	++*pos;
-@@ -2714,11 +2727,12 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 	if (v == SEQ_START_TOKEN)
- 		return netlink_seq_socket_idx(seq, 0);
- 
-+	net = seq_file_net(seq);
- 	iter = seq->private;
- 	s = v;
- 	do {
- 		s = sk_next(s);
--	} while (s && sock_net(s) != seq_file_net(seq));
-+	} while (s && !nl_table[s->sk_protocol].compare(net, s));
- 	if (s)
- 		return s;
- 
-@@ -2730,7 +2744,7 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 
- 		for (; j <= hash->mask; j++) {
- 			s = sk_head(&hash->table[j]);
--			while (s && sock_net(s) != seq_file_net(seq))
-+			while (s && !nl_table[s->sk_protocol].compare(net, s))
- 				s = sk_next(s);
- 			if (s) {
- 				iter->link = i;
-@@ -2923,6 +2937,8 @@ static int __init netlink_proto_init(void)
- 		hash->shift = 0;
- 		hash->mask = 0;
- 		hash->rehash_time = jiffies;
-+
-+		nl_table[i].compare = netlink_compare;
- 	}
- 
- 	netlink_add_usersock_entry();
-diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
-index ed85222..eaa88d1 100644
---- a/net/netlink/af_netlink.h
-+++ b/net/netlink/af_netlink.h
-@@ -73,6 +73,7 @@ struct netlink_table {
- 	struct mutex		*cb_mutex;
- 	struct module		*module;
- 	void			(*bind)(int group);
-+	bool			(*compare)(struct net *net, struct sock *sock);
- 	int			registered;
- };
- 
+ 	state = audit_filter_task(tsk, &key);
 -- 
 1.8.1.4
 
