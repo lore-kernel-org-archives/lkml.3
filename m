@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934631Ab3FSMDN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:03:13 -0400
-Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:55139 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934520Ab3FSMDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:03:05 -0400
-X-Greylist: delayed 1504 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jun 2013 08:03:05 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH 2/8] at_hdmac: prepare clk before calling enable
-Date: Wed, 19 Jun 2013 13:14:54 +0200
-Message-Id: <1371640494-9472-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-References: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 10580925850895153260
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S934652Ab3FSMFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:05:07 -0400
+Received: from smtp0.epfl.ch ([128.178.224.218]:59765 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934297Ab3FSMFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:05:05 -0400
+Message-ID: <51C19E6C.4040802@epfl.ch>
+Date: Wed, 19 Jun 2013 14:05:00 +0200
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <51C19011.5050107@ti.com>
+In-Reply-To: <51C19011.5050107@ti.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+Hello,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/dma/at_hdmac.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+On 06/19/2013 01:03 PM, Roger Quadros wrote:
+> On 06/19/2013 01:10 PM, Benoit Cousson wrote:
+>> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
+>>> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
+>>>> Hi Benoit,
+>>>>
+>>>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
+>>>>> Hi Roger,
+>>>>>
+>>>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
+>>>>>> Provide the RESET and Power regulators for the USB PHY,
+>>>>>> the USB Host port mode and the PHY device.
+>>>>>>
+>>>>>> Also provide pin multiplexer information for the USB host
+>>>>>> pins.
+>>>>>>
+>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>> ---
+>>>>>>     arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
+>>>>>>     1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> index 00cbaa5..7a21e8e 100644
+>>>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> @@ -59,6 +59,42 @@
+>>>>>>                 "AFML", "Line In",
+>>>>>>                 "AFMR", "Line In";
+>>>>>>         };
+>>>>>> +
+>>>>>> +    /* HS USB Port 1 RESET */
+>>>>>> +    hsusb1_reset: hsusb1_reset_reg {
+>>>>>> +        compatible = "regulator-fixed";
+>>>>>> +        regulator-name = "hsusb1_reset";
+>>>>>> +        regulator-min-microvolt = <3300000>;
+>>>>>> +        regulator-max-microvolt = <3300000>;
+>>>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
+>>>>>> +        startup-delay-us = <70000>;
+>>>>>> +        enable-active-high;
+>>>>>> +    };
+>>>>>
+>>>>> Is this really a regulator? Or just a GPIO line used to reset the USB PHY?
+>>>>
+>>>> It is in fact a GPIO line used as reset.
+>>>>>
+>>>>> If this is the case, I don't think it should be represented as a regulator.
+>>>>
+>>>> Why not? I think it fits very well in the regulator device model.
+>>
+>> I'm not sure fitting very well is the correct term.
+>> It works, for sure, but it is no different than when we were trying to abuse the regulator fmwk to enable the 32k clock in phoenix.
+>> It is just a hack.
+>>
+>
+> The only difference is there is a dedicated framework for clocks. Since there is nothing specific to
+> handle reset lines it is left to the driver writer how he wants to manage it.
+>
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index e923cda..19a484a 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -1374,7 +1374,9 @@ static int __init at_dma_probe(struct platform_device *pdev)
- 		err = PTR_ERR(atdma->clk);
- 		goto err_clk;
- 	}
--	clk_enable(atdma->clk);
-+	err = clk_prepare_enable(atdma->clk);
-+	if (err)
-+		goto err_clk_prepare;
- 
- 	/* force dma off, just in case */
- 	at_dma_off(atdma);
-@@ -1475,7 +1477,8 @@ err_pool_create:
- 	platform_set_drvdata(pdev, NULL);
- 	free_irq(platform_get_irq(pdev, 0), atdma);
- err_irq:
--	clk_disable(atdma->clk);
-+	clk_disable_unprepare(atdma->clk);
-+err_clk_prepare:
- 	clk_put(atdma->clk);
- err_clk:
- 	iounmap(atdma->regs);
-@@ -1512,7 +1515,7 @@ static int at_dma_remove(struct platform_device *pdev)
- 		list_del(&chan->device_node);
- 	}
- 
--	clk_disable(atdma->clk);
-+	clk_disable_unprepare(atdma->clk);
- 	clk_put(atdma->clk);
- 
- 	iounmap(atdma->regs);
-@@ -1531,7 +1534,7 @@ static void at_dma_shutdown(struct platform_device *pdev)
- 	struct at_dma	*atdma = platform_get_drvdata(pdev);
- 
- 	at_dma_off(platform_get_drvdata(pdev));
--	clk_disable(atdma->clk);
-+	clk_disable_unprepare(atdma->clk);
- }
- 
- static int at_dma_prepare(struct device *dev)
-@@ -1588,7 +1591,7 @@ static int at_dma_suspend_noirq(struct device *dev)
- 
- 	/* disable DMA controller */
- 	at_dma_off(atdma);
--	clk_disable(atdma->clk);
-+	clk_disable_unprepare(atdma->clk);
- 	return 0;
- }
- 
-@@ -1618,7 +1621,9 @@ static int at_dma_resume_noirq(struct device *dev)
- 	struct dma_chan *chan, *_chan;
- 
- 	/* bring back DMA controller */
--	clk_enable(atdma->clk);
-+	err = clk_prepare_enable(atdma->clk);
-+	if (err)
-+		return err;
- 	dma_writel(atdma, EN, AT_DMA_ENABLE);
- 
- 	/* clear any pending interrupt */
--- 
-1.7.9.5
+There is a proposed binding for gpio-controlled reset lines, but it is 
+not yet merged [1].
+I guess it can fit most usage patterns, and it can be an interesting 
+move in the future.
 
+Regards,
+
+Florian
+
+[1] http://thread.gmane.org/gmane.linux.drivers.devicetree/36830
