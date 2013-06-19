@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab3FSDAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 23:00:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:19253 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933861Ab3FSDAG (ORCPT
+	id S934219Ab3FSDAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 23:00:16 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:62129 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934183Ab3FSDAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 23:00:06 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C11E83.8030902@asianux.com>
-Date: Wed, 19 Jun 2013 10:59:15 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 18 Jun 2013 23:00:13 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
- + local_irq_save, especially when CONFIG_LOCKDEP not defined
+In-Reply-To: <CAFgnuDe1bUub92uE1H9Fc9U7AJCYL=WKdyDe2bg00yEr=kMEbQ@mail.gmail.com>
+References: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
+	<1912850.KuRKhn87Nf@vostro.rjw.lan>
+	<CAFgnuDe1bUub92uE1H9Fc9U7AJCYL=WKdyDe2bg00yEr=kMEbQ@mail.gmail.com>
+Date: Wed, 19 Jun 2013 08:30:11 +0530
+Message-ID: <CAKohpo=ADC_MGpXFp-QssYS70PHwBBA6qzrWhYGEqZeeaZHLDQ@mail.gmail.com>
+Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg.marvell@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Xiaoguang Chen <chenxg@marvell.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19 June 2013 06:50, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+>> On Thursday, June 13, 2013 05:01:58 PM Xiaoguang Chen wrote:
+>>> cpufreq governor stop and start should be kept in sequence.
+>>> If not, there will be unexpected behavior, for example:
+>>>
+>>> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+>>
+>> Please spell cpus as "CPUs".  And please start sequences from capitals.
+>
+> Ok, thanks for the remind
+>
+>>
+>> [Yes, it *really* is a problem.]
 
-When CONFIG_LOCKDEP is not defined, spin_lock_irqsave() is not equal to
-spin_lock() + local_irq_save().
+Just wanted to know the reasoning behind it so that I can remind
+others about it and then argue :)
 
-In __mod_timer(), After call spin_lock_irqsave() with 'base->lock' in
-lock_timer_base(), it may use spin_lock() with the 'new_base->lock'.
+>>> the normal sequence is as below:
+>>>
+>>> 1) Current governor is userspace, one application tries to set
+>>> governor to ondemand. it will call __cpufreq_set_policy in which it
+>>> will stop userspace governor and then start ondemand governor.
+>>
+>> Do I think correctly that this is for all CPUs?
+>
+> From current code design, it is for all CPUs.
 
-It may let original call do_raw_spin_lock_flags() with 'base->lock',
-but new  call LOCK_CONTENDED() with 'new_base->lock'.
-
-In fact, we need both of them call do_raw_spin_lock_flags(), so use
-spin_lock_irqsave() instead of spin_lock() + local_irq_save().
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/timer.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index aa8b964..2550a62 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -754,9 +754,9 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 		if (likely(base->running_timer != timer)) {
- 			/* See the comment in lock_timer_base() */
- 			timer_set_base(timer, NULL);
--			spin_unlock(&base->lock);
-+			spin_unlock_irqrestore(&base->lock, flags);
- 			base = new_base;
--			spin_lock(&base->lock);
-+			spin_lock_irqsave(&base->lock, flags);
- 			timer_set_base(timer, base);
- 		}
- 	}
--- 
-1.7.7.6
+Why? This can be for a single cpu (which would eventually force all
+others CPUs sharing policy with it).
