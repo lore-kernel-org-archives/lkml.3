@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab3FSQrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:47:14 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:59571 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3FSQrM (ORCPT
+	id S1757010Ab3FSQs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:48:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38898 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3FSQs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:47:12 -0400
-Message-ID: <51C1E08C.9040900@gmail.com>
-Date: Wed, 19 Jun 2013 09:47:08 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 12:48:27 -0400
+Date: Wed, 19 Jun 2013 17:48:22 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619164822.GA28240@srcf.ucam.org>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <20130619130434.GB24957@gmail.com>
+ <20130619160804.GB27832@srcf.ucam.org>
+ <20130619161827.GF28300@pd.tnic>
+ <20130619162115.GA28119@srcf.ucam.org>
+ <20130619163804.GG28300@pd.tnic>
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
-References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com> <20130619141008.GA32331@xps8300>
-In-Reply-To: <20130619141008.GA32331@xps8300>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619163804.GG28300@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 07:10 AM, Heikki Krogerus wrote:
-> On Tue, Jun 18, 2013 at 12:12:53PM -0700, David Daney wrote:
->> A few differences needed by OCTEON:
->>
->> o These are DWC UARTS, but have USR at a different offset.
->>
->> o OCTEON must have 64-bit wide register accesses, so we have OCTEON
->>    specific register accessors.
->>
->> o No UCV register, so we hard code some properties.
->>
->> Signed-off-by: David Daney <david.daney@cavium.com>
->
-> <snip>
->
->> @@ -270,10 +301,8 @@ static int dw8250_probe(struct platform_device *pdev)
->>   	uart.port.serial_out = dw8250_serial_out;
->>   	uart.port.private_data = data;
->>
->> -	dw8250_setup_port(&uart);
->> -
->>   	if (pdev->dev.of_node) {
->> -		err = dw8250_probe_of(&uart.port);
->> +		err = dw8250_probe_of(&uart.port, data);
->>   		if (err)
->>   			return err;
->>   	} else if (ACPI_HANDLE(&pdev->dev)) {
->> @@ -284,6 +313,9 @@ static int dw8250_probe(struct platform_device *pdev)
->>   		return -ENODEV;
->>   	}
->>
->> +	if (!data->no_ucv)
->> +		dw8250_setup_port(&uart);
->
-> Moving the dw8250_setup_port() call here breaks dw8250_probe_acpi(). It
-> expects values from the CPR register for the DMA burst size calculation.
->
-> The DMA support can be moved to a separate function. This way it can
-> be called after this point, and it will then be available for both DT
-> and ACPI. I can make a patch tomorrow. That should solve this issue.
->
+On Wed, Jun 19, 2013 at 06:38:04PM +0200, Borislav Petkov wrote:
+> On Wed, Jun 19, 2013 at 05:21:15PM +0100, Matthew Garrett wrote:
+> > Yes, kexec needs a different solution.
+> 
+> No need. If we say, "efi=use_11_map", the 1:1 map will be shoved down
+> SetVirtualAddressMap. Otherwise the high mappings.
 
-I am reworking the patch because other problems were found.  I will try 
-to get this part right in the next version.
+Ah, sure - if we're willing to take an argument then we can leave it at 
+that. But having a stable set of high addresses for UEFI is also an 
+option.
 
-David Daney
+> > Because firmware images don't always update all of the pointers, and
+> > so will crash if the 1:1 mappings aren't present.
+> 
+> Ok, so it sounds like we want to *always* create both mappings but,
+> depending on what we want, to shove down SetVirtualAddressMap a
+> different set. And the 1:1 map will be the optional one which we give
+> SetVirtualAddressMap only when user wants it, i.e. when booting with
+> "efi=1:1_map".
 
+Yup, I think that sounds ideal.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
