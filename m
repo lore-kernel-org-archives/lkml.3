@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab3FSQue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:50:34 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:40120 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756741Ab3FSQuc (ORCPT
+	id S1757288Ab3FSQvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:51:22 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:38875 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab3FSQud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:50:32 -0400
+	Wed, 19 Jun 2013 12:50:33 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH RFC 1/2] spinlock: New spinlock_refcount.h for lockless update of refcount
-Date: Wed, 19 Jun 2013 12:50:04 -0400
-Message-Id: <1371660605-19225-2-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH RFC 2/2] dcache: Locklessly update d_count whenever possible
+Date: Wed, 19 Jun 2013 12:50:05 -0400
+Message-Id: <1371660605-19225-3-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
 References: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
@@ -26,232 +26,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new spinlock_refcount.h header file to be
-included by kernel code that want to do a lockless update of reference
-count protected by a spinlock.
+The current code takes the dentry's d_lock lock whenever the d_count
+reference count is being updated. In reality, nothing big really
+happens until d_count goes to 0 in dput(). So it is not necessary
+to take the lock if the reference count won't go to 0. On the other
+hand, there are cases where d_count should not be updated or was not
+expected to be updated while d_lock was acquired by another thread.
 
-To try to locklessly update the reference count while lock isn't
-acquired by others, the 32-bit count and 32-bit raw spinlock can be
-combined into a single 64-bit word to be updated atomically whenever
-the following conditions are true:
+The new mechanism for locklessly update a reference count in the
+spinlock & reference count combo was used to ensure that the reference
+count was updated locklessly as much as possible.
 
-1. The lock is not taken, i.e. spin_can_lock() returns true.
-2. The value of the count isn't equal to the given non-negative
-   threshold value.
+The offsets of the d_count/d_lock combo are at byte 72 and 88 for
+32-bit and 64-bit SMP systems respectively. In both cases, they are
+8-byte aligned and their combination into a single 8-byte word will
+not introduce a hole that increase the size of the dentry structure.
 
-To maximize the chance of doing lockless update, the inlined
-__lockcnt_add_unless() function calls spin_unlock_wait() before trying
-to do the update.
+This patch has a particular big impact on the short workload of the
+AIM7 benchmark with ramdisk filesystem. The table below show the
+performance improvement to the JPM (jobs per minutes) throughput due
+to this patch on an 8-socket 80-core x86-64 system with a 3.10-rc4
+kernel in a 1/2/4/8 node configuration by using numactl to restrict
+the execution of the workload on certain nodes.
 
-The new code also attempts to do lockless atomic update twice before
-falling back to the old code path of acquring a lock before doing
-the update. It is because there will still be some fair amount of
-contention with only one attempt.
++-----------------+----------------+-----------------+----------+
+|  Configuration  |    Mean JPM    |    Mean JPM     | % Change |
+|                 | Rate w/o patch | Rate with patch |          |
++-----------------+---------------------------------------------+
+|                 |              User Range 10 - 100            |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1596798     |     4721367     | +195.7%  |
+| 4 nodes, HT off |    1653817     |     5020983     | +203.6%  |
+| 2 nodes, HT off |    3802258     |     3813229     |   +0.3%  |
+| 1 node , HT off |    2403297     |     2433240     |   +1.3%  |
++-----------------+---------------------------------------------+
+|                 |              User Range 200 - 1000          |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1070992     |     5878321     | +448.9%  |
+| 4 nodes, HT off |    1367668     |     7578718     | +454.1%  |
+| 2 nodes, HT off |    4554370     |     4614674     |   +1.3%  |
+| 1 node , HT off |    2534826     |     2540622     |   +0.2%  |
++-----------------+---------------------------------------------+
+|                 |              User Range 1100 - 2000         |
++-----------------+---------------------------------------------+
+| 8 nodes, HT off |    1061322     |     6397776     | +502.8%  |
+| 4 nodes, HT off |    1365111     |     6980558     | +411.3%  |
+| 2 nodes, HT off |    4583947     |     4637919     |   +1.2%  |
+| 1 node , HT off |    2563721     |     2587611     |   +0.9%  |
++-----------------+----------------+-----------------+----------+
 
-After including the header file, the LOCK_WITH_REFCOUNT() macro
-should be used to define the spinlock with reference count combo in
-an embedding data structure.  Then the __lockcnt_add_unless() inlined
-function can be used to locklessly update the reference count if the
-lock hasn't be acquired by others.
+It can be seen that with 40 CPUs (4 nodes) or more, this patch can
+significantly improve the short workload performance. With only 1 or
+2 nodes, the performance is similar with or without the patch. The
+short workload also scales pretty well up to 4 nodes with this patch.
 
-Build and boot tests of the new code and the associated dcache changes
-were conducted for the following configurations:
-1. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=n
-2. x86 64-bit SMP, CONFIG_DEBUG_SPINLOCK=y
-3. x86 32-bit UP , CONFIG_DEBUG_SPINLOCK=n
-4. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=n
-5. x86 32-bit SMP, CONFIG_DEBUG_SPINLOCK=y
+A perf call-graph report of the short workload at 1500 users
+without the patch on the same 8-node machine indicates that about
+78% of the workload's total time were spent in the _raw_spin_lock()
+function. Almost all of which can be attributed to the following 2
+kernel functions:
+ 1. dget_parent (49.91%)
+ 2. dput (49.89%)
+
+The relevant perf report lines are:
++  78.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
++   0.09%           reaim  [kernel.kallsyms]     [k] dput
++   0.05%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irq
++   0.00%           reaim  [kernel.kallsyms]     [k] dget_parent
+
+With this patch installed, the new perf report lines are:
++  12.24%           reaim  [kernel.kallsyms]     [k]
+_raw_spin_lock_irqsave
++   4.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
++   3.26%           reaim  [kernel.kallsyms]     [k] dget_parent
++   1.08%           reaim  [kernel.kallsyms]     [k] dput
+
+-   4.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+   - _raw_spin_lock
+      + 34.41% d_path
+      + 33.22% SyS_getcwd
+      + 4.38% prepend_path
+      + 3.71% dget_parent
+      + 2.54% inet_twsk_schedule
+      + 2.44% complete_walk
+      + 2.01% __rcu_process_callbacks
+      + 1.78% dput
+      + 1.36% unlazy_walk
+      + 1.18% do_anonymous_page
+      + 1.10% sem_lock
+      + 0.82% process_backlog
+      + 0.78% task_rq_lock
+      + 0.67% selinux_inode_free_security
+      + 0.60% unix_dgram_sendmsg
+      + 0.54% enqueue_to_backlog
+
+The dput used up only 1.78% of the _raw_spin_lock time while
+dget_parent used only 3.71%. The time spent on dput and dget_parent
+did increase because of busy waiting for unlock as well as the overhead
+of doing cmpxchg operations.
+
+This impact of this patch on other AIM7 workloads were much more
+modest.  The table below show the mean %change due to this patch on
+the same 8-socket system with a 3.10-rc4 kernel.
+
++--------------+---------------+----------------+-----------------+
+|   Workload   | mean % change | mean % change  | mean % change   |
+|              | 10-100 users  | 200-1000 users | 1100-2000 users |
++--------------+---------------+----------------+-----------------+
+| alltests     |      0.0%     |     -0.8%      |     +0.1%       |
+| five_sec     |     -2.4%     |     +1.7%      |     -0.1%       |
+| fserver      |     -1.8%     |     -2.4%      |     -2.1%       |
+| high_systime |     +0.1%     |     +0.7%      |     +2.1%       |
+| new_fserver  |     +0.2%     |     -1.7%      |     -0.9%       |
+| shared       |     -0.1%     |      0.0%      |     -0.1%       |
++--------------+---------------+----------------+-----------------+
+
+There are slight drops in performance for fsever and new_fserver
+workloads, but slight increase in the high_systime workload.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- include/linux/spinlock_refcount.h |  145 +++++++++++++++++++++++++++++++++++++
- include/linux/spinlock_types.h    |   19 +++++
- 2 files changed, 164 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/spinlock_refcount.h
+ fs/dcache.c            |   14 ++++++++++++--
+ include/linux/dcache.h |   22 ++++++++++++++++++++--
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/spinlock_refcount.h b/include/linux/spinlock_refcount.h
-new file mode 100644
-index 0000000..eaf4897
---- /dev/null
-+++ b/include/linux/spinlock_refcount.h
-@@ -0,0 +1,145 @@
-+/*
-+ * Spinlock with reference count combo
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Authors: Waiman Long <waiman.long@hp.com>
-+ */
-+#include <linux/spinlock.h>
-+
-+/*
-+ * The LOCK_WITH_REFCOUNT() macro defines the combined spinlock with reference
-+ * count data structure to be embedded in a larger structure. With unnamed
-+ * structure, the lock and count names can be accessed directly if no field
-+ * name is assigned to the structure. Otherwise, they will have to be accessed
-+ * indirectly via the assigned field name of the combined structure.
-+ *
-+ * The combined data structure is 8-byte aligned. So proper placement of this
-+ * structure in the larger embedding data structure is needed to ensure that
-+ * there is no hole in it.
-+ *
-+ * @lock:   Name of the spinlock
-+ * @count:  Name of the reference count
-+ * @u_name: Name of combined data structure union (can be empty for unnamed
-+ *	    union)
-+ */
-+#ifndef	CONFIG_SMP
-+#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
-+	unsigned int count;				\
-+	spinlock_t   lock
-+
-+#elif defined(__SPINLOCK_HAS_REFCOUNT)
-+#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
-+	union u_name {					\
-+		u64		__lock_count;		\
-+		spinlock_t	lock;			\
-+		struct {				\
-+			arch_spinlock_t __raw_lock;	\
-+			unsigned int	count;		\
-+		};					\
-+	}
-+
-+#else /* __SPINLOCK_HAS_REFCOUNT */
-+#define	LOCK_WITH_REFCOUNT(lock, count, u_name)		\
-+	union u_name {					\
-+		u64		__lock_count;		\
-+		struct {				\
-+			unsigned int	count;		\
-+			spinlock_t	lock;		\
-+		};					\
-+	}
-+
-+#endif /* __SPINLOCK_HAS_REFCOUNT */
-+
-+#ifdef CONFIG_SMP
-+#define	LOCKCNT_COMBO_PTR(s)	(&(s)->__lock_count)
-+
-+/*
-+ * Define a "union _lock_refcnt" structure to be used by the helper function
-+ */
-+LOCK_WITH_REFCOUNT(lock, count, __lock_refcnt);
-+
-+/**
-+ *
-+ * __lockcnt_add_unless - atomically add the given value to the count unless
-+ *			  the lock was acquired or the count equals to the
-+ *			  given threshold value.
-+ *
-+ * @plockcnt : pointer to the combined lock and count 8-byte data
-+ * @plock    : pointer to the spinlock
-+ * @pcount   : pointer to the reference count
-+ * @value    : value to be added
-+ * @threshold: threshold value for acquiring the lock
-+ * Return    : 1 if operation succeed, 0 otherwise
-+ *
-+ * If the lock was not acquired, __lockcnt_add_unless() atomically adds the
-+ * given value to the reference count unless the given threshold is reached.
-+ * If the lock was acquired or the threshold was reached, 0 is returned and
-+ * the caller will have to acquire the lock and update the count accordingly
-+ * (can be done in a non-atomic way).
-+ */
-+static inline int __lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock,
-+				       unsigned int *pcount, int value,
-+				       int threshold)
-+{
-+	union __lock_refcnt old, new;
-+	int   get_lock;
-+
-+	/*
-+	 * Code doesn't work if raw spinlock is larger than 4 bytes
-+	 * or is empty.
-+	 */
-+	BUG_ON((sizeof(arch_spinlock_t) > 4) || (sizeof(arch_spinlock_t) == 0));
-+
-+	spin_unlock_wait(plock);	/* Wait until lock is released */
-+	old.__lock_count = ACCESS_ONCE(*plockcnt);
-+	get_lock = ((threshold >= 0) && (old.count == threshold));
-+	if (likely(!get_lock && spin_can_lock(&old.lock))) {
-+		new.__lock_count = old.__lock_count;
-+		new.count += value;
-+		if (cmpxchg64(plockcnt, old.__lock_count, new.__lock_count)
-+		    == old.__lock_count)
-+			return 1;
-+		cpu_relax();
-+		/*
-+		 * Try one more time
-+		 */
-+		old.__lock_count = ACCESS_ONCE(*plockcnt);
-+		get_lock = ((threshold >= 0) && (old.count == threshold));
-+		if (likely(!get_lock && spin_can_lock(&old.lock))) {
-+			new.__lock_count = old.__lock_count;
-+			new.count += value;
-+			if (cmpxchg64(plockcnt, old.__lock_count,
-+				      new.__lock_count) == old.__lock_count)
-+				return 1;
-+			cpu_relax();
-+		}
-+	}
-+	return 0;	/* The caller will need to acquire the lock */
-+}
-+#else /* CONFIG_SMP */
-+#define	LOCKCNT_COMBO_PTR(s)	NULL
-+
-+/*
-+ * Just add the value as the spinlock is a no-op
-+ */
-+static inline int __lockcnt_add_unless(u64 *plockcnt, spinlock_t *plock,
-+				       unsigned int *pcount, int value,
-+				       int threshold)
-+{
-+	if ((threshold >= 0) && (*pcount == threshold))
-+		return 0;
-+	(*pcount) += value;
-+	return 1;
-+}
-+#endif /* CONFIG_SMP */
-diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
-index 73548eb..cc107ad 100644
---- a/include/linux/spinlock_types.h
-+++ b/include/linux/spinlock_types.h
-@@ -17,8 +17,27 @@
+diff --git a/fs/dcache.c b/fs/dcache.c
+index f09b908..040e99f 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -515,6 +515,8 @@ void dput(struct dentry *dentry)
+ repeat:
+ 	if (dentry->d_count == 1)
+ 		might_sleep();
++	else if (_DPUT(dentry))
++		return;
+ 	spin_lock(&dentry->d_lock);
+ 	BUG_ON(!dentry->d_count);
+ 	if (dentry->d_count > 1) {
+@@ -611,6 +613,8 @@ static inline void __dget_dlock(struct dentry *dentry)
  
- #include <linux/lockdep.h>
+ static inline void __dget(struct dentry *dentry)
+ {
++	if (_DGET(dentry))
++		return;
+ 	spin_lock(&dentry->d_lock);
+ 	__dget_dlock(dentry);
+ 	spin_unlock(&dentry->d_lock);
+@@ -620,17 +624,23 @@ struct dentry *dget_parent(struct dentry *dentry)
+ {
+ 	struct dentry *ret;
+ 
++	rcu_read_lock();
++	ret = rcu_dereference(dentry->d_parent);
++	if (_DGET0(ret)) {
++		rcu_read_unlock();
++		return ret;
++	}
+ repeat:
+ 	/*
+ 	 * Don't need rcu_dereference because we re-check it was correct under
+ 	 * the lock.
+ 	 */
+-	rcu_read_lock();
+-	ret = dentry->d_parent;
++	ret = ACCESS_ONCE(dentry->d_parent);
+ 	spin_lock(&ret->d_lock);
+ 	if (unlikely(ret != dentry->d_parent)) {
+ 		spin_unlock(&ret->d_lock);
+ 		rcu_read_unlock();
++		rcu_read_lock();
+ 		goto repeat;
+ 	}
+ 	rcu_read_unlock();
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 1a6bb81..a1271a2 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -6,6 +6,7 @@
+ #include <linux/rculist.h>
+ #include <linux/rculist_bl.h>
+ #include <linux/spinlock.h>
++#include <linux/spinlock_refcount.h>
+ #include <linux/seqlock.h>
+ #include <linux/cache.h>
+ #include <linux/rcupdate.h>
+@@ -112,8 +113,7 @@ struct dentry {
+ 	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
+ 
+ 	/* Ref lookup also touches following */
+-	unsigned int d_count;		/* protected by d_lock */
+-	spinlock_t d_lock;		/* per dentry lock */
++	LOCK_WITH_REFCOUNT(d_lock, d_count,/**/); /* per dentry lock & count */
+ 	const struct dentry_operations *d_op;
+ 	struct super_block *d_sb;	/* The root of the dentry tree */
+ 	unsigned long d_time;		/* used by d_revalidate */
+@@ -210,6 +210,22 @@ struct dentry_operations {
+ 
+ #define DCACHE_DENTRY_KILLED	0x100000
  
 +/*
-+ * The presence of either one of the CONFIG_DEBUG_SPINLOCK or
-+ * CONFIG_DEBUG_LOCK_ALLOC configuration parameter will force the
-+ * spinlock_t structure to be 8-byte aligned.
-+ *
-+ * To support the spinlock/reference count combo data type for 64-bit SMP
-+ * environment with spinlock debugging turned on, the reference count has
-+ * to be integrated into the spinlock_t data structure in this special case.
-+ * The spinlock_t data type will be 8 bytes larger if CONFIG_GENERIC_LOCKBREAK
-+ * is also defined.
++ * Internal d_count update macros:
++ * _DPUT  - decrements d_count unless it is locked or d_count is 1
++ * _DGET  - increments d_count unless it is locked
++ * _DGET0 - increments d_count unless it is locked or d_count is 0
 + */
-+#if defined(CONFIG_64BIT) && (defined(CONFIG_DEBUG_SPINLOCK) ||\
-+			      defined(CONFIG_DEBUG_LOCK_ALLOC))
-+#define	__SPINLOCK_HAS_REFCOUNT	1
-+#endif
++#define _DPUT(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
++					     &(dentry)->d_lock,		\
++					     &(dentry)->d_count, -1, 1)
++#define _DGET(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
++					     &(dentry)->d_lock,		\
++					     &(dentry)->d_count, 1, -1)
++#define _DGET0(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
++					     &(dentry)->d_lock,		\
++					     &(dentry)->d_count, 1, 0)
 +
- typedef struct raw_spinlock {
- 	arch_spinlock_t raw_lock;
-+#ifdef __SPINLOCK_HAS_REFCOUNT
-+	unsigned int count;
-+#endif
- #ifdef CONFIG_GENERIC_LOCKBREAK
- 	unsigned int break_lock;
- #endif
+ extern seqlock_t rename_lock;
+ 
+ static inline int dname_external(struct dentry *dentry)
+@@ -359,6 +375,8 @@ static inline struct dentry *dget_dlock(struct dentry *dentry)
+ static inline struct dentry *dget(struct dentry *dentry)
+ {
+ 	if (dentry) {
++		if (_DGET(dentry))
++			return dentry;
+ 		spin_lock(&dentry->d_lock);
+ 		dget_dlock(dentry);
+ 		spin_unlock(&dentry->d_lock);
 -- 
 1.7.1
 
