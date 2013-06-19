@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934400Ab3FSJJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:09:48 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48617 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934299Ab3FSJJl (ORCPT
+	id S934514Ab3FSJL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:11:29 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43397 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934300Ab3FSJJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:09:41 -0400
+	Wed, 19 Jun 2013 05:09:47 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 0/7] KVM: MMU: update mmu documentation
-Date: Wed, 19 Jun 2013 17:09:18 +0800
-Message-Id: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 5/7] KVM: MMU: document fast page fault in
+Date: Wed, 19 Jun 2013 17:09:23 +0800
+Message-Id: <1371632965-20077-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061909-5564-0000-0000-0000086CE31C
+x-cbid: 13061909-8256-0000-0000-000007FD5102
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Paolo pointed out that this is the time to update the documentation, this
-patchest does it to let mmu.txt matches with the current mmu implementation
+Document fast page fault to Documentation/virtual/kvm/mmu.txt
 
-Xiao Guangrong (7):
-  KVM: MMU: update the documentation for reverse mapping of parent_pte
-  KVM: MMU: document clear_spte_count
-  KVM: MMU: document write_flooding_count
-  KVM: MMU: document mmio page fault
-  KVM: MMU: document fast page fault in
-  KVM: MMU: document fast invalidate all pages
-  KVM: MMU: document fast invalidate all mmio sptes
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ Documentation/virtual/kvm/mmu.txt | 3 +++
+ 1 file changed, 3 insertions(+)
 
- Documentation/virtual/kvm/mmu.txt | 86 +++++++++++++++++++++++++++++++++++----
- arch/x86/include/asm/kvm_host.h   | 15 +++++++
- arch/x86/kvm/mmu.c                |  7 ++--
- 3 files changed, 97 insertions(+), 11 deletions(-)
-
+diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+index 4fb442b..b5ce7dd 100644
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -275,6 +275,9 @@ Handling a page fault is performed as follows:
+    information is stored and cache the information to vcpu->arch.mmio_gva,
+    vcpu->arch.access and vcpu->arch.mmio_gfn then call the emulator to emulate
+    the instruction who will get the benefit from the cached mmio info
++ - If both P bit and R/W bit of error code are set, there has a chance to
++   fast fix the page fault, please see the description of "Fast page fault" in
++   Documentation/virtual/kvm/locking.txt
+  - if needed, walk the guest page tables to determine the guest translation
+    (gva->gpa or ngpa->gpa)
+    - if permissions are insufficient, reflect the fault back to the guest
 -- 
 1.8.1.4
 
