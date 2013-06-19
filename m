@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935040Ab3FSRNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:13:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25956 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934924Ab3FSRNm (ORCPT
+	id S935048Ab3FSROI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:14:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20456 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935018Ab3FSRNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:13:42 -0400
-Date: Wed, 19 Jun 2013 13:13:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
- is stepped
-Message-ID: <20130619171321.GE13046@phenom.dumpdata.com>
-References: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com>
- <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
- <51C1E1B6.8090203@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C1E1B6.8090203@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 19 Jun 2013 13:13:38 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-71-51c1e6c14fe2
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH v4 7/7] thermal:boost: Disable boost when trip point is reached
+Date: Wed, 19 Jun 2013 19:12:48 +0200
+Message-id: <1371661969-7660-8-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t9jQd2Dzw4GGjxu5rf483Y5q8XTph/s
+	FvM+y1qs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbS43biCzaJ/YS+TxZOH
+	fWwWHUe+MVts/OrhwO+xeM9LJo871/aweayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAexSX
+	TUpqTmZZapG+XQJXxofH65kK5rJXPH9xirWBcRJbFyMnh4SAicSSsweYIGwxiQv31gPFuTiE
+	BKYzSrw88ZwdJCEk0MUkcf1UPIjNJqAn8fnuU7AGEQFfiZ5lh5hAGpgF9rFITP3WwQqSEBbw
+	l7i99QYLiM0ioCox8/ImMJtXwFWi5eFJFoht8hJP7/eBXcEp4CZx/FsX1OZGRom1Gx4wT2Dk
+	XcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOGyfSe1gXNlgcYhRgINRiYdX4/LBQCHW
+	xLLiytxDjBIczEoivEuPAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1DhQSSE8sSc1OTS1I
+	LYLJMnFwSjUwMpzlnr1EavqvhZd2KlXtP2pz472S/4vAF0dEM9v701wPZ2eHv1PQ37VMPba4
+	ROD/2f/TjR2mVMiHnfDJbdhQtHn1hiiTn3lZbVMs/vt3Ov1buYvvxvtUi85staXC4s8nfrjE
+	cm7/Uun9j+p0haW6IoMqv6s4bn7teXX3L+d8lk0Tnx41kX0vq8RSnJFoqMVcVJwIAPpqEMpX	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 09:52:06AM -0700, John Stultz wrote:
-> On 06/19/2013 08:25 AM, David Vrabel wrote:
-> >From: David Vrabel <david.vrabel@citrix.com>
-> >
-> >The high resolution timer code gets notified of step changes to the
-> >system time with clock_was_set() or clock_was_set_delayed() calls.  If
-> >other parts of the kernel require similar notification there is no
-> >clear place to hook into.
-> >
-> >Add a clock_was_set atomic notifier chain
-> >(clock_was_set_notifier_list) and call this in place of
-> >clock_was_set().  If the timekeeping locks are held, the calls are
-> >deferred to a new tasklet.
-> >
-> >The hrtimer code adds a notifier block to this chain and uses it to
-> >call (the now internal) clock_was_set().  Since the timekeeping code
-> >does not call the chain from the timer irq clock_was_set_delayed() and
-> >associated code can be removed.
-> 
-> So on my initial quick review, this *looks* pretty reasonable. I get
-> a little worried about interface abuse (ie: random drivers trying to
-> hook into clock_was_set_notifier_list), but we can move that into
-> timekeeper_internal.h or something similar to limit that.
-> 
-> The other issue here is we've been burned pretty badly in the past
-> with changes to clock_was_set(), as its key to keeping timers in
-> line with timekeeping.  So this will need a fair amount of testing
-> and run time before this gets merged, so 3.12 is what we'd be
-> targeting at the earliest (its getting a bit late for taking changes
-> for 3.11 anyway).
+This patch provides support for disabling cpufreq's boost
+feature when thermal trip point is reached.
 
-I think we have four weeks left? Or you think Linus is going to release
-at the end of the month?
-> 
-> If you want to try to push patch 1/4 in for 3.11 via the Xen tree,
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
-Done.
-> I'll see about queuing the other three for hopefully 3.12.
+Changes for v4:
+- New patch
+---
+ drivers/thermal/cpu_cooling.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-OK, let me run them through the testing gauntleet to have the
-warm fuzzy feeling.
-> 
-> thanks
-> -john
-> 
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index c94bf2e..3bdd870 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -323,6 +323,9 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
+ 	if (cpumask_test_cpu(policy->cpu, &notify_device->allowed_cpus))
+ 		max_freq = notify_device->cpufreq_val;
+ 
++	if (cpufreq_boost_supported())
++		cpufreq_boost_trigger_state(0);
++
+ 	/* Never exceed user_policy.max */
+ 	if (max_freq > policy->user_policy.max)
+ 		max_freq = policy->user_policy.max;
+-- 
+1.7.10.4
+
