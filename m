@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935118Ab3FSXHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 19:07:40 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43413 "EHLO hydra.sisk.pl"
+	id S935295Ab3FSXJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 19:09:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45063 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934170Ab3FSXHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 19:07:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Brown, Len" <len.brown@intel.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Subject: Re: [GIT PULL] Some error injection fixes to queue for 3.11
-Date: Thu, 20 Jun 2013 01:17 +0200
-Message-ID: <1565630.1FKRuXAmOU@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C94838515269@FMSMSX106.amr.corp.intel.com>
-References: <51b20612239358173f@agluck-desk.sc.intel.com> <3908561D78D1C84285E8C5FCA982C28F2DA87F71@ORSMSX106.amr.corp.intel.com> <1A7043D5F58CCB44A599DFD55ED4C94838515269@FMSMSX106.amr.corp.intel.com>
+	id S934170Ab3FSXJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 19:09:50 -0400
+Message-ID: <51C23A2E.1050800@ti.com>
+Date: Wed, 19 Jun 2013 19:09:34 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        <jonghwa3.lee@samsung.com>
+Subject: Re: [PATCH V6 17/30] thermal: exynos: Remove non DT based support
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-18-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1371451599-31035-18-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2BUWUPODRGDMBUSFKENOL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 19, 2013 05:01:52 PM Brown, Len wrote:
-> > >> Pulled, thanks Tony!
-> > >>
-> > >> Len, are you fine with this route [tip:x86/ras tree] for the
-> > >> drivers/acpi/apei/einj.c changes?
-> > >
-> > > Yes, the RAS guys basically own that code.
-> > 
-> > These patches also got picked up by Rafael and are in his ACPI tree
-> > too.  I think the patches were applied identically, so there should not
-> > be any merge conflicts when this all comes back together in the 3.11
-> > merge window.
-> > 
-> > Rafael already had a chat about who will take future apei changes
-> > so that we won't have this happen again.
-> 
-> I think the only real problem with being in two places at once
-> is if the patches _change_.   When that happens, you need to
-> get them _both_ changed, else merge conflict happens at the worst time.
+------enig2BUWUPODRGDMBUSFKENOL
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I dropped the APEI patches from my tree.
+On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+> Recently non DT support from Exynos platform is removed and hence
+> removing non DT support from the driver also. This will help in easy
+> maintainence.
+>=20
+> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Thanks,
-Rafael
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c |   17 +----------------
+>  1 files changed, 1 insertions(+), 16 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
+sung/exynos_tmu.c
+> index acbd295..4356118 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -403,19 +403,6 @@ static const struct of_device_id exynos_tmu_match[=
+] =3D {
+>  MODULE_DEVICE_TABLE(of, exynos_tmu_match);
+>  #endif
+> =20
+> -static struct platform_device_id exynos_tmu_driver_ids[] =3D {
+> -	{
+> -		.name		=3D "exynos4210-tmu",
+> -		.driver_data    =3D (kernel_ulong_t)EXYNOS4210_TMU_DRV_DATA,
+> -	},
+> -	{
+> -		.name		=3D "exynos5250-tmu",
+> -		.driver_data    =3D (kernel_ulong_t)EXYNOS5250_TMU_DRV_DATA,
+> -	},
+> -	{ },
+> -};
+> -MODULE_DEVICE_TABLE(platform, exynos_tmu_driver_ids);
+> -
+>  static inline struct  exynos_tmu_platform_data *exynos_get_driver_data=
+(
+>  			struct platform_device *pdev)
+>  {
+> @@ -428,8 +415,7 @@ static inline struct  exynos_tmu_platform_data *exy=
+nos_get_driver_data(
+>  		return (struct exynos_tmu_platform_data *) match->data;
+>  	}
+>  #endif
+> -	return (struct exynos_tmu_platform_data *)
+> -			platform_get_device_id(pdev)->driver_data;
+> +	return NULL;
+>  }
+> =20
+>  static int exynos_tmu_probe(struct platform_device *pdev)
+> @@ -586,7 +572,6 @@ static struct platform_driver exynos_tmu_driver =3D=
+ {
+>  	},
+>  	.probe =3D exynos_tmu_probe,
+>  	.remove	=3D exynos_tmu_remove,
+> -	.id_table =3D exynos_tmu_driver_ids,
+>  };
+> =20
+>  module_platform_driver(exynos_tmu_driver);
+>=20
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2BUWUPODRGDMBUSFKENOL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlHCOi4ACgkQCXcVR3XQvP2lAgD+OEUIEGdRUqYtNCq15vg0LRgF
+XoaPWVz/i8u5h30Xm0UBAMQ8VWadiEKA1TdT0VPggJkYNO5c8P+/mw5IXL24jfwh
+=tHPJ
+-----END PGP SIGNATURE-----
+
+------enig2BUWUPODRGDMBUSFKENOL--
