@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964851Ab3FSSwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:52:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40078 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964804Ab3FSSkA (ORCPT
+	id S964859Ab3FSSwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:52:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58288 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964807Ab3FSSwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:40:00 -0400
-Date: Wed, 19 Jun 2013 11:39:07 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-ae0def05ed856343181bf1eca4fab3e09056df6d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, dave.hansen@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dave.hansen@linux.intel.com
-In-Reply-To: <20130530174559.0DB049F4@viggo.jf.intel.com>
-References: <20130530174559.0DB049F4@viggo.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Only print PMU state when also WARN()'
- ing
-Git-Commit-ID: ae0def05ed856343181bf1eca4fab3e09056df6d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Jun 2013 14:52:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Daney <ddaney@caviumnetworks.com>
+Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
+Date: Wed, 19 Jun 2013 20:52:09 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, Jamie Iles <jamie@jamieiles.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <2302882.NVjP8DdXWY@wuerfel> <51C1E028.2040700@caviumnetworks.com>
+In-Reply-To: <51C1E028.2040700@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:39:13 -0700 (PDT)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306192052.09575.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZbYxcUpUyS76u1/rRQTN2kLUR9D28x30SfPTuHYQJER
+ WAFUaIwoHq3z+luwzRdlpp7McZt5/snat/+Nntz4UUqTlUBT8F
+ ovyG2KZm46NCfQeflT6Bq8fFCtUafbK/VOf8SeApbhTeOIgkBK
+ lb7gyNWg20jZSqA06ji8eXWzRPhRDbCqyEXq+npMqI6MfmJy4H
+ 9vHmMBFpFQPQDQBGEob+y9wwQQE98q8m3NbiXXVkrZFVJGszWk
+ ARX7qQt8QV8Ido5qrlh5Na+Pxi9SaJnrLWM8hj4WsVh5VCTF8s
+ WnwtkBPBtxQ+TREcDmn1fKVk6wqabG2T7MNRxHyFmoVg8XdLhw
+ dXINtU6n9qW41CcX9DQk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ae0def05ed856343181bf1eca4fab3e09056df6d
-Gitweb:     http://git.kernel.org/tip/ae0def05ed856343181bf1eca4fab3e09056df6d
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 30 May 2013 10:45:59 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 12:50:47 +0200
+On Wednesday 19 June 2013, David Daney wrote:
+> On 06/19/2013 03:01 AM, Arnd Bergmann wrote:
 
-perf/x86: Only print PMU state when also WARN()'ing
+> > It's also wrong to use the
+> > __raw_* variant, which is not guaranteed to be atomic and is not
+> > endian-safe.
+> 
+> We do runtime probing and only use this function on platforms where it 
+> is appropriate, so atomicity is not an issue.  As for endianess, I used 
+> the __raw_ variant precisely because it is correct for both big and 
+> little endian kernels.
 
-intel_pmu_handle_irq() has a warning in it if it does too many
-loops.  It is a WARN_ONCE(), but the perf_event_print_debug()
-call beneath it is unconditional. For the first warning, you get
-a nice backtrace and message, but subsequent ones just dump the
-PMU state with no leading messages.  I doubt this is what was
-intended.
+You don't know what the compiler turns a __raw_writeq into, it could
+always to eight byte wise stores, that's why typically writeq is
+an inline assembly while __raw_writeq is just a pointer dereference.
 
-This patch will only print the PMU state when paired with the
-WARN_ON() text.  It effectively open-codes WARN_ONCE()'s
-one-time-only logic.
+__raw_* never do endian swaps, so it will be wrong on either big-endian
+CPUs or on little-endian CPUs, depending on what the MMIO register
+needs.
 
-My suspicion is that the code really just wants to make sure we
-do not sit in the loop and spit out a warning for every loop
-iteration after the 100th.  From what I've seen, this is very
-unlikely to happen since we also clear the PMU state.
-
-After this patch, instead of seeing the PMU state dumped each
-time, you will just see:
-
-	[57494.894540] perf_event_intel: clearing PMU state on CPU#129
-	[57579.539668] perf_event_intel: clearing PMU state on CPU#10
-	[57587.137762] perf_event_intel: clearing PMU state on CPU#134
-	[57623.039912] perf_event_intel: clearing PMU state on CPU#114
-	[57644.559943] perf_event_intel: clearing PMU state on CPU#118
-	...
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130530174559.0DB049F4@viggo.jf.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index a9e2207..1321cf8 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1188,8 +1188,12 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- again:
- 	intel_pmu_ack_status(status);
- 	if (++loops > 100) {
--		WARN_ONCE(1, "perfevents: irq loop stuck!\n");
--		perf_event_print_debug();
-+		static bool warned = false;
-+		if (!warned) {
-+			WARN(1, "perfevents: irq loop stuck!\n");
-+			perf_event_print_debug();
-+			warned = true;
-+		}
- 		intel_pmu_reset();
- 		goto done;
- 	}
+	Arnd
