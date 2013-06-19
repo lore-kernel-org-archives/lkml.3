@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934313Ab3FSIne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:43:34 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:36569 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933042Ab3FSInc (ORCPT
+	id S934336Ab3FSInl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:43:41 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:49415 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933042Ab3FSIne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:43:32 -0400
-From: Lorenz Haspel <lorenz@badgers.com>
-To: devel@linuxdriverproject.org
-Cc: gregkh@linuxfoundation.org, puff65537@bansheeslibrary.com,
-        viro@zeniv.linux.org.uk, michael.banken@mathe.stud.uni-erlangen.de,
-        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de,
-        Lorenz Haspel <lorenz@badgers.com>
-Subject: [PATCH 1/2 v2] silicom: checkpatch: errors caused by macros
-Date: Wed, 19 Jun 2013 10:43:07 +0200
-Message-Id: <1371631388-27679-1-git-send-email-lorenz@badgers.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130618183212.GA8182@kroah.com>
-References: <20130618183212.GA8182@kroah.com>
+	Wed, 19 Jun 2013 04:43:34 -0400
+Date: Wed, 19 Jun 2013 09:43:29 +0100
+From: "matt@console-pimps.org" <matt@console-pimps.org>
+To: Zachary Bobroff <zacharyb@ami.com>
+Cc: "'Jan Beulich'" <jbeulich@suse.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, Joey Lee <JLee@suse.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
+Message-ID: <20130619084329.GA5386@console-pimps.org>
+References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
+ <1371139233.6523.272.camel@linux-s257.site>
+ <20130617092107.GA5440@console-pimps.org>
+ <51BEF71402000078000DEC12@nat28.tlf.novell.com>
+ <20130617101745.GB8569@console-pimps.org>
+ <51BF08CD02000078000DEC99@nat28.tlf.novell.com>
+ <20130617123052.GE8569@console-pimps.org>
+ <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com>
+ <51C068C1020000780009C995@nat28.tlf.novell.com>
+ <7BD74F8E52BFD147B6C83AE7A1E893FFE286040C@atlms1.us.megatrends.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7BD74F8E52BFD147B6C83AE7A1E893FFE286040C@atlms1.us.megatrends.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed checkpatch error:
-added parenthesis around complex macro.
+On Tue, 18 Jun, at 10:12:22PM, Zachary Bobroff wrote:
+> > Okay, I'm fine with that aspect then. Let's hope everyone plays by
+> > that rule.
+> This is all according to specification, so if they are not following
+> these rules they should be corrected.  The link to where the current
+> public version of the specification is available is here:
+> http://www.uefi.org/specs/agreement
+ 
+While I agree that the vendor should be informed if their implementation
+deviates from the spec in some way, the Linux kernel usually still needs
+to support these nonconforming machines once they end up in the hands of
+consumers (which is often the point at which we discover these kinds of
+issues). Sadly, we're still not in a position where firmware updates can
+be applied from OEMs ubiquitously, either because machines are End of
+Life'd or because the update needs to be run from Windows.
 
-Macro with return was only used once in the code,
-so I expandet it in-place.
+We tend to adopt the approach of: let's try this until we get reports of
+a class of machines where this solution doesn't work.
 
-Signed-off-by: Lorenz Haspel <lorenz@badgers.com>
-Signed-off-by: Michael Banken <michael.banken@mathe.stud.uni-erlangen.de>
----
-v2: expanded macro in-place
----
- drivers/staging/silicom/bpctl_mod.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+Though I do find it refreshing to hear engineers talking about the UEFI
+spec in such black and white terms. That is certainly the ideal we
+should be aiming for.
 
-diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-index a0ea241..75672af 100644
---- a/drivers/staging/silicom/bpctl_mod.c
-+++ b/drivers/staging/silicom/bpctl_mod.c
-@@ -43,11 +43,6 @@ MODULE_DESCRIPTION(BP_MOD_DESCR);
- MODULE_VERSION(BP_MOD_VER);
- spinlock_t bpvm_lock;
- 
--#define lock_bpctl()					\
--if (down_interruptible(&bpctl_sema)) {			\
--	return -ERESTARTSYS;				\
--}							\
--
- #define unlock_bpctl()					\
- 	up(&bpctl_sema);
- 
-@@ -5398,7 +5393,8 @@ static long device_ioctl(struct file *file,	/* see include/linux/fs.h */
- 	static bpctl_dev_t *pbpctl_dev;
- 
- 	/* lock_kernel(); */
--	lock_bpctl();
-+	if (down_interruptible(&bpctl_sema))
-+		return -ERESTARTSYS;
- 	/* local_irq_save(flags); */
- 	/* if(!spin_trylock_irqsave(&bpvm_lock)){
- 	   local_irq_restore(flags);
-@@ -7855,7 +7851,8 @@ int bypass_proc_create_dev_sd(bpctl_dev_t *pbp_device_block)
- 	}
- 	current_pfs->bypass_entry = procfs_dir;
- 
--#define ENTRY(x) ret |= procfs_add(#x, &x##_ops, pbp_device_block)
-+#define ENTRY(x) (ret |= procfs_add(#x, &x##_ops, pbp_device_block))
-+
- 	ENTRY(bypass_info);
- 	if (pbp_device_block->bp_caps & SW_CTL_CAP) {
- 		/* Create set param proc's */
+> > Why by one? Splitting some 'free memory' block may result in an
+> > increase by more then one afaict. Assuming the increment can only be
+> > one is >implying you having knowledge of the allocator
+> > implementation and behavior, which shouldn't be made use of in
+> > kernel code.
+> We had to actually increment it by two to get it to work correctly.
+> This is all based upon the use of the low_alloc routine in the linux
+> kernel file.  I agree there is still some outstanding issue based upon
+> this, but we put it through several different types of tests and it
+> continued to work correctly.  The truest solution would be to us the
+> AllocateMaxAddress parameter when using AllocatePages. 
+
+[...]
+
+> It was my understanding that the point of this was to allocate the
+> memory map below a certain address in memory because the kernel
+> required it.  Matt, can you comment here?  I am not aware of what
+> address it needs to be below, but using this function should do the
+> trick.  Also, if you want to inform me better of what memory ceiling
+> restrictions there are at this early stage of the kernel, I can
+> rewrite the file without the need of the low_alloc routine entirely.
+
+The most important restriction is that all allocations in the EFI boot
+stub need to be below the 1GB mark, because only the first 1GB of
+virtual memory is mapped, unless certain flags are set in the xloadflags
+field of the boot_params header. See Documentation/x86/boot.txt.
+
+Further to that, I think I remember some restrictions on the location of
+the cmdline pointer - that it needs to be below 0xa0000. Again,
+Documentation/x86/boot.xt should have all the info you need.
+
 -- 
-1.7.10.4
-
+Matt Fleming, Intel Open Source Technology Center
