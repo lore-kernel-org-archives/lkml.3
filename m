@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935107Ab3FSUkf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:40:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60299 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934714Ab3FSUkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:40:33 -0400
-Message-ID: <51C2173E.3080405@suse.cz>
-Date: Wed, 19 Jun 2013 22:40:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S935134Ab3FSUnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:43:50 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55313 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934858Ab3FSUnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 16:43:49 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 19 Jun 2013 13:43:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Nightly stable builds [Was: fec: Fix build for MCF5272]
+Message-ID: <20130619204348.GA7314@roeck-us.net>
+References: <1371575099-2962-1-git-send-email-linux@roeck-us.net>
+ <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [pull request] Pull request for branch yem-kconfig-for-next
-References: <cover.1371595499.git.yann.morin.1998@free.fr>
-In-Reply-To: <cover.1371595499.git.yann.morin.1998@free.fr>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5CU57Jqtzt2ZX=TYiemn5okASo4GU_zer+j736J8yj0OQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 19.6.2013 00:44, Yann E. MORIN napsal(a):
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+On Wed, Jun 19, 2013 at 10:42:36AM -0300, Fabio Estevam wrote:
+> Hi Guenter,
 > 
-> Hello Michal, All!
+> FYI
 > 
-> These are the patches against kconfig that I have accumulated for 3.11,
-> and for which I plan to later send a proper pull-request.
+> I asked Stephen to include m5272c3_defconfig as part of his daily
+> build and now it is available:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/8991795/
 > 
-> Note-whorthy this time:
->   - fix values of tristates that are selected by boolean choices (Arve)
->   - fix choice randomisation in presence of KCONFIG_ALLCONFIG    (me)
->   - fix choice randomisation selecting more than one value in
->     a choice (but only if it is conditional)                     (me)
->   - fix choice-in-a-choice randomisation not selecting any value
->     for the inner-most choice                                    (me)
-> 
-> Also, some code-cleanups and eye-candy:
->   - mconf and nconf code cleanups                                (Dirk, Sedat)
->   - mconf and nconf eye-candy                                    (Dirk)
->   - scripts/config script-name in help text                      (Clément)
->   - heuristic to sort found symbols by relevance                 (me)
->   - more randconfig debugging help                               (me)
-> 
-> Note: this series is for review before I send an official pull-request.
-> I want to avoid the debacle [0] [1] of the last kconfig breakage I caused
-> with my previous kconfig "fix" to randomising choices in presence of
-> KCONFIG_ALLCONFIG.
-> 
-> I would like to send an official pull-request early next week, so all of
-> these can land early in -next, so they get some real-life t4esting before
-> the next merge windows open. So please, please, test this carefully. ;-)
+Nice front-end.
 
-I tested this a bit, it works fine. Unless somebody else finds issues,
-I'll merge it.
+Greg, would it be useful to set up something similar for pending stable builds ?
+I have back-end code doing that running on one of my servers at home, but no
+web front-end.
+
+Any idea whom to talk to to set this up ? Stephen ? Michael ?
 
 Thanks,
-Michal
-
+Guenter
