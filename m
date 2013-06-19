@@ -1,111 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3FSOVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:21:31 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:42779 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab3FSOVa (ORCPT
+	id S1756880Ab3FSOZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:25:48 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:47332 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756731Ab3FSOZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:21:30 -0400
+	Wed, 19 Jun 2013 10:25:47 -0400
+Date: Wed, 19 Jun 2013 14:25:46 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: do not put a slab to cpu partial list when
+ cpu_partial is 0
+In-Reply-To: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <0000013f5cd3b621-8f7f97fb-f97e-4498-9e1e-40feaa7be0b7-000000@email.amazonses.com>
+References: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
-References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
-	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
-	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
-	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
-	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
-	<CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
-	<CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
-Date: Wed, 19 Jun 2013 16:21:29 +0200
-Message-ID: <CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.06.19-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 June 2013 19:15, Colin Cross <ccross@android.com> wrote:
-> On Tue, Jun 18, 2013 at 6:17 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> On 17 June 2013 20:33, Colin Cross <ccross@android.com> wrote:
->>> This is a generic requirement for using a kernel with autosleep
->>> enabled.  Autosleep will enter suspend whenever there is no wakeup
->>> source/wakelock held.  Consider the following sequence:
->>>
->>> Kernel is suspended
->>> Card is inserted, triggering a wakeup interrupt, which is an implicit
->>> wakeup source until it is handled
->>
->> I don't think a card insert/remove irq need to be configured as a
->> wakeup interrupt. As you say, it will force a resume to detect the
->> card, but for what reason?
->> Instead, I think it it better to leave the card detection to be
->> handled at the next resume, thus not resuming the system when not
->> needed.
->
-> That decision is going to be different on each device.  On Android
-> devices it has been configured as a wakeup interrupt.  This patch is
-> necessary on devices that want to handle the event as a wakeup event,
-> and has negligible impact on those that do not.
->
->>> Kernel starts resuming, resumes the mmc driver
->>> The mmc driver enables its interrupt, which is immediately handled and
->>> queues an event to be handled by userspace
->>> At this point the wakeup interrupt is handled and gone, and no wakeup
->>> sources are being held, so the kernel can choose to go back to
->>> suspend, so userspace can't handle the insertion event until the
->>> kernel wakes up for another reason.
->>
->> Is this a problem? From my point of view it should be perfectly
->> acceptable to let userspace handle the event at the next resume/wakeup
->> instead. Don't you think so?
->
-> Depends what userspace is doing.  If userspace would like to provide
-> the user some feedback on the event, then it has to be a wakeup
-> interrupt, and it has to hold a wakelock until it has passed the event
-> to userspace.
+On Wed, 19 Jun 2013, Joonsoo Kim wrote:
 
-It seems like a bad idea that an insertion of an SD card should
-trigger the display to be light up. That is indirectly in principle
-what you suggest should happen from user space once a new SD card is
-found. Right?
+> In free path, we don't check number of cpu_partial, so one slab can
+> be linked in cpu partial list even if cpu_partial is 0. To prevent this,
+> we should check number of cpu_partial in put_cpu_partial().
 
-I have been working with Android for several years, we never used this
-kind of setup. Instead we wait for the user to press the "display on"
-button. At that time the confirmation will be received. Not saying
-that this is the only way of doing it, but it seems to be an accepted
-solution for all our customers.
+Acked-by: Christoph Lameeter <cl@linux.com>
 
-I agree to that this patch should have negligible impact though - if
-we get things right. I will try to review the code in more detail
-soon.
-
-Kind regards
-Ulf Hansson
-
->
->>>
->>> In general, an event that is triggered by a wakeup interrupt that is
->>> being passed from the kernel to userspace needs to have a wakeup
->>> source held while the event is queued.
->>
->> That's sounds reasonable. Would it then make sense to hold a generic
->> wakeup source in the "suspend/resume core", once a wakeup interrupt is
->> fetched?
->
-> No, the suspend/resume core can only hold a wakeup source until it has
-> handed the event off to the driver, at which point it is the driver's
-> responsibility to hold a wakeup source.  The suspend/resume core
-> cannot tell if the event was handled by the driver or will be passed
-> to userspace.
