@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934251Ab3FSIwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:52:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:46920 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933820Ab3FSIwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:52:03 -0400
-Date: Wed, 19 Jun 2013 18:51:59 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, acme@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 15/15] perf, tools: Add perf stat --transaction v3
-Message-ID: <20130619085159.GA25177@concordia>
-References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
- <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+	id S934112Ab3FSIwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:52:39 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64569 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933755Ab3FSIwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:52:33 -0400
+X-AuditID: 9c930197-b7beaae000004876-c2-51c1714f21b0
+Date: Wed, 19 Jun 2013 17:52:50 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: do not put a slab to cpu partial list when
+ cpu_partial is 0
+Message-ID: <20130619085250.GC12231@lge.com>
+References: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <51c1652d.246e320a.4057.ffffed4fSMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366485563-16209-16-git-send-email-andi@firstfloor.org>
+In-Reply-To: <51c1652d.246e320a.4057.ffffed4fSMTPIN_ADDED_BROKEN@mx.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 20, 2013 at 12:19:23PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Wed, Jun 19, 2013 at 04:00:32PM +0800, Wanpeng Li wrote:
+> On Wed, Jun 19, 2013 at 03:33:55PM +0900, Joonsoo Kim wrote:
+> >In free path, we don't check number of cpu_partial, so one slab can
+> >be linked in cpu partial list even if cpu_partial is 0. To prevent this,
+> >we should check number of cpu_partial in put_cpu_partial().
+> >
 > 
-> Add support to perf stat to print the basic transactional execution statistics:
-> Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-> using the intx and intx_checkpoint qualifiers.
-> Transaction Starts and Elision Starts, to compute the average transaction length.
+> How about skip get_partial entirely? put_cpu_partial is called 
+> in two paths, one is during refill cpu partial lists in alloc 
+> slow path, the other is in free slow path. And cpu_partial is 0 
+> just in debug mode. 
 > 
-> This is a reasonable overview over the success of the transactions.
+> - alloc slow path, there is unnecessary to call get_partial 
+>   since cpu partial lists won't be used in debug mode. 
+> - free slow patch, new.inuse won't be true in debug mode 
+>   which lead to put_cpu_partial won't be called.
 > 
-> Enable with a new --transaction / -T option.
+
+In debug mode, put_cpu_partial() can't be called already on both path.
+But, if we assign 0 to cpu_partial via sysfs, put_cpu_partial() will be called
+on free slow path. On alloc slow path, it can't be called, because following
+test in get_partial_node() is always failed.
+
+available > s->cpu_partial / 2
+
+Thanks.
+
+> Regards,
+> Wanpeng Li 
 > 
-> This requires measuring these events in a group, since they depend on each
-> other.
+> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >
+> >diff --git a/mm/slub.c b/mm/slub.c
+> >index 57707f0..7033b4f 100644
+> >--- a/mm/slub.c
+> >+++ b/mm/slub.c
+> >@@ -1955,6 +1955,9 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+> > 	int pages;
+> > 	int pobjects;
+> >
+> >+	if (!s->cpu_partial)
+> >+		return;
+> >+
+> > 	do {
+> > 		pages = 0;
+> > 		pobjects = 0;
+> >-- 
+> >1.7.9.5
+> >
+> >--
+> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >the body to majordomo@kvack.org.  For more info on Linux MM,
+> >see: http://www.linux-mm.org/ .
+> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
-> This is implemented by using TM sysfs events exported by the kernel
-
-Hi Andi,
-
-I think this still hasn't gone upstream, so I thought I'd just jump in
-and comment for powerpc ...
-
-> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> index 7e910ba..5053c1a 100644
-> --- a/tools/perf/builtin-stat.c
-> +++ b/tools/perf/builtin-stat.c
-> @@ -70,6 +70,30 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
->  static void print_counter(struct perf_evsel *counter, char *prefix);
->  static void print_aggr(char *prefix);
->  
-> +/* Default events used for perf stat -T */
-> +static const char * const transaction_attrs[] = {
-> +	"task-clock",
-> +	"{"
-> +	"instructions,"
-> +	"cycles,"
-> +	"cpu/cycles-t/,"
-> +	"cpu/cycles-ct/,"
-> +	"cpu/tx-start/,"
-> +	"cpu/el-start/"
-> +	"}"
-> +};
-
-This hard coded list isn't going to work for us on powerpc.
-
-We don't have HLE, so we won't ever have an event for el-start.
-
-I don't quite grok what the cycles-ct is about, checkpointed cycles? But
-I don't think we have anything equivalent.
-
-I guess the simplest option is to make it a per-arch list inside the
-perf tool?
-
-cheers
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
