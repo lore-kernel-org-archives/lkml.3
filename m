@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab3FSP6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:58:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757039Ab3FSP6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:58:39 -0400
-Date: Wed, 19 Jun 2013 17:54:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] hw_breakpoint: Introduce "struct bp_cpuinfo"
-Message-ID: <20130619155404.GB9176@redhat.com>
-References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130602194912.GA3277@redhat.com> <20130602195057.GC3277@redhat.com> <20130618123741.GC17619@somewhere.redhat.com> <20130618144225.GA26920@redhat.com> <20130618170145.GI17619@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618170145.GI17619@somewhere.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757111Ab3FSP6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:58:38 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:40851 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab3FSP6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:58:36 -0400
+Message-ID: <1371657511.3252.324.camel@edumazet-glaptop>
+Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
+ queues by using flex array
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net, edumazet@google.com,
+        hkchu@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 19 Jun 2013 08:58:31 -0700
+In-Reply-To: <20130619154059.GA13735@redhat.com>
+References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
+	 <1371620452-49349-2-git-send-email-jasowang@redhat.com>
+	 <1371623518.3252.267.camel@edumazet-glaptop>
+	 <20130619091132.GA2816@redhat.com>
+	 <1371635763.3252.289.camel@edumazet-glaptop>
+	 <20130619154059.GA13735@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Frederic Weisbecker wrote:
->
-> On Tue, Jun 18, 2013 at 04:42:25PM +0200, Oleg Nesterov wrote:
-> >
-> > Simplest example,
-> >
-> > 	for_each_possible_cpu(cpu)
-> > 		total_count = per_cpu(per_cpu_count, cpu);
-> >
-> > Every per_cpu() likely means the cache miss. Not to mention we need the
-> > additional math to calculate the address of the local counter.
-> >
-> > 	for_each_possible_cpu(cpu)
-> > 		total_count = bootmem_or_kmalloc_array[cpu];
-> >
-> > is much better in this respect.
-> >
-> > And note also that per_cpu_count above can share the cacheline with
-> > another "hot" per-cpu variable.
->
-> Ah I see, that's good to know.
->
-> But these variables are supposed to only be touched from slow path
-> (perf events syscall, ptrace breakpoints creation, etc...), right?
-> So this is probably not a problem?
+On Wed, 2013-06-19 at 18:40 +0300, Michael S. Tsirkin wrote:
 
-Yes, sure. But please note that this can also penalize other CPUs.
-For example, toggle_bp_slot() writes to per_cpu(nr_cpu_bp_pinned),
-this invalidates the cachline which can contain another per-cpu
-variable.
+> That's a good trick too - vmalloc memory is a bit slower
+> on x86 since it's not using a huge page, but that's only
+> when we have lots of CPUs/queues...
+> 
+> Short term - how about switching to vmalloc if > 32 queues?
 
-But let me clarify. I agree, this all is minor, I am not trying to
-say this change can actually improve the performance.
+You do not have to switch "if > 32 queues"
 
-The main point of this patch is to make the code look a bit better,
-and you seem to agree. The changelog mentions s/percpu/array/ only
-as a potential change which obviously needs more discussion, I didnt
-mean that we should necessarily do this.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index fa007db..473cc9e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -130,6 +130,7 @@
+ #include <linux/cpu_rmap.h>
+ #include <linux/static_key.h>
+ #include <linux/hashtable.h>
++#include <linux/vmalloc.h>
+ 
+ #include "net-sysfs.h"
+ 
+@@ -5253,6 +5254,14 @@ static void netdev_init_one_queue(struct net_device *dev,
+ #endif
+ }
+ 
++static void netif_free_tx_queues(struct net_device *dev)
++{
++	if (is_vmalloc_addr(dev->_tx))
++		vfree(dev->_tx);
++	else
++		kfree(dev->_tx);
++}
++
+ static int netif_alloc_netdev_queues(struct net_device *dev)
+ {
+ 	unsigned int count = dev->num_tx_queues;
+@@ -5261,9 +5270,11 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
+ 	BUG_ON(count < 1);
+ 
+ 	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
+-	if (!tx)
+-		return -ENOMEM;
+-
++	if (!tx) {
++		tx = vzalloc(count * sizeof(struct netdev_queue));
++		if (!tx)
++			return -ENOMEM;
++	}
+ 	dev->_tx = tx;
+ 
+ 	netdev_for_each_tx_queue(dev, netdev_init_one_queue, NULL);
+@@ -5811,7 +5822,7 @@ free_all:
+ 
+ free_pcpu:
+ 	free_percpu(dev->pcpu_refcnt);
+-	kfree(dev->_tx);
++	netif_free_tx_queues(dev);
+ #ifdef CONFIG_RPS
+ 	kfree(dev->_rx);
+ #endif
+@@ -5836,7 +5847,7 @@ void free_netdev(struct net_device *dev)
+ 
+ 	release_net(dev_net(dev));
+ 
+-	kfree(dev->_tx);
++	netif_free_tx_queues(dev);
+ #ifdef CONFIG_RPS
+ 	kfree(dev->_rx);
+ #endif
 
-Although yes, personally I really dislike per-cpu in this case, but
-of course this is subjective and I won't argue ;)
-
-Oleg.
 
