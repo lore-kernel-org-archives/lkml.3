@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab3FSQ3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:29:00 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:50863 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab3FSQ27 (ORCPT
+	id S934805Ab3FSQar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:30:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57070 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264Ab3FSQaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:28:59 -0400
-Message-ID: <1371659333.3252.329.camel@edumazet-glaptop>
-Subject: RE: [net-next rfc 1/3] net: avoid high order memory allocation for
- queues by using flex array
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
-        davem@davemloft.net, edumazet@google.com, hkchu@google.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 19 Jun 2013 09:28:53 -0700
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B729A@saturn3.aculab.com>
-References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
-	 <1371620452-49349-2-git-send-email-jasowang@redhat.com>
-	 <1371623518.3252.267.camel@edumazet-glaptop>
-	 <20130619091132.GA2816@redhat.com>
-	 <1371635763.3252.289.camel@edumazet-glaptop>
-	 <20130619154059.GA13735@redhat.com>
-	 <1371657511.3252.324.camel@edumazet-glaptop>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B729A@saturn3.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 19 Jun 2013 12:30:46 -0400
+Date: Wed, 19 Jun 2013 09:30:43 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, arm@kernel.org,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over
+ global devices
+Message-ID: <20130619163043.GA6300@codeaurora.org>
+References: <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
+ <51B0A6E8.20909@linaro.org>
+ <20130606180425.GQ599@codeaurora.org>
+ <51B10D85.1060507@linaro.org>
+ <20130606223848.GR599@codeaurora.org>
+ <20130612214435.GE10823@codeaurora.org>
+ <51B991EF.70800@linaro.org>
+ <alpine.LFD.2.02.1306131331430.22970@ionos>
+ <20130613183950.GA32061@codeaurora.org>
+ <20130618102257.GH6809@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618102257.GH6809@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 17:06 +0100, David Laight wrote:
+Thomas,
 
-> Given the number of places I've seen this code added, why
-> not put it in a general helper?
+On 06/18, Mark Rutland wrote:
+> On Thu, Jun 13, 2013 at 07:39:50PM +0100, Stephen Boyd wrote:
+> > On 06/13, Thomas Gleixner wrote:
+> > > On Thu, 13 Jun 2013, Daniel Lezcano wrote:
+> > > > I prefer Thomas to have a look at it and ack it. I changed Cc to To for
+> > > > Thomas.
+> > > 
+> > > The patch does not apply on tip timers/core. The code has been
+> > > reworked a month ago. Please work against tip timers/core. That's
+> > > where this stuff ends up.
+> > > 
+> > 
+> > Ah, I thought your patch series had stalled. Here is a refreshed
+> > patch. Every other patch in this series applies cleanly to tip
+> > timers/core so I don't want to resend them again unless
+> > absolutely necessary.
+> > 
+> > -----8<-----
+> > Subject: [PATCH v8] clockevents: Prefer CPU local devices over global devices
+> > 
+> > On an SMP system with only one global clockevent and a dummy
+> > clockevent per CPU we run into problems. We want the dummy
+> > clockevents to be registered as the per CPU tick devices, but
+> > we can only achieve that if we register the dummy clockevents
+> > before the global clockevent or if we artificially inflate the
+> > rating of the dummy clockevents to be higher than the rating
+> > of the global clockevent. Failure to do so leads to boot
+> > hangs when the dummy timers are registered on all other CPUs
+> > besides the CPU that accepted the global clockevent as its tick
+> > device and there is no broadcast timer to poke the dummy
+> > devices.
+> > 
+> > If we're registering multiple clockevents and one clockevent is
+> > global and the other is local to a particular CPU we should
+> > choose to use the local clockevent regardless of the rating of
+> > the device. This way, if the clockevent is a dummy it will take
+> > the tick device duty as long as there isn't a higher rated tick
+> > device and any global clockevent will be bumped out into
+> > broadcast mode, fixing the problem described above.
+> > 
+> > Reported-by: Mark Rutland <mark.rutland@arm.com>
+> > Cc: John Stultz <john.stultz@linaro.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> I've just tested this atop of tip/timers/core on a tc2, using only the
+> sp804. As previously, without the patch boot hangs, and with the patch
+> I'm able to reach userspace and do useful things.
+> 
+> Tested-by: Mark Rutland <mark.rutland@arm.com>
+> 
+> Thanks for working on this, Stephen.
 
-Good luck with that. We had many attempts in the past.
+Can you pick up the first two patches in this series please? And
+preferably make a stable branch that can be pulled into arm-soc?
+Then I can send the rest through the arm-soc tree.
 
-> I also thought that malloc() with GFP_KERNEL would sleep.
-> Under what conditions does it fail instead?
-
-For example on 32 bit kernel, LOW memory exhaustion/fragmentation.
-
-vmalloc() has an extra 128MB virtual space (on i386 at least with
-standard 3G/1G split)
-
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
