@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934039Ab3FSBTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:19:08 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:5626 "EHLO
+	id S934037Ab3FSBTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:19:04 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:5601 "EHLO
 	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3FSBTF (ORCPT
+	with ESMTP id S932644Ab3FSBTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:19:05 -0400
+	Tue, 18 Jun 2013 21:19:01 -0400
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: akpm@linux-foundation.org, riel@redhat.com, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
 Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 10/11] ipc,msg: drop msg_unlock
-Date: Tue, 18 Jun 2013 18:18:35 -0700
-Message-Id: <1371604716-3439-11-git-send-email-davidlohr.bueso@hp.com>
+Subject: [PATCH 08/11] ipc,shm: shorten critical region for shmat
+Date: Tue, 18 Jun 2013 18:18:33 -0700
+Message-Id: <1371604716-3439-9-git-send-email-davidlohr.bueso@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
 References: <1371604716-3439-1-git-send-email-davidlohr.bueso@hp.com>
@@ -21,37 +21,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is only one user left, drop this function and just call
-ipc_unlock_object() and rcu_read_unlock().
+Similar to other system calls, acquire the kern_ipc_perm lock
+after doing the initial permission and security checks.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- ipc/msg.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ ipc/shm.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 80d8aa7..091fa2b 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -70,8 +70,6 @@ struct msg_sender {
+diff --git a/ipc/shm.c b/ipc/shm.c
+index d1b3ebf..2fe6170 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -19,6 +19,9 @@
+  * namespaces support
+  * OpenVZ, SWsoft Inc.
+  * Pavel Emelianov <xemul@openvz.org>
++ *
++ * Better ipc lock (kern_ipc_perm.lock) handling
++ * Davidlohr Bueso <davidlohr.bueso@hp.com>, June 2013.
+  */
  
- #define msg_ids(ns)	((ns)->ids[IPC_MSG_IDS])
+ #include <linux/slab.h>
+@@ -1086,7 +1089,8 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	 * additional creator id...
+ 	 */
+ 	ns = current->nsproxy->ipc_ns;
+-	shp = shm_lock_check(ns, shmid);
++	rcu_read_lock();
++	shp = shm_obtain_object_check(ns, shmid);
+ 	if (IS_ERR(shp)) {
+ 		err = PTR_ERR(shp);
+ 		goto out;
+@@ -1100,11 +1104,13 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	if (err)
+ 		goto out_unlock;
  
--#define msg_unlock(msq)		ipc_unlock(&(msq)->q_perm)
--
- static void freeque(struct ipc_namespace *, struct kern_ipc_perm *);
- static int newque(struct ipc_namespace *, struct ipc_params *);
- #ifdef CONFIG_PROC_FS
-@@ -270,7 +268,8 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 	expunge_all(msq, -EIDRM);
- 	ss_wakeup(&msq->q_senders, 1);
- 	msg_rmid(ns, msq);
--	msg_unlock(msq);
-+	ipc_unlock_object(&msq->q_perm);
++	ipc_lock_object(&shp->shm_perm);	
+ 	path = shp->shm_file->f_path;
+ 	path_get(&path);
+ 	shp->shm_nattch++;
+ 	size = i_size_read(path.dentry->d_inode);
+-	shm_unlock(shp);
++	ipc_unlock_object(&shp->shm_perm);	
 +	rcu_read_unlock();
  
- 	list_for_each_entry_safe(msg, t, &msq->q_messages, m_list) {
- 		atomic_dec(&ns->msg_hdrs);
+ 	err = -ENOMEM;
+ 	sfd = kzalloc(sizeof(*sfd), GFP_KERNEL);
+@@ -1175,7 +1181,7 @@ out_nattch:
+ 	return err;
+ 
+ out_unlock:
+-	shm_unlock(shp);
++	rcu_read_unlock();
+ out:
+ 	return err;
+ }
 -- 
 1.7.11.7
 
