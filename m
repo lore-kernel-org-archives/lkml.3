@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab3FSUOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:14:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57994 "EHLO mail.skyhub.de"
+	id S934947Ab3FSUTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:19:42 -0400
+Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:36581
+	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756847Ab3FSUOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:14:46 -0400
-Date: Wed, 19 Jun 2013 22:14:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Message-ID: <20130619201438.GM28300@pd.tnic>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
- <20130619175728.2852.73156.stgit@localhost.localdomain>
- <20130619180441.GK28300@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
- <20130619183640.GL28300@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
+	id S1756845Ab3FSUTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 16:19:40 -0400
+X-Originating-IP: [86.2.11.244]
+X-Spam: 0
+X-Authority: v=2.0 cv=RN7rhPe+ c=1 sm=1 a=n6O9K/ebToSnNVE6TGWEMw==:17
+ a=xFrwVLZJWjEA:10 a=NeM3mFqpoN0A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10
+ a=NLZqzBF-AAAA:8 a=eQPKN83LY6YA:10 a=NUpyhFhM5mD7V6ozJkMA:9 a=wPNLvfGTeEIA:10
+ a=_dQi-Dcv4p4A:10 a=n6O9K/ebToSnNVE6TGWEMw==:117
+Message-ID: <51C21253.2070308@ntlworld.com>
+Date: Wed, 19 Jun 2013 21:19:31 +0100
+From: Stephen Moorby <steve.moorby@ntlworld.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: jiri@resnulli.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers/net: param for lapbether for specific ethernet
+ device
+References: <1371655613-31969-1-git-send-email-steve.moorby@ntlworld.com> <20130619.121802.2112053686285060471.davem@davemloft.net>
+In-Reply-To: <20130619.121802.2112053686285060471.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 07:05:16PM +0000, Luck, Tony wrote:
-> > Why, fill out struct mce and do mce_log(mce) does not suffice?
-> 
-> There is (or should be)
+I will be using an Ubuntu 10.04 kernel with the 'eth_dev' module 
+parameter patch.  I appreciate a better solution needs to be designed 
+but it is not one I can contribute to.  I still advocate the patch as an 
+improvement on the current non functional situation.
 
-Ha!
-
-> a lot more interesting stuff in the CPER than just the address. Stuff
-> that we don't have fields for in the existing mcelog structure. We
-> also need to treat filtered records from modern APEI implementations a
-> bit differently from the old stuff.
-
-Great, the CPER record is described in the UEFI spec. Those BIOS people
-are all like a mafia.
-
-Ok, seriously: so the situation should still be fine, FF reported errors
-get the CPER format while the rest, the "old" MCE format.
-
-cper.c is doing printk so I'm guessing it would need to get its own
-tracepoint and carry that to userspace.
-
-Concerning the RAS daemon, Robert and I are making good progress so once
-we have the persistent events in perf, we can read that tracepoint in
-userspace and do whatever we want with the error info.
-
-> The original user of this code was Westmere-EX, which used it as a
-> workaround for a missing address in MCi_ADDR for corrected errors.
-> So in that scenario we had every error being reported and mcelog(8)
-> deamon doing the threshold analysis to decide when to take action.
+On 19/06/13 20:18, David Miller wrote:
+> From: Stephen Moorby <steve.moorby@ntlworld.com>
+> Date: Wed, 19 Jun 2013 16:26:53 +0100
 >
-> In this new modern world - Naveen wants to have the BIOS decide the
-> threshold, so we'd like Linux to take some action as soon as it sees
-> just one CPER.
+>> The lapbether driver binds to the first ethernet device that comes up.
+>> This causes problems in hardware with multiple ethernet interfaces,
+>> potentially resulting in the LAPB traffic on the wrong interface.
+>> Have added a module parameter 'eth_dev' to specify the ethernet
+>> interface over which lapbether should operate.  The module behaves
+>> as before if no device is specified.
+>>
+>> Patch created on linux-next 18-Jun-2013.
+>> Tested on 2.6.32-45-generic.
+>>
+>> Signed-off-by: Stephen Moorby <steve.moorby@ntlworld.com>
+> I rejected this patch last night, stating that module parameters are
+> deeply discouraged and therefore you need to create a runtime mechanism
+> to control this.
+>
 
-Why would Linux have to intervene if it is doing FF - wasn't the deal
-behind Firmware First for the firmware to get the error first and handle
-accordingly?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
