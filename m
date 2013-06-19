@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934590Ab3FSL5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:57:21 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:33617 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934052Ab3FSL5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:57:17 -0400
-Date: Wed, 19 Jun 2013 13:57:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>
-Subject: Re: [GIT PULL] Some error injection fixes to queue for 3.11
-Message-ID: <20130619115702.GC10599@gmail.com>
-References: <51b20612239358173f@agluck-desk.sc.intel.com>
+	id S934608Ab3FSL6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:58:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934052Ab3FSL6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 07:58:19 -0400
+Message-ID: <51C19CD2.3080608@redhat.com>
+Date: Wed, 19 Jun 2013 13:58:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51b20612239358173f@agluck-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 3/7] KVM: MMU: document write_flooding_count
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1371632965-20077-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
+> Document write_flooding_count to Documentation/virtual/kvm/mmu.txt
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  Documentation/virtual/kvm/mmu.txt | 8 ++++++++
+>  arch/x86/include/asm/kvm_host.h   | 5 +++++
+>  2 files changed, 13 insertions(+)
+> 
+> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+> index ce6df51..5a6b2e2 100644
+> --- a/Documentation/virtual/kvm/mmu.txt
+> +++ b/Documentation/virtual/kvm/mmu.txt
+> @@ -214,6 +214,14 @@ Shadow pages contain the following information:
+>      It is only used on 32bit host which helps us to detect whether updating the
+>      64bit spte is complete so that we can avoid reading the truncated value out
+>      of mmu-lock.
+> +  write_flooding_count:
+> +    In order to sync the page table between guest and host, the page sometimes
+> +    needs to be write-protected (see "Synchronized and unsynchronized pages"
+> +    below), any write to the page can cause write emulation. If the emulation
+> +    on the page is too frequent we'd better unmap the page to avoid the
+> +    future emulation. write_flooding_count aims at this optimization which is
+> +    increased when the page needs to be write emulated and cleared when the
+> +    page is actually used.
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+    A guest may write to a page table many times, causing a lot of
+    emulations if the page needs to be write-protected (see "Synchronized
+    and unsynchronized pages" below).  Leaf pages can be unsynchronized
+    so that they do not trigger frequent emulation, but this is not
+    possible for non-leafs.  This field counts the number of emulations
+    since the last time the page table was actually used; if emulation
+    is triggered too frequently on this page, KVM will unmap the page
+    to avoid emulation in the future.
 
-> The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
-> 
->   Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj
-> 
-> for you to fetch changes up to ace3647afb3eca214f6da5d653ad116ff77545b6:
-> 
->   ACPI/APEI: Update einj documentation for param1/param2 (2013-06-06 15:28:11 -0700)
-> 
-> ----------------------------------------------------------------
-> Miscellaneous fixes for ACPI EINJ (error injection) code.
-> 
-> ----------------------------------------------------------------
-> Chen Gong (2):
->       ACPI/APEI: Add parameter check before error injection
->       ACPI/APEI: Update einj documentation for param1/param2
-> 
-> Wei Yongjun (1):
->       ACPI, APEI, EINJ: Fix error return code in einj_init()
-> 
->  Documentation/acpi/apei/einj.txt |  9 +++++++--
->  drivers/acpi/apei/einj.c         | 39 ++++++++++++++++++++++++++++++++++++---
->  kernel/resource.c                |  1 +
->  3 files changed, 44 insertions(+), 5 deletions(-)
+>  Reverse map
+>  ===========
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 1dac2c1..5eb5382 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -234,6 +234,11 @@ struct kvm_mmu_page {
+>  	int clear_spte_count;
+>  #endif
+>  
+> +	/*
+> +	 * Increased when the page needs to be write emulated, cleared
+> +	 * when the page is actually used as page table to avoid frequent
+> +	 * emulation on the page.
+> +	 */
 
-Pulled, thanks Tony!
+        /* Number of writes since the last time traversal visited this page.  */
 
-Len, are you fine with this route [tip:x86/ras tree] for the 
-drivers/acpi/apei/einj.c changes?
+wdyt, better or worse?
 
-Thanks,
+Paolo
 
-	Ingo
+>  	int write_flooding_count;
+>  };
+>  
+> 
+
