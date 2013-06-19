@@ -1,62 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934348Ab3FSJuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:50:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1233 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933830Ab3FSJuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:50:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,895,1363158000"; 
-   d="scan'208";a="352248025"
-Message-ID: <51C17EA4.3030401@intel.com>
-Date: Wed, 19 Jun 2013 17:49:24 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S934399Ab3FSJyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:54:36 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:46738 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934149Ab3FSJyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 05:54:33 -0400
+Date: Wed, 19 Jun 2013 10:54:25 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: Julian Anastasov <ja@ssi.bg>, lvs-devel@vger.kernel.org
+Cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipvs: SH fallback and L4 hashing
+Message-ID: <20130619095425.GA20145@eldamar.org.uk>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [patch v8 9/9] sched/tg: remove blocked_load_avg in balance
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-10-git-send-email-alex.shi@intel.com> <CAPM31RJ_0xgymfN+5FzQCSrv-qgpT+42EOmWke1rOGy7GfHcYg@mail.gmail.com> <20130617140100.GZ3204@twins.programming.kicks-ass.net>
-In-Reply-To: <20130617140100.GZ3204@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 10:34:40 up 37 days, 19:58,  9 users,  load average: 0.35, 0.28,
+ 0.26
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2013 10:01 PM, Peter Zijlstra wrote:
-> On Mon, Jun 17, 2013 at 05:20:46AM -0700, Paul Turner wrote:
->> > On Fri, Jun 7, 2013 at 12:20 AM, Alex Shi <alex.shi@intel.com> wrote:
->>> > > blocked_load_avg sometime is too heavy and far bigger than runnable load
->>> > > avg, that make balance make wrong decision. So remove it.
->> > 
->> > Ok so this is  going to have terrible effects on the correctness of
->> > shares distribution; I'm fairly opposed to it in its present form.
-> Should someone take a look at the LTP cgroup tests to make sure they
-> cover this properly?
+By default the SH scheduler rejects connections that are hashed onto a
+realserver of weight 0.  This patch adds a flag to make SH choose a
+different realserver in this case, instead of rejecting the connection.
 
-Seems I have no time on this in near future. :(
+The patch also adds a flag to make SH include the source port (TCP, UDP,
+SCTP) in the hash as well as the source address.  This basically allows
+for deterministic round-robin load balancing (i.e., where any director
+in a cluster of directors with identical config will send the same
+packet the same way).
 
-But I were you, I would picked up this patch, since
-1, it is simple and easy revert.
-2, it wins in testing.
-3, it will motivate Paul to look into this problem. ;)
+The flags are service flags (IP_VS_SVC_F_SCHED*) so that these options
+can be set per service.  They are set using a new option to ipvsadm.
 
--- 
-Thanks
-    Alex
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+---
+The patch is against the ipvs-next tree.
+
+diff --git a/include/uapi/linux/ip_vs.h b/include/uapi/linux/ip_vs.h
+index a245377..2945822 100644
+--- a/include/uapi/linux/ip_vs.h
++++ b/include/uapi/linux/ip_vs.h
+@@ -20,6 +20,12 @@
+ #define IP_VS_SVC_F_PERSISTENT	0x0001		/* persistent port */
+ #define IP_VS_SVC_F_HASHED	0x0002		/* hashed entry */
+ #define IP_VS_SVC_F_ONEPACKET	0x0004		/* one-packet scheduling */
++#define IP_VS_SVC_F_SCHED1	0x0008		/* scheduler flag 1 */
++#define IP_VS_SVC_F_SCHED2	0x0010		/* scheduler flag 2 */
++#define IP_VS_SVC_F_SCHED3	0x0020		/* scheduler flag 3 */
++
++#define IP_VS_SVC_F_SCHED_SH_FALLBACK	IP_VS_SVC_F_SCHED1 /* SH fallback */
++#define IP_VS_SVC_F_SCHED_SH_PORT	IP_VS_SVC_F_SCHED2 /* SH use port */
+ 
+ /*
+  *      Destination Server Flags
+diff --git a/net/netfilter/ipvs/ip_vs_sh.c b/net/netfilter/ipvs/ip_vs_sh.c
+index e0130f8..b7e2c5a 100644
+--- a/net/netfilter/ipvs/ip_vs_sh.c
++++ b/net/netfilter/ipvs/ip_vs_sh.c
+@@ -48,6 +48,10 @@
+ 
+ #include <net/ip_vs.h>
+ 
++#include <net/tcp.h>
++#include <linux/udp.h>
++#include <linux/sctp.h>
++
+ 
+ /*
+  *      IPVS SH bucket
+@@ -71,10 +75,19 @@ struct ip_vs_sh_state {
+ 	struct rcu_head			rcu_head;
+ };
+ 
++/* Helper function to determine if server is unavailable */
++static inline bool is_unavailable(struct ip_vs_dest *dest)
++{
++	return atomic_read(&dest->weight) <= 0 ||
++	       dest->flags & IP_VS_DEST_F_OVERLOAD;
++}
++
+ /*
+  *	Returns hash value for IPVS SH entry
+  */
+-static inline unsigned int ip_vs_sh_hashkey(int af, const union nf_inet_addr *addr)
++static inline unsigned int
++ip_vs_sh_hashkey(int af, const union nf_inet_addr *addr,
++		 __be16 port, unsigned int offset)
+ {
+ 	__be32 addr_fold = addr->ip;
+ 
+@@ -83,7 +96,8 @@ static inline unsigned int ip_vs_sh_hashkey(int af, const union nf_inet_addr *ad
+ 		addr_fold = addr->ip6[0]^addr->ip6[1]^
+ 			    addr->ip6[2]^addr->ip6[3];
+ #endif
+-	return (ntohl(addr_fold)*2654435761UL) & IP_VS_SH_TAB_MASK;
++	return (offset + (ntohs(port) + ntohl(addr_fold))*2654435761UL) &
++		IP_VS_SH_TAB_MASK;
+ }
+ 
+ 
+@@ -91,12 +105,42 @@ static inline unsigned int ip_vs_sh_hashkey(int af, const union nf_inet_addr *ad
+  *      Get ip_vs_dest associated with supplied parameters.
+  */
+ static inline struct ip_vs_dest *
+-ip_vs_sh_get(int af, struct ip_vs_sh_state *s, const union nf_inet_addr *addr)
++ip_vs_sh_get(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
++	     const union nf_inet_addr *addr, __be16 port)
+ {
+-	return rcu_dereference(s->buckets[ip_vs_sh_hashkey(af, addr)].dest);
++	unsigned int hash = ip_vs_sh_hashkey(svc->af, addr, port, 0);
++	struct ip_vs_dest *dest = rcu_dereference(s->buckets[hash].dest);
++
++	return (!dest || is_unavailable(dest)) ? NULL : dest;
+ }
+ 
+ 
++/* As ip_vs_sh_get, but with fallback if selected server is unavailable */
++static inline struct ip_vs_dest *
++ip_vs_sh_get_fallback(struct ip_vs_service *svc, struct ip_vs_sh_state *s,
++		      const union nf_inet_addr *addr, __be16 port)
++{
++	unsigned int offset;
++	unsigned int hash;
++	struct ip_vs_dest *dest;
++
++	for (offset = 0; offset < IP_VS_SH_TAB_SIZE; offset++) {
++		hash = ip_vs_sh_hashkey(svc->af, addr, port, offset);
++		dest = rcu_dereference(s->buckets[hash].dest);
++		if (!dest)
++			break;
++		if (is_unavailable(dest))
++			IP_VS_DBG_BUF(6, "SH: selected unavailable server "
++				      "%s:%d (offset %d)",
++				      IP_VS_DBG_ADDR(svc->af, &dest->addr),
++				      ntohs(dest->port), offset);
++		else
++			return dest;
++	}
++
++	return NULL;
++}
++
+ /*
+  *      Assign all the hash buckets of the specified table with the service.
+  */
+@@ -213,13 +257,33 @@ static int ip_vs_sh_dest_changed(struct ip_vs_service *svc,
+ }
+ 
+ 
+-/*
+- *      If the dest flags is set with IP_VS_DEST_F_OVERLOAD,
+- *      consider that the server is overloaded here.
+- */
+-static inline int is_overloaded(struct ip_vs_dest *dest)
++/* Helper function to get port number */
++static inline __be16
++ip_vs_sh_get_port(const struct sk_buff *skb, struct ip_vs_iphdr *iph)
+ {
+-	return dest->flags & IP_VS_DEST_F_OVERLOAD;
++	__be16 port;
++	struct tcphdr _tcph, *th;
++	struct udphdr _udph, *uh;
++	sctp_sctphdr_t _sctph, *sh;
++
++	switch (iph->protocol) {
++	case IPPROTO_TCP:
++		th = skb_header_pointer(skb, iph->len, sizeof(_tcph), &_tcph);
++		port = th->source;
++		break;
++	case IPPROTO_UDP:
++		uh = skb_header_pointer(skb, iph->len, sizeof(_udph), &_udph);
++		port = uh->source;
++		break;
++	case IPPROTO_SCTP:
++		sh = skb_header_pointer(skb, iph->len, sizeof(_sctph), &_sctph);
++		port = sh->source;
++		break;
++	default:
++		port = 0;
++	}
++
++	return port;
+ }
+ 
+ 
+@@ -232,15 +296,21 @@ ip_vs_sh_schedule(struct ip_vs_service *svc, const struct sk_buff *skb,
+ {
+ 	struct ip_vs_dest *dest;
+ 	struct ip_vs_sh_state *s;
++	__be16 port = 0;
+ 
+ 	IP_VS_DBG(6, "ip_vs_sh_schedule(): Scheduling...\n");
+ 
++	if (svc->flags & IP_VS_SVC_F_SCHED_SH_PORT)
++		port = ip_vs_sh_get_port(skb, iph);
++
+ 	s = (struct ip_vs_sh_state *) svc->sched_data;
+-	dest = ip_vs_sh_get(svc->af, s, &iph->saddr);
+-	if (!dest
+-	    || !(dest->flags & IP_VS_DEST_F_AVAILABLE)
+-	    || atomic_read(&dest->weight) <= 0
+-	    || is_overloaded(dest)) {
++
++	if (svc->flags & IP_VS_SVC_F_SCHED_SH_FALLBACK)
++		dest = ip_vs_sh_get_fallback(svc, s, &iph->saddr, port);
++	else
++		dest = ip_vs_sh_get(svc, s, &iph->saddr, port);
++
++	if (!dest) {
+ 		ip_vs_scheduler_err(svc, "no destination available");
+ 		return NULL;
+ 	}
