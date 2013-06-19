@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934930Ab3FSR0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:26:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43483 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934731Ab3FSR0V (ORCPT
+	id S1757047Ab3FSR3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:29:09 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:48806 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756707Ab3FSR3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:26:21 -0400
-Message-ID: <51C1E98B.8030503@ti.com>
-Date: Wed, 19 Jun 2013 13:25:31 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 13:29:06 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <patches@lists.linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 08/15] thermal: cpu_cooling: fix stub function
-References: <1370038972-2318779-1-git-send-email-arnd@arndb.de> <1370038972-2318779-9-git-send-email-arnd@arndb.de>
-In-Reply-To: <1370038972-2318779-9-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2OJJKQETNUJCPPUTHNDRR"
+In-Reply-To: <CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
+References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
+	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
+	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
+	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
+	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
+	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
+	<CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
+	<CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
+	<CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
+Date: Wed, 19 Jun 2013 10:29:04 -0700
+X-Google-Sender-Auth: GwVBdyibDT4ECJVmMlrAzO0iZUM
+Message-ID: <CAMbhsRTR9im-BsJ-1m+DD-67LM=s0=KOoy-o+2PmnkDyLOP0Gg@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
+From: Colin Cross <ccross@android.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Johan Rudholm <johan.rudholm@stericsson.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2OJJKQETNUJCPPUTHNDRR
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 19, 2013 at 7:21 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> It seems like a bad idea that an insertion of an SD card should
+> trigger the display to be light up. That is indirectly in principle
+> what you suggest should happen from user space once a new SD card is
+> found. Right?
 
-Arnd,
+Most likely what will happen is the system will mount the sdcard, and
+if necessary start the media scanner so that the user can see their
+media on the sd card when they turn the screen on.  But that is mostly
+irrelevant, the point is that the event needs to be passed to
+userspace to allow it to make the decision in a timely fashion.
 
-On 31-05-2013 18:22, Arnd Bergmann wrote:
-> The function stub for cpufreq_cooling_get_level introduced
-> in 57df81069 "Thermal: exynos: fix cooling state translation"
-> is not syntactically correct C and needs to be fixed to avoid
-> this error:
->=20
-> In file included from drivers/thermal/db8500_thermal.c:20:0:
->  include/linux/cpu_cooling.h: In function 'cpufreq_cooling_get_level':
-> include/linux/cpu_cooling.h:57:1:
->  error: parameter name omitted  unsigned long cpufreq_cooling_get_level=
-(unsigned int, unsigned int)  ^
->  include/linux/cpu_cooling.h:57:1: error: parameter name omitted
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> I have been working with Android for several years, we never used this
+> kind of setup. Instead we wait for the user to press the "display on"
+> button. At that time the confirmation will be received. Not saying
+> that this is the only way of doing it, but it seems to be an accepted
+> solution for all our customers.
 
+This patch is ported from the Android common tree, so you've probably
+been using it.
 
-What is the status of this patch?
-
-I believe Rui is supposed to queue this one right?
-
-
-> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
-> ---
->  include/linux/cpu_cooling.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
-> index 282e270..a5d52ee 100644
-> --- a/include/linux/cpu_cooling.h
-> +++ b/include/linux/cpu_cooling.h
-> @@ -41,7 +41,7 @@ cpufreq_cooling_register(const struct cpumask *clip_c=
-pus);
->   */
->  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
-> =20
-> -unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int);
-> +unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int=
- freq);
->  #else /* !CONFIG_CPU_THERMAL */
->  static inline struct thermal_cooling_device *
->  cpufreq_cooling_register(const struct cpumask *clip_cpus)
-> @@ -54,7 +54,7 @@ void cpufreq_cooling_unregister(struct thermal_coolin=
-g_device *cdev)
->  	return;
->  }
->  static inline
-> -unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int)
-> +unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int=
- freq)
->  {
->  	return THERMAL_CSTATE_INVALID;
->  }
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-------enig2OJJKQETNUJCPPUTHNDRR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHB6YsACgkQCXcVR3XQvP0hwQEAh0awPf3VhYdWEccmXSWfQsI/
-E4DNfWZUJbKB2BV7buUA/jWK5xVmnTxzh8YHxcZCVYZe3jolPCiWXpWMTEzgZlYN
-=m7w8
------END PGP SIGNATURE-----
-
-------enig2OJJKQETNUJCPPUTHNDRR--
+> I agree to that this patch should have negligible impact though - if
+> we get things right. I will try to review the code in more detail
+> soon.
+>
+> Kind regards
+> Ulf Hansson
+>
