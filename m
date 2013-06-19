@@ -1,245 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3FSNGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:06:13 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:15068
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933869Ab3FSNGL convert rfc822-to-8bit (ORCPT
+	id S1756702Ab3FSNHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:07:15 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59679 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab3FSNHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:06:11 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -1
-X-BigFish: PS-1(zz9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hz97hz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>, Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH] drivers: hv: allocate synic structures before
- hv_synic_init()
-Thread-Topic: [PATCH] drivers: hv: allocate synic structures before
- hv_synic_init()
-Thread-Index: AQHObJ6lk0OIBHq55kCluOhup+Ttp5k9AcMA
-Date: Wed, 19 Jun 2013 13:05:12 +0000
-Message-ID: <3ac66c37a2514eebad75aa406cba49a9@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1371612490-28748-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1371612490-28748-1-git-send-email-jasowang@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Jun 2013 09:07:12 -0400
+Message-ID: <51C1ACF4.4040004@linux.vnet.ibm.com>
+Date: Wed, 19 Jun 2013 21:07:00 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704005)(199002)(189002)(13464003)(377454003)(46406003)(56816003)(65816001)(54356001)(74662001)(46102001)(81342001)(16676001)(66066001)(74366001)(74502001)(74316001)(79102001)(23726002)(50466002)(51856001)(77982001)(54316002)(53806001)(31966008)(76482001)(6806003)(77096001)(59766001)(44976003)(74876001)(47776003)(33646001)(20776003)(74706001)(69226001)(4396001)(80022001)(81542001)(49866001)(47976001)(76796001)(76576001)(56776001)(1511001)(76786001)(63696002)(47736001)(47446002)(50986001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB028;H:TK5EX14MLTC103.redmond.corp.microsoft.com;CLIP:131.107.125.37;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 08828D20BC
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 6/7] KVM: MMU: document fast invalidate all pages
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-7-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <51C1A327.90900@redhat.com>
+In-Reply-To: <51C1A327.90900@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061912-6102-0000-0000-000003B9EB90
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Tuesday, June 18, 2013 11:28 PM
-> To: KY Srinivasan; Haiyang Zhang; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; gregkh@linuxfoundation.org
-> Cc: Jason Wang
-> Subject: [PATCH] drivers: hv: allocate synic structures before hv_synic_init()
+On 06/19/2013 08:25 PM, Paolo Bonzini wrote:
+> Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
+>> Document it to Documentation/virtual/kvm/mmu.txt
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  Documentation/virtual/kvm/mmu.txt | 23 +++++++++++++++++++++++
+>>  arch/x86/include/asm/kvm_host.h   |  5 +++++
+>>  2 files changed, 28 insertions(+)
+>>
+>> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+>> index b5ce7dd..f5c4de9 100644
+>> --- a/Documentation/virtual/kvm/mmu.txt
+>> +++ b/Documentation/virtual/kvm/mmu.txt
+>> @@ -210,6 +210,10 @@ Shadow pages contain the following information:
+>>      A bitmap indicating which sptes in spt point (directly or indirectly) at
+>>      pages that may be unsynchronized.  Used to quickly locate all unsychronized
+>>      pages reachable from a given page.
+>> +  mmu_valid_gen:
+>> +    It is the generation number of the page which cooperates with
+>> +    kvm->arch.mmu_valid_gen to fast invalidate all pages.
+>> +    (see "Fast invalidate all pages" below.)
 > 
-> We currently allocate synic structures in hv_sync_init(), but there's no way for
-> the driver to know about the allocation failure and it may continue to use the
-> uninitialized pointers. Solve this by introducing helpers for allocating and
-> freeing and doing the allocation before the on_each_cpu() call in
-> vmbus_bus_init().
+> +  mmu_valid_gen:
+> +    Generation number of the page.  It is compared with kvm->arch.mmu_valid_gen
+> +    during hash table lookup, and used to skip invalidated shadow pages (see
+> +    "Zapping all pages" below.)
 > 
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-
-> ---
->  drivers/hv/hv.c           |   85 ++++++++++++++++++++++++++++-----------------
->  drivers/hv/hyperv_vmbus.h |    4 ++
->  drivers/hv/vmbus_drv.c    |    8 +++-
->  3 files changed, 63 insertions(+), 34 deletions(-)
+>>    clear_spte_count:
+>>      It is only used on 32bit host which helps us to detect whether updating the
+>>      64bit spte is complete so that we can avoid reading the truncated value out
+>> @@ -373,6 +377,25 @@ causes its write_count to be incremented, thus preventing instantiation of
+>>  a large spte.  The frames at the end of an unaligned memory slot have
+>>  artificially inflated ->write_counts so they can never be instantiated.
+>>  
+>> +Fast invalidate all pages
+>> +===========
+>> +For the large memory and large vcpus guests, zapping all pages is a challenge
+>> +since they have large number of pages need to be zapped, walking and zapping
+>> +these pages are really slow and it should hold mmu-lock which stops the memory
+>> +access on all vcpus.
+>> +
+>> +To make it be more scalable, kvm maintains a global mmu valid
+>> +generation-number which is stored in kvm->arch.mmu_valid_gen and every shadow
+>> +page stores the current global generation-number into sp->mmu_valid_gen when
+>> +it is created.
+>> +
+>> +When KVM need zap all shadow pages sptes, it just simply increases the global
+>> +generation-number then reload root shadow pages on all vcpus. Vcpu will create
+>> +a new shadow page table according to current kvm's generation-number. It
+>> +ensures the old pages are not used any more. The invalid-gen pages
+>> +(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen) are zapped by using lock-break
+>> +technique.
+>> +
 > 
-> diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-> index 3f88681..0039373 100644
-> --- a/drivers/hv/hv.c
-> +++ b/drivers/hv/hv.c
-> @@ -265,6 +265,59 @@ u16 hv_signal_event(void *con_id)
->  	return status;
->  }
-> 
+> +Zapping all pages (page generation count)
+> +=========================================
 > +
-> +int hv_synic_alloc(void)
-> +{
-> +	size_t size = sizeof(struct tasklet_struct);
-> +	int cpu;
+> +For the large memory guests, walking and zapping all pages is really slow
+> +(because there are a lot of pages), and also blocks memory accesses of
+> +all VCPUs because it needs to hold the MMU lock.
 > +
-> +	for_each_online_cpu(cpu) {
-> +		hv_context.event_dpc[cpu] = kmalloc(size, GFP_ATOMIC);
-> +		if (hv_context.event_dpc[cpu] == NULL) {
-> +			pr_err("Unable to allocate event dpc\n");
-> +			goto err;
-> +		}
-> +		tasklet_init(hv_context.event_dpc[cpu], vmbus_on_event, cpu);
+> +To make it be more scalable, kvm maintains a global generation number
+> +which is stored in kvm->arch.mmu_valid_gen.  Every shadow page stores
+> +the current global generation-number into sp->mmu_valid_gen when it
+> +is created.  Pages with a mismatching generation number are "obsolete".
 > +
-> +		hv_context.synic_message_page[cpu] =
-> +			(void *)get_zeroed_page(GFP_ATOMIC);
+> +When KVM need zap all shadow pages sptes, it just simply increases the global
+> +generation-number then reload root shadow pages on all vcpus.  As the VCPUs
+> +create new shadow page tables, the old pages are not used because of the
+> +mismatching generation number.
 > +
-> +		if (hv_context.synic_message_page[cpu] == NULL) {
-> +			pr_err("Unable to allocate SYNIC message page\n");
-> +			goto err;
-> +		}
+> +KVM then walks through all pages and zaps obsolete pages.  While the zap
+> +operation needs to take the MMU lock, the lock can be released periodically
+> +so that the VCPUs can make progress.
 > +
-> +		hv_context.synic_event_page[cpu] =
-> +			(void *)get_zeroed_page(GFP_ATOMIC);
-> +
-> +		if (hv_context.synic_event_page[cpu] == NULL) {
-> +			pr_err("Unable to allocate SYNIC event page\n");
-> +			goto err;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +err:
-> +	return -ENOMEM;
-> +}
-> +
-> +void hv_synic_free_cpu(int cpu)
-> +{
-> +	kfree(hv_context.event_dpc[cpu]);
-> +	if (hv_context.synic_message_page[cpu])
-> +		free_page((unsigned long)hv_context.synic_event_page[cpu]);
-> +	if (hv_context.synic_message_page[cpu])
-> +		free_page((unsigned
-> long)hv_context.synic_message_page[cpu]);
-> +}
-> +
-> +void hv_synic_free(void)
-> +{
-> +	int cpu;
-> +
-> +	for_each_online_cpu(cpu)
-> +		hv_synic_free_cpu(cpu);
-> +}
-> +
->  /*
->   * hv_synic_init - Initialize the Synthethic Interrupt Controller.
->   *
-> @@ -289,30 +342,6 @@ void hv_synic_init(void *arg)
->  	/* Check the version */
->  	rdmsrl(HV_X64_MSR_SVERSION, version);
 > 
-> -	hv_context.event_dpc[cpu] = kmalloc(sizeof(struct tasklet_struct),
-> -					    GFP_ATOMIC);
-> -	if (hv_context.event_dpc[cpu] == NULL) {
-> -		pr_err("Unable to allocate event dpc\n");
-> -		goto cleanup;
-> -	}
-> -	tasklet_init(hv_context.event_dpc[cpu], vmbus_on_event, cpu);
-> -
-> -	hv_context.synic_message_page[cpu] =
-> -		(void *)get_zeroed_page(GFP_ATOMIC);
-> -
-> -	if (hv_context.synic_message_page[cpu] == NULL) {
-> -		pr_err("Unable to allocate SYNIC message page\n");
-> -		goto cleanup;
-> -	}
-> -
-> -	hv_context.synic_event_page[cpu] =
-> -		(void *)get_zeroed_page(GFP_ATOMIC);
-> -
-> -	if (hv_context.synic_event_page[cpu] == NULL) {
-> -		pr_err("Unable to allocate SYNIC event page\n");
-> -		goto cleanup;
-> -	}
-> -
->  	/* Setup the Synic's message page */
->  	rdmsrl(HV_X64_MSR_SIMP, simp.as_uint64);
->  	simp.simp_enabled = 1;
-> @@ -355,14 +384,6 @@ void hv_synic_init(void *arg)
->  	rdmsrl(HV_X64_MSR_VP_INDEX, vp_index);
->  	hv_context.vp_index[cpu] = (u32)vp_index;
->  	return;
-> -
-> -cleanup:
-> -	if (hv_context.synic_event_page[cpu])
-> -		free_page((unsigned long)hv_context.synic_event_page[cpu]);
-> -
-> -	if (hv_context.synic_message_page[cpu])
-> -		free_page((unsigned
-> long)hv_context.synic_message_page[cpu]);
-> -	return;
->  }
+>>  Further reading
+>>  ===============
+>>  
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 5eb5382..c4f90f6 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -222,6 +222,11 @@ struct kvm_mmu_page {
+>>  	int root_count;          /* Currently serving as active root */
+>>  	unsigned int unsync_children;
+>>  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+>> +
+>> +	/*
+>> +	 * the generation number of the page which cooperates with
+>> +	 * kvm->arch.mmu_valid_gen to fast invalidate all pages.
+>> +	 */
 > 
->  /*
-> diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> index 12f2f9e..d84918f 100644
-> --- a/drivers/hv/hyperv_vmbus.h
-> +++ b/drivers/hv/hyperv_vmbus.h
-> @@ -527,6 +527,10 @@ extern int hv_post_message(union hv_connection_id
-> connection_id,
-> 
->  extern u16 hv_signal_event(void *con_id);
-> 
-> +extern int hv_synic_alloc(void);
-> +
-> +extern void hv_synic_free(void);
-> +
->  extern void hv_synic_init(void *irqarg);
-> 
->  extern void hv_synic_cleanup(void *arg);
-> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-> index 4004e54..a2464bf 100644
-> --- a/drivers/hv/vmbus_drv.c
-> +++ b/drivers/hv/vmbus_drv.c
-> @@ -563,6 +563,9 @@ static int vmbus_bus_init(int irq)
->  	 */
->  	hv_register_vmbus_handler(irq, vmbus_isr);
-> 
-> +	ret = hv_synic_alloc();
-> +	if (ret)
-> +		goto err_alloc;
->  	/*
->  	 * Initialize the per-cpu interrupt state and
->  	 * connect to the host.
-> @@ -570,13 +573,14 @@ static int vmbus_bus_init(int irq)
->  	on_each_cpu(hv_synic_init, NULL, 1);
->  	ret = vmbus_connect();
->  	if (ret)
-> -		goto err_irq;
-> +		goto err_alloc;
-> 
->  	vmbus_request_offers();
-> 
->  	return 0;
-> 
-> -err_irq:
-> +err_alloc:
-> +	hv_synic_free();
->  	free_irq(irq, hv_acpi_dev);
-> 
->  err_unregister:
-> --
-> 1.7.1
-> 
+> +	/* The page is obsolete if mmu_valid_gen != kvm->arch.mmu_valid_gen.  */
 > 
 
+All the changes are fine to me.
+
+I have learned a lot from your sentences, thanks! ;)
 
