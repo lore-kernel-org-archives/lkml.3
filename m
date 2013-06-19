@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935374Ab3FSXWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 19:22:25 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:4888 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934170Ab3FSXWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 19:22:24 -0400
-Message-ID: <1371684124.8433.2.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container
- hotplug with other scan handlers
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Lu, Aaron" <aaron.lu@intel.com>
-Date: Wed, 19 Jun 2013 17:22:04 -0600
-In-Reply-To: <11631311.zzmyWFE0GU@vostro.rjw.lan>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
-	 <3321228.vG97AE80O6@vostro.rjw.lan>
-	 <CA+8MBbLS9suFc4gdjbb1RQdYmEyNUUHhEKgSjMxJpQLcPPYN2g@mail.gmail.com>
-	 <11631311.zzmyWFE0GU@vostro.rjw.lan>
+	id S935378Ab3FSXYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 19:24:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31837 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934170Ab3FSXYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 19:24:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,900,1363158000"; 
+   d="scan'208";a="332418924"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1371683514.1783.3.camel@buesod1.americas.hpqcorp.net>
+References: <1371165333.27102.568.camel@schen9-DESK>
+	 <1371167015.1754.14.camel@buesod1.americas.hpqcorp.net>
+	 <51BD8A77.2080201@intel.com>
+	 <1371486122.1778.14.camel@buesod1.americas.hpqcorp.net>
+	 <51BF99B0.4040509@intel.com>
+	 <1371512120.1778.40.camel@buesod1.americas.hpqcorp.net>
+	 <1371514081.27102.651.camel@schen9-DESK>
+	 <1371683514.1783.3.camel@buesod1.americas.hpqcorp.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Date: Wed, 19 Jun 2013 16:24:15 -0700
+Message-ID: <1371684255.27102.667.camel@schen9-DESK>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 00:24 +0200, Rafael J. Wysocki wrote:
-> On Wednesday, June 19, 2013 10:37:27 AM Tony Luck wrote:
-> > > Can you please apply the appended patch on top of it and see if the system
-> > > still works then?
+On Wed, 2013-06-19 at 16:11 -0700, Davidlohr Bueso wrote:
+> On Mon, 2013-06-17 at 17:08 -0700, Tim Chen wrote:
+> > On Mon, 2013-06-17 at 16:35 -0700, Davidlohr Bueso wrote:
+> > > On Tue, 2013-06-18 at 07:20 +0800, Alex Shi wrote:
+> > > > On 06/18/2013 12:22 AM, Davidlohr Bueso wrote:
+> > > > > After a lot of benchmarking, I finally got the ideal results for aim7,
+> > > > > so far: this patch + optimistic spinning with preemption disabled. Just
+> > > > > like optimistic spinning, this patch by itself makes little to no
+> > > > > difference, yet combined is where we actually outperform 3.10-rc5. In
+> > > > > addition, I noticed extra throughput when disabling preemption in
+> > > > > try_optimistic_spin().
+> > > > > 
+> > > > > With i_mmap as a rwsem and these changes I could see performance
+> > > > > benefits for alltests (+14.5%), custom (+17%), disk (+11%), high_systime
+> > > > > (+5%), shared (+15%) and short (+4%), most of them after around 500
+> > > > > users, for fewer users, it made little to no difference.
+> > > > 
+> > > > A pretty good number. what's the cpu number in your machine? :)
+> > > 
+> > > 8-socket, 80 cores (ht off)
+> > > 
+> > > 
 > > 
-> > Still works with this patch.
+> > David,
+> > 
+> > I wonder if you are interested to try the experimental patch below.  
+> > It tries to avoid unnecessary writes to the sem->count when we are 
+> > going to fail the down_write by executing rwsem_down_write_failed_s
+> > instead of rwsem_down_write_failed.  It should further reduce the
+> > cache line bouncing.  It didn't make a difference for my 
+> > workload.  Wonder if it may help yours more in addition to the 
+> > other two patches.  Right now the patch is an ugly hack.  I'll merge
+> > rwsem_down_write_failed_s and rwsem_down_write_failed into one
+> > function if this approach actually helps things.
+> > 
 > 
-> Cool, thanks! :-)
+> I tried this on top of the patches we've already been dealing with. It
+> actually did more harm than good. Only got a slight increase in the
+> five_sec workload, for the rest either no effect, or negative. So far
+> the best results are still with spin on owner + preempt disable + Alex's
+> patches.
 > 
-> If you don't mind, I'll queue up https://patchwork.kernel.org/patch/2712741/ and
-> this for 3.11.
 
-For both patches:
+Thanks for trying it out. A little disappointed as I was expecting no
+change in performance for the worst case.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-
-Thanks,
--Toshi
-
-
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > > ---
-> > >  drivers/acpi/scan.c  |    3 +++
-> > >  drivers/acpi/video.c |    3 ---
-> > >  2 files changed, 3 insertions(+), 3 deletions(-)
-> > >
-> > > Index: linux-pm/drivers/acpi/scan.c
-> > > ===================================================================
-> > > --- linux-pm.orig/drivers/acpi/scan.c
-> > > +++ linux-pm/drivers/acpi/scan.c
-> > > @@ -939,6 +939,9 @@ static int acpi_device_probe(struct devi
-> > >         struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
-> > >         int ret;
-> > >
-> > > +       if (acpi_dev->handler)
-> > > +               return -EINVAL;
-> > > +
-> > >         if (!acpi_drv->ops.add)
-> > >                 return -ENOSYS;
-> > >
-> > > Index: linux-pm/drivers/acpi/video.c
-> > > ===================================================================
-> > > --- linux-pm.orig/drivers/acpi/video.c
-> > > +++ linux-pm/drivers/acpi/video.c
-> > > @@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
-> > >         int error;
-> > >         acpi_status status;
-> > >
-> > > -       if (device->handler)
-> > > -               return -EINVAL;
-> > > -
-> > >         status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
-> > >                                 device->parent->handle, 1,
-> > >                                 acpi_video_bus_match, NULL,
-> > >
-
+Tim
 
