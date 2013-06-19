@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934600Ab3FSKi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:38:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46076 "EHLO arroyo.ext.ti.com"
+	id S934630Ab3FSKit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:38:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4563 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933991Ab3FSKiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:38:24 -0400
-Message-ID: <51C189E4.3050608@ti.com>
-Date: Wed, 19 Jun 2013 05:37:24 -0500
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] ARM: dts: AM43x EPOS EVM support
-References: <1371218614-26311-1-git-send-email-afzal@ti.com>
-In-Reply-To: <1371218614-26311-1-git-send-email-afzal@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933991Ab3FSKis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 06:38:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,896,1363158000"; 
+   d="scan'208";a="319357723"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: apw@canonical.com, joe@perches.com
+Cc: Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [net] checkpatch: modify logFunction regular expression to allow repeated front tags
+Date: Wed, 19 Jun 2013 03:38:43 -0700
+Message-Id: <1371638323-20999-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-On 06/14/2013 09:03 AM, Afzal Mohammed wrote:
-> Add AM43x ePOS EVM minimal DT source - this is a minimal one to get
-> it booting. Also include it in omap2plus dtbs and document bindings.
-> The hardware is under development.
->
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
->
-> Hi Benoit,
->
-> This is based on your for_3.11/dts branch.
->
-> Ideally I wanted to split this into 3 patches - first doc, second dts
-> and last adding build support. As changes in total is trivial, it was
-> made a single one.
+The previous logFunction regular expression allowed names for log functions like
+dev_warn or e_dbg and so forth, but some log functions are of the forms
+similar to e_dev_warn, (adding an additional tag in front of a standard name
+like dev_warn).
 
-That's fine for me. I've just applied it.
+This patch modifies checkpatch to enable use of this type of log function name.
 
-Thanks,
-Benoit
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> Regards
-> Afzal
->
->
->   Documentation/devicetree/bindings/arm/omap/omap.txt |  3 +++
->   arch/arm/boot/dts/Makefile                          |  3 ++-
->   arch/arm/boot/dts/am43x-epos-evm.dts                | 18 ++++++++++++++++++
->   3 files changed, 23 insertions(+), 1 deletion(-)
->   create mode 100644 arch/arm/boot/dts/am43x-epos-evm.dts
->
-> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> index f8288ea..6d498c7 100644
-> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> @@ -56,3 +56,6 @@ Boards:
->
->   - OMAP5 EVM : Evaluation Module
->     compatible = "ti,omap5-evm", "ti,omap5"
-> +
-> +- AM43x EPOS EVM
-> +  compatible = "ti,am43x-epos-evm", "ti,am4372", "ti,am43"
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 8e50761..05da469 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -155,7 +155,8 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
->   	am335x-evmsk.dtb \
->   	am335x-bone.dtb \
->   	am3517-evm.dtb \
-> -	am3517_mt_ventoux.dtb
-> +	am3517_mt_ventoux.dtb \
-> +	am43x-epos-evm.dtb
->   dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
->   dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
->   dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
-> diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-> new file mode 100644
-> index 0000000..74174d4
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-> @@ -0,0 +1,18 @@
-> +/*
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/* AM43x EPOS EVM */
-> +
-> +/dts-v1/;
-> +
-> +#include "am4372.dtsi"
-> +
-> +/ {
-> +	model = "TI AM43x EPOS EVM";
-> +	compatible = "ti,am43x-epos-evm","ti,am4372","ti,am43";
-> +};
->
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b954de5..a38d71e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -269,7 +269,7 @@ our $typeTypedefs = qr{(?x:
+ 
+ our $logFunctions = qr{(?x:
+ 	printk(?:_ratelimited|_once|)|
+-	[a-z0-9]+_(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
++	(?:[a-z0-9]+_)+(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
+ 	WARN(?:_RATELIMIT|_ONCE|)|
+ 	panic|
+ 	MODULE_[A-Z_]+
+-- 
+1.7.11.7
 
