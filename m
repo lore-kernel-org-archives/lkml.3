@@ -1,153 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab3FSN7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:59:49 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:28626 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756427Ab3FSN7o convert rfc822-to-8bit (ORCPT
+	id S1756852Ab3FSN74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:59:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39295 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756841Ab3FSN7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:59:44 -0400
-Date: Wed, 19 Jun 2013 15:58:56 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>
+	Wed, 19 Jun 2013 09:59:48 -0400
+Date: Wed, 19 Jun 2013 14:59:21 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH REBASE] i2c-designware: make SDA hold time configurable
-Message-ID: <20130619135855.GB16483@ab42.lan>
-References: <20130514110745.GA10906@intel.com>
- <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
- <20130610152954.GE2987@katana>
- <20130612144743.GB8102@ab42.lan>
- <20130619094540.GA2950@katana>
+        linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20130619135920.GV1403@sirena.org.uk>
+References: <1371565785-31332-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1371565785-31332-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20130618180948.GP1403@sirena.org.uk>
+ <20130619092508.GJ2718@n2100.arm.linux.org.uk>
+ <20130619093938.GT1403@sirena.org.uk>
+ <20130619100515.GK2718@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="o9qiPLpykPxkk5uk"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130619094540.GA2950@katana>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130619100515.GK2718@n2100.arm.linux.org.uk>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi/pxa2xx: use a flag to check if the device is
+ runtime suspended
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:45:40AM +0200, Wolfram Sang wrote:
-> Hi,
-> 
-> On Wed, Jun 12, 2013 at 04:47:45PM +0200, Christian Ruppert wrote:
-> > On Mon, Jun 10, 2013 at 05:29:55PM +0200, Wolfram Sang wrote:
-> > > On Tue, May 14, 2013 at 03:04:02PM +0200, Christian Ruppert wrote:
-> > > > This patch makes the SDA hold time configurable through device tree.
-> > > > 
-> > > > [rebased to i2c-current/i2c-next/mainline-3.10-rc1]
-> > > > 
-> > > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> > > 
-> > > Hmm, I really have problems adding a generic property. I need to better
-> > > understand why this is needed? What is the usecase? Can't a safe value
-> > > be calculated depending on the bus-speed? Is there a public datasheet
-> > > available somewhere?
-> > 
-> > I checked with our PCB/Applications team and the data sheets for the
-> > peripherals in question (DVB demodulator front ends) are under NDA.
-> > Mika, you seem to be interested in this patch as well. Do you know of
-> > any publicly available data sheets for hardware requiring this
-> > adjustment?
-> 
-> So, I looked around and found:
-> http://www.maximintegrated.com/app-notes/index.mvp/id/3268
-> 
-> which after thinking further about it gives me the following
-> conclusions:
-> 
-> - sda-hold-time is a property/requirement of a device not following
->   the I2C spec. It is not a property of the master!
 
-Actually, in a protocol like I2C, every device on the bus must respect
-timing constraints like hold time etc. These parameters apply at the
-same time to the master and to all slaves.
+--o9qiPLpykPxkk5uk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> - It should not be encoded in the devicetree, since the flaw is implicit
->   to the device, so only the driver needs to know about it. I wonder
->   about something like this in the i2c slave driver:
-> 
-> 	ret = i2c_request_sda_hold_time(client);
-> 
->   The core then can collect the requests and forward them to the host
->   driver. This driver then can set up the hardware or return -EOPNOTSUPP
->   and we can even warn the user that there might be problems ahead.
+On Wed, Jun 19, 2013 at 11:05:15AM +0100, Russell King - ARM Linux wrote:
 
-This might be a solution but given that many I2C drivers are written as
-an afterthought by device manufacturers and are released under more or
-less open terms of licensing into the wild I doubt this would work very
-well in practise.
+> And that's why doing it by "read the ISR and check its value" is the
+> best way, and not doing the "what state does the kernel think this
+> device is in".
 
-> - I wonder if we really need to have a parameter time-in-ns? The
->   specs cleary say 300ns, so I'd think this is the value we should
->   always use. This is from a theorhetical pov though, maybe your
->   practical experience is different. What values do you need?
+Not entirely, and of course that's not always an option either.
 
-In reality, the I2C specification is more subtle than that: The "data
-hold time" is specified as 0ns with a footnote [3] stating that devices
-"must internally provide a hold time of at least 300ns for the SDA
-signal...".
+> The latter may be fine if the device is only connected to a non-shared
+> interrupt, but as soon as you start sharing interrupts, it fails - what
+> do you do if the device signals an interrupt on a level-sensitive input
+> but the kernel's state says that it's not yet active?  The answer -
+> you spin forever entering the same interrupt handler until the IRQ
+> input gets disabled permanently until you reboot the system.
 
-Revision 5 contains a relatively understandable explanation about how to
-interpret this but earlier versions are less helpful. I think this
-confusion is at the root of many timing issues encountered with I2C (and
-the reason why Synopsys made this configurable). In fact, especially
-earlier specs are _all but_ clear in this point and we cannot assume
-that all peripherals were designed after Revision 5 was released in
-October 2012.
+Or we teach the interrupt core how to handle it better - checking for
+I/O failures works in the case where the device is genuinely asleep and
+we can see I/O failures without undue pain but starts to fall over with
+other scenarios.
 
-> > In the case of the Designware block, the parameter both changes SDA and
-> > START hold times, however, and you'll find lots of data sheets for
-> > hardware with START hold time requirements on the net, e.g.
-> > http://ww1.microchip.com/downloads/en/DeviceDoc/21805B.pdf
-> 
-> What I couldn't find is a reference manual for a designware IP that
-> supports sda hold time? I found some spear SoC which do not have that
-> register, so that should surely be reflected in the patchset, too.
+> As far as device sequencing, that is where the tree topology of the
+> device model is supposed to save you - the parenting of devices is
+> supposed to reflect their relationship, and the way things like PM
+> and runtime PM work, those relationships dictate the order in which
+> PM operations occur.  For instance, with runtime PM, a parent will
+> not be placed into a suspend state unless its children are already
+> suspended, unless the parent signals that it is independent of the
+> childs states.
 
-If you have access to DesignWare documentation, check out the
-"DesignWare DW_apb_i2c Databook" Version 1.17a from March 2012.
-Unluckily, I clearly don't have the right to share this document with
-you. Do you know the version of the blocks in the spear SoC which do not
-support this register?
+This doesn't fix everything (though it's a lot better with deferred
+probing since things now mostly end up in the actual dependency order),
+there's still some nasty issues especially around devices which can
+interrupt from suspend states.  If that can happen then you can get the
+interrupt controller being awake and delivering the interrupt while the
+device (or worse, the control bus for the device) is not able to
+interact with it.  This is a different problem in that the interrupt
+genuinely is firing, it's just that the control path isn't available
+yet, but it's the same general class of things.
 
-> > The empirical solution in the function i2c_dw_scl_hcnt does not seem to
-> > work in all cases: Our lab guys confirmed that we have several PCB
-> > designs which do not work without adjusting the sda-hold-time parameter
-> > to an appropriate value. The value seems to be different for different
-> > PCBs.
-> 
-> I'd hope that 300ns is a safe value for all PCBs?
+--o9qiPLpykPxkk5uk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Not according to our PCB guys. The highest value I have found in a quick
-check of our device trees is 650ns with others being just slightly above
-300ns.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-> > I suspect that this kind of configurability is not the same for all i2c
-> > bus master hardware.
-> 
-> Yeah, maybe some do sda-holding by default? Dunno, never checked for
-> that detail.
-> 
-> Regards,
-> 
->    Wolfram
-> 
+iQIcBAEBAgAGBQJRwbk1AAoJELSic+t+oim979YP/2gx7Pxm6IbcteHJUSKxHVjI
+3lgX3/V2YafeqnzM9SilSiM3a/zzy9+JlIZv3rvgQRMvf4lyVrGI7ZFjPKBqDe9L
+94FTj2XIBGORK8NncahnP4Mk/hhnlBZ+phlWq/yMni/5Gxxrr9q7VXp59+9/PL+v
+tcMwhtNAqyso3NXXlBEuF2i3kDl49SlCfpmnAzs5jItY+S76bjy8v4JUw2XV3Q5i
+tGrLu6eYtwKiZBGUQXaNoCEtCcW+CnRjsrL/XlrkP8jz/U7vlEGzCntfZARAfikZ
+En4DBp9iVniAbHo7Zc47ZuDX2WZ66tFTgKo8ofNutDGJpo0+oMTWx+EB2wRtG7qt
+lSS4bhrne7Gf2NmrPhXbnxtboY2MM0Js96qw4o+6WPe7VxyqlZUwWc5yTS6mkoDP
+2T3SzI+7HF3nBe9O6wOoT1BMUNZOV20I5AUc+6i/nFvi4BsMuBHcind3a03vVDpI
+pQVIqhgYIKEOLFm/8PsbB6a9CVAu9s/4wUQMsp7jvkiXgBICrVbULgbztJ4gxN0k
+Erv2vHhJIASyxuXfbK4kzTr96IpEjcLdQuQKxrr0rhFfYHdgJjUDJU9Kr8zTzbE7
++bNUm+ftRerrIajVWkPev345S8YjFTiBH5L6L5HBWqYn9qHZuVNzS/+3R/g4nDv5
+dF4rkVcEIStiq10D/FuL
+=y7s0
+-----END PGP SIGNATURE-----
 
-
-
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+--o9qiPLpykPxkk5uk--
