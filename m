@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab3FSTKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:10:43 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:35027 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416Ab3FSTKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:10:42 -0400
+	id S1757490Ab3FSTMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:12:18 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:18782
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757435Ab3FSTMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 15:12:15 -0400
+Message-ID: <51C20289.1060303@caviumnetworks.com>
+Date: Wed, 19 Jun 2013 12:12:09 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1371205241-17205-3-git-send-email-avinashphilipk@gmail.com>
-References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com>
-	<1371205241-17205-3-git-send-email-avinashphilipk@gmail.com>
-Date: Wed, 19 Jun 2013 21:10:40 +0200
-Message-ID: <CACRpkdbJJVKC539CAPNxxEbofVfw3Pr0gyCSZyY9YbkXneE-qQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] gpio: davinci: DT changes for driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Philip Avinash <avinashphilipk@gmail.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Philip Avinash <avinashphilip@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
+References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <2302882.NVjP8DdXWY@wuerfel> <51C1E028.2040700@caviumnetworks.com> <201306192052.09575.arnd@arndb.de>
+In-Reply-To: <201306192052.09575.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:SN2PR07MB016;H:BL2PRD0712HT001.namprd07.prod.outlook.com;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 14, 2013 at 12:20 PM, Philip Avinash
-<avinashphilipk@gmail.com> wrote:
-
-> From: KV Sujith <sujithkv@ti.com>
+On 06/19/2013 11:52 AM, Arnd Bergmann wrote:
+> On Wednesday 19 June 2013, David Daney wrote:
+>> On 06/19/2013 03:01 AM, Arnd Bergmann wrote:
 >
-> - Add of_device_id for Davinci GPIO driver.
-> - Add function to populate data from DT.
-> - Modify the probe to read from DT if DT match is found.
-> - Add DT binding documentation for Davinci GPIO properties in a new file
->   gpio-davinci.txt located at Documentation/devicetree/bindings/gpio/.
+>>> It's also wrong to use the
+>>> __raw_* variant, which is not guaranteed to be atomic and is not
+>>> endian-safe.
+>>
+>> We do runtime probing and only use this function on platforms where it
+>> is appropriate, so atomicity is not an issue.  As for endianess, I used
+>> the __raw_ variant precisely because it is correct for both big and
+>> little endian kernels.
 >
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> ---
-> Changes since v1:
->         - description for interrupts changed to reflecti
->            interrupt array usage.
-(...)
+> You don't know what the compiler turns a __raw_writeq into, it could
+> always to eight byte wise stores, that's why typically writeq is
+> an inline assembly while __raw_writeq is just a pointer dereference.
 
-> +static struct davinci_gpio_platform_data *davinci_gpio_set_pdata_of(
-> +                                               struct platform_device *pdev)
-> +{
-> +       struct device_node *dn = pdev->dev.of_node;
-> +       struct davinci_gpio_platform_data *pdata;
-> +       u32 val, ret;
-> +
-> +       pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +       if (pdata) {
+Well, I do know that for the cases of interest, it will be a single load 
+or store, but it is moot, as I rewrote that part.
 
-Instead of this arrow pattern:
+>
+> __raw_* never do endian swaps,
 
-if (!pdata) {
-  dev_err( ... "out of memory allocating platform data");
-  return NULL;
-}
+Yes, I know that.
 
-And de-indent the rest.
+> so it will be wrong on either big-endian
+> CPUs or on little-endian CPUs, depending on what the MMIO register
+> needs.
 
-With that change:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Please see the instruction set reference manual 
+(MD00087-2B-MIPS64BIS-AFP-03.51 or similar) available at:
 
-I guess this may go through the DaVinci tree with the rest of the DaVinci
-patches?
+http://www.mips.com/products/architectures/mips64/#specifications
 
-Yours,
-Linus Walleij
+... for why you are mistaken.  Pay particular attention to the low order 
+address bit scrambling on narrow loads and stores and how this results 
+in uniform (not affected by processor endian mode) load and store 
+results for aligned 64-bit accesses.  In effect, it is magic, and 
+__raw_writeq yields correct results in both big and little endian modes 
+of operation.
+
+David Daney.
+
+
