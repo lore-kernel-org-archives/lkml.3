@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934827Ab3FSOGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:06:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49950 "EHLO comal.ext.ti.com"
+	id S934847Ab3FSOHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:07:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56802 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933853Ab3FSOGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:06:33 -0400
+	id S934775Ab3FSOGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 10:06:31 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <stern@rowland.harvard.edu>, <tony@atomide.com>
 CC: <balbi@ti.com>, <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during bus suspend
-Date: Wed, 19 Jun 2013 17:05:51 +0300
-Message-ID: <1371650753-11452-5-git-send-email-rogerq@ti.com>
+Subject: [RFC PATCH 3/6] USB: ehci: allow controller drivers to override irq & bus_suspend/resume
+Date: Wed, 19 Jun 2013 17:05:50 +0300
+Message-ID: <1371650753-11452-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1371650753-11452-1-git-send-email-rogerq@ti.com>
 References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
@@ -23,147 +23,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Runtime suspend the controller during bus suspend and resume it
-during bus resume. This will ensure that the USB Host power domain
-enters lower power state and does not prevent the SoC from
-endering deeper sleep states.
+Some drivers (e.g. ehci_omap) need to do additional work in
+bus suspend/resume and interrupt handler to support low power
+modes and remote wakeup.
+Allow drivers to override these functions through ehci_driver_overrides.
 
-Remote wakeup will come up as an interrupt while the controller
-is suspended, so tackle it carefully using a workqueue.
+Also export the ehci_irq(), ehci_bus_suspend() and ehci_bus_resume()
+functions so they can be called from the controller drivers.
 
+CC: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/host/ehci-omap.c |   82 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 82 insertions(+), 0 deletions(-)
+ drivers/usb/host/ehci-hcd.c |    9 ++++++++-
+ drivers/usb/host/ehci-hub.c |    6 ++++--
+ drivers/usb/host/ehci.h     |    6 ++++++
+ 3 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index 16d7150..91f14f1 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -44,6 +44,8 @@
- #include <linux/usb/hcd.h>
- #include <linux/of.h>
- #include <linux/dma-mapping.h>
-+#include <linux/workqueue.h>
-+#include <linux/spinlock.h>
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 246e124..8d35dd4 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -681,7 +681,7 @@ EXPORT_SYMBOL_GPL(ehci_setup);
  
- #include "ehci.h"
+ /*-------------------------------------------------------------------------*/
  
-@@ -69,6 +71,7 @@ static const char hcd_name[] = "ehci-omap";
- struct omap_hcd {
- 	struct usb_phy *phy[OMAP3_HS_USB_PORTS]; /* one PHY for each port */
- 	int nports;
-+	struct work_struct work;
- };
+-static irqreturn_t ehci_irq (struct usb_hcd *hcd)
++irqreturn_t ehci_irq(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	u32			status, masked_status, pcd_status = 0, cmd;
+@@ -828,6 +828,7 @@ dead:
+ 		usb_hcd_poll_rh_status(hcd);
+ 	return IRQ_HANDLED;
+ }
++EXPORT_SYMBOL_GPL(ehci_irq);
  
- static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
-@@ -81,6 +84,76 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
- 	return __raw_readl(base + reg);
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -1211,6 +1212,12 @@ void ehci_init_driver(struct hc_driver *drv,
+ 		drv->hcd_priv_size += over->extra_priv_size;
+ 		if (over->reset)
+ 			drv->reset = over->reset;
++		if (over->bus_suspend)
++			drv->bus_suspend = over->bus_suspend;
++		if (over->bus_resume)
++			drv->bus_resume = over->bus_resume;
++		if (over->irq)
++			drv->irq = over->irq;
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(ehci_init_driver);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 9ab4a4d..1fc03f9 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -218,7 +218,7 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ 	spin_unlock_irq(&ehci->lock);
  }
  
-+static void omap_ehci_work(struct work_struct *work)
-+{
-+	struct omap_hcd *omap = container_of(work, struct omap_hcd, work);
-+	struct ehci_hcd *ehci = container_of((void *) omap,
-+						struct ehci_hcd, priv);
-+	struct usb_hcd *hcd = ehci_to_hcd(ehci);
-+	struct device *dev = hcd->self.controller;
-+
-+	pm_runtime_get_sync(dev);
-+	enable_irq(hcd->irq);
-+	/*
-+	 * enable_irq() should preempt us with a pending IRQ
-+	 * so we can be sure that IRQ handler completes before
-+	 * we call pm_runtime_put_sync()
-+	 */
-+	pm_runtime_put_sync(dev);
-+}
-+
-+static irqreturn_t omap_ehci_irq(struct usb_hcd *hcd)
-+{
-+	struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
-+	struct device *dev = hcd->self.controller;
-+	irqreturn_t ret;
-+
-+	if (pm_runtime_suspended(dev)) {
-+		schedule_work(&omap->work);
-+		disable_irq_nosync(hcd->irq);
-+		ret = IRQ_HANDLED;
-+	} else
-+		ret = ehci_irq(hcd);
-+
-+	return ret;
-+}
-+
-+#ifdef CONFIG_PM
-+static int omap_ehci_bus_suspend(struct usb_hcd *hcd)
-+{
-+	struct device *dev;
-+	int ret;
-+
-+	dev = hcd->self.controller;
-+	ret = ehci_bus_suspend(hcd);
-+	if (ret)
-+		return ret;
-+
-+	ret = pm_runtime_put_sync(dev);
-+	if (ret < 0 && !(ret == -EBUSY || ret == -EAGAIN)) {
-+		dev_err(dev, "Failed to runtime suspend :%d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int omap_ehci_bus_resume(struct usb_hcd *hcd)
-+{
-+	struct device *dev;
-+	int ret;
-+
-+	dev = hcd->self.controller;
-+	ret = pm_runtime_get_sync(dev);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to runtime resume :%d\n", ret);
-+		return ret;
-+	}
-+
-+	return ehci_bus_resume(hcd);
-+}
-+#endif /* CONFIG_PM */
-+
- /* configure so an HC device and id are always provided */
- /* always called with process context; sleeping is OK */
+-static int ehci_bus_suspend (struct usb_hcd *hcd)
++int ehci_bus_suspend(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	int			port;
+@@ -348,10 +348,11 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
+ 	hrtimer_cancel(&ehci->hrtimer);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(ehci_bus_suspend);
  
-@@ -88,6 +161,11 @@ static struct hc_driver __read_mostly ehci_omap_hc_driver;
  
- static const struct ehci_driver_overrides ehci_omap_overrides __initdata = {
- 	.extra_priv_size = sizeof(struct omap_hcd),
-+#ifdef CONFIG_PM
-+	.bus_suspend = omap_ehci_bus_suspend,
-+	.bus_resume = omap_ehci_bus_resume,
-+#endif
-+	.irq = omap_ehci_irq,
+ /* caller has locked the root hub, and should reset/reinit on error */
+-static int ehci_bus_resume (struct usb_hcd *hcd)
++int ehci_bus_resume(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	u32			temp;
+@@ -489,6 +490,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 	spin_unlock_irq(&ehci->lock);
+ 	return -ESHUTDOWN;
+ }
++EXPORT_SYMBOL_GPL(ehci_bus_resume);
+ 
+ #else
+ 
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 7c978b2..992d626 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -795,15 +795,21 @@ static inline u32 hc32_to_cpup (const struct ehci_hcd *ehci, const __hc32 *x)
+ struct ehci_driver_overrides {
+ 	size_t		extra_priv_size;
+ 	int		(*reset)(struct usb_hcd *hcd);
++	int		(*bus_suspend)(struct usb_hcd *hcd);
++	int		(*bus_resume)(struct usb_hcd *hcd);
++	irqreturn_t	(*irq) (struct usb_hcd *hcd);
  };
  
- /**
-@@ -163,6 +241,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ extern void	ehci_init_driver(struct hc_driver *drv,
+ 				const struct ehci_driver_overrides *over);
+ extern int	ehci_setup(struct usb_hcd *hcd);
++extern irqreturn_t ehci_irq(struct usb_hcd *hcd);
  
- 	omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
- 	omap->nports = pdata->nports;
-+	INIT_WORK(&omap->work, omap_ehci_work);
+ #ifdef CONFIG_PM
+ extern int	ehci_suspend(struct usb_hcd *hcd, bool do_wakeup);
+ extern int	ehci_resume(struct usb_hcd *hcd, bool hibernated);
++extern int	ehci_bus_suspend(struct usb_hcd *hcd);
++extern int	ehci_bus_resume(struct usb_hcd *hcd);
+ #endif	/* CONFIG_PM */
  
- 	platform_set_drvdata(pdev, hcd);
- 
-@@ -257,6 +336,9 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
- 	struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
- 	int i;
- 
-+	if (pm_runtime_suspended(dev))
-+		pm_runtime_get_sync(dev);
-+
- 	usb_remove_hcd(hcd);
- 
- 	for (i = 0; i < omap->nports; i++) {
+ #endif /* __LINUX_EHCI_HCD_H */
 -- 
 1.7.4.1
 
