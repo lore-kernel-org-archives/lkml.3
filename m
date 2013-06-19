@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3FSQpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:45:36 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:1574
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756707Ab3FSQpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:45:33 -0400
-Message-ID: <51C1E028.2040700@caviumnetworks.com>
-Date: Wed, 19 Jun 2013 09:45:28 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1757222Ab3FSQpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:45:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757047Ab3FSQpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:45:49 -0400
+Date: Wed, 19 Jun 2013 12:45:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: frequent softlockups with 3.10rc6.
+Message-ID: <20130619164540.GB22483@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
-References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com> <2302882.NVjP8DdXWY@wuerfel>
-In-Reply-To: <2302882.NVjP8DdXWY@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:SN2PR07MB064;H:BLUPRD0712HT001.namprd07.prod.outlook.com;LANG:en;
-X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 03:01 AM, Arnd Bergmann wrote:
-> On Tuesday 18 June 2013 12:12:53 David Daney wrote:
->> +static unsigned int dw8250_serial_inq(struct uart_port *p, int offset)
->> +{
->> +       offset <<= p->regshift;
->> +
->> +       return (u8)__raw_readq(p->membase + offset);
->> +}
->> +
->> +static void dw8250_serial_outq(struct uart_port *p, int offset, int value)
->> +{
->> +       struct dw8250_data *d = p->private_data;
->> +
->> +       if (offset == UART_LCR)
->> +               d->last_lcr = value;
->> +
->> +       offset <<= p->regshift;
->> +       __raw_writeq(value, p->membase + offset);
->> +       dw8250_serial_inq(p, UART_LCR);
->> +}
->
-> This breaks building on 32 bit architectures as I found on my daily ARM
-> builds: __raw_writeq cannot be defined on architectures that don't have
-> native 64 bit data access instructions.
+I've been hitting this a lot the last few days.
+This is the same machine that I was also seeing lockups during sync()
 
-I will rework the patch to avoid this problem.
+	Dave
 
+BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child9:6902]
+Modules linked in: bridge snd_seq_dummy dlci bnep fuse 8021q garp stp hidp tun rfcomm can_raw ipt_ULOG nfnetlink rose scsi_transport_iscsi ipx p8023 p8022 phonet llc2 irda rds pppoe pppox caif_socket caif ppp_generic af_key slhc crc_ccitt bluetooth netrom can_bcm x25 appletalk psnap can llc af_rxrpc atm ax25 af_802154 nfc rfkill coretemp hwmon kvm_intel kvm snd_hda_codec_realtek snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel snd_hda_intel microcode snd_hda_codec pcspkr snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+irq event stamp: 2057909
+hardirqs last  enabled at (2057908): [<ffffffff816ed220>] restore_args+0x0/0x30
+hardirqs last disabled at (2057909): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
+softirqs last  enabled at (1444600): [<ffffffff810542d4>] __do_softirq+0x194/0x440
+softirqs last disabled at (1444851): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+CPU: 1 PID: 6902 Comm: trinity-child9 Not tainted 3.10.0-rc6+ #16
+task: ffff880243212520 ti: ffff88015c1fa000 task.ti: ffff88015c1fa000
+RIP: 0010:[<ffffffff810541f1>]  [<ffffffff810541f1>] __do_softirq+0xb1/0x440
+RSP: 0000:ffff880244a03f08  EFLAGS: 00000202
+RAX: ffff880243212520 RBX: ffffffff816ed220 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880243212520
+RBP: ffff880244a03f70 R08: 0000000010000003 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff880244a03e78
+R13: ffffffff816f5d2f R14: ffff880244a03f70 R15: 0000000000000000
+FS:  00007f2e89fa1740(0000) GS:ffff880244a00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 000000000351a000 CR3: 00000001f6b7d000 CR4: 00000000001407e0
+DR0: 00007f2e898d2000 DR1: 0000000001c59000 DR2: 0000000001c5c000
+DR3: 0000000000008000 DR6: 00000000fffe0ff0 DR7: 00000000000b0602
+Stack:
+ 0000000a00406040 00000001008fead4 ffff88015c1fbfd8 ffff88015c1fbfd8
+ ffff88015c1fbfd8 0000000010010002 ffff88015c1fbfd8 ffffffff00000001
+ ffff880243212520 0000000000000000 ffff88023bbf0c80 0000000000000001
+Call Trace:
+ <IRQ> 
 
-> It's also wrong to use the
-> __raw_* variant, which is not guaranteed to be atomic and is not
-> endian-safe.
+ [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+ [<ffffffff816f6bcb>] smp_apic_timer_interrupt+0x6b/0x9b
+ [<ffffffff816f5d2f>] apic_timer_interrupt+0x6f/0x80
+ <EOI> 
 
-We do runtime probing and only use this function on platforms where it 
-is appropriate, so atomicity is not an issue.  As for endianess, I used 
-the __raw_ variant precisely because it is correct for both big and 
-little endian kernels.
-
-David Daney
-
+ [<ffffffff816ed220>] ? retint_restore_args+0xe/0xe
+ [<ffffffff816ec642>] ? _raw_spin_unlock_irq+0x32/0x60
+ [<ffffffff816ec63c>] ? _raw_spin_unlock_irq+0x2c/0x60
+ [<ffffffff81086c95>] finish_task_switch+0x85/0x130
+ [<ffffffff81086c57>] ? finish_task_switch+0x47/0x130
+ [<ffffffff816ea734>] __schedule+0x444/0x9c0
+ [<ffffffff816eb313>] preempt_schedule_irq+0x53/0x90
+ [<ffffffff816ed336>] retint_kernel+0x26/0x30
+ [<ffffffff81145297>] ? user_enter+0x87/0xd0
+ [<ffffffff8100f6f8>] syscall_trace_leave+0x78/0x140
+ [<ffffffff816f53af>] int_check_syscall_exit_work+0x34/0x3d
+Code: 48 89 45 b8 48 89 45 b0 48 89 45 a8 66 0f 1f 44 00 00 65 c7 04 25 80 0f 1d 00 00 00 00 00 e8 b7 31 06 00 fb 49 c7 c6 00 41 c0 81 <eb> 0e 0f 1f 44 00 00 49 83 c6 08 41 d1 ef 74 6c 41 f6 c7 01 74 
 
