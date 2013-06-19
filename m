@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab3FSQs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:48:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38898 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3FSQs1 (ORCPT
+	id S1757213Ab3FSQuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:50:35 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:24552 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab3FSQud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:48:27 -0400
-Date: Wed, 19 Jun 2013 17:48:22 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130619164822.GA28240@srcf.ucam.org>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
- <20130619125243.GD11209@gmail.com>
- <20130619130225.GA28311@pd.tnic>
- <20130619130434.GB24957@gmail.com>
- <20130619160804.GB27832@srcf.ucam.org>
- <20130619161827.GF28300@pd.tnic>
- <20130619162115.GA28119@srcf.ucam.org>
- <20130619163804.GG28300@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130619163804.GG28300@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 19 Jun 2013 12:50:33 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH RFC 0/2] Lockless update of reference count protected by spinlock
+Date: Wed, 19 Jun 2013 12:50:03 -0400
+Message-Id: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 06:38:04PM +0200, Borislav Petkov wrote:
-> On Wed, Jun 19, 2013 at 05:21:15PM +0100, Matthew Garrett wrote:
-> > Yes, kexec needs a different solution.
-> 
-> No need. If we say, "efi=use_11_map", the 1:1 map will be shoved down
-> SetVirtualAddressMap. Otherwise the high mappings.
+This patchset supports a generic mechanism to atomically update
+a reference count that is protected by a spinlock without actually
+acquiring the lock itself. If the update doesn't succeeed, the caller
+will have to acquire the lock and update the reference count in the
+the old way.  This will help in situation where there is a lot of
+spinlock contention because of frequent reference count update.
 
-Ah, sure - if we're willing to take an argument then we can leave it at 
-that. But having a stable set of high addresses for UEFI is also an 
-option.
+The new mechanism was designed in such a way to easily retrofit
+into existing code with minimal changes. Both the spinlock and the
+reference count can be accessed in the same way as before.
 
-> > Because firmware images don't always update all of the pointers, and
-> > so will crash if the 1:1 mappings aren't present.
-> 
-> Ok, so it sounds like we want to *always* create both mappings but,
-> depending on what we want, to shove down SetVirtualAddressMap a
-> different set. And the 1:1 map will be the optional one which we give
-> SetVirtualAddressMap only when user wants it, i.e. when booting with
-> "efi=1:1_map".
+The d_lock and d_count fields of the struct dentry in dcache.h was
+modified to use the new mechanism. This serves as an example of how
+to convert existing spinlock and reference count combo to use the
+new way of locklessly updating the reference count.
 
-Yup, I think that sounds ideal.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Waiman Long (2):
+  spinlock: New spinlock_refcount.h for lockless update of refcount
+  dcache: Locklessly update d_count whenever possible
+
+ fs/dcache.c                       |   14 +++-
+ include/linux/dcache.h            |   22 +++++-
+ include/linux/spinlock_refcount.h |  145 +++++++++++++++++++++++++++++++++++++
+ include/linux/spinlock_types.h    |   19 +++++
+ 4 files changed, 196 insertions(+), 4 deletions(-)
+ create mode 100644 include/linux/spinlock_refcount.h
+
