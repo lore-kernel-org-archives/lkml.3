@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab3FSQ74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:59:56 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44145 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab3FSQ7z (ORCPT
+	id S1757273Ab3FSRAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:00:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33489 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757021Ab3FSRAr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:59:55 -0400
-From: Mark Brown <broonie@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        patches@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Wed, 19 Jun 2013 17:57:56 +0100
-Message-Id: <1371661076-12626-1-git-send-email-broonie@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: wm8997: Make Kconfig prompt for WM8997 more consistent
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 19 Jun 2013 13:00:47 -0400
+Date: Wed, 19 Jun 2013 18:00:43 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: David Lang <david@lang.hm>, Ingo Molnar <mingo@kernel.org>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: power-efficient scheduling design
+Message-ID: <20130619170042.GH5460@e103034-lin>
+References: <20130530134718.GB32728@e103034-lin>
+ <20130531105204.GE30394@gmail.com>
+ <20130614160522.GG32728@e103034-lin>
+ <51C07ABC.2080704@linux.intel.com>
+ <alpine.DEB.2.02.1306181039340.9258@nftneq.ynat.uz>
+ <51C1D0BB.3040705@linux.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <51C1D0BB.3040705@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 19 Jun 2013 17:00:42.0479 (UTC) FILETIME=[88586FF0:01CE6D0E]
+X-MC-Unique: 113061918004301801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig prompt for WM8997 says "Support for..." while the other MFD
-Kconfigs (including the adjacent ones for other Arizona devices) just
-list the device name which sticks out like a sore thumb when doing
-configuration.
+On Wed, Jun 19, 2013 at 04:39:39PM +0100, Arjan van de Ven wrote:
+> On 6/18/2013 10:47 AM, David Lang wrote:
+> 
+> >
+> > It's bad enough trying to guess the needs of the processes, but if you also are reduced to guessing the capabilities of the cores, how can anything be made to work?
+> 
+> btw one way to look at this is to assume that (with some minimal hinting)
+> the CPU driver will do the right thing and get you just about the best performance you can get
+> (that is appropriate for the task at hand)...
+> ... and don't do anything in the scheduler proactively.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If I understand correctly, you mean if your hardware/firmware is fully
+in control of the p-state selection and changes it fast enough to match
+the current load, the scheduler doesn't have to care? By fast enough I
+mean, faster than the scheduler would notice if a cpu was temporarily
+overloaded at a low p-state. In that case, you wouldn't need
+cpufreq/p-state hints, and the scheduler would only move tasks between
+cpus when cpus are fully loaded at their max p-state.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 29f7363..f804960 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1048,7 +1048,7 @@ config MFD_WM5110
- 	  Support for Wolfson Microelectronics WM5110 low power audio SoC
- 
- config MFD_WM8997
--	bool "Support Wolfson Microelectronics WM8997"
-+	bool "Wolfson Microelectronics WM8997"
- 	depends on MFD_ARIZONA
- 	help
- 	  Support for Wolfson Microelectronics WM8997 low power audio SoC
--- 
-1.8.3.1
+> 
+> Now for big.little and other temporary or permanent asymmetries, we may want to
+> have a "max performance level" type indicator, and that's fair enough
+> (and this can be dynamic, since it for thermal reasons this can change over time,
+> but on a somewhat slower timescale)
+> 
+> 
+> the hints I have in mind are not all that complex; we have the biggest issues today
+> around task migration (the task migrates to a cold cpu... so a simple notifier chain
+> on the new cpu as it is accepting a task and we can bump it up), real time tasks
+> (again, simple notifier chain to get you to a predictably high performance level)
+> and we're a long way better than we are today in terms of actual problems.
+> 
+> For all the talk of ondemand (as ARM still uses that today)... that guy puts you in
+> either the lowest or highest frequency over 95% of the time. Other non-cpufreq solutions
+> like on Intel are bit more advanced (and will grow more so over time), but even there,
+> in the grand scheme of things, the scheduler shouldn't have to care anymore with those
+> two notifiers in place.
+
+You would need more than a few hints to implement more advanced capacity
+management like proposed for the power scheduler. I believe that Intel
+would benefit as well from guiding the scheduler to idle the right cpu
+to enable deeper idle states and/or enable turbo-boost for other cpus.
+
+Morten
 
