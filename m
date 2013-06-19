@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934222Ab3FSLIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:08:21 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:50051 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933991Ab3FSLIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:08:19 -0400
-Message-ID: <51C1911A.3000507@redhat.com>
-Date: Wed, 19 Jun 2013 13:08:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S934301Ab3FSLJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:09:09 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:39253 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933991Ab3FSLJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 07:09:07 -0400
+Date: Wed, 19 Jun 2013 13:08:12 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, juan.david.gonzalez.cobas@cern.ch,
+        cota@braap.org, siglesias@igalia.com, gregkh@linuxfoundation.org,
+        rob@landley.net, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/8] FMC: add needed headers
+Message-ID: <20130619110812.GA26690@mail.gnudd.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        avi.kivity@gmail.com, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075656.GY4725@redhat.com> <51B590C9.9080009@gmail.com> <20130610224352.0a769838745b294fc43f7823@gmail.com> <20130610170341.GJ29022@redhat.com>
-In-Reply-To: <20130610170341.GJ29022@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <2530586.aQgWYlUvJa@wuerfel>
+References: <2530586.aQgWYlUvJa@wuerfel>
+  <cover.1371018406.git.rubini@gnudd.com>
+ <1d3aedf8636f4bed4ffda25e13acd853bf8e08fb.1371018406.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/06/2013 19:03, Gleb Natapov ha scritto:
-> On Mon, Jun 10, 2013 at 10:43:52PM +0900, Takuya Yoshikawa wrote:
->> On Mon, 10 Jun 2013 16:39:37 +0800
->> Xiao Guangrong <xiaoguangrong.eric@gmail.com> wrote:
->>
->>> On 06/10/2013 03:56 PM, Gleb Natapov wrote:
->>>> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
->>
->>>> Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
->>>> sp->mmio_cached, so they should be removed as part of the patch series?
->>>
->>> Yes, i agree, they should be removed. :)
->>
->> I'm fine with removing it but please make it clear that you all agree
->> on the same basis.
->>
->> Last time, Paolo mentioned the possibility to use some bits of spte for
->> other things.  The suggestion there was to keep sp->mmio_cached code
->> for the time we would need to reduce the bits for generation numbers.
->>
->> Do you think that zap_all() is now preemptible and can treat the
->> situation reasonably well as the current kvm_mmu_zap_mmio_sptes()?
->>
->> One downside is the need to zap unrelated shadow pages, but if this case
->> is really very rare, yes I agree, it should not be a problem: it depends
->> on how many bits we can use.
->>
->> Just please reconfirm.
->>
-> That was me who mention the possibility to use some bits of spte for
-> other things. But for now I have a use for one bit only. Now that you
-> have reminded me about that discussion I am not so sure we want to
-> remove kvm_mmu_zap_mmio_sptes(), but on the other hand it is non
-> preemptable, so large number of mmio sptes can cause soft lockups.
-> zap_all() is better in this regards now.
+> The use of the 'readl' and 'writel' identifiers here causes build errors on
+> architectures where those are macros. This renames the fields to read32/write32
+> to avoid the problem.
 
-I asked Gleb on IRC, and he's fine with applying patch 7 too (otherwise
-there's hardly any benefit, because kvm_mmu_zap_mmio_sptes is
-non-preemptable).
+Thanks.  I'll apply the same to my repo and related drivers.
 
-I'm also changing the -13 to -150 since it's quite easy to generate 150
-calls to KVM_SET_USER_MEMORY_REGION.  Using QEMU, and for a pretty basic
-guest with virtio-net, IDE controller and VGA you get:
+Acked-by: Alessandro Rubini <rubini@gnudd.com>
 
-- 9-10 calls before starting the guest, depending on the guest memory size
-
-- around 25 during the BIOS
-
-- around 20 during kernel boot
-
-- 34 during a single dump of the 64 KB ROM from a virtio-net device.
-
-Paolo
+/alessandro
