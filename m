@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934193Ab3FSJGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:06:23 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:54943 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933820Ab3FSJGU (ORCPT
+	id S934221Ab3FSJIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:08:38 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60753 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933873Ab3FSJIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:06:20 -0400
-Date: Wed, 19 Jun 2013 11:06:11 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
- the MIPS-VZ extensions.
-Message-ID: <20130619090611.GB11687@linux-mips.org>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Jun 2013 05:08:35 -0400
+Date: Wed, 19 Jun 2013 02:08:35 -0700 (PDT)
+Message-Id: <20130619.020835.1966828230232438649.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] sparc: Switch to asm-generic/linkage.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367920555-18544-1-git-send-email-geert@linux-m68k.org>
+References: <1367920555-18544-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI, Since you intend to resubmit anyway I just dropped the entire series
-from patchwork.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Tue,  7 May 2013 11:55:55 +0200
 
-  Ralf
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Applied, thanks.
