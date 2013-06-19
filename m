@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab3FSOt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:49:26 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20382 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab3FSOtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:49:25 -0400
-Date: Wed, 19 Jun 2013 17:49:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] FMC: NULL dereference on allocation failure
-Message-ID: <20130619144904.GA10484@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1756905Ab3FSOv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:51:29 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49793 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756724Ab3FSOv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 10:51:28 -0400
+Message-ID: <1371653443.21896.291.camel@pasglop>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
+Date: Thu, 20 Jun 2013 00:50:43 +1000
+In-Reply-To: <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
+	 <1370412673-1345-4-git-send-email-aik@ozlabs.ru>
+	 <1371422343.21896.143.camel@pasglop>
+	 <1371438800.22681.38.camel@ul30vt.home>
+	 <1371441361.21896.152.camel@pasglop>
+	 <1371522772.22681.140.camel@ul30vt.home> <87txkun568.fsf@rustcorp.com.au>
+	 <1371617970.21896.232.camel@pasglop>
+	 <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't allocate "arr" then the cleanup path will dereference it and
-oops.
+On Wed, 2013-06-19 at 11:58 +0200, Alexander Graf wrote:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > Alex, any objection ?
+> 
+> Which Alex? :)
 
-diff --git a/drivers/fmc/fmc-sdb.c b/drivers/fmc/fmc-sdb.c
-index 74fb326..79adc39 100644
---- a/drivers/fmc/fmc-sdb.c
-+++ b/drivers/fmc/fmc-sdb.c
-@@ -46,16 +46,17 @@ static struct sdb_array *__fmc_scan_sdb_tree(struct fmc_device *fmc,
- 	onew = __sdb_rd(fmc, sdb_addr + 4, convert);
- 	n = __be16_to_cpu(*(uint16_t *)&onew);
- 	arr = kzalloc(sizeof(*arr), GFP_KERNEL);
--	if (arr) {
--		arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
--		arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
--	}
--	if (!arr || !arr->record || !arr->subtree) {
-+	if (!arr)
-+		return ERR_PTR(-ENOMEM);
-+	arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
-+	arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
-+	if (!arr->record || !arr->subtree) {
- 		kfree(arr->record);
- 		kfree(arr->subtree);
- 		kfree(arr);
- 		return ERR_PTR(-ENOMEM);
- 	}
-+
- 	arr->len = n;
- 	arr->level = level;
- 	arr->fmc = fmc;
+Heh, mostly Williamson in this specific case but your input is still
+welcome :-)
+
+> I think validate works, it keeps iteration logic out of the kernel
+> which is a good thing. There still needs to be an interface for
+> getting the iommu id in VFIO, but I suppose that one's for the other
+> Alex and Jörg to comment on.
+
+I think getting the iommu fd is already covered by separate patches from
+Alexey.
+
+> > 
+> > Do we need to make it a get/put interface instead ?
+> > 
+> > 	vfio_validate_and_use_iommu(file, iommu_id);
+> > 
+> > 	vfio_release_iommu(file, iommu_id);
+> > 
+> > To ensure that the resource remains owned by the process until KVM
+> > is closed as well ?
+> > 
+> > Or do we want to register with VFIO with a callback so that VFIO can
+> > call us if it needs us to give it up ?
+> 
+> Can't we just register a handler on the fd and get notified when it
+> closes? Can you kill VFIO access without closing the fd?
+
+That sounds actually harder :-)
+
+The question is basically: When we validate that relationship between a
+specific VFIO struct file with an iommu, what is the lifetime of that
+and how do we handle this lifetime properly.
+
+There's two ways for that sort of situation: The notification model
+where we get notified when the relationship is broken, and the refcount
+model where we become a "user" and thus delay the breaking of the
+relationship until we have been disposed of as well.
+
+In this specific case, it's hard to tell what is the right model from my
+perspective, which is why I would welcome Alex (W.) input.
+
+In the end, the solution will end up being in the form of APIs exposed
+by VFIO for use by KVM (via that symbol lookup mechanism) so Alex (W),
+as owner of VFIO at this stage, what do you want those to look
+like ? :-)
+
+Cheers,
+Ben.
+ 
+> 
+> Alex
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm-ppc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
