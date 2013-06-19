@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935047Ab3FSUd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:33:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65385 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934714Ab3FSUd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:33:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,899,1363158000"; 
-   d="scan'208";a="332339968"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBCAAHyTAP//kUdQgACKGAD//4yfcA==
-Date: Wed, 19 Jun 2013 20:33:49 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA8838B@ORSMSX106.amr.corp.intel.com>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
- <20130619175728.2852.73156.stgit@localhost.localdomain>
- <20130619180441.GK28300@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
- <20130619183640.GL28300@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
- <20130619201438.GM28300@pd.tnic>
-In-Reply-To: <20130619201438.GM28300@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S935099Ab3FSUe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:34:28 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:41813 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934714Ab3FSUe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 16:34:26 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linaro-kernel@lists.linaro.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/nohz: add sysctl control over sched_tick_max_deferment
+In-Reply-To: <20130619184238.GD21522@somewhere.redhat.com> (Frederic
+	Weisbecker's message of "Wed, 19 Jun 2013 20:42:40 +0200")
+References: <1371599913-1232-1-git-send-email-khilman@linaro.org>
+	<20130619184238.GD21522@somewhere.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Wed, 19 Jun 2013 13:34:23 -0700
+Message-ID: <87ehbx6drk.fsf@linaro.org>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5JKY6LS012585
 
->> There is (or should be)
+Frederic Weisbecker <fweisbec@gmail.com> writes:
+
+> On Tue, Jun 18, 2013 at 04:58:28PM -0700, Kevin Hilman wrote:
+>> Allow sysctl override of sched_tick_max_deferment in order to ease
+>> finding/fixing the remaining issues with full nohz.
+>> 
+>> The value to be written is in jiffies, and -1 means the max deferment
+>> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
+>> 
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
 >
-> Ha!
-
-Oh ye of little faith - I'm sure the BIOS will get this right this time :-)
-
-
-> Ok, seriously: so the situation should still be fine, FF reported errors
-> get the CPER format while the rest, the "old" MCE format.
+> This looks like a useful thing but I wonder if a debugfs file would
+> be more appropriate than sysctl.
 >
-> cper.c is doing printk so I'm guessing it would need to get its own
-> tracepoint and carry that to userspace.
+> The scheduler tick max deferment is supposed to be a temporary
+> hack so we probably don't want to bring a real user ABI for that.
 
-Yes - a tracepoint is the right answer here for all the new stuff.
+I wondered about that as well, but I wasn't sure if the existing knobs
+under CONFIG_SCHED_DEBUG (sched_min_granularity_ns, sched_latency_ns,
+etc.) are considered permanant ABI, or optional debugging tools.
 
-> Concerning the RAS daemon, Robert and I are making good progress so once
-> we have the persistent events in perf, we can read that tracepoint in
-> userspace and do whatever we want with the error info.
+This new option is inside CONFIG_SCHED_DEBUG along with the others, but
+if debugfs is preferred I can move it there.  It seems strange though to
+just have this knob in debugfs and the rest in sysctl under
+CONFIG_SCHED_DEBUG.
 
-Mauro has a rasdaemon in progress
-       git://git.fedorahosted.org/rasdaemon.git
-just picks up perf/events and logs to a sqlite database.
+Thanks,
 
->> In this new modern world - Naveen wants to have the BIOS decide the
->> threshold, so we'd like Linux to take some action as soon as it sees
->> just one CPER.
->
-> Why would Linux have to intervene if it is doing FF - wasn't the deal
-> behind Firmware First for the firmware to get the error first and handle
-> accordingly?
+Kevin
 
-Because Linux can do runtime things that the BIOS can't - like offline a 4K page.
-Idea here is that BIOS does whatever the OEM thinks is the right level of
-threshholding - not bothering the OS with petty details of random corrected
-erorrs that mean nothing.  But if there is some repeated error (like a stuck bit)
-then the BIOS can provide a CPER to the OS telling it that it would be a good idea
-to stop using that page.
 
-And this is where the semantics of a CPER change between the original WSM-EX
-implementation ... where Linux expects to see all the errors and do its own
-thresholding only taking a page offline if it sees a lot of CPER refer to the same
-page; and now - where the BIOS does the counting and tells Linux just once to
-take the page offline.
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
