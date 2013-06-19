@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934107Ab3FSCmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 22:42:38 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:47978 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933861Ab3FSCmh (ORCPT
+	id S934136Ab3FSCrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 22:47:09 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:61092 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933836Ab3FSCrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 22:42:37 -0400
+	Tue, 18 Jun 2013 22:47:08 -0400
 MIME-Version: 1.0
-Date: Wed, 19 Jun 2013 10:42:35 +0800
-Message-ID: <CAPgLHd_sYVPQQkx7y4L=i_-GMjSmFGAbgY0bP7M1sr_02WtPvA@mail.gmail.com>
-Subject: [PATCH] vme: vme_tsi148.c: fix error return code in tsi148_probe()
+Date: Wed, 19 Jun 2013 10:47:06 +0800
+Message-ID: <CAPgLHd-k_HkBa+oKU+7gPZfY3vT4u-xzsKZTqjkw_GdyK1rGcg@mail.gmail.com>
+Subject: [PATCH -next] mfd: htc-egpio: use devm_ioremap_nocache() instead of ioremap_nocache()
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,26 +21,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Fix to return a negative error code in the tsi148_crcsr_init() error
-handling case instead of 0, as done elsewhere in this function.
+Replace probe-time ioremap_nocache() call with devm_ioremap_nocache()
+to avoid iounmap() missing and get rid of the corresponding iounmap()
+call on remove.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/vme/bridges/vme_tsi148.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mfd/htc-egpio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
-index 9c1aa4d..95c9b54 100644
---- a/drivers/vme/bridges/vme_tsi148.c
-+++ b/drivers/vme/bridges/vme_tsi148.c
-@@ -2582,7 +2582,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	dev_info(&pdev->dev, "VME Write and flush and error check is %s\n",
- 		err_chk ? "enabled" : "disabled");
- 
--	if (tsi148_crcsr_init(tsi148_bridge, pdev)) {
-+	retval = tsi148_crcsr_init(tsi148_bridge, pdev);
-+	if (retval) {
- 		dev_err(&pdev->dev, "CR/CSR configuration failed.\n");
- 		goto err_crcsr;
+diff --git a/drivers/mfd/htc-egpio.c b/drivers/mfd/htc-egpio.c
+index f2e0ad4..26aca54 100644
+--- a/drivers/mfd/htc-egpio.c
++++ b/drivers/mfd/htc-egpio.c
+@@ -286,7 +286,8 @@ static int __init egpio_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res)
+ 		goto fail;
+-	ei->base_addr = ioremap_nocache(res->start, resource_size(res));
++	ei->base_addr = devm_ioremap_nocache(&pdev->dev, res->start,
++					     resource_size(res));
+ 	if (!ei->base_addr)
+ 		goto fail;
+ 	pr_debug("EGPIO phys=%08x virt=%p\n", (u32)res->start, ei->base_addr);
+@@ -380,7 +381,6 @@ static int __exit egpio_remove(struct platform_device *pdev)
+ 		irq_set_chained_handler(ei->chained_irq, NULL);
+ 		device_init_wakeup(&pdev->dev, 0);
  	}
+-	iounmap(ei->base_addr);
+ 
+ 	return 0;
+ }
 
