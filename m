@@ -1,96 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3FSNQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 09:16:13 -0400
-Received: from skyrme.org ([193.175.80.135]:45887 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756468Ab3FSNQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 09:16:11 -0400
-Date: 19 Jun 2013 13:16:06 +0000
-Message-Id: <1371647766-4900-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Fabio Estevam" <fabio.estevam@freescale.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        "Zeng Zhaoming" <zengzm.kernel@gmail.com>, alsa-devel@alsa-project.org,
-        "Liam Girdwood" <lgirdwood@gmail.com>, "Takashi Iwai" <tiwai@suse.de>,
-        "Jaroslav Kysela" <perex@perex.cz>,
-        "Wolfram Sang" <w.sang@pengutronix.de>, broonie@kernel.org,
-        "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH v3] sound/sgtl5000: fix codec register initial values and handling
-X-Mailer: git-send-email 1.6.0.3
-In-Reply-To: <51B749F5.3010907@freescale.com>
-References: <51B749F5.3010907@freescale.com>
+	id S1756742Ab3FSNQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 09:16:20 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:54208 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab3FSNQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 09:16:17 -0400
+Date: Wed, 19 Jun 2013 15:16:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130619131611.GC24957@gmail.com>
+References: <1371165992.27102.573.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371165992.27102.573.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to documentation bit 3:2 in register SSS_CTRL are
-reserved and zero, so initially setting the register to 0x0008
-does not make much sense. Instead, bit 4 should be marked set,
-as this is the power up default.
 
-Further, mask computation in declarative part is obviously wrong:
-Fix FRAC DIVISOR to provide an 11 bit mask correctly.
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
 
-Next, powering down PLL before switching to a mode that
-does not use it, is a bad idea. So first set the mode control,
-then power down PLL.
+> Ingo,
+> 
+> At the time of switching the anon-vma tree's lock from mutex to 
+> rw-sem (commit 5a505085), we encountered regressions for fork heavy workload. 
+> A lot of optimizations to rw-sem (e.g. lock stealing) helped to 
+> mitigate the problem.  I tried an experiment on the 3.10-rc4 kernel 
+> to compare the performance of rw-sem to one that uses mutex. I saw 
+> a 8% regression in throughput for rw-sem vs a mutex implementation in
+> 3.10-rc4.
+> 
+> For the experiments, I used the exim mail server workload in 
+> the MOSBENCH test suite on 4 socket (westmere) and a 4 socket 
+> (ivy bridge) with the number of clients sending mail equal 
+> to number of cores.  The mail server will
+> fork off a process to handle an incoming mail and put it into mail
+> spool. The lock protecting the anon-vma tree is stressed due to
+> heavy forking. On both machines, I saw that the mutex implementation 
+> has 8% more throughput.  I've pinned the cpu frequency to maximum
+> in the experiments.
+> 
+> I've tried two separate tweaks to the rw-sem on 3.10-rc4.  I've tested 
+> each tweak individually.
+> 
+> 1) Add an owner field when a writer holds the lock and introduce 
+> optimistic spinning when an active writer is holding the semaphore.  
+> It reduced the context switching by 30% to a level very close to the
+> mutex implementation.  However, I did not see any throughput improvement
+> of exim.
+> 
+> 2) When the sem->count's active field is non-zero (i.e. someone
+> is holding the lock), we can skip directly to the down_write_failed
+> path, without adding the RWSEM_DOWN_WRITE_BIAS and taking
+> it off again from sem->count, saving us two atomic operations.
+> Since we will try the lock stealing again later, this should be okay.
+> Unfortunately it did not improve the exim workload either.  
+> 
+> Any suggestions on the difference between rwsem and mutex performance
+> and possible improvements to recover this regression?
+> 
+> Thanks.
+> 
+> Tim
+> 
+> vmstat for mutex implementation: 
+> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+>  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> 38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
+> 41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
+> 
+> vmstat for rw-sem implementation (3.10-rc4)
+> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+>  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> 40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
+> 39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
----
- sound/soc/codecs/sgtl5000.c |   11 +++++++----
- sound/soc/codecs/sgtl5000.h |    2 +-
- 2 files changed, 8 insertions(+), 5 deletions(-)
+It appears the main difference is that the rwsem variant context-switches 
+about 36% more than the mutex version, right?
 
-diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-index 92bbfec..6162e19 100644
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -38,7 +38,7 @@
- static const struct reg_default sgtl5000_reg_defaults[] = {
- 	{ SGTL5000_CHIP_CLK_CTRL,		0x0008 },
- 	{ SGTL5000_CHIP_I2S_CTRL,		0x0010 },
--	{ SGTL5000_CHIP_SSS_CTRL,		0x0008 },
-+	{ SGTL5000_CHIP_SSS_CTRL,		0x0010 },
- 	{ SGTL5000_CHIP_DAC_VOL,		0x3c3c },
- 	{ SGTL5000_CHIP_PAD_STRENGTH,		0x015f },
- 	{ SGTL5000_CHIP_ANA_HP_CTRL,		0x1818 },
-@@ -644,16 +644,19 @@ static int sgtl5000_set_clock(struct snd_soc_codec *codec, int frame_rate)
- 		snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP);
-+
-+		/* if using pll, clk_ctrl must be set after pll power up */
-+		snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
- 	} else {
-+		/* otherwise, clk_ctrl must be set before pll power down */
-+		snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
-+
- 		/* power down pll */
- 		snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP,
- 			0);
- 	}
- 
--	/* if using pll, clk_ctrl must be set after pll power up */
--	snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
--
- 	return 0;
- }
- 
-diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
-index 8a9f435..d3a68bb 100644
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -347,7 +347,7 @@
- #define SGTL5000_PLL_INT_DIV_MASK		0xf800
- #define SGTL5000_PLL_INT_DIV_SHIFT		11
- #define SGTL5000_PLL_INT_DIV_WIDTH		5
--#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-+#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
- #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
- #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
- 
--- 
-1.7.9.5
+I'm wondering how that's possible - the lock is mostly write-locked, 
+correct? So the lock-stealing from Davidlohr Bueso and Michel Lespinasse 
+ought to have brought roughly the same lock-stealing behavior as mutexes 
+do, right?
 
+So the next analytical step would be to figure out why rwsem lock-stealing 
+is not behaving in an equivalent fashion on this workload. Do readers come 
+in frequently enough to disrupt write-lock-stealing perhaps?
+
+Context-switch call-graph profiling might shed some light on where the 
+extra context switches come from...
+
+Something like:
+
+  perf record -g -e sched:sched_switch --filter 'prev_state != 0' -a sleep 1
+
+or a variant thereof might do the trick.
+
+Thanks,
+
+	Ingo
