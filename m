@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934445Ab3FSIyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:54:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36378 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934430Ab3FSIx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:57 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130619084329.GA5386@console-pimps.org>
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org> <1371139233.6523.272.camel@linux-s257.site> <20130617092107.GA5440@console-pimps.org> <51BEF71402000078000DEC12@nat28.tlf.novell.com> <20130617101745.GB8569@console-pimps.org> <51BF08CD02000078000DEC99@nat28.tlf.novell.com> <20130617123052.GE8569@console-pimps.org> <7BD74F8E52BFD147B6C83AE7A1E893FFE285F690@atlms1.us.megatrends.com> <51C068C1020000780009C995@nat28.tlf.novell.com> <7BD74F8E52BFD147B6C83AE7A1E893FFE286040C@atlms1.us.megatrends.com> <20130619084329.GA5386@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 19 Jun 2013 01:53:28 -0700
-To: "matt@console-pimps.org" <matt@console-pimps.org>,
-        Zachary Bobroff <zacharyb@ami.com>
-CC: "'Jan Beulich'" <jbeulich@suse.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, Joey Lee <JLee@suse.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Message-ID: <298f16e6-7ada-4f2e-8dae-f3919e7c8225@email.android.com>
+	id S934470Ab3FSIyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:54:33 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38656 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934435Ab3FSIyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 04:54:05 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH 03/13] cpufreq: davinci: call CPUFREQ_POSTCHANGE notfier in error cases
+Date: Wed, 19 Jun 2013 14:22:57 +0530
+Message-Id: <6e65891cd3e33c5db94563a387832ae648ef0d8c.1371630975.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1371630975.git.viresh.kumar@linaro.org>
+References: <cover.1371630975.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1371630975.git.viresh.kumar@linaro.org>
+References: <cover.1371630975.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 0xa0000 restriction applies to BIOS really...
+PRECHANGE and POSTCHANGE notifiers must be called in groups, i.e either both
+should be called or both shouldn't be.
 
-"matt@console-pimps.org" <matt@console-pimps.org> wrote:
+In case we have started PRECHANGE notifier and found an error, we must call
+POSTCHANGE notifier with freqs.new = freqs.old to guarantee that sequence of
+calling notifiers is complete.
 
->On Tue, 18 Jun, at 10:12:22PM, Zachary Bobroff wrote:
->> > Okay, I'm fine with that aspect then. Let's hope everyone plays by
->> > that rule.
->> This is all according to specification, so if they are not following
->> these rules they should be corrected.  The link to where the current
->> public version of the specification is available is here:
->> http://www.uefi.org/specs/agreement
-> 
->While I agree that the vendor should be informed if their
->implementation
->deviates from the spec in some way, the Linux kernel usually still
->needs
->to support these nonconforming machines once they end up in the hands
->of
->consumers (which is often the point at which we discover these kinds of
->issues). Sadly, we're still not in a position where firmware updates
->can
->be applied from OEMs ubiquitously, either because machines are End of
->Life'd or because the update needs to be run from Windows.
->
->We tend to adopt the approach of: let's try this until we get reports
->of
->a class of machines where this solution doesn't work.
->
->Though I do find it refreshing to hear engineers talking about the UEFI
->spec in such black and white terms. That is certainly the ideal we
->should be aiming for.
->
->> > Why by one? Splitting some 'free memory' block may result in an
->> > increase by more then one afaict. Assuming the increment can only
->be
->> > one is >implying you having knowledge of the allocator
->> > implementation and behavior, which shouldn't be made use of in
->> > kernel code.
->> We had to actually increment it by two to get it to work correctly.
->> This is all based upon the use of the low_alloc routine in the linux
->> kernel file.  I agree there is still some outstanding issue based
->upon
->> this, but we put it through several different types of tests and it
->> continued to work correctly.  The truest solution would be to us the
->> AllocateMaxAddress parameter when using AllocatePages. 
->
->[...]
->
->> It was my understanding that the point of this was to allocate the
->> memory map below a certain address in memory because the kernel
->> required it.  Matt, can you comment here?  I am not aware of what
->> address it needs to be below, but using this function should do the
->> trick.  Also, if you want to inform me better of what memory ceiling
->> restrictions there are at this early stage of the kernel, I can
->> rewrite the file without the need of the low_alloc routine entirely.
->
->The most important restriction is that all allocations in the EFI boot
->stub need to be below the 1GB mark, because only the first 1GB of
->virtual memory is mapped, unless certain flags are set in the
->xloadflags
->field of the boot_params header. See Documentation/x86/boot.txt.
->
->Further to that, I think I remember some restrictions on the location
->of
->the cmdline pointer - that it needs to be below 0xa0000. Again,
->Documentation/x86/boot.xt should have all the info you need.
+Davinci driver was taking care of it but frequency isn't restored to freqs.old.
 
+This patch fixes it.
+
+Cc: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/davinci-cpufreq.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
+index c33c76c..551dd65 100644
+--- a/drivers/cpufreq/davinci-cpufreq.c
++++ b/drivers/cpufreq/davinci-cpufreq.c
+@@ -114,6 +114,9 @@ static int davinci_target(struct cpufreq_policy *policy,
+ 		pdata->set_voltage(idx);
+ 
+ out:
++	if (ret)
++		freqs.new = freqs.old;
++
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 
+ 	return ret;
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.12.rc2.18.g61b472e
+
