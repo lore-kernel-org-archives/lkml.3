@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934943Ab3FSRyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:54:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933869Ab3FSRyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:54:10 -0400
-Date: Wed, 19 Jun 2013 13:53:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130619175356.GA23673@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	paulmck@linux.vnet.ibm.com
-References: <20130619164540.GB22483@redhat.com>
+	id S934736Ab3FSRzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:55:04 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59605 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934254Ab3FSRzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 13:55:01 -0400
+Date: Wed, 19 Jun 2013 12:25:06 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mmap: allow MAP_HUGETLB for hugetlbfs files v2
+Message-ID: <20130619162506.GA7511@logfs.org>
+References: <1371581225-27535-1-git-send-email-joern@logfs.org>
+ <1371581225-27535-3-git-send-email-joern@logfs.org>
+ <51C107E9.9050900@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130619164540.GB22483@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C107E9.9050900@huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 12:45:40PM -0400, Dave Jones wrote:
- > I've been hitting this a lot the last few days.
- > This is the same machine that I was also seeing lockups during sync()
+It is counterintuitive at best that mmap'ing a hugetlbfs file with
+MAP_HUGETLB fails, while mmap'ing it without will a) succeed and b)
+return huge pages.
+v2: use is_file_hugepages(), as suggested by Jianguo
 
-On a whim, I reverted 971394f389992f8462c4e5ae0e3b49a10a9534a3
-(As I started seeing these just after that rcu merge).
+Signed-off-by: Joern Engel <joern@logfs.org>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+---
+ mm/mmap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-It's only been 30 minutes, but it seems stable again. Normally I would
-hit these within 5 minutes.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2a594246..cdc8e7a 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1322,11 +1322,12 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 
+ 	if (!(flags & MAP_ANONYMOUS)) {
+ 		audit_mmap_fd(fd, flags);
+-		if (unlikely(flags & MAP_HUGETLB))
+-			return -EINVAL;
+ 		file = fget(fd);
+ 		if (!file)
+ 			goto out;
++		retval = -EINVAL;
++		if (unlikely(flags & MAP_HUGETLB && !is_file_hugepages(file)))
++			goto out_fput;
+ 	} else if (flags & MAP_HUGETLB) {
+ 		struct user_struct *user = NULL;
+ 		/*
+@@ -1346,6 +1347,7 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+ 
+ 	retval = vm_mmap_pgoff(file, addr, len, prot, flags, pgoff);
++out_fput:
+ 	if (file)
+ 		fput(file);
+ out:
+-- 
+1.7.10.4
 
-I think this may be the same root cause for http://www.spinics.net/lists/kernel/msg1551503.html too.
-
-Paul ?
-
-	Dave
-
-
-
- > BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child9:6902]
- > Modules linked in: bridge snd_seq_dummy dlci bnep fuse 8021q garp stp hidp tun rfcomm can_raw ipt_ULOG nfnetlink rose scsi_transport_iscsi ipx p8023 p8022 phonet llc2 irda rds pppoe pppox caif_socket caif ppp_generic af_key slhc crc_ccitt bluetooth netrom can_bcm x25 appletalk psnap can llc af_rxrpc atm ax25 af_802154 nfc rfkill coretemp hwmon kvm_intel kvm snd_hda_codec_realtek snd_hda_codec_hdmi crc32c_intel ghash_clmulni_intel snd_hda_intel microcode snd_hda_codec pcspkr snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
- > irq event stamp: 2057909
- > hardirqs last  enabled at (2057908): [<ffffffff816ed220>] restore_args+0x0/0x30
- > hardirqs last disabled at (2057909): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
- > softirqs last  enabled at (1444600): [<ffffffff810542d4>] __do_softirq+0x194/0x440
- > softirqs last disabled at (1444851): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
- > CPU: 1 PID: 6902 Comm: trinity-child9 Not tainted 3.10.0-rc6+ #16
- > task: ffff880243212520 ti: ffff88015c1fa000 task.ti: ffff88015c1fa000
- > RIP: 0010:[<ffffffff810541f1>]  [<ffffffff810541f1>] __do_softirq+0xb1/0x440
- > RSP: 0000:ffff880244a03f08  EFLAGS: 00000202
- > RAX: ffff880243212520 RBX: ffffffff816ed220 RCX: 0000000000000000
- > RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880243212520
- > RBP: ffff880244a03f70 R08: 0000000010000003 R09: 0000000000000000
- > R10: 0000000000000001 R11: 0000000000000000 R12: ffff880244a03e78
- > R13: ffffffff816f5d2f R14: ffff880244a03f70 R15: 0000000000000000
- > FS:  00007f2e89fa1740(0000) GS:ffff880244a00000(0000) knlGS:0000000000000000
- > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- > CR2: 000000000351a000 CR3: 00000001f6b7d000 CR4: 00000000001407e0
- > DR0: 00007f2e898d2000 DR1: 0000000001c59000 DR2: 0000000001c5c000
- > DR3: 0000000000008000 DR6: 00000000fffe0ff0 DR7: 00000000000b0602
- > Stack:
- >  0000000a00406040 00000001008fead4 ffff88015c1fbfd8 ffff88015c1fbfd8
- >  ffff88015c1fbfd8 0000000010010002 ffff88015c1fbfd8 ffffffff00000001
- >  ffff880243212520 0000000000000000 ffff88023bbf0c80 0000000000000001
- > Call Trace:
- >  <IRQ> 
- > 
- >  [<ffffffff8105473d>] irq_exit+0xcd/0xe0
- >  [<ffffffff816f6bcb>] smp_apic_timer_interrupt+0x6b/0x9b
- >  [<ffffffff816f5d2f>] apic_timer_interrupt+0x6f/0x80
- >  <EOI> 
- > 
- >  [<ffffffff816ed220>] ? retint_restore_args+0xe/0xe
- >  [<ffffffff816ec642>] ? _raw_spin_unlock_irq+0x32/0x60
- >  [<ffffffff816ec63c>] ? _raw_spin_unlock_irq+0x2c/0x60
- >  [<ffffffff81086c95>] finish_task_switch+0x85/0x130
- >  [<ffffffff81086c57>] ? finish_task_switch+0x47/0x130
- >  [<ffffffff816ea734>] __schedule+0x444/0x9c0
- >  [<ffffffff816eb313>] preempt_schedule_irq+0x53/0x90
- >  [<ffffffff816ed336>] retint_kernel+0x26/0x30
- >  [<ffffffff81145297>] ? user_enter+0x87/0xd0
- >  [<ffffffff8100f6f8>] syscall_trace_leave+0x78/0x140
- >  [<ffffffff816f53af>] int_check_syscall_exit_work+0x34/0x3d
- > Code: 48 89 45 b8 48 89 45 b0 48 89 45 a8 66 0f 1f 44 00 00 65 c7 04 25 80 0f 1d 00 00 00 00 00 e8 b7 31 06 00 fb 49 c7 c6 00 41 c0 81 <eb> 0e 0f 1f 44 00 00 49 83 c6 08 41 d1 ef 74 6c 41 f6 c7 01 74 
- > 
- > --
- > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
- > the body of a message to majordomo@vger.kernel.org
- > More majordomo info at  http://vger.kernel.org/majordomo-info.html
- > Please read the FAQ at  http://www.tux.org/lkml/
----end quoted text---
