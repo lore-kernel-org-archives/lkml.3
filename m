@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934817Ab3FSPQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:16:56 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:48269 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756775Ab3FSPQz (ORCPT
+	id S1756940Ab3FSPS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:18:58 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:6246 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3FSPS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:16:55 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <x86@kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@vger.kernel.org>
-Subject: [PATCH] x86: fix section mismatch on load_ucode_ap
-Date: Wed, 19 Jun 2013 11:15:26 -0400
-Message-ID: <1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 19 Jun 2013 11:18:57 -0400
+Message-ID: <1371655111.22206.29.camel@misato.fc.hp.com>
+Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Wed, 19 Jun 2013 09:18:31 -0600
+In-Reply-To: <51C15DC2.3030501@cn.fujitsu.com>
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <51C15DC2.3030501@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are in the process of removing all the __cpuinit annotations.
-While working on making that change, an existing problem was
-made evident:
+On Wed, 2013-06-19 at 15:29 +0800, Tang Chen wrote:
+> Hi Vasilis, Yinghai,
+> 
+> On 06/19/2013 01:05 AM, Vasilis Liaskovitis wrote:
+> ......
+> >
+> > This could be a design problem of part3: if we allow local pagetable memory
+> > to not be offlined but allow the offlining to return successfully, then
+> > hot-remove is going to succeed. But the direct mapped pagetable pages are still
+> > mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
+> > physical DIMMs getting disabled in real hardware, or in a VM case the
+> > corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
+> > system can crash as a result.
+> >
+> 
+> Yes. Since the pagetable pages is only allocated to local node, a node may
+> have more than one device, hot-remove only one memory device could be
+> problematic.
+> 
+> But I think it will work if we hot-remove a whole node. I should have
+> mentioned it. And sorry for the not fully test.
+> 
+> I think allocating pagetable pages to local device will resolve this problem.
+> And need to restructure this patch-set.
+> 
+> > I think these local pagetables do need to be unmapped from kernel, offlined and
+> > removed somehow - otherwise hot-remove should fail. Could they be migrated
+> > alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
+> > migrated, correct?
+> 
+> I think we have unmapped the local pagetables. in functions
+> free_pud/pmd/pte_table(), we cleared pud, pmd, and pte. We just didn't
+> free the pagetable pages to buddy.
+> 
+> But when we are not hot-removing the whole node, it is still problematic.
+> This is true, and it is my design problem.
+> 
+> >
+> > What is the original reason for local node pagetable allocation with regards
+> > to memory hotplug? I assume we want to have hotplugged nodes use only their local
+> > memory, so that there are no inter-node memory dependencies for hot-add/remove.
+> > Are there other reasons that I am missing?
+> 
+> I think the original reason to do local node pagetable is to improve 
+> performance.
+> Using local pagetable, vmemmap and so on will be faster.
+> 
+> But actually I think there is no particular reason to implement memory hot-remove
+> and local node pagetable at the same time. And before this patch-set, I also
+> suggested once that implement memory hot-remove first, and then improve it to
+> local pagetable. But Yinghai has done the local pagetable work in has 
+> patches (part1).
+> And my work is based on his patches. So I just did it.
+> 
+> But obviously it is more complicated than I thought.
+> 
+> And now, it seems tj has some more thinking on part1.
+> 
+> So how about the following plan:
+> 1. Implement arranging hotpluggable memory with SRAT first, without 
+> local pagetable.
+>     (The main work in part2. And of course, need some patches in part1.)
+> 2. Do the local device pagetable work, not local node.
+> 3. Improve memory hotplug to support local device pagetable.
 
-  WARNING: arch/x86/kernel/built-in.o(.text+0x198f2): Section mismatch
-  in reference from the function cpu_init() to the function
-  .init.text:load_ucode_ap()   The function cpu_init() references
-  the function __init load_ucode_ap().  This is often because cpu_init
-  lacks a __init annotation or the annotation of load_ucode_ap is wrong.
+Sounds like a good plan.  Thanks Tang!
+-Toshi
 
-This now appears because in my working tree, cpu_init() is no longer
-tagged as __cpuinit, and so the audit picks up the mismatch.  The 2nd
-hypothesis from the audit is the correct one, as there was an incorrect
-__init tag on the prototype in the header (but __cpuinit was used on
-the function itself.)
-
-The audit is telling us that the prototype's __init annotation took
-effect and the function did land in the .init.text section.  Checking
-with objdump on a mainline tree that still has __cpuinit shows that
-the __cpuinit on the function takes precedence over the __init on the
-prototype, but that won't be true once we make __cpuinit a no-op.
-
-Even though we are removing __cpuinit, we temporarily align both
-the function and the prototype on __cpuinit so that the changeset
-can be applied to stable trees  if desired.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: stable <stable@vger.kernel.org> # 3.9+
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/include/asm/microcode.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index 6825e2e..6bc3985 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -60,11 +60,11 @@ static inline void __exit exit_amd_microcode(void) {}
- #ifdef CONFIG_MICROCODE_EARLY
- #define MAX_UCODE_COUNT 128
- extern void __init load_ucode_bsp(void);
--extern __init void load_ucode_ap(void);
-+extern void __cpuinit load_ucode_ap(void);
- extern int __init save_microcode_in_initrd(void);
- #else
- static inline void __init load_ucode_bsp(void) {}
--static inline __init void load_ucode_ap(void) {}
-+static inline void __cpuinit load_ucode_ap(void) {}
- static inline int __init save_microcode_in_initrd(void)
- {
- 	return 0;
--- 
-1.8.1.2
 
