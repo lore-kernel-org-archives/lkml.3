@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934816Ab3FSQfA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:35:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57677 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757027Ab3FSQe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:34:57 -0400
-Date: Wed, 19 Jun 2013 09:34:56 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Subject: Re: [PATCH/RESEND 11/12] ARM: msm: Make proc_comm clock control
- into a platform driver
-Message-ID: <20130619163456.GB6300@codeaurora.org>
-References: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
- <1371490999-15501-12-git-send-email-sboyd@codeaurora.org>
+	id S934859Ab3FSQgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:36:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934547Ab3FSQgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:36:51 -0400
+Date: Wed, 19 Jun 2013 18:32:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jan Kratochvil <jan.kratochvil@redhat.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
+Message-ID: <20130619163234.GA12029@redhat.com>
+References: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371490999-15501-12-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17, Stephen Boyd wrote:
-> diff --git a/arch/arm/mach-msm/devices.h b/arch/arm/mach-msm/devices.h
-> index da902cf..dccefad 100644
-> --- a/arch/arm/mach-msm/devices.h
-> +++ b/arch/arm/mach-msm/devices.h
-> @@ -16,10 +16,6 @@
->  #ifndef __ARCH_ARM_MACH_MSM_DEVICES_H
->  #define __ARCH_ARM_MACH_MSM_DEVICES_H
->  
-> -#include <linux/clkdev.h>
-> -
-> -#include "clock.h"
-> -
+On 06/19, Denys Vlasenko wrote:
+>
+> This is a user-visible behavior change.
+> Do we really have to introduce a separate
+> PTRACE_NOT_STUPID_DETACH? I hope not.
 
-This removal causes a build failure on 7x30/8x50. Please squash in
-this small fixup when applying.
+Oh, I think yes.
 
----8<-----
-diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
-index be45136..d4db75a 100644
---- a/arch/arm/mach-msm/devices-msm7x30.c
-+++ b/arch/arm/mach-msm/devices-msm7x30.c
-@@ -28,6 +28,7 @@
- 
- #include <asm/mach/flash.h>
- 
-+#include "clock.h"
- #include "clock-pcom.h"
- 
- #include <linux/platform_data/mmc-msm_sdcc.h>
-diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
-index 3fd8f88..f551811 100644
---- a/arch/arm/mach-msm/devices-qsd8x50.c
-+++ b/arch/arm/mach-msm/devices-qsd8x50.c
-@@ -28,6 +28,7 @@
- #include <asm/mach/flash.h>
- 
- #include <linux/platform_data/mmc-msm_sdcc.h>
-+#include "clock.h"
- #include "clock-pcom.h"
- 
- static struct resource msm_gpio_resources[] = {
+> @@ -1062,7 +1060,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+>  	}
+>
+>  	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+> -				  request == PTRACE_INTERRUPT);
+> +				  request == PTRACE_INTERRUPT ||
+> +				  request == PTRACE_DETACH);
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+There doesn't look right.
+
+For example ptrace_disable(). See the comment set_task_blockstep().
+And flush_ptrace_hw_breakpoint() can race with the exiting task.
+
+And the setting of ->exit_code is racy too.
+
+And this makes the ptrace_unfreeze_traced() logic more confusing...
+but probably this is fine.
+
+Oleg.
+
