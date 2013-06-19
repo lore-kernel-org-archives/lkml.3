@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343Ab3FSLwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:52:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41867 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933666Ab3FSLwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:52:30 -0400
-Message-ID: <51C19B5E.6030907@ti.com>
-Date: Wed, 19 Jun 2013 17:21:58 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/7] ARM: davinci: da8xx: creation of gpio platform
- device
-References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com> <1371202532-14628-4-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1371202532-14628-4-git-send-email-avinashphilip@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S934486Ab3FSLxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:53:09 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:52050 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933666Ab3FSLxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 07:53:07 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-0c-51c19ba13df6
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+References: <20130619164521.f5477ccb559cc6c6f8b0a19a@canb.auug.org.au>
+In-reply-to: <20130619164521.f5477ccb559cc6c6f8b0a19a@canb.auug.org.au>
+Subject: RE: linux-next: manual merge of the samsung tree with the usb tree
+Date: Wed, 19 Jun 2013 20:53:05 +0900
+Message-id: <1f6801ce6ce3$8f1b7380$ad525a80$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5suJdjhnWgqBQ1RV+QrcmQbVel8gAKtfDg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zQ92Fsw8GGiz4rW3xd9IxdotzC2Yw
+	WpxtesNucXnXHDaLgwvbGC227r3KbrF+xmsWB3aP378mMXo03rjB5vH2YYBH35ZVjB6fN8kF
+	sEZx2aSk5mSWpRbp2yVwZfRcvcFS8Im5Ys/z+6wNjJ3MXYycHBICJhJfH3YzQthiEhfurWfr
+	YuTiEBJYxijx6+IqFpiijvvT2SES0xklnl5YDFX1l1Hi8sdDYKPYBDQkDr9/xg5iiwjoSvT9
+	m88EUsQscI5RYsPaHWBFQgJuEku+nWIFsTkF3CUmNU1mArGFBbwlXp64DFbDIqAq0fH0NFic
+	V8BWYu+TTihbUOLH5HtgJzELaEms33mcCcKWl9i85i1QLwfQqeoSj/7qgpgiAkYSL7vlISpE
+	JPa9eMcIco6EwFt2iaUbL7JArBKQ+Db5EAtEq6zEpgPQUJGUOLjiBssERolZSBbPQrJ4FpLF
+	s5CsWMDIsopRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJHr7dzDePWB9iDEZaP1EZinR5Hxg
+	9OeVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVHt
+	RO/izXZle6+d/GEbffNMZLzFl5jpqziTt/u6sz+xU//wNWEuz4bZW14qGTexGDF1a6baSeQo
+	S5jrTg+9WzRR8NRvva3q5V8MlFTWNYS8Wz6/dfuZ1yEXp9bkL/96k2H+p5XhzIfsp06oiXhj
+	/G2/cqCP+FbXyduuN+R+nqB3yIFXxMts+WolluKMREMt5qLiRAB66Yz09AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jQd2Fsw8GGvxu1rD4O+kYu8W5BTMY
+	Lc42vWG3uLxrDpvFwYVtjBZb915lt1g/4zWLA7vH71+TGD0ab9xg83j7MMCjb8sqRo/Pm+QC
+	WKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5Q
+	UihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWb0XL3BUvCJuWLP8/usDYyd
+	zF2MnBwSAiYSHfens0PYYhIX7q1n62Lk4hASmM4o8fTCYijnL6PE5Y+HwDrYBDQkDr9/BtYh
+	IqAr0fdvPhNIEbPAOUaJDWt3gBUJCbhJLPl2ihXE5hRwl5jUNJkJxBYW8JZ4eeIyWA2LgKpE
+	x9PTYHFeAVuJvU86oWxBiR+T77GA2MwCWhLrdx5ngrDlJTaveQvUywF0qrrEo7+6IKaIgJHE
+	y255iAoRiX0v3jFOYBSahWTQLCSDZiEZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5
+	uZsYwanhmdQOxpUNFocYBTgYlXh4G1YeCBRiTSwrrsw9xCjBwawkwlsx82CgEG9KYmVValF+
+	fFFpTmrxIcZkoD8nMkuJJucD01ZeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NT
+	C1KLYLYwcXBKNTCWK3eEylVHKd3Z5rrv4S2hDV+v6mq+uXP/niif47XdmtM2PzSUu8VRF1K6
+	9shF6Xvei4t572YYz+NdNWM6g+3rmF1O1QVnAjebNJ5T1L7g57dI9f1pToccI4WDD8/o6U+w
+	1msJ+TXzwWdnT+8tK9ImqTy/8vjoDpUFC34lHGOtffvvwdXeM/wflFiKMxINtZiLihMBNdHo
+	x1EDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/14/2013 3:05 PM, Philip Avinash wrote:
-> From: KV Sujith <sujithkv@ti.com>
+Stephen Rothwell wrote:
 > 
-> gpio controller resource information being associated with
-> davinci_soc_info structure and not created any device. Hence davinci
-> gpio didn't fall under proper device model. This patch creates gpio
-> davinci as a platform device for da8xx platforms.
+> Hi Kukjin,
+> 
+Hi,
 
-I didn't really find the description coherent. I simplified it to:
+> Today's linux-next merge of the samsung tree got a conflict in
+> drivers/usb/Kconfig between commit d9ea21a77927 ("usb: host: make
+> USB_ARCH_HAS_?HCI obsolete") from the usb tree and commit 58d5b72088cc
+> ("USB: Check for ARCH_EXYNOS separately") from the samsung tree.
+> 
+> I fixed it up (USB_ARCH_HAS_EHCI is no longer used) and can carry the fix
+> as necessary (no action is required).
+> 
+Looks good to me, thanks.
 
-    ARM: davinci: da8xx: support gpio platform device
+- Kukjin
 
-    DaVinci GPIO driver now uses platform device model.
-    Convert DA8XX SoC code to use the new model.
-
-    - Add Memory and IRQ resources for da8xx
-    - Add da8xx_register_gpio API to create platform device for da8xx
-      platforms.
-
-    Signed-off-by: KV Sujith <sujithkv@ti.com>
-    Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-    Acked-by: Linus Walleij <linus.walleij@linaro.org>
-    [nsekhar@ti.com: simplify commit message]
-    Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-
-Before applying the patch.
-
-Thanks,
-Sekhar
