@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab3FSR3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 13:29:09 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:48806 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756707Ab3FSR3G (ORCPT
+	id S934866Ab3FSRaD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 13:30:03 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:62340 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab3FSRaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 13:29:06 -0400
+	Wed, 19 Jun 2013 13:30:00 -0400
+Message-ID: <51C1EA99.2020401@cogentembedded.com>
+Date: Wed, 19 Jun 2013 21:30:01 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
-References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
-	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
-	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
-	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
-	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
-	<CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
-	<CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
-	<CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
-Date: Wed, 19 Jun 2013 10:29:04 -0700
-X-Google-Sender-Auth: GwVBdyibDT4ECJVmMlrAzO0iZUM
-Message-ID: <CAMbhsRTR9im-BsJ-1m+DD-67LM=s0=KOoy-o+2PmnkDyLOP0Gg@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-From: Colin Cross <ccross@android.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roger Quadros <rogerq@ti.com>
+CC: stern@rowland.harvard.edu, tony@atomide.com, balbi@ti.com,
+        ruslan.bilovol@ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 6/6] ARM: OMAP3: Enable Hardware Save and Restore
+ for USB Host
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-7-git-send-email-rogerq@ti.com>
+In-Reply-To: <1371650753-11452-7-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 7:21 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> It seems like a bad idea that an insertion of an SD card should
-> trigger the display to be light up. That is indirectly in principle
-> what you suggest should happen from user space once a new SD card is
-> found. Right?
+Hello.
 
-Most likely what will happen is the system will mount the sdcard, and
-if necessary start the media scanner so that the user can see their
-media on the sd card when they turn the screen on.  But that is mostly
-irrelevant, the point is that the event needs to be passed to
-userspace to allow it to make the decision in a timely fashion.
+On 06/19/2013 06:05 PM, Roger Quadros wrote:
 
-> I have been working with Android for several years, we never used this
-> kind of setup. Instead we wait for the user to press the "display on"
-> button. At that time the confirmation will be received. Not saying
-> that this is the only way of doing it, but it seems to be an accepted
-> solution for all our customers.
+> To ensure hardware context is restored while resuming from
+> OFF mode we need to enable the Hardware SAR bit for the
+> USB Host power domain.
 
-This patch is ported from the Android common tree, so you've probably
-been using it.
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>   arch/arm/mach-omap2/powerdomains3xxx_data.c |    8 +-------
+>   1 files changed, 1 insertions(+), 7 deletions(-)
 
-> I agree to that this patch should have negligible impact though - if
-> we get things right. I will try to review the code in more detail
-> soon.
+> diff --git a/arch/arm/mach-omap2/powerdomains3xxx_data.c b/arch/arm/mach-omap2/powerdomains3xxx_data.c
+> index f0e14e9..9554d2b 100644
+> --- a/arch/arm/mach-omap2/powerdomains3xxx_data.c
+> +++ b/arch/arm/mach-omap2/powerdomains3xxx_data.c
+> @@ -289,13 +289,7 @@ static struct powerdomain usbhost_pwrdm = {
+>   	.prcm_offs	  = OMAP3430ES2_USBHOST_MOD,
+>   	.pwrsts		  = PWRSTS_OFF_RET_ON,
+>   	.pwrsts_logic_ret = PWRSTS_RET,
+> -	/*
+> -	 * REVISIT: Enabling usb host save and restore mechanism seems to
+> -	 * leave the usb host domain permanently in ACTIVE mode after
+> -	 * changing the usb host power domain state from OFF to active once.
+> -	 * Disabling for now.
+> -	 */
+> -	/*.flags	  = PWRDM_HAS_HDWR_SAR,*/ /* for USBHOST ctrlr only */
+> +	.flags	  = PWRDM_HAS_HDWR_SAR, /* for USBHOST ctrlr only */
+
+    Looks like you're not indenting = right, in accordance to the other 
+fields...
+
+>   	.banks		  = 1,
+>   	.pwrsts_mem_ret	  = {
+>   		[0] = PWRSTS_RET, /* MEMRETSTATE */
 >
-> Kind regards
-> Ulf Hansson
->
+
+WBR, Sergei
+
