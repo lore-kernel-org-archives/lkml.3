@@ -1,189 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3FSH0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 03:26:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22575 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756549Ab3FSH0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 03:26:11 -0400
-X-IronPort-AV: E=Sophos;i="4.87,895,1363104000"; 
-   d="scan'208";a="7600145"
-Message-ID: <51C15DC2.3030501@cn.fujitsu.com>
-Date: Wed, 19 Jun 2013 15:29:06 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        yinghai@kernel.org
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com> <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20130618170515.GC4553@dhcp-192-168-178-175.profitbricks.localdomain>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/19 15:25:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/19 15:25:04,
-	Serialize complete at 2013/06/19 15:25:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933870Ab3FSH1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 03:27:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48917 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3FSH1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 03:27:31 -0400
+Date: Wed, 19 Jun 2013 17:27:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
+Subject: linux-next: manual merge of the akpm tree with the ext4 tree
+Message-Id: <20130619172721.00e757acd76e1f9d362f59be@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Jun_2013_17_27_21_+1000_o9txJCQSY3RSRaDH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasilis, Yinghai,
+--Signature=_Wed__19_Jun_2013_17_27_21_+1000_o9txJCQSY3RSRaDH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 06/19/2013 01:05 AM, Vasilis Liaskovitis wrote:
-......
->
-> This could be a design problem of part3: if we allow local pagetable memory
-> to not be offlined but allow the offlining to return successfully, then
-> hot-remove is going to succeed. But the direct mapped pagetable pages are still
-> mapped in the kernel. The hot-removed memblocks will suddenly disappear (think
-> physical DIMMs getting disabled in real hardware, or in a VM case the
-> corresponding guest memory getting freed from the emulator e.g. qemu/kvm). The
-> system can crash as a result.
->
+Hi Andrew,
 
-Yes. Since the pagetable pages is only allocated to local node, a node may
-have more than one device, hot-remove only one memory device could be
-problematic.
+Today's linux-next merge of the akpm tree got a conflict in
+fs/ext4/extents_status.c between commit 6480bad916be ("ext4: improve
+extent cache shrink mechanism to avoid to burn CPU time") from the ext
+tree and commit 1f42d0934b4e ("fs: convert fs shrinkers to new scan/count
+API") from the akpm tree.
 
-But I think it will work if we hot-remove a whole node. I should have
-mentioned it. And sorry for the not fully test.
+I fixed it up (I am not sure if the result makes complete sense - see
+below) and can carry the fix as necessary (no action is required).
 
-I think allocating pagetable pages to local device will resolve this 
-problem.
-And need to restructure this patch-set.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> I think these local pagetables do need to be unmapped from kernel, offlined and
-> removed somehow - otherwise hot-remove should fail. Could they be migrated
-> alternatively e.g. to node 0 memory?  But Iiuc direct mapped pages cannot be
-> migrated, correct?
+diff --cc fs/ext4/extents_status.c
+index 80dcc59,4bce4f0..0000000
+--- a/fs/ext4/extents_status.c
++++ b/fs/ext4/extents_status.c
+@@@ -876,58 -878,32 +876,63 @@@ int ext4_es_zeroout(struct inode *inode
+  				     EXTENT_STATUS_WRITTEN);
+  }
+ =20
+ +static int ext4_inode_touch_time_cmp(void *priv, struct list_head *a,
+ +				     struct list_head *b)
+ +{
+ +	struct ext4_inode_info *eia, *eib;
+ +	unsigned long diff;
+ +
+ +	eia =3D list_entry(a, struct ext4_inode_info, i_es_lru);
+ +	eib =3D list_entry(b, struct ext4_inode_info, i_es_lru);
+ +
+ +	diff =3D eia->i_touch_when - eib->i_touch_when;
+ +	if (diff < 0)
+ +		return -1;
+ +	if (diff > 0)
+ +		return 1;
+ +	return 0;
+ +}
+ =20
+- static int ext4_es_shrink(struct shrinker *shrink, struct shrink_control =
+*sc)
++ static long ext4_es_count(struct shrinker *shrink, struct shrink_control =
+*sc)
++ {
++ 	long nr;
++ 	struct ext4_sb_info *sbi =3D container_of(shrink,
++ 					struct ext4_sb_info, s_es_shrinker);
++=20
++ 	nr =3D percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
++ 	trace_ext4_es_shrink_enter(sbi->s_sb, sc->nr_to_scan, nr);
++ 	return nr;
++ }
++=20
++ static long ext4_es_scan(struct shrinker *shrink, struct shrink_control *=
+sc)
+  {
+  	struct ext4_sb_info *sbi =3D container_of(shrink,
+  					struct ext4_sb_info, s_es_shrinker);
+  	struct ext4_inode_info *ei;
+ -	struct list_head *cur, *tmp, scanned;
+ +	struct list_head *cur, *tmp;
+ +	LIST_HEAD(skiped);
+  	int nr_to_scan =3D sc->nr_to_scan;
+- 	int ret, nr_shrunk =3D 0;
+-=20
+- 	ret =3D percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
+- 	trace_ext4_es_shrink_enter(sbi->s_sb, nr_to_scan, ret);
+-=20
+- 	if (!nr_to_scan)
+- 		return ret;
++ 	int ret =3D 0, nr_shrunk =3D 0;
+ =20
+ -	INIT_LIST_HEAD(&scanned);
+ -
+  	spin_lock(&sbi->s_es_lru_lock);
+ +
+ +	/*
+ +	 * If the inode that is at the head of LRU list is newer than
+ +	 * last_sorted time, that means that we need to sort this list.
+ +	 */
+ +	ei =3D list_first_entry(&sbi->s_es_lru, struct ext4_inode_info, i_es_lru=
+);
+ +	if (sbi->s_es_last_sorted < ei->i_touch_when) {
+ +		list_sort(NULL, &sbi->s_es_lru, ext4_inode_touch_time_cmp);
+ +		sbi->s_es_last_sorted =3D jiffies;
+ +	}
+ +
+  	list_for_each_safe(cur, tmp, &sbi->s_es_lru) {
+ -		list_move_tail(cur, &scanned);
+ +		/*
+ +		 * If we have already reclaimed all extents from extent
+ +		 * status tree, just stop the loop immediately.
+ +		 */
+ +		if (percpu_counter_read_positive(&sbi->s_extent_cache_cnt) =3D=3D 0)
+ +			break;
+ =20
+  		ei =3D list_entry(cur, struct ext4_inode_info, i_es_lru);
+ =20
+@@@ -951,22 -923,22 +956,22 @@@
+  		if (nr_to_scan =3D=3D 0)
+  			break;
+  	}
+ -	list_splice_tail(&scanned, &sbi->s_es_lru);
+ +
+ +	/* Move the newer inodes into the tail of the LRU list. */
+ +	list_splice_tail(&skiped, &sbi->s_es_lru);
+  	spin_unlock(&sbi->s_es_lru_lock);
+ =20
+- 	ret =3D percpu_counter_read_positive(&sbi->s_extent_cache_cnt);
+  	trace_ext4_es_shrink_exit(sbi->s_sb, nr_shrunk, ret);
+- 	return ret;
++ 	return nr_shrunk;
+  }
+ =20
+ -void ext4_es_register_shrinker(struct super_block *sb)
+ +void ext4_es_register_shrinker(struct ext4_sb_info *sbi)
+  {
+ -	struct ext4_sb_info *sbi;
+ -
+ -	sbi =3D EXT4_SB(sb);
+  	INIT_LIST_HEAD(&sbi->s_es_lru);
+  	spin_lock_init(&sbi->s_es_lru_lock);
+ +	sbi->s_es_last_sorted =3D 0;
+- 	sbi->s_es_shrinker.shrink =3D ext4_es_shrink;
++ 	sbi->s_es_shrinker.scan_objects =3D ext4_es_scan;
++ 	sbi->s_es_shrinker.count_objects =3D ext4_es_count;
+  	sbi->s_es_shrinker.seeks =3D DEFAULT_SEEKS;
+  	register_shrinker(&sbi->s_es_shrinker);
+  }
 
-I think we have unmapped the local pagetables. in functions
-free_pud/pmd/pte_table(), we cleared pud, pmd, and pte. We just didn't
-free the pagetable pages to buddy.
+--Signature=_Wed__19_Jun_2013_17_27_21_+1000_o9txJCQSY3RSRaDH
+Content-Type: application/pgp-signature
 
-But when we are not hot-removing the whole node, it is still problematic.
-This is true, and it is my design problem.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
->
-> What is the original reason for local node pagetable allocation with regards
-> to memory hotplug? I assume we want to have hotplugged nodes use only their local
-> memory, so that there are no inter-node memory dependencies for hot-add/remove.
-> Are there other reasons that I am missing?
+iQIcBAEBCAAGBQJRwV1eAAoJEECxmPOUX5FEIo8P/RWLvYwS9n0qvCumRP2LqiHv
+dNozOaFNHbRZSzLHVPFyJgHMO1WYLw79gwWNIjlxdGUSmwGbt4EvQF0kVbWIbgPy
+w7YZ5opE90+QpAjZKi3ZbYPR1TGP26DyAKJoakPUwxVZLhFm0WS5OKcnt+UY1B24
+suGnTAEUmSSqdP5D1Z9qZjGSykoDs9Kc5PAQwmWa29qEkKk2hXXX/aMl0bkvaidk
+ZPMDpaTCvPRf2Oe5E2kivw5TmyLF9ZSMvG2EUwWF8jybKGaj4FXbGoWaSQqm38oA
+vcNjjSJH9JHrYN4WNDQQ6uRb7cSJ9QEuo7vfvNpVSrmjOceL5k/AdBad3usnuQAL
+stF/JvXl7JbR+6R0tG2vYnJTz5SBPVjGv22Q/Utuym4FLKo37j746DC16dPpD8iD
+laIovkjXdAzNcXaCmfdcWmaixikULJB2sEZtKXJUYD3URwuABYmQGv4usHgQtdH5
+reaKMTBkbywy+u4obSo/gSpxb1V/dDAjpTgeKAteWYMoi5GOIVLW3kOtSlCGaCH4
+jmjVdv3O+0ALA4BlhURvmavy9wdPnZp2cDHNoL6F86oOxXhp+GlSUsf1Y8itCHVn
+4IfZ3ITgF1/yzBYugrON5am/7WkLo8oxXdnOiR3T6ctvjP8kJRurYfkzVua3VmHp
+RR6Ij63ComFOiJCEd916
+=ApQl
+-----END PGP SIGNATURE-----
 
-I think the original reason to do local node pagetable is to improve 
-performance.
-Using local pagetable, vmemmap and so on will be faster.
-
-But actually I think there is no particular reason to implement memory 
-hot-remove
-and local node pagetable at the same time. And before this patch-set, I 
-also
-suggested once that implement memory hot-remove first, and then improve 
-it to
-local pagetable. But Yinghai has done the local pagetable work in has 
-patches (part1).
-And my work is based on his patches. So I just did it.
-
-But obviously it is more complicated than I thought.
-
-And now, it seems tj has some more thinking on part1.
-
-So how about the following plan:
-1. Implement arranging hotpluggable memory with SRAT first, without 
-local pagetable.
-    (The main work in part2. And of course, need some patches in part1.)
-2. Do the local device pagetable work, not local node.
-3. Improve memory hotplug to support local device pagetable.
-
-I also want Yinghai's suggestion because local node pagetable is his idea.
-
->
->
-> I get a crash with the following:
-
-Will try to fix it soon.
-
-Thanks. :)
-
-> - boot 2-node VM with 4G on node0 and 0G on node1
-> - guest kernel linux_next20130607 + part1 + part2 + part3 patchsets
-> - hotplugged 2 dimms on node1 (previosuly node 1 had no memory)
-> - reboot with movablecore=acpi, ZONE_MOVABLE is created for node1
-> - I verified that in this case LOCAL_NODE_DATA pages are allocated on node1
-> - remove a dimm on node1
->
-> [  260.615677] Offlined Pages 32768
-> [  260.619650] Offlined Pages 32768
-> [  260.630514] Offlined Pages 32768
-> [  260.634342] Offlined Pages 32768
-> [  260.637989] Offlined Pages 32768
-> [  260.642021] Offlined Pages 32768
-> [  260.643852] Offlined Pages 32768
-> [  260.645555] Offlined Pages 32768
-> [  260.817960] general protection fault: 0000 [#1] SMP
-> [  260.818384] Modules linked in: netconsole pci_hotplug lp loop kvm_amd kvm ppdev psmouse parport_pc i2c_piix4 parport i2c_core serio_raw evdev processor microcode button thermal_sys ext3 jbd mbcache sr_mod cdrom ata_generic virtio_blk virtio_net ata_piix libata scsi_mod virtio_pci virtio_ring virtio
-> [  260.820449] CPU: 0 PID: 177 Comm: kworker/0:2 Not tainted 3.10.0-rc4-next-20130607-guest #1
-> [  260.820449] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  260.820449] Workqueue: kacpi_hotplug acpi_os_execute_deferred
-> [  260.820449] task: ffff880115c80080 ti: ffff880115564000 task.ti: ffff880115564000
-> [  260.820449] RIP: 0010:[<ffffffff812b92b9>]  [<ffffffff812b92b9>] memchr_inv+0x89/0x110
-> [  260.820449] RSP: 0018:ffff880115565b90  EFLAGS: 00010206
-> [  260.820449] RAX: 0000000008000000 RBX: ffff8801e0000000 RCX: 0000000000000000
-> [  260.820449] RDX: 0000000040000000 RSI: 00000000000000fd RDI: 7fff8801c0000000
-> [  260.820449] RBP: ffff8801e0000000 R08: 00000000000000fd R09: 0101010101010101
-> [  260.820449] R10: 0000000000000000 R11: ffff880116e38e50 R12: ffff880220000000
-> [  260.820449] R13: ffff8801c0000000 R14: 00003ffffffff000 R15: ffff880116e38e01
-> [  260.820449] FS:  00007fa6d8de37c0(0000) GS:ffff88011f000000(0000) knlGS:0000000000000000
-> [  260.820449] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  260.820449] CR2: 00007fa6d8dea000 CR3: 000000000180b000 CR4: 00000000000006f0
-> [  260.820449] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  260.820449] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  260.820449] Stack:
-> [  260.820449]  ffffffff8151e3bc 0000160000000000 ffffc00000000fff ffff880001a5d038
-> [  260.820449]  ffffffff8150e39e ffff880116e38e50 0000000000000100 0000000000000000
-> [  260.820449]  ffff8801e0000000 ffff8801181fb060 ffffffff8150e424 ffff88021ffff000
-> [  260.820449] Call Trace:
-> [  260.820449]  [<ffffffff8151e3bc>] ? remove_pagetable+0x20c/0x7f7
-> [  260.820449]  [<ffffffff8150e39e>] ? klist_put+0x4e/0xc0
-> [  260.820449]  [<ffffffff8150e424>] ? klist_iter_exit+0x14/0x20
-> [  260.820449]  [<ffffffff8150f385>] ? arch_remove_memory+0x75/0xd0
-> [  260.820449]  [<ffffffff81510e18>] ? remove_memory+0x68/0x80
-> [  260.820449]  [<ffffffff8132baa5>] ? acpi_memory_device_remove+0x90/0xea
-> [  260.820449]  [<ffffffff81308157>] ? acpi_bus_device_detach+0x37/0x5c
-> [  260.820449]  [<ffffffff813081b5>] ? acpi_bus_trim+0x39/0x6e
-> [  260.820449]  [<ffffffff81308c74>] ? acpi_scan_hot_remove+0x136/0x264
-> [  260.820449]  [<ffffffff81304b15>] ? acpi_evaluate_hotplug_ost+0x86/0x8b
-> [  260.820449]  [<ffffffff81308e3a>] ? acpi_bus_device_eject+0x98/0xcc
-> [  260.820449]  [<ffffffff813042ea>] ? acpi_os_execute_deferred+0x1f/0x2b
-> [  260.820449]  [<ffffffff8105a183>] ? process_one_work+0x153/0x480
-> [  260.820449]  [<ffffffff8105b2b6>] ? worker_thread+0x116/0x3d0
-> [  260.820449]  [<ffffffff8105b1a0>] ? manage_workers+0x2b0/0x2b0
-> [  260.820449]  [<ffffffff8105b1a0>] ? manage_workers+0x2b0/0x2b0
-> [  260.820449]  [<ffffffff81060b56>] ? kthread+0xc6/0xd0
-> [  260.820449]  [<ffffffff81060a90>] ? kthread_freezable_should_stop+0x60/0x60
-> [  260.820449]  [<ffffffff8152c6ec>] ? ret_from_fork+0x7c/0xb0
-> [  260.820449]  [<ffffffff81060a90>] ? kthread_freezable_should_stop+0x60/0x60
-> [  260.820449] Code: 75 f0 45 89 c0 4c 01 c7 4c 29 c2 0f 1f 80 00 00 00 00 48 89 d0 48 c1 e8 03 85 c0 74 2a 44 0f b6 c6 49 b9 01 01 01 01 01 01 01 01<48>  8b 0f 4d 0f af c1 4c 39 c1 74 08 eb 41 90 48 3b 0f 75 3b 48
-> [  260.820449] RIP  [<ffffffff812b92b9>] memchr_inv+0x89/0x110
-> [  260.820449]  RSP<ffff880115565b90>
-> [  260.852908] ---[ end trace 5e9b131e0294cfb6 ]---
->
-> I haven't analyzed more yet.
->
-> Other times instead of a crash on hot-remove I get a "fork: cannot allocate memory"
-> always after hot-remove.
->
-> thanks,
->
-> - Vasilis
->
+--Signature=_Wed__19_Jun_2013_17_27_21_+1000_o9txJCQSY3RSRaDH--
