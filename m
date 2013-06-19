@@ -1,304 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935152Ab3FSTaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:30:17 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:62896 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934714Ab3FSTaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:30:14 -0400
-Message-ID: <51C206C2.2070404@google.com>
-Date: Wed, 19 Jun 2013 15:30:10 -0400
-From: Tristan Schmelcher <tschmelcher@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S935173Ab3FSTbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:31:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41355 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934714Ab3FSTbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 15:31:16 -0400
+Date: Wed, 19 Jun 2013 22:31:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Kevin Hilman <khilman@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH 1/5] i2c: omap: fix spurious IRQs: disable/enable IRQ at
+ INTC when idle
+Message-ID: <20130619193111.GD4779@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
+ <1370630768-4077-2-git-send-email-grygorii.strashko@ti.com>
+ <87li6llk4w.fsf@linaro.org>
+ <51C1F9FA.9000502@ti.com>
 MIME-Version: 1.0
-To: richard@nod.at, jdike@addtoit.com
-CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
- and in other edge cases
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TybLhxa8M7aNoW+V"
+Content-Disposition: inline
+In-Reply-To: <51C1F9FA.9000502@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tristan Schmelcher <tschmelcher@google.com>
+--TybLhxa8M7aNoW+V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to /run/shm), if there were multiple mounts on top of each other, if the mount(s) were obscured by a later mount, or if /dev/shm was a prefix of another mount point. This fixes these cases. Applies to 3.9.6.
+Hi,
 
-Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
----
+On Wed, Jun 19, 2013 at 09:35:38PM +0300, Grygorii Strashko wrote:
+> On 06/07/2013 11:51 PM, Kevin Hilman wrote:
+> >Grygorii Strashko <grygorii.strashko@ti.com> writes:
+> >
+> >>From: Kevin Hilman <khilman@deeprootsystems.com>
+> >>
+> >>Currently, runtime PM is used to keep the device enabled only during
+> >>active transfers and for a configurable runtime PM autosuspend timout
+> >>after an xfer.
+> >>
+> >>In addition to idling the device, driver's ->runtime_suspend() method
+> >>currently disables device interrupts when idle.  However, on some SoCs
+> >>(notably OMAP4+), the I2C hardware may shared with other coprocessors.
+> >>This means that the MPU will still recieve interrupts if a coprocessor
+> >>is using the I2C device.  To avoid this, also disable interrupts at
+> >>the MPU INTC when idling the device in ->runtime_suspend() (and
+> >>re-enable them in ->runtime_resume().)  This part based on an original
+> >>patch from Shubhrajyoti Datta.  NOTE: for proper sharing the I2C with
+> >>a coprocessor, this driver still needs hwspinlock support added.
+> >>
+> >>More over, this patch fixes the kernel boot failure which happens when
+> >>CONFIG_SENSORS_LM75=3Dy:
+> >>
+> >>[    2.251220] WARNING: at drivers/bus/omap_l3_noc.c:113 l3_interrupt_h=
+andler+0x140/0x184()
+> >>[    2.257781] L3 custom error: MASTER:MPU TARGET:L4 PER2
+> >>[    2.264373] Modules linked in:
+> >>[    2.268463] CPU: 0 PID: 2 Comm: kthreadd Not tainted 3.10.0-rc4-0003=
+4-g042dd60-dirty #64
+> >>[    2.270385] [<c001a80c>] (unwind_backtrace+0x0/0xf0) from [<c0017238=
+>] (show_stack+0x10/0x14)
+> >>[    2.286102] [<c0017238>] (show_stack+0x10/0x14) from [<c0040fd0>] (w=
+arn_slowpath_common+0x4c/0x68)
+> >>[    2.295593] [<c0040fd0>] (warn_slowpath_common+0x4c/0x68) from [<c00=
+41080>] (warn_slowpath_fmt+0x30/0x40)
+> >>[    2.299987] [<c0041080>] (warn_slowpath_fmt+0x30/0x40) from [<c02c5e=
+d0>] (l3_interrupt_handler+0x140/0x184)
+> >>[    2.315582] [<c02c5ed0>] (l3_interrupt_handler+0x140/0x184) from [<c=
+009ffb8>] (handle_irq_event_percpu+0x58/0x258)
+> >>[    2.323364] [<c009ffb8>] (handle_irq_event_percpu+0x58/0x258) from [=
+<c00a01f4>] (handle_irq_event+0x3c/0x5c)
+> >>[    2.327819] [<c00a01f4>] (handle_irq_event+0x3c/0x5c) from [<c00a2f7=
+c>] (handle_fasteoi_irq+0xbc/0x164)
+> >>[    2.337829] [<c00a2f7c>] (handle_fasteoi_irq+0xbc/0x164) from [<c009=
+f978>] (generic_handle_irq+0x20/0x30)
+> >>[    2.357513] [<c009f978>] (generic_handle_irq+0x20/0x30) from [<c0014=
+168>] (handle_IRQ+0x4c/0xac)
+> >>[    2.366821] [<c0014168>] (handle_IRQ+0x4c/0xac) from [<c00085b4>] (g=
+ic_handle_irq+0x28/0x5c)
+> >>[    2.375762] [<c00085b4>] (gic_handle_irq+0x28/0x5c) from [<c04f08a4>=
+] (__irq_svc+0x44/0x5c)
+> >>[    2.379821] Exception stack(0xdb085ec0 to 0xdb085f08)
+> >>[    2.389953] 5ec0: 00000001 00000001 00000000 db07ea00 40000113 db231=
+7a8 db084000 000002f1
+> >>[    2.389953] 5ee0: db07ea00 00000000 00000000 00000000 c04fd990 db085=
+f08 c009170c c04f03e8
+> >>[    2.405609] 5f00: 20000113 ffffffff
+> >>[    2.408355] [<c04f08a4>] (__irq_svc+0x44/0x5c) from [<c04f03e8>] (_r=
+aw_spin_unlock_irqrestore+0x34/0x44)
+> >>[    2.418304] [<c04f03e8>] (_raw_spin_unlock_irqrestore+0x34/0x44) fro=
+m [<c00403c0>] (do_fork+0xa4/0x2d4)
+> >>[    2.427795] [<c00403c0>] (do_fork+0xa4/0x2d4) from [<c0040620>] (ker=
+nel_thread+0x30/0x38)
+> >>[    2.437805] [<c0040620>] (kernel_thread+0x30/0x38) from [<c0063888>]=
+ (kthreadd+0xd4/0x13c)
+> >>[    2.448364] [<c0063888>] (kthreadd+0xd4/0x13c) from [<c0013308>] (re=
+t_from_fork+0x14/0x2c)
+> >>[    2.448364] ---[ end trace da8cf92c433d1616 ]---
+> >>
+> >>The root casue of crash is race between omap_i2c_runtime_suspend()
+> >>  and omap_i2c_isr_thread()
+> >If there's a race here, then it's not the same problem which is
+> >described above, unless the CPU2 IRQ is happening because of a shared
+> >user of I2C, in which case it doesn't need any additional explanation.
+> no shared users here
+> >>CPU1:                                   CPU2:
+> >>|-omap_i2c_xfer                         |
+> >>   |- pm_runtime_put_autosuspend()       |
+> >>      |-timeout                          |-omap_i2c_isr()
+> >>                                           |-return IRQ_WAKE_THREAD;
+> >>      |-omap_i2c_runtime_suspend()       |
+> >>                                         |-omap_i2c_isr_thread()
+> >>                                           |- oops is here - I2C module=
+ is in idle state
+> >If this is happening, I don't think it's related to $SUBJECT patch (but
+> >is probably hidden by it.)
+> I can remove "fix spurious IRQs: " from $SUBJECT. What do you think?
+> >
+> >Instead, what probably needs to happen in this is case is that
+> >omap_i2c_isr() should be doing a "mark last busy" to reset the
+> >autosuspend timeout.  And, that should be done in a separate patch.
 
---- linux-3.9.6/arch/um/os-Linux/mem.c.orig	2013-06-19 14:50:14.000000000 -0400
-+++ linux-3.9.6/arch/um/os-Linux/mem.c	2013-06-19 14:53:07.000000000 -0400
-@@ -53,6 +53,25 @@ static void __init find_tempdir(void)
-  }
-  
-  /*
-+ * Remove bytes from the front of the buffer and refill it so that if there's a
-+ * partial string that we care about, it will be completed, and we can recognize
-+ * it.
-+ */
-+static int pop(int fd, char *buf, size_t size, size_t npop)
-+{
-+	ssize_t n;
-+	size_t len = strlen(&buf[npop]);
-+
-+	memmove(buf, &buf[npop], len + 1);
-+	n = read(fd, &buf[len], size - len - 1);
-+	if (n < 0)
-+		return -errno;
-+
-+	buf[len + n] = '\0';
-+	return 1;
-+}
-+
-+/*
-   * This will return 1, with the first character in buf being the
-   * character following the next instance of c in the file.  This will
-   * read the file as needed.  If there's an error, -errno is returned;
-@@ -61,7 +80,6 @@ static void __init find_tempdir(void)
-  static int next(int fd, char *buf, size_t size, char c)
-  {
-  	ssize_t n;
--	size_t len;
-  	char *ptr;
-  
-  	while ((ptr = strchr(buf, c)) == NULL) {
-@@ -74,20 +92,113 @@ static int next(int fd, char *buf, size_
-  		buf[n] = '\0';
-  	}
-  
--	ptr++;
--	len = strlen(ptr);
--	memmove(buf, ptr, len + 1);
-+	return pop(fd, buf, size, ptr - buf + 1);
-+}
-  
--	/*
--	 * Refill the buffer so that if there's a partial string that we care
--	 * about, it will be completed, and we can recognize it.
--	 */
--	n = read(fd, &buf[len], size - len - 1);
--	if (n < 0)
--		return -errno;
-+/*
-+ * Decode an octal-escaped and space-terminated path of the form used by
-+ * /proc/mounts. May be used to decode a path in-place. "out" must be at least
-+ * as large as the input.
-+ */
-+static int decode_path(const char *in, char *out, size_t *ndecoded,
-+		       size_t *decodedlen)
-+{
-+	const char *first_in = in;
-+	char *first_out = out;
-+	int c;
-+	int i;
-+	while (*in) {
-+		switch (*in) {
-+		case ' ':
-+			*out = '\0';
-+			*ndecoded = in - first_in + 1;
-+			*decodedlen = out - first_out;
-+			return 0;
-  
--	buf[len + n] = '\0';
--	return 1;
-+		case '\\':
-+			in++;
-+			c = 0;
-+			for (i = 0; i < 3; i++) {
-+				if (*in < '0' || *in > '7')
-+					return -EINVAL;
-+				c = (c << 3) | (*in++ - '0');
-+			}
-+			*out++ = (char) c;
-+			break;
-+
-+		default:
-+			*out++ = *in++;
-+			break;
-+		}
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static size_t octal_encoded_length(const char *s, const char *chars)
-+{
-+	size_t len = strlen(s);
-+	while ((s = strpbrk(s, chars)) != NULL) {
-+		len += 3;
-+		s++;
-+	}
-+
-+	return len;
-+}
-+
-+enum {
-+	OUTCOME_NOT_A_MOUNT_POINT,
-+	OUTCOME_TMPFS_MOUNT,
-+	OUTCOME_NON_TMPFS_MOUNT,
-+};
-+
-+/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
-+static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
-+		      int *outcome)
-+{
-+	int found;
-+	int match;
-+	size_t ndecoded;
-+	size_t decodedlen;
-+
-+	enum {
-+		MATCH_NONE,
-+		MATCH_EXACT,
-+		MATCH_PARENT,
-+	};
-+
-+	found = next(fd, buf, bufsize, ' ');
-+	if (found != 1)
-+		return found;
-+
-+	if (!decode_path(buf, buf, &ndecoded, &decodedlen)) {
-+		match = MATCH_NONE;
-+		if (!strcmp(buf, path))
-+			match = MATCH_EXACT;
-+		else if (!strncmp(buf, path, decodedlen)
-+			 && (path[decodedlen] == '/' || !strcmp(buf, "/")))
-+			match = MATCH_PARENT;
-+
-+		found = pop(fd, buf, bufsize, ndecoded);
-+		if (found != 1)
-+			return found;
-+
-+		switch (match) {
-+		case MATCH_EXACT:
-+			if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
-+				*outcome = OUTCOME_TMPFS_MOUNT;
-+			else
-+				*outcome = OUTCOME_NON_TMPFS_MOUNT;
-+			break;
-+
-+		case MATCH_PARENT:
-+			/* This mount obscures any previous ones. */
-+			*outcome = OUTCOME_NOT_A_MOUNT_POINT;
-+			break;
-+		}
-+	}
-+
-+	return next(fd, buf, bufsize, '\n');
-  }
-  
-  /* which_tmpdir is called only during early boot */
-@@ -106,8 +217,12 @@ static int checked_tmpdir = 0;
-   */
-  static void which_tmpdir(void)
-  {
--	int fd, found;
--	char buf[128] = { '\0' };
-+	int fd;
-+	int found;
-+	int outcome;
-+	char *path;
-+	char *buf;
-+	size_t bufsize;
-  
-  	if (checked_tmpdir)
-  		return;
-@@ -116,49 +231,66 @@ static void which_tmpdir(void)
-  
-  	printf("Checking for tmpfs mount on /dev/shm...");
-  
-+	path = realpath("/dev/shm", NULL);
-+	if (!path) {
-+		printf("failed to check real path, errno = %d\n", errno);
-+		return;
-+	}
-+	printf("%s...", path);
-+
-+	/*
-+	 * The buffer needs to be able to fit the full octal-escaped path, a
-+	 * space, and a trailing null in order to successfully decode it.
-+	 */
-+	bufsize = octal_encoded_length(path, " \t\n\\") + 2;
-+
-+	if (bufsize < 128)
-+		bufsize = 128;
-+
-+	buf = malloc(bufsize);
-+	if (!buf) {
-+		printf("malloc failed, errno = %d\n", errno);
-+		goto out;
-+	}
-+	buf[0] = '\0';
-+
-  	fd = open("/proc/mounts", O_RDONLY);
-  	if (fd < 0) {
-  		printf("failed to open /proc/mounts, errno = %d\n", errno);
--		return;
-+		goto out1;
-  	}
-  
-+	outcome = OUTCOME_NOT_A_MOUNT_POINT;
-  	while (1) {
--		found = next(fd, buf, ARRAY_SIZE(buf), ' ');
--		if (found != 1)
--			break;
--
--		if (!strncmp(buf, "/dev/shm", strlen("/dev/shm")))
--			goto found;
--
--		found = next(fd, buf, ARRAY_SIZE(buf), '\n');
-+		found = read_mount(fd, buf, bufsize, path, &outcome);
-  		if (found != 1)
-  			break;
-  	}
-  
--err:
--	if (found == 0)
--		printf("nothing mounted on /dev/shm\n");
--	else if (found < 0)
-+	if (found < 0) {
-  		printf("read returned errno %d\n", -found);
-+	} else {
-+		switch (outcome) {
-+		case OUTCOME_TMPFS_MOUNT:
-+			printf("OK\n");
-+			default_tmpdir = "/dev/shm";
-+			break;
-  
--out:
--	close(fd);
--
--	return;
--
--found:
--	found = next(fd, buf, ARRAY_SIZE(buf), ' ');
--	if (found != 1)
--		goto err;
-+		case OUTCOME_NON_TMPFS_MOUNT:
-+			printf("not tmpfs\n");
-+			break;
-  
--	if (strncmp(buf, "tmpfs", strlen("tmpfs"))) {
--		printf("not tmpfs\n");
--		goto out;
-+		default:
-+			printf("nothing mounted on /dev/shm\n");
-+			break;
-+		}
-  	}
-  
--	printf("OK\n");
--	default_tmpdir = "/dev/shm";
--	goto out;
-+	close(fd);
-+out1:
-+	free(buf);
-+out:
-+	free(path);
-  }
-  
-  static int __init make_tempfile(const char *template, char **out_tempname,
+this doesn't make sense... mark last busy is done after the I2C message
+is actually complete, so is pm_runtime_put_autosuspend() which is done
+following mark_last_busy. autosuspend timer shouldn't be firing since
+put won't be called until we're dead sure I2C message (all of them, in
+fact) are finalized.
 
+> Yes - from one side. From other side, this patch prevents such
+> situation to happen.
+> disable_irq(_dev->irq); - waits for any pending IRQ handlers for this
+> interrupt
+> to complete before returning.
+
+IRQ subsystem makes sure to disable our IRQ line while our handler is
+running and, because of IRQF_ONESHOT, IRQ will only be re-enabled after
+thread has finished.
+
+> If we are in .runtime_idle() callback - it means I2C transaction has
+> been finished
+
+we don't even use runtime_idle() and your statement is wrong, btw. If
+you have 200 pm_runtime_get() followed by 200 pm_runtime_put() (put
+is called only after 200 gets, no put-get ping-pong), your
+->runtime_resume() gets called once, your ->runtime_suspend() gets
+called once but your ->runtime_idle() will get called 200 times.
+
+assuming I2C transaction has finished is wrong here. What if we decide
+to add pm_runtime_get() on hardirq handler and pm_runtime_put() to the
+end of the thread handler ?
+
+If you mask IRQs on ->runtime_idle(), you might miss some events.
+
+> As I mentioned in cover-latter this happens because PM runtime
+> auto-suspend isn't
+> working properly during the boot:
+>=20
+> [   23.190002] omap_i2c 48350000.i2c: =3D=3D=3D=3D i2c_add_numbered_adapt=
+er
+> [   23.204681] omap_i2c 48350000.i2c: bus 3 rev0.11 at 400 kHz
+> [   23.211669] omap_i2c 48350000.i2c: =3D=3D=3D=3D=3D=3D rpm_suspend elap=
+sed 0 last_busy 4294939616
+> [   23.219879] omap_i2c 48350000.i2c: =3D=3D=3D=3D=3D=3D rpm_suspend expi=
+res 4294939716 last_busy 4294939616 autosuspend_delay 1000
+> [   23.219879] omap_i2c 48350000.i2c: =3D=3D=3D=3D=3D=3D rpm_suspend expi=
+res 4294939700
+> [   23.237274] omap_i2c 48350000.i2c: =3D=3D=3D=3D=3D=3D rpm_suspend mod_=
+timer expires 4294939700
+> --- the timer scheduled to 84 jiffes
+> [   23.246185] omap_i2c 48350000.i2c: =3D=3D=3D=3D pm_runtime_put_autosus=
+pend
+> [   23.253448] omap-dma-engine 4a056000.dma-controller: allocating channe=
+l for 62
+> [   23.261138] omap-dma-engine 4a056000.dma-controller: allocating channe=
+l for 61
+> [   23.269500] omap_i2c 48070000.i2c: =3D=3D=3D=3D omap_i2c_runtime_resume
+> [   23.275817] omap_i2c 48350000.i2c: =3D=3D=3D=3D omap_i2c_runtime_suspe=
+nd
+> --- and expired after ~40 ms
+>=20
+> So, there are no guaranty that this race will not happen even if I'll
+> do "mark last busy"
+> in HW IRQ handler (, because in high CPU load use case the threaded
+> IRQ can be delayed.
+
+then the bug is on pm_runtime time keeping, no ? Not really on the I2C
+driver.
+
+--=20
+balbi
+
+--TybLhxa8M7aNoW+V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwgb/AAoJEIaOsuA1yqREdosP/3GW7j4ySiQ2wPvbU032Qlsu
+sFeDvlAdJwuysrwUjX1lj77unQ00wOu5/Zwm+tsEYHaCI3zE7I7wkh7qzUOO4vjM
+XQhX7XspGC/89YCPiLH+CLI/B1LLjNj4tUMkaRByfxgfYUmTDefrmq2mXeyLzT2M
+RBM89FC9xcFJhX/vaBwjTqDlnflS81gje9O+7AIHzET1TGX/A18U0MkTg5SMYj4b
+0jTGy7dig9YhO3AhGGAM/OL4z/KlRndZ4Thr/GA/MatlELo5jU97yRIoZXAKMFyV
+q1Kry5OI2pxEgP/CFXAH7e5qKOF3/x1d1NMrgonVvBQC3QXD4BpnJkWG3HusEA1G
+o3vaD7Bpd17372ePymJtg/zRzxIQskceLXg30Ez2ng9v4J76uo0WeiUtfw5KCa2y
+ru8RjDJraTuUnGvRo3olGi/gH7/XcNoluvOk9plEGoHiiLPtr68TFDMBwj1CoZMp
+5/eH0Bm0XrnWbJpi8dlzDGnxi8NDTNINHwY1l1Gvud3lPlN7cp2s+jdiymaGk0Dh
+oCaSrM/GFnClwoCqCFq+mYd2jdNhaCEWAnEuQQrpKAb5cySDgvBejR7qx4iKE7r0
+fdHFE+cpkcQuC6ygro/gyUlOe0Om5HfTRi5s8GT+hSRKO3Q0xj5K8oCnfNVyQLdd
+861uGujjnBL7W6tJNVFX
+=Eq18
+-----END PGP SIGNATURE-----
+
+--TybLhxa8M7aNoW+V--
