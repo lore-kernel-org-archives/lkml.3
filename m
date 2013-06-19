@@ -1,257 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab3FSQvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:51:22 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38875 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3FSQud (ORCPT
+	id S934720Ab3FSQwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:52:12 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:50105 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805Ab3FSQwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:50:33 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH RFC 2/2] dcache: Locklessly update d_count whenever possible
-Date: Wed, 19 Jun 2013 12:50:05 -0400
-Message-Id: <1371660605-19225-3-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
-References: <1371660605-19225-1-git-send-email-Waiman.Long@hp.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>
+	Wed, 19 Jun 2013 12:52:09 -0400
+Message-ID: <51C1E1B6.8090203@linaro.org>
+Date: Wed, 19 Jun 2013 09:52:06 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/4] time: add a notifier chain for when the system time
+ is stepped
+References: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com> <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1371655523-15609-3-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code takes the dentry's d_lock lock whenever the d_count
-reference count is being updated. In reality, nothing big really
-happens until d_count goes to 0 in dput(). So it is not necessary
-to take the lock if the reference count won't go to 0. On the other
-hand, there are cases where d_count should not be updated or was not
-expected to be updated while d_lock was acquired by another thread.
+On 06/19/2013 08:25 AM, David Vrabel wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
+>
+> The high resolution timer code gets notified of step changes to the
+> system time with clock_was_set() or clock_was_set_delayed() calls.  If
+> other parts of the kernel require similar notification there is no
+> clear place to hook into.
+>
+> Add a clock_was_set atomic notifier chain
+> (clock_was_set_notifier_list) and call this in place of
+> clock_was_set().  If the timekeeping locks are held, the calls are
+> deferred to a new tasklet.
+>
+> The hrtimer code adds a notifier block to this chain and uses it to
+> call (the now internal) clock_was_set().  Since the timekeeping code
+> does not call the chain from the timer irq clock_was_set_delayed() and
+> associated code can be removed.
 
-The new mechanism for locklessly update a reference count in the
-spinlock & reference count combo was used to ensure that the reference
-count was updated locklessly as much as possible.
+So on my initial quick review, this *looks* pretty reasonable. I get a 
+little worried about interface abuse (ie: random drivers trying to hook 
+into clock_was_set_notifier_list), but we can move that into 
+timekeeper_internal.h or something similar to limit that.
 
-The offsets of the d_count/d_lock combo are at byte 72 and 88 for
-32-bit and 64-bit SMP systems respectively. In both cases, they are
-8-byte aligned and their combination into a single 8-byte word will
-not introduce a hole that increase the size of the dentry structure.
+The other issue here is we've been burned pretty badly in the past with 
+changes to clock_was_set(), as its key to keeping timers in line with 
+timekeeping.  So this will need a fair amount of testing and run time 
+before this gets merged, so 3.12 is what we'd be targeting at the 
+earliest (its getting a bit late for taking changes for 3.11 anyway).
 
-This patch has a particular big impact on the short workload of the
-AIM7 benchmark with ramdisk filesystem. The table below show the
-performance improvement to the JPM (jobs per minutes) throughput due
-to this patch on an 8-socket 80-core x86-64 system with a 3.10-rc4
-kernel in a 1/2/4/8 node configuration by using numactl to restrict
-the execution of the workload on certain nodes.
+If you want to try to push patch 1/4 in for 3.11 via the Xen tree, I'll 
+see about queuing the other three for hopefully 3.12.
 
-+-----------------+----------------+-----------------+----------+
-|  Configuration  |    Mean JPM    |    Mean JPM     | % Change |
-|                 | Rate w/o patch | Rate with patch |          |
-+-----------------+---------------------------------------------+
-|                 |              User Range 10 - 100            |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1596798     |     4721367     | +195.7%  |
-| 4 nodes, HT off |    1653817     |     5020983     | +203.6%  |
-| 2 nodes, HT off |    3802258     |     3813229     |   +0.3%  |
-| 1 node , HT off |    2403297     |     2433240     |   +1.3%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 200 - 1000          |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1070992     |     5878321     | +448.9%  |
-| 4 nodes, HT off |    1367668     |     7578718     | +454.1%  |
-| 2 nodes, HT off |    4554370     |     4614674     |   +1.3%  |
-| 1 node , HT off |    2534826     |     2540622     |   +0.2%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 1100 - 2000         |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1061322     |     6397776     | +502.8%  |
-| 4 nodes, HT off |    1365111     |     6980558     | +411.3%  |
-| 2 nodes, HT off |    4583947     |     4637919     |   +1.2%  |
-| 1 node , HT off |    2563721     |     2587611     |   +0.9%  |
-+-----------------+----------------+-----------------+----------+
-
-It can be seen that with 40 CPUs (4 nodes) or more, this patch can
-significantly improve the short workload performance. With only 1 or
-2 nodes, the performance is similar with or without the patch. The
-short workload also scales pretty well up to 4 nodes with this patch.
-
-A perf call-graph report of the short workload at 1500 users
-without the patch on the same 8-node machine indicates that about
-78% of the workload's total time were spent in the _raw_spin_lock()
-function. Almost all of which can be attributed to the following 2
-kernel functions:
- 1. dget_parent (49.91%)
- 2. dput (49.89%)
-
-The relevant perf report lines are:
-+  78.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-+   0.09%           reaim  [kernel.kallsyms]     [k] dput
-+   0.05%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irq
-+   0.00%           reaim  [kernel.kallsyms]     [k] dget_parent
-
-With this patch installed, the new perf report lines are:
-+  12.24%           reaim  [kernel.kallsyms]     [k]
-_raw_spin_lock_irqsave
-+   4.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-+   3.26%           reaim  [kernel.kallsyms]     [k] dget_parent
-+   1.08%           reaim  [kernel.kallsyms]     [k] dput
-
--   4.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-   - _raw_spin_lock
-      + 34.41% d_path
-      + 33.22% SyS_getcwd
-      + 4.38% prepend_path
-      + 3.71% dget_parent
-      + 2.54% inet_twsk_schedule
-      + 2.44% complete_walk
-      + 2.01% __rcu_process_callbacks
-      + 1.78% dput
-      + 1.36% unlazy_walk
-      + 1.18% do_anonymous_page
-      + 1.10% sem_lock
-      + 0.82% process_backlog
-      + 0.78% task_rq_lock
-      + 0.67% selinux_inode_free_security
-      + 0.60% unix_dgram_sendmsg
-      + 0.54% enqueue_to_backlog
-
-The dput used up only 1.78% of the _raw_spin_lock time while
-dget_parent used only 3.71%. The time spent on dput and dget_parent
-did increase because of busy waiting for unlock as well as the overhead
-of doing cmpxchg operations.
-
-This impact of this patch on other AIM7 workloads were much more
-modest.  The table below show the mean %change due to this patch on
-the same 8-socket system with a 3.10-rc4 kernel.
-
-+--------------+---------------+----------------+-----------------+
-|   Workload   | mean % change | mean % change  | mean % change   |
-|              | 10-100 users  | 200-1000 users | 1100-2000 users |
-+--------------+---------------+----------------+-----------------+
-| alltests     |      0.0%     |     -0.8%      |     +0.1%       |
-| five_sec     |     -2.4%     |     +1.7%      |     -0.1%       |
-| fserver      |     -1.8%     |     -2.4%      |     -2.1%       |
-| high_systime |     +0.1%     |     +0.7%      |     +2.1%       |
-| new_fserver  |     +0.2%     |     -1.7%      |     -0.9%       |
-| shared       |     -0.1%     |      0.0%      |     -0.1%       |
-+--------------+---------------+----------------+-----------------+
-
-There are slight drops in performance for fsever and new_fserver
-workloads, but slight increase in the high_systime workload.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- fs/dcache.c            |   14 ++++++++++++--
- include/linux/dcache.h |   22 ++++++++++++++++++++--
- 2 files changed, 32 insertions(+), 4 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index f09b908..040e99f 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -515,6 +515,8 @@ void dput(struct dentry *dentry)
- repeat:
- 	if (dentry->d_count == 1)
- 		might_sleep();
-+	else if (_DPUT(dentry))
-+		return;
- 	spin_lock(&dentry->d_lock);
- 	BUG_ON(!dentry->d_count);
- 	if (dentry->d_count > 1) {
-@@ -611,6 +613,8 @@ static inline void __dget_dlock(struct dentry *dentry)
- 
- static inline void __dget(struct dentry *dentry)
- {
-+	if (_DGET(dentry))
-+		return;
- 	spin_lock(&dentry->d_lock);
- 	__dget_dlock(dentry);
- 	spin_unlock(&dentry->d_lock);
-@@ -620,17 +624,23 @@ struct dentry *dget_parent(struct dentry *dentry)
- {
- 	struct dentry *ret;
- 
-+	rcu_read_lock();
-+	ret = rcu_dereference(dentry->d_parent);
-+	if (_DGET0(ret)) {
-+		rcu_read_unlock();
-+		return ret;
-+	}
- repeat:
- 	/*
- 	 * Don't need rcu_dereference because we re-check it was correct under
- 	 * the lock.
- 	 */
--	rcu_read_lock();
--	ret = dentry->d_parent;
-+	ret = ACCESS_ONCE(dentry->d_parent);
- 	spin_lock(&ret->d_lock);
- 	if (unlikely(ret != dentry->d_parent)) {
- 		spin_unlock(&ret->d_lock);
- 		rcu_read_unlock();
-+		rcu_read_lock();
- 		goto repeat;
- 	}
- 	rcu_read_unlock();
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 1a6bb81..a1271a2 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -6,6 +6,7 @@
- #include <linux/rculist.h>
- #include <linux/rculist_bl.h>
- #include <linux/spinlock.h>
-+#include <linux/spinlock_refcount.h>
- #include <linux/seqlock.h>
- #include <linux/cache.h>
- #include <linux/rcupdate.h>
-@@ -112,8 +113,7 @@ struct dentry {
- 	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
- 
- 	/* Ref lookup also touches following */
--	unsigned int d_count;		/* protected by d_lock */
--	spinlock_t d_lock;		/* per dentry lock */
-+	LOCK_WITH_REFCOUNT(d_lock, d_count,/**/); /* per dentry lock & count */
- 	const struct dentry_operations *d_op;
- 	struct super_block *d_sb;	/* The root of the dentry tree */
- 	unsigned long d_time;		/* used by d_revalidate */
-@@ -210,6 +210,22 @@ struct dentry_operations {
- 
- #define DCACHE_DENTRY_KILLED	0x100000
- 
-+/*
-+ * Internal d_count update macros:
-+ * _DPUT  - decrements d_count unless it is locked or d_count is 1
-+ * _DGET  - increments d_count unless it is locked
-+ * _DGET0 - increments d_count unless it is locked or d_count is 0
-+ */
-+#define _DPUT(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
-+					     &(dentry)->d_lock,		\
-+					     &(dentry)->d_count, -1, 1)
-+#define _DGET(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
-+					     &(dentry)->d_lock,		\
-+					     &(dentry)->d_count, 1, -1)
-+#define _DGET0(dentry)	__lockcnt_add_unless(LOCKCNT_COMBO_PTR(dentry),	\
-+					     &(dentry)->d_lock,		\
-+					     &(dentry)->d_count, 1, 0)
-+
- extern seqlock_t rename_lock;
- 
- static inline int dname_external(struct dentry *dentry)
-@@ -359,6 +375,8 @@ static inline struct dentry *dget_dlock(struct dentry *dentry)
- static inline struct dentry *dget(struct dentry *dentry)
- {
- 	if (dentry) {
-+		if (_DGET(dentry))
-+			return dentry;
- 		spin_lock(&dentry->d_lock);
- 		dget_dlock(dentry);
- 		spin_unlock(&dentry->d_lock);
--- 
-1.7.1
+thanks
+-john
 
