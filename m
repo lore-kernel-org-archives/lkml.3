@@ -1,144 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464Ab3FSLa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:30:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50263 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934175Ab3FSLa5 (ORCPT
+	id S934499Ab3FSLbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:31:11 -0400
+Received: from smtp-out-221.synserver.de ([212.40.185.221]:1069 "EHLO
+	smtp-out-221.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934175Ab3FSLbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:30:57 -0400
-Message-ID: <51C1963B.2070501@ti.com>
-Date: Wed, 19 Jun 2013 06:30:03 -0500
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 07:31:07 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29272
+Message-ID: <51C19682.2070304@metafoo.de>
+Date: Wed, 19 Jun 2013 13:31:14 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <51C19011.5050107@ti.com>
-In-Reply-To: <51C19011.5050107@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Akhil Goyal <akhil.goyal@freescale.com>
+CC: Arnd Bergmann <arnd@arndb.de>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, pankaj.chauhan@freescale.com
+Subject: Re: [PATCH 1/5] drivers/misc: Support for RF interface device framework
+References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com> <201306172328.26430.arnd@arndb.de> <51C00FC0.90105@freescale.com>
+In-Reply-To: <51C00FC0.90105@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 06:03 AM, Roger Quadros wrote:
-> On 06/19/2013 01:10 PM, Benoit Cousson wrote:
->> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
->>> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
->>>> Hi Benoit,
->>>>
->>>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
->>>>> Hi Roger,
->>>>>
->>>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
->>>>>> Provide the RESET and Power regulators for the USB PHY,
->>>>>> the USB Host port mode and the PHY device.
->>>>>>
->>>>>> Also provide pin multiplexer information for the USB host
->>>>>> pins.
->>>>>>
->>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>>>> ---
->>>>>>     arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
->>>>>>     1 files changed, 62 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>>> index 00cbaa5..7a21e8e 100644
->>>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>>>>> @@ -59,6 +59,42 @@
->>>>>>                 "AFML", "Line In",
->>>>>>                 "AFMR", "Line In";
->>>>>>         };
->>>>>> +
->>>>>> +    /* HS USB Port 1 RESET */
->>>>>> +    hsusb1_reset: hsusb1_reset_reg {
->>>>>> +        compatible = "regulator-fixed";
->>>>>> +        regulator-name = "hsusb1_reset";
->>>>>> +        regulator-min-microvolt = <3300000>;
->>>>>> +        regulator-max-microvolt = <3300000>;
->>>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
->>>>>> +        startup-delay-us = <70000>;
->>>>>> +        enable-active-high;
->>>>>> +    };
->>>>>
->>>>> Is this really a regulator? Or just a GPIO line used to reset the USB PHY?
->>>>
->>>> It is in fact a GPIO line used as reset.
->>>>>
->>>>> If this is the case, I don't think it should be represented as a regulator.
->>>>
->>>> Why not? I think it fits very well in the regulator device model.
+On 06/18/2013 09:44 AM, Akhil Goyal wrote:
+[...]
+>>> +    /*
+>>> +     * Spin_locks are changed to mutexes if PREEMPT_RT is enabled,
+>>> +     * i.e they can sleep. This fact is problem for us because
+>>> +     * add_wait_queue()/wake_up_all() takes wait queue spin lock.
+>>> +     * Since spin lock can sleep with PREEMPT_RT, wake_up_all() can not be
+>>> +     * called from rf_notify_dl_tti (which is called in interrupt context).
+>>> +     * As a workaround, wait_q_lock is used for protecting the wait_q and
+>>> +     * add_wait_queue_locked()/ wake_up_locked() functions of wait queues
+>>> +     * are used.
+>>> +     */
+>>> +    raw_spin_lock_irqsave(&rf_dev->wait_q_lock, flags);
+>>> +    __add_wait_queue_tail_exclusive(&rf_dev->wait_q,&wait);
+>>> +    raw_spin_unlock_irqrestore(&rf_dev->wait_q_lock, flags);
+>>> +    set_current_state(TASK_INTERRUPTIBLE);
+>>> +    /*Now wait here, tti notificaion will wake us up*/
+>>> +    schedule();
+>>> +    set_current_state(TASK_RUNNING);
+>>> +    raw_spin_lock_irqsave(&rf_dev->wait_q_lock, flags);
+>>> +    __remove_wait_queue(&rf_dev->wait_q,&wait);
+>>> +    raw_spin_unlock_irqrestore(&rf_dev->wait_q_lock, flags);
 >>
->> I'm not sure fitting very well is the correct term.
->> It works, for sure, but it is no different than when we were trying to abuse the regulator fmwk to enable the 32k clock in phoenix.
->> It is just a hack.
+>> This is not a proper method of waiting for an event. Why can't you
+>> use wait_event() here?
+> wait_event() is internally calling spin_lock_irqsave() and this function
+> will be called in hard IRQ context with PREEMPT_RT enabled(IRQF_NODELAY
+> set). So wait_event cannot be used.
+> This problem can be solved if we can get the following patch applied on the
+> tree.
+> https://patchwork.kernel.org/patch/2161261/
+> 
 >>
->
-> The only difference is there is a dedicated framework for clocks. Since there is nothing specific to
-> handle reset lines it is left to the driver writer how he wants to manage it.
+>> The explanation about the interrupt handler seems incorrect, since PREEMPT_RT
+>> also turns interrupt handlers into threads.
+> The interrupt handler has real time requirement and thus running in HARDIRQ
+> context with flag IRQF_NODELAY. We get this interrupt in every millisecond.
 
-Well, at that time, it was not available either. The point is still that 
-using a existing fmwk that has nothing to do with the signal you need to 
-handle just because it works is not a very good justification.
+But if you are running in HARDIRQ context the whole sequence doesn't make
+much sense at all, since you won't be able to sleep and wait for the event.
 
->>>> I couldn't find a better
->>>> way to represent this. It gives us a way to specify not only the GPIO line but also
->>>> the polarity. I know mostly reset is active low but still there is flexibility as you never
->>>> know for sure.
->>
->> Mmm, and what about just controlling the gpio from the driver?
->
-> Yes gpio is possible. But then you need to add additional code in the driver to parse GPIO number and polarity.
-> Using regulator_get() was plain simple for me.
-
-Maybe, but it is not the right thing to do.
-Can you explain me the commonality between a reset line and a regulator???
-
->>> I think it's really a mux + a comparator. But from Linux driver point of view
->>> a regulator fits well as we don't have anything better. After all, the pin
->>> voltage changes, and then something can be done based on the comparator
->>> value.
->>>
->>>> Do you have any better ideas?
->>>
->>> We have a similar issue with the MMC1 PBIAS. I think in the long run we
->>> should expand regulator (and possibly pinctrl) framework(s) to handle
->>> comparators. We could just assume that a comparatator is a regulator,
->>> and have a comparator binding that just uses the regulator code.
->>
->> In the case of pbias, the pinctrl seems to be a much better fit for my point of view. pinctrl can handle pin configuration and this is what the pbias is in the case of MMC pins.
->>
->>>> FYI. The USB PHY driver is already treating reset as a regulator and is into 3.10. Reworking that
->>>> will take some time. Not getting these in will prevent USB host/ethernet support on panda.
->>
->> That's not because we did some mistake in the past that we have to keep doing that :-)
->
-> I had actually thought it well and don't consider it as a mistake. It is just a difference in opinion.
-
-Well, I don't think so. Again, you are abusing the regulator fmwk to 
-enable at boot time a GPIO line that should reset the IP. I doubt the 
-regulator fmwk was done for that. Otherwise Mark would have named it 
-"miscellaneous fmwk" or "regulator & reset" fmwk.
-
->>> Yes and we need to have some solution for v3.11 as we've dropped the
->>> legacy data for omap4. Otherwise things won't work properly.
->>
->> I'm fine taking it as soon as big disclaimer is added to avoid mis-using the regulator in the future for controlling a gpio line.
->>
->
-> I can re-work the phy driver. No problem. But I'm still not convinced
-> what it will improve. IMHO it just adds more code in the phy driver without any benefits.
-
-Yes, it will. It will give explicitly the reset control to the driver 
-that knows and needs it. Moreover, it will avoid abusing a fmwk that was 
-not done for that purpose.
-
-Regards,
-Benoit
-
+- Lars
