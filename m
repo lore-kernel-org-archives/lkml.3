@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934735Ab3FSMfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 08:35:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44331 "EHLO comal.ext.ti.com"
+	id S934750Ab3FSMgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 08:36:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16075 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934022Ab3FSMfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 08:35:30 -0400
-Message-ID: <51C1A55E.9040500@ti.com>
-Date: Wed, 19 Jun 2013 07:34:38 -0500
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S934022Ab3FSMgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 08:36:03 -0400
+Message-ID: <51C1A57F.3060704@redhat.com>
+Date: Wed, 19 Jun 2013 14:35:11 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <20130619122715.GA5523@atomide.com>
-In-Reply-To: <20130619122715.GA5523@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 7/7] KVM: MMU: document fast invalidate all mmio sptes
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1371632965-20077-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1371632965-20077-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Il 19/06/2013 11:09, Xiao Guangrong ha scritto:
+> Document it to Documentation/virtual/kvm/mmu.txt
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  Documentation/virtual/kvm/mmu.txt | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+> 
+> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+> index f5c4de9..9b7cfb3 100644
+> --- a/Documentation/virtual/kvm/mmu.txt
+> +++ b/Documentation/virtual/kvm/mmu.txt
+> @@ -396,6 +396,31 @@ ensures the old pages are not used any more. The invalid-gen pages
+>  (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen) are zapped by using lock-break
+>  technique.
+>  
+> +Fast invalidate all mmio sptes
+> +===========
+> +As mentioned in "Reaction to events" above, kvm will cache the mmio information
+> +to the last sptes so that we should zap all mmio sptes when the guest mmio info
+> +is changed. This will happen when a new memslot is added or the existing
+> +memslot is moved.
+> +
+> +Zapping mmio spte is also a scalability issue for the large memory and large
+> +vcpus guests since it needs to hold hot mmu-lock and walk all shadow pages to
+> +find all the mmio spte out.
+> +
+> +We fix this issue by using the similar way of "Fast invalidate all pages".
+> +The global mmio valid generation-number is stored in kvm->memslots.generation
+> +and every mmio spte stores the current global generation-number into his
+> +available bits when it is created
+> +
+> +The global mmio valid generation-number is increased whenever the gust memory
+> +info is changed. When guests do mmio access, kvm intercepts a MMIO #PF then it
+> +walks the shadow page table and get the mmio spte. If the generation-number on
+> +the spte does not equal the global generation-number, it will go to the normal
+> +#PF handler to update the mmio spte.
+> +
+> +Since 19 bits are used to store generation-number on mmio spte, we zap all pages
+> +when the number is round.
 
-On 06/19/2013 07:27 AM, Tony Lindgren wrote:
-> * Benoit Cousson <b-cousson@ti.com> [130619 03:17]:
->> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
->>>
->>> We have a similar issue with the MMC1 PBIAS. I think in the long run we
->>> should expand regulator (and possibly pinctrl) framework(s) to handle
->>> comparators. We could just assume that a comparatator is a regulator,
->>> and have a comparator binding that just uses the regulator code.
->>
->> In the case of pbias, the pinctrl seems to be a much better fit for
->> my point of view. pinctrl can handle pin configuration and this is
->> what the pbias is in the case of MMC pins.
->
-> Well just recently Linus W specifically wanted us to use regulator
-> framework for the MMC1 PBIAS rather than pinctrl. That's because
-> from consumer driver point of view, it changes voltage and there's
-> a delay involved. So I guess no conclusion yet, and it's best to
-> do stand alone drivers to deal with those that use pinctrl for the
-> pinctrl specific parts and export it as a regulator for the consumer
-> devices.
+As mentioned in "Reaction to events" above, kvm will cache MMIO
+information in leaf sptes.  When a new memslot is added or an existing
+memslot is changed, this information may become stale and needs to be
+invalidated.  This also needs to hold the MMU lock while walking all
+shadow pages, and is made more scalable with a similar technique.
 
-In the case of pbias, the boundary is not that clear, and it is true 
-that writing a complete pinctrl driver is really overkill.
-I've tried in the past, and gave up due to the complexity of fmwk and 
-the lack of time. I still think, it is a much better fmwk to handle pin 
-configuration than the regulator fmwk.
+MMIO sptes have a few spare bits, which are used to store a
+generation number.  The global generation number is stored in
+kvm_memslots(kvm)->generation, and increased whenever guest memory info
+changes.  This generation number is distinct from the one described in
+the previous section.
 
-> That's pretty much along the lines what Roger has done,
-> except the transceiver could use the pinctrl-single,bits for the
-> muxing and pinconf.
+When KVM finds an MMIO spte, it checks the generation number of the spte.
+If the generation number of the spte does not equal the global generation
+number, it will ignore the cached MMIO information and handle the page
+fault through the slow path.
 
-Well, in that case, this is a reset line, so it does not have anything 
-to do with voltage :-)
+Since only 19 bits are used to store generation-number on mmio spte, all
+pages are zapped when there is an overflow.
 
-Anyway, thanks to Florian, we know that there is a real solution to that 
-problem. It is just not merged now :-(
 
-Regards,
-Benoit
+I'm also adding this in the page fault section:
+
+   - check for valid generation number in the spte (see "Fast invalidation of
+     MMIO sptes" below)
+
+>  Further reading
+>  ===============
+>  
+> 
+
