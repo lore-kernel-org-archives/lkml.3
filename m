@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934427Ab3FSL1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:27:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51974 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934141Ab3FSL07 (ORCPT
+	id S934451Ab3FSL1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:27:49 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37797 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934141Ab3FSL1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:26:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH] usb: gadget: at91_udc: call at91udc_of_init only when needed
-Date: Wed, 19 Jun 2013 13:27:27 +0200
-Message-ID: <6194333.jEShKk4GmN@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+	Wed, 19 Jun 2013 07:27:47 -0400
+Message-ID: <51C195AC.80201@gmail.com>
+Date: Wed, 19 Jun 2013 19:27:40 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:tkrQmEwYRLw8e0g91BxmEkptIw2M5Y4Jeo7VZmf5L4P
- ELvj45sHHrR2+hu3RSEG6Hg/M9+5P6+8O1KsiYV481tPyfmSnQ
- 37xPAcowqZD78Yg+WIp05QWqOxR0NG+cnZikHyydQkmv/Fqz+8
- uELfjpwRj8LTTWkpIalW3/QJNUckAlXYKtL98Epcdfv3imjsYk
- +A3WsVV/IUh5GckM+sIvsFlAaFEg+DeNkMnPBvK0RkiambGLST
- bSHP1OXhJEsBwbV0PbrArYG8EtDPTskLcheid0y6C0fbIhM0mg
- XN9gA6fnGIA2dhLhX1o41FWunpukRcGIZojfc1sxOgRLtWQ+l0
- X75DcWnZm/SutLkC02uU=
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075656.GY4725@redhat.com> <51B590C9.9080009@gmail.com> <20130610224352.0a769838745b294fc43f7823@gmail.com> <20130610170341.GJ29022@redhat.com> <51C1911A.3000507@redhat.com>
+In-Reply-To: <51C1911A.3000507@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids a build error in at91sam9261_9g10_defconfig:
+On 06/19/2013 07:08 PM, Paolo Bonzini wrote:
+> Il 10/06/2013 19:03, Gleb Natapov ha scritto:
+>> On Mon, Jun 10, 2013 at 10:43:52PM +0900, Takuya Yoshikawa wrote:
+>>> On Mon, 10 Jun 2013 16:39:37 +0800
+>>> Xiao Guangrong <xiaoguangrong.eric@gmail.com> wrote:
+>>>
+>>>> On 06/10/2013 03:56 PM, Gleb Natapov wrote:
+>>>>> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
+>>>
+>>>>> Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
+>>>>> sp->mmio_cached, so they should be removed as part of the patch series?
+>>>>
+>>>> Yes, i agree, they should be removed. :)
+>>>
+>>> I'm fine with removing it but please make it clear that you all agree
+>>> on the same basis.
+>>>
+>>> Last time, Paolo mentioned the possibility to use some bits of spte for
+>>> other things.  The suggestion there was to keep sp->mmio_cached code
+>>> for the time we would need to reduce the bits for generation numbers.
+>>>
+>>> Do you think that zap_all() is now preemptible and can treat the
+>>> situation reasonably well as the current kvm_mmu_zap_mmio_sptes()?
+>>>
+>>> One downside is the need to zap unrelated shadow pages, but if this case
+>>> is really very rare, yes I agree, it should not be a problem: it depends
+>>> on how many bits we can use.
+>>>
+>>> Just please reconfirm.
+>>>
+>> That was me who mention the possibility to use some bits of spte for
+>> other things. But for now I have a use for one bit only. Now that you
+>> have reminded me about that discussion I am not so sure we want to
+>> remove kvm_mmu_zap_mmio_sptes(), but on the other hand it is non
+>> preemptable, so large number of mmio sptes can cause soft lockups.
+>> zap_all() is better in this regards now.
+> 
+> I asked Gleb on IRC, and he's fine with applying patch 7 too (otherwise
+> there's hardly any benefit, because kvm_mmu_zap_mmio_sptes is
+> non-preemptable).
+> 
+> I'm also changing the -13 to -150 since it's quite easy to generate 150
+> calls to KVM_SET_USER_MEMORY_REGION.  Using QEMU, and for a pretty basic
+> guest with virtio-net, IDE controller and VGA you get:
+> 
+> - 9-10 calls before starting the guest, depending on the guest memory size
+> 
+> - around 25 during the BIOS
+> 
+> - around 20 during kernel boot
+> 
+> - 34 during a single dump of the 64 KB ROM from a virtio-net device.
 
-drivers/usb/gadget/at91_udc.c: In function 'at91udc_probe':
-drivers/usb/gadget/at91_udc.c:1685:34: warning: 'flags' may be used uninitialized in this
-function [-Wmaybe-uninitialized]
-  board->vbus_active_low = (flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0;
-                                  ^
-drivers/usb/gadget/at91_udc.c:1678:21: note: 'flags' was declared here
-  enum of_gpio_flags flags;
-                     ^
+Okay. The change is find to me. :)
 
-Making the call to at91udc_of_init conditinal also reduces
-the object code size without sacrificing build coverage.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index 073b938..2cbab1c 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1725,7 +1725,7 @@ static int at91udc_probe(struct platform_device *pdev)
- 	/* init software state */
- 	udc = &controller;
- 	udc->gadget.dev.parent = dev;
--	if (pdev->dev.of_node)
-+	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
- 		at91udc_of_init(udc, pdev->dev.of_node);
- 	else
- 		memcpy(&udc->board, dev->platform_data,
 
