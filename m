@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab3FSSfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:35:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20931 "EHLO mx1.redhat.com"
+	id S935072Ab3FSSgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:36:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49956 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab3FSSfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:35:00 -0400
-Date: Wed, 19 Jun 2013 14:34:50 -0400
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: [3.10-rc6] WARNING: at fs/btrfs/inode.c:7961
- btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
-Message-ID: <20130619183450.GA26752@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
-References: <20130617134955.GB15861@redhat.com>
- <20130617173942.15057.63201@localhost.localdomain>
- <20130617182005.GA9839@redhat.com>
- <20130617184227.15057.75499@localhost.localdomain>
- <20130617185810.GA13370@redhat.com>
- <20130619180233.5430.5764@localhost.localdomain>
+	id S934714Ab3FSSgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:36:48 -0400
+Date: Wed, 19 Jun 2013 20:36:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Message-ID: <20130619183640.GL28300@pd.tnic>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130619175728.2852.73156.stgit@localhost.localdomain>
+ <20130619180441.GK28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130619180233.5430.5764@localhost.localdomain>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 02:02:33PM -0400, Chris Mason wrote:
- > Quoting Dave Jones (2013-06-17 14:58:10)
- > > On Mon, Jun 17, 2013 at 02:42:27PM -0400, Chris Mason wrote:
- > >  > Quoting Dave Jones (2013-06-17 14:20:06)
- > >  > > On Mon, Jun 17, 2013 at 01:39:42PM -0400, Chris Mason wrote:
- > >  > >  > Quoting Dave Jones (2013-06-17 09:49:55)
- > >  > >  > > Hit this while running this script in a loop..
- > >  > >  > > https://github.com/kernelslacker/io-tests/blob/master/setup.sh
- > >  > >  > > [34385.251507] ------------[ cut here ]------------
- > >  > >  > > [34385.254068] WARNING: at fs/btrfs/inode.c:7961 btrfs_destroy_inode+0x265/0x2e0 [btrfs]()
- > >  > >  > 
- > >  > >  > Thanks Dave, how long did you have to run the script to trigger it?
- > >  > > 
- > >  > > Judging by the timestamp, about 9 hours.  This is on a 3 disk (sata)
- > >  > > (oldish) quad opteron. Might repro faster on a more modern machine.
- > >  > 
- > >  > Exactly how did you run it?  I want to make sure I'm matching your
- > >  > config.
- > > 
- > > while [ 1 ];
- > > do
- > >   setup.sh
- > > done
- > > 
- > > You'll need to set DISK1 etc variables at the top of the script to point to
- > > at least 3 disks for it to scribble over.
- > > 
- > > you'll also need fsx and fsstress in /usr/local/bin.
- > 
- > I've tried with and without memory pressure, and let it run for about 30
- > hours.  So far, nothing here.  Have you seen this again?
+On Wed, Jun 19, 2013 at 06:19:25PM +0000, Luck, Tony wrote:
+> > Interesting, why? Why would we even need such an option? My impression
+> > is, if ACPI tells us FF, MCE code doesn't poll those banks anymore. So
+> > where do the duplicated reports come from?
+> 
+> The option is only disabling the Linux side of firmware first ... the BIOS
+> will still be doing it and generating records to feed to the OS using APEI.
+> 
+> So Linux may see the error in a bank and report it, and BIOS may report
+> the same error.  Though I'd expect that to be rare as whoever saw it first
+> would most likely clear the bank before the other could see it.
+> 
+> I asked for the option because I'm nervous about just skipping some banks
+> on the say-so of the BIOS ... what if the BIOS did something wrong. This
+> option gives us a way to return to the way things were before this patch.
 
-yeah, one time I hit it within 30 minutes.
+Yeah, the code I saw only disables the banks in the HEST:
 
-	Dave
+	mce_disable_ce_bank(mc_bank->bank_number)
 
+and leaving the rest in poll mode. But I agree, we need this as a
+fallback if BIOS is doing other crack smoking exercises and thus we want
+to ignore FF completely.
+
+> These parts are now looking good ... but we still need to tackle what
+> Linux does when it does get the CPER record. I suspect we need to
+> preserve the existing "fake an mcelog entry with just the address" on
+> old platforms, but need to do something smarter on new ones.
+
+Why, fill out struct mce and do mce_log(mce) does not suffice?
+
+I'll take a look at the rest of the stuff tomorrow, on a clear head.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
