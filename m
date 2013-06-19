@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934944Ab3FSQnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:43:20 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48313 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934837Ab3FSQnR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:43:17 -0400
-Date: Wed, 19 Jun 2013 17:42:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, ldewangan@nvidia.com, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, gg@slimlogic.co.uk
-Message-ID: <20130619164254.GA1403@sirena.org.uk>
-References: <1371621470-22279-1-git-send-email-j-keerthy@ti.com>
- <1371621470-22279-2-git-send-email-j-keerthy@ti.com>
+	id S1756860Ab3FSQpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:45:36 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:1574
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756707Ab3FSQpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 12:45:33 -0400
+Message-ID: <51C1E028.2040700@caviumnetworks.com>
+Date: Wed, 19 Jun 2013 09:45:28 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f1Ot4QhJn5dlG2/n"
-Content-Disposition: inline
-In-Reply-To: <1371621470-22279-2-git-send-email-j-keerthy@ti.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/4] MFD: Palmas: Check if irq is valid
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/5] tty/8250_dw: Add support for OCTEON UARTS.
+References: <1371582775-12141-1-git-send-email-ddaney.cavm@gmail.com> <1371582775-12141-4-git-send-email-ddaney.cavm@gmail.com> <2302882.NVjP8DdXWY@wuerfel>
+In-Reply-To: <2302882.NVjP8DdXWY@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-Antispam-Report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:0;SRVR:SN2PR07MB064;H:BLUPRD0712HT001.namprd07.prod.outlook.com;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/19/2013 03:01 AM, Arnd Bergmann wrote:
+> On Tuesday 18 June 2013 12:12:53 David Daney wrote:
+>> +static unsigned int dw8250_serial_inq(struct uart_port *p, int offset)
+>> +{
+>> +       offset <<= p->regshift;
+>> +
+>> +       return (u8)__raw_readq(p->membase + offset);
+>> +}
+>> +
+>> +static void dw8250_serial_outq(struct uart_port *p, int offset, int value)
+>> +{
+>> +       struct dw8250_data *d = p->private_data;
+>> +
+>> +       if (offset == UART_LCR)
+>> +               d->last_lcr = value;
+>> +
+>> +       offset <<= p->regshift;
+>> +       __raw_writeq(value, p->membase + offset);
+>> +       dw8250_serial_inq(p, UART_LCR);
+>> +}
+>
+> This breaks building on 32 bit architectures as I found on my daily ARM
+> builds: __raw_writeq cannot be defined on architectures that don't have
+> native 64 bit data access instructions.
 
---f1Ot4QhJn5dlG2/n
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I will rework the patch to avoid this problem.
 
-On Wed, Jun 19, 2013 at 11:27:47AM +0530, Keerthy wrote:
-> From: J Keerthy <j-keerthy@ti.com>
->=20
-> Check if irq value obtained is valid. If it is not valid
-> then skip the irq request step and go ahead with the probe.
->=20
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
 
-Reviewed-by: Mark Brown <broonie@linaro.org>
+> It's also wrong to use the
+> __raw_* variant, which is not guaranteed to be atomic and is not
+> endian-safe.
 
---f1Ot4QhJn5dlG2/n
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We do runtime probing and only use this function on platforms where it 
+is appropriate, so atomicity is not an issue.  As for endianess, I used 
+the __raw_ variant precisely because it is correct for both big and 
+little endian kernels.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+David Daney
 
-iQIcBAEBAgAGBQJRwd+LAAoJELSic+t+oim9Po0P/ApRELd4efvrDfhsfTBaE1/K
-HXDV4j01sG+AQ6jPYnsODw5gJkGGEh9Z6/oKUPK4+VBHwg/aOalCwTMAgJ4JQ95D
-ixOZCql8s+Rxf7XbB7a4/HLvJjtflUySnxTGVozS/newrbD991n0RcyjwL+97yEp
-xWCgn6D+bYOXLnpVN2Pb4TnwgqHLVJ4QMYD525o4j1RqkRSL1nLSb/JWAQWtsQZp
-P7R1WRgkn0eEVf7XHPP/GECCuUMypCtw688TDH/rs4rBIixGJ/wiHlPtxSN0e9yt
-+e09y5lo25Xf3v5pW796XDzyWS28kcCUqV+ipDWle81xVd3FooIhnouEKO3l8QbQ
-JDVq1NCGFbWOUfoXnixSYQjrEA+/modH6RTGUUjJLMhi+ooXCN6pRD3DXPSIb9Xr
-WHQZsEUkuPbdKm8xvTpSb4ICVlGtgXgmTLD/TKyl2CJgD2lPc7afwj8UVdjcltYx
-yjw2YNJAFm6aJn5/KyB89CAoZSm9v4fxao4jFpD12O2SSU045omuFnJZ1DqgTXBg
-jMIyeAa+X+jQSV53mqdL508idcXJwELjoNQeVGaAkXJ9iAc38D5eL2Ef4zjre33T
-uSH9unmilfYAEvj3nPWZ3hBwzGTc/dJyWamM8C41hmo18aauyv05yQ3xmBqIzDme
-uwVzUmodTsqD5jEaiVqm
-=8YBj
------END PGP SIGNATURE-----
 
---f1Ot4QhJn5dlG2/n--
