@@ -1,156 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964840Ab3FSVhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 17:37:51 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:57827 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934987Ab3FSVhs (ORCPT
+	id S935148Ab3FSVhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 17:37:39 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:56158 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934929Ab3FSVhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 17:37:48 -0400
-Date: Thu, 20 Jun 2013 01:35:32 +0400
-From: Andrey Wagin <avagin@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] [RFC] mnt: restrict a number of "struct mnt"
-Message-ID: <20130619213532.GA31165@gmail.com>
-References: <1371457498-27241-1-git-send-email-avagin@openvz.org>
- <878v284iif.fsf@xmission.com>
- <CANaxB-zvPMZe932nAeyOCbdHmmXa76f12BRv0X0W7F0ULZMkTA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <CANaxB-zvPMZe932nAeyOCbdHmmXa76f12BRv0X0W7F0ULZMkTA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Jun 2013 17:37:37 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 0/4] MIPS/tty/8250: Use standard 8250 drivers for OCTEON
+Date: Wed, 19 Jun 2013 14:37:25 -0700
+Message-Id: <1371677849-23912-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:56:51AM +0400, Andrey Wagin wrote:
-> 2013/6/17 Eric W. Biederman <ebiederm@xmission.com>:
-> > So for anyone seriously worried about this kind of thing in general we
-> > already have the memory control group, which is quite capable of
-> > limiting this kind of thing,
-> 
-> > and it limits all memory allocations not just mount.
-> 
-> And that is problem, we can't to limit a particular slab. Let's
-> imagine a real container with 4Gb of RAM. What is a kernel memory
-> limit resonable for it? I setup 64 Mb (it may be not enough for real
-> CT, but it's enough to make host inaccessible for some minutes).
-> 
-> $ mkdir /sys/fs/cgroup/memory/test
-> $ echo $((64 << 20)) > /sys/fs/cgroup/memory/test/memory.kmem.limit_in_bytes
-> $ unshare -m
-> $ echo $$ > /sys/fs/cgroup/memory/test/tasks
-> $ mount --make-rprivate /
-> $ mount -t tmpfs xxx /mnt
-> $ mount --make-shared /mnt
-> $ time bash -c 'set -m; for i in `seq 30`; do mount --bind /mnt
-> `mktemp -d /mnt/test.XXXXXX` & done;  for i in `seq 30`; do wait;
-> done'
-> real 0m23.141s
-> user 0m0.016s
-> sys 0m22.881s
-> 
-> While the last script is working, nobody can't to read /proc/mounts or
-> mount something. I don't think that users from other containers will
-> be glad. This problem is not so significant in compared with umounting
-> of this tree.
-> 
-> $ strace -T umount -l /mnt
-> umount("/mnt", MNT_DETACH)              = 0 <548.898244>
-> The host is inaccessible, it writes messages about soft lockup in
-> kernel log and eats 100% cpu.
+From: David Daney <david.daney@cavium.com>
 
-Eric, do you agree that
-* It is a problem
-* Currently we don't have a mechanism to prevent this problem
-* We need to find a way to prevent this problem
+Changes from v1: Fix breakage in non-OCTEON builds of 8250_dw.c
 
-> 
-> 
-> >
-> > Is there some reason we want to go down the path of adding and tuning
-> > static limits all over the kernel?  As opposed to streamlining the memory
-> > control group so it is low overhead and everyone that cares can use it?
-> 
-> The memory control group doesn't help in this case... I need to look
-> at this code in more details, maybe we can limit a depth of nested
-> mount points.
+1) Fix OCTEON's UART clock rate.
 
-Complexity of the umount algorithm does not depends on a depth of nested
-mounts, it depends on a number of mounts and sometimes complexity is O(n^2).
+2) Make minor patches to 8250_dw so it can be used by OCTEON
 
-For example:
+3) Rip out the OCTEON serial code.
 
-	mount -t tmpfs xxx /mnt
-	mount --make-shared /mnt
+4) Update defconfig so we default to having a usable serial port.
 
-	mkdir /mnt/tmp
-	mount -t tmpfs xxx /mnt/tmp
-	mkdir /mnt/d
+Since the patches are all interdependent, we might want to merge them
+via a single tree (perhaps Ralf's MIPS tree as OKed by Greg K-H).
 
-	for ((i = 0; i < $1; i++)); do
-		d=`mktemp -d /mnt/d/xxx.XXXXXX`
-		mount --bind /mnt/tmp $d || break
-	done
+David Daney (4):
+  MIPS: OCTEON: Set proper UART clock in internal device trees.
+  tty/8250_dw: Add support for OCTEON UARTS.
+  MIPS: OCTEON: Remove custom serial setup code.
+  MIPS: Update cavium_octeon_defconfig
 
-	mkdir /mnt/tmp/d
-	for ((i = 0; i < $1; i++)); do
-		d=`mktemp -d /mnt/tmp/xxx.XXXXXX`
-		mount --bind /mnt/tmp/d $d || break
-	done
+ arch/mips/cavium-octeon/Makefile          |   2 +-
+ arch/mips/cavium-octeon/octeon-platform.c |   9 ++-
+ arch/mips/cavium-octeon/serial.c          | 109 ------------------------------
+ arch/mips/configs/cavium_octeon_defconfig |   4 +-
+ drivers/tty/serial/8250/8250_dw.c         | 108 ++++++++++++++++++-----------
+ 5 files changed, 79 insertions(+), 153 deletions(-)
+ delete mode 100644 arch/mips/cavium-octeon/serial.c
 
-perf data for umount -l /mnt
-    29.60%     dbus-daemon  [kernel.kallsyms]        [k] __ticket_spin_lock
-               |
-               --- __ticket_spin_lock
-                   lg_local_lock
-                   path_init
-                   path_openat
-                   do_filp_open
-                   do_sys_open
-                   SyS_openat
-                   system_call_fastpath
-                   __openat64_nocancel
-                   0x747379732f312d73
-
-    20.20%          umount  [kernel.kallsyms]        [k] propagation_next
-                    |
-                    --- propagation_next
-                       |
-                       |--65.35%-- umount_tree
-                       |          SyS_umount
-                       |          system_call_fastpath
-                       |          __umount2
-                       |          __libc_start_main
-                       |
-                        --34.65%-- propagate_umount
-                                  umount_tree
-                                  SyS_umount
-                                  system_call_fastpath
-                                  __umount2
-                                  __libc_start_main
-
-    17.81%          umount  [kernel.kallsyms]        [k] __lookup_mnt
-                    |
-                    --- __lookup_mnt
-                       |
-                       |--82.78%-- propagate_umount
-                       |          umount_tree
-                       |          SyS_umount
-                       |          system_call_fastpath
-                       |          __umount2
-                       |          __libc_start_main
-                       |
-                        --17.22%-- umount_tree
-                                  SyS_umount
-                                  system_call_fastpath
-                                  __umount2
-                                  __libc_start_main
+-- 
+1.7.11.7
 
