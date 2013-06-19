@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934476Ab3FSJ4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:56:18 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:36368 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933991Ab3FSJ4R (ORCPT
+	id S934505Ab3FSJ5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:57:25 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:64141 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933830Ab3FSJ5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:56:17 -0400
-Message-ID: <1371635763.3252.289.camel@edumazet-glaptop>
-Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
- queues by using flex array
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net, edumazet@google.com,
-        hkchu@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 19 Jun 2013 02:56:03 -0700
-In-Reply-To: <20130619091132.GA2816@redhat.com>
-References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
-	 <1371620452-49349-2-git-send-email-jasowang@redhat.com>
-	 <1371623518.3252.267.camel@edumazet-glaptop>
-	 <20130619091132.GA2816@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 19 Jun 2013 05:57:23 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C18051.8070404@asianux.com>
+Date: Wed, 19 Jun 2013 17:56:33 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: hannes@cmpxchg.org, riel@redhat.com, mhocko@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/vmscan.c: 'lru' may be used without initialized after
+ the patch "3abf380..." in next-20130607 tree
+References: <51C155D1.3090304@asianux.com> <20130619085315.GK1875@suse.de>
+In-Reply-To: <20130619085315.GK1875@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 12:11 +0300, Michael S. Tsirkin wrote:
-
-> Well KVM supports up to 160 VCPUs on x86.
+On 06/19/2013 04:53 PM, Mel Gorman wrote:
+> On Wed, Jun 19, 2013 at 02:55:13PM +0800, Chen Gang wrote:
+>> > 
+>> > 'lru' may be used without initialized, so need regressing part of the
+>> > related patch.
+>> > 
+>> > The related patch:
+>> >   "3abf380 mm: remove lru parameter from __lru_cache_add and lru_cache_add_lru"
+>> > 
+>> > 
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  mm/vmscan.c |    1 +
+>> >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> > 
+>> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> > index fe73724..e92b1858 100644
+>> > --- a/mm/vmscan.c
+>> > +++ b/mm/vmscan.c
+>> > @@ -595,6 +595,7 @@ redo:
+>> >  		 * unevictable page on [in]active list.
+>> >  		 * We know how to handle that.
+>> >  		 */
+>> > +		lru = !!TestClearPageActive(page) + page_lru_base_type(page);
+>> >  		lru_cache_add(page);
+> Thanks for catching this but I have one question. Why are you clearing
+> the active bit?
 > 
-> Creating a queue per CPU is very reasonable, and
-> assuming cache line size of 64 bytes, netdev_queue seems to be 320
-> bytes, that's 320*160 = 51200. So 12.5 pages, order-4 allocation.
-> I agree most people don't have such systems yet, but
-> they do exist.
 
-Even so, it will just work, like a fork() is likely to work, even if a
-process needs order-1 allocation for kernel stack.
-
-Some drivers still use order-10 allocations with kmalloc(), and nobody
-complained yet.
-
-We had complains with mlx4 driver lately only bcause kmalloc() now gives
-a warning if allocations above MAX_ORDER are attempted.
-
-Having a single pointer means that we can :
-
-- Attempts a regular kmalloc() call, it will work most of the time.
-- fallback to vmalloc() _if_ kmalloc() failed.
-
-Frankly, if you want one tx queue per cpu, I would rather use
-NETIF_F_LLTX, like some other virtual devices.
-
-This way, you can have real per cpu memory, with proper NUMA affinity.
+Oh, it is my fault, I only want to regress part of the original patch,
+did not notice clearing the active bit.
 
 
+> Before 3abf380 we did
+> 
+> active = TestClearPageActive(page);
+> lru = active + page_lru_base_type(page);
+> lru_cache_add_lru(page, lru);
+> 
+> so if the page was active before then it gets added to the active list. When
+> 3abf380 is applied. it becomes.
+> 
+> Leave PageActive alone
+> lru_cache_add(page);
+> .... until __pagevec_lru_add -> __pagevec_lru_add_fn
+> int file = page_is_file_cache(page);
+> int active = PageActive(page);
+> enum lru_list lru = page_lru(page);
+> 
+> After your patch it's
+> 
+> Clear PageActive
+> lru_cache_add(page)
+> ......
+> always add to inactive list
+> 
+> I do not think you intended to do this and if you did, it deserves far
+> more comment than being a compile warning fix. In putback_lru_page we only
+> care about whether the lru was unevictable or not. Hence I think what you
+> meant to do was simply
+> 
+> 	lru = page_lru_base_type(page);
+> 
+> If you agree then can you resend a revised version to Andrew please?
 
+Yes, I should do, but excuse me, I do not quite know about 'revised
+version'.
+
+I guess it means I need still send the related patch which base on the
+original one, e.g. for next-20130618:
+
+------------------------diff begin-------------------------------------
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fe73724..d03facb 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -595,6 +595,7 @@ redo:
+ 		 * unevictable page on [in]active list.
+ 		 * We know how to handle that.
+ 		 */
++		lru = page_lru_base_type(page);
+ 		lru_cache_add(page);
+ 	} else {
+ 		/*
+
+------------------------diff end---------------------------------------
+
+Is it correct ?
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
