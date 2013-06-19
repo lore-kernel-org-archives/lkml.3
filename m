@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934415Ab3FSIxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 04:53:40 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:49073 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934071Ab3FSIxg (ORCPT
+	id S934428Ab3FSIx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 04:53:56 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59258 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934071Ab3FSIxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 04:53:36 -0400
+	Wed, 19 Jun 2013 04:53:51 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -14,11 +14,10 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
         Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 01/13] cpufreq: acpi: call CPUFREQ_POSTCHANGE notfier in error cases
-Date: Wed, 19 Jun 2013 14:22:55 +0530
-Message-Id: <27d5d1fbc05f7cd41a566ca430cbd432804a5acd.1371630975.git.viresh.kumar@linaro.org>
+        dave.martin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 02/13] cpufreq: arm-big-little: call CPUFREQ_POSTCHANGE notfier in error cases
+Date: Wed, 19 Jun 2013 14:22:56 +0530
+Message-Id: <5fb078efce86924709ce4a1fbeccaf6edaad04bc.1371630975.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1371630975.git.viresh.kumar@linaro.org>
 References: <cover.1371630975.git.viresh.kumar@linaro.org>
@@ -37,33 +36,31 @@ calling notifiers is complete.
 
 This patch fixes it.
 
-Cc: Borislav Petkov <bp@suse.de>
+This also removes code setting policy->cur as this is also done by POSTCHANGE
+notifier.
+
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/acpi-cpufreq.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/cpufreq/arm_big_little.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index edc089e..223ddf4 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -494,12 +494,14 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
- 			pr_debug("acpi_cpufreq_target failed (%d)\n",
- 				policy->cpu);
- 			result = -EAGAIN;
--			goto out;
-+			freqs.new = freqs.old;
- 		}
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index 5d7f53f..3549f07 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -84,11 +84,9 @@ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
+ 	if (ret) {
+ 		pr_err("clk_set_rate failed: %d\n", ret);
+-		return ret;
++		freqs.new = freqs.old;
  	}
  
+-	policy->cur = freqs.new;
+-
  	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--	perf->state = next_perf_state;
-+
-+	if (!result)
-+		perf->state = next_perf_state;
  
- out:
- 	return result;
+ 	return ret;
 -- 
 1.7.12.rc2.18.g61b472e
 
