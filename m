@@ -1,311 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935092Ab3FSUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 16:36:26 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:57795 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934858Ab3FSUgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 16:36:25 -0400
-Message-ID: <51C21645.3050108@google.com>
-Date: Wed, 19 Jun 2013 16:36:21 -0400
-From: Tristan Schmelcher <tschmelcher@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S935071Ab3FSUiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 16:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52817 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934764Ab3FSUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 16:38:54 -0400
+Date: Wed, 19 Jun 2013 22:34:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: [PATCH] tracing/kprobes: Don't pass addr=ip to
+	perf_trace_buf_submit()
+Message-ID: <20130619203433.GB19750@redhat.com>
+References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com> <51BFD6EF.1060805@hitachi.com> <20130618192414.GA19488@redhat.com> <20130619203005.GA19750@redhat.com>
 MIME-Version: 1.0
-To: richard@nod.at, jdike@addtoit.com
-CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
- and in other edge cases
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619203005.GA19750@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tristan Schmelcher <tschmelcher@google.com>
+On 06/19, Oleg Nesterov wrote:
+>
+> So. I'll resend this series, will you ack the v2 below?
 
-which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to /run/shm),
-if there were multiple mounts on top of each other, if the mount(s) were
-obscured by a later mount, or if /dev/shm was a prefix of another mount point.
-This fixes these cases. Applies to 3.9.6.
+Also. Could you please review the new patch I am going to include
+into this series?
 
-Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
+This is copy-and-paste of 32520b2c6 which you reviewed and acked.
+
+And please note that kprobes is the last user of
+perf_trace_buf_submit(addr != 0), we can make some cleanups on top.
+
+-------------------------------------------------------------------------------
+Subject: [PATCH] tracing/kprobes: Don't pass addr=ip to perf_trace_buf_submit()
+
+kprobe_perf_func() and kretprobe_perf_func() pass addr=ip to
+perf_trace_buf_submit() for no reason.
+
+This sets perf_sample_data->addr for PERF_SAMPLE_ADDR, we already
+have perf_sample_data->ip initialized if PERF_SAMPLE_IP.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
-v1 had a bug where it would misparse the file if it got a truncated path
-containing a newline after decoding. (I also mangled the patch.)
+ kernel/trace/trace_kprobe.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
---- linux-3.9.6/arch/um/os-Linux/mem.c.orig	2013-06-19 14:50:14.000000000 -0400
-+++ linux-3.9.6/arch/um/os-Linux/mem.c	2013-06-19 16:09:39.000000000 -0400
-@@ -53,6 +53,25 @@ static void __init find_tempdir(void)
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 3432652..141c682 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1163,8 +1163,7 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
+ 	entry->ip = (unsigned long)tp->rp.kp.addr;
+ 	memset(&entry[1], 0, dsize);
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+-	perf_trace_buf_submit(entry, size, rctx,
+-					entry->ip, 1, regs, head, NULL);
++	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
  }
  
- /*
-+ * Remove bytes from the front of the buffer and refill it so that if there's a
-+ * partial string that we care about, it will be completed, and we can recognize
-+ * it.
-+ */
-+static int pop(int fd, char *buf, size_t size, size_t npop)
-+{
-+	ssize_t n;
-+	size_t len = strlen(&buf[npop]);
-+
-+	memmove(buf, &buf[npop], len + 1);
-+	n = read(fd, &buf[len], size - len - 1);
-+	if (n < 0)
-+		return -errno;
-+
-+	buf[len + n] = '\0';
-+	return 1;
-+}
-+
-+/*
-  * This will return 1, with the first character in buf being the
-  * character following the next instance of c in the file.  This will
-  * read the file as needed.  If there's an error, -errno is returned;
-@@ -61,7 +80,6 @@ static void __init find_tempdir(void)
- static int next(int fd, char *buf, size_t size, char c)
- {
- 	ssize_t n;
--	size_t len;
- 	char *ptr;
- 
- 	while ((ptr = strchr(buf, c)) == NULL) {
-@@ -74,20 +92,116 @@ static int next(int fd, char *buf, size_
- 		buf[n] = '\0';
- 	}
- 
--	ptr++;
--	len = strlen(ptr);
--	memmove(buf, ptr, len + 1);
-+	return pop(fd, buf, size, ptr - buf + 1);
-+}
- 
--	/*
--	 * Refill the buffer so that if there's a partial string that we care
--	 * about, it will be completed, and we can recognize it.
--	 */
--	n = read(fd, &buf[len], size - len - 1);
--	if (n < 0)
--		return -errno;
-+/*
-+ * Decode an octal-escaped and space-terminated path of the form used by
-+ * /proc/mounts. May be used to decode a path in-place. "out" must be at least
-+ * as large as the input.
-+ */
-+static int decode_path(const char *in, char *out, size_t *ndecoded,
-+		       size_t *decodedlen)
-+{
-+	const char *first_in = in;
-+	char *first_out = out;
-+	int c;
-+	int i;
-+	int ret = -EINVAL;
-+	while (*in) {
-+		switch (*in) {
-+		case ' ':
-+			*out = '\0';
-+			*decodedlen = out - first_out;
-+			ret = 0;
-+			goto out;
-+
-+		case '\\':
-+			in++;
-+			c = 0;
-+			for (i = 0; i < 3; i++) {
-+				if (*in < '0' || *in > '7')
-+					goto out;
-+				c = (c << 3) | (*in++ - '0');
-+			}
-+			*out++ = (char) c;
-+			break;
- 
--	buf[len + n] = '\0';
--	return 1;
-+		default:
-+			*out++ = *in++;
-+			break;
-+		}
-+	}
-+
-+out:
-+	*ndecoded = in - first_in + 1;
-+	return ret;
-+}
-+
-+static size_t octal_encoded_length(const char *s, const char *chars)
-+{
-+	size_t len = strlen(s);
-+	while ((s = strpbrk(s, chars)) != NULL) {
-+		len += 3;
-+		s++;
-+	}
-+
-+	return len;
-+}
-+
-+enum {
-+	OUTCOME_NOT_A_MOUNT_POINT,
-+	OUTCOME_TMPFS_MOUNT,
-+	OUTCOME_NON_TMPFS_MOUNT,
-+};
-+
-+/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
-+static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
-+		      int *outcome)
-+{
-+	int found;
-+	int match;
-+	size_t ndecoded;
-+	size_t decodedlen;
-+
-+	enum {
-+		MATCH_NONE,
-+		MATCH_EXACT,
-+		MATCH_PARENT,
-+	};
-+
-+	found = next(fd, buf, bufsize, ' ');
-+	if (found != 1)
-+		return found;
-+
-+	match = MATCH_NONE;
-+	if (!decode_path(buf, buf, &ndecoded, &decodedlen)) {
-+		if (!strcmp(buf, path))
-+			match = MATCH_EXACT;
-+		else if (!strncmp(buf, path, decodedlen)
-+			 && (path[decodedlen] == '/' || !strcmp(buf, "/")))
-+			match = MATCH_PARENT;
-+	}
-+
-+	found = pop(fd, buf, bufsize, ndecoded);
-+	if (found != 1)
-+		return found;
-+
-+	switch (match) {
-+	case MATCH_EXACT:
-+		if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
-+			*outcome = OUTCOME_TMPFS_MOUNT;
-+		else
-+			*outcome = OUTCOME_NON_TMPFS_MOUNT;
-+		break;
-+
-+	case MATCH_PARENT:
-+		/* This mount obscures any previous ones. */
-+		*outcome = OUTCOME_NOT_A_MOUNT_POINT;
-+		break;
-+	}
-+
-+	return next(fd, buf, bufsize, '\n');
+ /* Kretprobe profile handler */
+@@ -1197,8 +1196,7 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ 	entry->func = (unsigned long)tp->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+-	perf_trace_buf_submit(entry, size, rctx,
+-					entry->ret_ip, 1, regs, head, NULL);
++	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
  }
+ #endif	/* CONFIG_PERF_EVENTS */
  
- /* which_tmpdir is called only during early boot */
-@@ -106,8 +220,12 @@ static int checked_tmpdir = 0;
-  */
- static void which_tmpdir(void)
- {
--	int fd, found;
--	char buf[128] = { '\0' };
-+	int fd;
-+	int found;
-+	int outcome;
-+	char *path;
-+	char *buf;
-+	size_t bufsize;
- 
- 	if (checked_tmpdir)
- 		return;
-@@ -116,49 +234,66 @@ static void which_tmpdir(void)
- 
- 	printf("Checking for tmpfs mount on /dev/shm...");
- 
-+	path = realpath("/dev/shm", NULL);
-+	if (!path) {
-+		printf("failed to check real path, errno = %d\n", errno);
-+		return;
-+	}
-+	printf("%s...", path);
-+
-+	/*
-+	 * The buffer needs to be able to fit the full octal-escaped path, a
-+	 * space, and a trailing null in order to successfully decode it.
-+	 */
-+	bufsize = octal_encoded_length(path, " \t\n\\") + 2;
-+
-+	if (bufsize < 128)
-+		bufsize = 128;
-+
-+	buf = malloc(bufsize);
-+	if (!buf) {
-+		printf("malloc failed, errno = %d\n", errno);
-+		goto out;
-+	}
-+	buf[0] = '\0';
-+
- 	fd = open("/proc/mounts", O_RDONLY);
- 	if (fd < 0) {
- 		printf("failed to open /proc/mounts, errno = %d\n", errno);
--		return;
-+		goto out1;
- 	}
- 
-+	outcome = OUTCOME_NOT_A_MOUNT_POINT;
- 	while (1) {
--		found = next(fd, buf, ARRAY_SIZE(buf), ' ');
--		if (found != 1)
--			break;
--
--		if (!strncmp(buf, "/dev/shm", strlen("/dev/shm")))
--			goto found;
--
--		found = next(fd, buf, ARRAY_SIZE(buf), '\n');
-+		found = read_mount(fd, buf, bufsize, path, &outcome);
- 		if (found != 1)
- 			break;
- 	}
- 
--err:
--	if (found == 0)
--		printf("nothing mounted on /dev/shm\n");
--	else if (found < 0)
-+	if (found < 0) {
- 		printf("read returned errno %d\n", -found);
-+	} else {
-+		switch (outcome) {
-+		case OUTCOME_TMPFS_MOUNT:
-+			printf("OK\n");
-+			default_tmpdir = "/dev/shm";
-+			break;
- 
--out:
--	close(fd);
--
--	return;
--
--found:
--	found = next(fd, buf, ARRAY_SIZE(buf), ' ');
--	if (found != 1)
--		goto err;
-+		case OUTCOME_NON_TMPFS_MOUNT:
-+			printf("not tmpfs\n");
-+			break;
- 
--	if (strncmp(buf, "tmpfs", strlen("tmpfs"))) {
--		printf("not tmpfs\n");
--		goto out;
-+		default:
-+			printf("nothing mounted on /dev/shm\n");
-+			break;
-+		}
- 	}
- 
--	printf("OK\n");
--	default_tmpdir = "/dev/shm";
--	goto out;
-+	close(fd);
-+out1:
-+	free(buf);
-+out:
-+	free(path);
- }
- 
- static int __init make_tempfile(const char *template, char **out_tempname,
+-- 
+1.5.5.1
+
+
