@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934646Ab3FSKNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 06:13:32 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63974 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934265Ab3FSKN2 (ORCPT
+	id S934588Ab3FSKS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 06:18:28 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:17117 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934254Ab3FSKS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 06:13:28 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, patches@linaro.org
-Subject: [PATCH] ARM: dts: Update range for vdd_arm on EXYNOS4412-origen board
-Date: Wed, 19 Jun 2013 15:28:39 +0530
-Message-Id: <1371635919-16288-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 19 Jun 2013 06:18:27 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C18540.5060200@asianux.com>
+Date: Wed, 19 Jun 2013 18:17:36 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        laijs@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/kthread.c: need spin_lock_irq() for 'worker' before
+ main looping,  since it can "WARN_ON(worker->task)".
+References: <51C12D9A.8030801@asianux.com> <20130619084124.GF30681@mtj.dyndns.org>
+In-Reply-To: <20130619084124.GF30681@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXYNOS4412 cpufreq driver requires the range of vdd_arm regulator to
-be from .9v to 1.35v. Since vdd_arm regulator (BUCK2 on S5M8767) has
-a supported range of .6v to 1.6v, the constraints are updated to
-match the requirement from cpufreq driver.
+On 06/19/2013 04:41 PM, Tejun Heo wrote:
+> On Wed, Jun 19, 2013 at 12:03:38PM +0800, Chen Gang wrote:
+>> > 
+>> > Since "WARN_ON(worker->task)", we can not assume that 'worker->task'
+>> > will be NULL before set 'current' to it.
+>> > 
+>> > So need let 'worker' lock protected too, just like it already lock
+>> > protected all time in main looping.
+> That synchronization is the kthread_worker user's responsibility.  The
+> locking around worker->task = NULL is to prevent the worker task being
+> destroyed while insert_kthread_work() is trying to wake it up.  It has
+> nothing to do with the user trying to attach multiple tasks to the
+> same kthread_worker.  Plus, putting locking around WARN_ON() is
+> pointless.  It doesn't really fix anything.  It just makes WARN_ON()
+> trigger *slightly* more reliably.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- arch/arm/boot/dts/exynos4412-origen.dts |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hmm... can 'worker->task' has chance to be not NULL before set 'current'
+to it ?
 
-diff --git a/arch/arm/boot/dts/exynos4412-origen.dts b/arch/arm/boot/dts/exynos4412-origen.dts
-index 7993641..309a583 100644
---- a/arch/arm/boot/dts/exynos4412-origen.dts
-+++ b/arch/arm/boot/dts/exynos4412-origen.dts
-@@ -450,8 +450,8 @@
- 
- 				buck2_reg: BUCK2 {
- 					regulator-name = "vdd_arm";
--					regulator-min-microvolt = <925000>;
--					regulator-max-microvolt	= <1300000>;
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt	= <1350000>;
- 					regulator-always-on;
- 					regulator-boot-on;
- 					op_mode = <1>; /* Normal Mode */
+why do we use WARN_ON(worker->task) ?
+
+I guess it still has chance to let "worker->task != NULL", or it should
+be BUG_ON(worker->task) instead of.
+
+
+Thanks.
 -- 
-1.7.9.5
+Chen Gang
 
+Asianux Corporation
