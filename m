@@ -1,137 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934807Ab3FSOGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:06:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59616 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933853Ab3FSOG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:06:28 -0400
+	id S934849Ab3FSOGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:06:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42319 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934811Ab3FSOGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 10:06:35 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <stern@rowland.harvard.edu>, <tony@atomide.com>
 CC: <balbi@ti.com>, <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [RFC PATCH 2/6] mfd: omap-usb-host: Put pins in IDLE state on suspend
-Date: Wed, 19 Jun 2013 17:05:49 +0300
-Message-ID: <1371650753-11452-3-git-send-email-rogerq@ti.com>
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>
+Subject: [RFC PATCH 5/6] ARM: dts: omap3beagle-xm: Add idle state pins for USB host
+Date: Wed, 19 Jun 2013 17:05:52 +0300
+Message-ID: <1371650753-11452-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1371650753-11452-1-git-send-email-rogerq@ti.com>
 References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support wake up from suspend use the pinctrl
-framework to put the USB host pins in IDLE state during suspend.
+Add the Idle state pins for USB host and enable WAKEUP on
+DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
+sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
 
-CC: Samuel Ortiz <sameo@linux.intel.com>
+CC: Benoît Cousson <b-cousson@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   46 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 6601a49..171cc3b 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -31,6 +31,7 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/err.h>
-+#include <linux/pinctrl/consumer.h>
- 
- #include "omap-usb.h"
- 
-@@ -111,6 +112,10 @@ struct usbhs_hcd_omap {
- 	struct usbhs_omap_platform_data	*pdata;
- 
- 	u32				usbhs_rev;
-+
-+	struct pinctrl *pinctrl;
-+	struct pinctrl_state *pins_default;
-+	struct pinctrl_state *pins_idle;
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index d3808ed..f1d56c2 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -89,12 +89,7 @@
  };
- /*-------------------------------------------------------------------------*/
  
-@@ -325,6 +330,10 @@ static int usbhs_runtime_resume(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_resume\n");
- 
-+	if (!IS_ERR(omap->pins_default))
-+		if (pinctrl_select_state(omap->pinctrl, omap->pins_default))
-+			dev_err(dev, "Could not select DEFAULT pin state\n");
+ &omap3_pmx_core {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <
+-			&hsusbb2_pins
+-	>;
+-
+-	hsusbb2_pins: pinmux_hsusbb2_pins {
++	hsusb2_pins: pinmux_hsusb2_pins {
+ 		pinctrl-single,pins = <
+ 			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
+ 			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
+@@ -110,6 +105,25 @@
+ 			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
+ 		>;
+ 	};
 +
- 	omap_tll_enable(pdata);
++	/* WAKEUP enabled on DIR, DAT0-3 */
++	hsusb2_idle_pins: pinmux_hsusb2_idle_pins {
++		pinctrl-single,pins = <
++			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
++			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
++			0x5c4 (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
++			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)			/* etk_d13.hsusb2_nxt */
++			0x5c8 (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
++			0x5cA (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
++			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
++			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
++			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
++			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
++			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
++			0x1ae (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
++		>;
++		interrupts = <77>; /* route padconf wakeup to EHCI IRQ */
++	};
+ };
  
- 	if (!IS_ERR(omap->ehci_logic_fck))
-@@ -402,6 +411,10 @@ static int usbhs_runtime_suspend(struct device *dev)
+ &i2c1 {
+@@ -181,6 +195,9 @@
+ };
  
- 	omap_tll_disable(pdata);
- 
-+	if (!IS_ERR(omap->pins_idle))
-+		if (pinctrl_select_state(omap->pinctrl, omap->pins_idle))
-+			dev_err(dev, "Could not select IDLE pin state\n");
-+
- 	return 0;
- }
- 
-@@ -608,6 +621,30 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	omap->pinctrl = devm_pinctrl_get(dev);
-+	if (!IS_ERR(omap->pinctrl)) {
-+		omap->pins_default = pinctrl_lookup_state(omap->pinctrl,
-+							 PINCTRL_STATE_DEFAULT);
-+		if (IS_ERR(omap->pins_default))
-+			dev_err(dev, "Could not get DEFAULT state pins\n");
-+
-+		omap->pins_idle = pinctrl_lookup_state(omap->pinctrl,
-+						      PINCTRL_STATE_IDLE);
-+		if (IS_ERR(omap->pins_idle))
-+			dev_err(dev, "Could not get IDLE state pins\n");
-+
-+	} else {
-+		dev_info(dev, "pinctrl_get error\n");
-+		if (PTR_ERR(omap->pinctrl) == -EPROBE_DEFER) {
-+			dev_info(dev, "defer\n");
-+			return -EPROBE_DEFER;
-+		}
-+
-+		omap->pins_default = omap->pins_idle = ERR_PTR(-EINVAL);
-+		dev_dbg(dev, "Proceeding without pinctrl: %ld\n",
-+						PTR_ERR(omap->pinctrl));
-+	}
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	omap->uhh_base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(omap->uhh_base))
-@@ -796,6 +833,10 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	if (!IS_ERR(omap->pins_default))
-+		if (pinctrl_select_state(omap->pinctrl, omap->pins_default))
-+			dev_err(dev, "Could not select DEFAULT pin state\n");
-+
- 	return 0;
- 
- err_alloc:
-@@ -872,6 +913,11 @@ static int usbhs_omap_remove(struct platform_device *pdev)
- 
- 	/* remove children */
- 	device_for_each_child(&pdev->dev, NULL, usbhs_omap_remove_child);
-+
-+	if (!IS_ERR(omap->pins_idle))
-+		if (pinctrl_select_state(omap->pinctrl, omap->pins_idle))
-+			dev_err(&pdev->dev, "Could not select IDLE pin state\n");
-+
- 	return 0;
- }
+ &usbhshost {
++	pinctrl-names = "default", "idle";
++	pinctrl-0 = <&hsusb2_pins>;
++	pinctrl-1 = <&hsusb2_idle_pins>;
+ 	port2-mode = "ehci-phy";
+ };
  
 -- 
 1.7.4.1
