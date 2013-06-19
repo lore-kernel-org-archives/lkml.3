@@ -1,237 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3FSO4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 10:56:53 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:53652 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762Ab3FSO4v (ORCPT
+	id S1756895Ab3FSO6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 10:58:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64775 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3FSO6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 10:56:51 -0400
+	Wed, 19 Jun 2013 10:58:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for Radio phy
+Date: Wed, 19 Jun 2013 16:58:04 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Lars-Peter Clausen" <lars@metafoo.de>, akhil.goyal@freescale.com,
+        linux-kernel@vger.kernel.org, pankaj.chauhan@freescale.com,
+        "Getz, Robin" <robin.getz@analog.com>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        "Lars-Peter Clausen" <lars-peter.clausen@analog.com>
+References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de> <20130619143042.GB8073@kroah.com>
+In-Reply-To: <20130619143042.GB8073@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1933024.UCR4mQ7fzS@amdc1227>
-References: <1371569191-2364-1-git-send-email-t.figa@samsung.com>
-	<2791500.rs0iL4EgjJ@amdc1227>
-	<CANuQgHHbDze0VthjnnKm8R3gny=4ubPUjr2jnkGnh7a-OK2siQ@mail.gmail.com>
-	<1933024.UCR4mQ7fzS@amdc1227>
-Date: Wed, 19 Jun 2013 20:26:50 +0530
-Message-ID: <CANuQgHEXHgYm1-fzLfrsk66q4T-==ka0dnSKNuBVAq1kLWOOvg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: Fix incorrect usage of S5P_ARM_CORE1_* registers
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306191658.04385.arnd@arndb.de>
+X-Provags-ID: V02:K0:1tA2Td/fDPJn4z9croiKYwp2npVWcbnWjyce9H1cCk9
+ 5ARuXJQNeoWzJJFheQjUxHSzeIQ1WI7scogroHLXQt5Rxe6NmQ
+ 1cOQxcxLjGt8JoXn95Dj6M6oocJ7uXhsRyQJsWs9uT95r01Y+d
+ oYizXnsLKj1KL+9vXBIveqQeuQJlAt6egFHI9d3cWIBr3yZcyG
+ 4WMwsKC75O+OKet7HXVNJvdXvpJDpVpDQRE3BibgBXcUE3cRAc
+ TTNzdMyOjUrNfqL984iFe3tePlXa6M3iAjrWic7z4SExeyDmmE
+ HaAeN6cMA5w4dGHuW+i0NzKLATRbBeOGwiyhgQ+CBX6fMjhCuG
+ gs7EIF7GrC6pPUVVcHRQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 June 2013 19:58, Tomasz Figa <t.figa@samsung.com> wrote:
-> On Wednesday 19 of June 2013 19:25:27 Chander Kashyap wrote:
->> On 19 June 2013 19:19, Tomasz Figa <t.figa@samsung.com> wrote:
->> > On Wednesday 19 of June 2013 14:24:17 Lorenzo Pieralisi wrote:
->> >> On Wed, Jun 19, 2013 at 01:50:57PM +0100, Tomasz Figa wrote:
->> >> > On Wednesday 19 of June 2013 17:39:21 Chander Kashyap wrote:
->> >> > > On 18 June 2013 23:29, Kukjin Kim <kgene.kim@samsung.com> wrote:
->> >> > > > On 06/19/13 02:45, Tomasz Figa wrote:
->> >> > > >> Ccing Arnd and Olof, because I forgot to add them to git
->> >> > > >> send-email...
->> >> > > >>
->> >> > > >> Sorry for the noise.
->> >> > > >>
->> >> > > >> On Tuesday 18 of June 2013 17:26:31 Tomasz Figa wrote:
->> >> > > >>> S5P_ARM_CORE1_* registers affect only core 1. To control
->> >> > > >>> further
->> >> > > >>> cores
->> >> > > >>> properly another registers must be used.
->> >> > > >>>
->> >> > > >>> This patch replaces S5P_ARM_CORE1_* register definitions with
->> >> > > >>> S5P_ARM_CORE_*(x) macro which return addresses of registers
->> >> > > >>> for
->> >> > > >>> specified core.
->> >> > > >>>
->> >> > > >>> This fixes CPU hotplug on quad core Exynos SoCs on which
->> >> > > >>> currently
->> >> > > >>> offlining CPUs 2 or 3 caused CPU 1 to be turned off.
->> >> > > >>
->> >> > > >> Obviously this doesn't happen currently because of the if (cpu
->> >> > > >> ==
->> >> > > >> 1),
->> >> > > >> but>
->> >> > > >
->> >> > > > Yes, not happened...and just note exynos5440 doesn't support
->> >> > > > hotplug :)
->> >> > > > so this is available on exynos4412 and added 5420.
->> >> > > >
->> >> > > >> if logical cpu1 turned out not to be physical cpu1, then it
->> >> > > >> would
->> >> > > >> crash.
->> >> > > >>
->> >> > > >> Best regards,
->> >> > > >> Tomasz
->> >> > > >>
->> >> > > >>> In addition,
->> >> > > >>> bring-up of CPU 2 and 3 is fixed on boards where bootloader
->> >> > > >>> powers
->> >> > > >>> off
->> >> > > >>> secondary cores by default.
->> >> > > >
->> >> > > > I need to test on board about above...
->> >> > > >
->> >> > > >>> Cc: stable@vger.kernel.org
->> >> > > >>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
->> >> > > >>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
->> >> > > >>> ---
->> >> > > >>>
->> >> > > >>>   arch/arm/mach-exynos/hotplug.c               |  9 +++++----
->> >> > > >>>   arch/arm/mach-exynos/include/mach/regs-pmu.h | 10 +++++++---
->> >> > > >>>   arch/arm/mach-exynos/platsmp.c               |  9 +++++----
->> >> > > >>>   3 files changed, 17 insertions(+), 11 deletions(-)
->> >> > > >>>
->> >> > > >>> diff --git a/arch/arm/mach-exynos/hotplug.c
->> >> > > >>> b/arch/arm/mach-exynos/hotplug.c index af90cfa..c089943 100644
->> >> > > >>> --- a/arch/arm/mach-exynos/hotplug.c
->> >> > > >>> +++ b/arch/arm/mach-exynos/hotplug.c
->> >> > > >>> @@ -93,10 +93,11 @@ static inline void
->> >> > > >>> cpu_leave_lowpower(void)
->> >> > > >>>
->> >> > > >>>   static inline void platform_do_lowpower(unsigned int cpu,
->> >> > > >>>   int
->> >> > > >>>
->> >> > > >>> *spurious) {
->> >> > > >>>
->> >> > > >>>         for (;;) {
->> >> > > >>>
->> >> > > >>> +               void __iomem *reg_base;
->> >> > > >>> +               unsigned int phys_cpu = cpu_logical_map(cpu);
->> >> > > >>>
->> >> > > >>> -               /* make cpu1 to be turned off at next WFI
->> >> > > >>> command
->> >> > > >>> */
->> >> > > >>> -               if (cpu == 1)
->> >> > > >>> -                       __raw_writel(0,
->> >> > > >>> S5P_ARM_CORE1_CONFIGURATION);
->> >> > > >>> +               reg_base =
->> >> > > >>> S5P_ARM_CORE_CONFIGURATION(phys_cpu);
->> >> > >
->> >> > > Tomasz,
->> >> > > This will break for non-zero, MPIDR value.  Say if MPIDR is 1 then
->> >> > > for
->> >> > > cpu0 phys_cpu value will be 0x100,
->> >> > > and address calculation will be   (S5P_ARM_CORE0_CONFIGURATION +
->> >> > > ((0x101) * 0x80)), which is wrong.
->> >>
->> >> Honestly, I did not understand the reasoning above, please clarify.
->> >>
->> >> > Hmm, according to the code initializing __cpu_logical_map[] array
->> >> > this
->> >> > is not true.
->> >> >
->> >> > Here's the code:
->> >> >
->> >> > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tre
->> >> > e/a
->> >> > rch/arm/kernel/setup.c?id=refs/tags/next-20130619#n468
->> >> >
->> >> > and for used macros and bitmasks:
->> >> >
->> >> > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tre
->> >> > e/a
->> >> > rch/arm/include/asm/cputype.h?id=refs/tags/next-20130619#n45
->> >> >
->> >> > Now the structure of the MPIDR register:
->> >> >
->> >> > http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0388e
->> >> > /CI
->> >> > HEBGFG.html
->> >> >
->> >> > As you can see, the value read from the register in
->> >> > smp_setup_processor_id() is only the physical CPU ID, so I don't see
->> >> > any
->> >> > problem here.
->> >>
->> >> Define "physical CPU ID" :-)
->> >>
->> >> There is a problem here: the MPIDR is not an index, and the
->> >> cpu_logical_map is populated in arm_dt_init_cpu_maps in:
->> >>
->> >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/a
->> >> rch /arm/kernel/devtree.c?id=refs/tags/v3.10-rc6
->> >>
->> >> with all affinity levels.
->> >
->> > OK. This is what I was missing. Thanks.
->> >
->> >> You need to perform a mapping between logical cpus and registers
->> >> offset,
->> >> you can't use the cpu_logical_map directly for that.
->> >
->> > Hmm, can't I just extract cluster ID and CPU ID from the MPIDR value
->> > and
->> > use them appropriately to calculate register offsets?
->>
->> That will create problem for multi-cluster systems. Say we have two
->> clusters then with clusterID 0 and 1. So phys-cpu will be 0x0/0x100,
->> 0x1/0x101 ans so on.
->
-> I mean, calculate register offset based on two parameters - cluster ID and
-> CPU ID, like:
->
->         ...
->
->         u32 mpidr = cpu_logical_map(cpu);
->         u32 phys_cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
->
->         if (soc_is_exynosXXXX()) {
->                 u32 cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
->
->                 phys_cpu += EXYNOSXXXX_CPUS_PER_CLUSTER * cluster;
->         }
->
->         reg_base = S5P_ARM_CORE_CONFIGURATION(phys_cpu);
->         __raw_writel(0, reg_base);
->
-This does not seems to viable solution, as eg. clusterID for
-exynos4210 is 0x9 and exynos 4412 is 0xa. But if we wass the cpu nodes
-thru DT, the we can comfortably rely on the logical cpu number. Also
-EXYNOSXXXX_CPUS_PER_CLUSTER can vary from cluster to cluster.
->         ...
->
-> Best regards,
-> Tomasz
->
->> > Best regards,
->> > Tomasz
->> >
->> >> Next accident waiting to happen is GIC code (CONFIG_GIC_NON_BANKED),
->> >> where cpu_logical_map is used erroneously as an index.
->> >>
->> >> Lorenzo
->>
->> --
->> with warm regards,
->> Chander Kashyap
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-samsung-soc" in the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wednesday 19 June 2013, Greg KH wrote:
+> On Wed, Jun 19, 2013 at 02:57:40PM +0200, Lars-Peter Clausen wrote:
+> > On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
+> > 
+> > This is interesting. We at Analog Devices are currently also working on a
+> > driver for this part. We are using the Linux Industrial IO (IIO) framework
+> > though, since the AD9361 is more or less a multifunction device implementing
+> > different functions already covered by the IIO framework, like ADCs, DACs,
+> > clock chips and so on.
+> 
+> That's the "proper" api for this, not a bunch of chip-custom ioctls that
+> aren't documented anywhere.
 
+Depending on what functions there are in the device, it might actually be
+better to make the chip itself an MFD device, and have sub-functions handled
+by drivers/iio, drivers/clk, drivers/pwm etc. For the bigger picture I
+definitely agree: it should use the existing subsystems whereever possible.
+It may well be that a single IIO device is the right answer in this case,
+but a new subsystem that covers the entire chip and adds a custom user
+interface is almost certainly not.
 
-
---
-with warm regards,
-Chander Kashyap
+	Arnd
