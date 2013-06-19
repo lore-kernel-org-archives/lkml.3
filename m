@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933896Ab3FSBMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 21:12:32 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49005 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932644Ab3FSBMb (ORCPT
+	id S933963Ab3FSBNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 21:13:33 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:61223 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3FSBNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 21:12:31 -0400
-Date: Tue, 18 Jun 2013 21:12:27 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [RELEASE] Userspace RCU 0.7.7
-Message-ID: <20130619011226.GA20509@Krystal>
+	Tue, 18 Jun 2013 21:13:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1371602813-19828-2-git-send-email-jon.mason@intel.com>
+References: <1371602813-19828-1-git-send-email-jon.mason@intel.com>
+	<1371602813-19828-2-git-send-email-jon.mason@intel.com>
+Date: Tue, 18 Jun 2013 18:13:28 -0700
+X-Google-Sender-Auth: UHIka6k-0tWgfGlwnzEev_NlIFo
+Message-ID: <CAA9_cmc1Gu=BnM_OpMuqL7Hcjz-kfqxJtZzGHP8Nh-hc+tCWeA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] dmadevices: dma_sync_wait undefined
+From: Dan Williams <djbw@fb.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+On Tue, Jun 18, 2013 at 5:46 PM, Jon Mason <jon.mason@intel.com> wrote:
+> dma_sync_wait is declared regardless of whether CONFIG_DMA_ENGINE is
+> enabled, but calling the function without CONFIG_DMA_ENGINE enabled
+> results in the following gcc error.
+> ERROR: "dma_sync_wait" [drivers/ntb/ntb.ko] undefined!
+>
+> To get around this, declare dma_sync_wait as an inline function if
+> CONFIG_DMA_ENGINE is undefined.
+>
+> Signed-off-by: Jon Mason <jon.mason@intel.com>
+> Acked-by: Dave Jiang <dave.jiang@intel.com>
+> ---
+>  include/linux/dmaengine.h |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 96d3e4a..e3652ac 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -963,8 +963,8 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
+>         }
+>  }
+>
+> -enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
+>  #ifdef CONFIG_DMA_ENGINE
+> +enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
+>  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
+>  void dma_issue_pending_all(void);
+>  struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
+> @@ -972,6 +972,10 @@ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
+>  struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name);
+>  void dma_release_channel(struct dma_chan *chan);
+>  #else
+> +static inline enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
+> +{
+> +       return DMA_SUCCESS;
+> +}
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+Seems like something we should fix, but why is this not an indication
+that the code calling this is missing a "depends on DMA_ENGINE".
 
-Changelog:
+On second look dma_sync_wait is a use as last resort hack that
+probably should not escape its internal use in dmaengine.c.  The other
+escape in drivers/media/platform/timblogiw.c already looks problematic
+by having a live cpu spin immediately following a sleeping wait,
+obviously something event based was wanted.  What's the use case in
+NTB?
 
-2013-06-18 Userspace RCU 0.7.7
-        * rculfhash: document destroy context limitation
-        * Fix: Use a filled signal mask to disable all signals
-        * Document: rculfhash destroy and resize side-effect in 0.7
-        * Add "sparc" host cpu to configure.ac
-        * Fix: tests/api.h use cpuset.h
-        * Fix hurd-i386: move cpuset tests outside of sched_setaffinity
-          conditional
-        * Fix tests: finer-grained use of CPU_SET, CPU_ZERO and cpu_set_t
-        * Test for CPU_SET
-        * Fix build on architectures with HAVE_SCHED_GETCPU but without
-          HAVE_SYSCONF
-        * README: document that Clang 3.0 (based on LLVM 3.0) is supported
-        * clang: silence "unused expression result" warning
-        * rculfhash: add assertions on node alignment
-        * uatomic: style fix
-
-Project website: http://lttng.org/urcu
-Download link: http://lttng.org/files/urcu/
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+--
+Dan
