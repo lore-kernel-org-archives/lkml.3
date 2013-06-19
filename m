@@ -1,80 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab3FSTi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 15:38:58 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:41144 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935094Ab3FSTi5 (ORCPT
+	id S964843Ab3FSTjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 15:39:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50725 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935094Ab3FSTjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 15:38:57 -0400
-Date: Wed, 19 Jun 2013 21:38:55 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: Basic perf PMU support for Haswell v14
-Message-ID: <20130619193855.GY6123@two.firstfloor.org>
-References: <1371515812-9646-1-git-send-email-andi@firstfloor.org>
- <20130619124822.GC11209@gmail.com>
+	Wed, 19 Jun 2013 15:39:22 -0400
+Date: Wed, 19 Jun 2013 22:39:16 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 2/5] i2c: omap: add runtime check in isr to be sure that
+ i2c is enabled
+Message-ID: <20130619193916.GE4779@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
+ <1370630768-4077-3-git-send-email-grygorii.strashko@ti.com>
+ <20130607190206.GC15295@arwen.pp.htv.fi>
+ <51C1FB91.1000006@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="idY8LE8SD6/8DnRI"
 Content-Disposition: inline
-In-Reply-To: <20130619124822.GC11209@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51C1FB91.1000006@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, this series looks good at first sight: you've slightly overdone the 
-> checkpatch style changes without checking that the result is actually an 
-> improvement - I've fixed those few places.
-> 
-> I'll give it a bit of testing.
+--idY8LE8SD6/8DnRI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for testing and merging.
+On Wed, Jun 19, 2013 at 09:42:25PM +0300, Grygorii Strashko wrote:
+> Hi Felipe,
+> On 06/07/2013 10:02 PM, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Fri, Jun 07, 2013 at 09:46:05PM +0300, Grygorii Strashko wrote:
+> >>Add runtime check at the beginning of omap_i2c_isr/omap_i2c_isr_thread
+> >>to be sure that i2c is enabled, before performing IRQ handling and acce=
+ssing
+> >>I2C IP registers:
+> >>	if (pm_runtime_suspended(dev->dev)) {
+> >>		WARN_ONCE(true, "We should never be here!\n");
+> >>		return IRQ_NONE;
+> >>	}
+> >>
+> >>Produce warning in case if ISR called when i2c is disabled
+> >>
+> >>CC: Kevin Hilman <khilman@linaro.org>
+> >>Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>---
+> >>  drivers/i2c/busses/i2c-omap.c |   10 ++++++++++
+> >>  1 file changed, 10 insertions(+)
+> >>
+> >>diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-oma=
+p.c
+> >>index 97844ff..2dac598 100644
+> >>--- a/drivers/i2c/busses/i2c-omap.c
+> >>+++ b/drivers/i2c/busses/i2c-omap.c
+> >>@@ -885,6 +885,11 @@ omap_i2c_isr(int irq, void *dev_id)
+> >>  	u16 stat;
+> >>  	spin_lock(&dev->lock);
+> >>+	if (pm_runtime_suspended(dev->dev)) {
+> >>+		WARN_ONCE(true, "We should never be here!\n");
+> >>+		return IRQ_NONE;
+> >>+	}
+> >returning IRQ_NONE is not what you want to do in this case. You want to
+> >setup a flag so that your runtime_resume() knows that there are pending
+> >events to be handled and you handle those in runtime_resume time.
+> I don't want to handle this IRQ - we should never be here.
+> Will be changed to  IRQ_HANDLED.
 
-I still have some other patches to enable other features,
-on top of this.
+blindly returning IRQ_HANDLED won't do you any good either. Your line
+will be re-enabled anyway and you'll get another IRQ even being fired.
 
-I'll repost them in hopefully logical groups. 
+If you have found a bug in the driver, fix it, don't try to mask it.
 
-If you want them grouped in some particular way or other
-requirements please let me know.
+> >But to be frank, I don't see how this can trigger since we're calling
+> >pm_runtime_get_sync() from omap_i2c_xfer() which means by the time
+> >pm_runtime_get_sync() returns, assuming no errors, i2c module should be
+> >fully resumed and ready to go. Perhaps you have found a bug somewhere
+> >else ?
+> May be it's better to revert this patch:
+> e3a36b207f76364c281aeecaf14c1b22a7247278
+> i2c: omap: remove unnecessary pm_runtime_suspended check
+>=20
+> which doesn't cover case when transfer is *finished*.
 
-https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/log/?h=hsw/pmu6
+what happens when transfer is finished ? After we come out of the loop
+in omap_i2c_xfer() we will mark last busy and
+pm_runtime_put_autosuspend()
 
-FWIW the outstanding patches do:
+ 633 static int
+ 634 omap_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 635 {
+ 636         struct omap_i2c_dev *dev =3D i2c_get_adapdata(adap);
+ 637         int i;
+ 638         int r;
+ 639=20
+ 640         r =3D pm_runtime_get_sync(dev->dev);
+ 641         if (IS_ERR_VALUE(r))
+ 642                 goto out;
+ 643=20
+ 644         r =3D omap_i2c_wait_for_bb(dev);
+ 645         if (r < 0)
+ 646                 goto out;
+ 647=20
+ 648         if (dev->set_mpu_wkup_lat !=3D NULL)
+ 649                 dev->set_mpu_wkup_lat(dev->dev, dev->latency);
+ 650=20
+ 651         for (i =3D 0; i < num; i++) {
+ 652                 r =3D omap_i2c_xfer_msg(adap, &msgs[i], (i =3D=3D (num=
+ - 1)));
+ 653                 if (r !=3D 0)
+ 654                         break;
+ 655         }
+ 656=20
+ 657         if (r =3D=3D 0)
+ 658                 r =3D num;
+ 659=20
+ 660         omap_i2c_wait_for_bb(dev);
+ 661=20
+ 662         if (dev->set_mpu_wkup_lat !=3D NULL)
+ 663                 dev->set_mpu_wkup_lat(dev->dev, -1);
+ 664=20
+ 665 out:
+ 666         pm_runtime_mark_last_busy(dev->dev);
+ 667         pm_runtime_put_autosuspend(dev->dev);
+ 668         return r;
+ 669 }
 
-- Some changes to make CPU event aliases more user friendly:
+When that timer expires, we will mask the controller's IRQs on our
+->runtime_suspend().
 
-print aliases in perf list, avoid the need to specify cpu//,
-automatically enable PEBS for mem-loads/stores,
-Allow aliases to specify "precise"
+Now, if another IRQ comes before we ->runtime_suspend(), then we need to
+figure out what's generating that event, we don't want to be "fixing"
+what's not broken in this driver.
 
-This is all not Haswell specific, but makes
-the TSX changes below a lot more user friendly.
+> Please, see https://patchwork.kernel.org/patch/2689211/ and
+> cover-latter.
 
-Most of this is actually user mode only, except for the
-"precise" alias changes.
+that patch is fine, but doesn't seem like has nothing to do with what
+you're talking about here.
 
-- TSX changes: perf stat -T, TSX event aliases, support for 
-reporting the abort cause from PEBS, plus the user tools
-support for all of this
+> >Also, your 'We should never be here' message isn't helpfull at all.
 
-- Full width counting (generally useful, but also avoids
-a TSX checkpoint problem)
+nor is your explanation of the problem. It's not sufficient.
 
-- Support TSX filtering in the the LBR, plus a workaround
-for the duplicated abort record.
+I'm telling you that we should never reach this case because that's the
+assumption that the driver makes. It assumes that no IRQs will be fired
+unless a transfer is started and by the time that for loop ends, no
+transfer will be started.
 
-Plus also on top (not in my git tree):
+> >>@@ -905,6 +910,11 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
+> >>  	u16 stat;
+> >>  	int err =3D 0, count =3D 0;
+> >>+	if (pm_runtime_suspended(dev->dev)) {
+> >>+		WARN_ONCE(true, "We should never be here!\n");
+> >>+		return IRQ_NONE;
+> >>+	}
+> >because of IRQF_ONESHOT I can't see how this would *ever* be a valid
+> >check.
+> >
+> Please, see https://patchwork.kernel.org/patch/2689211/ and
+> cover-latter.
 
-- Zheng's call graph lbr mode patches, to allow user mode -g without
-frame pointers or full dwarf. This has a few known problems, but is still
-useful enough that it should be available as a option.
+explain to me how would we get to this point, meaning the IRQ thread
+handler, with the device disabled.
 
--Andi
+--=20
+balbi
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+--idY8LE8SD6/8DnRI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRwgjkAAoJEIaOsuA1yqREh4IP/0UsXFMEWqaKt8g7OEV92aC4
+MC0evJTGX7PC9Goxz7zNrb+pMS3gDaLIsDeKGqEuCbnrJ0G9CGapX67Zd00m9YnN
+ylNgwUa6Sb7z6GFcJw6c26ERMyHOPNWnXeCu2pibjaWapefneYi4YN5H5KEbg3/Z
+legcBZpwQmktQ9svv2so40+JxxiX0ar+0AImzNZgyXuCYqwS/2b5fGIwDPi2ebm4
+bUq545dazPLQ/T28AV+W8iTfV0WnJ0/anl9MzyI32pnGWKu3rKgYgs5lbn+g4a2Q
+R3EAIxXf0XX0MAEIXRPnREFFWv3sJF7Hm5G/e90QTcKaOk0cnrrihdAfnf+0kExT
+ndOuu8OYULaB4VRFag6XH7oXf4xzv2AvKIugAB4ArZv3yOXv7CJIbA799888BVu0
+lNjGceTcq6EWL2y8fV2Tg1/H9hgqrMSJ32oVqhu9FyiIl84Ur1cNYw62v5FDeqqG
+NdBrACVt55h4s+yg2TJqqYvKKaXihCt2o4NLAz8ZvVyUQafz8xBLCQkASvTC9Npx
+1xP6BT7hE+pFozVtWcIAvQMmYB574BPJqAAlmrgLgxxfNUwpMUgsB+Yd0SMCD+4D
+6PoYvEPHp0EMuHzkiJxrA4gibpbtWuguxYVKf9NR+hxMd2B3TAicPf26K6a0Tasw
+9Pu34fsg6sxycRJn8l6P
+=Y3h1
+-----END PGP SIGNATURE-----
+
+--idY8LE8SD6/8DnRI--
