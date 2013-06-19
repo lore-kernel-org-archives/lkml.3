@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab3FSFUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 01:20:40 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:39801 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3FSFUi (ORCPT
+	id S933577Ab3FSFVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 01:21:53 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58928 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab3FSFVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 01:20:38 -0400
+	Wed, 19 Jun 2013 01:21:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C0B177.2000006@meduna.org>
-References: <5195ED8B.7060002@meduna.org>
-	<1369183168.6828.168.camel@gandalf.local.home>
-	<519CBB30.3060200@redhat.com>
-	<CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
-	<20130522134111.33a695c5@cuia.bos.redhat.com>
-	<519D08B0.8050707@meduna.org>
-	<1369246316.6828.176.camel@gandalf.local.home>
-	<519D0CAB.7020800@meduna.org>
-	<519D0FF8.5080200@redhat.com>
-	<519D118B.6010306@zytor.com>
-	<519D11BF.5000604@redhat.com>
-	<519DCE2A.4010801@meduna.org>
-	<519E095A.4000105@redhat.com>
-	<519F24DD.5060700@meduna.org>
-	<519F65DB.2020305@redhat.com>
-	<51BE2F5C.8070408@meduna.org>
-	<51C0B177.2000006@meduna.org>
-Date: Tue, 18 Jun 2013 19:20:37 -1000
-X-Google-Sender-Auth: uS3oz_euJYb0pk6mwQD9b58jonI
-Message-ID: <CA+55aFwm-a0O-jvznYpXM4Ctf_jex+gcgELq_pqXL38Y6X-JPg@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Stanislav Meduna <stano@meduna.org>
-Cc: Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+In-Reply-To: <CAKohpo=t+bVdPpqVoBOGByeNguLgyLqoE3sLwjfDFAeQArbuMA@mail.gmail.com>
+References: <1371606191-5618-1-git-send-email-chenxg@marvell.com>
+	<CAKohpont42JcdLH-TawNWVDJeiLNHeAWx4fgvAkyerOD=64MLQ@mail.gmail.com>
+	<CAFgnuDcxS53FS0w31w8k4JzyhKadfO+P12jOy5hyfVKf6pEPWg@mail.gmail.com>
+	<CAKohpo=t+bVdPpqVoBOGByeNguLgyLqoE3sLwjfDFAeQArbuMA@mail.gmail.com>
+Date: Wed, 19 Jun 2013 13:21:50 +0800
+Message-ID: <CAFgnuDcLY7HfwNHLez46+bX=V3m5pDcj7Cm8ECehV4+WoUtEEQ@mail.gmail.com>
+Subject: Re: [PATCH v6] Cpufreq: Fix governor start/stop race condition
+From: Xiaoguang Chen <chenxg.marvell@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Xiaoguang Chen <chenxg@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 9:13 AM, Stanislav Meduna <stano@meduna.org> wrote:
+2013/6/19 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 19 June 2013 10:45, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+>> 2013/6/19 Viresh Kumar <viresh.kumar@linaro.org>:
+>>> On 19 June 2013 07:13, Xiaoguang Chen <chenxg@marvell.com> wrote:
+>>>> There are 4 CPUs and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+>>>> The normal sequence is as below:
+>>>
+>>> I thought Rafael asked to write cpu0 as CPU0, ...
+>>
+>> I changed "cpus" to "CPUs" as Rafael suggested(Please spell cpus as
+>> "CPUs".  And please start sequences from capitals.)
+>> do I need to change other "cpu" to "CPU"?
 >
-> No crash in 2 days running with preempt none...
+> I am not really sure what he meant by "sequence", but I guess its regarding
+> cpu0, cpu1, cpu2, etc... and not cpu .
 
-Is this UP?
+Ok, it's not a big deal, I'll change it.
 
-There's the fast_tlb race that Peter fixed in commit 29eb77825cc7
-("arch, mm: Remove tlb_fast_mode()"). I'm not seeing how it would
-cause infinite TLB faults, but it definitely causes potentially
-incoherent TLB contents. And afaik it only happens with
-CONFIG_PREEMPT, and on UP systems. Which sounds like it might match
-your setup...
-
-                Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
