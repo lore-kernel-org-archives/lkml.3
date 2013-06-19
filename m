@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab3FSPPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 11:15:19 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46309 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab3FSPPD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 11:15:03 -0400
-Message-ID: <1371654898.3173.11.camel@hornet>
-Subject: Re: [RFC PATCH v3 0/2] drivers: mfd: Versatile Express SPC support
-From: Pawel Moll <pawel.moll@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Date: Wed, 19 Jun 2013 16:14:58 +0100
-In-Reply-To: <201306191703.35182.arnd@arndb.de>
-References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
-	 <201306191437.20759.arnd@arndb.de> <1371646530.3867.12.camel@hornet>
-	 <201306191703.35182.arnd@arndb.de>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 19 Jun 2013 15:14:59.0387 (UTC) FILETIME=[C39168B0:01CE6CFF]
-X-MC-Unique: 113061916150001101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756937Ab3FSPPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 11:15:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756706Ab3FSPPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 11:15:48 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
+Date: Wed, 19 Jun 2013 17:15:36 +0200
+Message-Id: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 16:03 +0100, Arnd Bergmann wrote:
-> On Wednesday 19 June 2013, Pawel Moll wrote:
-> > ... but sysreg does more than just that. In particular it provides a
-> > pseudo-gpio controller (I don't think you want to hide this behind the
-> > syscon) and it can act as a bridge to the configuration bus - see
-> > below. In short - no, I don't think sysreg driver can disappear. It can
-> > be reduced in size, yes.
-> 
-> As I said, the gpio part can be a separate driver that just handles
-> gpio, 
+Before this change debuggers needed to jump through hoops
+if they want to detach from a running tracee.
 
-I've already promised Samuel that.
+Typically they just try PTRACE_DETACH, and if it fails
+with ESRCH, they make tracee enter a ptrace-stop.
+Before introduction of PTRACE_INTERRUPT, the only way to do that
+was to send a signal (which raced with real signals),
+then repeatedly call waitpid looking for (this particular)
+signal to be delivered, and finally call PTRACE_DETACH.
 
-> and I think the configuration bridge can be part of the
-> vexpress-config driver, building on top of syscon. I'm not completely
-> sure about the latter part.
+With PTRACE_INTERRUPT it is somewhat less ugly,
+and not racy wrt signals.
 
-I don't think so, no. I appreciate what you are trying to say, but I
-object to mixing ideas for the sake of reducing number of files. The
-config infrastructure is completely independent from the sysreg. Each of
-them can exist on its own. The only common thing is a (slightly baroque)
-communication interface between those two.
+This does not make much sense, especially that kernel code
+for detach operation already supports implicit,
+asynchronous detach which happens if tracer process exits.
 
-> > > > > 3. Move vexpress-config into drivers/bus as it is (however I see no one
-> > > > > in MAINTAINERS for this directory)
-> > > > ISTR that Arnd originally created that directory, so he may help here.
-> > > > Arnd also had some concerns about implementing this code as a bus,
-> > > > mostly about it not being a discoverable bus. IMHO that's a valid
-> > > > concern, and this is why you ended up putting it under MFD which can be
-> > > > seen as some sort of platform devices bus. But I still believe the bus
-> > > > API would make this code look cleaner and easier to maintain.
-> > > 
-> > > Sorry, I don't see why it would be a bus. I assume that there is code
-> > > missing somewhere that is not yet merged, right?
-> > 
-> > Well, different VE components (configuration microcontrollers on
-> > motherboard and daughterboards in particular) talk to each other over a
-> > bus (an SPI derivative, in case you were wondering). So there is a bus.
-> > A non-discoverable one, but it does 42 (approximately ;-) different
-> > things. We already have: clk, hwmon, regulator and reset drivers using
-> > it.
-> 
-> Ah, got it. In this case I think what you are looking for is a custom
-> 'regmap' interface that abstracts those devices. Regmap can already
-> cover i2c, spi and mmio based sets of registers (syscon is one example
-> for mmio), and IIRC there is a simple way of extending it to other
-> register-level interfaces like this one.
+This change simply removes the requirement that tracee is
+in ptrace-stop for PTRACE_DETACH to work.
 
-This is an interesting idea. The thing that worries me the most is its
-early (pre-slab) availability, but I will give it a try.
+This is a user-visible behavior change.
+Do we really have to introduce a separate
+PTRACE_NOT_STUPID_DETACH? I hope not.
 
-Paweł
+If this behavior existed from the start, strace
+would not need a large, ugly chunk of code it currently has
+to handle this quirk.
 
+CCing Jan to hear his comments from gdb side.
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Jan Kratochvil <jan.kratochvil@redhat.com>
+CC: Dmitry V. Levin <ldv@altlinux.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/ptrace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index fc07650..2e294bf 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -56,9 +56,7 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
+  * state.
+  *
+  * Unlinking can happen via two paths - explicit PTRACE_DETACH or ptracer
+- * exiting.  For PTRACE_DETACH, unless the ptracee has been killed between
+- * ptrace_check_attach() and here, it's guaranteed to be in TASK_TRACED.
+- * If the ptracer is exiting, the ptracee can be in any state.
++ * exiting.  The ptracee is not necessarily ptrace-stopped.
+  *
+  * After detach, the ptracee should be in a state which conforms to the
+  * group stop.  If the group is stopped or in the process of stopping, the
+@@ -1062,7 +1060,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+ 	}
+ 
+ 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+-				  request == PTRACE_INTERRUPT);
++				  request == PTRACE_INTERRUPT ||
++				  request == PTRACE_DETACH);
+ 	if (ret < 0)
+ 		goto out_put_task_struct;
+ 
+@@ -1207,7 +1206,8 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 	}
+ 
+ 	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+-				  request == PTRACE_INTERRUPT);
++				  request == PTRACE_INTERRUPT ||
++				  request == PTRACE_DETACH);
+ 	if (!ret) {
+ 		ret = compat_arch_ptrace(child, request, addr, data);
+ 		if (ret || request != PTRACE_DETACH)
+-- 
+1.8.1.4
 
