@@ -1,199 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814Ab3FSSkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:40:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40076 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934962Ab3FSSj5 (ORCPT
+	id S935142Ab3FSSkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:40:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47293 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934962Ab3FSSkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:39:57 -0400
-Date: Wed, 19 Jun 2013 11:39:24 -0700
-From: tip-bot for Steven Rostedt <tipbot@zytor.com>
-Message-ID: <tip-29bb9e5a75684106a37593ad75ec75ff8312731b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1369423420.6828.226.camel@gandalf.local.home>
-References: <1369423420.6828.226.camel@gandalf.local.home>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] tracing/context-tracking:
-  Add preempt_schedule_context() for tracing
-Git-Commit-ID: 29bb9e5a75684106a37593ad75ec75ff8312731b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Jun 2013 14:40:02 -0400
+Message-ID: <51C1F9FA.9000502@ti.com>
+Date: Wed, 19 Jun 2013 21:35:38 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:39:31 -0700 (PDT)
+To: Kevin Hilman <khilman@linaro.org>
+CC: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH 1/5] i2c: omap: fix spurious IRQs: disable/enable IRQ
+ at INTC when idle
+References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com> <1370630768-4077-2-git-send-email-grygorii.strashko@ti.com> <87li6llk4w.fsf@linaro.org>
+In-Reply-To: <87li6llk4w.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29bb9e5a75684106a37593ad75ec75ff8312731b
-Gitweb:     http://git.kernel.org/tip/29bb9e5a75684106a37593ad75ec75ff8312731b
-Author:     Steven Rostedt <rostedt@goodmis.org>
-AuthorDate: Fri, 24 May 2013 15:23:40 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Jun 2013 12:55:10 +0200
+On 06/07/2013 11:51 PM, Kevin Hilman wrote:
+> Grygorii Strashko <grygorii.strashko@ti.com> writes:
+>
+>> From: Kevin Hilman <khilman@deeprootsystems.com>
+>>
+>> Currently, runtime PM is used to keep the device enabled only during
+>> active transfers and for a configurable runtime PM autosuspend timout
+>> after an xfer.
+>>
+>> In addition to idling the device, driver's ->runtime_suspend() method
+>> currently disables device interrupts when idle.  However, on some SoCs
+>> (notably OMAP4+), the I2C hardware may shared with other coprocessors.
+>> This means that the MPU will still recieve interrupts if a coprocessor
+>> is using the I2C device.  To avoid this, also disable interrupts at
+>> the MPU INTC when idling the device in ->runtime_suspend() (and
+>> re-enable them in ->runtime_resume().)  This part based on an original
+>> patch from Shubhrajyoti Datta.  NOTE: for proper sharing the I2C with
+>> a coprocessor, this driver still needs hwspinlock support added.
+>>
+>> More over, this patch fixes the kernel boot failure which happens when
+>> CONFIG_SENSORS_LM75=y:
+>>
+>> [    2.251220] WARNING: at drivers/bus/omap_l3_noc.c:113 l3_interrupt_handler+0x140/0x184()
+>> [    2.257781] L3 custom error: MASTER:MPU TARGET:L4 PER2
+>> [    2.264373] Modules linked in:
+>> [    2.268463] CPU: 0 PID: 2 Comm: kthreadd Not tainted 3.10.0-rc4-00034-g042dd60-dirty #64
+>> [    2.270385] [<c001a80c>] (unwind_backtrace+0x0/0xf0) from [<c0017238>] (show_stack+0x10/0x14)
+>> [    2.286102] [<c0017238>] (show_stack+0x10/0x14) from [<c0040fd0>] (warn_slowpath_common+0x4c/0x68)
+>> [    2.295593] [<c0040fd0>] (warn_slowpath_common+0x4c/0x68) from [<c0041080>] (warn_slowpath_fmt+0x30/0x40)
+>> [    2.299987] [<c0041080>] (warn_slowpath_fmt+0x30/0x40) from [<c02c5ed0>] (l3_interrupt_handler+0x140/0x184)
+>> [    2.315582] [<c02c5ed0>] (l3_interrupt_handler+0x140/0x184) from [<c009ffb8>] (handle_irq_event_percpu+0x58/0x258)
+>> [    2.323364] [<c009ffb8>] (handle_irq_event_percpu+0x58/0x258) from [<c00a01f4>] (handle_irq_event+0x3c/0x5c)
+>> [    2.327819] [<c00a01f4>] (handle_irq_event+0x3c/0x5c) from [<c00a2f7c>] (handle_fasteoi_irq+0xbc/0x164)
+>> [    2.337829] [<c00a2f7c>] (handle_fasteoi_irq+0xbc/0x164) from [<c009f978>] (generic_handle_irq+0x20/0x30)
+>> [    2.357513] [<c009f978>] (generic_handle_irq+0x20/0x30) from [<c0014168>] (handle_IRQ+0x4c/0xac)
+>> [    2.366821] [<c0014168>] (handle_IRQ+0x4c/0xac) from [<c00085b4>] (gic_handle_irq+0x28/0x5c)
+>> [    2.375762] [<c00085b4>] (gic_handle_irq+0x28/0x5c) from [<c04f08a4>] (__irq_svc+0x44/0x5c)
+>> [    2.379821] Exception stack(0xdb085ec0 to 0xdb085f08)
+>> [    2.389953] 5ec0: 00000001 00000001 00000000 db07ea00 40000113 db2317a8 db084000 000002f1
+>> [    2.389953] 5ee0: db07ea00 00000000 00000000 00000000 c04fd990 db085f08 c009170c c04f03e8
+>> [    2.405609] 5f00: 20000113 ffffffff
+>> [    2.408355] [<c04f08a4>] (__irq_svc+0x44/0x5c) from [<c04f03e8>] (_raw_spin_unlock_irqrestore+0x34/0x44)
+>> [    2.418304] [<c04f03e8>] (_raw_spin_unlock_irqrestore+0x34/0x44) from [<c00403c0>] (do_fork+0xa4/0x2d4)
+>> [    2.427795] [<c00403c0>] (do_fork+0xa4/0x2d4) from [<c0040620>] (kernel_thread+0x30/0x38)
+>> [    2.437805] [<c0040620>] (kernel_thread+0x30/0x38) from [<c0063888>] (kthreadd+0xd4/0x13c)
+>> [    2.448364] [<c0063888>] (kthreadd+0xd4/0x13c) from [<c0013308>] (ret_from_fork+0x14/0x2c)
+>> [    2.448364] ---[ end trace da8cf92c433d1616 ]---
+>>
+>> The root casue of crash is race between omap_i2c_runtime_suspend()
+>>   and omap_i2c_isr_thread()
+> If there's a race here, then it's not the same problem which is
+> described above, unless the CPU2 IRQ is happening because of a shared
+> user of I2C, in which case it doesn't need any additional explanation.
+no shared users here
+>> CPU1:                                   CPU2:
+>> |-omap_i2c_xfer                         |
+>>    |- pm_runtime_put_autosuspend()       |
+>>       |-timeout                          |-omap_i2c_isr()
+>>                                            |-return IRQ_WAKE_THREAD;
+>>       |-omap_i2c_runtime_suspend()       |
+>>                                          |-omap_i2c_isr_thread()
+>>                                            |- oops is here - I2C module is in idle state
+> If this is happening, I don't think it's related to $SUBJECT patch (but
+> is probably hidden by it.)
+I can remove "fix spurious IRQs: " from $SUBJECT. What do you think?
+>
+> Instead, what probably needs to happen in this is case is that
+> omap_i2c_isr() should be doing a "mark last busy" to reset the
+> autosuspend timeout.  And, that should be done in a separate patch.
+Yes - from one side. From other side, this patch prevents such situation 
+to happen.
+disable_irq(_dev->irq); - waits for any pending IRQ handlers for this 
+interrupt
+to complete before returning.
 
-tracing/context-tracking: Add preempt_schedule_context() for tracing
+If we are in .runtime_idle() callback - it means I2C transaction has 
+been finished
+(and It doesn't matter successfully or not) and we don't want to receive 
+IRQs any more.
 
-Dave Jones hit the following bug report:
+As I mentioned in cover-latter this happens because PM runtime 
+auto-suspend isn't
+working properly during the boot:
 
- ===============================
- [ INFO: suspicious RCU usage. ]
- 3.10.0-rc2+ #1 Not tainted
- -------------------------------
- include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
- other info that might help us debug this:
- RCU used illegally from idle CPU! rcu_scheduler_active = 1, debug_locks = 0
- RCU used illegally from extended quiescent state!
- 2 locks held by cc1/63645:
-  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816b39fd>] __schedule+0xed/0x9b0
-  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8109d645>] cpuacct_charge+0x5/0x1f0
+[   23.190002] omap_i2c 48350000.i2c: ==== i2c_add_numbered_adapter
+[   23.204681] omap_i2c 48350000.i2c: bus 3 rev0.11 at 400 kHz
+[   23.211669] omap_i2c 48350000.i2c: ====== rpm_suspend elapsed 0 last_busy 4294939616
+[   23.219879] omap_i2c 48350000.i2c: ====== rpm_suspend expires 4294939716 last_busy 4294939616 autosuspend_delay 1000
+[   23.219879] omap_i2c 48350000.i2c: ====== rpm_suspend expires 4294939700
+[   23.237274] omap_i2c 48350000.i2c: ====== rpm_suspend mod_timer expires 4294939700
+--- the timer scheduled to 84 jiffes
+[   23.246185] omap_i2c 48350000.i2c: ==== pm_runtime_put_autosuspend
+[   23.253448] omap-dma-engine 4a056000.dma-controller: allocating channel for 62
+[   23.261138] omap-dma-engine 4a056000.dma-controller: allocating channel for 61
+[   23.269500] omap_i2c 48070000.i2c: ==== omap_i2c_runtime_resume
+[   23.275817] omap_i2c 48350000.i2c: ==== omap_i2c_runtime_suspend
+--- and expired after ~40 ms
 
- CPU: 1 PID: 63645 Comm: cc1 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 25/277 64369]
- Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
-  0000000000000000 ffff88010f78fcf8 ffffffff816ae383 ffff88010f78fd28
-  ffffffff810b698d ffff88011c092548 000000000023d073 ffff88011c092500
-  0000000000000001 ffff88010f78fd60 ffffffff8109d7c5 ffffffff8109d645
- Call Trace:
-  [<ffffffff816ae383>] dump_stack+0x19/0x1b
-  [<ffffffff810b698d>] lockdep_rcu_suspicious+0xfd/0x130
-  [<ffffffff8109d7c5>] cpuacct_charge+0x185/0x1f0
-  [<ffffffff8109d645>] ? cpuacct_charge+0x5/0x1f0
-  [<ffffffff8108dffc>] update_curr+0xec/0x240
-  [<ffffffff8108f528>] put_prev_task_fair+0x228/0x480
-  [<ffffffff816b3a71>] __schedule+0x161/0x9b0
-  [<ffffffff816b4721>] preempt_schedule+0x51/0x80
-  [<ffffffff816b4800>] ? __cond_resched_softirq+0x60/0x60
-  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
-  [<ffffffff810ff3cc>] ftrace_ops_control_func+0x1dc/0x210
-  [<ffffffff816be280>] ftrace_call+0x5/0x2f
-  [<ffffffff816b681d>] ? retint_careful+0xb/0x2e
-  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
-  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
-  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
- ------------[ cut here ]------------
+So, there are no guaranty that this race will not happen even if I'll do 
+"mark last busy"
+in HW IRQ handler (, because in high CPU load use case the threaded IRQ 
+can be delayed.
 
-What happened was that the function tracer traced the schedule_user() code
-that tells RCU that the system is coming back from userspace, and to
-add the CPU back to the RCU monitoring.
+I2C driver should not receive IRQs after finishing the transfer.
 
-Because the function tracer does a preempt_disable/enable_notrace() calls
-the preempt_enable_notrace() checks the NEED_RESCHED flag. If it is set,
-then preempt_schedule() is called. But this is called before the user_exit()
-function can inform the kernel that the CPU is no longer in user mode and
-needs to be accounted for by RCU.
+>> Cc: Nishanth Menon <nm@ti.com>
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> Both the From: and Signed-off should be from my TI address since the
+> work was done while I was working for TI.
+>
+> Also, if you change the original patch/changelog, you should add a line
+> here like:
+>
+> [grygorii.strashko@ti.com]: updated changlog
+ok.
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Kevin
 
-The fix is to create a new preempt_schedule_context() that checks if
-the kernel is still in user mode and if so to switch it to kernel mode
-before calling schedule. It also switches back to user mode coming back
-from schedule in need be.
+Actually, I can confirm, that this patch really fixes "spurious IRQs" issues
+when M3 Ducati is enabled :).
 
-The only user of this currently is the preempt_enable_notrace(), which is
-only used by the tracing subsystem.
+Sorry, for delayed reply - I've had problems with my e-mail.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1369423420.6828.226.camel@gandalf.local.home
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/preempt.h   | 18 +++++++++++++++++-
- kernel/context_tracking.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index 87a03c7..f5d4723 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -33,9 +33,25 @@ do { \
- 		preempt_schedule(); \
- } while (0)
- 
-+#ifdef CONFIG_CONTEXT_TRACKING
-+
-+void preempt_schedule_context(void);
-+
-+#define preempt_check_resched_context() \
-+do { \
-+	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
-+		preempt_schedule_context(); \
-+} while (0)
-+#else
-+
-+#define preempt_check_resched_context() preempt_check_resched()
-+
-+#endif /* CONFIG_CONTEXT_TRACKING */
-+
- #else /* !CONFIG_PREEMPT */
- 
- #define preempt_check_resched()		do { } while (0)
-+#define preempt_check_resched_context()	do { } while (0)
- 
- #endif /* CONFIG_PREEMPT */
- 
-@@ -88,7 +104,7 @@ do { \
- do { \
- 	preempt_enable_no_resched_notrace(); \
- 	barrier(); \
--	preempt_check_resched(); \
-+	preempt_check_resched_context(); \
- } while (0)
- 
- #else /* !CONFIG_PREEMPT_COUNT */
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 65349f0..6667700 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -71,6 +71,46 @@ void user_enter(void)
- 	local_irq_restore(flags);
- }
- 
-+#ifdef CONFIG_PREEMPT
-+/**
-+ * preempt_schedule_context - preempt_schedule called by tracing
-+ *
-+ * The tracing infrastructure uses preempt_enable_notrace to prevent
-+ * recursion and tracing preempt enabling caused by the tracing
-+ * infrastructure itself. But as tracing can happen in areas coming
-+ * from userspace or just about to enter userspace, a preempt enable
-+ * can occur before user_exit() is called. This will cause the scheduler
-+ * to be called when the system is still in usermode.
-+ *
-+ * To prevent this, the preempt_enable_notrace will use this function
-+ * instead of preempt_schedule() to exit user context if needed before
-+ * calling the scheduler.
-+ */
-+void __sched notrace preempt_schedule_context(void)
-+{
-+	struct thread_info *ti = current_thread_info();
-+	enum ctx_state prev_ctx;
-+
-+	if (likely(ti->preempt_count || irqs_disabled()))
-+		return;
-+
-+	/*
-+	 * Need to disable preemption in case user_exit() is traced
-+	 * and the tracer calls preempt_enable_notrace() causing
-+	 * an infinite recursion.
-+	 */
-+	preempt_disable_notrace();
-+	prev_ctx = exception_enter();
-+	preempt_enable_no_resched_notrace();
-+
-+	preempt_schedule();
-+
-+	preempt_disable_notrace();
-+	exception_exit(prev_ctx);
-+	preempt_enable_notrace();
-+}
-+EXPORT_SYMBOL_GPL(preempt_schedule_context);
-+#endif /* CONFIG_PREEMPT */
- 
- /**
-  * user_exit - Inform the context tracking that the CPU is
+- grygorii
