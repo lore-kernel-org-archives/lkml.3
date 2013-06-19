@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934181Ab3FSCsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jun 2013 22:48:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56037 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933901Ab3FSCr7 (ORCPT
+	id S934151Ab3FSCtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jun 2013 22:49:52 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:53158 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933861Ab3FSCtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jun 2013 22:47:59 -0400
-Date: Tue, 18 Jun 2013 19:48:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chao Xie <chao.xie@marvell.com>
-Cc: stern@rowland.harvard.edu, balbi@ti.com, rogerq@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, xiechao.mail@gmail.com
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
-Message-ID: <20130619024839.GA1987@kroah.com>
-References: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
+	Tue, 18 Jun 2013 22:49:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 19 Jun 2013 10:49:50 +0800
+Message-ID: <CAPgLHd8ycujfKpt4zd-AXyg2J4uRAGREO_YjaGba+rLgQQ40uA@mail.gmail.com>
+Subject: [PATCH -next] dlm: remove duplicated include from lowcomms.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: ccaulfie@redhat.com, teigland@redhat.com
+Cc: yongjun_wei@trendmicro.com.cn, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 10:31:20PM -0400, Chao Xie wrote:
-> Some controller need software to initialize PHY before add
-> host controller, and shut down PHY after remove host controller.
-> Add the generic code for these controllers so they do not need
-> do it in its own host controller driver.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Why?  What breaks if we add this patch, and what gets fixed?  I'm
-guessing you can then remove code?
+Remove duplicated include.
 
-What out-of-tree code now works properly?  Or gets broken?
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/dlm/lowcomms.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-we need more info here please...
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index 4f539dd..d90909e 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -52,7 +52,6 @@
+ #include <linux/mutex.h>
+ #include <linux/sctp.h>
+ #include <linux/slab.h>
+-#include <linux/sctp.h>
+ #include <net/sctp/sctp.h>
+ #include <net/ipv6.h>
+ 
 
-thanks,
-
-greg k-h
