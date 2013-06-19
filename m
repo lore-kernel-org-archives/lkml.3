@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964948Ab3FSSm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:42:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965016Ab3FSSmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:42:50 -0400
-Date: Wed, 19 Jun 2013 14:42:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130619184218.GB26752@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20130619164540.GB22483@redhat.com>
- <20130619175356.GA23673@redhat.com>
- <20130619181302.GE5146@linux.vnet.ibm.com>
+	id S965065Ab3FSSnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:43:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40285 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964945Ab3FSSnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:43:06 -0400
+Date: Wed, 19 Jun 2013 11:42:46 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-72db55964695dcd4aa15950f3b2fb7c09ad79829@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, ak@linux.jf.intel.com,
+        ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        ak@linux.jf.intel.com, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1371515812-9646-5-git-send-email-andi@firstfloor.org>
+References: <1371515812-9646-5-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/intel:
+  Move NMI clearing to end of PMI handler
+Git-Commit-ID: 72db55964695dcd4aa15950f3b2fb7c09ad79829
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130619181302.GE5146@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 19 Jun 2013 11:42:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:13:02AM -0700, Paul E. McKenney wrote:
+Commit-ID:  72db55964695dcd4aa15950f3b2fb7c09ad79829
+Gitweb:     http://git.kernel.org/tip/72db55964695dcd4aa15950f3b2fb7c09ad79829
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Mon, 17 Jun 2013 17:36:50 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 19 Jun 2013 14:43:34 +0200
 
- > > On a whim, I reverted 971394f389992f8462c4e5ae0e3b49a10a9534a3
- > > (As I started seeing these just after that rcu merge).
- > > 
- > > It's only been 30 minutes, but it seems stable again. Normally I would
- > > hit these within 5 minutes.
- > > 
- > > I think this may be the same root cause for http://www.spinics.net/lists/kernel/msg1551503.html too.
- > 
- > In both cases, I am guessing that you built with CONFIG_PROVE_RCU_DELAY=y.
+perf/x86/intel: Move NMI clearing to end of PMI handler
 
-Yes.
+This avoids some problems with spurious PMIs on Haswell.
+Haswell seems to behave more like P4 in this regard. Do
+the same thing as the P4 perf handler by unmasking
+the NMI only at the end. Shouldn't make any difference
+for earlier family 6 cores.
 
- > Even then, this is very strange.  I am at a loss as to why udelay(200)
- > would result in a hang.
+(Tested on Haswell, IvyBridge, Westmere, Saltwell (Atom).)
 
-It may not be a real 'hang' per se, but might just be that that process isn't
-scheduled within the time needed to appease the lockup detector ?
-(20 seconds is a long time, but that box is under constant load when it's 
- running the fuzz tests, so.. ?)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <ak@linux.jf.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/r/1371515812-9646-5-git-send-email-andi@firstfloor.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event.h       |  1 +
+ arch/x86/kernel/cpu/perf_event_intel.c | 20 ++++++++++++--------
+ 2 files changed, 13 insertions(+), 8 deletions(-)
 
- > Or does your system turn udelay() into something other than a pure spin?
-
-I see no reason why it would. Am I missing something ?
-
-
-I also don't know if it's related, but it would be real nice if someone
-would push along that fix for rcu_preempt hogging the cpu when idle that's
-been in timers/urgent for over a month.
-
-	Dave
-
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fb7fe44..f43473c 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -378,6 +378,7 @@ struct x86_pmu {
+ 	struct event_constraint *event_constraints;
+ 	struct x86_pmu_quirk *quirks;
+ 	int		perfctr_second_write;
++	bool		late_ack;
+ 
+ 	/*
+ 	 * sysfs attrs
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4a4c4ba..877672c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1185,15 +1185,11 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	/*
+-	 * Some chipsets need to unmask the LVTPC in a particular spot
+-	 * inside the nmi handler.  As a result, the unmasking was pushed
+-	 * into all the nmi handlers.
+-	 *
+-	 * This handler doesn't seem to have any issues with the unmasking
+-	 * so it was left at the top.
++	 * No known reason to not always do late ACK,
++	 * but just in case do it opt-in.
+ 	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
++	if (!x86_pmu.late_ack)
++		apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+@@ -1257,6 +1253,13 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
++	/*
++	 * Only unmask the NMI after the overflow counters
++	 * have been reset. This avoids spurious NMIs on
++	 * Haswell CPUs.
++	 */
++	if (x86_pmu.late_ack)
++		apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	return handled;
+ }
+ 
+@@ -2260,6 +2263,7 @@ __init int intel_pmu_init(void)
+ 	case 70:
+ 	case 71:
+ 	case 63:
++		x86_pmu.late_ack = true;
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+ 
