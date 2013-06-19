@@ -1,41 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934641Ab3FSJO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:14:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60840 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934410Ab3FSJOv (ORCPT
+	id S934633Ab3FSJPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:15:47 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53828 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934057Ab3FSJPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:14:51 -0400
-Date: Wed, 19 Jun 2013 02:14:50 -0700 (PDT)
-Message-Id: <20130619.021450.1126981647735749233.davem@davemloft.net>
-To: tushar.behera@linaro.org
-Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        sachin.kamat@linaro.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH V2 1/15] sparc,leon: Convert to use
- devm_ioremap_resource
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371460064-19549-1-git-send-email-tushar.behera@linaro.org>
-References: <1370864113-17895-2-git-send-email-tushar.behera@linaro.org>
-	<1371460064-19549-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jun 2013 05:15:44 -0400
+From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, paulus@samba.org, acme@redhat.com,
+        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        icycoder@gmail.com, Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] perf tools: fix a typo of a Power7 event name
+Date: Wed, 19 Jun 2013 17:15:25 +0800
+Message-Id: <1371633326-7696-1-git-send-email-runzhen@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061920-3568-0000-0000-000003CCEADB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tushar Behera <tushar.behera@linaro.org>
-Date: Mon, 17 Jun 2013 14:37:44 +0530
+In the Power7 PMU guide:
+https://www.power.org/documentation/commonly-used-metrics-for-performance-analysis/
+PM_BRU_MPRED is referred to as PM_BR_MPRED.
 
-> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> introduced devm_ioremap_resource() and deprecated the use of
-> devm_request_and_ioremap().
-> 
-> While at it, also remove the error message as devm_ioremap_resource()
-> also prints similar error message.
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+This patch fix the typo by changing the name of the event in kernel and
+documentation accordingly.
 
-Applied.
+Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+---
+ .../testing/sysfs-bus-event_source-devices-events  |    2 +-
+ arch/powerpc/perf/power7-pmu.c                     |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 8b25ffb..3c1cc24 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -29,7 +29,7 @@ Description:	Generic performance monitoring events
+ 
+ What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
+ 		/sys/devices/cpu/events/PM_BRU_FIN
+-		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_BR_MPRED
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL_BRU
+ 		/sys/devices/cpu/events/PM_CMPLU_STALL_DCACHE_MISS
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index 13c3f0e..d1821b8 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -60,7 +60,7 @@
+ #define	PME_PM_LD_REF_L1		0xc880
+ #define	PME_PM_LD_MISS_L1		0x400f0
+ #define	PME_PM_BRU_FIN			0x10068
+-#define	PME_PM_BRU_MPRED		0x400f6
++#define	PME_PM_BR_MPRED			0x400f6
+ 
+ #define PME_PM_CMPLU_STALL_FXU			0x20014
+ #define PME_PM_CMPLU_STALL_DIV			0x40014
+@@ -349,7 +349,7 @@ static int power7_generic_events[] = {
+ 	[PERF_COUNT_HW_CACHE_REFERENCES] =		PME_PM_LD_REF_L1,
+ 	[PERF_COUNT_HW_CACHE_MISSES] =			PME_PM_LD_MISS_L1,
+ 	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =		PME_PM_BRU_FIN,
+-	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BRU_MPRED,
++	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BR_MPRED,
+ };
+ 
+ #define C(x)	PERF_COUNT_HW_CACHE_##x
+@@ -405,7 +405,7 @@ GENERIC_EVENT_ATTR(instructions,		INST_CMPL);
+ GENERIC_EVENT_ATTR(cache-references,		LD_REF_L1);
+ GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
+ GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
+-GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
++GENERIC_EVENT_ATTR(branch-misses,		BR_MPRED);
+ 
+ POWER_EVENT_ATTR(CYC,				CYC);
+ POWER_EVENT_ATTR(GCT_NOSLOT_CYC,		GCT_NOSLOT_CYC);
+@@ -414,7 +414,7 @@ POWER_EVENT_ATTR(INST_CMPL,			INST_CMPL);
+ POWER_EVENT_ATTR(LD_REF_L1,			LD_REF_L1);
+ POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
+ POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
+-POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
++POWER_EVENT_ATTR(BR_MPRED,			BR_MPRED);
+ 
+ POWER_EVENT_ATTR(CMPLU_STALL_FXU,		CMPLU_STALL_FXU);
+ POWER_EVENT_ATTR(CMPLU_STALL_DIV,		CMPLU_STALL_DIV);
+@@ -449,7 +449,7 @@ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(LD_REF_L1),
+ 	GENERIC_EVENT_PTR(LD_MISS_L1),
+ 	GENERIC_EVENT_PTR(BRU_FIN),
+-	GENERIC_EVENT_PTR(BRU_MPRED),
++	GENERIC_EVENT_PTR(BR_MPRED),
+ 
+ 	POWER_EVENT_PTR(CYC),
+ 	POWER_EVENT_PTR(GCT_NOSLOT_CYC),
+@@ -458,7 +458,7 @@ static struct attribute *power7_events_attr[] = {
+ 	POWER_EVENT_PTR(LD_REF_L1),
+ 	POWER_EVENT_PTR(LD_MISS_L1),
+ 	POWER_EVENT_PTR(BRU_FIN),
+-	POWER_EVENT_PTR(BRU_MPRED),
++	POWER_EVENT_PTR(BR_MPRED),
+ 
+ 	POWER_EVENT_PTR(CMPLU_STALL_FXU),
+ 	POWER_EVENT_PTR(CMPLU_STALL_DIV),
+-- 
+1.7.9.5
+
