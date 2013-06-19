@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab3FSQBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 12:01:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19242 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab3FSQBS (ORCPT
+	id S1757139Ab3FSQFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 12:05:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38331 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756845Ab3FSQFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 12:01:18 -0400
-Date: Wed, 19 Jun 2013 19:01:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch -next] FMC: NULL dereference on allocation failure
-Message-ID: <20130619160101.GA29108@mwanda>
+	Wed, 19 Jun 2013 12:05:37 -0400
+Date: Wed, 19 Jun 2013 17:05:23 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130619160523.GA27832@srcf.ucam.org>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130619155731.GA4957@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130619130225.GA28311@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't allocate "arr" then the cleanup path will dereference it and
-oops.
+On Wed, Jun 19, 2013 at 03:02:25PM +0200, Borislav Petkov wrote:
+> On Wed, Jun 19, 2013 at 02:52:43PM +0200, Ingo Molnar wrote:
+> > I hope making it a weird boot option is not the end plan, there's
+> > little point in _not_ enabling 1:1 mappings by default eventually:
+> > the 1:1 mapping is supposed to emulate a "Windows compatible" EFI
+> > environment better and is expected to work around certain EFI runtime
+> > crashes.
+> 
+> And yet there are the Macs which reportedly cannot stomach this.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alessandro Rubini <rubini@gnudd.com>
+I suspect they'll be fine with having a 1:1 map, as long as we pass the 
+high mappings via SetVirtualAddressMap().
 
-diff --git a/drivers/fmc/fmc-sdb.c b/drivers/fmc/fmc-sdb.c
-index 74fb326..79adc39 100644
---- a/drivers/fmc/fmc-sdb.c
-+++ b/drivers/fmc/fmc-sdb.c
-@@ -46,16 +46,17 @@ static struct sdb_array *__fmc_scan_sdb_tree(struct fmc_device *fmc,
- 	onew = __sdb_rd(fmc, sdb_addr + 4, convert);
- 	n = __be16_to_cpu(*(uint16_t *)&onew);
- 	arr = kzalloc(sizeof(*arr), GFP_KERNEL);
--	if (arr) {
--		arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
--		arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
--	}
--	if (!arr || !arr->record || !arr->subtree) {
-+	if (!arr)
-+		return ERR_PTR(-ENOMEM);
-+	arr->record = kzalloc(sizeof(arr->record[0]) * n, GFP_KERNEL);
-+	arr->subtree = kzalloc(sizeof(arr->subtree[0]) * n, GFP_KERNEL);
-+	if (!arr->record || !arr->subtree) {
- 		kfree(arr->record);
- 		kfree(arr->subtree);
- 		kfree(arr);
- 		return ERR_PTR(-ENOMEM);
- 	}
-+
- 	arr->len = n;
- 	arr->level = level;
- 	arr->fmc = fmc;
---
-To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
