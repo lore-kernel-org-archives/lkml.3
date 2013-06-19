@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965060Ab3FSSqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 14:46:51 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43837 "EHLO mga14.intel.com"
+	id S965080Ab3FSSrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 14:47:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38662 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965004Ab3FSSqs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 14:46:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,899,1363158000"; 
-   d="scan'208";a="319582728"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Michael Neuling <mikey@neuling.org>,
-        Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-CC: "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "anton@samba.org" <anton@samba.org>,
-        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>
-Subject: RE: [PATCH v4 0/8] Nvram-to-pstore
-Thread-Topic: [PATCH v4 0/8] Nvram-to-pstore
-Thread-Index: AQHOYh2tPzMOSeP5DUubcpE5iE3W8pk9GcmAgAAFSwCAAAE9AIAAVT+A
-Date: Wed, 19 Jun 2013 18:46:45 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA88179@ORSMSX106.amr.corp.intel.com>
-References: <20130605184756.25794.43872.stgit@aruna-ThinkPad-T420>
- <1822.1371622503@ale.ozlabs.ibm.com> <51C150D8.2070706@linux.vnet.ibm.com>
- <5493.1371623906@ale.ozlabs.ibm.com>
-In-Reply-To: <5493.1371623906@ale.ozlabs.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S964950Ab3FSSrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 14:47:02 -0400
+Message-ID: <51C1FC9B.70102@ti.com>
+Date: Wed, 19 Jun 2013 14:46:51 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        <jonghwa3.lee@samsung.com>
+Subject: Re: [PATCH V6 02/30] thermal: exynos: Use ARCH_HAS_BANDGAP config
+ to know the supported soc's
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-3-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1371451599-31035-3-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2BXHJRQBIOTCHHNAHHKSF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You need to mount pstore to access the files.
-> 
-> # mkdir /dev/pstore
-> # mount -t pstore - /dev/pstore
-> 
-> to unmount
-> 
-> # umount /dev/pstore
-> 
-> References: http://lwn.net/Articles/421297/
+------enig2BXHJRQBIOTCHHNAHHKSF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Note that /dev/pstore has fallen out of fashion as the mount point ... we now (since 3.9)
-suggest /sys/fs/pstore
+On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+> This patch uses the recently added config sybmol ARCH_HAS_BANDGAP to en=
+able
+> the TMU driver. This will allow adding support for new soc easily as no=
+w it
+> is the platform responsibility to enable this config symbol for a parti=
+cular
+> soc.
+>=20
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-> Documentation/ABI/testing/pstore
 
-This file was updated with the new location.
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
--Tony
- 
+> ---
+>  drivers/thermal/samsung/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/=
+Kconfig
+> index 2d3d9dc..883a8a8 100644
+> --- a/drivers/thermal/samsung/Kconfig
+> +++ b/drivers/thermal/samsung/Kconfig
+> @@ -1,6 +1,6 @@
+>  config EXYNOS_THERMAL
+>  	tristate "Temperature sensor on Samsung EXYNOS"
+> -	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
+> +	depends on ARCH_HAS_BANDGAP
+>  	depends on CPU_THERMAL
+>  	help
+>  	  If you say yes here you get support for TMU (Thermal Management
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2BXHJRQBIOTCHHNAHHKSF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlHB/JsACgkQCXcVR3XQvP1zNgEA3LZ0yfkxN8dVgec3SGoVcljV
+VdJB6HV+DHmyRgnVggUBAMBO+wSw3AfKem/5o+j9UnY029mMt/3n4HsGcimUUTGh
+=mfLr
+-----END PGP SIGNATURE-----
+
+------enig2BXHJRQBIOTCHHNAHHKSF--
