@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934418Ab3FSJZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 05:25:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43511 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934032Ab3FSJZZ (ORCPT
+	id S934369Ab3FSJ1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 05:27:22 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33595 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933947Ab3FSJ1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 05:25:25 -0400
-Date: Wed, 19 Jun 2013 10:25:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 2/2] spi/pxa2xx: use a flag to check if the device is
-	runtime suspended
-Message-ID: <20130619092508.GJ2718@n2100.arm.linux.org.uk>
-References: <1371565785-31332-1-git-send-email-mika.westerberg@linux.intel.com> <1371565785-31332-2-git-send-email-mika.westerberg@linux.intel.com> <20130618180948.GP1403@sirena.org.uk>
+	Wed, 19 Jun 2013 05:27:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618180948.GP1403@sirena.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
+References: <20130619181031.8b53acc44466ba70a47e1fcd@canb.auug.org.au>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Wed, 19 Jun 2013 17:26:57 +0800
+Message-ID: <CA+a=Yy4z-ufq2GEtzC17TBbrNGWv6ZUzuVe=VLBH48Df=3HZxA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 07:09:48PM +0100, Mark Brown wrote:
-> On Tue, Jun 18, 2013 at 05:29:45PM +0300, Mika Westerberg wrote:
-> > Current code calls pm_runtime_suspended() in the interrupt handler to check
-> > if the device is suspended or not. However, runtime PM status of the device
-> > is only set to suspended once all PM runtime suspend hooks have executed.
-> 
-> > In our case we have the device bound to the ACPI power domain and its
-> > runtime suspend hook will put the device to D3hot (or D3cold if possible).
-> > This effectively means that the device is powered off before its state is
-> > set to runtime suspended. During this time, it might get an interrupt that
-> > is meant for another device (as the interrupt line is shared), and because
-> > the device is powered off accessing its registers will return 0xffffffff
-> > that the driver misinterprets as an invalid state. When this happens user
-> > will see messages like below on the console:
-> 
-> This sounds like a problem which will affect a lot of devices and hence
-> ought to be handled better by the PM core or at least frameworks in
-> general.  Is it really device specific?
+On Wed, Jun 19, 2013 at 4:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> In file included from drivers/staging/lustre/include/linux/libcfs/libcfs.h:203:0,
+>                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.h:67,
+>                  from drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c:41:
+> drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c: In function 'kiblnd_dev_need_failover':
+> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:215:16: error: implicit declaration of function 'NIPQUAD' [-Werror=implicit-function-declaration]
+>   static struct libcfs_debug_msg_data msgdata;      \
+>                 ^
+Thanks for reporting!
 
-It's always been something that has been recommended to be dealt with
-by the driver.  If reading the interrupt status you read ~0, then it
-likely is because the device is powered down or removed from the system.
+It is a bug in Lustre code that it is missing NIPQUAD definition on
+Linux platform. I will send fix later.
 
-PCMCIA drivers have done this for years.
+> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:231:2: note: in expansion of macro '__CDEBUG'
+>   __CDEBUG(&cdls, mask, format, ## __VA_ARGS__);\
+>   ^
+> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:238:30: note: in expansion of macro 'CDEBUG_LIMIT'
+>  #define CERROR(format, ...)  CDEBUG_LIMIT(D_ERROR, format, ## __VA_ARGS__)
+>                               ^
+> drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c:2577:3: note: in expansion of macro 'CERROR'
+>    CERROR("Failed to bind %s:%u.%u.%u.%u to device(%p): %d\n",
+>    ^
+>
+> I have once again disabled the building og the lustre client code.
+>
+Sorry that Lustre is mostly tested only on x86 platform (and sadly I
+don't have other architectures to test on.). We sincerely thank you
+for your continuous help.
+
+Cheers,
+Tao
