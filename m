@@ -1,177 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934500Ab3FSL2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 07:28:04 -0400
-Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:45627 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934141Ab3FSL2B (ORCPT
+	id S934464Ab3FSLa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 07:30:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50263 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934175Ab3FSLa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 07:28:01 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jun 2013 07:28:01 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH 4/8] tty: atmel_serial: prepare clk before calling enable
-Date: Wed, 19 Jun 2013 13:17:30 +0200
-Message-Id: <1371640650-9625-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-References: <1371640263-9268-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 10626524797590009964
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 19 Jun 2013 07:30:57 -0400
+Message-ID: <51C1963B.2070501@ti.com>
+Date: Wed, 19 Jun 2013 06:30:03 -0500
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <51C19011.5050107@ti.com>
+In-Reply-To: <51C19011.5050107@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On 06/19/2013 06:03 AM, Roger Quadros wrote:
+> On 06/19/2013 01:10 PM, Benoit Cousson wrote:
+>> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
+>>> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
+>>>> Hi Benoit,
+>>>>
+>>>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
+>>>>> Hi Roger,
+>>>>>
+>>>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
+>>>>>> Provide the RESET and Power regulators for the USB PHY,
+>>>>>> the USB Host port mode and the PHY device.
+>>>>>>
+>>>>>> Also provide pin multiplexer information for the USB host
+>>>>>> pins.
+>>>>>>
+>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>> ---
+>>>>>>     arch/arm/boot/dts/omap4-panda-common.dtsi |   62 +++++++++++++++++++++++++++++
+>>>>>>     1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> index 00cbaa5..7a21e8e 100644
+>>>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>> @@ -59,6 +59,42 @@
+>>>>>>                 "AFML", "Line In",
+>>>>>>                 "AFMR", "Line In";
+>>>>>>         };
+>>>>>> +
+>>>>>> +    /* HS USB Port 1 RESET */
+>>>>>> +    hsusb1_reset: hsusb1_reset_reg {
+>>>>>> +        compatible = "regulator-fixed";
+>>>>>> +        regulator-name = "hsusb1_reset";
+>>>>>> +        regulator-min-microvolt = <3300000>;
+>>>>>> +        regulator-max-microvolt = <3300000>;
+>>>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
+>>>>>> +        startup-delay-us = <70000>;
+>>>>>> +        enable-active-high;
+>>>>>> +    };
+>>>>>
+>>>>> Is this really a regulator? Or just a GPIO line used to reset the USB PHY?
+>>>>
+>>>> It is in fact a GPIO line used as reset.
+>>>>>
+>>>>> If this is the case, I don't think it should be represented as a regulator.
+>>>>
+>>>> Why not? I think it fits very well in the regulator device model.
+>>
+>> I'm not sure fitting very well is the correct term.
+>> It works, for sure, but it is no different than when we were trying to abuse the regulator fmwk to enable the 32k clock in phoenix.
+>> It is just a hack.
+>>
+>
+> The only difference is there is a dedicated framework for clocks. Since there is nothing specific to
+> handle reset lines it is left to the driver writer how he wants to manage it.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/tty/serial/atmel_serial.c |   41 ++++++++++++++++++++++++++++---------
- 1 file changed, 31 insertions(+), 10 deletions(-)
+Well, at that time, it was not available either. The point is still that 
+using a existing fmwk that has nothing to do with the signal you need to 
+handle just because it works is not a very good justification.
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 3467462..691265f 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1100,7 +1100,7 @@ static void atmel_serial_pm(struct uart_port *port, unsigned int state,
- 		 * Enable the peripheral clock for this serial port.
- 		 * This is called on uart_open() or a resume event.
- 		 */
--		clk_enable(atmel_port->clk);
-+		clk_prepare_enable(atmel_port->clk);
- 
- 		/* re-enable interrupts if we disabled some on suspend */
- 		UART_PUT_IER(port, atmel_port->backup_imr);
-@@ -1114,7 +1114,7 @@ static void atmel_serial_pm(struct uart_port *port, unsigned int state,
- 		 * Disable the peripheral clock for this serial port.
- 		 * This is called on uart_close() or a suspend event.
- 		 */
--		clk_disable(atmel_port->clk);
-+		clk_disable_unprepare(atmel_port->clk);
- 		break;
- 	default:
- 		printk(KERN_ERR "atmel_serial: unknown pm %d\n", state);
-@@ -1458,9 +1458,10 @@ static void atmel_of_init_port(struct atmel_uart_port *atmel_port,
- /*
-  * Configure the port from the platform device resource info.
-  */
--static void atmel_init_port(struct atmel_uart_port *atmel_port,
-+static int atmel_init_port(struct atmel_uart_port *atmel_port,
- 				      struct platform_device *pdev)
- {
-+	int ret;
- 	struct uart_port *port = &atmel_port->uart;
- 	struct atmel_uart_data *pdata = pdev->dev.platform_data;
- 
-@@ -1496,9 +1497,19 @@ static void atmel_init_port(struct atmel_uart_port *atmel_port,
- 	/* for console, the clock could already be configured */
- 	if (!atmel_port->clk) {
- 		atmel_port->clk = clk_get(&pdev->dev, "usart");
--		clk_enable(atmel_port->clk);
-+		if (IS_ERR(atmel_port->clk)) {
-+			ret = PTR_ERR(atmel_port->clk);
-+			atmel_port->clk = NULL;
-+			return ret;
-+		}
-+		ret = clk_prepare_enable(atmel_port->clk);
-+		if (ret) {
-+			clk_put(atmel_port->clk);
-+			atmel_port->clk = NULL;
-+			return ret;
-+		}
- 		port->uartclk = clk_get_rate(atmel_port->clk);
--		clk_disable(atmel_port->clk);
-+		clk_disable_unprepare(atmel_port->clk);
- 		/* only enable clock when USART is in use */
- 	}
- 
-@@ -1511,6 +1522,8 @@ static void atmel_init_port(struct atmel_uart_port *atmel_port,
- 	} else {
- 		atmel_port->tx_done_mask = ATMEL_US_TXRDY;
- 	}
-+
-+	return 0;
- }
- 
- struct platform_device *atmel_default_console_device;	/* the serial console device */
-@@ -1601,6 +1614,7 @@ static void __init atmel_console_get_options(struct uart_port *port, int *baud,
- 
- static int __init atmel_console_setup(struct console *co, char *options)
- {
-+	int ret;
- 	struct uart_port *port = &atmel_ports[co->index].uart;
- 	int baud = 115200;
- 	int bits = 8;
-@@ -1612,7 +1626,9 @@ static int __init atmel_console_setup(struct console *co, char *options)
- 		return -ENODEV;
- 	}
- 
--	clk_enable(atmel_ports[co->index].clk);
-+	ret = clk_prepare_enable(atmel_ports[co->index].clk);
-+	if (ret)
-+		return ret;
- 
- 	UART_PUT_IDR(port, -1);
- 	UART_PUT_CR(port, ATMEL_US_RSTSTA | ATMEL_US_RSTRX);
-@@ -1645,6 +1661,7 @@ static struct console atmel_console = {
-  */
- static int __init atmel_console_init(void)
- {
-+	int ret;
- 	if (atmel_default_console_device) {
- 		struct atmel_uart_data *pdata =
- 			atmel_default_console_device->dev.platform_data;
-@@ -1655,7 +1672,9 @@ static int __init atmel_console_init(void)
- 		port->uart.line = id;
- 
- 		add_preferred_console(ATMEL_DEVICENAME, id, NULL);
--		atmel_init_port(port, atmel_default_console_device);
-+		ret = atmel_init_port(port, atmel_default_console_device);
-+		if (ret)
-+			return ret;
- 		register_console(&atmel_console);
- 	}
- 
-@@ -1786,7 +1805,9 @@ static int atmel_serial_probe(struct platform_device *pdev)
- 	port->backup_imr = 0;
- 	port->uart.line = ret;
- 
--	atmel_init_port(port, pdev);
-+	ret = atmel_init_port(port, pdev);
-+	if (ret)
-+		goto err;
- 
- 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
- 	if (IS_ERR(pinctrl)) {
-@@ -1812,9 +1833,9 @@ static int atmel_serial_probe(struct platform_device *pdev)
- 			&& ATMEL_CONSOLE_DEVICE->flags & CON_ENABLED) {
- 		/*
- 		 * The serial core enabled the clock for us, so undo
--		 * the clk_enable() in atmel_console_setup()
-+		 * the clk_prepare_enable() in atmel_console_setup()
- 		 */
--		clk_disable(port->clk);
-+		clk_disable_unprepare(port->clk);
- 	}
- #endif
- 
--- 
-1.7.9.5
+>>>> I couldn't find a better
+>>>> way to represent this. It gives us a way to specify not only the GPIO line but also
+>>>> the polarity. I know mostly reset is active low but still there is flexibility as you never
+>>>> know for sure.
+>>
+>> Mmm, and what about just controlling the gpio from the driver?
+>
+> Yes gpio is possible. But then you need to add additional code in the driver to parse GPIO number and polarity.
+> Using regulator_get() was plain simple for me.
+
+Maybe, but it is not the right thing to do.
+Can you explain me the commonality between a reset line and a regulator???
+
+>>> I think it's really a mux + a comparator. But from Linux driver point of view
+>>> a regulator fits well as we don't have anything better. After all, the pin
+>>> voltage changes, and then something can be done based on the comparator
+>>> value.
+>>>
+>>>> Do you have any better ideas?
+>>>
+>>> We have a similar issue with the MMC1 PBIAS. I think in the long run we
+>>> should expand regulator (and possibly pinctrl) framework(s) to handle
+>>> comparators. We could just assume that a comparatator is a regulator,
+>>> and have a comparator binding that just uses the regulator code.
+>>
+>> In the case of pbias, the pinctrl seems to be a much better fit for my point of view. pinctrl can handle pin configuration and this is what the pbias is in the case of MMC pins.
+>>
+>>>> FYI. The USB PHY driver is already treating reset as a regulator and is into 3.10. Reworking that
+>>>> will take some time. Not getting these in will prevent USB host/ethernet support on panda.
+>>
+>> That's not because we did some mistake in the past that we have to keep doing that :-)
+>
+> I had actually thought it well and don't consider it as a mistake. It is just a difference in opinion.
+
+Well, I don't think so. Again, you are abusing the regulator fmwk to 
+enable at boot time a GPIO line that should reset the IP. I doubt the 
+regulator fmwk was done for that. Otherwise Mark would have named it 
+"miscellaneous fmwk" or "regulator & reset" fmwk.
+
+>>> Yes and we need to have some solution for v3.11 as we've dropped the
+>>> legacy data for omap4. Otherwise things won't work properly.
+>>
+>> I'm fine taking it as soon as big disclaimer is added to avoid mis-using the regulator in the future for controlling a gpio line.
+>>
+>
+> I can re-work the phy driver. No problem. But I'm still not convinced
+> what it will improve. IMHO it just adds more code in the phy driver without any benefits.
+
+Yes, it will. It will give explicitly the reset control to the driver 
+that knows and needs it. Moreover, it will avoid abusing a fmwk that was 
+not done for that purpose.
+
+Regards,
+Benoit
 
