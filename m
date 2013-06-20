@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965966Ab3FTTy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:54:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44617 "EHLO hydra.sisk.pl"
+	id S1758168Ab3FTTNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:13:47 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:54346 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965319Ab3FTTyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:54:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v4 2/7] cpufreq: Add boost frequency support in core
-Date: Thu, 20 Jun 2013 22:03:45 +0200
-Message-ID: <5038475.Kzi1Kavss7@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpo=5ZJp6JBVVA0NinTMO5FUwtfy3QAabcTwVOW6TmEfs9g@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <1371661969-7660-3-git-send-email-l.majewski@samsung.com> <CAKohpo=5ZJp6JBVVA0NinTMO5FUwtfy3QAabcTwVOW6TmEfs9g@mail.gmail.com>
+	id S1758101Ab3FTTNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:13:44 -0400
+X-IronPort-AV: E=Sophos;i="4.87,906,1363132800"; 
+   d="scan'208";a="32469512"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <xen-devel@lists.xen.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/2] hrtimers: provide a hrtimers_late_resume() call
+Date: Thu, 20 Jun 2013 20:13:38 +0100
+Message-ID: <1371755619-25348-2-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1371755619-25348-1-git-send-email-david.vrabel@citrix.com>
+References: <1371755619-25348-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 20, 2013 10:43:08 AM Viresh Kumar wrote:
-> On 19 June 2013 22:42, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> 
-> > Boost sysfs attribute is always exported (to support legacy API). By
-> > default boost is exported as read only. One global attribute is available at:
-> > /sys/devices/system/cpu/cpufreq/boost.
-> 
-> You asked me and Rafael a question and posted your next version without
-> even waiting for our replies? That will waste your time and ours too
-> reviewing it.
+From: David Vrabel <david.vrabel@citrix.com>
 
-I believe I replied to that (in a different branch of the thread).
+Xen suspends (and resumes) without disabling non-boot CPUs as doing so
+adds considerable delay to live migrations.  A 4 VCPU guest had more
+than 200 ms of additional downtime if disable_nonboot_cpus() was
+called prior to suspending.
 
-And the reply was: Do not expose if not supported.
+As a consequence, only high resolution timers on the current CPU are
+retriggered when resuming.  The Xen resume path worked around this
+with a call to clock_was_set() to retrigger timers on all the CPUs.
 
-Thanks,
-Rafael
+A subsequent change will make clock_was_set() internal to hrtimers so
+add an new call (hrtimers_late_resume()) to do the same job.
 
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/xen/manage.c    |    8 ++++++--
+ include/linux/hrtimer.h |    1 +
+ kernel/hrtimer.c        |    9 +++++++++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 412b96c..75bc2d5 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -166,8 +166,12 @@ out_resume:
+ 
+ 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+ 
+-	/* Make sure timer events get retriggered on all CPUs */
+-	clock_was_set();
++	/*
++	 * syscore_resume() ends up calling hrtimer_resume() but this
++	 * only retriggers timer events on the current CPU.  We need
++	 * to retrigger the events on all the other CPUS.
++	 */
++	hrtimers_late_resume();
+ 
+ out_thaw:
+ #ifdef CONFIG_PREEMPT
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index d19a5c2..13df0fa 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -323,6 +323,7 @@ extern void timerfd_clock_was_set(void);
+ static inline void timerfd_clock_was_set(void) { }
+ #endif
+ extern void hrtimers_resume(void);
++extern void hrtimers_late_resume(void);
+ 
+ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index fd4b13b..34384b4 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -784,6 +784,15 @@ void hrtimers_resume(void)
+ 	timerfd_clock_was_set();
+ }
+ 
++/*
++ * If non-boot CPUs were online during resume, we need to retrigger
++ * the events for all the non-boot CPUs.
++ */
++void hrtimers_late_resume(void)
++{
++	clock_was_set();
++}
++
+ static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
+ {
+ #ifdef CONFIG_TIMER_STATS
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.2.5
+
