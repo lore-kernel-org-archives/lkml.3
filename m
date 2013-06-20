@@ -1,82 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030263Ab3FTOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:30:27 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:23983
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752878Ab3FTOa0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:30:26 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: "joro@8bytes.org" <joro@8bytes.org>
-CC: Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: RE: [PATCH 2/5 v11] powerpc: Add iommu domain pointer to device
- archdata
-Thread-Topic: [PATCH 2/5 v11] powerpc: Add iommu domain pointer to device
- archdata
-Thread-Index: AQHOK+8khWuiv7ZxxUGiwKSUgC0KZZjRaX6AgG3DdUA=
-Date: Thu, 20 Jun 2013 14:29:30 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D5CB5D4@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
- <1364500442-20927-3-git-send-email-Varun.Sethi@freescale.com>
- <AC9BAE34-A9CB-4A24-A357-0AA7734CE443@kernel.crashing.org>
-In-Reply-To: <AC9BAE34-A9CB-4A24-A357-0AA7734CE443@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757737Ab3FTOj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:39:26 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6344 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757675Ab3FTOjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:39:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 20 Jun 2013 07:37:28 -0700
+Message-ID: <51C31537.9030705@nvidia.com>
+Date: Thu, 20 Jun 2013 20:14:07 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] regulator: palmas: model SMPS10 as two regulators
+References: <1371717458-10307-1-git-send-email-kishon@ti.com> <1371717458-10307-3-git-send-email-kishon@ti.com> <51C2DEEB.9090600@nvidia.com> <51C3089F.5030003@ti.com> <51C30B95.4010406@nvidia.com> <51C30F60.3060100@ti.com>
+In-Reply-To: <51C30F60.3060100@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-My PAMU driver patches depend on this patch which was Ack by Kumar. Should I resubmit this patch as well?
+On Thursday 20 June 2013 07:49 PM, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Thursday 20 June 2013 07:33 PM, Laxman Dewangan wrote:
+>> On Thursday 20 June 2013 07:20 PM, Kishon Vijay Abraham I wrote:
+>>> Hi,
+>>>
+>>> On Thursday 20 June 2013 04:22 PM, Laxman Dewangan wrote:
+>>>> On Thursday 20 June 2013 02:07 PM, Kishon Vijay Abraham I wrote:
+>>>>> SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
+>>>>> SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
+>>>>> in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
+>>>>> it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
+>>>>> used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
+>>>>> regulator_enable().
+>>>>>
+>>>>> Cc: Laxman Dewangan <ldewangan@nvidia.com>
+>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>> ---
+>>>>>     drivers/regulator/palmas-regulator.c |   39
+>>>>> ++++++++++++++++++++++++++++++----
+>>>>>     include/linux/mfd/palmas.h           |    9 ++++----
+>>>>>     2 files changed, 40 insertions(+), 8 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/regulator/palmas-regulator.c
+>>>>> b/drivers/regulator/palmas-regulator.c
+>>>>> index 3ae44ac..7004bab 100644
+>>>>> --- a/drivers/regulator/palmas-regulator.c
+>>>>> +++ b/drivers/regulator/palmas-regulator.c
+>>>>> @@ -97,7 +97,12 @@ static const struct regs_info palmas_regs_info[] = {
+>>>>>             .ctrl_addr    = PALMAS_SMPS9_CTRL,
+>>>>>         },
+>>>>>         {
+>>>>> -        .name        = "SMPS10",
+>>>>> +        .name        = "SMPS10_OUT1",
+>>>>> +        .sname        = "smps10-out2",
+>>>>> +        .ctrl_addr    = PALMAS_SMPS10_CTRL,
+>>>>> +    },
+>>>>> +    {
+>>>>> +        .name        = "SMPS10_OUT2",
+>>>>>             .sname        = "smps10-in",
+>>>>>
+>>>> This sequence can create regulator to be never register.
+>>>> In probe, we register regulator from 0 to max_id.
+>>>> Here smps10-out1 comes first and see the supply as smps10-out2 which is not
+>>>> registered yet and so will fail with PROBE_DEFER
+>>>> When again it tries, the same issue.
+>>> hmm.. But I was able to get (regulator_get) *SMPS10_OUT1* without any issue
+>>> during my testing. From looking at the code, I couldn't see *sname* being used
+>>> anywhere.
+>> We used the sname as
+>> pmic->desc[id].supply_name = palmas_regs_info[id].sname;
+>>
+>> However, how you have populated your dt?
+>> Have you added like
+>> smps10-out2-supply = <&SMPS10_OUT2>
+>>
+>> for the palmas regualtor -dt.
+> I added the regulator data like
+>
+> +                       smps10_out1_reg: smps10_out1 {
+> +                               regulator-name = "smps10_out1";
+> +                               regulator-min-microvolt = <5000000>;
+> +                               regulator-max-microvolt = <5000000>;
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-allow-bypass;
+> +                               ti,warm_sleep = <0>;
+> +                               ti,roof_floor = <0>;
+> +                               ti,mode_sleep = <0>;
+> +                               ti,warm_reset = <0>;
+> +                               ti,tstep = <0>;
+> +                               ti,vsel = <0>;
+> +                       };
+>
+> and from my controller I reference it using
+> +               vbus-supply = <&smps10_out1_reg>;
+>
+> and in the controller driver I use
+> +               vbus_reg = devm_regulator_get(dev, "vbus");
 
-Regards
-Varun
+Have you added the regulator supply entries?
+Are you testing on mainline linux-next?
 
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@kernel.crashing.org]
-> Sent: Thursday, April 11, 2013 11:46 PM
-> To: Sethi Varun-B16395
-> Cc: joro@8bytes.org; Yoder Stuart-B08248; Wood Scott-B07421;
-> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; benh@kernel.crashing.org
-> Subject: Re: [PATCH 2/5 v11] powerpc: Add iommu domain pointer to device
-> archdata
-> 
-> 
-> On Mar 28, 2013, at 2:53 PM, Varun Sethi wrote:
-> 
-> > Add an iommu domain pointer to device (powerpc) archdata.  Devices are
-> > attached to iommu domains and this pointer provides a mechanism to
-> > correlate between a device and the associated iommu domain.  This
-> > field is set when a device is attached to a domain.
-> >
-> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> > ---
-> > - no change in v11.
-> > - no change in v10.
-> > - Added CONFIG_IOMMU_API in v9.
-> > arch/powerpc/include/asm/device.h |    6 ++++++
-> > 1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> Acked-by: Kumar Gala <galak@kernel.crashing.org>
-> 
-> - k
+I have DT entry as:
+                 palmas: tps65913@58 {
+                         compatible = "ti,palmas";
+                         reg = <0x58>;
+                         interrupts = <0 86 0x4>;
+
+                 :::::::::::::::;
+                         palmas_pmic {
+                             compatible = "ti,palmas-pmic";
+                             smps1-in-supply = <&tps65090_dcdc3_reg>;
+                             smps3-in-supply = <&tps65090_dcdc3_reg>;
+                             smps4-in-supply = <&tps65090_dcdc2_reg>;
+  :::::::::;
+
+			smps10-out2-supply = <&SMPS10_OUT2>
+:::::::::::::;
+}
+
+And it fails.
+
 
 
