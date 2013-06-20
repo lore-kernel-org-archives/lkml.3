@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161197Ab3FTRBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:01:39 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:55213 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161182Ab3FTRBh (ORCPT
+	id S1757952Ab3FTQXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:23:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43538 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757748Ab3FTQXW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:01:37 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] PCI: export three functions to support modular host bridge driver
-Date: Fri, 21 Jun 2013 01:01:03 +0800
-Message-Id: <1371747665-12768-2-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
-References: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
+	Thu, 20 Jun 2013 12:23:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
+   d="scan'208";a="356864770"
+From: "Heasley, Seth" <seth.heasley@intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Peter Tyser <ptyser@xes-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ralston, James D" <james.d.ralston@intel.com>
+Subject: RE: [PATCH 4/4] lpc_ich: iTCO_wdt patch for Intel Coleto Creek
+ DeviceIDs
+Thread-Topic: [PATCH 4/4] lpc_ich: iTCO_wdt patch for Intel Coleto Creek
+ DeviceIDs
+Thread-Index: AQHObUnk1krMJwlMpU29tGlBlc7Dx5k+wkEAgAAH25A=
+Date: Thu, 20 Jun 2013 16:23:20 +0000
+Message-ID: <DEC3922D1904474A8862C7BFF516EA9A8653A1FF@ORSMSX101.amr.corp.intel.com>
+References: <1371686665-6622-1-git-send-email-seth.heasley@intel.com>
+ <20130620085416.GE15667@zurbaran>
+In-Reply-To: <20130620085416.GE15667@zurbaran>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Hi Samuel,
 
-The xen-pcifront host bridge driver could be built as a module,
-so export pci_create_root_bus(), pci_stop_and_remove_root_bus() and
-pci_set_host_bridge_release() to support modular host bridge drivers.
-This patch is a preparation for coming xen-pcifront refinement.
+>> This patch adds the LPC Controller DeviceIDs for iTCO Watchdog for the Intel
+>Coleto Creek PCH.
+>>
+>> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+>> ---
+>>  drivers/mfd/lpc_ich.c |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>This one did not apply on top of mfd-next, because of the Avoton SoC
+>addition.
+>I fixed it manually, but please verify that it's all right:
+>
+>https://git.kernel.org/cgit/linux/kernel/git/sameo/mfd-
+>next.git/commit/?id=283aae8ab88e695a660c610d6535ca44bc5b8835
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: xen-devel@lists.xensource.com
-Cc: virtualization@lists.linux-foundation.org
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/pci/host-bridge.c | 1 +
- drivers/pci/probe.c       | 1 +
- drivers/pci/remove.c      | 7 +++++++
- include/linux/pci.h       | 1 +
- 4 files changed, 10 insertions(+)
-
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index a68dc61..6e390a6 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -34,6 +34,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
- 	bridge->release_fn = release_fn;
- 	bridge->release_data = release_data;
- }
-+EXPORT_SYMBOL(pci_set_host_bridge_release);
- 
- static bool resource_contains(struct resource *res1, struct resource *res2)
- {
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 46ada5c..ed768d8 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1801,6 +1801,7 @@ err_out:
- 	kfree(b);
- 	return NULL;
- }
-+EXPORT_SYMBOL(pci_create_root_bus);
- 
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
- {
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 8fc54b7..f328668 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -147,3 +147,10 @@ void pci_remove_root_bus(struct pci_bus *bus)
- 	/* remove the host bridge */
- 	put_device(&host_bridge->dev);
- }
-+
-+void pci_stop_and_remove_root_bus(struct pci_bus *bus)
-+{
-+	pci_stop_root_bus(bus);
-+	pci_remove_root_bus(bus);
-+}
-+EXPORT_SYMBOL(pci_stop_and_remove_root_bus);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 0fd1f15..f1229c7 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -757,6 +757,7 @@ void pci_remove_bus(struct pci_bus *b);
- void pci_stop_and_remove_bus_device(struct pci_dev *dev);
- void pci_stop_root_bus(struct pci_bus *bus);
- void pci_remove_root_bus(struct pci_bus *bus);
-+void pci_stop_and_remove_root_bus(struct pci_bus *bus);
- void pci_setup_cardbus(struct pci_bus *bus);
- void pci_sort_breadthfirst(void);
- #define dev_is_pci(d) ((d)->bus == &pci_bus_type)
--- 
-1.8.1.2
-
+That looks good.
+-Seth
