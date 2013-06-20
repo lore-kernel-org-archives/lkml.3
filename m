@@ -1,296 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161286Ab3FTS5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:57:13 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44548 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030481Ab3FTS5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:57:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
-Date: Thu, 20 Jun 2013 21:06:30 +0200
-Message-ID: <1436701.V8egnZxOqz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAN_LGv0DUH3o6=iCBcQDEOLQ3n=O=GR5BSQU5dLs306YeLVL7w@mail.gmail.com>
-References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <1880810.6jIKdDRiJm@vostro.rjw.lan> <CAN_LGv0DUH3o6=iCBcQDEOLQ3n=O=GR5BSQU5dLs306YeLVL7w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1422683Ab3FTS6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:58:12 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50359 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422666Ab3FTS6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:58:09 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>
+Cc: jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 0/3] Add support for the Nuvoton NAU7802 ADC to the cfa10049
+Date: Thu, 20 Jun 2013 20:57:52 +0200
+Message-Id: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
-> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
-> > OK, let's try to untangle this a bit.
-> >
-> > If you applyt patches [1/4] and [4/4] from the $subject series only, what
-> > does remain unfixed?
-> 
-> [not tested, can do so in 12 hours if needed]
-> 
-> I think there will be problems on undocking and/or on the second
-> docking, as described in comments #6 - #8 of
-> https://bugzilla.kernel.org/show_bug.cgi?id=59501
+Hi,
 
-OK, I think I have something that might work.  It may not solve all problems,
-but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
-if you can.
+Sorry for the delay, this is v2 of the patchset that adds support for the 3
+Nuvoton NAU7802 ADCs present on the CFA-10049 board from Crystalfontz. The first
+patch adds the driver, the next ones are adding them in the DT after switching
+the second i2c bus to bitbanging following a lot of timeout issues we have on
+that bus.
 
-Please apply [1/4] and [4/4] and the one below and see what happens.
+Since v1, I've taken into account the review from Jonathan Cameron, Lars-Peter
+Clausen and Maxime Ripard:
+ - channels are now statically allocated
+ - no wrappers around i2c functions
+ - sampling_freq is a shared attribute
+ - setting gain is done through scale
+ - cosmetics changes (s/idev/indio_dev/, blank lines before returns)
+ - use of sign_extend32 to extend the sign
+ - reading scale now returns IIO_VAL_FRACTIONAL_LOG2
+ - no dt lookup for interrupts, this is done in of_i2c.c but that was mask due
+ to a bug.
 
-Thanks,
-Rafael
+what I didn't address is setting the external reference voltage through a fixed
+regulator and I kept the vldo attribute to set the internal voltage reference in
+the DT as Jonathan seemed to be ok with that. If anybody is using a nau7802 with
+an external reference, it will still be time to add the fixed regulator. It
+shouldn't be difficult but I don't have any hardware to test.
 
+Regards,
 
----
-Rationale:
-	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
-	after removing the companion PCI devices, so the dock station code
-	doesn't need to trim them separately for the dependent devices handled
-	by acpiphp.
+Alexandre Belloni (1):
+  iio: Add Nuvoton NAU7802 ADC driver
 
-	Moreover, acpiphp_glue.c is the only user of
-	[un]register_hotplug_dock_device(), so *all* devices on the
-	ds->hotplug_devices list are handled by acpiphp and ops is set for all
-	of them.
+Maxime Ripard (2):
+  ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
+  ARM: mxs: cfa10049: Add NAU7802 ADCs to the device tree
 
-	This means that (1) the ds->hotplug_devices list is not necessary (we
-	can always walk ds->dependent_devices instead and look for those that
-	have dd->ops set) and (2) we don't need to call
-	dock_remove_acpi_device(dd->handle) on eject for any of those devices,
-	because dd->ops->handler() is going to take care of the ACPI device
-	objects trimming for them anyway.
-
-	Taking the above into account make the following changes:
-	(1) Drop hotplug_devices from struct dock_station.
-	(2) Drop dock_{add|del}_hotplug_device()
-	(3) Make [un]register_hotplug_dock_device() [un]set 'ops' and
-	    'context' for the given device under ds->hp_lock.
-	(4) Add hot_remove_dock_devices() that walks ds->dependent_devices and
-	    either calls dd->ops->handler(), if present, or trims the underlying
-	    ACPI device object, otherwise.
-	(5) Replace hotplug_dock_devices(ds, ACPI_NOTIFY_EJECT_REQUEST) calls
-	    with hot_remove_dock_devices(ds).
-	(6) Rename hotplug_dock_devices() to hot_add_dock_devices() and make
-	    it only handle bus check and device check requests.  Make it walk
-	    ds->dependent_devices instead of ds->hotplug devices.
-	(7) Make dock_event() walk ds->dependent_devices (instead of
-	    ds->hotplug devices) under ds->hp_lock.
----
- drivers/acpi/dock.c |  111 ++++++++++++++++++++++++----------------------------
- 1 file changed, 53 insertions(+), 58 deletions(-)
-
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -66,7 +66,6 @@ struct dock_station {
- 	spinlock_t dd_lock;
- 	struct mutex hp_lock;
- 	struct list_head dependent_devices;
--	struct list_head hotplug_devices;
- 
- 	struct list_head sibling;
- 	struct platform_device *dock_device;
-@@ -121,38 +120,6 @@ add_dock_dependent_device(struct dock_st
- }
- 
- /**
-- * dock_add_hotplug_device - associate a hotplug handler with the dock station
-- * @ds: The dock station
-- * @dd: The dependent device struct
-- *
-- * Add the dependent device to the dock's hotplug device list
-- */
--static void
--dock_add_hotplug_device(struct dock_station *ds,
--			struct dock_dependent_device *dd)
--{
--	mutex_lock(&ds->hp_lock);
--	list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
--	mutex_unlock(&ds->hp_lock);
--}
--
--/**
-- * dock_del_hotplug_device - remove a hotplug handler from the dock station
-- * @ds: The dock station
-- * @dd: the dependent device struct
-- *
-- * Delete the dependent device from the dock's hotplug device list
-- */
--static void
--dock_del_hotplug_device(struct dock_station *ds,
--			struct dock_dependent_device *dd)
--{
--	mutex_lock(&ds->hp_lock);
--	list_del(&dd->hotplug_list);
--	mutex_unlock(&ds->hp_lock);
--}
--
--/**
-  * find_dock_dependent_device - get a device dependent on this dock
-  * @ds: the dock station
-  * @handle: the acpi_handle of the device we want
-@@ -342,40 +309,60 @@ static void dock_remove_acpi_device(acpi
- }
- 
- /**
-- * hotplug_dock_devices - insert or remove devices on the dock station
-- * @ds: the dock station
-- * @event: either bus check or eject request
-+ * hot_remove_dock_devices - Remove devices on a dock station.
-+ * @ds: Dock station to remove devices for.
-+ *
-+ * For each device depending on @ds, if a dock event handler is registered,
-+ * call it for the device, or trim the underlying ACPI device object otherwise.
-+ *
-+ * Dock event handlers are responsible for trimming the underlying ACPI device
-+ * objects if present.
-+ */
-+static void hot_remove_dock_devices(struct dock_station *ds)
-+{
-+	struct dock_dependent_device *dd;
-+
-+	mutex_lock(&ds->hp_lock);
-+
-+	list_for_each_entry(dd, &ds->dependent_devices, list) {
-+		if (dd->ops && dd->ops->handler)
-+			dd->ops->handler(dd->handle, ACPI_NOTIFY_EJECT_REQUEST,
-+					 dd->context);
-+		else
-+			dock_remove_acpi_device(dd->handle);
-+	}
-+
-+	mutex_unlock(&ds->hp_lock);
-+}
-+
-+/**
-+ * hot_add_dock_devices - Insert devices on a dock station.
-+ * @ds: Dock station to insert devices for.
-  *
-  * Some devices on the dock station need to have drivers called
-  * to perform hotplug operations after a dock event has occurred.
-  * Traverse the list of dock devices that have registered a
-  * hotplug handler, and call the handler.
-  */
--static void hotplug_dock_devices(struct dock_station *ds, u32 event)
-+static void hot_add_dock_devices(struct dock_station *ds, u32 event)
- {
- 	struct dock_dependent_device *dd;
- 
- 	mutex_lock(&ds->hp_lock);
- 
--	/*
--	 * First call driver specific hotplug functions
--	 */
--	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
-+	/* First call driver specific hotplug event handlers. */
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
- 		if (dd->ops && dd->ops->handler)
- 			dd->ops->handler(dd->handle, event, dd->context);
- 
- 	/*
--	 * Now make sure that an acpi_device is created for each
--	 * dependent device, or removed if this is an eject request.
--	 * This will cause acpi_drivers to be stopped/started if they
--	 * exist
-+	 * Now make sure that an acpi_device is created for each dependent
-+	 * device.  That will cause scan handlers to attach to devices objects
-+	 * or  acpi_drivers to be started if they exist.
- 	 */
--	list_for_each_entry(dd, &ds->dependent_devices, list) {
--		if (event == ACPI_NOTIFY_EJECT_REQUEST)
--			dock_remove_acpi_device(dd->handle);
--		else
--			dock_create_acpi_device(dd->handle);
--	}
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
-+		dock_create_acpi_device(dd->handle);
-+
- 	mutex_unlock(&ds->hp_lock);
- }
- 
-@@ -398,10 +385,14 @@ static void dock_event(struct dock_stati
- 	if (num == DOCK_EVENT)
- 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
- 
--	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
-+	mutex_lock(&ds->hp_lock);
-+
-+	list_for_each_entry(dd, &ds->dependent_devices, list)
- 		if (dd->ops && dd->ops->uevent)
- 			dd->ops->uevent(dd->handle, event, dd->context);
- 
-+	mutex_unlock(&ds->hp_lock);
-+
- 	if (num != DOCK_EVENT)
- 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
- }
-@@ -598,9 +589,10 @@ register_hotplug_dock_device(acpi_handle
- 		 */
- 		dd = find_dock_dependent_device(dock_station, handle);
- 		if (dd) {
-+			mutex_lock(&dock_station->hp_lock);
- 			dd->ops = ops;
- 			dd->context = context;
--			dock_add_hotplug_device(dock_station, dd);
-+			mutex_unlock(&dock_station->hp_lock);
- 			ret = 0;
- 		}
- 	}
-@@ -623,8 +615,12 @@ void unregister_hotplug_dock_device(acpi
- 
- 	list_for_each_entry(dock_station, &dock_stations, sibling) {
- 		dd = find_dock_dependent_device(dock_station, handle);
--		if (dd)
--			dock_del_hotplug_device(dock_station, dd);
-+		if (dd) {
-+			mutex_lock(&dock_station->hp_lock);
-+			dd->ops = NULL;
-+			dd->context = NULL;
-+			mutex_unlock(&dock_station->hp_lock);
-+		}
- 	}
- }
- EXPORT_SYMBOL_GPL(unregister_hotplug_dock_device);
-@@ -649,7 +645,7 @@ static int handle_eject_request(struct d
- 	 */
- 	dock_event(ds, event, UNDOCK_EVENT);
- 
--	hotplug_dock_devices(ds, ACPI_NOTIFY_EJECT_REQUEST);
-+	hot_remove_dock_devices(ds);
- 	undock(ds);
- 	dock_lock(ds, 0);
- 	eject_dock(ds);
-@@ -708,7 +704,7 @@ static void dock_notify(acpi_handle hand
- 			}
- 			atomic_notifier_call_chain(&dock_notifier_list,
- 						   event, NULL);
--			hotplug_dock_devices(ds, event);
-+			hot_add_dock_devices(ds, event);
- 			complete_dock(ds);
- 			dock_event(ds, event, DOCK_EVENT);
- 			dock_lock(ds, 1);
-@@ -953,7 +949,6 @@ static int __init dock_add(acpi_handle h
- 	mutex_init(&dock_station->hp_lock);
- 	spin_lock_init(&dock_station->dd_lock);
- 	INIT_LIST_HEAD(&dock_station->sibling);
--	INIT_LIST_HEAD(&dock_station->hotplug_devices);
- 	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
- 	INIT_LIST_HEAD(&dock_station->dependent_devices);
- 
-
-
+ .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
+ arch/arm/boot/dts/imx28-cfa10049.dts               | 126 +++--
+ drivers/iio/adc/Kconfig                            |   9 +
+ drivers/iio/adc/Makefile                           |   1 +
+ drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
+ 5 files changed, 713 insertions(+), 43 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+ create mode 100644 drivers/iio/adc/nau7802.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.2
+
