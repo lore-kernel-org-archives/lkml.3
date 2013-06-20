@@ -1,143 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155Ab3FTJIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:08:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57841 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965105Ab3FTJIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:08:31 -0400
-Message-ID: <51C2C66D.4030106@ti.com>
-Date: Thu, 20 Jun 2013 14:37:57 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1756277Ab3FTJMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:12:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47729 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754182Ab3FTJMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 05:12:20 -0400
+Date: Thu, 20 Jun 2013 10:11:37 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jed Davis <jld@mozilla.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf: arm64: Record the user-mode PC in the call chain.
+Message-ID: <20130620091136.GC2842@mudshark.cambridge.arm.com>
+References: <20130620030713.GA27428@mozilla.com>
+ <20130620083327.GA5288@gmail.com>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Philip Avinash <avinashphilip@ti.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux@arm.linux.org.uk>, <khilman@deeprootsystems.com>,
-        <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 5/7] ARM: davinci: da8xx: gpio device creation
-References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com> <1371202532-14628-6-git-send-email-avinashphilip@ti.com> <51C2BFEF.1090205@ti.com>
-In-Reply-To: <51C2BFEF.1090205@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620083327.GA5288@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/2013 2:10 PM, Sekhar Nori wrote:
-> On 6/14/2013 3:05 PM, Philip Avinash wrote:
->> Create davinci gpio device and remove references in davinci_soc_info
->> structure. Also rearrange header file inclusion in group basis.
->>
->> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
->> ---
->>  arch/arm/mach-davinci/board-da830-evm.c     |   19 +++++++++++++++----
->>  arch/arm/mach-davinci/board-da850-evm.c     |   11 +++++++++++
->>  arch/arm/mach-davinci/board-omapl138-hawk.c |    2 ++
->>  arch/arm/mach-davinci/da830.c               |    4 ----
->>  arch/arm/mach-davinci/da850.c               |    4 ----
->>  5 files changed, 28 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
->> index 1332de8..4e8bcc1 100644
->> --- a/arch/arm/mach-davinci/board-da830-evm.c
->> +++ b/arch/arm/mach-davinci/board-da830-evm.c
->> @@ -22,17 +22,19 @@
->>  #include <linux/mtd/partitions.h>
->>  #include <linux/spi/spi.h>
->>  #include <linux/spi/flash.h>
->> +#include <linux/platform_data/mtd-davinci.h>
->> +#include <linux/platform_data/gpio-davinci.h>
->> +#include <linux/platform_data/usb-davinci.h>
->> +#include <linux/platform_data/mtd-davinci-aemif.h>
->> +#include <linux/platform_data/spi-davinci.h>
+On Thu, Jun 20, 2013 at 09:33:28AM +0100, Ingo Molnar wrote:
 > 
-> While doing this, its better to keep the header files you are adding in
-> sorted order.
+> * Jed Davis <jld@mozilla.com> wrote:
 > 
->>  
->>  #include <asm/mach-types.h>
->>  #include <asm/mach/arch.h>
->>  
->>  #include <mach/cp_intc.h>
->>  #include <mach/mux.h>
->> -#include <linux/platform_data/mtd-davinci.h>
->> +#include <mach/common.h>
+> > With this change, we no longer lose the innermost entry in the user-mode
+> > part of the call chain.  See also the x86 port, which includes the ip,
+> > and the corresponding change in arch/arm.
+> > 
+> > Signed-off-by: Jed Davis <jld@mozilla.com>
+> > ---
+> >  arch/arm64/kernel/perf_event.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+> > index 1e49e5eb..9ba33c4 100644
+> > --- a/arch/arm64/kernel/perf_event.c
+> > +++ b/arch/arm64/kernel/perf_event.c
+> > @@ -1336,6 +1336,7 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
+> >  		return;
+> >  	}
+> >  
+> > +	perf_callchain_store(entry, regs->pc);
+> >  	tail = (struct frame_tail __user *)regs->regs[29];
+> >  
+> >  	while (entry->nr < PERF_MAX_STACK_DEPTH &&
 > 
-> You dont need to include this file here.
+> Acked-by: Ingo Molnar <mingo@kernel.org>
 > 
->>  #include <mach/da8xx.h>
->> -#include <linux/platform_data/usb-davinci.h>
->> -#include <linux/platform_data/mtd-davinci-aemif.h>
->> -#include <linux/platform_data/spi-davinci.h>
->>  
->>  #define DA830_EVM_PHY_ID		""
->>  /*
->> @@ -590,11 +592,20 @@ static struct spi_board_info da830evm_spi_info[] = {
->>  	},
->>  };
->>  
->> +static struct davinci_gpio_platform_data da830_gpio_platform_data = {
->> +	.ngpio = 128,
->> +	.intc_irq_num = DA830_N_CP_INTC_IRQ,
->> +};
->> +
->>  static __init void da830_evm_init(void)
->>  {
->>  	struct davinci_soc_info *soc_info = &davinci_soc_info;
->>  	int ret;
->>  
->> +	ret = da8xx_register_gpio(&da830_gpio_platform_data);
->> +	if (ret)
->> +		pr_warn("da830_evm_init: GPIO init failed: %d\n", ret);
->> +
->>  	ret = da830_register_edma(da830_edma_rsv);
->>  	if (ret)
->>  		pr_warning("da830_evm_init: edma registration failed: %d\n",
->> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
->> index 8a24b6c..d5dd010 100644
->> --- a/arch/arm/mach-davinci/board-da850-evm.c
->> +++ b/arch/arm/mach-davinci/board-da850-evm.c
->> @@ -28,6 +28,7 @@
->>  #include <linux/mtd/partitions.h>
->>  #include <linux/mtd/physmap.h>
->>  #include <linux/platform_device.h>
->> +#include <linux/platform_data/gpio-davinci.h>
->>  #include <linux/platform_data/mtd-davinci.h>
->>  #include <linux/platform_data/mtd-davinci-aemif.h>
->>  #include <linux/platform_data/spi-davinci.h>
->> @@ -42,6 +43,7 @@
->>  #include <mach/da8xx.h>
->>  #include <mach/mux.h>
->>  #include <mach/sram.h>
->> +#include <mach/common.h>
-> 
-> No need of this file, as before.
-> 
->>  
->>  #include <asm/mach-types.h>
->>  #include <asm/mach/arch.h>
->> @@ -1138,6 +1140,11 @@ static struct edma_rsv_info *da850_edma_rsv[2] = {
->>  	&da850_edma_cc1_rsv,
->>  };
->>  
->> +static struct davinci_gpio_platform_data da850_gpio_platform_data = {
->> +	.ngpio = 144,
->> +	.intc_irq_num = DA850_N_CP_INTC_IRQ,
->> +};
+> I suspect this goes to v3.10 via the ARM64 tree?
 
-I did not notice this before, but this is a wrong place for this. This
-should be in SoC file since it does not change with each board. And this
-explains why you left hawk board broken - you would end up replicating
-this there.
+Yup, we'll take this via the arm64 tree, thanks.
 
-You need to fix patches 3-6 and repost again. I have some fixes what I
-made while reviewing and committed to my v3.11/gpio branch. You can to
-take that branch as starting point and complete the fixes.
+Catalin, you can add:
 
-Thanks,
-Sekhar
+	Acked-by: Will Deacon <will.deacon@arm.com>
+
+to this.
+
+Cheers,
+
+Will
