@@ -1,124 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935509Ab3FTBlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 21:41:32 -0400
-Received: from ozlabs.org ([203.10.76.45]:58412 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935237Ab3FTBlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 21:41:31 -0400
-Message-ID: <1371692489.21846.14.camel@concordia>
-Subject: Re: [PATCH 2/2] perf tools: Make Power7 events available for perf
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, sukadev@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, icycoder@gmail.com
-Date: Thu, 20 Jun 2013 11:41:29 +1000
-In-Reply-To: <1371633326-7696-2-git-send-email-runzhen@linux.vnet.ibm.com>
-References: <1371633326-7696-1-git-send-email-runzhen@linux.vnet.ibm.com>
-	 <1371633326-7696-2-git-send-email-runzhen@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935513Ab3FTBns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 21:43:48 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:49974 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935398Ab3FTBnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 21:43:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <51BF2E37.5040400@intel.com>
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
+	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
+	<51BF2E37.5040400@intel.com>
+Date: Thu, 20 Jun 2013 09:43:45 +0800
+Message-ID: <CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
+Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-19 at 17:15 +0800, Runzhen Wang wrote:
-> Power7 supports over 530 different perf events but only a small
-> subset of these can be specified by name, for the remaining
-> events, we must specify them by their raw code:
-> 
->         perf stat -e r2003c <application>
-> 
-> This patch makes all the POWER7 events available in sysfs.
-> So we can instead specify these as:
-> 
->         perf stat -e 'cpu/PM_CMPLU_STALL_DFU/' <application>
-> 
-> where PM_CMPLU_STALL_DFU is the r2003c in previous example.
-> 
-> Before this patch is applied, the size of power7-pmu.o is:
-> 
-> $ size arch/powerpc/perf/power7-pmu.o
->    text	   data	    bss	    dec	    hex	filename
->    3073	   2720	      0	   5793	   16a1	arch/powerpc/perf/power7-pmu.o
-> 
-> and after the patch is applied, it is:
-> 
-> $ size arch/powerpc/perf/power7-pmu.o
->    text	   data	    bss	    dec	    hex	filename
->   14451	  31112	      0	  45563	   b1fb	arch/powerpc/perf/power7-pmu.o
+Hi Alex,
 
-OK so that's ~38K. Which is not terrible.
+On Mon, Jun 17, 2013 at 11:41 PM, Alex Shi <alex.shi@intel.com> wrote:
+> On 06/17/2013 07:51 PM, Paul Turner wrote:
+>> Can you add something like:
+>>
+>> +               /*
+>> +                * Task re-woke on same cpu (or else
+>> migrate_task_rq_fair()
+>> +                * would have made count negative); we must be careful
+>> to avoid
+>> +                * double-accounting blocked time after synchronizing
+>> decays.
+>> +                */
+>>
+>>
+>> Reviewed-by: Paul Turner <pjt@google.com>
+>
+> thanks for review!
+> ---
+>
+> From 24d9b43e7a269e6ffee5b874d39812b83812a809 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Thu, 9 May 2013 10:54:13 +0800
+> Subject: [PATCH] sched: fix slept time double counting in enqueue entity
+>
+> The wakeuped migrated task will __synchronize_entity_decay(se); in
+> migrate_task_fair, then it needs to set
 
-Can you measure the runtime overhead as well. I suspect it will be more.
+Should be migrate_task_rq_fair, right? :)
 
+> `se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
+> before update_entity_load_avg, in order to avoid slept time is updated
+> twice for se.avg.load_avg_contrib in both __syncchronize and
+> update_entity_load_avg.
+>
+> but if the slept task is waked up from self cpu, it miss the
+> last_runnable_update before update_entity_load_avg(se, 0, 1), then the
+> slept time was used twice in both functions.
+> So we need to remove the double slept time counting.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Reviewed-by: Paul Turner <pjt@google.com>
+> ---
+>  kernel/sched/fair.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index df5b8a9..1e5a5e6 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1571,7 +1571,13 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>                 }
+>                 wakeup = 0;
+>         } else {
+> -               __synchronize_entity_decay(se);
+> +               /*
+> +                * Task re-woke on same cpu (or else migrate_task_rq_fair()
+> +                * would have made count negative); we must be careful to avoid
+> +                * double-accounting blocked time after synchronizing decays.
+> +                */
+> +               se->avg.last_runnable_update += __synchronize_entity_decay(se)
+> +                                                       << 20;
 
-You'll notice below that each event name is repeated four times, which
-for 530 events is a bit ugly.
+I'm kind of getting confused at here, since migrate_task_rq_fair use
+below equation to
+avoid sleep time be accounted for twice.
+ `se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
 
-I think we should be able to do something better using the C
-preprocessor, this is exactly the sort of thing it's good at.
+Why here we need to use "+=", which the reversed version comparing
+with previous?
 
-What I mean is something like we do with arch/powerpc/include/asm/systbl.h,
-where we define the list of syscalls once, and then include it in
-multiple places, using different macro definitions to get different
-outputs.
+Thanks,
+Lei
 
-So perhaps you'd define the list of events like:
-
-#define EVENT(PM_CMPLU_STALL_FXU, 0x20014)
-#define EVENT(PM_CMPLU_STALL_DIV, 0x40014)
-
-etc.
-
-Then you do something approximately like:
-
-#define EVENT(_name, _code)	POWER_EVENT_ATTR(_name, _code)
-#include "event-list.h"
-#undef EVENT
-
-#define EVENT(_name, _code)	POWER_EVENT_PTR(_name)
-
-static struct attribute *power7_events_attr[] = {
-#include "event-list.h"
-};
-
-
-You will obviously need to rework the POWER_EVENT macros to make that
-work, but it should be possible.
-
-The end result will be we have a single list of the events which we can
-check for accuracy once. And we can be sure that there are no mixups
-between events.
-
-
-> diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-> index d1821b8..55e2404 100644
-> --- a/arch/powerpc/perf/power7-pmu.c
-> +++ b/arch/powerpc/perf/power7-pmu.c
-> @@ -53,37 +53,544 @@
->  /*
->   * Power7 event codes.
->   */
-
-...
-
-> +#define PME_PM_MRK_DERAT_MISS_64K                 0x2d05c
-> +#define PME_PM_INST_PTEG_FROM_DL2L3_MOD           0x4e054
-> +#define PME_PM_L2_ST_MISS                         0x26082
-> +#define PME_PM_MRK_PTEG_FROM_L21_SHR              0x4d056
-> +#undef  LWSYNC
-    ^
-What is this doing here?
-
-That is not your macro to undefine. Please be more careful.
-
-> +#define PME_PM_LWSYNC                             0xd094
-
-
-
-cheers
-
+>         }
+>
+>         /* migrated tasks did not contribute to our blocked load */
+> --
+> 1.7.5.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
