@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab3FTHxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:53:20 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:34867 "EHLO
+	id S1755720Ab3FTHx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:53:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:34873 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab3FTHxS (ORCPT
+	with ESMTP id S1755555Ab3FTHxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:53:18 -0400
+	Thu, 20 Jun 2013 03:53:23 -0400
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>
 CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: [v2][PATCH 5/7] book3e/kexec/kdump: implement ppc64 kexec specfic
-Date: Thu, 20 Jun 2013 15:53:15 +0800
-Message-ID: <1371714797-7898-6-git-send-email-tiejun.chen@windriver.com>
+Subject: [v2][PATCH 7/7] book3e/kexec/kdump: recover "r4 = 0" to create the initial TLB
+Date: Thu, 20 Jun 2013 15:53:17 +0800
+Message-ID: <1371714797-7898-8-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1371714797-7898-1-git-send-email-tiejun.chen@windriver.com>
 References: <1371714797-7898-1-git-send-email-tiejun.chen@windriver.com>
@@ -22,63 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ppc64 kexec mechanism has a different implementation with ppc32.
+In commit 96f013f, "powerpc/kexec: Add kexec "hold" support for Book3e
+processors", requires that GPR4 survive the "hold" process, for IBM Blue
+Gene/Q with with some very strange firmware. But for FSL Book3E, r4 = 1
+to indicate that the initial TLB entry for this core already exists so
+we still should set r4 with 0 to create that initial TLB.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- arch/powerpc/platforms/85xx/smp.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/powerpc/kernel/head_64.S |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index b308373..18a5f8a 100644
---- a/arch/powerpc/platforms/85xx/smp.c
-+++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -280,6 +280,7 @@ struct smp_ops_t smp_85xx_ops = {
- };
- 
- #ifdef CONFIG_KEXEC
-+#ifdef CONFIG_PPC32
- atomic_t kexec_down_cpus = ATOMIC_INIT(0);
- 
- void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
-@@ -298,6 +299,14 @@ static void mpc85xx_smp_kexec_down(void *arg)
- 	if (ppc_md.kexec_cpu_down)
- 		ppc_md.kexec_cpu_down(0,1);
- }
-+#else
-+void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
-+{
-+	local_irq_disable();
-+	hard_irq_disable();
-+	mpic_teardown_this_cpu(secondary);
-+}
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index ffa4b18..63ed1c3 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -129,6 +129,10 @@ __secondary_hold:
+ 	/* Grab our physical cpu number */
+ 	mr	r24,r3
+ 	/* stash r4 for book3e */
++#ifdef CONFIG_PPC_FSL_BOOK3E
++	/* we need to setup initial TLB entry. */
++	li	r4,0
 +#endif
+ 	mr	r25,r4
  
- static void map_and_flush(unsigned long paddr)
- {
-@@ -349,11 +358,14 @@ static void mpc85xx_smp_flush_dcache_kexec(struct kimage *image)
- 
- static void mpc85xx_smp_machine_kexec(struct kimage *image)
- {
-+#ifdef CONFIG_PPC32
- 	int timeout = INT_MAX;
- 	int i, num_cpus = num_present_cpus();
-+#endif
- 
- 	mpc85xx_smp_flush_dcache_kexec(image);
- 
-+#ifdef CONFIG_PPC32
- 	if (image->type == KEXEC_TYPE_DEFAULT)
- 		smp_call_function(mpc85xx_smp_kexec_down, NULL, 0);
- 
-@@ -371,6 +383,7 @@ static void mpc85xx_smp_machine_kexec(struct kimage *image)
- 		if ( i == smp_processor_id() ) continue;
- 		mpic_reset_core(i);
- 	}
-+#endif
- 
- 	default_machine_kexec(image);
- }
+ 	/* Tell the master cpu we're here */
 -- 
 1.7.9.5
 
