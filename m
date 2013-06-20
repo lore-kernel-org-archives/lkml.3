@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3FTIiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:38:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:22586 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028Ab3FTIiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:38:07 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2BF3C.8020804@asianux.com>
-Date: Thu, 20 Jun 2013 16:37:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S965052Ab3FTIiY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:38:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44414 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935345Ab3FTIiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:38:18 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <ldewangan@nvidia.com>, <broonie@kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <lgirdwood@gmail.com>, <swarren@nvidia.com>, <gg@slimlogic.co.uk>,
+        <sameo@linux.intel.com>, <ian@slimlogic.co.uk>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kishon@ti.com>
+Subject: [PATCH 1/2] regulator: of: Added a property to indicate bypass mode support
+Date: Thu, 20 Jun 2013 14:07:37 +0530
+Message-ID: <1371717458-10307-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371717458-10307-1-git-send-email-kishon@ti.com>
+References: <1371717458-10307-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
- + local_irq_save, especially when CONFIG_LOCKDEP not defined
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C1861A.6030901@asianux.com> <alpine.DEB.2.02.1306191249260.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306191249260.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 06:53 PM, Thomas Gleixner wrote:
-> On Wed, 19 Jun 2013, Chen Gang wrote:
-> 
->> > On 06/19/2013 05:59 PM, Thomas Gleixner wrote:
->>> > > I'm well aware how that works. And there is no difference whether you
->>> > > do:
->>> > > 
->>> > > 	local_irq_save(flags);
->>> > > 	spin_lock(&lock);
->>> > > or
->>> > > 	spin_lock_irqsave(&lock, flags);
->> > 
->> > if CONFIG_LOCKDEP is not defined, they are not semantically the same.
-> Care to explain _your_ spinlock semantics to me?
-> 
-> The factual ones are:
-> 
->     spin_lock_irqsave() returns with the lock held, interrupts and
->     preemption disabled. 
-> 
+Added a property to indicate if the regulator supports bypass mode.
+Also modified of_get_regulation_constraints() to check for that
+property and set appropriate constraints.
 
-Yes.
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/regulator/regulator.txt |    1 +
+ drivers/regulator/of_regulator.c                          |    3 +++
+ 2 files changed, 4 insertions(+)
 
->     spin_lock() returns with the lock held, preemption disabled. It
->     does not affect interrupt disabled/enabled state
-> 
-
-Yes.
-
-> So
-> 	local_irq_save(flags);
-> 	spin_lock(&lock);
-> 
-> is semantically the same as 
-> 
-> 	spin_lock_irqsave(&lock, flags);
-> 
-
-Yes (but reverse is NO).
-
-> And this is completely independent of LOCKDEP.
-
-NO.
-
- 	spin_lock_irqsave(&lock, flags);
-
- is not semantically the same as
-
- 	local_irq_save(flags);
- 	spin_lock(&lock);
-
-It depend on the spin_lock_irqsave() implementation, if the parameters
-has no relation ship with each other, semantically the same.
-
-
-Thanks.
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index ecfc6cc..48a3b8e 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -9,6 +9,7 @@ Optional properties:
+ - regulator-max-microamp: largest current consumers may set
+ - regulator-always-on: boolean, regulator should never be disabled
+ - regulator-boot-on: bootloader/firmware enabled regulator
++- regulator-allow-bypass: allow the regulator to go into bypass mode
+ - <name>-supply: phandle to the parent supply/regulator node
+ - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
+ 
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 66ca769..f3c8f8f 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -61,6 +61,9 @@ static void of_get_regulation_constraints(struct device_node *np,
+ 	else /* status change should be possible if not always on. */
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_STATUS;
+ 
++	if (of_property_read_bool(np, "regulator-allow-bypass"))
++		constraints->valid_ops_mask |= REGULATOR_CHANGE_BYPASS;
++
+ 	ramp_delay = of_get_property(np, "regulator-ramp-delay", NULL);
+ 	if (ramp_delay)
+ 		constraints->ramp_delay = be32_to_cpu(*ramp_delay);
 -- 
-Chen Gang
+1.7.10.4
 
-Asianux Corporation
