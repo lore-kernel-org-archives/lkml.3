@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935452Ab3FTAxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 20:53:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41949 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab3FTAxG (ORCPT
+	id S935461Ab3FTAzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 20:55:13 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:53373 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934734Ab3FTAzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 20:53:06 -0400
+	Wed, 19 Jun 2013 20:55:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <51C162F9.9020705@ti.com>
-References: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
-	<51C162F9.9020705@ti.com>
-Date: Thu, 20 Jun 2013 08:53:05 +0800
-Message-ID: <CADApbej+qcvV2EmcB9g_k=DGp7R-1H_dEaA7StimMoR+G6z0Cg@mail.gmail.com>
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
+In-Reply-To: <201306172334.05626.arnd@arndb.de>
+References: <1369969115-4279-1-git-send-email-zhangwm@marvell.com>
+	<2766142.mFu63TyH69@wuerfel>
+	<CADApbejV3v11jedq=q9Nz7wyVWVAJp-4vYmAifsPb7UsdVj5zg@mail.gmail.com>
+	<201306172334.05626.arnd@arndb.de>
+Date: Thu, 20 Jun 2013 08:55:11 +0800
+Message-ID: <CADApbeiotgXqX2Y_w8C9zY3mf+MjJmsVS3VBKVdWxYHwNkV2SQ@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: mmp: bring up pxa988 with device tree support
 From: Chao Xie <xiechao.mail@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Chao Xie <chao.xie@marvell.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "balbi@ti.com" <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Zhang <zhangwm@marvell.com>, Chao Xie <cxie4@marvell.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 3:51 PM, Roger Quadros <rogerq@ti.com> wrote:
-> Hi Chao,
+On Tue, Jun 18, 2013 at 5:34 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 17 June 2013, Chao Xie wrote:
+>> On Fri, Jun 14, 2013 at 8:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Friday 14 June 2013 17:15:33 Chao Xie wrote:
+>> >> On Mon, Jun 10, 2013 at 4:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >
+>> >> > I guess that is a problem we have on other platforms as well, we should
+>> >> > find a generic solution for that. It would be nice to reserve a page
+>> >> > in "fixmap" and have common code map the SCU page into that.
+>> >> >
+>> >>
+>> >> So you mean that reserve a page in arch/arm/asm/include/fixmap.h?
+>> >
+>> > Yes.
+>> >
+>> >> This reserve will depend on the cpu type beacuse only A9 will have SCU part.
+>> >
+>> > I think A5 and ARM11MPCore as well.
+>> >
+>> >> I do not know that in fixmap, the #ifdef is acceptable or not.
+>> >
+>> > Yes, it is. We don't really use fixmap on ARM for anything other than
+>> > kmap_atomic at the moment. Please have a look at the powerpc and x86
+>> > implementations.
+>> >
+>> >> For the common code to map the SCU page, where do you suggest to put it?
+>> >
+>> > arch/arm/kernel/smp_scu.c.
+>> >
+>> I think smp_scu.c may not be good place to put the mapping for SCU page.
+>> As you know that the fix map will make use of the mapping that set up
+>> by vector page.
+>> It will make use of top_pmd, and some APIs only provided under arch/arm/mm/.
+>> For example
+>> get_mem_type: for the pgprot for MT_DEVICE
+>> set_top_pte:
+>> Is that possible to add a file fixmap.c under arch/arm/mm/? It can
+>> including all the fix mapping
+>> except highmem. So SCU is one of it.
 >
-> On 06/19/2013 05:31 AM, Chao Xie wrote:
->> Some controller need software to initialize PHY before add
->> host controller, and shut down PHY after remove host controller.
->> Add the generic code for these controllers so they do not need
->> do it in its own host controller driver.
->>
->> Signed-off-by: Chao Xie <chao.xie@marvell.com>
->> ---
->>  drivers/usb/core/hcd.c |   24 +++++++++++++++++++++++-
->>  1 files changed, 23 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
->> index d53547d..301c639 100644
->> --- a/drivers/usb/core/hcd.c
->> +++ b/drivers/usb/core/hcd.c
->> @@ -40,9 +40,11 @@
->>  #include <linux/platform_device.h>
->>  #include <linux/workqueue.h>
->>  #include <linux/pm_runtime.h>
->> +#include <linux/err.h>
->>
->>  #include <linux/usb.h>
->>  #include <linux/usb/hcd.h>
->> +#include <linux/usb/phy.h>
->>
->>  #include "usb.h"
->>
->> @@ -2531,12 +2533,26 @@ int usb_add_hcd(struct usb_hcd *hcd,
->>        */
->>       set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
->>
->> +     /* In case hcd->phy contains the error code. */
->> +     if (IS_ERR(hcd->phy))
->> +             hcd->phy = NULL;
->> +
->> +     /* Initialize the PHY before other hardware operation. */
->> +     if (hcd->phy) {
->> +             retval = usb_phy_init(hcd->phy);
->> +             if (retval) {
->> +                     dev_err(hcd->self.controller,
->> +                             "can't initialize phy\n");
->> +                     goto err_hcd_driver_setup;
->> +             }
->> +     }
->> +
->>       /* "reset" is misnamed; its role is now one-time init. the controller
->>        * should already have been reset (and boot firmware kicked off etc).
->>        */
->>       if (hcd->driver->reset && (retval = hcd->driver->reset(hcd)) < 0) {
->>               dev_err(hcd->self.controller, "can't setup\n");
->> -             goto err_hcd_driver_setup;
->> +             goto err_hcd_driver_init_phy;
->>       }
->>       hcd->rh_pollable = 1;
->>
->> @@ -2608,6 +2624,9 @@ err_hcd_driver_start:
->>       if (usb_hcd_is_primary_hcd(hcd) && hcd->irq > 0)
->>               free_irq(irqnum, hcd);
->>  err_request_irq:
->> +err_hcd_driver_init_phy:
->> +     if (hcd->phy)
->> +             usb_phy_shutdown(hcd->phy);
->>  err_hcd_driver_setup:
->>  err_set_rh_speed:
->>       usb_put_dev(hcd->self.root_hub);
->> @@ -2674,6 +2693,9 @@ void usb_remove_hcd(struct usb_hcd *hcd)
->>                       free_irq(hcd->irq, hcd);
->>       }
->>
->> +     if (hcd->phy)
->> +             usb_phy_shutdown(hcd->phy);
->> +
->>       usb_put_dev(hcd->self.root_hub);
->>       usb_deregister_bus(&hcd->self);
->>       hcd_buffer_destroy(hcd);
->>
+> It's up to Russell, and he probably has an idea where this should be
+> going.
 >
-> I still think that we shouldn't do this because it adds more confusion and is not
-> still a generic enough solution.
+> Russell, do you think using a fixmap page for the SCU makes sense?
+> I'm looking for a method to consolidate the various methods of
+> doing early mappings of the SCU for device tree based platforms.
+> Where do you think that should be implemented?
 >
-> 1) It is better for the piece of code that does usb_phy_get() to do usb_phy_init/shutdown,
-> else there will be lot of confusion. (Felipe pointed this out earlier).
->
-> 2) There is no standard way of getting phy for different controllers. It is mostly platform
-> dependent and it is best to leave this to the controller drivers. (Pointed out by Alan).
->
-> 3) Controllers can have multiple PHYs. e.g. ehci-omap has one PHY per port and it supports
-> 3 ports. This is also platform specific and difficult to handle generically.
->
-> 4) Controllers can have specific timing requirements as to when the PHY is initialized relative
-> to the controller being initialized. I've pointed OMAP specific stuff in the earlier patch.
->
-> Considering all these points, I think we should leave things as they are. It isn't that hard
-> for controllers to manage phy_init() and phy_shutdown(), and there is not much code space saved
-> when compared to the complexity it creates if we move them to HCD layer.
->
-In fact, the PHY setting and handling is related to platform or SOC,
-and for different SOC they can
-have same EHCI HCD but they PHY handling can be different.
-Omap'a case is the example, and i think some other vendors may have
-silimar cases.
->From above point, It is better to leave the PHY initialization and
-shutdown to be done by each echi-xxx driver.
+Hi, Russell
 
-So Alan and Felipe
-What are your ideas about it?
+What do you think about above suggestion?
 
-> cheers,
-> -roger
+Thanks.
+
+
+>         Arnd
