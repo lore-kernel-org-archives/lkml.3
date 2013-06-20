@@ -1,49 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab3FTI7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:59:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35579 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192Ab3FTI7C (ORCPT
+	id S1756958Ab3FTI7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:59:31 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:59423 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756209Ab3FTI71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:59:02 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Rob Landley <rob@landley.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, linux-acpi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH] Documentation / cpu hotplug: remove outdated description for MADT entries
-Date: Thu, 20 Jun 2013 16:54:42 +0800
-Message-Id: <1371718482-452-1-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Jun 2013 04:59:27 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v2] irqchip: add support for MOXA ART SoCs
+Date: Thu, 20 Jun 2013 10:58:52 +0200
+Message-Id: <1371718732-12680-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <20130618154104.7f8115c7@skate>
+References: <20130618154104.7f8115c7@skate>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More than 256 entries in ACPI MADT is supported from ACPI 3.0 Specification,
-So the outdated description for MADT entries should be removed.
+This patch adds an irqchip driver for the main interrupt controller found
+on MOXA ART SoCs.
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+v2:
+* use irq_chip_generic
+* remove macro duplicates
+
+Applies to next-20130619
+
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
- Documentation/cpu-hotplug.txt |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/irqchip/Makefile     |    1 +
+ drivers/irqchip/irq-moxart.c |  109 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/irqchip/irq-moxart.c
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index 9f40135..2e36e40 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -370,9 +370,6 @@ A: There is no clear spec defined way from ACPI that can give us that
-    CPUs in MADT as hotpluggable CPUS.  In the case there are no disabled CPUS
-    we assume 1/2 the number of CPUs currently present can be hotplugged.
- 
--   Caveat: Today's ACPI MADT can only provide 256 entries since the apicid field
--   in MADT is only 8 bits.
--
- User Space Notification
- 
- Hotplug support for devices is common in Linux today. Its being used today to
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index cda4cb5..956d129 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
+ obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+ obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
++obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
+diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+new file mode 100644
+index 0000000..25c0ff7
+--- /dev/null
++++ b/drivers/irqchip/irq-moxart.c
+@@ -0,0 +1,109 @@
++/*
++ * MOXA ART SoCs IRQ chip driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/irqdomain.h>
++
++#include <asm/exception.h>
++
++#include "irqchip.h"
++
++#define IRQ_SOURCE_REG      0
++#define IRQ_MASK_REG        0x04
++#define IRQ_CLEAR_REG       0x08
++#define IRQ_MODE_REG        0x0c
++#define IRQ_LEVEL_REG       0x10
++#define IRQ_STATUS_REG      0x14
++
++#define FIQ_SOURCE_REG      0x20
++#define FIQ_MASK_REG        0x24
++#define FIQ_CLEAR_REG       0x28
++#define FIQ_MODE_REG        0x2c
++#define FIQ_LEVEL_REG       0x30
++#define FIQ_STATUS_REG      0x34
++
++static void __iomem *moxart_irq_base;
++static struct irq_domain *moxart_irq_domain;
++static unsigned int interrupt_mask;
++
++asmlinkage void __exception_irq_entry moxart_handle_irq(struct pt_regs *regs)
++{
++	u32 irqstat;
++	int hwirq;
++
++	irqstat = readl(moxart_irq_base + IRQ_STATUS_REG);
++
++	while (irqstat) {
++		hwirq = ffs(irqstat) - 1;
++		handle_IRQ(irq_find_mapping(moxart_irq_domain, hwirq), regs);
++		irqstat &= ~(1 << hwirq);
++	}
++}
++
++static __init void moxart_alloc_gc(void __iomem *base,
++	unsigned int irq_start, unsigned int num)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	int ret;
++	struct irq_chip_generic *gc;
++
++	ret = irq_alloc_domain_generic_chips(moxart_irq_domain, 32, 1,
++		"MOXARTINTC", handle_edge_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
++
++	if (ret)
++		pr_err("%s: could not alloc generic chip\n", __func__);
++
++	gc = irq_get_domain_generic_chip(moxart_irq_domain, 0);
++
++	gc->reg_base = base;
++	gc->chip_types[0].regs.mask = IRQ_MASK_REG;
++	gc->chip_types[0].regs.ack = IRQ_CLEAR_REG;
++	gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
++	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++}
++
++static int __init moxart_of_init(struct device_node *node,
++	struct device_node *parent)
++{
++	interrupt_mask = be32_to_cpup(of_get_property(node,
++		"interrupt-mask", NULL));
++	pr_debug("%s: interrupt-mask=%x\n", node->full_name, interrupt_mask);
++
++	moxart_irq_base = of_iomap(node, 0);
++	if (!moxart_irq_base)
++		panic("%s: unable to map INTC CPU registers\n",
++			node->full_name);
++
++	moxart_irq_domain = irq_domain_add_linear(node,
++		32, &irq_generic_chip_ops, moxart_irq_base);
++
++	moxart_alloc_gc(moxart_irq_base, 0, 32);
++
++	writel(0, moxart_irq_base + IRQ_MASK_REG);
++	writel(0xffffffff, moxart_irq_base + IRQ_CLEAR_REG);
++
++	writel(interrupt_mask, moxart_irq_base + IRQ_MODE_REG);
++	writel(interrupt_mask, moxart_irq_base + IRQ_LEVEL_REG);
++
++	set_handle_irq(moxart_handle_irq);
++
++	pr_info("%s: %s finished\n", node->full_name, __func__);
++
++	return 0;
++}
++IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-interrupt-controller",
++	moxart_of_init);
 -- 
-1.7.9.5
+1.7.2.5
 
