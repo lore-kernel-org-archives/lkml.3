@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030222Ab3FTNSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:18:30 -0400
-Received: from out.ipsmtp4nec.opaltelecom.net ([62.24.202.76]:8842 "EHLO
-	out.ipsmtp4nec.opaltelecom.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756231Ab3FTNS3 (ORCPT
+	id S965499Ab3FTNUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:20:08 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:39486 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965039Ab3FTNUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:18:29 -0400
-X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jun 2013 09:18:29 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnERAB3+wlE+GIt+/2dsb2JhbABXBAaDNDSDF4IxuW4BAQIBAQIBGXhkEIIbMiQwJRICDQQVAoZoghwImweGeYgDg3+FLYgigSaMWgEKBw9eD0WCQw6BBgOBJY1lmRphgxA7gS0IF4Ee
-X-IronPort-AV: E=Sophos;i="4.87,905,1363132800"; 
-   d="scan'208";a="39886315"
-Message-ID: <12315230.3256651371733727277.JavaMail.defaultUser@defaultHost>
-Date: Thu, 20 Jun 2013 14:08:47 +0100 (BST)
-From: Admin <katiemay@tinyonline.co.uk>
-Reply-To: admincare@webmail.md
-Subject: WEBMAIL ADMINISTRATOR NOTIFICATION
+	Thu, 20 Jun 2013 09:20:06 -0400
+Date: Thu, 20 Jun 2013 22:20:03 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Alexander Frolkin <avf@eldamar.org.uk>, lvs-devel@vger.kernel.org,
+        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: SH fallback and L4 hashing
+Message-ID: <20130620132003.GD24993@verge.net.au>
+References: <20130619095425.GA20145@eldamar.org.uk>
+ <alpine.LFD.2.00.1306192239510.1823@ja.ssi.bg>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1306192239510.1823@ja.ssi.bg>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email Account has exceeded limit quota, click the link below and 
-fill your email account information to upgrade.
+On Wed, Jun 19, 2013 at 10:45:43PM +0300, Julian Anastasov wrote:
+> 
+> 	Hello,
+> 
+> On Wed, 19 Jun 2013, Alexander Frolkin wrote:
+> 
+> > By default the SH scheduler rejects connections that are hashed onto a
+> > realserver of weight 0.  This patch adds a flag to make SH choose a
+> > different realserver in this case, instead of rejecting the connection.
+> > 
+> > The patch also adds a flag to make SH include the source port (TCP, UDP,
+> > SCTP) in the hash as well as the source address.  This basically allows
+> > for deterministic round-robin load balancing (i.e., where any director
+> > in a cluster of directors with identical config will send the same
+> > packet the same way).
+> > 
+> > The flags are service flags (IP_VS_SVC_F_SCHED*) so that these options
+> > can be set per service.  They are set using a new option to ipvsadm.
+> > 
+> > Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+> 
+> 	Thanks! Looks good to me.
+> 
+> Acked-by: Julian Anastasov <ja@ssi.bg>
+> 
+> > ---
+> > The patch is against the ipvs-next tree.
+> 
+> 	Still, I see one warning:
+> 
+> patching file include/uapi/linux/ip_vs.h
+> patching file net/netfilter/ipvs/ip_vs_sh.c
+> Hunk #2 succeeded at 75 with fuzz 1.
+> 
+> 	May be because you are missing the
+> "ipvs: ip_vs_sh: fix build" change, not sure where is
+> the fault, may be the change is not in ipvs-next,
+> Simon can tell how to proceed with applying this patch.
 
-http://www.form2go.com/publish/publish_form/102984
+Thanks, applied and pushed to ipvs-next.
 
-We have send you 
-this upgrade notification times without number, and you have refuse to
-
-upgrade your user, note that failure to upgrade this time, would result 
-to termination of your user account.
-
-Thank you for your cooperation.
-
-
-WEBMAIL ADMINISTRATOR NOTIFICATION
+I also noticed some fuzz.
+Alexander, could you double-check ipvs-next to make sure
+that I applied the patch correctly?
