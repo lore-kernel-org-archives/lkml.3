@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030419Ab3FTWUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 18:20:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10525 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758043Ab3FTWUu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 18:20:50 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CP4Tl-rxqdAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9d5NqswhC6UA:10 a=8DIfM-bG0CoPEQikIXgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371766847.18733.109.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Jun 2013 18:20:47 -0400
-In-Reply-To: <1371754391.18733.107.camel@gandalf.local.home>
-References: <20130618192147.GA19443@redhat.com>
-	 <20130619121039.GA19225@twins.programming.kicks-ass.net>
-	 <20130619152844.GA9176@redhat.com> <20130619175139.GA20454@redhat.com>
-	 <51C1FD7F.9090606@gmail.com> <20130619195822.GA16489@redhat.com>
-	 <1371752633.18733.96.camel@gandalf.local.home> <51C34B70.60808@gmail.com>
-	 <1371754078.18733.106.camel@gandalf.local.home>
-	 <1371754391.18733.107.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1161176Ab3FTWgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 18:36:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51333 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161077Ab3FTWgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 18:36:04 -0400
+Message-ID: <51C383AC.4060706@zytor.com>
+Date: Thu, 20 Jun 2013 15:35:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+References: <1371740019.2372.3.camel@dabdike> <20130620162916.GA25727@srcf.ucam.org> <1371746775.2372.11.camel@dabdike> <20130620165426.GB26214@srcf.ucam.org> <20130620170124.GA19877@pd.tnic> <20130620171210.GA26593@srcf.ucam.org> <20130620180808.GB19877@pd.tnic> <20130620181015.GA27833@srcf.ucam.org> <20130620181445.GA791@pd.tnic> <20130620181731.GA27960@srcf.ucam.org> <20130620184736.GC19877@pd.tnic>
+In-Reply-To: <20130620184736.GC19877@pd.tnic>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 14:53 -0400, Steven Rostedt wrote:
-
-> Oh wait, I just noticed Oleg's:
+On 06/20/2013 11:47 AM, Borislav Petkov wrote:
 > 
-> # perf record -e sched:sched_switch -p1 &
+> I guess we can do a top-down allocation, starting from the highest
+> virtual addresses:
 > 
-> I missed that.
+> EFI_HIGHEST_ADDRESS
+> |
+> | size1
+> |
+> --> region1
+> |
+> | size2
+> |
+> --> region2
 > 
-> bah, time to re-run it.
+> ...
+> 
+> and we make EFI_HIGHEST_ADDRESS be the same absolute number on every
+> system.
+> 
+> hpa, is this close to what you had in mind? It would be prudent to
+> verify whether this will suit well with the kexec virtual space layout
+> though...
 > 
 
+This would work really well, I think.  The tricky part here is to pick a
+safe EFI_HIGHEST_ADDRESS as it is an ABI.
 
-New update, after running with the above command:
+My preference would be to make EFI_HIGHEST_ADDRESS = -4 GB, which is
+*not* what Windows uses, but will leave the high negative range clear,
+and allows a range where we can grow down without much risk of
+interfering with anything else.
 
-[root@ixf ~]# cat perf-bench-sched.before.2 | tail -20
-     Total time: 11.833 [sec]
-
-      11.833804 usecs/op
-          84503 ops/sec
-
- Performance counter stats for process id '1' (100 runs):
-
-     <not counted> task-clock              
-     <not counted> context-switches        
-     <not counted> cpu-migrations          
-     <not counted> page-faults             
-     <not counted> cycles                  
-   <not supported> stalled-cycles-frontend 
-   <not supported> stalled-cycles-backend  
-     <not counted> instructions            
-     <not counted> branches                
-     <not counted> branch-misses           
-
-      11.955755673 seconds time elapsed
-( +-  0.05% )
-
-[root@ixf ~]# cat perf-bench-sched.after-2 | tail -20
-     Total time: 11.490 [sec]
-
-      11.490764 usecs/op
-          87026 ops/sec
-
- Performance counter stats for process id '1' (100 runs):
-
-     <not counted> task-clock              
-     <not counted> context-switches        
-     <not counted> cpu-migrations          
-     <not counted> page-faults             
-     <not counted> cycles                  
-   <not supported> stalled-cycles-frontend 
-   <not supported> stalled-cycles-backend  
-     <not counted> instructions            
-     <not counted> branches                
-     <not counted> branch-misses           
-
-      11.511847099 seconds time elapsed
-( +-  0.05% )
-
-
-OK, this does give us a slight improvement. Approximately 4%.
-
--- Steve
+	-hpa
 
 
