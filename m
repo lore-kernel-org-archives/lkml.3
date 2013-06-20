@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992Ab3FTPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:42:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39698 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757675Ab3FTPmy (ORCPT
+	id S1758118Ab3FTQTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:19:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48279 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757980Ab3FTQTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:42:54 -0400
+	Thu, 20 Jun 2013 12:19:10 -0400
+Date: Thu, 20 Jun 2013 09:18:46 -0700
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-c790b0ad23f427c7522ffed264706238c57c007e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, vincent.weaver@maine.edu, fweisbec@gmail.com,
+        tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, vincent.weaver@maine.edu, fweisbec@gmail.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20130620155009.GA6327@redhat.com>
+References: <20130620155009.GA6327@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] hw_breakpoint: Use cpu_possible_mask in {reserve,
+ release}_bp_slot()
+Git-Commit-ID: c790b0ad23f427c7522ffed264706238c57c007e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <51C2E509.2030800@samsung.com>
-References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
-	<CAKohponD5s6-g0X9rgsVt0U4RutfyXSQJRZP3vT7EuczgMMQ2Q@mail.gmail.com>
-	<51C2DD3D.5040601@samsung.com>
-	<CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
-	<51C2E0AD.8060208@samsung.com>
-	<51C2E509.2030800@samsung.com>
-Date: Thu, 20 Jun 2013 21:12:53 +0530
-Message-ID: <CAKohpo=0m8+WegUmMR2BOKeY2mJZw=X5-nEAp26M5L3PH9Bz2A@mail.gmail.com>
-Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 09:18:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 June 2013 16:48, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> But,
-> To show old frequency/new frequency on load_table debugfs file,
-> governor function(dbs_check_cpu()) pass calculated CPUs load to specific governor(e.g., ondemand)
-> as below function flow.
->
-> dbs_check_cpu() (in cpufreq.c)
-> -> od_check_cpu() (in cpufreq_ondemand.c)
-> -> __cpufreq_driver_target() (in cpufreq.c)
-> -> cpufreq_driver->target(policy)
->
-> Also, The __cpufreq_driver_target() is external function which can be called on other file
-> so I must consider exception case.
->
-> If send CPUFREQ_LOADCHECK noti after changed cpu frequency,
-> I think it is complicated and has quite a little difficulty.
->
-> What is your opinion?
+Commit-ID:  c790b0ad23f427c7522ffed264706238c57c007e
+Gitweb:     http://git.kernel.org/tip/c790b0ad23f427c7522ffed264706238c57c007e
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Thu, 20 Jun 2013 17:50:09 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 20 Jun 2013 17:57:01 +0200
 
-What you can do is:
-- create another routine: cpufreq_governor_driver_target()
-- replace all __cpufreq_driver_target() from ondemand/conservative governors
-with this one
-- In cpufreq_governor_driver_target() call __cpufreq_driver_target() and
-take a note of new freq.
+hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
 
-Maybe you don't need to check the actual freq that is set (even
-that would be simple to implement), but what is requested.
+fetch_bp_busy_slots() and toggle_bp_slot() use
+for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
+cpu_down(), we can over/under account the per-cpu numbers.
+
+For example:
+
+	# echo 0 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10 -p 1 &
+	# echo 1 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
+	# taskset -p 0x2 1
+
+triggers the same WARN_ONCE("Can't find any breakpoint slot") in
+arch_install_hw_breakpoint().
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/hw_breakpoint.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index a853dea..20185ea 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -149,7 +149,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		return;
+ 	}
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		unsigned int nr;
+ 
+ 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
+@@ -235,7 +235,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+ 	if (cpu >= 0) {
+ 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	} else {
+-		for_each_online_cpu(cpu)
++		for_each_possible_cpu(cpu)
+ 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	}
+ 
