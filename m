@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab3FTEw0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 00:52:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48427 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3FTEwY (ORCPT
+	id S1751876Ab3FTEzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 00:55:35 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:59612 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3FTEze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 00:52:24 -0400
-Message-ID: <51C28A63.6080905@ti.com>
-Date: Thu, 20 Jun 2013 10:21:47 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Philip Avinash <avinashphilipk@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: Re: [PATCH v2 2/4] gpio: davinci: DT changes for driver
-References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com> <1371205241-17205-3-git-send-email-avinashphilipk@gmail.com> <CACRpkdbJJVKC539CAPNxxEbofVfw3Pr0gyCSZyY9YbkXneE-qQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbJJVKC539CAPNxxEbofVfw3Pr0gyCSZyY9YbkXneE-qQ@mail.gmail.com>
+	Thu, 20 Jun 2013 00:55:34 -0400
+Message-ID: <1371704129.3252.356.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net bridge: add null pointer check, fix panic
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: xiaoming gao <gxm.linux.kernel@gmail.com>
+Cc: stephen@networkplumber.org, davem@davemloft.net,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 19 Jun 2013 21:55:29 -0700
+In-Reply-To: <51C2721B.9050603@gmail.com>
+References: <51C2710D.2060405@gmail.com> <51C2721B.9050603@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/2013 12:40 AM, Linus Walleij wrote:
-> On Fri, Jun 14, 2013 at 12:20 PM, Philip Avinash
-> <avinashphilipk@gmail.com> wrote:
+On Thu, 2013-06-20 at 11:08 +0800, xiaoming gao wrote:
+> From: newtongao <newtongao@tencent.com>
+> Date: Wed, 19 Jun 2013 14:58:33 +0800
+> Subject: [PATCH] net bridge: add null pointer check,fix panic
 > 
->> From: KV Sujith <sujithkv@ti.com>
->>
->> - Add of_device_id for Davinci GPIO driver.
->> - Add function to populate data from DT.
->> - Modify the probe to read from DT if DT match is found.
->> - Add DT binding documentation for Davinci GPIO properties in a new file
->>   gpio-davinci.txt located at Documentation/devicetree/bindings/gpio/.
->>
->> Signed-off-by: KV Sujith <sujithkv@ti.com>
->> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
->> ---
->> Changes since v1:
->>         - description for interrupts changed to reflecti
->>            interrupt array usage.
-> (...)
+> in kernel 3.0, br_port_get_rcu() may return NULL when network interface be deleting from bridge,
+> but in function br_handle_frame and br_handle_local_finish, the pointer didn't be checked before using,
+> so all br_port_get_rcu callers must do null check,or there occurs the null pointer panic.
 > 
->> +static struct davinci_gpio_platform_data *davinci_gpio_set_pdata_of(
->> +                                               struct platform_device *pdev)
->> +{
->> +       struct device_node *dn = pdev->dev.of_node;
->> +       struct davinci_gpio_platform_data *pdata;
->> +       u32 val, ret;
->> +
->> +       pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
->> +       if (pdata) {
-> 
-> Instead of this arrow pattern:
-> 
-> if (!pdata) {
->   dev_err( ... "out of memory allocating platform data");
->   return NULL;
-> }
-> 
-> And de-indent the rest.
-> 
-> With that change:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> I guess this may go through the DaVinci tree with the rest of the DaVinci
-> patches?
+> kernel 3.4 also has this bug,i have verified.
+> mainline kernel still did not  check br_port_get_rcu()'s NULL pointer, but i have not tested it yet.
 
-Linus, yes, I will pick these up with your acks.
+Please check current version before sending a patch.
 
-Thanks,
-Sekhar
+This was most probably fixed in commit 00cfec37484761a44
+("net: add a synchronize_net() in netdev_rx_handler_unregister()")
+
+Thanks
+
+
