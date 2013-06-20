@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965200Ab3FTLAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:00:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14422 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964966Ab3FTLAH (ORCPT
+	id S1030213Ab3FTLA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:00:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:65146 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965287Ab3FTLAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 07:00:07 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2E083.7080302@asianux.com>
-Date: Thu, 20 Jun 2013 18:59:15 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
- + local_irq_save, especially when CONFIG_LOCKDEP not defined
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C1861A.6030901@asianux.com> <alpine.DEB.2.02.1306191249260.4013@ionos.tec.linutronix.de> <51C2BF3C.8020804@asianux.com> <alpine.DEB.2.02.1306201102330.4013@ionos.tec.linutronix.de> <51C2D10B.5030408@asianux.com> <alpine.DEB.2.02.1306201218360.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306201218360.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 07:00:21 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-fd-51c2e0ac2838
+Message-id: <51C2E0AD.8060208@samsung.com>
+Date: Thu, 20 Jun 2013 19:59:57 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
+ accumulated data of CPUs
+References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
+ <CAKohponD5s6-g0X9rgsVt0U4RutfyXSQJRZP3vT7EuczgMMQ2Q@mail.gmail.com>
+ <51C2DD3D.5040601@samsung.com>
+ <CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
+In-reply-to: <CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkSHfNg0OBBlsXmVmcbXrDbnF51xw2
+	i9uNK9gs+hf2Mlls/OrhwOpx59oeNo++LasYPR4tbmH0+LxJLoAlissmJTUnsyy1SN8ugStj
+	yhKfgitsFfsW/WFuYNzA2sXIySEhYCLx7dYEFghbTOLCvfVsXYxcHEICSxklzvxbztjFyAFW
+	NHV7EEiNkMAiRon/P+sgal4wSnzeeIUNJMEroCUxfcYVsKEsAqoS576tBYuzAcX3v7gBZosK
+	hEmsnH6FBaJeUOLH5HssIPNFgGpe3kwFCTMLtDJKXDjoCRIWFsiQmPC2CmLtF0aJc+eDQWxO
+	gWCJpXMms0OU60jsb53GBmHLS2xe85YZ5DQJgU3sErPnNzNBnCMg8W3yIRaIV2QlNh1ghnhX
+	UuLgihssExjFZiE5aBaSsbOQjF3AyLyKUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzCeTv97
+	1r+D8e4B60OMyUArJzJLiSbnA+MxryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU
+	1ILUovii0pzU4kOMTBycUg2Mwv0JNRUP1c1iZmya/b7F6PctnR/fWl8bdiw6JHOLT1K7+a+k
+	XOmhsn2bi1+o97zs8mgXifu98r/C68/FjS/WcsuzPbb/uKX+a3OpttupTmnX0PqwCV7Bt7Na
+	2B8WP2/puP6uv3Pp+n87fnfuYZFya9VayOojmzNrjnKRy4/nKtH7JJdVBnEosRRnJBpqMRcV
+	JwIAZmj1hr0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xgO6aB4cCDTZ/07M42/SG3eLyrjls
+	FrcbV7BZ9C/sZbLY+NXDgdXjzrU9bB59W1Yxejxa3MLo8XmTXABLVAOjTUZqYkpqkUJqXnJ+
+	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
+	oSFuuhYwjRG6viFBcD1GBmggYQ1jxpQlPgVX2Cr2LfrD3MC4gbWLkYNDQsBEYur2oC5GTiBT
+	TOLCvfVsILaQwCJGif8/67oYuYDsF4wSnzdeAUvwCmhJTJ9xhRXEZhFQlTj3bS1YnA0ovv/F
+	DTBbVCBMYuX0KywQ9YISPybfYwHZJQJU8/JmKkiYWaCVUeLCQU+QsLBAhsSEt1UQa78wSpw7
+	HwxicwoESyydM5kdolxHYn/rNDYIW15i85q3zBMYBWYhWTALSdksJGULGJlXMYqmFiQXFCel
+	5xrpFSfmFpfmpesl5+duYgRH6zPpHYyrGiwOMQpwMCrx8GpcPhgoxJpYVlyZe4hRgoNZSYQ3
+	dc6hQCHelMTKqtSi/Pii0pzU4kOMyUD/T2SWEk3OByaSvJJ4Q2MTMyNLI3NDCyNjc9KElcR5
+	D7ZaBwoJpCeWpGanphakFsFsYeLglGpgnC72e09RR7K2c/TjYql337T1XzuEJysKu05z+Wb6
+	6NyHKuVrR1y3ZH3jLV8R/fUlh5XcW4Ev85euuTHzzJMXjFPXr5vrfHkrf9b2z3zWN6ds2P3j
+	+e2EKR237hQ7tVsq1Mf3zEwvrX5ptnGDHrvjlEqXmcVvjq873X+2IOCsrUkk0+9wed5DIkos
+	xRmJhlrMRcWJAIQY2L4aAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 06:42 PM, Thomas Gleixner wrote:
-> Chen,
+On 06/20/2013 07:55 PM, Viresh Kumar wrote:
+> On 20 June 2013 16:15, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> Yes, freq->old is same freq->new.
+>>
+>> The cpufreq gorvernor(dbs_check_cpu()) send CPUFREQ_LOADCHECK noti
+>> right after calculating CPUs load, regardless of changing CPU frequency.
+>> So, I use only freq->old value without using freq->new because load_table
+>> debugfs file need current cpu frequency.
+>>
+>> Now, I can't think of any proper usage for freq->new.
+>> Do you have good way for using freq->new to include more useful data in load_table?
 > 
-> On Thu, 20 Jun 2013, Chen Gang wrote:
->> > On 06/20/2013 05:07 PM, Thomas Gleixner wrote:
->>> > > If A is semantically the same as B, then B is semantically the same as
->>> > > A. At least that's the common understanding.
->>> > > 
->> > 
->> >   From A to B is OK.
->> > 
->> > Not means:
->> > 
->> >   From B to A is also OK.
-> Either you're questioning logic, math and fundamental basics of
-> computer science or you simply fail to grok the difference between
-> semantics and implementation details. See below.
+> This information might be interesting.. At what load, we moved from
+> which freq to which one..
 > 
->>> > > Yes, it depends on the implementation, but all implementations do:
->>> > > 
->>> > >      local_irq_save(flags);
->>> > >      arch_spin_lock_flags(l, flags);
->>> > > 
->> > 
->> > Yes this is spin_lock_irqsave().
->> > 
->> > At least, this implemenation is not equal to.
->> > 
->> > 	local_irq_save(flags);
->> > 	spin_lock(l);
-> Again. It is semantically the same, because the semantics are:
+> Just see if you can add the notification after frequency has been
+> changed.
 > 
->    spin_lock_irqsave() returns with interrupts disabled, preemption
->    disabled and the lock acquired.
-> 
-> This construct exactly follows these semantics:
-> 
->  	local_irq_save(flags);
->  	spin_lock(l);
-> 
-> After spin_lock(l) interrupts are disabled, preemption is disabled and
-> the lock is acquired. End of discussion.
-> 
+OK, I'll modify it and send test result. Thanks.
 
-OK, end of discussion. It is a polite.
-
-
-> I wasted enough time explaining you the difference between semantics
-> and implementation, but you seem to be simply advisory restistant.
-> 
-
-Yes, time resources are really very expensive for every members.
-
-
-> And I already told you very impolite in the other thread, that I'm not
-> going to cope with such nonsense anymore. And yes, I'm tired of it.
-> 
-
-OK, I don't care about it.
-
-We just stop now.
-
-:-)
-
-> Provide factual prove, that there is a bug in the code. And to prove
-> that, you actually need to understand the code and the basic concepts
-> behind it. 
-> 
-> If you keep up pursuing your contributions plan at the expense of my
-> and other peoples valuable time, I consider this as extremly impolite
-> from your side. The form of collaboration you are going to achieve
-> this way is an entry in my /dev/null mail filter.
-
-
-Don't worry about it, and why worry about it ?
-
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+Best Regards,
+Chanwoo Choi
