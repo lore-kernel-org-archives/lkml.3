@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965606Ab3FTQaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 12:30:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49588 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965396Ab3FTQap (ORCPT
+	id S1161151Ab3FTQqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:46:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55000 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161046Ab3FTQqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 12:30:45 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 20 Jun 2013 09:30:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Joe Perches <joe@perches.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <monstr@monstr.eu>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] MAINTAINERS: Remove Hans J. Koch entries
-Message-ID: <20130620163049.GB26936@roeck-us.net>
-References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
- <71c482e15ee32fa304db73b984f6d5a63441cd92.1369317710.git.michal.simek@xilinx.com>
- <51A5E644.1040901@monstr.eu>
- <51AC8D43.100@monstr.eu>
- <20130603210513.GA22606@kroah.com>
- <20130620160126.GB22115@amd.pavel.ucw.cz>
- <1371745227.2146.13.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371745227.2146.13.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Jun 2013 12:46:16 -0400
+Message-ID: <1371746775.2372.11.camel@dabdike>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Date: Thu, 20 Jun 2013 09:46:15 -0700
+In-Reply-To: <20130620162916.GA25727@srcf.ucam.org>
+References: <20130619125243.GD11209@gmail.com>
+	 <20130619130225.GA28311@pd.tnic> <20130619130434.GB24957@gmail.com>
+	 <20130619160804.GB27832@srcf.ucam.org> <20130620091321.GB6811@gmail.com>
+	 <20130620091537.GA17159@srcf.ucam.org> <20130620092237.GA6943@gmail.com>
+	 <20130620093337.GI32694@pd.tnic> <20130620094446.GA17882@srcf.ucam.org>
+	 <1371740019.2372.3.camel@dabdike> <20130620162916.GA25727@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 09:20:27AM -0700, Joe Perches wrote:
-> On Thu, 2013-06-20 at 18:01 +0200, Pavel Machek wrote:
-> > Anyway, Hans disappeared, so Greg takes patches, again.
+On Thu, 2013-06-20 at 17:29 +0100, Matthew Garrett wrote:
+> On Thu, Jun 20, 2013 at 07:53:39AM -0700, James Bottomley wrote:
 > 
-> Maybe this is appropriate then.
+> > Can't we detect Macs from some of the UEFI strings at boot time and do
+> > the right thing with the boot switch (which can be overriden from the
+> > kernel command line if we get it wrong)?
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 69fea4f..dc9d04a 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5253,9 +5253,8 @@ F:	Documentation/hwmon/max16065
->  F:	drivers/hwmon/max16065.c
->  
->  MAX6650 HARDWARE MONITOR AND FAN CONTROLLER DRIVER
-> -M:	"Hans J. Koch" <hjk@hansjkoch.de>
->  L:	lm-sensors@lm-sensors.org
-> -S:	Maintained
-> +S:	Orphan
->  F:	Documentation/hwmon/max6650
->  F:	drivers/hwmon/max6650.c
->  
-Please just drop that entry entirely, causing it to default to hwmon.
+> Yes, and then our behaviour differs from Windows and so we'll have 
+> inevitably broken some other system.
 
-Thanks,
-Guenter
+Unless you can think of the way out of this, we seem to have the stark
+choice of behave like windows or allow kexec.  For the server market,
+kexec wins, so either we find a way not to have to make the choice or we
+do something automatic to make it fairly painless.
 
-> @@ -8795,7 +8794,6 @@ F:	fs/hostfs/
->  F:	fs/hppfs/
->  
->  USERSPACE I/O (UIO)
-> -M:	"Hans J. Koch" <hjk@hansjkoch.de>
->  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->  S:	Maintained
->  F:	Documentation/DocBook/uio-howto.tmpl
-> 
-> 
-> 
-> _______________________________________________
-> lm-sensors mailing list
-> lm-sensors@lm-sensors.org
-> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
-> 
+James
+
+
+
+
