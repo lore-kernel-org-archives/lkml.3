@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965293Ab3FTKRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 06:17:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53304 "EHLO
+	id S965289Ab3FTKS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 06:18:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55985 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964966Ab3FTKRa (ORCPT
+	with ESMTP id S964966Ab3FTKS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 06:17:30 -0400
+	Thu, 20 Jun 2013 06:18:27 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH V6 3/3] ARM: dts: Add pcie controller node for Samsung EXYNOS5440 SoC
-Date: Thu, 20 Jun 2013 12:16:36 +0200
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH v2] irqchip: add support for MOXA ART SoCs
+Date: Thu, 20 Jun 2013 12:17:47 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-References: <00c201ce6d85$83b072a0$8b1157e0$@samsung.com> <3250954.dVh4O1LchK@flatron> <00c501ce6d8f$af1bf900$0d53eb00$@samsung.com>
-In-Reply-To: <00c501ce6d8f$af1bf900$0d53eb00$@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        thomas.petazzoni@free-electrons.com
+References: <20130618154104.7f8115c7@skate> <1371718732-12680-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1371718732-12680-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306201216.37248.arnd@arndb.de>
-X-Provags-ID: V02:K0:wSqllInhZV2F7/RULYMUHsAJf04LFIzVDQsNIzHiO8P
- mLf43tewiU00zr9un9upm/DL4q2l4FWBFFc0yrBT8kE2/Q0Pam
- Zh0/v/vIJ6jeyV47LJI/pT29unXiEi+M9jRPDmlf9d0ojd072x
- tD/ppd+wCoshOgdGDsLbaBg5CRqGzbl7vWgRHXkGvNYP1bZF9E
- Ho3M1RXBF/bUgMF5jiAToxTAMb93JN6deTyXoDoIo0WHW+Lwa3
- MwU7bGkdbpXoyg5fyzAz4jroeQ3Pko1bCF/j2CXsM+YBRBKQyy
- 1HtBD6nAkLUr1HkH6vkJbn89geMqkFhQyBrLDYW2dIIfdTGhLS
- vhH8SdmMT6cb0VU28rb8=
+Message-Id: <201306201217.47903.arnd@arndb.de>
+X-Provags-ID: V02:K0:zpijw9wQjACoPiHvqXQuiDMEmeWBFXbaQ5PZELk8jJq
+ aKETYIZUp/+GxuTxuFhwyW5Bck9NDGJvaE6UZl8Jm2Kc6JTzki
+ wNErz6Jz8uvQg3AZoQJSF/J0smTRJzKokevAPZuD9etCuEMYoI
+ 86XHXIJxozHKWE/Ao8PfFfzI1s8QAI2IjKpyJcHiu0v9RT26F5
+ S/PEcUbdqzFarIOOQ495bBmZvsZCF5eiPcezUgnTSx4B+h+crO
+ f7ibcl5sOb+VxlFRMF638eSFt9t0M4V+YfnQKjQrASEuMhI+5M
+ FNCftGAjHV8t0s5DkTGF57MkNPuEgCZ2Mw2jlq1hE1vmXYY3Ja
+ 23HJVGTFDa8LC+2PIrUg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 June 2013, Jingoo Han wrote:
-> 2. patch adding label to the pinctrl node (which is a prerequisite) and
->     board-specific properties of PCIe nodes.
->    [PATCH] ARM: dts: Add pcie controller node for exynos5440-ssdk5440
+On Thursday 20 June 2013, Jonas Jensen wrote:
+> This patch adds an irqchip driver for the main interrupt controller found
+> on MOXA ART SoCs.
 > 
-> arch/arm/boot/dts/exynos5440-ssdk5440.dts
-> +
-> +       pcie0@290000 {
-> +               reset-gpio = <&pin_ctrl 5 0>;
-> +       };
-> +
-> +       pcie1@2a0000 {
-> +               reset-gpio = <&pin_ctrl 22 0>;
-> +       };
+> v2:
+> * use irq_chip_generic
+> * remove macro duplicates
 > 
-> arch/arm/boot/dts/exynos5440.dtsi
-> -       pinctrl {
-> +       pin_ctrl: pinctrl {
+> Applies to next-20130619
 > 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Note that you don't really have to use a label, you can also refer
-to the pinctrl node by its full path, which is just "/pinctrl"
-or "/pinctrl@e0000".
-
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
