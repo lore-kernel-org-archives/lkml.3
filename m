@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030304Ab3FTOtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:49:03 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:44761 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030276Ab3FTOs7 (ORCPT
+	id S1758151Ab3FTP6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:58:48 -0400
+Received: from mx04.smart-weblications.de ([188.65.144.39]:46276 "EHLO
+	mx04.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756558Ab3FTP6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:48:59 -0400
-Date: Thu, 20 Jun 2013 14:48:56 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, roland@kernel.org, tglx@linutronix.de,
-        kosaki.motohiro@gmail.com, penberg@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-rdma@vger.kernel.org
-Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
-In-Reply-To: <20130620114943.GB12125@gmail.com>
-Message-ID: <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
-References: <20130606124351.GZ27176@twins.programming.kicks-ass.net> <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com> <20130607110344.GA27176@twins.programming.kicks-ass.net> <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
- <20130617110832.GP3204@twins.programming.kicks-ass.net> <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com> <20130620114943.GB12125@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Jun 2013 11:58:46 -0400
+Message-ID: <51C326CA.8020806@smart-weblications.de>
+Date: Thu, 20 Jun 2013 17:59:06 +0200
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.20-54.240.9.70
+To: "Matthew O'Connor" <liquidhorse@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        davem@davemloft.net, andy@greyhouse.net,
+        Jay Vosburgh <fubar@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com,
+        zheng.x.li@oracle.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de> <519D5206.8080701@gmail.com> <1371086125.10688.5.camel@deadeye.wl.decadent.org.uk> <51C048E6.6010602@smart-weblications.de> <CAK8PzVkac_oTEaRcM1HPZPKaJRN_ozsM-=BobELChEscDMB+dg@mail.gmail.com>
+In-Reply-To: <CAK8PzVkac_oTEaRcM1HPZPKaJRN_ozsM-=BobELChEscDMB+dg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Ingo Molnar wrote:
+Hi Matthew,
 
-> Peter clearly pointed it out that in the perf case it's user-space that
-> initiates the pinned memory mapping which is resource-controlled via
-> RLIMIT_MEMLOCK - and this was implemented that way before your commit
-> broke the code.
+Am 18.06.2013 19:23, schrieb Matthew O'Connor:
+> Because all of my submissions are damaged and I haven't had the time
+> to correct them or my badly configured email clients.  Trust me this
+> affects me in the exact same way it does you; I'll try to redo the
+> patches and send them upstream soon, for all our sake's.
+> 
 
-There is no way that user space can initiate a page pin right now. Perf is
-pinning the page from the kernel. Similarly the IB subsystem pins memory
-meeded for device I/O.
+Strange - your last patch worked without any flaws?!
 
-> You seem to be hell bent on defining 'memory pinning' only as "the thing
-> done via the mlock*() system calls", but that is a nonsensical distinction
-> that actively and incorrectly ignores other system calls that can and do
-> pin memory legitimately.
 
-Nope. I have said that Memory pinning is done by increasing the refcount
-which is different from mlock which sets a page flag.
+-- 
 
-I have consistently argued that these are two different things. And I am
-a
-bit surprised that this point has not been understood after all these
-repetitions.
+Mit freundlichen Grüßen,
 
-Memory pinning these days is done as a side effect of kernel / driver
-needs. I.e. the memory registration done through the IB subsystem and
-elsewhere.
+Florian Wiessner
 
-> int can_do_mlock(void)
-> {
->         if (capable(CAP_IPC_LOCK))
->                 return 1;
->         if (rlimit(RLIMIT_MEMLOCK) != 0)
->                 return 1;
->         return 0;
-> }
-> EXPORT_SYMBOL(can_do_mlock);
->
-> Q.E.D.
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
 
-Argh. Just checked the apps. True. They did set the rlimit to 0 at some
-point in order to make this work. Then they monitor the number of locked
-pages and create alerts so that action can be taking if a system uses too
-many mlocked pages.
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
+
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
