@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab3FTTRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:17:06 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:8084 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758240Ab3FTTQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:16:38 -0400
-X-IronPort-AV: E=Sophos;i="4.87,906,1363132800"; 
-   d="scan'208";a="30925427"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <xen-devel@lists.xen.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/4] hrtimers: provide a hrtimers_late_resume() call
-Date: Thu, 20 Jun 2013 20:16:29 +0100
-Message-ID: <1371755792-25962-2-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com>
-References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com>
+	id S1161162Ab3FTSmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:42:11 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:56061 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161052Ab3FTSmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:42:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130619100544.GB4545@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+	<20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
+	<CAE9FiQW2CMfNOTNM1MRCZo-ZQuQgj=JQtXLZ3eUxF7dQ8qukTA@mail.gmail.com>
+	<20130619100544.GB4545@dhcp-192-168-178-175.profitbricks.localdomain>
+Date: Thu, 20 Jun 2013 11:42:08 -0700
+X-Google-Sender-Auth: tcPPUOTuT9PWfIeVBZemGXFEhk0
+Message-ID: <CAE9FiQX7LwQHakzSD7f8yw6yT7gR=8d53p-=FxZsxVCyU-+SYw@mail.gmail.com>
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
+        Prarit Bhargava <prarit@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Vrabel <david.vrabel@citrix.com>
+On Wed, Jun 19, 2013 at 3:05 AM, Vasilis Liaskovitis
+<vasilis.liaskovitis@profitbricks.com> wrote:
+> On Tue, Jun 18, 2013 at 01:19:12PM -0700, Yinghai Lu wrote:
+>> On Tue, Jun 18, 2013 at 10:10 AM, Vasilis Liaskovitis
+>> <vasilis.liaskovitis@profitbricks.com> wrote:
+>> >> could be found at:
+>> >>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+>> >>
+>> >> and it is based on today's Linus tree.
+>> >>
+>> >
+>> > Has this patchset been tested on various numa configs?
+>> > I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
+>> > boots successfully in many numa configs but while trying different memory sizes
+>> > for a 2 numa node VM, I noticed that booting does not complete in all cases
+>> > (bootup screen appears to hang but there is no output indicating an early panic)
+>> >
+>> > node0   node1    boots
+>> > 1G      1G       yes
+>> > 1G      2G       yes
+>> > 1G      0.5G     yes
+>> > 3G      2.5G     yes
+>> > 3G      3G       yes
+>> > 4G      0G       yes
+>> > 4G      4G       yes
+>> > 1.5G    1G       no
+>> > 2G      1G       no
+>> > 2G      2G       no
+>> > 2.5G    2G       no
+>> > 2.5G    2.5G     no
+>> >
+>> > linux-next next-20130607 boots al of these configs fine.
+>> >
+>> > Looks odd, perhaps I have something wrong in my setup or maybe there is a
+>> > seabios/qemu interaction with this patchset. I will update if I find something.
+>>
+>> just tried 2g/2g, and it works on qemu-kvm:
+>
+> thanks for testing. If you can also share qemu/seabios versions you use (release
+> or git commits), that would be helpful.
 
-Xen suspends (and resumes) without disabling non-boot CPUs as doing so
-adds considerable delay to live migrations.  A 4 VCPU guest had more
-than 200 ms of additional downtime if disable_nonboot_cpus() was
-called prior to suspending.
+QEMU emulator version 1.5.50, Copyright (c) 2003-2008 Fabrice Bellard
 
-As a consequence, only high resolution timers on the current CPU are
-retriggered when resuming.  The Xen resume path worked around this
-with a call to clock_was_set() to retrigger timers on all the CPUs.
+it is at:
+commit 7387de16d0e4d2988df350926537cd12a8e34206
+Merge: b8a75b6 e73fe2b
+Author: Anthony Liguori <aliguori@us.ibm.com>
+Date:   Fri Jun 7 08:40:52 2013 -0500
 
-A subsequent change will make clock_was_set() internal to hrtimers so
-add an new call (hrtimers_late_resume()) to do the same job.
+    Merge remote-tracking branch 'stefanha/block' into staging
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/xen/manage.c    |    8 ++++++--
- include/linux/hrtimer.h |    1 +
- kernel/hrtimer.c        |    9 +++++++++
- 3 files changed, 16 insertions(+), 2 deletions(-)
+start command:
 
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 412b96c..75bc2d5 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -166,8 +166,12 @@ out_resume:
- 
- 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
--	/* Make sure timer events get retriggered on all CPUs */
--	clock_was_set();
-+	/*
-+	 * syscore_resume() ends up calling hrtimer_resume() but this
-+	 * only retriggers timer events on the current CPU.  We need
-+	 * to retrigger the events on all the other CPUS.
-+	 */
-+	hrtimers_late_resume();
- 
- out_thaw:
- #ifdef CONFIG_PREEMPT
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d19a5c2..13df0fa 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -323,6 +323,7 @@ extern void timerfd_clock_was_set(void);
- static inline void timerfd_clock_was_set(void) { }
- #endif
- extern void hrtimers_resume(void);
-+extern void hrtimers_late_resume(void);
- 
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index fd4b13b..34384b4 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -784,6 +784,15 @@ void hrtimers_resume(void)
- 	timerfd_clock_was_set();
- }
- 
-+/*
-+ * If non-boot CPUs were online during resume, we need to retrigger
-+ * the events for all the non-boot CPUs.
-+ */
-+void hrtimers_late_resume(void)
-+{
-+	clock_was_set();
-+}
-+
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
- {
- #ifdef CONFIG_TIMER_STATS
--- 
-1.7.2.5
+#for 64bit numa
+/usr/local/kvm/bin/qemu-system-x86_64 -L /usr/local/kvm/share/qemu
+-enable-kvm -numa node,nodeid=0,cpus=0-1,mem=2048 -numa
+node,nodeid=1,cpus=2-3,mem=2048 -smp sockets=2,cores=2,threads=1 -m
+4096 -net nic,model=e1000,macaddr=00:1c:25:1c:13:e9 -net user -hda
+/home/yhlu/data.dsk -cdrom
+/home/yhlu/xx/xx/kernel/tip/linux-2.6/arch/x86/boot/image.iso -boot d
+-serial telnet:127.0.0.1:4444,server -monitor stdio
 
+
+>
+> this is most likely some error on my setup, I 'll let you know if I conclude
+> otherwise.
+>
+> thanks,
+>
+> - Vasilis
