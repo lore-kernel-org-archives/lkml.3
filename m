@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab3FTMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:35:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57064 "EHLO bear.ext.ti.com"
+	id S1757618Ab3FTMi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:38:27 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:33323 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab3FTMf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:35:56 -0400
-Message-ID: <51C2F70A.3040708@ti.com>
-Date: Thu, 20 Jun 2013 15:35:22 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754724Ab3FTMi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:38:26 -0400
+Message-ID: <51C2F7BE.2060805@imgtec.com>
+Date: Thu, 20 Jun 2013 13:38:22 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-5-git-send-email-rogerq@ti.com> <20130620121151.GD9817@arwen.pp.htv.fi>
-In-Reply-To: <20130620121151.GD9817@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        =?UTF-8?B?77+9?= <heiko@sntech.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] pinctrl: establish pull-up/pull-down terminology
+References: <1371379548-6482-1-git-send-email-linus.walleij@stericsson.com> <51C22A95.4050703@wwwdotorg.org>
+In-Reply-To: <51C22A95.4050703@wwwdotorg.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_20_13_38_23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 03:11 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Wed, Jun 19, 2013 at 05:05:51PM +0300, Roger Quadros wrote:
->> Runtime suspend the controller during bus suspend and resume it
->> during bus resume. This will ensure that the USB Host power domain
->> enters lower power state and does not prevent the SoC from
->> endering deeper sleep states.
+On 19/06/13 23:03, Stephen Warren wrote:
+> On 06/16/2013 04:45 AM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
 >>
->> Remote wakeup will come up as an interrupt while the controller
->> is suspended, so tackle it carefully using a workqueue.
+>> It is counter-intuitive to have "0" mean disable in a boolean
+>> manner for electronic properties of pins such as pull-up and
+>> pull-down. Therefore, define that a pull-up/pull-down argument
+>> of 0 to such a generic option means that the pin is
+>> short-circuited to VDD or GROUND. Pull disablement shall be
+>> done using PIN_CONFIG_BIAS_DISABLE.
 >>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> Cc: Heiko St�bner <heiko@sntech.de>
+>> Cc: James Hogan <james.hogan@imgtec.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 >> ---
->>  drivers/usb/host/ehci-omap.c |   82 ++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 82 insertions(+), 0 deletions(-)
+>>  include/linux/pinctrl/pinconf-generic.h | 13 +++++++------
+>>  1 file changed, 7 insertions(+), 6 deletions(-)
 >>
->> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
->> index 16d7150..91f14f1 100644
->> --- a/drivers/usb/host/ehci-omap.c
->> +++ b/drivers/usb/host/ehci-omap.c
->> @@ -44,6 +44,8 @@
->>  #include <linux/usb/hcd.h>
->>  #include <linux/of.h>
->>  #include <linux/dma-mapping.h>
->> +#include <linux/workqueue.h>
->> +#include <linux/spinlock.h>
->>  
->>  #include "ehci.h"
->>  
->> @@ -69,6 +71,7 @@ static const char hcd_name[] = "ehci-omap";
->>  struct omap_hcd {
->>  	struct usb_phy *phy[OMAP3_HS_USB_PORTS]; /* one PHY for each port */
->>  	int nports;
->> +	struct work_struct work;
->>  };
->>  
->>  static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
->> @@ -81,6 +84,76 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
->>  	return __raw_readl(base + reg);
->>  }
->>  
->> +static void omap_ehci_work(struct work_struct *work)
->> +{
->> +	struct omap_hcd *omap = container_of(work, struct omap_hcd, work);
->> +	struct ehci_hcd *ehci = container_of((void *) omap,
->> +						struct ehci_hcd, priv);
->> +	struct usb_hcd *hcd = ehci_to_hcd(ehci);
->> +	struct device *dev = hcd->self.controller;
->> +
->> +	pm_runtime_get_sync(dev);
->> +	enable_irq(hcd->irq);
->> +	/*
->> +	 * enable_irq() should preempt us with a pending IRQ
->> +	 * so we can be sure that IRQ handler completes before
->> +	 * we call pm_runtime_put_sync()
->> +	 */
->> +	pm_runtime_put_sync(dev);
->> +}
->> +
->> +static irqreturn_t omap_ehci_irq(struct usb_hcd *hcd)
->> +{
->> +	struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
->> +	struct device *dev = hcd->self.controller;
->> +	irqreturn_t ret;
->> +
->> +	if (pm_runtime_suspended(dev)) {
->> +		schedule_work(&omap->work);
->> +		disable_irq_nosync(hcd->irq);
->> +		ret = IRQ_HANDLED;
+>> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+>> index d414a77..67780f5 100644
+>> --- a/include/linux/pinctrl/pinconf-generic.h
+>> +++ b/include/linux/pinctrl/pinconf-generic.h
+>> @@ -36,14 +36,15 @@
+>>   *	tristate. The argument is ignored.
+>>   * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
+>>   *	impedance to VDD). If the argument is != 0 pull-up is enabled,
+>> - *	if it is 0, pull-up is disabled.
+>> + *	if it is 0, pull-up it total, i.e. the pin is connected to VDD.
+>>   * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
+>>   *	impedance to GROUND). If the argument is != 0 pull-down is enabled,
+>> - *	if it is 0, pull-down is disabled.
+>> + *	if it is 0, pull-down is total, i.e. the pin is connected to GROUND.
+>>   * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+>>   *	on embedded knowledge of the controller, like current mux function.
+>> - *	If the argument is != 0 pull up/down is enabled, if it is 0,
+>> - *	the pull is disabled.
+>> + *	If the argument is != 0 pull up/down is enabled, if it is 0, the
+>> + *	configuration is ignored. The proper way to disable it is to use
+>> + *	@PIN_CONFIG_BIAS_DISABLE.
 > 
-> looks like this could be done as:
-> 
-> if (pm_runtime_suspended(dev)) {
-> 	pm_runtime_get(dev);
-> 	omap->flags |= OMAP_EHCI_IRQ_PENDING;
-> 	disable_irq_nosync(hcd->irq);
-> 	ret = IRQ_HANDLED;
-> }
-> 
-> then on your ->runtime_resume():
-> 
-> runtime_resume(dev)
-> {
-> 	...
-> 
-> 	if (omap->flags & OMAP_EHCI_IRQ_PENDING) {
-> 		process_pending_irqs(omap);
+> Why treat PULL_UP/PULL_DOWN differently from PULL_PIN_DEFAULT?
+> PULL_PIN_DEFAULT is logically simply a macro that selects PULL_UP/DOWN
+> based on what's "normal" for the pin's expected usage, so surely the
+> value associated with that option should behave identically?
 
-OK, thanks. 
+I'm not familiar with hardware that does this so I could be way wrong
+here, but presumably if there's a default up/down, there's probably a
+default resistance too. Does it really make sense to say
+"pull up or down depending on whatever the pin is intended for... but
+whichever it is must be XXX Ohm"?
+If you know the resistance you want, you surely already know whether you
+want it pull up or down with that resistence.
 
-But I'm not sure if the generic ehci_irq handler is able to
-run in a process context. Maybe if we replace spin_lock(&ehci->lock);
-with spin_lock_irqsave() there, it will work.
+Cheers
+James
 
-Alan is this a doable option?
-
-> 		omap->flags &= ~OMAP_EHCI_IRQ_PENDING;
-> 	}
-> 
-> 	return 0;
-> }
-> 
-> or something similar
-> 
-
-cheers,
--roger
