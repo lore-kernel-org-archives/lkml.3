@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161072Ab3FTSbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:31:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31632 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030341Ab3FTSbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:31:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
-   d="scan'208";a="257885783"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@intel.com>
-Subject: [PATCH 02/11] tracing: add missing syscall_metadata comment
-Date: Thu, 20 Jun 2013 13:31:26 -0500
-Message-Id: <f151e7e82a9a0723cdd50ae04ab30fd49b1e51ce.1371751701.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+	id S966025Ab3FTULT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 16:11:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43783 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965998Ab3FTULR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 16:11:17 -0400
+Date: Thu, 20 Jun 2013 21:06:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Airlie <airlied@linux.ie>,
+        Darren Etheridge <darren.etheridge@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] drm/i2c: tda998x: fix sync generation and
+	calculation
+Message-ID: <20130620200624.GQ2718@n2100.arm.linux.org.uk>
+References: <1371757563-27862-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371757563-27862-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tom.zanussi@intel.com>
+On Thu, Jun 20, 2013 at 09:46:03PM +0200, Sebastian Hesselbarth wrote:
+> +	ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
+> +	de_pix_s     = mode->htotal - mode->hdisplay;
+> +	de_pix_e     = de_pix_s + mode->hdisplay;
+> +	hs_pix_s     = mode->hsync_start - mode->hdisplay;
+> +	hs_pix_e     = hs_pix_s + mode->hsync_end - mode->hsync_start;
 
-Add the missing syscall_metadata description for the enter_fields
-struct member.
+Correct, however, these can be simplified.
 
-Signed-off-by: Tom Zanussi <tom.zanussi@intel.com>
----
- include/trace/syscall.h | 1 +
- 1 file changed, 1 insertion(+)
+For de_pix_e:
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 84bc419..fed853f 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -16,6 +16,7 @@
-  * @nb_args: number of parameters it takes
-  * @types: list of types as strings
-  * @args: list of args as strings (args[i] matches types[i])
-+ * @enter_fields: list of fields for syscall_enter trace event
-  * @enter_event: associated syscall_enter trace event
-  * @exit_event: associated syscall_exit trace event
-  */
--- 
-1.7.11.4
+	de_pix_e = de_pix_s + mode->hdisplay;
+	de_pix_s = mode->htotal - mode->hdisplay;
 
+Putting de_pix_s into de_pix_e's equation, you get:
+
+	de_pix_e = mode->htotal - mode->hdisplay + mode->hdisplay;
+
+which ends up simply as:
+
+	de_pix_e = mode->htotal;
+
+Now, doing the same for hs_pix_e:
+
+	hs_pix_e = mode->hsync_start - mode->hdisplay + mode->hsync_end - mode->hsync_start;
+
+which ends up as:
+
+	hs_pix_e = mode->hsync_end - mode->hdisplay;
+
+So overall these come out as:
+
+	de_pix_e = mode->htotal;
+	de_pix_s = mode->htotal - mode->hdisplay;
+	hs_pix_e = mode->hsync_end - mode->hdisplay;
+	hs_pix_s = mode->hsync_start - mode->hdisplay;
+
+I've listed them in reverse order because it makes more sense to me when
+thinking about it.  What we're basically doing is rotating this by
+hdisplay pixel clocks to the left, so using abbreviations:
+
+ht=htotal
+hds=hdisplay start
+hde=hdisplay end
+hss=hsync_start
+hse=hsync_end
+
+0                                                ht
+hds                                hde  hss hse   |
+|-----------------------------------|----|---|----|
+
+becomes:
+0                                                ht
+0   hss hse  hds                                hde
+|----|---|----|-----------------------------------|
+
+and from that you can visualize taking hdisplay (being hde-hds) off each
+timing parameter modulo htotal gives you the above equations.
+
+These calculations are the same as what was originally in the driver:
+
++       de_start   = mode->htotal - mode->hdisplay;
++       de_end     = mode->htotal;
++       hs_start   = mode->hsync_start - mode->hdisplay;
++       hs_end     = mode->hsync_end - mode->hdisplay;
+
+when it was first committed.
+
+This is otherwise exactly what I came up with which gets my TV working
+again in HDMI mode.
