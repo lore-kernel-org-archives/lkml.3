@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965844Ab3FTVkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:40:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43263 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965663Ab3FTVkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 17:40:47 -0400
-Message-ID: <1371764435.3944.30.camel@pasglop>
-Subject: Re: Masked MSIs expectations
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Jun 2013 07:40:35 +1000
-In-Reply-To: <20130620133314.GR2575@8bytes.org>
-References: <1368086982.25488.165.camel@pasglop>
-	 <20130620133314.GR2575@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757947Ab3FTVmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:42:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52109 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab3FTVmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:42:08 -0400
+Date: Thu, 20 Jun 2013 14:42:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Christoph Anton Mitterer <calestyo@scientia.net>
+Cc: linux-kernel@vger.kernel.org, wokeswang@qnap.com
+Subject: Re: support for Intel Atom based QNAP LEDs/buttons/buzzer in Linux?
+Message-ID: <20130620214207.GA12922@kroah.com>
+References: <1371259861.12984.6.camel@heisenberg.scientia.net>
+ <1371687272.30351.13.camel@heisenberg.scientia.net>
+ <20130620025900.GA21820@kroah.com>
+ <1371763706.5197.6.camel@fermat.scientia.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371763706.5197.6.camel@fermat.scientia.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 15:33 +0200, Joerg Roedel wrote:
-> (In case this topic is still relevant)
+On Thu, Jun 20, 2013 at 11:28:26PM +0200, Christoph Anton Mitterer wrote:
+> Hey Greg.
 > 
-> On Thu, May 09, 2013 at 06:09:42PM +1000, Benjamin Herrenschmidt wrote:
-> > Do we provide drivers any guarantee to what happen if an MSI is shot
-> > while masked with disable_irq() or while not yet request_irq()'ed ?
-> > 
-> > Do we guarantee delivery (latched while masked), non-delivery, or
-> > undefined ?
-> 
-> I am not aware of any guarantees the kernel gives in this situation. I
-> think it would just drop the IRQ and print a "nobody cared" message.
+> On Wed, 2013-06-19 at 19:59 -0700, Greg KH wrote:
+> > If you can dig the code out into a stand-alone form that I can make into
+> > a patch for the drivers/staging/ tree, I'll be glad to take it.
+> Well I don't think my kernel/hardware development skills are enough for
+> that... especially as Guenter already said that the code shouldn't be
+> part of hwmon/it87 ... but rather a separate gpio driver...
 
-Well, I was not necessarily talking about the kernel reaction here, my
-statement was high level, it could be that the interrupt controller
-latches it and "shoots" it as soon as enabled for example in some cases,
-or drops it in others.
+Fair enough.
 
-Also we wouldn't print a message in the kernel, we "lazy disable" edge
-interrupts, so we would just drop it.
+> > Or, if
+> > you get a contact at QNAP, I'll be glad to help out there as well
+> Well I've asked them again,... no reply so far.
+> The only direct contact I know (from the sources of their drivers) is
+> Wokes Wang, which I've CCed. Perhaps he can help.
 
-> > I'm bringing up a piece of HW where if it happened, it won't be
-> > automatically sent to the CPU and can block further MSIs unless I
-> > explicitly either ditch it or force a resend when unmasking (at the PCI
-> > Express controller PIC level).
-> > 
-> > I'm tempted to just ditch anything that happened while masked, it would
-> > make everything easier on my side, but maybe drivers have different
-> > expectations (and of course an LSI would still shoot, that's not an
-> > issue, only MSIs are in question here).
-> > 
-> > I have cases of devices continuing to shoot one or two MSIs after kexec
-> > and before the new kernel takes over, causing a "loss" of any subsequent
-> > one unless I deal with that case one way or another.
-> 
-> I would also just ditch such IRQs that happen in that kexec case and
-> make sure that they will work again when the kexec-kernel device driver
-> wants to initialize them.
+That would be great.  Also, do you have a pointer to the git tree for
+the hardware again, I can't seem to find it.  I can dig through the tree
+to see if I can make something "self-contained", if you are willing to
+test it out.
 
-Yes, in the kexec case it sounds obvious to just ditch anything, but I
-wanted to make sure of the general idea, ie, if the driver temporarily
-does disable_irq()/enable_irq() I can potentially ditch them all too,
-rather than "latch" them. 
+thanks,
 
-Anyway, I've done that, so far so good.
-
-Cheers,
-Ben.
-
-> 	Joerg
-> 
-
-
+greg k-h
