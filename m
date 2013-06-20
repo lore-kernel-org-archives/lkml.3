@@ -1,286 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab3FTJgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:36:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19271 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3FTJgb (ORCPT
+	id S1757359Ab3FTJhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:37:39 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:4715 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545Ab3FTJhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:36:31 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-79-51c2cd1df0a0
-From: Tomasz Figa <t.figa@samsung.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Subject: Re: [PATCH V6 3/3] ARM: dts: Add pcie controller node for Samsung
- EXYNOS5440 SoC
-Date: Thu, 20 Jun 2013 11:36:20 +0200
-Message-id: <228629412.BqSshikCdN@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.3 (Linux/3.8.8-gentoo; KDE/4.10.3; x86_64; ; )
-In-reply-to: <00c501ce6d8f$af1bf900$0d53eb00$@samsung.com>
-References: <00c201ce6d85$83b072a0$8b1157e0$@samsung.com>
- <3250954.dVh4O1LchK@flatron> <00c501ce6d8f$af1bf900$0d53eb00$@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t/xy7qyZw8FGlzp47Jo/r+d1eLvpGPs
-	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
-	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmi1W7/jA6CHmsmbeG0eP3r0mMHn1TrrJ5PNl0kdFj
-	56y77B4LNpV63Lm2h81j85J6j/MzFjJ6fN/RC1S1ZRWjx8+XOh6fN8kF8EZx2aSk5mSWpRbp
-	2yVwZXQ9amUpeG5ccfvyD6YGxmlqXYycHBICJhJH1y1mgbDFJC7cW8/WxcjFISSwlFHi+v/T
-	TBBOF5PEhImP2ECq2ATUJD43QNgiAioSn9cfB7OZBV6wSizcbQZiCwtESzxZ3MQEYrMIqEo8
-	nXwazOYV0JZo/feVEcTmF1CXeLftKVhcVMBV4v3qw2BXcApYSZx9toYFYnEbo8S8LV+hmgUl
-	fky+xwKxTF5i3/6prBC2lsT6nceZJjAKzkJSNgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGukVJ+YW
-	l+al6yXn525ihETt1x2MS49ZHWIU4GBU4uHVuHwwUIg1say4MvcQowQHs5IIb+qcQ4FCvCmJ
-	lVWpRfnxRaU5qcWHGJk4OKUaGEt05WdnXp+57n6glL756kS+fQovvoYEefwS9wmp7zD5Kdv+
-	psWAQeyhG9M/Jrspx+TWunf4y00q/RogwyN88ixDX2P6avP72vaBk4Kk+kTq5BwP8MQcPfDn
-	jHOAt+eh8yczmq7aK3AxMVgkrOHv793lPEPk5q+TZ89fCQr40bWD6056g6uyEktxRqKhFnNR
-	cSIAPkT6a7gCAAA=
+	Thu, 20 Jun 2013 05:37:37 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C2CD2D.1090400@asianux.com>
+Date: Thu, 20 Jun 2013 17:36:45 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        laijs@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/kthread.c: need spin_lock_irq() for 'worker' before
+ main looping, since it can "WARN_ON(worker->task)".
+References: <51C12D9A.8030801@asianux.com> <20130619084124.GF30681@mtj.dyndns.org> <51C18540.5060200@asianux.com> <20130619155218.GA14881@htj.dyndns.org> <51C26087.9000109@asianux.com> <alpine.DEB.2.02.1306200900030.4013@ionos.tec.linutronix.de> <51C2B157.40806@asianux.com> <alpine.DEB.2.02.1306200951090.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306200951090.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 of June 2013 17:25:12 Jingoo Han wrote:
-> On Thursday, June 20, 2013 5:04 PM, Tomasz Figa wrote:
-> > Hi Jingoo,
-> > 
-> > On Thursday 20 of June 2013 16:12:24 Jingoo Han wrote:
-> > > Exynos5440 has two PCIe controllers which can be used as root complex
-> > > for PCIe interface.
-> > > 
-> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > > ---
-> > > 
-> > >  arch/arm/boot/dts/exynos5440-ssdk5440.dts |    8 ++++++
-> > >  arch/arm/boot/dts/exynos5440.dtsi         |   40
-> > > 
-> > > ++++++++++++++++++++++++++++- 2 files changed, 47 insertions(+), 1
-> > > deletion(-)
-> > > 
-> > > diff --git a/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-> > > b/arch/arm/boot/dts/exynos5440-ssdk5440.dts index f32cd77..3d93804
-> > > 100644
-> > > --- a/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-> > > +++ b/arch/arm/boot/dts/exynos5440-ssdk5440.dts
-> > > @@ -65,4 +65,12 @@
-> > > 
-> > >  			clock-frequency = <50000000>;
-> > >  		
-> > >  		};
-> > >  	
-> > >  	};
-> > > 
-> > > +
-> > > +	pcie0@290000 {
-> > > +		reset-gpio = <&pin_ctrl 5 0>;
-> > > +	};
-> > > +
-> > > +	pcie1@2a0000 {
-> > > +		reset-gpio = <&pin_ctrl 22 0>;
-> > > +	};
-> > > 
-> > >  };
-> > > 
-> > > diff --git a/arch/arm/boot/dts/exynos5440.dtsi
-> > > b/arch/arm/boot/dts/exynos5440.dtsi index 03d40c0..6295eda 100644
-> > > --- a/arch/arm/boot/dts/exynos5440.dtsi
-> > > +++ b/arch/arm/boot/dts/exynos5440.dtsi
-> > > @@ -126,7 +126,7 @@
-> > > 
-> > >  		clock-names = "spi", "spi_busclk0";
-> > >  	
-> > >  	};
-> > > 
-> > > -	pinctrl {
-> > > +	pin_ctrl: pinctrl {
-> > > 
-> > >  		compatible = "samsung,exynos5440-pinctrl";
-> > >  		reg = <0xE0000 0x1000>;
-> > >  		interrupts = <0 37 0>, <0 38 0>, <0 39 0>, <0 40 0>,
-> > > 
-> > > @@ -230,4 +230,42 @@
-> > > 
-> > >  		clocks = <&clock 24>;
-> > >  		clock-names = "usbhost";
-> > >  	
-> > >  	};
-> > 
-> > I think this patch should be split into two:
-> >  - patch adding just generlic PCIe nodes for Exynos5440,
-> >  - patch adding label to the pinctrl node (which is a prerequisite) and
-> > 
-> > board-specific properties of PCIe nodes.
+On 06/20/2013 04:28 PM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, Chen Gang wrote:
 > 
-> Do you mean the following?
+>> > On 06/20/2013 03:02 PM, Thomas Gleixner wrote:
+>>> > > On Thu, 20 Jun 2013, Chen Gang wrote:
+>>> > > 
+>>>>> > >> > On 06/19/2013 11:52 PM, Tejun Heo wrote:
+>>>>>>> > >>> > > On Wed, Jun 19, 2013 at 06:17:36PM +0800, Chen Gang wrote:
+>>>>>>>>>>> > >>>>> > >> > Hmm... can 'worker->task' has chance to be not NULL before set 'current'
+>>>>>>>>>>> > >>>>> > >> > to it ?
+>>>>>>> > >>> > > Yes, if the caller screws up and try to attach more than one workers
+>>>>>>> > >>> > > to the kthread_worker, which has some possibility of happening as
+>>>>>>> > >>> > > kthread_worker allows both attaching and detaching a worker.
+>>>>>>> > >>> > > 
+>>>>> > >> > 
+>>>>> > >> > If we detect the bugs, and still want to use WARN_ON() to report warning
+>>>>> > >> > and continue running, we need be sure of keeping the related things no
+>>>>> > >> > touch (at least not lead to worse).
+>>>>> > >> > 
+>>>>> > >> > If we can not be sure of keeping the related things no touch:
+>>>>> > >> >   if it is a kernel bug, better use BUG_ON() instead of,
+>>>>> > >> >   if it is a user mode bug, better to return failure with error code and
+>>>>> > >> > print related information.
+>>> > > Wrong. BUG_ON() is only for cases where the kernel CANNOT continue at
+>>> > > all. WARN_ON() prints the very same information, but allows to
+>>> > > continue.
+>>> > > 
+>> > 
+>> > In fact, BUG_ON() and WARN_ON() has various implementations in different
+>> > architectures, and also can be configured by user.
+> And how is that relevant? 
+>  
+
+I only want to say 'Wrong. BUG_ON() is only for cases where ...." is not
+quite precious.
+
+
+>> > Even some of 'crazy users' (e.g. randconfig), can make BUG_ON() and
+>> > WARN_ON() 'empty' (include/asm-generic/bug.h).
+> That does not matter at all.
+>  
+>> > In my experience (mainly for servers), when find a kernel bug, it will
+>> > stop and report bug, that will let coredump analysing (or KDB trap) much
+>> > easier.
+> And your core dump will help you in what way? The code which
+> misbehaved is not longer executing. The problem is detected after the
+> fact and therefor your coredump will just tell you that worker->task
+> is not NULL.
+>  
+
+In this case, if generate a coredump, it will provide much help to
+analyze the issues.
+
+Normally, this coredump is not belongs to complex coredump.
+
+I met a complex KDB trap (at least for me, it is complex, maybe easy for
+others):
+  When a driver is quiting, it releases the dma buffers firstly, then
+immediately tell the hardware to stop dma usage.
+  After the hardware writes 'a little waste data' to the released
+buffer, the driver quite successfully.
+  Then the driver restart again, and work normally.
+  After 'a long period', the system finds random issues (sometimes for
+ext3, sometimes for mm, block, or anywhere...).
+
+I spend almost 1 month to find the root cause (from 2008-12 to 2009-01).
+
+
+So if it generates a coredump (or KDB trap) when find bug, in most
+cases, it is not a quite complex coredump.
+
+
+>>>>> > >> > BUG_ON() will stop current working flow and report kernel bug in details.
+>>> > > There is no reason to crash the machine completely. The kernel can
+>>> > > continue and the WARN_ON reports the bug with the same details.
+> Linus said about BUG_ON():
 > 
-> 1. patch adding just generlic PCIe nodes for Exynos5440
->     [PATCH] ARM: dts: Add pcie controller node for Samsung EXYNOS5440 SoC
+>   Adding BUG_ON()'s just makes things much much much worse. There is
+>   *never* a reason to add a BUG_ON().
+>   
+>   BUG_ON() makes it almost impossible to debug something, because you
+>   just killed the machine. So using BUG_ON() for "please notice this"
+>   is stupid as hell, because the most common end result is: "Oh, the
+>   machine just hung with no messages".
 > 
-> arch/arm/boot/dts/exynos5440.dtsi
-> +
-> +	pcie@290000 {
-> +		compatible = "samsung,exynos5440-pcie";
-> +		reg = <0x290000 0x1000
-> +			0x270000 0x1000
-> +			0x271000 0x40>;
-> +		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
-> +		clocks = <&clock 28>, <&clock 27>;
-> +		clock-names = "pcie", "pcie_bus";
-> +		#address-cells = <3>;
-> +		#size-cells = <2>;
-> +		device_type = "pci";
-> +		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00001000   /*
-> configuration space */ +			  0x81000000 0 0	  0x40001000 0 0x00010000  
-> /* downstream I/O */ +			  0x82000000 0 0x40011000 0x40011000 0
-> 0x1ffef000>; /* non-prefetchable memory */ +		#interrupt-cells = <1>;
-> +		interrupt-map-mask = <0 0 0 0>;
-> +		interrupt-map = <0x0 0 &gic 53>;
-> +	};
-> +
-> +	pcie@2a0000 {
-> +		compatible = "samsung,exynos5440-pcie";
-> +		reg = <0x2a0000 0x1000
-> +			0x272000 0x1000
-> +			0x271040 0x40>;
-> +		interrupts = <0 23 0>, <0 24 0>, <0 25 0>;
-> +		clocks = <&clock 29>, <&clock 27>;
-> +		clock-names = "pcie", "pcie_bus";
-> +		#address-cells = <3>;
-> +		#size-cells = <2>;
-> +		device_type = "pci";
-> +		ranges = <0x00000800 0 0x60000000 0x60000000 0 0x00001000   /*
-> configuration space */ +			  0x81000000 0 0	  0x60001000 0 0x00010000  
-> /* downstream I/O */ +			  0x82000000 0 0x60011000 0x60011000 0
-> 0x1ffef000>; /* non-prefetchable memory */ +		#interrupt-cells = <1>;
-> +		interrupt-map-mask = <0 0 0 0>;
-> +		interrupt-map = <0x0 0 &gic 56>;
-> +	};
-> 
-> 
-> 
-> 2. patch adding label to the pinctrl node (which is a prerequisite) and
->     board-specific properties of PCIe nodes.
->    [PATCH] ARM: dts: Add pcie controller node for exynos5440-ssdk5440
-> 
-> arch/arm/boot/dts/exynos5440-ssdk5440.dts
-> +
-> +	pcie0@290000 {
-> +		reset-gpio = <&pin_ctrl 5 0>;
-> +	};
-> +
-> +	pcie1@2a0000 {
-> +		reset-gpio = <&pin_ctrl 22 0>;
-> +	};
-> 
-> arch/arm/boot/dts/exynos5440.dtsi
-> -	pinctrl {
-> +	pin_ctrl: pinctrl {
+> And he is right about that. 
+>  
+
+Why we provide BUG_ON(), and many sub-systems also use it, at last ?
+
+and Why we integrated KDB and KGDB at last ?
+
+
+>> > If so (we still prefer to use WARN_ON), we'd better to let it in lock
+>> > protected.
+> No, because the lock is not protecting anything in that case. If some
+> other code misbehaves and sets worker->task, then the lock does not
+> prevent this and taking the lock is not making the WARN_ON any more
+> reliable. So why the heck should we take it?
+>  
+
+For writing code, if 'worker->task' is not NULL, we can assume, it need
+lock protected.
+
+>> > At least when we still have to continue, try not to lead things worse.
+> And what's going to be better if we take the lock? Nothing, because
+> the lock CANNOT protect the check.
+>  
+>> > It will provide much help for coredump analysing (or KDB trap).
+>> > 
+>> > In fact, for coredump analysers, for every real world coredump, they
+>> > have to assume the system has already continued blindly, and then die.
+> Core dump analysers cannot analyse dynamic race conditions and neither
+> can KDB. 
 > 
 
-Exactly.
+Yes, they can.
 
-> > > +
-> > > +	pcie0@290000 {
-> > 
-> > Node naming looks incorrect here. The name should be as generic as
-> > possible, without any hardware-specific IDs, e.g. pcie, not pcie0. The
-> > @290000 suffix is enough to make the node unique.
-> 
-> I see. You are right.
-> I will fix it.
+At least for me, I have at least 20 successful experiences (2009 - 2010)
+for coredump, dead lock, memory leak, and busy looping under user mode
+system services (the related code about 400K).
+
+For kernel, I also have some successful experience for coredump.
+
+
+> So what do you gain from crashing the kernel? Exactly NOTHING.
+
+So, the coredump (or KDB trap) is really useful for some guys (at least
+for me).
+
 
 Thanks.
+-- 
+Chen Gang
 
-Best regards,
-Tomasz
-
-> Best regards,
-> Jingoo Han
-> 
-> > > +		compatible = "samsung,exynos5440-pcie";
-> > > +		reg = <0x290000 0x1000
-> > > +			0x270000 0x1000
-> > > +			0x271000 0x40>;
-> > > +		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
-> > > +		clocks = <&clock 28>, <&clock 27>;
-> > > +		clock-names = "pcie", "pcie_bus";
-> > > +		#address-cells = <3>;
-> > > +		#size-cells = <2>;
-> > > +		device_type = "pci";
-> > > +		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00001000
-> > 
-> > /*
-> > 
-> > > configuration space */ +			  0x81000000 0 0
-> > 
-> > 0x40001000 0 0x00010000
-> > 
-> > > /* downstream I/O */ +			  0x82000000 0 0x40011000
-> > 
-> > 0x40011000 0
-> > 
-> > > 0x1ffef000>; /* non-prefetchable memory */ +		#interrupt-cells =
-> > 
-> > <1>;
-> > 
-> > > +		interrupt-map-mask = <0 0 0 0>;
-> > > +		interrupt-map = <0x0 0 &gic 53>;
-> > > +	};
-> > > +
-> > > +	pcie1@2a0000 {
-> > 
-> > Same here.
-> > 
-> > Best regards,
-> > Tomasz
-> > 
-> > > +		compatible = "samsung,exynos5440-pcie";
-> > > +		reg = <0x2a0000 0x1000
-> > > +			0x272000 0x1000
-> > > +			0x271040 0x40>;
-> > > +		interrupts = <0 23 0>, <0 24 0>, <0 25 0>;
-> > > +		clocks = <&clock 29>, <&clock 27>;
-> > > +		clock-names = "pcie", "pcie_bus";
-> > > +		#address-cells = <3>;
-> > > +		#size-cells = <2>;
-> > > +		device_type = "pci";
-> > > +		ranges = <0x00000800 0 0x60000000 0x60000000 0 0x00001000
-> > 
-> > /*
-> > 
-> > > configuration space */ +			  0x81000000 0 0
-> > 
-> > 0x60001000 0 0x00010000
-> > 
-> > > /* downstream I/O */ +			  0x82000000 0 0x60011000
-> > 
-> > 0x60011000 0
-> > 
-> > > 0x1ffef000>; /* non-prefetchable memory */ +		#interrupt-cells =
-> > 
-> > <1>;
-> > 
-> > > +		interrupt-map-mask = <0 0 0 0>;
-> > > +		interrupt-map = <0x0 0 &gic 56>;
-> > > +	};
-> > > 
-> > >  };
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-samsung-soc" in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Asianux Corporation
