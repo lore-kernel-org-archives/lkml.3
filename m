@@ -1,130 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965436Ab3FTPOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:14:10 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45085 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965153Ab3FTPOI (ORCPT
+	id S1758137Ab3FTP4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:56:38 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:59903 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758121Ab3FTP4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:14:08 -0400
-From: Ghennadi Procopciuc <unix140@gmail.com>
-To: akpm@linux-foundation.org, js1304@gmail.com, rientjes@google.com,
-        minchan@kernel.org, kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Ghennadi Procopciuc <unix140@gmail.com>,
-        Daniel Baluta <dbaluta@ixiacom.com>
-Subject: [PATCH] mm: fix overflow in alloc_vmap_area
-Date: Thu, 20 Jun 2013 18:12:30 +0300
-Message-Id: <1371741150-10861-1-git-send-email-unix140@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 20 Jun 2013 11:56:34 -0400
+Message-ID: <51C3262E.80407@monstr.eu>
+Date: Thu, 20 Jun 2013 17:56:30 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 0/2] Extend multi_v7_defconfig
+References: <1371664384-24974-1-git-send-email-soren.brinkmann@xilinx.com> <201306192046.41005.arnd@arndb.de> <51C291D0.6000401@monstr.eu> <201306201002.01702.arnd@arndb.de> <51C2BD00.4000800@monstr.eu> <5ab196fe-de67-4d75-a722-c084517a948a@CO9EHSMHS003.ehs.local>
+In-Reply-To: <5ab196fe-de67-4d75-a722-c084517a948a@CO9EHSMHS003.ehs.local>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WKDQCAGEMSQGAIWDMMMC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inserting the following kernel module:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WKDQCAGEMSQGAIWDMMMC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-<snip>
+On 06/20/2013 05:41 PM, S=C3=B6ren Brinkmann wrote:
+> On Thu, Jun 20, 2013 at 10:27:44AM +0200, Michal Simek wrote:
+>> On 06/20/2013 10:02 AM, Arnd Bergmann wrote:
+>>> On Thursday 20 June 2013, Michal Simek wrote:
+>>>> On 06/19/2013 08:46 PM, Arnd Bergmann wrote:
+>>>>> On Wednesday 19 June 2013, Soren Brinkmann wrote:
+>>>>>> I don't know how much a defconfig is supposed to provide, hence as=
+ RFC.
+>>>>>> This patches are needed for booting Zynq into a minimum ramfs base=
+d
+>>>>>> system with a serial console.
+>>>>>
+>>>>> In my opinion we should provide enable all the platform specific dr=
+ivers
+>>>>> in the defconfigs, as well as everything needed to boot the system,=
 
-static int simple_test_init(void)
-{
-        size_t i, j;
-        void *address;
+>>>>> to get proper compile coverage as well as the ability to test chang=
+es
+>>>>> easily. Your patches look good. Michal, would you apply them and
+>>>>> send another pull request or should I just take them directly?
+>>>>
+>>>> Soren asked me 2 days ago if make sense to create zynq defconfig or =
+not.
+>>>> I just suggested him to better extend this multi_v7_defconfig.
+>>>> But still question is if we can/should create zynq specific defconfi=
+g?
+>>>> Or are you going to remove all of these platform specific defconfig?=
 
-        for (i = 0 * MB; i<  60 * MB; i += 1 * MB) {
-                for (j = i; j<  i + 1 * MB; j += KB) {
-                        address = vmalloc(j);
-                        vfree(address);
-                }
-        }
+>>>
+>>> We don't have a consistent policy across platforms at the moment.
+>>> Traditionally we had multiple defconfigs per platform, in some cases
+>>> one per board, but moving towards one defconfig per platform at
+>>> the moment.
+>>
+>> That's what I though but on the other hand in this process
+>> all these defconfigs should be removed.
+>>
+>>> I guess whether or not to have a separate defconfig for one platform
+>>> or to use only multi_*_defconfig is a question of how many people
+>>> would use a zynq_defconfig in practice.
+>>
+>> The point is if you look at zynq users than they will just use this zy=
+nq_defconfig
+>> because they know that it is for zynq and also they don't want to
+>> compile drivers for other platforms which zynq can't use.
+>> From distribution point of view they want to use only one image becaus=
+e it is just
+>> easier.
+>>
+>> Based on this if there is an option to also add just zynq defconfig, I=
+ would prefer
+>> to also add it.
+>>
+>>>> Definitely agree that multi_v7 defconfig should enable everything ne=
+eded
+>>>> to boot the system.
+>>>> Does it also mean that we should also enable all zynq drivers
+>>>> to get better compile coverage?
+>>>
+>>> I would say yes.
+>>>
+>>> My feeling is that multi_v7_defconfig should enable all hardware
+>>> support for the platforms in it, and that users would take it
+>>> as a starting point if they want to have a configuration for
+>>> an embedded system, disabling everything they don't need.
+>>
+>> I just wanted to be sure because you wrote just drivers for booting
+>> it means any "minimal" configuration to get it boot not all drivers.
+>>
+>> If you are ok, Soren will prepare also specific zynq defconfig file
+>> and check if there are any missing drivers which are not enabled for z=
+ynq
+>> for multi_v7. I will collect them in one branch and will send pull req=
+uest.
+> I can check. But I don't think it makes too much sense currently. Even
+> though multi_v7_defconfig targets several SOCs its pretty minimal. I
+> think there are just a few SOC BSPs and serial drivers selected. Due to=
 
-        return 0;
-}
+> lacking driver support in mainline, a Zynq specific config would not be=
 
-</snip>
+> that different, IMHO.
+> But this does hopefully change with growing driver support for Zynq in
+> mainline.
 
-triggers BUG at mm/vmalloc.c:310 on a x86 machine:
+It depends. Kernel with all possible drivers for all arm multiplatform
+could be big and also it will take a lot of time to compile it.
 
-[   95.218283] Kernel BUG at c1126cdb [verbose debug info unavailable]
-[   95.218306] invalid opcode: 0000 [#1] SMP
-[   95.218324] Modules linked in: lkma_test(OF+)<snip lots of not tainted modules>
-[   95.218559] Pid: 2419, comm: insmod Tainted: GF          O 3.9.0+ #57 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
-[   95.218597] EIP: 0060:[<c1126cdb>] EFLAGS: 00010207 CPU: 3
-[   95.218617] EIP is at __insert_vmap_area+0xfb/0x100
-[   95.218635] EAX: f85dc000 EBX: ef05cac0 ECX: f7be08c4 EDX: 00000007
-[   95.218657] ESI: f2ed044c EDI: c1a220b8 EBP: f027bd34 ESP: f027bd14
-[   95.218680]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   95.218699] CR0: 80050033 CR2: b5995118 CR3: 30364000 CR4: 000407f0
-[   95.218721] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[   95.218743] DR6: ffff0ff0 DR7: 00000400
-[   95.218758] Process insmod (pid: 2419, ti=f027a000 task=efe64010 task.ti=f027a000)
-[   95.218784] Stack:
-[   95.218792]  c177b964 fecfb000 f85e2000 00000000 f85dc000 ffbfe000 f02da1c0 0007f000
-[   95.218829]  f027bd7c c112802d c177b9b0 fecfb000 01305000 ffbfe000 00000001 ef05cac0
-[   95.218866]  00000000 00000000 f83fe000 01304fff f83fe000 ffffffff 01305000 ef05c500
-[   95.218903] Call Trace:
-[   95.218915]  [<f85e2000>] ? 0xf85e1fff
-[   95.218930]  [<f85dc000>] ? 0xf85dbfff
-[   95.218945]  [<c112802d>] alloc_vmap_area.isra.16+0x1bd/0x2f0
-[   95.218967]  [<c112867f>] __get_vm_area_node.isra.17+0x8f/0x130
-[   95.218988]  [<c1128d77>] __vmalloc_node_range+0x57/0x200
-[   95.219009]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
-[   95.219031]  [<c1128f82>] __vmalloc_node+0x62/0x70
-[   95.219049]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
-[   95.219071]  [<c1129058>] vmalloc+0x38/0x40
-[   95.219087]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
-[   95.219109]  [<f85f3075>] lkma_test_init+0x45/0x70 [lkma_test]
-[   95.219131]  [<f85f3030>] ? kzalloc+0x10/0x10 [lkma_test]
-[   95.219151]  [<c1001222>] do_one_initcall+0x112/0x160
-[   95.219171]  [<c15ca3cf>] ? set_section_ro_nx+0x54/0x59
-[   95.219190]  [<c1099b69>] load_module+0x1d79/0x2660
-[   95.219209]  [<c114721d>] ? create_object+0x19d/0x280
-[   95.219230]  [<c109a4c8>] sys_init_module+0x78/0xb0
-[   95.219250]  [<c15d9801>] sysenter_do_call+0x12/0x22
-[   95.219268] Code: 39 03 73 0c 8b 3f 89 f0 83 c7 08 e9 3d ff ff ff 8b 46 f4 39 43 04 76 13 8b 3f 89 f0 83 c7 04 e9 29 ff ff ff e8 fb 1b 4a 00 eb ab<0f>  0b 8d 76 00 55 89 e5 56 53 66 66 66 66 90 83 60 0c df 89 c6
-[   95.219415] EIP: [<c1126cdb>] __insert_vmap_area+0xfb/0x100 SS:ESP 0068:f027bd14
-[   95.228313] ---[ end trace e0a1efb2acb97c98 ]---
+It is more up to Arnd and Olof.
 
-A printk placed in __insert_vmap_area will show:
+Thanks,
+Michal
 
-[   95.218256] va->va_start=0xfecfb000 tmp_va->va_end=0xf85e2000 va->va_end=0 tmp_va->va_start=0xf85dc000
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-and another one, before sum operation in alloc_vmap_area:
 
-[   95.218204] addr = 0xfecfb000 size = 19943424 vend = 0xffbfe000
 
-If after addition the result is smaller than one of the arguments,
-then an overflow occurred. In our case there is an obvious overflow.
+------enig2WKDQCAGEMSQGAIWDMMMC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Signed-off-by: Ghennadi Procopciuc <unix140@gmail.com>
-Cc: Daniel Baluta<dbaluta@ixiacom.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
----
- Don't know if this is the right solution, but the bug happens for me in
- 3.10-rc6 and 3.9.
----
- mm/vmalloc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+iEYEARECAAYFAlHDJi4ACgkQykllyylKDCEczACfZCYbEVfbS87FvaQ6hfB/qRL0
+e0sAn2pCL/pMereAjalnELERwbFaEAFf
+=xgcT
+-----END PGP SIGNATURE-----
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0f751f2..6ea525c 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -421,12 +421,13 @@ nocache:
- 	}
-
- found:
--	if (addr + size > vend)
-+	va->va_end = addr + size;
-+	if (va->va_end < addr || va->va_end < size || va->va_end > vend)
- 		goto overflow;
-
- 	va->va_start = addr;
--	va->va_end = addr + size;
- 	va->flags = 0;
-+
- 	__insert_vmap_area(va);
- 	free_vmap_cache = &va->rb_node;
- 	spin_unlock(&vmap_area_lock);
---
-1.8.1.2
-
+------enig2WKDQCAGEMSQGAIWDMMMC--
