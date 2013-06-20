@@ -1,104 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935716Ab3FTDzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:55:10 -0400
-Received: from [133.145.228.5] ([133.145.228.5]:37623 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S935546Ab3FTDzJ (ORCPT
+	id S1750943Ab3FTEJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 00:09:59 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65354 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab3FTEJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:55:09 -0400
-Message-ID: <51C27D05.3070301@hitachi.com>
-Date: Thu, 20 Jun 2013 12:54:45 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 20 Jun 2013 00:09:58 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 19 Jun 2013 21:10:01 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Adding support for ARINC429 into the Linux kernel
+Message-ID: <20130620041001.GA1099@roeck-us.net>
+References: <20130619202954.GA5594@roeck-us.net>
+ <201306192345.31106.arnd@arndb.de>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] tracing/kprobes: Don't pass addr=ip to perf_trace_buf_submit()
-References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com> <51BFD6EF.1060805@hitachi.com> <20130618192414.GA19488@redhat.com> <20130619203005.GA19750@redhat.com> <20130619203433.GB19750@redhat.com>
-In-Reply-To: <20130619203433.GB19750@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201306192345.31106.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/20 5:34), Oleg Nesterov wrote:
-> On 06/19, Oleg Nesterov wrote:
->>
->> So. I'll resend this series, will you ack the v2 below?
+On Wed, Jun 19, 2013 at 11:45:30PM +0200, Arnd Bergmann wrote:
+> On Wednesday 19 June 2013, Guenter Roeck wrote:
+> > I have been asked to explore options for adding ARINC 429 support [1]
+> > into the Linux kernel, primarily to support devices from Holt Integrated
+> > Circuits [2] (the request is unrelated to the chip manufacturer).
+> > 
+> > ARINC429 is a protocol which is widely used in commercial airplanes. 
+> > 
+> > There are various chips supporting this protocol available, as well as
+> > out-of-tree Linux support. The drivers I have looked at implement it
+> > either as character device or misc device and typically pass raw receive
+> > data to userspace.
+> > 
+> > I can see a number of options for going forward:
+> > 1) Implement as character device (or possibly misc device) and pass
+> >    raw data to/from user space
+> >    1a) Just implement a driver for the specific chips
+> >    2b) Implement some kind of generic infrastructure
+> > 2) Implement as network driver with a new address family, similar to,
+> >    say, AF_CAN.
+> > 
+> > Any thoughts / suggestions which approach would be better and, most of all,
+> > which approach might have a better chance of being accepted upstream ?
 > 
-> Also. Could you please review the new patch I am going to include
-> into this series?
-
-It looks OK for me. BTW, IIRC, I had reviewed same one previously...
-
+> Since this is a standard protocol, a driver that just supports a specific
+> chip (1a) would be the worst option IMHO.
 > 
-> This is copy-and-paste of 32520b2c6 which you reviewed and acked.
+It would not be optimal, but straightforward and easy to implement.
+
+> A character device and a network protocol both sound reasonable, but
+> it really depends on the use cases:
 > 
-> And please note that kprobes is the last user of
-> perf_trace_buf_submit(addr != 0), we can make some cleanups on top.
-
-Agreed,
-
+> * Does Linux act both as the sender and receiver, or do you want to
+>   support just one of the cases (which?)?
 > 
-> -------------------------------------------------------------------------------
-> Subject: [PATCH] tracing/kprobes: Don't pass addr=ip to perf_trace_buf_submit()
+Both, depending on the use case. Some of those are
+
+1) ACARS -
+   http://en.wikipedia.org/wiki/Aircraft_Communications_Addressing_and_Reporting_System
+   Rx and tx
+
+2) CIDS - Cabin Intercommunication Data System
+   Rx and tx
+
+3) IRS (Inertial Reference System) and FMS (Flight Management System)
+   Rx only
+
+> * Would you expect to always just transfer a single 32-bit word, or
+>   are there larger chunks of logically contigous data? What are typical
+>   and maximum sizes for those?
 > 
-> kprobe_perf_func() and kretprobe_perf_func() pass addr=ip to
-> perf_trace_buf_submit() for no reason.
+The raw protocol is chunks of 32 bit (Logical Data Unit, or LDU), which
+the protocol refers to as 'physical layer'. Broadcast messages such as
+those from IRS and FMS use this format.
+
+There is also bit-oriented data. The two protocols I am aware of are "Bit-
+Oriented File Transfer Protocol", and "Bit-Oriented Media Access Control
+(MAC) Protocol", which is supposed to be IEEE 802 compliant. Packet size
+is 3 to 255 LDUs for FTP and 3 to 1023 LDUs for the MAC protocol.
+Both include a SOF and EOF marker, so the actual data size would be 1-253
+or 1-1021 LDUs. Each LDU carries 20 bit, and partial words are possible
+in 4-bit increments, which means the data transfer size is 4 to 20,420 bit
+(2,552.5 bytes) for the MAC protocol, and 4 to 5,060 bit (632.5 bytes)
+for FTP.
+
+Bit-oriented data is commonly used for ACARS and CIDS, where bi-directional
+communication is used.
+
+Details are available in Specification ARINC-429P3-19-2009, sections 2.5 and 3.0.
+You should be able to find it on the web if you are interested.
+
+> * Would you expect the kernel to filter for specific data on the
+>   receiver side?
 > 
-> This sets perf_sample_data->addr for PERF_SAMPLE_ADDR, we already
-> have perf_sample_data->ip initialized if PERF_SAMPLE_IP.
+Each LDU has an 8-bit label. Applications listen for specific sets of labels.
+The chips have a configurable hardware filter; if there are not enough hardware
+filters, the kernel would have to do the filtering. Either case, the kernel
+has to select protocol receivers (sockets or open file descriptors) based
+on bind/registration information. For example, one aplication may register
+for label 1,3,5, and 7, and another for labels 1, 3, 12, and 14. So there can
+be overlaps.
+
+> * Would a user space receiver want to always see all data from one
+>   sender, or only the latest word?
 > 
+The receiver would want to receive all data for the labels it has registered
+for.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Hope this helps. Note that, at least as first step, I only envision to handle
+4-byte units and pass those to/from user-space. Implementing the two link layer
+protocols would probably make sense, especially with the socket interface,
+but that would be a second step.
 
-Thank you!
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_kprobe.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 3432652..141c682 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -1163,8 +1163,7 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
->  	entry->ip = (unsigned long)tp->rp.kp.addr;
->  	memset(&entry[1], 0, dsize);
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> -	perf_trace_buf_submit(entry, size, rctx,
-> -					entry->ip, 1, regs, head, NULL);
-> +	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
->  }
->  
->  /* Kretprobe profile handler */
-> @@ -1197,8 +1196,7 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  	entry->func = (unsigned long)tp->rp.kp.addr;
->  	entry->ret_ip = (unsigned long)ri->ret_addr;
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-> -	perf_trace_buf_submit(entry, size, rctx,
-> -					entry->ret_ip, 1, regs, head, NULL);
-> +	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
->  }
->  #endif	/* CONFIG_PERF_EVENTS */
->  
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks,
+Guenter
