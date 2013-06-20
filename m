@@ -1,132 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab3FTE6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 00:58:31 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37712 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3FTE63 (ORCPT
+	id S1751849Ab3FTFF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:05:28 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:38747 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3FTFF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 00:58:29 -0400
-Message-ID: <51C28BEA.8050501@ozlabs.ru>
-Date: Thu, 20 Jun 2013 14:58:18 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 01:05:26 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>  <1370412673-1345-4-git-send-email-aik@ozlabs.ru>  <1371422343.21896.143.camel@pasglop>  <1371438800.22681.38.camel@ul30vt.home>  <1371441361.21896.152.camel@pasglop>  <1371522772.22681.140.camel@ul30vt.home> <87txkun568.fsf@rustcorp.com.au>  <1371617970.21896.232.camel@pasglop>  <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>  <1371653443.21896.291.camel@pasglop> <1371656989.22659.98.camel@ul30vt.home>
-In-Reply-To: <1371656989.22659.98.camel@ul30vt.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130618154456.56d99e18@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<20130617155156.4c729b5a@amdc308.digital.local>
+	<CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
+	<3258927.Qds4G9CTyG@vostro.rjw.lan>
+	<20130618154456.56d99e18@amdc308.digital.local>
+Date: Thu, 20 Jun 2013 10:35:26 +0530
+Message-ID: <CAKohpokYq8LyA0B1q2DNC58dhC0kxFzcMgTGnBkACH4FCoDZXQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 01:49 AM, Alex Williamson wrote:
-> On Thu, 2013-06-20 at 00:50 +1000, Benjamin Herrenschmidt wrote:
->> On Wed, 2013-06-19 at 11:58 +0200, Alexander Graf wrote:
->>
->>>> Alex, any objection ?
->>>
->>> Which Alex? :)
->>
->> Heh, mostly Williamson in this specific case but your input is still
->> welcome :-)
->>
->>> I think validate works, it keeps iteration logic out of the kernel
->>> which is a good thing. There still needs to be an interface for
->>> getting the iommu id in VFIO, but I suppose that one's for the other
->>> Alex and Jörg to comment on.
->>
->> I think getting the iommu fd is already covered by separate patches from
->> Alexey.
->>
->>>>
->>>> Do we need to make it a get/put interface instead ?
->>>>
->>>> 	vfio_validate_and_use_iommu(file, iommu_id);
->>>>
->>>> 	vfio_release_iommu(file, iommu_id);
->>>>
->>>> To ensure that the resource remains owned by the process until KVM
->>>> is closed as well ?
->>>>
->>>> Or do we want to register with VFIO with a callback so that VFIO can
->>>> call us if it needs us to give it up ?
->>>
->>> Can't we just register a handler on the fd and get notified when it
->>> closes? Can you kill VFIO access without closing the fd?
->>
->> That sounds actually harder :-)
->>
->> The question is basically: When we validate that relationship between a
->> specific VFIO struct file with an iommu, what is the lifetime of that
->> and how do we handle this lifetime properly.
->>
->> There's two ways for that sort of situation: The notification model
->> where we get notified when the relationship is broken, and the refcount
->> model where we become a "user" and thus delay the breaking of the
->> relationship until we have been disposed of as well.
->>
->> In this specific case, it's hard to tell what is the right model from my
->> perspective, which is why I would welcome Alex (W.) input.
->>
->> In the end, the solution will end up being in the form of APIs exposed
->> by VFIO for use by KVM (via that symbol lookup mechanism) so Alex (W),
->> as owner of VFIO at this stage, what do you want those to look
->> like ? :-)
-> 
-> My first thought is that we should use the same reference counting as we
-> have for vfio devices (group->container_users).  An interface for that
-> might look like:
-> 
-> int vfio_group_add_external_user(struct file *filep)
-> {
-> 	struct vfio_group *group = filep->private_data;
-> 
-> 	if (filep->f_op != &vfio_group_fops)
-> 		return -EINVAL;
-> 
-> 
-> 	if (!atomic_inc_not_zero(&group->container_users))
-> 		return -EINVAL;
-> 
-> 	return 0;
-> }
-> 
-> void vfio_group_del_external_user(struct file *filep)
-> {
-> 	struct vfio_group *group = filep->private_data;
-> 
-> 	BUG_ON(filep->f_op != &vfio_group_fops);
-> 
-> 	vfio_group_try_dissolve_container(group);
-> }
-> 
-> int vfio_group_iommu_id_from_file(struct file *filep)
-> {
-> 	struct vfio_group *group = filep->private_data;
-> 
-> 	BUG_ON(filep->f_op != &vfio_group_fops);
-> 
-> 	return iommu_group_id(group->iommu_group);
-> }
-> 
-> Would that work?  Thanks,
+On 18 June 2013 19:14, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Tue, 18 Jun 2013 15:26:16 +0200, Rafael J. Wysocki wrote:
+>> On Tuesday, June 18, 2013 12:12:13 PM Viresh Kumar wrote:
+>> > On 17 June 2013 19:21, Lukasz Majewski <l.majewski@samsung.com>
 
+>> Well, that's why on x86 turbo is controlled by hardware that takes
+>> care of keeping things within the chip's thermal limits.
+>
+> And this is the reason why I don't want to overly change acpi-cpufreq.c
+> code. :-)
 
-Just out of curiosity - would not get_file() and fput_atomic() on a group's
-file* do the right job instead of vfio_group_add_external_user() and
-vfio_group_del_external_user()?
+We need to keep both hardware/software boost features at the same place
+in core, they may behave differently though. That's why I wanted you
+to do that.
 
+> I think that thermal subsystem shall be the second option to disable SW
+> boosting.
+>
+> The main control shall be done inside the cpufreq core. The idea to
+> disable boost when more than one core is active is rational.
 
-
--- 
-Alexey
+But then, it might not be enough. A single core can make your SoC
+very hot.
