@@ -1,262 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307Ab3FTRmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:42:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757684Ab3FTRmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:42:49 -0400
-Date: Thu, 20 Jun 2013 19:38:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+	id S1161210Ab3FTRBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:01:45 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:51085 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030293Ab3FTRBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 13:01:41 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] tracing/kprobes: Turn trace_probe->files into
-	list_head
-Message-ID: <20130620173814.GA13165@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130620173748.GA13133@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: [PATCH 2/3] PCI, xen-pcifront: use new PCI interfaces to simplify implementation
+Date: Fri, 21 Jun 2013 01:01:04 +0800
+Message-Id: <1371747665-12768-3-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
+References: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that "ftrace_event_file *trace_probe[]" complicates the
-code for no reason, turn it into list_head to simplify the code.
-enable_trace_probe() no longer needs synchronize_sched().
+From: Jiang Liu <jiang.liu@huawei.com>
 
-This needs the extra sizeof(list_head) memory for every attached
-ftrace_event_file, hopefully not a problem in this case.
+Use new PCI interfaces to simplify xen-pcifront implementation:
+1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
+   because pci_scan_bus_parented() will be marked as __deprecated.
+   This also gets rid of a duplicated call to pci_bus_start_devices().
+2) Use pci_stop_and_remove_root_bus() instead of open-coded private
+   implementation.
+3) Use pci_set_host_bridge_release() to release data structures
+   associated with PCI root buses.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
+Cc: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- kernel/trace/trace_kprobe.c |  138 ++++++++++++-------------------------------
- 1 files changed, 37 insertions(+), 101 deletions(-)
+ drivers/pci/xen-pcifront.c | 70 ++++++++++++++++++++--------------------------
+ 1 file changed, 30 insertions(+), 40 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 141c682..2f54344 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -35,12 +35,17 @@ struct trace_probe {
- 	const char		*symbol;	/* symbol name */
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
--	struct ftrace_event_file * __rcu *files;
-+	struct list_head	files;
- 	ssize_t			size;		/* trace entry size */
- 	unsigned int		nr_args;
- 	struct probe_arg	args[];
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index 966abc6..1b01960 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -25,11 +25,6 @@
+ #define INVALID_GRANT_REF (0)
+ #define INVALID_EVTCHN    (-1)
+ 
+-struct pci_bus_entry {
+-	struct list_head list;
+-	struct pci_bus *bus;
+-};
+-
+ #define _PDEVB_op_active		(0)
+ #define PDEVB_op_active			(1 << (_PDEVB_op_active))
+ 
+@@ -47,12 +42,12 @@ struct pcifront_device {
+ 	struct xen_pci_sharedinfo *sh_info;
+ 	struct work_struct op_work;
+ 	unsigned long flags;
+-
  };
  
-+struct event_file_link {
-+	struct ftrace_event_file	*file;
-+	struct list_head		list;
-+};
-+
- #define SIZEOF_TRACE_PROBE(n)			\
- 	(offsetof(struct trace_probe, args) +	\
- 	(sizeof(struct probe_arg) * (n)))
-@@ -150,6 +155,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
+ struct pcifront_sd {
+ 	int domain;
+ 	struct pcifront_device *pdev;
++	struct resource busn_res;
+ };
  
- 	INIT_LIST_HEAD(&tp->list);
-+	INIT_LIST_HEAD(&tp->files);
- 	return tp;
- error:
- 	kfree(tp->call.name);
-@@ -184,22 +190,6 @@ static struct trace_probe *find_trace_probe(const char *event,
+ static inline struct pcifront_device *
+@@ -67,6 +62,12 @@ static inline void pcifront_init_sd(struct pcifront_sd *sd,
+ {
+ 	sd->domain = domain;
+ 	sd->pdev = pdev;
++
++	/* Xen pci-backend doesn't export P2P bridges */
++	sd->busn_res.start = bus;
++	sd->busn_res.end = bus;
++	sd->busn_res.flags = IORESOURCE_BUS;
++	sd->busn_res.name = "PCI busn";
  }
  
- /*
-- * This and enable_trace_probe/disable_trace_probe rely on event_mutex
-- * held by the caller, __ftrace_set_clr_event().
-- */
--static int trace_probe_nr_files(struct trace_probe *tp)
+ static DEFINE_SPINLOCK(pcifront_dev_lock);
+@@ -441,12 +442,19 @@ static int pcifront_scan_bus(struct pcifront_device *pdev,
+ 	return 0;
+ }
+ 
++static void pcifront_release_sd(struct pci_host_bridge *bridge)
++{
++	struct pcifront_sd *sd = bridge->release_data;
++
++	kfree(sd);
++}
++
+ static int pcifront_scan_root(struct pcifront_device *pdev,
+ 				 unsigned int domain, unsigned int bus)
+ {
+ 	struct pci_bus *b;
+ 	struct pcifront_sd *sd = NULL;
+-	struct pci_bus_entry *bus_entry = NULL;
++	LIST_HEAD(resources);
+ 	int err = 0;
+ 
+ #ifndef CONFIG_PCI_DOMAINS
+@@ -463,16 +471,18 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+ 	dev_info(&pdev->xdev->dev, "Creating PCI Frontend Bus %04x:%02x\n",
+ 		 domain, bus);
+ 
+-	bus_entry = kmalloc(sizeof(*bus_entry), GFP_KERNEL);
+-	sd = kmalloc(sizeof(*sd), GFP_KERNEL);
+-	if (!bus_entry || !sd) {
++	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
++	if (!sd) {
+ 		err = -ENOMEM;
+ 		goto err_out;
+ 	}
+ 	pcifront_init_sd(sd, domain, bus, pdev);
+ 
+-	b = pci_scan_bus_parented(&pdev->xdev->dev, bus,
+-				  &pcifront_bus_ops, sd);
++	pci_add_resource(&resources, &ioport_resource);
++	pci_add_resource(&resources, &iomem_resource);
++	pci_add_resource(&resources, &sd->busn_res);
++	b = pci_create_root_bus(&pdev->xdev->dev, bus, &pcifront_bus_ops,
++				sd, &resources);
+ 	if (!b) {
+ 		dev_err(&pdev->xdev->dev,
+ 			"Error creating PCI Frontend Bus!\n");
+@@ -480,9 +490,8 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+ 		goto err_out;
+ 	}
+ 
+-	bus_entry->bus = b;
+-
+-	list_add(&bus_entry->list, &pdev->root_buses);
++	pci_set_host_bridge_release(to_pci_host_bridge(b->bridge),
++				    pcifront_release_sd, sd);
+ 
+ 	/* pci_scan_bus_parented skips devices which do not have a have
+ 	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
+@@ -497,7 +506,6 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+ 	return err;
+ 
+ err_out:
+-	kfree(bus_entry);
+ 	kfree(sd);
+ 
+ 	return err;
+@@ -538,35 +546,17 @@ static int pcifront_rescan_root(struct pcifront_device *pdev,
+ 	return err;
+ }
+ 
+-static void free_root_bus_devs(struct pci_bus *bus)
 -{
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--	int ret = 0;
+-	struct pci_dev *dev;
 -
--	if (file)
--		while (*(file++))
--			ret++;
--
--	return ret;
+-	while (!list_empty(&bus->devices)) {
+-		dev = container_of(bus->devices.next, struct pci_dev,
+-				   bus_list);
+-		dev_dbg(&dev->dev, "removing device\n");
+-		pci_stop_and_remove_bus_device(dev);
+-	}
 -}
 -
--/*
-  * Enable trace_probe
-  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
-  */
-@@ -209,29 +199,18 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	int ret = 0;
- 
- 	if (file) {
--		struct ftrace_event_file **new, **old;
--		int n = trace_probe_nr_files(tp);
--
--		old = rcu_dereference_raw(tp->files);
--		/* 1 is for new one and 1 is for stopper */
--		new = kzalloc((n + 2) * sizeof(struct ftrace_event_file *),
--			      GFP_KERNEL);
--		if (!new) {
-+		struct event_file_link *link;
-+
-+		link = kmalloc(sizeof(*link), GFP_KERNEL);
-+		if (!link) {
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
--		new[n] = file;
--		/* The last one keeps a NULL */
- 
--		rcu_assign_pointer(tp->files, new);
--		tp->flags |= TP_FLAG_TRACE;
-+		link->file = file;
-+		list_add_tail_rcu(&link->list, &tp->files);
- 
--		if (old) {
--			/* Make sure the probe is done with old files */
--			synchronize_sched();
--			kfree(old);
--		}
-+		tp->flags |= TP_FLAG_TRACE;
- 	} else
- 		tp->flags |= TP_FLAG_PROFILE;
- 
-@@ -246,24 +225,16 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	return ret;
- }
- 
--static int
--trace_probe_file_index(struct trace_probe *tp, struct ftrace_event_file *file)
-+static struct event_file_link *
-+find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
+ static void pcifront_free_roots(struct pcifront_device *pdev)
  {
--	struct ftrace_event_file **files;
--	int i;
-+	struct event_file_link *link;
+-	struct pci_bus_entry *bus_entry, *t;
++	struct pcifront_sd *sd;
++	struct pci_bus *bus, *temp;
  
--	/*
--	 * Since all tp->files updater is protected by probe_enable_lock,
--	 * we don't need to lock an rcu_read_lock.
--	 */
--	files = rcu_dereference_raw(tp->files);
--	if (files) {
--		for (i = 0; files[i]; i++)
--			if (files[i] == file)
--				return i;
--	}
-+	list_for_each_entry(link, &tp->files, list)
-+		if (link->file == file)
-+			return link;
+ 	dev_dbg(&pdev->xdev->dev, "cleaning up root buses\n");
  
--	return -1;
-+	return NULL;
+-	list_for_each_entry_safe(bus_entry, t, &pdev->root_buses, list) {
+-		list_del(&bus_entry->list);
+-
+-		free_root_bus_devs(bus_entry->bus);
+-
+-		kfree(bus_entry->bus->sysdata);
+-
+-		device_unregister(bus_entry->bus->bridge);
+-		pci_remove_bus(bus_entry->bus);
+-
+-		kfree(bus_entry);
++	list_for_each_entry_safe(bus, temp, &pci_root_buses, node) {
++		sd = bus->sysdata;
++		if (sd->pdev == pdev)
++			pci_stop_and_remove_root_bus(bus);
+ 	}
  }
  
- /*
-@@ -276,38 +247,23 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 	int ret = 0;
- 
- 	if (file) {
--		struct ftrace_event_file **new, **old;
--		int n = trace_probe_nr_files(tp);
--		int i, j;
-+		struct event_file_link *link;
- 
--		old = rcu_dereference_raw(tp->files);
--		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
-+		link = find_event_file_link(tp, file);
-+		if (!link) {
- 			ret = -EINVAL;
- 			goto out;
- 		}
- 
--		if (n == 1) {	/* Remove the last file */
--			tp->flags &= ~TP_FLAG_TRACE;
--			new = NULL;
--		} else {
--			new = kzalloc(n * sizeof(struct ftrace_event_file *),
--				      GFP_KERNEL);
--			if (!new) {
--				ret = -ENOMEM;
--				goto out;
--			}
--
--			/* This copy & check loop copies the NULL stopper too */
--			for (i = 0, j = 0; j < n && i < n + 1; i++)
--				if (old[i] != file)
--					new[j++] = old[i];
--		}
-+		list_del_rcu(&link->list);
-+		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
-+		synchronize_sched();
-+		kfree(link);
- 
--		rcu_assign_pointer(tp->files, new);
-+		if (!list_empty(&tp->files))
-+			goto out;
- 
--		/* Make sure the probe is done with old files */
--		synchronize_sched();
--		kfree(old);
-+		tp->flags &= ~TP_FLAG_TRACE;
- 	} else
- 		tp->flags &= ~TP_FLAG_PROFILE;
- 
-@@ -872,20 +828,10 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- static __kprobes void
- kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
- {
--	/*
--	 * Note: preempt is already disabled around the kprobe handler.
--	 * However, we still need an smp_read_barrier_depends() corresponding
--	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
--	 */
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--
--	if (unlikely(!file))
--		return;
-+	struct event_file_link *link;
- 
--	while (*file) {
--		__kprobe_trace_func(tp, regs, *file);
--		file++;
--	}
-+	list_for_each_entry_rcu(link, &tp->files, list)
-+		__kprobe_trace_func(tp, regs, link->file);
- }
- 
- /* Kretprobe handler */
-@@ -932,20 +878,10 @@ static __kprobes void
- kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 		     struct pt_regs *regs)
- {
--	/*
--	 * Note: preempt is already disabled around the kprobe handler.
--	 * However, we still need an smp_read_barrier_depends() corresponding
--	 * to smp_wmb() in rcu_assign_pointer() to access the pointer.
--	 */
--	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
--
--	if (unlikely(!file))
--		return;
-+	struct event_file_link *link;
- 
--	while (*file) {
--		__kretprobe_trace_func(tp, ri, regs, *file);
--		file++;
--	}
-+	list_for_each_entry_rcu(link, &tp->files, list)
-+		__kretprobe_trace_func(tp, ri, regs, link->file);
- }
- 
- /* Event entry printers */
 -- 
-1.5.5.1
+1.8.1.2
 
