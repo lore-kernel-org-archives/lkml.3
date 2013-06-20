@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab3FTRAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:00:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47829 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab3FTRAv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:00:51 -0400
-Date: Thu, 20 Jun 2013 10:01:31 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/48] 3.9.7-stable review
-Message-ID: <20130620170131.GA21356@kroah.com>
-References: <20130618161725.912524266@linuxfoundation.org>
- <878v253xrx.wl%satoru.takeuchi@gmail.com>
+	id S1757851Ab3FTT0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:26:43 -0400
+Received: from 8bytes.org ([85.214.48.195]:35736 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab3FTT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:26:42 -0400
+Date: Thu, 20 Jun 2013 21:26:38 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd_iommu: Fix leak in free_pagetable()
+Message-ID: <20130620192638.GD11309@8bytes.org>
+References: <20130618014459.20440.73844.stgit@bling.home>
+ <20130618015116.20711.90269.stgit@bling.home>
+ <20130620182808.GC11309@8bytes.org>
+ <1371755280.30572.4.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <878v253xrx.wl%satoru.takeuchi@gmail.com>
+In-Reply-To: <1371755280.30572.4.camel@ul30vt.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun 20 21:26:39 2013
+X-DSPAM-Confidence: 0.9981
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c3576f20862005116848
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 07:02:42PM +0900, Satoru Takeuchi wrote:
-> At Tue, 18 Jun 2013 09:17:26 -0700,
-> Greg Kroah-Hartman wrote:
-> > 
-> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > This is the start of the stable review cycle for the 3.9.7 release.
-> > There are 48 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Thu Jun 20 16:15:42 UTC 2013.
-> > Anything received after that time might be too late.
+On Thu, Jun 20, 2013 at 01:08:00PM -0600, Alex Williamson wrote:
+> On Thu, 2013-06-20 at 20:28 +0200, Joerg Roedel wrote:
+> > Hmm, actually a recursive version would make more sense here. But since
+> > recursion is a bad idea in the kernel, how about this approach instead:
 > 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
+> It's a fixed maximum depth of recursion though, is it really that taboo?
 
-Thanks for testing and letting us know.
+Well, a recursive version would be better here because it has lower icache
+impact than my patch. But the risk is if there is a bug in recursive
+code and it goes on forever it will overwrite random kernel memory, with
+undefined, potentially very bad, results (like data corruption, killed
+filesystems and so on).
 
-greg k-h
+So in my opinion it is better to not take that risk whenever possible.
+
+> > The IOMMU pagetables can have up to 3 levels, but the code
+> 
+> s/3/6/
+
+Right, thanks.
+
+> Seems like it should do the right thing
+
+Ok, I also gave it some testing (started a vm, assigned and de-assigned
+a device), so it should work as expected.
+
+> Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+
+Thanks,
+
+	Joerg
+
+
