@@ -1,202 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161210Ab3FTRBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:01:45 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:51085 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030293Ab3FTRBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:01:41 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] PCI, xen-pcifront: use new PCI interfaces to simplify implementation
-Date: Fri, 21 Jun 2013 01:01:04 +0800
-Message-Id: <1371747665-12768-3-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
-References: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
+	id S1030410Ab3FTSbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:31:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14966 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030394Ab3FTSbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:31:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
+   d="scan'208";a="257885830"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: rostedt@goodmis.org
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH 07/11] tracing: add 'snapshot' event trigger command
+Date: Thu, 20 Jun 2013 13:31:31 -0500
+Message-Id: <fbe19857708e50f5039bfccc245c530688d87d42.1371751701.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Add 'snapshot' ftrace_func_command.  snapshot event triggers are added
+by the user via this command in a similar way and using practically
+the same syntax as the analogous 'snapshot' ftrace function command,
+but instead of writing to the set_ftrace_filter file, the snapshot
+event trigger is written to the per-event 'trigger' files:
 
-Use new PCI interfaces to simplify xen-pcifront implementation:
-1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
-   because pci_scan_bus_parented() will be marked as __deprecated.
-   This also gets rid of a duplicated call to pci_bus_start_devices().
-2) Use pci_stop_and_remove_root_bus() instead of open-coded private
-   implementation.
-3) Use pci_set_host_bridge_release() to release data structures
-   associated with PCI root buses.
+    echo 'snapshot' > .../somesys/someevent/trigger
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: xen-devel@lists.xensource.com
-Cc: virtualization@lists.linux-foundation.org
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+The above command will turn on snapshots for someevent i.e. whenever
+someevent is hit, a snapshot will be done.
+
+This also adds a 'count' version that limits the number of times the
+command will be invoked:
+
+    echo 'snapshot:N' > .../somesys/someevent/trigger
+
+Where N is the number of times the command will be invoked.
+
+The above command will snapshot N times for someevent i.e. whenever
+someevent is hit N times, a snapshot will be done.
+
+Also adds a new ftrace_alloc_snapshot() function - the ftrace snapshot
+command defines code that allocates a snapshot, which would be nice to
+be able to reuse, which this does.
+
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- drivers/pci/xen-pcifront.c | 70 ++++++++++++++++++++--------------------------
- 1 file changed, 30 insertions(+), 40 deletions(-)
+ kernel/trace/trace.c                |  9 ++++
+ kernel/trace/trace.h                |  1 +
+ kernel/trace/trace_events_trigger.c | 88 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 98 insertions(+)
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index 966abc6..1b01960 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -25,11 +25,6 @@
- #define INVALID_GRANT_REF (0)
- #define INVALID_EVTCHN    (-1)
- 
--struct pci_bus_entry {
--	struct list_head list;
--	struct pci_bus *bus;
--};
--
- #define _PDEVB_op_active		(0)
- #define PDEVB_op_active			(1 << (_PDEVB_op_active))
- 
-@@ -47,12 +42,12 @@ struct pcifront_device {
- 	struct xen_pci_sharedinfo *sh_info;
- 	struct work_struct op_work;
- 	unsigned long flags;
--
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e71a8be..96f3cdc 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5169,6 +5169,15 @@ static const struct file_operations tracing_dyn_info_fops = {
  };
+ #endif /* CONFIG_DYNAMIC_FTRACE */
  
- struct pcifront_sd {
- 	int domain;
- 	struct pcifront_device *pdev;
-+	struct resource busn_res;
- };
- 
- static inline struct pcifront_device *
-@@ -67,6 +62,12 @@ static inline void pcifront_init_sd(struct pcifront_sd *sd,
- {
- 	sd->domain = domain;
- 	sd->pdev = pdev;
-+
-+	/* Xen pci-backend doesn't export P2P bridges */
-+	sd->busn_res.start = bus;
-+	sd->busn_res.end = bus;
-+	sd->busn_res.flags = IORESOURCE_BUS;
-+	sd->busn_res.name = "PCI busn";
- }
- 
- static DEFINE_SPINLOCK(pcifront_dev_lock);
-@@ -441,12 +442,19 @@ static int pcifront_scan_bus(struct pcifront_device *pdev,
- 	return 0;
- }
- 
-+static void pcifront_release_sd(struct pci_host_bridge *bridge)
++#if defined(CONFIG_TRACER_SNAPSHOT)
++int ftrace_alloc_snapshot(void)
 +{
-+	struct pcifront_sd *sd = bridge->release_data;
++	return alloc_snapshot(&global_trace);
++}
++#else
++int ftrace_alloc_snapshot(void) { return -ENOSYS; }
++#endif
 +
-+	kfree(sd);
+ #if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
+ static void
+ ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 3738d65..7df20e8 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1060,6 +1060,7 @@ struct event_command {
+ extern int trace_event_enable_disable(struct ftrace_event_file *file,
+ 				      int enable, int soft_disable,
+ 				      int trigger_enable);
++extern int ftrace_alloc_snapshot(void);
+ 
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+index edc1c01..3e8dfe1 100644
+--- a/kernel/trace/trace_events_trigger.c
++++ b/kernel/trace/trace_events_trigger.c
+@@ -610,6 +610,86 @@ static struct event_command trigger_traceoff_cmd = {
+ 	.get_trigger_ops	= onoff_get_trigger_ops,
+ };
+ 
++static void
++snapshot_trigger(void **_data)
++{
++	struct event_trigger_data **p = (struct event_trigger_data **)_data;
++	struct event_trigger_data *data = *p;
++
++	if (!data)
++		return;
++
++	tracing_snapshot();
 +}
 +
- static int pcifront_scan_root(struct pcifront_device *pdev,
- 				 unsigned int domain, unsigned int bus)
++static void
++snapshot_count_trigger(void **_data)
++{
++	struct event_trigger_data **p = (struct event_trigger_data **)_data;
++	struct event_trigger_data *data = *p;
++
++	if (!data)
++		return;
++
++	if (!data->count)
++		return;
++
++	if (data->count != -1)
++		(data->count)--;
++
++	snapshot_trigger(_data);
++}
++
++static int
++register_snapshot_trigger(char *glob, struct event_trigger_ops *ops,
++			  void *data, void *cmd_data)
++{
++	int ret = register_trigger(glob, ops, data, cmd_data);
++
++	if (ret > 0)
++		ftrace_alloc_snapshot();
++
++	return ret;
++}
++
++static int
++snapshot_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
++		       void *_data)
++{
++	struct event_trigger_data *data = _data;
++
++	return event_trigger_print("snapshot", m, (void *)data->count,
++				   data->filter_str);
++}
++
++static struct event_trigger_ops snapshot_trigger_ops = {
++	.func			= snapshot_trigger,
++	.print			= snapshot_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops snapshot_count_trigger_ops = {
++	.func			= snapshot_count_trigger,
++	.print			= snapshot_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops *
++snapshot_get_trigger_ops(char *cmd, char *param)
++{
++	return param ? &snapshot_count_trigger_ops : &snapshot_trigger_ops;
++}
++
++static struct event_command trigger_snapshot_cmd = {
++	.name			= "snapshot",
++	.func			= event_trigger_callback,
++	.reg			= register_snapshot_trigger,
++	.unreg			= unregister_trigger,
++	.get_trigger_ops	= snapshot_get_trigger_ops,
++};
++
+ static __init void unregister_trigger_traceon_traceoff_cmds(void)
  {
- 	struct pci_bus *b;
- 	struct pcifront_sd *sd = NULL;
--	struct pci_bus_entry *bus_entry = NULL;
-+	LIST_HEAD(resources);
- 	int err = 0;
- 
- #ifndef CONFIG_PCI_DOMAINS
-@@ -463,16 +471,18 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
- 	dev_info(&pdev->xdev->dev, "Creating PCI Frontend Bus %04x:%02x\n",
- 		 domain, bus);
- 
--	bus_entry = kmalloc(sizeof(*bus_entry), GFP_KERNEL);
--	sd = kmalloc(sizeof(*sd), GFP_KERNEL);
--	if (!bus_entry || !sd) {
-+	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
-+	if (!sd) {
- 		err = -ENOMEM;
- 		goto err_out;
- 	}
- 	pcifront_init_sd(sd, domain, bus, pdev);
- 
--	b = pci_scan_bus_parented(&pdev->xdev->dev, bus,
--				  &pcifront_bus_ops, sd);
-+	pci_add_resource(&resources, &ioport_resource);
-+	pci_add_resource(&resources, &iomem_resource);
-+	pci_add_resource(&resources, &sd->busn_res);
-+	b = pci_create_root_bus(&pdev->xdev->dev, bus, &pcifront_bus_ops,
-+				sd, &resources);
- 	if (!b) {
- 		dev_err(&pdev->xdev->dev,
- 			"Error creating PCI Frontend Bus!\n");
-@@ -480,9 +490,8 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
- 		goto err_out;
+ 	unregister_event_command(&trigger_traceon_cmd,
+@@ -646,5 +726,13 @@ __init int register_trigger_cmds(void)
+ 		return ret;
  	}
  
--	bus_entry->bus = b;
--
--	list_add(&bus_entry->list, &pdev->root_buses);
-+	pci_set_host_bridge_release(to_pci_host_bridge(b->bridge),
-+				    pcifront_release_sd, sd);
- 
- 	/* pci_scan_bus_parented skips devices which do not have a have
- 	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
-@@ -497,7 +506,6 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
- 	return err;
- 
- err_out:
--	kfree(bus_entry);
- 	kfree(sd);
- 
- 	return err;
-@@ -538,35 +546,17 @@ static int pcifront_rescan_root(struct pcifront_device *pdev,
- 	return err;
++	ret = register_event_command(&trigger_snapshot_cmd,
++				     &trigger_commands,
++				     &trigger_cmd_mutex);
++	if (WARN_ON(ret < 0)) {
++		unregister_trigger_traceon_traceoff_cmds();
++		return ret;
++	}
++
+ 	return 0;
  }
- 
--static void free_root_bus_devs(struct pci_bus *bus)
--{
--	struct pci_dev *dev;
--
--	while (!list_empty(&bus->devices)) {
--		dev = container_of(bus->devices.next, struct pci_dev,
--				   bus_list);
--		dev_dbg(&dev->dev, "removing device\n");
--		pci_stop_and_remove_bus_device(dev);
--	}
--}
--
- static void pcifront_free_roots(struct pcifront_device *pdev)
- {
--	struct pci_bus_entry *bus_entry, *t;
-+	struct pcifront_sd *sd;
-+	struct pci_bus *bus, *temp;
- 
- 	dev_dbg(&pdev->xdev->dev, "cleaning up root buses\n");
- 
--	list_for_each_entry_safe(bus_entry, t, &pdev->root_buses, list) {
--		list_del(&bus_entry->list);
--
--		free_root_bus_devs(bus_entry->bus);
--
--		kfree(bus_entry->bus->sysdata);
--
--		device_unregister(bus_entry->bus->bridge);
--		pci_remove_bus(bus_entry->bus);
--
--		kfree(bus_entry);
-+	list_for_each_entry_safe(bus, temp, &pci_root_buses, node) {
-+		sd = bus->sysdata;
-+		if (sd->pdev == pdev)
-+			pci_stop_and_remove_root_bus(bus);
- 	}
- }
- 
 -- 
-1.8.1.2
+1.7.11.4
 
