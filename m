@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935617Ab3FTCWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:22:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16182 "EHLO mga03.intel.com"
+	id S935695Ab3FTCWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:22:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37877 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935556Ab3FTCVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:21:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,901,1363158000"; 
-   d="scan'208";a="319759516"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: [Resend patch v8 08/13] sched/tg: remove blocked_load_avg in balance
-Date: Thu, 20 Jun 2013 10:18:52 +0800
-Message-Id: <1371694737-29336-9-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
-References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
+	id S935506Ab3FTCWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 22:22:43 -0400
+Message-ID: <51C26765.6030407@ti.com>
+Date: Wed, 19 Jun 2013 22:22:29 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        <jonghwa3.lee@samsung.com>
+Subject: Re: [PATCH V6 25/30] thermal: exynos: Fix to set the second point
+ correction value
+References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-26-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1371451599-31035-26-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2CJJAJLVHUTFJSBDVRSND"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blocked_load_avg sometime is too heavy and far bigger than runnable load
-avg, that make balance make wrong decision. So remove it.
+------enig2CJJAJLVHUTFJSBDVRSND
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Changlong tested this patch, found ltp cgroup stress testing get better
-performance: https://lkml.org/lkml/2013/5/23/65
----
-3.10-rc1          patch1-7         patch1-8
-duration=764   duration=754   duration=750
-duration=764   duration=754   duration=751
-duration=763   duration=755   duration=751
+On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
+> This patch sets the second point trimming value according to the platfo=
+rm
+> data if the register value is 0.
+>=20
+> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-duration means the seconds of testing cost.
----
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
-And Jason also tested this patchset on his 8 sockets machine:
-https://lkml.org/lkml/2013/5/29/673
----
-When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-improvement in performance of the workload compared to when using the
-vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-kernel with just patches 1-7, the performance improvement of the
-workload over the vanilla 3.10-rc2 tip kernel was about 25%.
----
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
+sung/exynos_tmu.c
+> index a4dbc84..af0e6ca 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -180,10 +180,15 @@ static int exynos_tmu_initialize(struct platform_=
+device *pdev)
+>  	data->temp_error2 =3D ((trim_info >> reg->triminfo_85_shift) &
+>  				EXYNOS_TMU_TEMP_MASK);
+> =20
+> -	if ((pdata->min_efuse_value > data->temp_error1) ||
+> -			(data->temp_error1 > pdata->max_efuse_value) ||
+> -			(data->temp_error2 !=3D 0))
+> -		data->temp_error1 =3D pdata->efuse_value;
+> +	if (!data->temp_error1 ||
+> +		(pdata->min_efuse_value > data->temp_error1) ||
+> +		(data->temp_error1 > pdata->max_efuse_value))
+> +		data->temp_error1 =3D pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+> +
+> +	if (!data->temp_error2)
+> +		data->temp_error2 =3D
+> +			(pdata->efuse_value >> reg->triminfo_85_shift) &
+> +			EXYNOS_TMU_TEMP_MASK;
+> =20
+>  	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
+>  		dev_err(&pdev->dev, "Invalid max trigger level\n");
+>=20
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Tested-by: Changlong Xie <changlongx.xie@intel.com>
-Tested-by: Jason Low <jason.low2@hp.com>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ddbc19f..395f57c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1358,7 +1358,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 	struct task_group *tg = cfs_rq->tg;
- 	s64 tg_contrib;
- 
--	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-+	tg_contrib = cfs_rq->runnable_load_avg;
- 	tg_contrib -= cfs_rq->tg_load_contrib;
- 
- 	if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
--- 
-1.7.12
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
+Eduardo Valentin
+
+
+------enig2CJJAJLVHUTFJSBDVRSND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlHCZ2UACgkQCXcVR3XQvP0EBwD/VZK9GS8xGZMqtVo72a6xW6f/
+mA4z//PVeZ/UjgthrA4BANDoCDkstprAcMqVVXG1UNRq9VPdlbzHu5Ix4rd7py8N
+=fRlp
+-----END PGP SIGNATURE-----
+
+------enig2CJJAJLVHUTFJSBDVRSND--
