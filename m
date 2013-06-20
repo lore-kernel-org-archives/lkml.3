@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965042Ab3FTI1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:27:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13347 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964992Ab3FTI1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:27:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,903,1363158000"; 
-   d="scan'208";a="356629679"
-Date: Thu, 20 Jun 2013 10:27:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-Cc: tony@atomide.com, lgirdwood@gmail.com, broonie@kernel.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        t-kristo@ti.com, gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] MFD: Change TWL6025 references to TWL6032
-Message-ID: <20130620082741.GB15667@zurbaran>
-References: <1371644642-934-1-git-send-email-oleksandr.kozaruk@ti.com>
+	id S965064Ab3FTI2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:28:13 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36095 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964995Ab3FTI1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:27:49 -0400
+Message-ID: <51C2BD00.4000800@monstr.eu>
+Date: Thu, 20 Jun 2013 10:27:44 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371644642-934-1-git-send-email-oleksandr.kozaruk@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: monstr@monstr.eu, Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 0/2] Extend multi_v7_defconfig
+References: <1371664384-24974-1-git-send-email-soren.brinkmann@xilinx.com> <201306192046.41005.arnd@arndb.de> <51C291D0.6000401@monstr.eu> <201306201002.01702.arnd@arndb.de>
+In-Reply-To: <201306201002.01702.arnd@arndb.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2JRVKQIXGUFPTNCANISPF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleksandr,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2JRVKQIXGUFPTNCANISPF
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 19, 2013 at 03:24:02PM +0300, Oleksandr Kozaruk wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
-> 
-> The TWL6025 was never released beyond sample form and was replaced by
-> the PhoenixLite range of chips - TWL6032. Change the references to
-> reference the TWL6032 class and name the registers to twl6032 in line with
-> an actual released chip name to avoid confusion.
-> 
-> Currently there are no users of TWL6025 in the code.
-> 
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> ---
-> 
-> There are non-mainline branches that use twl6032 by its name (for example
-> git://git.omapzoom.org/kernel/omap.git). There is intention to add support
-> of twl6032 device in mainline, but we'd like to know if we can use twl6032
-> instead of twl6025 in our new patches, that we are going to provide.
-> Related discussion: https://patchwork.kernel.org/patch/2686331/
-> 
->  .../bindings/regulator/twl-regulator.txt           |   26 +++----
->  .../devicetree/bindings/usb/twlxxxx-usb.txt        |    2 +-
->  drivers/mfd/twl-core.c                             |   46 ++++++------
->  drivers/regulator/twl-regulator.c                  |   76 ++++++++++----------
->  drivers/usb/phy/phy-twl6030-usb.c                  |    2 +-
->  include/linux/i2c/twl.h                            |   30 ++++----
->  6 files changed, 91 insertions(+), 91 deletions(-)
-Applied to mfd-next, thanks.
+On 06/20/2013 10:02 AM, Arnd Bergmann wrote:
+> On Thursday 20 June 2013, Michal Simek wrote:
+>> On 06/19/2013 08:46 PM, Arnd Bergmann wrote:
+>>> On Wednesday 19 June 2013, Soren Brinkmann wrote:
+>>>> I don't know how much a defconfig is supposed to provide, hence as R=
+FC.
+>>>> This patches are needed for booting Zynq into a minimum ramfs based
+>>>> system with a serial console.
+>>>
+>>> In my opinion we should provide enable all the platform specific driv=
+ers
+>>> in the defconfigs, as well as everything needed to boot the system,
+>>> to get proper compile coverage as well as the ability to test changes=
 
-Cheers,
-Samuel.
+>>> easily. Your patches look good. Michal, would you apply them and
+>>> send another pull request or should I just take them directly?
+>>
+>> Soren asked me 2 days ago if make sense to create zynq defconfig or no=
+t.
+>> I just suggested him to better extend this multi_v7_defconfig.
+>> But still question is if we can/should create zynq specific defconfig?=
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+>> Or are you going to remove all of these platform specific defconfig?
+>=20
+> We don't have a consistent policy across platforms at the moment.
+> Traditionally we had multiple defconfigs per platform, in some cases
+> one per board, but moving towards one defconfig per platform at
+> the moment.
+
+That's what I though but on the other hand in this process
+all these defconfigs should be removed.
+
+> I guess whether or not to have a separate defconfig for one platform
+> or to use only multi_*_defconfig is a question of how many people
+> would use a zynq_defconfig in practice.
+
+The point is if you look at zynq users than they will just use this zynq_=
+defconfig
+because they know that it is for zynq and also they don't want to
+compile drivers for other platforms which zynq can't use.
+=46rom distribution point of view they want to use only one image because=
+ it is just
+easier.
+
+Based on this if there is an option to also add just zynq defconfig, I wo=
+uld prefer
+to also add it.
+
+>> Definitely agree that multi_v7 defconfig should enable everything need=
+ed
+>> to boot the system.
+>> Does it also mean that we should also enable all zynq drivers
+>> to get better compile coverage?
+>=20
+> I would say yes.
+>=20
+> My feeling is that multi_v7_defconfig should enable all hardware
+> support for the platforms in it, and that users would take it
+> as a starting point if they want to have a configuration for
+> an embedded system, disabling everything they don't need.
+
+I just wanted to be sure because you wrote just drivers for booting
+it means any "minimal" configuration to get it boot not all drivers.
+
+If you are ok, Soren will prepare also specific zynq defconfig file
+and check if there are any missing drivers which are not enabled for zynq=
+
+for multi_v7. I will collect them in one branch and will send pull reques=
+t.
+
+Thanks,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2JRVKQIXGUFPTNCANISPF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHCvQEACgkQykllyylKDCEVGQCeLKZ3czjNA2ns0h4imMXs9qXB
+XnIAnjpftG1CE1auE7ai7s3H9QmuSsm/
+=GovF
+-----END PGP SIGNATURE-----
+
+------enig2JRVKQIXGUFPTNCANISPF--
