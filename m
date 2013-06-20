@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170Ab3FTIkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:40:42 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:34861 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3FTIkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:40:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130620080212.GO11878@intel.com>
-References: <1371537818-19579-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CACRpkdYMiNnCy26px26ofY8MCbw_VSgOpOncS=5YK3vd9BC9yA@mail.gmail.com>
-	<CAHp75VexskPUkqKhE2fowc=cscyGSvirz9d9igy37BveFYGVKA@mail.gmail.com>
-	<CACRpkdZCjNGMxbnR7e_8x1GPxCLe5KzsY8ep8Unnqq4gFg07sg@mail.gmail.com>
-	<CAHp75VdqOTUtp=LEN8hbxJq1E2-BxhxVW0BtHUYhW=-4soYqsQ@mail.gmail.com>
-	<20130620080212.GO11878@intel.com>
-Date: Thu, 20 Jun 2013 10:40:35 +0200
-Message-ID: <CACRpkda4f-LOCUS8c0v0HyPV0UCBvxh7_VoAf5O+JB5dd1Eyyg@mail.gmail.com>
-Subject: Re: [PATCH] gpio-langwell: remove Withney point support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        David Cohen <david.a.cohen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965185Ab3FTIkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:40:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965175Ab3FTIks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:40:48 -0400
+Date: Thu, 20 Jun 2013 10:30:04 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Batalov Eugene <eabatalov89@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Eugene Batalov <ebatalov@parallels.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1] kvm guest: fix uninitialized kvmclock read by KVM
+ guest
+Message-ID: <20130620103004.4aa39c47@nial.usersys.redhat.com>
+In-Reply-To: <51C1B23B.7080703@redhat.com>
+References: <20130610201933.GA31409@amt.cnet>
+	<1371319305-590-1-git-send-email-ebatalov@parallels.com>
+	<20130618222114.GC13856@amt.cnet>
+	<51C1AC93.6010001@redhat.com>
+	<CAJF2t5sYHy9q9a7-fZauf1Z7_FkK1_DOP13GHji=8-vDUsnnsQ@mail.gmail.com>
+	<51C1B23B.7080703@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 10:02 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Thu, Jun 20, 2013 at 10:09:37AM +0300, Andy Shevchenko wrote:
->> On Thu, Jun 20, 2013 at 9:46 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> > On Wed, Jun 19, 2013 at 11:02 PM, Andy Shevchenko
->> > <andy.shevchenko@gmail.com> wrote:
->> >> On Wed, Jun 19, 2013 at 10:23 PM, Linus Walleij
->> >> <linus.walleij@linaro.org> wrote:
->> >>
->> >>> Please give some context though, Wikipedia says:
->> >>>
->> >>> Whitney Point is the codename of a PCH in the Oak Trail platform
->> >>> chipset for Atom Lincroft microprocessors.
->> >>> This has the following variations:
->> >>> 82SM35 (PCH SM35)
->> >>
->> >>> Does this mean that platform is not coming back to support Linux
->> >>> ever again
->> >>
->> >> I think it's very unluckily.
->> >> May be David could shed a light...
->> >
->> > Is that some kind of NACK?
->>
->> No, the opposite.
->> I meant it's very unluckily that we will have any Oak Trail user in future.
->
-> You mean *unlikely*, right?
->
-> AFAICT there are no real Oak Trail products outside Intel. It was
-> superseded by Medfield.
+On Wed, 19 Jun 2013 15:29:31 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-Only lab boards then? OK I will keep this patch around.
+> Il 19/06/2013 15:20, Batalov Eugene ha scritto:
+> > 
+> > I've missed this detail. It looks like Igor's patch doesn't bring
+> > secondary cpus kvm_clocksource behavior back to one before the regression,
+> > Before the regression per_cpu variables are used to allocate
+> > kvm_pv_clock areas.
+> > To to usage of percpu variables bootstrap cpu kvm_clock area contents
+> > were copied to smp secondary cpus kvm_clock areas when they were started.
+> > Bootstrap cpu kvm_clock area was not zeroed at this time.
+> > So kvm_pv_clock for secondary cpus never returned "zero" clock before
+> > the regression.
+> > 
+> > During the analysis of the bug I introduced idea to return zero before
+> > kvm clocksource is initialized for secondary cpus
+> > just like bootstrap cpu does on kernel boot. You can read that in BZ.
+> 
+> Yes, this is why I prefer to invert the two function calls.  But Igor's
+> patch fixes the hang (trivially because version is even) and is more
+> appropriate for -rc6.
 
-Yours,
-Linus Walleij
+I'll post this swap shortly, but zeroing out hv_clock at init time,
+would be still needed to provide sane values there if ftrace enabled
+at that time.
+
+> 
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
