@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab3FTHTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:19:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:39376 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab3FTHTH (ORCPT
+	id S1754419Ab3FTHVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:21:19 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62945 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753840Ab3FTHVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:19:07 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2ACB8.6050701@asianux.com>
-Date: Thu, 20 Jun 2013 15:18:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 20 Jun 2013 03:21:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX182QkVjkOQHg7ZHOUqFCcnu
+Date: Thu, 20 Jun 2013 00:21:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Roger Quadros <rogerq@ti.com>, stern@rowland.harvard.edu, balbi@ti.com,
+        ruslan.bilovol@ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RFC PATCH 2/6] mfd: omap-usb-host: Put pins in IDLE state on
+ suspend
+Message-ID: <20130620072112.GF5523@atomide.com>
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
+ <1371650753-11452-3-git-send-email-rogerq@ti.com>
+ <878v26815g.fsf@linaro.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/itimer.c: for return value, using -EINVAL instead
- of -EFAULT
-References: <51C29FBC.1090507@asianux.com> <alpine.DEB.2.02.1306200847300.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306200847300.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v26815g.fsf@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 02:59 PM, Thomas Gleixner wrote:
-> On Thu, 20 Jun 2013, Chen Gang wrote:
+* Kevin Hilman <khilman@linaro.org> [130619 10:30]:
+> Hi Roger,
 > 
->> > For the system call getitimer(), if the parameter 'value' is NULL, need
->> > return -EINVAL, not -EFAULT.
-> Care to explain why? Because you are feeling so?
+> Roger Quadros <rogerq@ti.com> writes:
 > 
-
-I am not feeling so, the original implementation really just checks the parameter 'value', if it is invalid, need return, is it incorrect ??
-
-
-> I recommend reading the man page of getitimer:
+> > In order to support wake up from suspend use the pinctrl
+> > framework to put the USB host pins in IDLE state during suspend.
+> >
+> > CC: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Roger Quadros <rogerq@ti.com>
 > 
->  ERRORS
->        EFAULT new_value, old_value, or curr_value is not valid a pointer.
+> You should use helpers for this now in the pinctrl core:
 > 
-> And NULL is definitely NOT a valid pointer.
-> 
-> The Posix spec does not specify an explicit error value for this
-> syscall, but the general policy is:
-> 
-> [EFAULT]
->     Bad address. The system detected an invalid address in attempting
->     to use an argument of a call. The reliable detection of this error
->     cannot be guaranteed, and when not detected may result in the
->     generation of a signal, indicating an address violation, which is
->     sent to the process.
-> 
-> And we made use of this, which is correct and makes sense.
-> 
-> Returning EINVAL makes no sense at all, because EINVAL _IS_ a
-> specified error code for this syscall:
-> 
-> [EINVAL]
->         The which argument is not recognized.
+>     http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html
 
-That means we need not check the parameter 'value' out side of copy_to_user().
+Also see the thread "[PATCH] pinctrl: document the pinctrl PM states"
+as we're still discussing how to deal with the various dynamic
+pinctrl needs in a generic way. Meanwile, just make sure the other
+patches work and don't break anything without this patch to
+remove the dependency.
 
-And the implement need like this:
+Regards,
 
----------------------------diff begin-----------------------------------
-
-diff --git a/kernel/itimer.c b/kernel/itimer.c
-index 8d262b4..3b12271 100644
---- a/kernel/itimer.c
-+++ b/kernel/itimer.c
-@@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
- 
- SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
- {
--	int error = -EFAULT;
-+	int error;
- 	struct itimerval get_buffer;
- 
--	if (value) {
--		error = do_getitimer(which, &get_buffer);
--		if (!error &&
--		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
--			error = -EFAULT;
--	}
-+	error = do_getitimer(which, &get_buffer);
-+	if (!error &&
-+	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
-+		error = -EFAULT;
-+
- 	return error;
- }
-
-
----------------------------diff end-------------------------------------
-
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+Tony
