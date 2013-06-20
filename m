@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965577Ab3FTOFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:05:38 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:43719 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030288Ab3FTOFW (ORCPT
+	id S1030291Ab3FTOG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:06:59 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58823 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965594Ab3FTOG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:05:22 -0400
-Date: Thu, 20 Jun 2013 14:05:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 1/2] mm: make vmstat_update periodic run conditional
-In-Reply-To: <1371672168-9869-1-git-send-email-gilad@benyossef.com>
-Message-ID: <0000013f61e7609b-a8d1907b-8169-4f77-ab83-a624a8d0ab4a-000000@email.amazonses.com>
-References: <CAOtvUMc5w3zNe8ed6qX0OOM__3F_hOTqvFa1AkdXF0PHvzGZqg@mail.gmail.com> <1371672168-9869-1-git-send-email-gilad@benyossef.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.20-54.240.9.58
+	Thu, 20 Jun 2013 10:06:57 -0400
+From: <patrice.chotard.st@gmail.com>
+To: <linux-kernel@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
+Cc: Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>
+Subject: [PATCH v2 1/4] pinctrl: abx500: suppress hardcoded value
+Date: Thu, 20 Jun 2013 16:05:42 +0200
+Message-Id: <1371737145-27662-2-git-send-email-patrice.chotard.st@gmail.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
+References: <1371737145-27662-1-git-send-email-patrice.chotard.st@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Gilad Ben-Yossef wrote:
+From: Patrice Chotard <patrice.chotard@st.com>
 
-> +static void vmstat_update(struct work_struct *w)
-> +{
-> +	int cpu, this_cpu = smp_processor_id();
-> +
-> +	if (unlikely(this_cpu == vmstat_monitor_cpu))
-> +		for_each_cpu_not(cpu, &vmstat_cpus)
-> +			if (need_vmstat(cpu))
-> +				start_cpu_timer(cpu);
-> +
-> +	if (likely(refresh_cpu_vm_stats(this_cpu) || (this_cpu == vmstat_monitor_cpu)))
-> +		schedule_delayed_work(&__get_cpu_var(vmstat_work),
-> +				round_jiffies_relative(sysctl_stat_interval));
-> +	else
-> +		cpumask_clear_cpu(this_cpu, &vmstat_cpus);
+Replace hardcoded value by corresponding #define's.
 
-The clearing of vmstat_cpus could be avoided if this processor is not
-running tickless. Frequent updates to vmstat_cpus could become an issue.
+Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+---
+ drivers/pinctrl/pinctrl-abx500.c       |   18 ++++++++++++++----
+ include/linux/mfd/abx500/ab8500-gpio.h |    5 +++++
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
->  	case CPU_DOWN_PREPARE_FROZEN:
-> -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-> -		per_cpu(vmstat_work, cpu).work.func = NULL;
-> +		if (cpumask_test_cpu(cpu, &vmstat_cpus)) {
-> +			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-> +			per_cpu(vmstat_work, cpu).work.func = NULL;
-> +			if(cpu == vmstat_monitor_cpu) {
-> +				int this_cpu = smp_processor_id();
-> +				vmstat_monitor_cpu = this_cpu;
-> +				if (!cpumask_test_cpu(this_cpu, &vmstat_cpus))
-> +					start_cpu_timer(this_cpu);
-> +			}
-> +		}
->  		break;
-
-If the disabling of vmstat is tied into the nohz logic then these portions
-are no longer necessary.
-
-> @@ -1237,8 +1299,10 @@ static int __init setup_vmstat(void)
->
->  	register_cpu_notifier(&vmstat_notifier);
->
-> +	vmstat_monitor_cpu = smp_processor_id();
-> +
-
-Drop the vmstat_monitor_cpu and use the dynticks processor.
+diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
+index caa7ab6..d1d42e7 100644
+--- a/drivers/pinctrl/pinctrl-abx500.c
++++ b/drivers/pinctrl/pinctrl-abx500.c
+@@ -264,12 +264,18 @@ static int abx500_gpio_direction_output(struct gpio_chip *chip,
+ 	int ret;
+ 
+ 	/* set direction as output */
+-	ret = abx500_gpio_set_bits(chip, AB8500_GPIO_DIR1_REG, offset, 1);
++	ret = abx500_gpio_set_bits(chip,
++				AB8500_GPIO_DIR1_REG,
++				offset,
++				ABX500_GPIO_OUTPUT);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* disable pull down */
+-	ret = abx500_gpio_set_bits(chip, AB8500_GPIO_PUD1_REG, offset, 1);
++	ret = abx500_gpio_set_bits(chip,
++				AB8500_GPIO_PUD1_REG,
++				offset,
++				ABX500_GPIO_PULL_NONE);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -290,7 +296,10 @@ static int abx500_gpio_direction_output(struct gpio_chip *chip,
+ static int abx500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ {
+ 	/* set the register as input */
+-	return abx500_gpio_set_bits(chip, AB8500_GPIO_DIR1_REG, offset, 0);
++	return abx500_gpio_set_bits(chip,
++				AB8500_GPIO_DIR1_REG,
++				offset,
++				ABX500_GPIO_INPUT);
+ }
+ 
+ static int abx500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+@@ -1018,7 +1027,8 @@ static int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+ 		else
+ 			/* Chip only supports pull down */
+ 			ret = abx500_gpio_set_bits(chip, AB8500_GPIO_PUD1_REG,
+-				offset, argument ? 0 : 1);
++				offset,
++				argument ? ABX500_GPIO_PULL_DOWN : ABX500_GPIO_PULL_NONE);
+ 		break;
+ 
+ 	case PIN_CONFIG_BIAS_PULL_UP:
+diff --git a/include/linux/mfd/abx500/ab8500-gpio.h b/include/linux/mfd/abx500/ab8500-gpio.h
+index 172b2f2..dafeca4 100644
+--- a/include/linux/mfd/abx500/ab8500-gpio.h
++++ b/include/linux/mfd/abx500/ab8500-gpio.h
+@@ -30,4 +30,9 @@ enum abx500_gpio_vinsel {
+ 	ABX500_GPIO_VINSEL_VDD_BIF = 0x2,
+ };
+ 
++enum abx500_gpio_direction {
++	ABX500_GPIO_INPUT = 0x0,
++	ABX500_GPIO_OUTPUT = 0x1,
++};
++
+ #endif /* _AB8500_GPIO_H */
+-- 
+1.7.10
 
