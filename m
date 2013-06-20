@@ -1,55 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161240Ab3FTRCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:02:25 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:33950 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161056Ab3FTRCV convert rfc822-to-8bit (ORCPT
+	id S965681Ab3FTQnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:43:00 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41299 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965232Ab3FTQm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:02:21 -0400
-X-AuditID: cbfec37c-b7f166d000004b4e-05-51c3359b22e2
-From: Daniel Phillips <d.phillips@partner.samsung.com>
-To: Christian Stroetmann <stroetmann@ontolinux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "tux3@tux3.org" <tux3@tux3.org>
-Subject: Re: Tux3 Report: Meet Shardmap, the designated successor of HTree
-Thread-topic: Tux3 Report: Meet Shardmap, the designated successor of HTree
-Thread-index: Ac5t1+vVOrBF/IDKR66mJLNzgb4UiA==
-Date: Thu, 20 Jun 2013 17:02:18 +0000
-Message-id: <1EC23D2B9975384993D85B5DB93AAE8860E5A2@sisaex02sj>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9hX93ZpocDDa5vM7XYs/cki8XlXXPY
-	LLpfVVp8OPCZ0YHFY+P6TjaPb09fsXl83iQXwBzFZZOSmpNZllqkb5fAlXG/+RJjwQ+mijcN
-	89kaGNcydTFyckgImEisWtbHCmGLSVy4t56ti5GLQ0hgGaPEu9kr2CGcXiaJLXMWskI48xkl
-	Nvy6CdbCJmAmsfT4GbBRIgK3GCVuT8oFsYUFvCQenVrKBhH3ljgKNpYDyNaTeHEnBSTMIqAq
-	ce3bZLBWXgF7iS3XFjCC2IxAV3w/tQYsziwgLtHcepMF4joBiSV7zjND2KISLx//YwUZKSGg
-	KLF9tRVEuZbE+p3HoVq1JZ68u8AKMV5Q4sfkeywTGEVmIZk6C0nLLCQts5C0LGBkWcUoVlqc
-	XFCclJ5aYaxXnJhbXJqXrpecn7uJERIrNTsY7321OcQowMGoxMMboHQ4UIg1say4MvcQowQH
-	s5IIr7QCUIg3JbGyKrUoP76oNCe1+BAjEwenVAPjLK9/nedkt15537PctHP1lQt22wQyF57d
-	9soz9sVy17Zt34tMEyP4xe2vGOhtCzlivPFwuH3s2wI+4Z7LcYLFhlxCs/fUtCtfVX5vvMsy
-	pOeJL0fM5bJYxSfP6tcu6DBPe/ecJdm6Vrf6gIl6k6B55cQLyy3e6u610l6fvt3S8ds024OV
-	TF+VWIozEg21mIuKEwGxZTp8cwIAAA==
+	Thu, 20 Jun 2013 12:42:58 -0400
+Date: Thu, 20 Jun 2013 18:42:54 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, vincent.weaver@maine.edu,
+        jolsa@redhat.com, ak@linux.intel.com
+Subject: [PATCH v2] perf,x86: Fix shared register mutual exclusion enforcement
+Message-ID: <20130620164254.GA3556@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christian,
 
-You are welcome, and I hope that your project can make good use of this 
-technology. Please do credit your sources if you use these ideas, and 
-please keep the CC list intact in further replies.
+This patch fixes a problem with the shared registers mutual
+exclusion code and incremental event scheduling by the
+generic perf_event code.
 
-What is the scale of your application, that is, how many index entries 
-do you expect?
+There was a bug whereby the mutual exclusion on the shared
+registers was not enforced because of incremental scheduling
+abort due to event constraints. As an example on Intel
+Nehalem, consider the following events:
 
-Regards,
+group1= L1D_CACHE_LD:E_STATE,OFFCORE_RESPONSE_0:PF_RFO,L1D_CACHE_LD:I_STATE
+group2= L1D_CACHE_LD:I_STATE
 
-Daniel
+The L1D_CACHE_LD event can only be measured by 2 counters. Yet, there
+are 3 instances here. The first group can be scheduled and is committed.
+Then, the generic code tries to schedule group2 and this fails (because
+there is no more counter to support the 3rd instance of L1D_CACHE_LD).
+But in x86_schedule_events() error path, put_event_contraints() is invoked
+on ALL the events and not just the ones that just failed. That causes the
+"lock" on the shared offcore_response MSR to be released. Yet the first group
+is actually scheduled and is exposed to reprogramming of that shared msr by
+the sibling HT thread. In other words, there is no guarantee on what is
+measured.
+
+This patch fixes the problem by tagging committed events with the
+PERF_X86_EVENT_COMMITTED tag. In the error path of x86_schedule_events(),
+only the events NOT tagged have their constraint released. The tag
+is eventually removed when the event in descheduled.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       |   26 +++++++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event.h       |    3 ++-
+ arch/x86/kernel/cpu/perf_event_intel.c |    2 --
+ 3 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ab33952..f585ae1 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -726,6 +726,7 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
+ 	struct event_constraint *c;
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++	struct perf_event *e;
+ 	int i, wmin, wmax, num = 0;
+ 	struct hw_perf_event *hwc;
+ 
+@@ -770,13 +771,31 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 					 wmax, assign);
+ 
+ 	/*
++	 * Mark the event as committed, so we do not put_constraint()
++	 * in case new events are added and fail scheduling.
++	 */
++	if (!num && assign) {
++		for (i = 0; i < n; i++) {
++			e = cpuc->event_list[i];
++			e->hw.flags |= PERF_X86_EVENT_COMMITTED;
++		}
++	}
++	/*
+ 	 * scheduling failed or is just a simulation,
+ 	 * free resources if necessary
+ 	 */
+ 	if (!assign || num) {
+ 		for (i = 0; i < n; i++) {
++			e = cpuc->event_list[i];
++			/*
++			 * do not put_constraint() on comitted events,
++			 * because they are good to go
++			 */
++			if ((e->hw.flags & PERF_X86_EVENT_COMMITTED))
++				continue;
++
+ 			if (x86_pmu.put_event_constraints)
+-				x86_pmu.put_event_constraints(cpuc, cpuc->event_list[i]);
++				x86_pmu.put_event_constraints(cpuc, e);
+ 		}
+ 	}
+ 	return num ? -EINVAL : 0;
+@@ -1156,6 +1175,11 @@ static void x86_pmu_del(struct perf_event *event, int flags)
+ 	int i;
+ 
+ 	/*
++	 * event is descheduled
++	 */
++	event->hw.flags &= ~PERF_X86_EVENT_COMMITTED;
++
++	/*
+ 	 * If we're called during a txn, we don't need to do anything.
+ 	 * The events never got scheduled and ->cancel_txn will truncate
+ 	 * the event_list.
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 108dc75..5521e04 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -63,11 +63,12 @@ struct event_constraint {
+ 	int	flags;
+ };
+ /*
+- * struct event_constraint flags
++ * struct hw_perf_event.flags flags
+  */
+ #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
+ #define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+ #define PERF_X86_EVENT_PEBS_ST_HSW	0x4 /* haswell style st data sampling */
++#define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
+ 
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a6eccf1..7318e77 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1450,7 +1450,6 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	if (x86_pmu.event_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+ 			if ((event->hw.config & c->cmask) == c->code) {
+-				/* hw.flags zeroed at initialization */
+ 				event->hw.flags |= c->flags;
+ 				return c;
+ 			}
+@@ -1498,7 +1497,6 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 					struct perf_event *event)
+ {
+-	event->hw.flags = 0;
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
+ }
+ 
+-- 
+1.7.10.4
+
