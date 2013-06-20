@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160Ab3FTMBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:01:04 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:48952 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3FTMBB (ORCPT
+	id S965208Ab3FTMBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:01:50 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:35966 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab3FTMBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:01:01 -0400
-Date: Thu, 20 Jun 2013 14:00:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: fix trigger_all_cpu_backtrace() implementation
-Message-ID: <20130620120055.GC12479@gmail.com>
-References: <1370518875-1346-1-git-send-email-walken@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370518875-1346-1-git-send-email-walken@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Jun 2013 08:01:48 -0400
+From: Nicolas Palix <nicolas.palix@imag.fr>
+To: Sachin Kamat <sachin.kamat@linaro.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Cc: Nicolas Palix <nicolas.palix@imag.fr>
+Subject: [PATCH] Coccinelle: Update the documentation
+Date: Thu, 20 Jun 2013 14:00:19 +0200
+Message-Id: <1371729619-18719-1-git-send-email-nicolas.palix@imag.fr>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAK9yfHyM7OrOtxWN56J06RAVBc-q0idDdhFjYzT3=opw-bZuXA@mail.gmail.com>
+References: <CAK9yfHyM7OrOtxWN56J06RAVBc-q0idDdhFjYzT3=opw-bZuXA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ - The new default mode is 'report'.
+ - The available modes are detailed a bit more.
+ - Some information about the use of spatch options are
+   also given concerning the use of indexing tools.
 
-* Michel Lespinasse <walken@google.com> wrote:
+Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+---
+v2: Fix typo reported by Sachin Kamat
 
-> The following change fixes the x86 implementation of
-> trigger_all_cpu_backtrace(), which was previously (accidentally, as
-> far as I can tell) disabled to always return false as on architectures
-> that do not implement this function.
-> 
-> Is there any chance that we could get this in before v3.10 ?
+ Documentation/coccinelle.txt |   39 ++++++++++++++++++++++++++-------------
+ 1 file changed, 26 insertions(+), 13 deletions(-)
 
-Looks good at first glance - I'll test it and push Linuswards.
+diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
+index 408439d..81a329f 100644
+--- a/Documentation/coccinelle.txt
++++ b/Documentation/coccinelle.txt
+@@ -48,7 +48,7 @@ A Coccinelle-specific target is defined in the top level
+ Makefile. This target is named 'coccicheck' and calls the 'coccicheck'
+ front-end in the 'scripts' directory.
+ 
+-Four modes are defined: patch, report, context, and org. The mode to
++Four basic modes are defined: patch, report, context, and org. The mode to
+ use is specified by setting the MODE variable with 'MODE=<mode>'.
+ 
+ 'patch' proposes a fix, when possible.
+@@ -62,18 +62,24 @@ diff-like style.Lines of interest are indicated with '-'.
+ 'org' generates a report in the Org mode format of Emacs.
+ 
+ Note that not all semantic patches implement all modes. For easy use
+-of Coccinelle, the default mode is "chain" which tries the previous
+-modes in the order above until one succeeds.
++of Coccinelle, the default mode is "report".
+ 
+-To make a report for every semantic patch, run the following command:
++Two other modes provide some common combinations of these modes.
+ 
+-	make coccicheck MODE=report
++'chain' tries the previous modes in the order above until one succeeds.
+ 
+-NB: The 'report' mode is the default one.
++'rep+ctxt' runs successively the report mode and the context mode.
++	   It should be used with the C option (described later)
++	   which checks the code on a file basis.
+ 
+-To produce patches, run:
++Examples:
++	To make a report for every semantic patch, run the following command:
+ 
+-	make coccicheck MODE=patch
++		make coccicheck MODE=report
++
++	To produce patches, run:
++
++		make coccicheck MODE=patch
+ 
+ 
+ The coccicheck target applies every semantic patch available in the
+@@ -129,26 +135,33 @@ To check only newly edited code, use the value 2 for the C flag, i.e.
+ 
+     make C=2 CHECK="scripts/coccicheck"
+ 
++In these modes, which works on a file basis, there is no information
++about semantic patches displayed, and no commit message proposed.
++
+ This runs every semantic patch in scripts/coccinelle by default. The
+ COCCI variable may additionally be used to only apply a single
+ semantic patch as shown in the previous section.
+ 
+-The "chain" mode is the default. You can select another one with the
++The "report" mode is the default. You can select another one with the
+ MODE variable explained above.
+ 
+-In this mode, there is no information about semantic patches
+-displayed, and no commit message proposed.
+-
+  Additional flags
+ ~~~~~~~~~~~~~~~~~~
+ 
+ Additional flags can be passed to spatch through the SPFLAGS
+ variable.
+ 
+-    make SPFLAGS=--use_glimpse coccicheck
++    make SPFLAGS=--use-glimpse coccicheck
++    make SPFLAGS=--use-idutils coccicheck
+ 
+ See spatch --help to learn more about spatch options.
+ 
++Note that the '--use-glimpse' and '--use-idutils' options
++require external tools for indexing the code. None of them is
++thus active by default. However, by indexing the code with
++one of these tools, and according to the cocci file used,
++spatch could proceed the entire code base more quickly.
++
+  Proposing new semantic patches
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+-- 
+1.7.9.5
 
-Thanks,
-
-	Ingo
