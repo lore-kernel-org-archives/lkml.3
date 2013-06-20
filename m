@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965710Ab3FTSxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:53:08 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40463 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965649Ab3FTSxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:53:05 -0400
-Message-ID: <51C34F8D.2000806@gmail.com>
-Date: Thu, 20 Jun 2013 12:53:01 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
-References: <20130618192147.GA19443@redhat.com>   <20130619121039.GA19225@twins.programming.kicks-ass.net>   <20130619152844.GA9176@redhat.com> <20130619175139.GA20454@redhat.com>   <51C1FD7F.9090606@gmail.com> <20130619195822.GA16489@redhat.com>  <1371752633.18733.96.camel@gandalf.local.home> <51C34B70.60808@gmail.com> <1371754078.18733.106.camel@gandalf.local.home>
-In-Reply-To: <1371754078.18733.106.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1161186Ab3FTSnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:43:35 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53656 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1161036Ab3FTSne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:43:34 -0400
+Message-ID: <1371753812.2146.37.camel@joe-AO722>
+Subject: Re: [PATCH] gpio MIPS/OCTEON: Add a driver for OCTEON's on-chip
+ GPIO pins.
+From: Joe Perches <joe@perches.com>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        David Daney <david.daney@cavium.com>
+Date: Thu, 20 Jun 2013 11:43:32 -0700
+In-Reply-To: <51C3497D.2050107@gmail.com>
+References: <1371251915-18271-1-git-send-email-ddaney.cavm@gmail.com>
+	 <CACRpkdYHzBBbPNujYRGkMFGuQRzeYKs9jgfc3e3HWyxQFahvRQ@mail.gmail.com>
+	 <51C34584.8070301@gmail.com> <1371752324.2146.25.camel@joe-AO722>
+	 <51C3497D.2050107@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/13 12:47 PM, Steven Rostedt wrote:
-> On Thu, 2013-06-20 at 12:35 -0600, David Ahern wrote:
->> On 6/20/13 12:23 PM, Steven Rostedt wrote:
->>>
->>> I ran this:
->>>
->>>    perf stat --repeat 100 -- perf bench sched pipe > /tmp/perf-bench-sched.{before, after}
->>
->> You want to compare:
->>     perf stat --repeat 100 -p 1 -- perf bench sched pipe
->>
->> so that event is tagged to pid 1 and not the perf-bench workload.
->
-> I guess I'm a bit confused. What's the significance of measuring pid 1
-> (init)?
+On Thu, 2013-06-20 at 11:27 -0700, David Daney wrote:
+> On 06/20/2013 11:18 AM, Joe Perches wrote:
+> > On Thu, 2013-06-20 at 11:10 -0700, David Daney wrote:
+> >> Sorry for not responding earlier, but my e-mail system seems to have
+> >> malfunctioned with respect to this message...
+> > []
+> >> On 06/17/2013 01:51 AM, Linus Walleij wrote:
+> >>>> +static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
+> >>>> +{
+> >>>> +       struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+> >>>> +       u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
+> >>>> +
+> >>>> +       return ((1ull << offset) & read_bits) != 0;
+> >>>
+> >>> A common idiom we use for this is:
+> >>>
+> >>> return !!(read_bits & (1ull << offset));
+> >>
+> >> I hate that idiom, but if its use is a condition of accepting the patch,
+> >> I will change it.
+> >
+> > Or use an even more common idiom and change the
+> > function to return bool and let the compiler do it.
+> >
+> 
+> ... but it is part of the gpiochip system interface, so it would have to 
+> be done kernel wide.
 
-I believe Oleg's point is the overhead for tasks without events 
-associated with them. To show that create an event tagged to the init 
-task and then run some workload -- like perf bench shed pipe. It shows 
-that all tasks take a hit, not just the one getting profiled.
+Not really.  It's a local static function.
 
-David
+> Really I don't like the idea of GPIO lines having Boolean truth values 
+> associated with them.  Some represent things that are active-high and 
+> others active-low.  Converting the pin voltage being above or below a 
+> given threshold to something other than zero or one would in my opinion 
+> be confusing.
+
+No worries, just offering options.  Your code, your choice.
+
