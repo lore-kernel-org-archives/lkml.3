@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3FTHg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:36:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59202 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab3FTHg2 (ORCPT
+	id S1754650Ab3FTHiw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:38:52 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:21859 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab3FTHiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:36:28 -0400
-Date: Thu, 20 Jun 2013 09:36:28 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
- spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
-In-Reply-To: <51C28193.3080106@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306200903520.4013@ionos.tec.linutronix.de>
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C182EE.5070500@asianux.com>
- <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de> <51C28193.3080106@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Jun 2013 03:38:51 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C2B157.40806@asianux.com>
+Date: Thu, 20 Jun 2013 15:37:59 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        laijs@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/kthread.c: need spin_lock_irq() for 'worker' before
+ main looping, since it can "WARN_ON(worker->task)".
+References: <51C12D9A.8030801@asianux.com> <20130619084124.GF30681@mtj.dyndns.org> <51C18540.5060200@asianux.com> <20130619155218.GA14881@htj.dyndns.org> <51C26087.9000109@asianux.com> <alpine.DEB.2.02.1306200900030.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306200900030.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Chen Gang wrote:
-> On 06/19/2013 06:49 PM, Thomas Gleixner wrote:
-> > We must do this because some architectures implement
-> > do_raw_spin_lock_flags() in the following way:
-> > 
-> > do_raw_spin_lock_flags(l, flags)
-> > {
-> > 	while (!arch_spin_trylock(l)) {
-> > 	      if (!irq_disabled_flags(flags)) {
-> > 	      	      arch_irq_restore(flags);
-> > 		      cpu_relax();
-> > 		      arch_irq_disable();
-> > 	      }
-> > 	}
-> > }
-> > 
+On 06/20/2013 03:02 PM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, Chen Gang wrote:
 > 
-> For mn10300 and sparc64 (not space32), it doesn't like your demo above.
-
-Sigh. You're an sparc64 and mn10300 assembler expert, right?
- 
-> For powerpc and s390, it seems your demo above (although not quite
-> precious)
-
-It does not matter at all whether the code is implemented exactly that
-way. What matters is that the semantics are the same.
- 
-> For x86 and parisc, it like your demo above.
-
-For parisc, yes.
-
-For x86, no. 
-
-static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
-                                                  unsigned long flags)
-{
-        arch_spin_lock(lock);
-}
-
-> > And again. Both are semantically the same.
-> > 
+>> > On 06/19/2013 11:52 PM, Tejun Heo wrote:
+>>> > > On Wed, Jun 19, 2013 at 06:17:36PM +0800, Chen Gang wrote:
+>>>>> > >> > Hmm... can 'worker->task' has chance to be not NULL before set 'current'
+>>>>> > >> > to it ?
+>>> > > Yes, if the caller screws up and try to attach more than one workers
+>>> > > to the kthread_worker, which has some possibility of happening as
+>>> > > kthread_worker allows both attaching and detaching a worker.
+>>> > > 
+>> > 
+>> > If we detect the bugs, and still want to use WARN_ON() to report warning
+>> > and continue running, we need be sure of keeping the related things no
+>> > touch (at least not lead to worse).
+>> > 
+>> > If we can not be sure of keeping the related things no touch:
+>> >   if it is a kernel bug, better use BUG_ON() instead of,
+>> >   if it is a user mode bug, better to return failure with error code and
+>> > print related information.
+> Wrong. BUG_ON() is only for cases where the kernel CANNOT continue at
+> all. WARN_ON() prints the very same information, but allows to
+> continue.
 > 
-> I am not quite sure about mn10300 and sparc64.
-> 
-> Could you be sure about it ?
 
-I am sure, because I can read _and_ understand the asm code.
+In fact, BUG_ON() and WARN_ON() has various implementations in different
+architectures, and also can be configured by user.
 
-> At least, for mn10300 and sparc64, they have no duty to make sure of
-> our using ways to be correct.
+Even some of 'crazy users' (e.g. randconfig), can make BUG_ON() and
+WARN_ON() 'empty' (include/asm-generic/bug.h).
 
-You think that architectures can implement these functions as they
-want and see fit? No, they can't otherwise their kernel would not work
-at all. Again the semantics are what we care about, not the
-implementation. And it's totally irrelevant whether its implemented in
-C or in assembler.
+In my experience (mainly for servers), when find a kernel bug, it will
+stop and report bug, that will let coredump analysing (or KDB trap) much
+easier.
 
-> > spin_lock_irqsave() semantics are:
-> > 
-> > The function returns with the lock acquired, interrupts and preemption
-> > disabled. Both variants do that.
-> > 
-> > The internal details whether an architecture reenables interrupts
-> > while spinning on a contended lock or not are completely irrelevant
-> > and do not affect the correctness of the code.
-> 
-> For API definition, it has no duty to make it correct if the user call
-> them with informal ways, especially, the implementation is related with
-> various architectures.
 
-Nonsense.
+>> > BUG_ON() will stop current working flow and report kernel bug in details.
+> There is no reason to crash the machine completely. The kernel can
+> continue and the WARN_ON reports the bug with the same details.
 
-We define an API and the semantics and every implementation has to
-follow these semantics. Period.
+If so (we still prefer to use WARN_ON), we'd better to let it in lock
+protected.
 
-If there is an implementation, which does not follow the
-specification, then it needs to be fixed. Period.
+At least when we still have to continue, try not to lead things worse.
 
-And this has nothing to do how this is called and whether various
-architecture specific implementations exist or not.
- 
-> At last if it is really correct now, it is still dangerous (the API has
-> no duty to let it always correct).
+It will provide much help for coredump analysing (or KDB trap).
 
-The API CANNOT make sure that the implementations are correct. It's
-the duty of the person who implements the API to make sure it is
-correct.
 
-And there is nothing dangerous except your ongoing attempts to patch
-code which you really do not understand at all.
+In fact, for coredump analysers, for every real world coredump, they
+have to assume the system has already continued blindly, and then die.
 
-Thanks,
 
-	tglx
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
