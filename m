@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965241Ab3FTMCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:02:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35258 "EHLO comal.ext.ti.com"
+	id S965430Ab3FTMDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:03:25 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:27111 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3FTMCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:02:51 -0400
-Message-ID: <51C2EF50.3070707@ti.com>
-Date: Thu, 20 Jun 2013 15:02:24 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755658Ab3FTMDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:03:23 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 5/7] metag: tz1090: select and instantiate gpio-tz1090
+Date: Thu, 20 Jun 2013 13:02:36 +0100
+Message-ID: <1371729758-10196-6-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
+References: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
-        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <b-cousson@ti.com>
-Subject: Re: [RFC PATCH 5/6] ARM: dts: omap3beagle-xm: Add idle state pins
- for USB host
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-6-git-send-email-rogerq@ti.com> <87obb26ixm.fsf@linaro.org> <51C2EDB1.3080801@ti.com>
-In-Reply-To: <51C2EDB1.3080801@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_20_13_03_19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 02:55 PM, Roger Quadros wrote:
-> On 06/19/2013 09:42 PM, Kevin Hilman wrote:
->> Roger Quadros <rogerq@ti.com> writes:
->>
->>> Add the Idle state pins for USB host and enable WAKEUP on
->>> DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
->>> sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
->>>
->>> CC: Benoît Cousson <b-cousson@ti.com>
->>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>
->> This one doesn't apply...
->>
->>> ---
->>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
->>>  1 files changed, 23 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>> index d3808ed..f1d56c2 100644
->>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>> @@ -89,12 +89,7 @@
->>>  };
->>>  
->>>  &omap3_pmx_core {
->>> -	pinctrl-names = "default";
->>> -	pinctrl-0 = <
->>> -			&hsusbb2_pins
->>> -	>;
->>> -
->>> -	hsusbb2_pins: pinmux_hsusbb2_pins {
->>
->> This omap3_pmx_core section doesn't exist upstream in the xM DTS file
->> (but does in omap3-beagle.dts.)  
->>
->> Is there a dependency patch missing?
->>
-> 
-> Sorry for not mentioning it earlier. This is based on Benoit's tree [1]
-> and you need these patches
-> 
-> http://thread.gmane.org/gmane.linux.drivers.devicetree/38383
+Select ARCH_WANT_OPTIONAL_GPIOLIB from SOC_TZ1090 to allow GPIOLIB and
+GPIO_TZ1090 (the main gpio driver) to be enabled once it is merged, and
+instantiate it from tz1090.dtsi.
 
-Just noticed that this no longer applies today. I'll send a revision soon.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/metag/Kconfig.soc          |  1 +
+ arch/metag/boot/dts/tz1090.dtsi | 35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
-cheers,
--roger
+diff --git a/arch/metag/Kconfig.soc b/arch/metag/Kconfig.soc
+index 944dc30..d61d687 100644
+--- a/arch/metag/Kconfig.soc
++++ b/arch/metag/Kconfig.soc
+@@ -16,6 +16,7 @@ config META21_FPGA
+ 
+ config SOC_TZ1090
+ 	bool "Toumaz Xenif TZ1090 SoC (Comet)"
++	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select IMGPDC_IRQ
+ 	select METAG_LNKGET_AROUND_CACHE
+ 	select METAG_META21
+diff --git a/arch/metag/boot/dts/tz1090.dtsi b/arch/metag/boot/dts/tz1090.dtsi
+index f9cb189..d9e537e 100644
+--- a/arch/metag/boot/dts/tz1090.dtsi
++++ b/arch/metag/boot/dts/tz1090.dtsi
+@@ -49,5 +49,40 @@
+ 			compatible = "img,tz1090-pinctrl";
+ 			reg = <0x02005800 0xe4>;
+ 		};
++
++		gpios: gpios@02005800 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "img,tz1090-gpio";
++			reg = <0x02005800 0x90>;
++
++			gpios0: bank@0 {
++				gpio-controller;
++				interrupt-controller;
++				#gpio-cells = <2>;
++				#interrupt-cells = <2>;
++				reg = <0>;
++				interrupts = <13 IRQ_TYPE_LEVEL_HIGH>;
++				gpio-ranges = <&pinctrl 0 0 30>;
++			};
++			gpios1: bank@1 {
++				gpio-controller;
++				interrupt-controller;
++				#gpio-cells = <2>;
++				#interrupt-cells = <2>;
++				reg = <1>;
++				interrupts = <14 IRQ_TYPE_LEVEL_HIGH>;
++				gpio-ranges = <&pinctrl 0 30 30>;
++			};
++			gpios2: bank@2 {
++				gpio-controller;
++				interrupt-controller;
++				#gpio-cells = <2>;
++				#interrupt-cells = <2>;
++				reg = <2>;
++				interrupts = <15 IRQ_TYPE_LEVEL_HIGH>;
++				gpio-ranges = <&pinctrl 0 60 30>;
++			};
++		};
+ 	};
+ };
+-- 
+1.8.1.2
+
+
