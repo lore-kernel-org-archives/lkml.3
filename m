@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965071Ab3FTCid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:38:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57138 "EHLO
+	id S935576Ab3FTCjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:39:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57156 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965025Ab3FTCic (ORCPT
+	with ESMTP id S935506Ab3FTCje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:38:32 -0400
-Message-ID: <51C26B15.3090800@infradead.org>
-Date: Wed, 19 Jun 2013 19:38:13 -0700
+	Wed, 19 Jun 2013 22:39:34 -0400
+Message-ID: <51C26B56.20802@infradead.org>
+Date: Wed, 19 Jun 2013 19:39:18 -0700
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ CC: Andrew Morton <akpm@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 1/2] fb: fix atyfb build warning
+Subject: [PATCH 2/2] fb: fix atyfb unused data warnings
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,11 +28,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@infradead.org>
 
-Fix build warning when neither of CONFIG_FB_ATY_GX or
-CONFIG_FB_ATY_CT is enabled, since ARRAY_SIZE(aty_chips) is 0 in
-that case.
+Fix compiler warnings of data defined but not used.  They are only used
+with certain kconfig settings.
 
-drivers/video/aty/atyfb_base.c:437:11: warning: overflow in implicit constant conversion [-Woverflow]
+drivers/video/aty/atyfb_base.c:534:13: warning: 'ram_dram' defined but not used [-Wunused-variable]
+drivers/video/aty/atyfb_base.c:535:13: warning: 'ram_resv' defined but not used [-Wunused-variable]
 
 Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 Cc:	Paul Mackerras <paulus@samba.org>
@@ -41,19 +41,19 @@ Cc:	linux-fbdev@vger.kernel.org
 Cc:	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 Cc:	Tomi Valkeinen <tomi.valkeinen@ti.com>
 ---
- drivers/video/aty/atyfb_base.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/aty/atyfb_base.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 --- linux-next-20130619.orig/drivers/video/aty/atyfb_base.c
 +++ linux-next-20130619/drivers/video/aty/atyfb_base.c
-@@ -434,8 +434,8 @@ static int correct_chipset(struct atyfb_
- 	const char *name;
- 	int i;
+@@ -531,8 +531,10 @@ static int correct_chipset(struct atyfb_
+ 	return 0;
+ }
  
--	for (i = ARRAY_SIZE(aty_chips) - 1; i >= 0; i--)
--		if (par->pci_id == aty_chips[i].pci_id)
-+	for (i = ARRAY_SIZE(aty_chips); i > 0; i--)
-+		if (par->pci_id == aty_chips[i - 1].pci_id)
- 			break;
- 
- 	if (i < 0)
++#if defined(CONFIG_FB_ATY_GX) || defined(CONFIG_FB_ATY_CT)
+ static char ram_dram[] = "DRAM";
+ static char ram_resv[] = "RESV";
++#endif
+ #ifdef CONFIG_FB_ATY_GX
+ static char ram_vram[] = "VRAM";
+ #endif /* CONFIG_FB_ATY_GX */
