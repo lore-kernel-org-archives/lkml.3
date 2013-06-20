@@ -1,83 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030213Ab3FTLA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:00:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65146 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965287Ab3FTLAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965280Ab3FTLAV (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Jun 2013 07:00:21 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-fd-51c2e0ac2838
-Message-id: <51C2E0AD.8060208@samsung.com>
-Date: Thu, 20 Jun 2013 19:59:57 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
- <CAKohponD5s6-g0X9rgsVt0U4RutfyXSQJRZP3vT7EuczgMMQ2Q@mail.gmail.com>
- <51C2DD3D.5040601@samsung.com>
- <CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
-In-reply-to: <CAKohpomx54Y3WVToYP0nOw-hsxKzGjp2nyfzWf5bo1s530Yg1w@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkSHfNg0OBBlsXmVmcbXrDbnF51xw2
-	i9uNK9gs+hf2Mlls/OrhwOpx59oeNo++LasYPR4tbmH0+LxJLoAlissmJTUnsyy1SN8ugStj
-	yhKfgitsFfsW/WFuYNzA2sXIySEhYCLx7dYEFghbTOLCvfVsXYxcHEICSxklzvxbztjFyAFW
-	NHV7EEiNkMAiRon/P+sgal4wSnzeeIUNJMEroCUxfcYVsKEsAqoS576tBYuzAcX3v7gBZosK
-	hEmsnH6FBaJeUOLH5HssIPNFgGpe3kwFCTMLtDJKXDjoCRIWFsiQmPC2CmLtF0aJc+eDQWxO
-	gWCJpXMms0OU60jsb53GBmHLS2xe85YZ5DQJgU3sErPnNzNBnCMg8W3yIRaIV2QlNh1ghnhX
-	UuLgihssExjFZiE5aBaSsbOQjF3AyLyKUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzCeTv97
-	1r+D8e4B60OMyUArJzJLiSbnA+MxryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU
-	1ILUovii0pzU4kOMTBycUg2Mwv0JNRUP1c1iZmya/b7F6PctnR/fWl8bdiw6JHOLT1K7+a+k
-	XOmhsn2bi1+o97zs8mgXifu98r/C68/FjS/WcsuzPbb/uKX+a3OpttupTmnX0PqwCV7Bt7Na
-	2B8WP2/puP6uv3Pp+n87fnfuYZFya9VayOojmzNrjnKRy4/nKtH7JJdVBnEosRRnJBpqMRcV
-	JwIAZmj1hr0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xgO6aB4cCDTZ/07M42/SG3eLyrjls
-	FrcbV7BZ9C/sZbLY+NXDgdXjzrU9bB59W1Yxejxa3MLo8XmTXABLVAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
-	oSFuuhYwjRG6viFBcD1GBmggYQ1jxpQlPgVX2Cr2LfrD3MC4gbWLkYNDQsBEYur2oC5GTiBT
-	TOLCvfVsILaQwCJGif8/67oYuYDsF4wSnzdeAUvwCmhJTJ9xhRXEZhFQlTj3bS1YnA0ovv/F
-	DTBbVCBMYuX0KywQ9YISPybfYwHZJQJU8/JmKkiYWaCVUeLCQU+QsLBAhsSEt1UQa78wSpw7
-	HwxicwoESyydM5kdolxHYn/rNDYIW15i85q3zBMYBWYhWTALSdksJGULGJlXMYqmFiQXFCel
-	5xrpFSfmFpfmpesl5+duYgRH6zPpHYyrGiwOMQpwMCrx8GpcPhgoxJpYVlyZe4hRgoNZSYQ3
-	dc6hQCHelMTKqtSi/Pii0pzU4kOMyUD/T2SWEk3OByaSvJJ4Q2MTMyNLI3NDCyNjc9KElcR5
-	D7ZaBwoJpCeWpGanphakFsFsYeLglGpgnC72e09RR7K2c/TjYql337T1XzuEJysKu05z+Wb6
-	6NyHKuVrR1y3ZH3jLV8R/fUlh5XcW4Ev85euuTHzzJMXjFPXr5vrfHkrf9b2z3zWN6ds2P3j
-	+e2EKR237hQ7tVsq1Mf3zEwvrX5ptnGDHrvjlEqXmcVvjq873X+2IOCsrUkk0+9wed5DIkos
-	xRmJhlrMRcWJAIQY2L4aAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:55886 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964966Ab3FTLAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 07:00:15 -0400
+Message-ID: <51C2E0AF.7040702@monstr.eu>
+Date: Thu, 20 Jun 2013 12:59:59 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
+References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com> <CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com> <51A8387C.4030704@monstr.eu> <CACRpkdbHiaK6YPgXyxNgEeZxAsddK4x0vS-q3YfyXnj_BgHvuw@mail.gmail.com> <51A852A1.7020505@monstr.eu> <CACRpkdbL4pqiF8zxMi28SRTJ9AESiFt0wJMhK1oBio_cfFhpsQ@mail.gmail.com> <51C2B47A.6010906@monstr.eu> <CACRpkdbWXFLgcUJ-gcUArRotJMoX4JBU9mmheooJBWsLR=QHOA@mail.gmail.com>
+In-Reply-To: <CACRpkdbWXFLgcUJ-gcUArRotJMoX4JBU9mmheooJBWsLR=QHOA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2HPSMLBMTGVVEBVKMEWOO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 07:55 PM, Viresh Kumar wrote:
-> On 20 June 2013 16:15, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> Yes, freq->old is same freq->new.
->>
->> The cpufreq gorvernor(dbs_check_cpu()) send CPUFREQ_LOADCHECK noti
->> right after calculating CPUs load, regardless of changing CPU frequency.
->> So, I use only freq->old value without using freq->new because load_table
->> debugfs file need current cpu frequency.
->>
->> Now, I can't think of any proper usage for freq->new.
->> Do you have good way for using freq->new to include more useful data in load_table?
-> 
-> This information might be interesting.. At what load, we moved from
-> which freq to which one..
-> 
-> Just see if you can add the notification after frequency has been
-> changed.
-> 
-OK, I'll modify it and send test result. Thanks.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HPSMLBMTGVVEBVKMEWOO
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Best Regards,
-Chanwoo Choi
+On 06/20/2013 11:23 AM, Linus Walleij wrote:
+> On Thu, Jun 20, 2013 at 9:51 AM, Michal Simek <monstr@monstr.eu> wrote:=
+
+>> On 06/17/2013 07:29 AM, Linus Walleij wrote:
+>=20
+>>> I think of_property_read_bool() will accept
+>>> xlnx,is-dual =3D <1>; to mean the same as xlnx,is-dual;
+>>> try it.
+>>
+>> First of all sorry for delay.
+>> You are right that of_property_read_bool()
+>> also accept xlnx,is-dual =3D <1>;
+>> but also accept and return 1 when xlnx,is-dual =3D <0>;
+>> which is incorrect behaviour.
+>=20
+> OK but that is a coding issue, not a DT bindings design issue.
+> Can't we think a bit outside the box?
+
+Before that fyi: I am working on supporing irq in this driver too.
+Sure.
+
+> What about something like this:
+>=20
+> static bool is_dual (struct device_node *np)
+> {
+>     struct property *prop =3D of_find_property(np, "xlnx,is-dual", NULL=
+);
+>     int ret;
+>     u32 val;
+>=20
+>     if (!prop)
+>         return false;
+>=20
+>     ret =3D of_property_read_u32(np, "xlnx,is-dual", &val);
+>     if (ret < 0)
+>         return true; /* node exists but has no cells */
+>=20
+>     return !!val;
+> }
+
+we can do it in this way but what I don't like on this is that IP
+is design to support 2 channels right now.
+It can happen that Xilinx decides to extend this for new channels.
+Register map is prepared for it and there is enough space to do it.
+
+And when this is done then is-dual (which is current name which
+is used in hardware configuration from design tools) will contain
+larger value >1.
+I agree that is-dual is not the best name.
+
+What about to do it differently?
+Generate number of channel in the description.
+And also do for() loop in the probe function to read values based
+on this channel number.
+
+Thanks,
+Michal
+
+
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2HPSMLBMTGVVEBVKMEWOO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHC4LEACgkQykllyylKDCFZjACfU8XBcP4LjjjRlf9q1B6ahskU
+ZJ8An25m30BfZbMwQ+Hb3R5X7P7ZrwNY
+=2nKg
+-----END PGP SIGNATURE-----
+
+------enig2HPSMLBMTGVVEBVKMEWOO--
