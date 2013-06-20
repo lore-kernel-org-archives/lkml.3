@@ -1,118 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab3FTJo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:44:56 -0400
-Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:59043 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751484Ab3FTJoy (ORCPT
+	id S1757536Ab3FTJt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:49:58 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:41083 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757304Ab3FTJt4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:44:54 -0400
-X-Greylist: delayed 142012 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jun 2013 05:44:54 EDT
-Message-ID: <51C2CF0B.1010007@overkiz.com>
-Date: Thu, 20 Jun 2013 11:44:43 +0200
-From: =?ISO-8859-1?Q?Ga=EBl_PORTAY?= <g.portay@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 05:49:56 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: netdev <netdev@vger.kernel.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v5] ethernet/arc/arc_emac - Add new driver
+Thread-Topic: [PATCH v5] ethernet/arc/arc_emac - Add new driver
+Thread-Index: AQHObMTB0pUCWSTLfkKwzmR6uOQoOA==
+Date: Thu, 20 Jun 2013 09:49:48 +0000
+Message-ID: <4881796E12491D4BB15146FE0209CE643F5F2F56@DE02WEMBXB.internal.synopsys.com>
+References: <1371629537-8076-1-git-send-email-abrodkin@synopsys.com>
+ <CAHp75Vc-Aza03ZLJj3CkLP2YhvdRi94bfutxKbV34hTc1_6k4g@mail.gmail.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.121.8.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Rob Landley <rob@landley.net>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [RFC PATCH] led: add Cycle LED trigger.
-References: <1371572663-10846-1-git-send-email-g.portay@overkiz.com> <1371593140.2038.8.camel@joe-AO722>
-In-Reply-To: <1371593140.2038.8.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 14932247516096752630
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/06/2013 00:05, Joe Perches wrote:
-> On Tue, 2013-06-18 at 18:24 +0200, Gaël PORTAY wrote:
->> Currently, none of available triggers supports playing with the LED brightness
->> level.  The cycle trigger provides a way to define custom brightness cycle.
->> For example, it is easy to customize the cycle to mock up the rhythm of human
->> breathing which is a nice cycle to tell the user the system is doing something.
-> I think maybe this is a userspace thing, but here's a
-> trivial comment or two
+On 06/19/2013 04:06 PM, Andy Shevchenko wrote:
+> On Wed, Jun 19, 2013 at 11:12 AM, Alexey Brodkin
+> <Alexey.Brodkin@synopsys.com> wrote:
+>> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+>> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+>> ARCAngel4/ML50x.
+>>
+>> This is based off of current Linus tree.
 >
->
->> +static int cycle_start(struct cycle_trig_data *data)
+> This line should go away from commit message.
+
+Ok, will do.
+
+>> +static int arc_emac_rx(struct net_device *ndev, int budget)
 >> +{
->> +	unsigned long flags;
+>> +       struct arc_emac_priv *priv = netdev_priv(ndev);
+>> +       unsigned int work_done;
 >> +
->> +	if (hrtimer_active(&data->timer))
->> +		return -EINVAL;
+>> +       for (work_done = 0; work_done <= budget;) {
+>> +               unsigned int *last_rx_bd = &priv->last_rx_bd;
+>> +               struct net_device_stats *stats = &priv->stats;
+>> +               struct buffer_state *rx_buff = &priv->rx_buff[*last_rx_bd];
+>> +               struct arc_emac_bd *rxbd = &priv->rxbd[*last_rx_bd];
+>> +               unsigned int buflen = EMAC_BUFFER_SIZE;
+>> +               unsigned int pktlen, info = __le32_to_cpu(rxbd->info);
+>> +               struct sk_buff *skb;
+>> +               dma_addr_t addr;
 >> +
->> +	spin_lock_irqsave(&data->lock, flags);
->> +	data->plot_index = 0;
->> +	data->cycle_count = 0;
->> +	hrtimer_start(&data->timer, ktime_get(), HRTIMER_MODE_ABS);
->> +	spin_unlock_irqrestore(&data->lock, flags);
->> +
->> +	return 1;
-> Maybe return 0 on success
+>> +               if (unlikely((info & OWN_MASK) == FOR_EMAC))
+>> +                       break;
 >
->> +static ssize_t cycle_control_store(struct device *dev,
->> +				    struct device_attribute *attr,
->> +				    const char *buf, size_t size)
+>> +               work_done++;
+>
+> Why it can't be inside for()?
+
+Indeed it can. Earlier there was "continue" instead of "break" that's 
+why increment was done at this particular place. With "break" in place 
+I'm moving incrementation in "for".
+
+>> +               if (unlikely((info & FRST_OR_LAST_MASK) != FRST_OR_LAST_MASK)) {
+>> +                       /* Buffer chaining results in a significant
+>> +                        * amount of additional bus overhead and thus
+>> +                        * a higher CLK frequency or larger FIFOs are required.
+>> +                        * Because of that fact we don't support
+>> +                        * chaining of receive packets. We pre-allocate
+>> +                        * buffers of MTU size so incoming packets
+>> +                        * won't be chained.
+>> +                        */
+>
+> Could that comment take less LOC?
+>
+>> +                       /* Return ownership to EMAC */
+>> +                       rxbd->info = __cpu_to_le32(FOR_EMAC | buflen);
+>
+> Here and in the whole file. Parhaps cpu_to_le32()?
+
+Indeed. Replaced both "__cpu_to_le32" and "__le32_to_cpu" with no "__" 
+versions.
+
+>> +               /* Once EMAC sees he is an owner of this BD, EMAC will start to
+>> +                * use it for receiving or transmitting packets,
+>> +                * depending on BD: Tx or Rx.
+>> +                * That's why we need to make sure "data" has proper address
+>> +                * before writing "info" word with owner flag.
+>> +                */
+>
+> Less LOC?
+
+Reduced.
+
+>> +static int arc_emac_probe(struct platform_device *pdev)
 >> +{
->> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +	struct cycle_trig_data *data = led_cdev->trigger_data;
+>
+>> +       err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
+>
+>> +       if (of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+>> +                                &clock_frequency)) {
+>
+>> +       err = of_irq_to_resource(pdev->dev.of_node, 0, &res_irq);
+>
+> You may save few lines if you move those checks before allocation of the netdev.
+
+Correct, but having netdev is handy because I may have driver's private 
+structure allocated as well and may set corresponding values right in 
+the order I parse them from DT.
+Moreover I need to have private structure pretty early in place just to 
+read EMAC's ID from a register.
+So I'd better leave netdev allocation on top of the probe.
+
+>> +       err = arc_mdio_probe(pdev->dev.of_node, priv);
+>> +       if (err) {
+>> +               dev_err(&pdev->dev, "failed to probe MII bus\n");
+>> +               goto out;
+>> +       }
 >> +
->> +	if (strncmp(buf, "start", sizeof("start") - 1) == 0)
->> +		cycle_start(data);
->> +	else if (strncmp(buf, "stop", sizeof("stop") - 1) == 0)
->> +		cycle_stop(data);
->> +	else if (strncmp(buf, "reset", sizeof("reset") - 1) == 0)
->> +		cycle_reset(data);
->> +	else if (strncmp(buf, "pause", sizeof("stop") - 1) == 0)
->> +		cycle_pause(data);
->> +	else if (strncmp(buf, "resume", sizeof("resume") - 1) == 0)
->> +		cycle_resume(data);
->> +	else
->> +		return -EINVAL;
-> I think strcasecmp better than strncmp
+>> +       priv->phy_dev = of_phy_connect(ndev, phy_node, arc_emac_adjust_link, 0,
+>> +                                      PHY_INTERFACE_MODE_MII);
+>> +       if (!priv->phy_dev) {
+>> +               netdev_err(ndev, "of_phy_connect() failed\n");
 >
->> +static ssize_t cycle_rawplot_store(struct device *dev,
->> +                                  struct device_attribute *attr,
->> +                                  const char *buf, size_t size)
+> Can we be consistent and use here dev_err()?
+
+Right. Replaced.
+
+>> +++ b/drivers/net/ethernet/arc/emac_mdio.c
+>> @@ -0,0 +1,151 @@
+>
+>> +static int arc_mdio_complete_wait(struct arc_emac_priv *priv)
 >> +{
-> []
-> +       plot = kzalloc(size, GFP_KERNEL);
-> +       if (plot) {
-> +               hrtimer_cancel(&data->timer);
+>> +       unsigned int i;
+>> +
+>> +       for (i = 0; i < ARC_MDIO_COMPLETE_POLL_COUNT * 40; i++) {
 >
-> Ick.
+>> +               msleep(25);
 >
-> 	if (!plot)
-> 		return -ENOMEM;
+> So, in the worst case it takes ARC_MDIO_COMPLETE_POLL_COUNT seconds to
+> wait. Quite a long time.
+> Does user expect such a delay?
+
+Well, but it shouldn't be that long. It's just a check for illegal 
+situation. If this transaction never ends then it doesn't matter if we 
+wait for 1 second or 2 - after this time period "libphy" will "halt" 
+MDIO anyways.
+
+In general MDIO register gets polled by "libphy" once in a couple of 
+seconds, so delay of 25 milliseconds IMHO is fine.
+
+>> +int arc_mdio_probe(struct device_node *dev_node, struct arc_emac_priv *priv)
+>> +{
 >
-> 	etc...
+>> +       snprintf(bus->id, MII_BUS_ID_SIZE, "%.8x", (unsigned int)priv->regs);
 >
-Hello,
+> Is bus->id exposed to user-space somehow?
 
-Thanks a lot for your review. I took your remarks into consideration and 
-fixed the mistakes.
+Well as a boot-up message from "libphy":
+====
+libphy: Synopsys MII Bus: probed
+====
 
-About the kernel/user space discussion, I'd rather keep the cycle 
-trigger implementation in the kernel space,
-because it implies brightness change every 10-100ms or less. This leads 
-to lots of context switches, and I'm not
-even sure the user space can handle such timings accurately.
-
-Could you detail your concerns about adding this driver in the kernel?
-
-Best Regards,
-Gaël
+Regards,
+Alexey
