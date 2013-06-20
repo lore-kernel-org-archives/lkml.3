@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab3FTJzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:55:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:29029 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756558Ab3FTJzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:55:40 -0400
-X-IronPort-AV: E=Sophos;i="4.87,903,1363104000"; 
-   d="scan'208";a="7614480"
-Message-ID: <51C2D0E7.3020403@cn.fujitsu.com>
-Date: Thu, 20 Jun 2013 17:52:39 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1757556Ab3FTJ53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:57:29 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:44457 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab3FTJ51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 05:57:27 -0400
 MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>, guz.fnst@cn.fujitsu.com
-Subject: [PATCH] fs/f2fs: Code cleanup and simplify in func {find/add}_gc_inode
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/20 17:54:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/20 17:54:28,
-	Serialize complete at 2013/06/20 17:54:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4881796E12491D4BB15146FE0209CE643F5F2F56@DE02WEMBXB.internal.synopsys.com>
+References: <1371629537-8076-1-git-send-email-abrodkin@synopsys.com>
+ <CAHp75Vc-Aza03ZLJj3CkLP2YhvdRi94bfutxKbV34hTc1_6k4g@mail.gmail.com> <4881796E12491D4BB15146FE0209CE643F5F2F56@DE02WEMBXB.internal.synopsys.com>
+From: Florian Fainelli <florian@openwrt.org>
+Date: Thu, 20 Jun 2013 10:56:46 +0100
+X-Google-Sender-Auth: b75K3pXAUE0-mFx36JRcomTNAws
+Message-ID: <CAGVrzcYoz-pGG46otLjZDHs=xek-qpPEWxUtDQV1CcWCPs8WYg@mail.gmail.com>
+Subject: Re: [PATCH v5] ethernet/arc/arc_emac - Add new driver
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        netdev <netdev@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>, Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/6/20 Alexey Brodkin <Alexey.Brodkin@synopsys.com>:
+[snip]
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/gc.c |   17 +++++------------
- 1 files changed, 5 insertions(+), 12 deletions(-)
+>
+> In general MDIO register gets polled by "libphy" once in a couple of
+> seconds, so delay of 25 milliseconds IMHO is fine.
+>
+>>> +int arc_mdio_probe(struct device_node *dev_node, struct arc_emac_priv *priv)
+>>> +{
+>>
+>>> +       snprintf(bus->id, MII_BUS_ID_SIZE, "%.8x", (unsigned int)priv->regs);
+>>
+>> Is bus->id exposed to user-space somehow?
+>
+> Well as a boot-up message from "libphy":
+> ====
+> libphy: Synopsys MII Bus: probed
+> ====
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 1496159..0b8b439 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -314,28 +314,21 @@ static const struct victim_selection default_v_ops = {
+Well not only as a boot-up message, this serves as unique identifer in
+the entire system for your MDIO bus. It is crucial that you have an
+unique MDIO bus identifier for at least the two following reasons:
 
- static struct inode *find_gc_inode(nid_t ino, struct list_head *ilist)
- {
--       struct list_head *this;
-        struct inode_entry *ie;
+- the corresponding kobject/sysfs node that is going to be created
+also needs to be unique in the system
+- you may have multiple MDIO bus in the system (e.g: the one for your
+specific driver and the fixed MDIO bus)
 
--       list_for_each(this, ilist) {
--               ie = list_entry(this, struct inode_entry, list);
-+       list_for_each_entry(ie, ilist, list)
-                if (ie->inode->i_ino == ino)
-                        return ie->inode;
--       }
-        return NULL;
- }
+Since you are using Device Tree already, you may just turn this into:
 
- static void add_gc_inode(struct inode *inode, struct list_head *ilist)
- {
--       struct list_head *this;
--       struct inode_entry *new_ie, *ie;
-+       struct inode_entry *new_ie;
+snprintf(bus->id, MII_BUS_ID_SIZE, "%s", pdev->name);
 
--       list_for_each(this, ilist) {
--               ie = list_entry(this, struct inode_entry, list);
--               if (ie->inode == inode) {
--                       iput(inode);
--                       return;
--               }
-+       if (inode == find_gc_inode(inode->i_ino, ilist)) {
-+               iput(inode);
-+               return;
-        }
- repeat:
-        new_ie = kmem_cache_alloc(winode_slab, GFP_NOFS);
--- 
-1.7.7
+assuming that your node is already properly labelleled (e.g:
+mdio@deadbeef) which would be exactly equivalent to what you are doing
+with priv->regs;
+--
+Florian
