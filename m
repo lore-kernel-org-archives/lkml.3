@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935679Ab3FTC6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:58:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47056 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935535Ab3FTC6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:58:33 -0400
-Date: Thu, 20 Jun 2013 12:58:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20130620125823.da633b21e33688372729b9c0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Jun_2013_12_58_23_+1000_PWJKQjTJ.dTkhSk1"
+	id S935612Ab3FTDAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:00:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36971 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S935506Ab3FTDAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 23:00:40 -0400
+X-IronPort-AV: E=Sophos;i="4.87,901,1363104000"; 
+   d="scan'208";a="7609965"
+Message-ID: <51C270AF.1080902@cn.fujitsu.com>
+Date: Thu, 20 Jun 2013 11:02:07 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: Aristeu Rozanski <aris@redhat.com>, containers@lists.linux-foundation.org,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
+Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>  <20130619204927.GJ3212@redhat.com> <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com>
+In-Reply-To: <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 10:59:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 10:59:31,
+	Serialize complete at 2013/06/20 10:59:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jun_2013_12_58_23_+1000_PWJKQjTJ.dTkhSk1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/20/2013 04:51 AM, Eric Paris wrote:
+> On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
+>> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
+>>> This patchset is first part of namespace support for audit.
+>>> in this patchset, the mainly resources of audit system have
+>>> been isolated. the audit filter, rules havn't been isolated
+>>> now. It will be implemented in Part2. We finished the isolation
+>>> of user audit message in this patchset.
+>>>
+>>> I choose to assign audit to the user namespace.
+>>> Right now,there are six kinds of namespaces, such as
+>>> net, mount, ipc, pid, uts and user. the first five
+>>> namespaces have special usage. the audit isn't suitable to
+>>> belong to these five namespaces, And since the flag of system
+>>> call clone is in short supply, we can't provide a new flag such
+>>> as CLONE_NEWAUDIT to enable audit namespace separately. so the
+>>> user namespace may be the best choice.
+>>
+>> I thought it was said on the last submission that to tie userns and
+>> audit namespace would be a bad idea?
+> 
+> I consider it a non-starter.  unpriv users are allowed to launch their
+> own user namespace.  The whole point of audit is to have only a priv
+> user be allowed to make changes.  If you tied audit namespace to user
+> namespace you grant an unpriv user the ability to modify audit.
+> 
 
-Hi all,
+I understand your views.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/wireless/nl80211.c between commit 3a5a423bb958 ("nl80211: fix attrbuf
-access race by allocating a separate one") from the net tree and commit
-5fe231e87372 ("cfg80211: vastly simplify locking") from the net-next tree.
+But ven the unpriv user are allowed to make changes, they can do no harm.
+they can only make changes on the audit namespace they created.they can
+only communicate with the audit namespace they created.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Before we have mount namespace, only priv user can change the mount
+information, And with mount namespace & user namespace, the unpriv
+user can create their own user namespace,and then create they own
+mount namespace. so the unpriv user have the ability to change their
+own mount namespace, since they become the priv user in their user
+namespace.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The only difference to the mount namespace is that,audit namespace
+is created automatically when creating user namespace,So the unpriv
+users even have no chance to change the init audit namespace. the
+unpriv users can't make changes on the init audit namespace.
 
-diff --cc net/wireless/nl80211.c
-index b14b7e3,31d265f..0000000
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@@ -1564,17 -1527,12 +1527,17 @@@ static int nl80211_dump_wiphy(struct sk
-  	struct cfg80211_registered_device *dev;
-  	s64 filter_wiphy =3D -1;
-  	bool split =3D false;
- -	struct nlattr **tb =3D nl80211_fam.attrbuf;
- +	struct nlattr **tb;
-  	int res;
- =20
- +	/* will be zeroed in nlmsg_parse() */
- +	tb =3D kmalloc(sizeof(*tb) * (NL80211_ATTR_MAX + 1), GFP_KERNEL);
- +	if (!tb)
- +		return -ENOMEM;
- +
-- 	mutex_lock(&cfg80211_mutex);
-+ 	rtnl_lock();
-  	res =3D nlmsg_parse(cb->nlh, GENL_HDRLEN + nl80211_fam.hdrsize,
- -			  tb, nl80211_fam.maxattr, nl80211_policy);
- +			  tb, NL80211_ATTR_MAX, nl80211_policy);
-  	if (res =3D=3D 0) {
-  		split =3D tb[NL80211_ATTR_SPLIT_WIPHY_DUMP];
-  		if (tb[NL80211_ATTR_WIPHY])
-@@@ -1586,11 -1544,8 +1549,10 @@@
-  			int ifidx =3D nla_get_u32(tb[NL80211_ATTR_IFINDEX]);
- =20
-  			netdev =3D dev_get_by_index(sock_net(skb->sk), ifidx);
- -			if (!netdev)
- +			if (!netdev) {
-- 				mutex_unlock(&cfg80211_mutex);
- +				kfree(tb);
-  				return -ENODEV;
- +			}
-  			if (netdev->ieee80211_ptr) {
-  				dev =3D wiphy_to_dev(
-  					netdev->ieee80211_ptr->wiphy);
+In this patchset, I already do some check to make sure only the priv
+user in init user namespace can change the rate_limit,audit_failure,
+backlog_limit. I think we can absolutely make the unpriv users
+can't do some bad influence on the whole system.
 
---Signature=_Thu__20_Jun_2013_12_58_23_+1000_PWJKQjTJ.dTkhSk1
-Content-Type: application/pgp-signature
+If we don't tie audit to user namespace, there is still one problem.
+how audit netlink works? In this patchset, I use sock_net(sk)->user_ns
+to decide if two audit netlink sockets can communicate with each other.
+if we don't tie audit to user namespace, we have to add one field such
+as 'auditns' in socket and use sk1->auditns == sk2->auditns to decide
+if two audit netlink sockets belong to same audit namespace. I think
+this is a little of overhead and ugly.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> NAK.
+> 
+> If there are not clone flags you will either need to only do this from
+> unshare and not from clone, or get more flags to clone
+> 
 
-iQIcBAEBCAAGBQJRwm/TAAoJEECxmPOUX5FEIi8P/3l0DTQM8UM86ZGuhxaMeK3x
-Q0elirtp3arstUZWMU0eMgVteN9HZgdEHajxtNKhVbPjU/pRIcAdEC04CWPuu5NL
-yfChxQLuL+tmQljvvkwcRwu4oRorHPMvmOFq5K9rSRtjYXJsOKBv/sabdPVhaFU2
-gdnWPf5h13oOy3gtINVhxr7PpRNTTHviyB9omTlKC9ULOE7oPS8Pc5LK0fiQu2xs
-VwRXJgz2KACUI9VS9jXTGa5U8EjoBYUAQ6twKT+OXQ485tv8UR43GvXfT8/eWGLl
-QEINXpsftfxCnDwfSl9HlFW+F5Q7v8h7Pd+L9m9PcbMNfzaVfbs/eiM3Qsu6pBri
-24tn56/g8nVN+siE+dknk8lUL3pRwNqBZrtuWh2WTGGKyHZUQyVJlrMdza3bpltx
-dyBckoxNKoc/8S6hdhdeW8AWPv6Kucoy/Mf1x26rmRV3gIrVlTTVZRfqxiIT1+o1
-/M2mUq5qXTiXeKrCkuNjzVqy4rJhQp0Qq8RqRg/yaJ0aF74eJewawynmucecXm2O
-RBe4tNRXD/Q6xhO7xPUcxxUaJhARRdf4SyVQmSAFqhmPP3DyAdaLWhY+WCnU8tuE
-lq4MERh3CkIeNFabOMlFeS8rxj+36rwo6HHw962Dcu49Uwrpvy8nGnjqKzUbd3L8
-46ltbolgrUvghoVjwRD8
-=dE0T
------END PGP SIGNATURE-----
+If you still think it's unsafe or unreasonable for unpriv users to create
+audit namespace, I think we can only allow priv user to create audit ns
+when they creating user namespace. If unpriv users create new user namespace,
+we can simply don't create new audit namespace for them.
 
---Signature=_Thu__20_Jun_2013_12_58_23_+1000_PWJKQjTJ.dTkhSk1--
+I can't find out a better solution...
+
+Thanks,
+Gao
