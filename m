@@ -1,199 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030410Ab3FTSbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:31:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14966 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030394Ab3FTSbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:31:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
-   d="scan'208";a="257885830"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 07/11] tracing: add 'snapshot' event trigger command
-Date: Thu, 20 Jun 2013 13:31:31 -0500
-Message-Id: <fbe19857708e50f5039bfccc245c530688d87d42.1371751701.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+	id S1422700Ab3FTS6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:58:15 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50396 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422666Ab3FTS6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:58:12 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>
+Cc: jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 3/3] ARM: mxs: cfa10049: Add NAU7802 ADCs to the device tree
+Date: Thu, 20 Jun 2013 20:57:55 +0200
+Message-Id: <1371754675-12242-4-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'snapshot' ftrace_func_command.  snapshot event triggers are added
-by the user via this command in a similar way and using practically
-the same syntax as the analogous 'snapshot' ftrace function command,
-but instead of writing to the set_ftrace_filter file, the snapshot
-event trigger is written to the per-event 'trigger' files:
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-    echo 'snapshot' > .../somesys/someevent/trigger
+Since these ADCs share the same non-configurable address on the I2C bus,
+they have to be put behind a muxer.
 
-The above command will turn on snapshots for someevent i.e. whenever
-someevent is hit, a snapshot will be done.
-
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
-
-    echo 'snapshot:N' > .../somesys/someevent/trigger
-
-Where N is the number of times the command will be invoked.
-
-The above command will snapshot N times for someevent i.e. whenever
-someevent is hit N times, a snapshot will be done.
-
-Also adds a new ftrace_alloc_snapshot() function - the ftrace snapshot
-command defines code that allocates a snapshot, which would be nice to
-be able to reuse, which this does.
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- kernel/trace/trace.c                |  9 ++++
- kernel/trace/trace.h                |  1 +
- kernel/trace/trace_events_trigger.c | 88 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 98 insertions(+)
+ arch/arm/boot/dts/imx28-cfa10049.dts | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e71a8be..96f3cdc 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5169,6 +5169,15 @@ static const struct file_operations tracing_dyn_info_fops = {
- };
- #endif /* CONFIG_DYNAMIC_FTRACE */
+diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
+index d3758c2..efc4213 100644
+--- a/arch/arm/boot/dts/imx28-cfa10049.dts
++++ b/arch/arm/boot/dts/imx28-cfa10049.dts
+@@ -356,18 +356,36 @@
+ 			reg = <0>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++
++			adc0: nau7802@2a {
++				compatible = "nuvoton,nau7802";
++				reg = <0x2a>;
++				nuvoton,vldo = <3000>;
++			};
+ 		};
  
-+#if defined(CONFIG_TRACER_SNAPSHOT)
-+int ftrace_alloc_snapshot(void)
-+{
-+	return alloc_snapshot(&global_trace);
-+}
-+#else
-+int ftrace_alloc_snapshot(void) { return -ENOSYS; }
-+#endif
+ 		i2c@1 {
+ 			reg = <1>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
 +
- #if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
- static void
- ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 3738d65..7df20e8 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -1060,6 +1060,7 @@ struct event_command {
- extern int trace_event_enable_disable(struct ftrace_event_file *file,
- 				      int enable, int soft_disable,
- 				      int trigger_enable);
-+extern int ftrace_alloc_snapshot(void);
++			adc1: nau7802@2a {
++				compatible = "nuvoton,nau7802";
++				reg = <0x2a>;
++				nuvoton,vldo = <3000>;
++			};
+ 		};
  
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index edc1c01..3e8dfe1 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -610,6 +610,86 @@ static struct event_command trigger_traceoff_cmd = {
- 	.get_trigger_ops	= onoff_get_trigger_ops,
- };
+ 		i2c@2 {
+ 			reg = <2>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++
++			adc2: nau7802@2a {
++				compatible = "nuvoton,nau7802";
++				reg = <0x2a>;
++				nuvoton,vldo = <3000>;
++			};
+ 		};
  
-+static void
-+snapshot_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	tracing_snapshot();
-+}
-+
-+static void
-+snapshot_count_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	snapshot_trigger(_data);
-+}
-+
-+static int
-+register_snapshot_trigger(char *glob, struct event_trigger_ops *ops,
-+			  void *data, void *cmd_data)
-+{
-+	int ret = register_trigger(glob, ops, data, cmd_data);
-+
-+	if (ret > 0)
-+		ftrace_alloc_snapshot();
-+
-+	return ret;
-+}
-+
-+static int
-+snapshot_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		       void *_data)
-+{
-+	struct event_trigger_data *data = _data;
-+
-+	return event_trigger_print("snapshot", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static struct event_trigger_ops snapshot_trigger_ops = {
-+	.func			= snapshot_trigger,
-+	.print			= snapshot_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops snapshot_count_trigger_ops = {
-+	.func			= snapshot_count_trigger,
-+	.print			= snapshot_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops *
-+snapshot_get_trigger_ops(char *cmd, char *param)
-+{
-+	return param ? &snapshot_count_trigger_ops : &snapshot_trigger_ops;
-+}
-+
-+static struct event_command trigger_snapshot_cmd = {
-+	.name			= "snapshot",
-+	.func			= event_trigger_callback,
-+	.reg			= register_snapshot_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= snapshot_get_trigger_ops,
-+};
-+
- static __init void unregister_trigger_traceon_traceoff_cmds(void)
- {
- 	unregister_event_command(&trigger_traceon_cmd,
-@@ -646,5 +726,13 @@ __init int register_trigger_cmds(void)
- 		return ret;
- 	}
- 
-+	ret = register_event_command(&trigger_snapshot_cmd,
-+				     &trigger_commands,
-+				     &trigger_cmd_mutex);
-+	if (WARN_ON(ret < 0)) {
-+		unregister_trigger_traceon_traceoff_cmds();
-+		return ret;
-+	}
-+
- 	return 0;
- }
+ 		i2c@3 {
 -- 
-1.7.11.4
+1.8.1.2
 
