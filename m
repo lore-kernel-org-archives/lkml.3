@@ -1,180 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965840Ab3FTT3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:29:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51089 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161077Ab3FTT3P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:29:15 -0400
-Date: Thu, 20 Jun 2013 12:29:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.50
-Message-ID: <20130620192914.GA27830@kroah.com>
+	id S1161286Ab3FTS5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:57:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44548 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030481Ab3FTS5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:57:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, alexdeucher@gmail.com,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, linux-acpi@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX v2 0/4] fix bug 56531, 59501 and 59581
+Date: Thu, 20 Jun 2013 21:06:30 +0200
+Message-ID: <1436701.V8egnZxOqz@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAN_LGv0DUH3o6=iCBcQDEOLQ3n=O=GR5BSQU5dLs306YeLVL7w@mail.gmail.com>
+References: <1371238081-32260-1-git-send-email-jiang.liu@huawei.com> <1880810.6jIKdDRiJm@vostro.rjw.lan> <CAN_LGv0DUH3o6=iCBcQDEOLQ3n=O=GR5BSQU5dLs306YeLVL7w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, June 19, 2013 11:18:41 AM Alexander E. Patrakov wrote:
+> 2013/6/19 Rafael J. Wysocki <rjw@sisk.pl>:
+> > OK, let's try to untangle this a bit.
+> >
+> > If you applyt patches [1/4] and [4/4] from the $subject series only, what
+> > does remain unfixed?
+> 
+> [not tested, can do so in 12 hours if needed]
+> 
+> I think there will be problems on undocking and/or on the second
+> docking, as described in comments #6 - #8 of
+> https://bugzilla.kernel.org/show_bug.cgi?id=59501
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, I think I have something that might work.  It may not solve all problems,
+but maybe it helps a bit.  Unfortunately, I can't really test it, so please do
+if you can.
 
-I'm announcing the release of the 3.4.50 kernel.
+Please apply [1/4] and [4/4] and the one below and see what happens.
 
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
-mmary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                   |    2=20
- arch/powerpc/include/asm/exception-64s.h   |    2=20
- arch/powerpc/kernel/irq.c                  |    2=20
- arch/powerpc/kernel/process.c              |    4=20
- arch/x86/kernel/relocate_kernel_64.S       |    2=20
- drivers/block/cciss.c                      |   32 +++----
- drivers/gpu/drm/gma500/cdv_intel_display.c |   14 +++
- drivers/gpu/drm/gma500/psb_intel_display.c |   14 +++
- drivers/gpu/drm/i915/intel_sdvo.c          |   10 +-
- drivers/md/raid1.c                         |   12 ++
- drivers/md/raid10.c                        |   12 ++
- drivers/net/wireless/ath/ath9k/Kconfig     |   10 +-
- drivers/net/wireless/ath/ath9k/Makefile    |    2=20
- drivers/net/wireless/ath/ath9k/init.c      |    7 -
- drivers/net/wireless/ath/ath9k/rc.h        |    2=20
- drivers/net/wireless/b43/main.c            |    2=20
- drivers/rtc/rtc-twl.c                      |    1=20
- fs/ceph/locks.c                            |   73 +++++++++++-------
- fs/ceph/mds_client.c                       |   90 ++++++++++++----------
- fs/ceph/super.c                            |    7 +
- fs/ceph/super.h                            |   11 +-
- include/linux/ceph/auth.h                  |   18 ++++
- include/linux/cpu.h                        |    4=20
- include/linux/swapops.h                    |    3=20
- include/net/bluetooth/hci_core.h           |    1=20
- include/net/bluetooth/mgmt.h               |    1=20
- kernel/cpu.c                               |   55 +++++--------
- kernel/sys.c                               |   29 ++++++-
- mm/hugetlb.c                               |    2=20
- mm/migrate.c                               |   23 ++++-
- mm/swap_state.c                            |   18 ++++
- net/bluetooth/hci_core.c                   |    6 +
- net/bluetooth/mgmt.c                       |   21 +++++
- net/ceph/auth.c                            |  117 ++++++++++++++++++++++++=
------
- net/ceph/auth_x.c                          |   24 +++++
- net/ceph/auth_x.h                          |    1=20
- net/ceph/messenger.c                       |    3=20
- net/ceph/mon_client.c                      |    7 -
- net/ceph/osd_client.c                      |   29 +++----
- 39 files changed, 478 insertions(+), 195 deletions(-)
-
-Alex Elder (1):
-      libceph: must hold mutex for reset_changed_osds()
-
-Alex Lyakas (1):
-      md/raid1: consider WRITE as successful only if at least one non-Fault=
-y and non-rebuilding drive completed it.
-
-Benjamin Herrenschmidt (1):
-      powerpc: Fix missing/delayed calls to irq_work
-
-Daniel Vetter (1):
-      drm/i915: prefer VBT modes for SVDO-LVDS over EDID
-
-Greg Kroah-Hartman (1):
-      Linux 3.4.50
-
-Jim Schutt (2):
-      ceph: add cpu_to_le32() calls when encoding a reconnect capability
-      ceph: ceph_pagelist_append might sleep while atomic
-
-Johan Hedberg (1):
-      Bluetooth: Fix mgmt handling of power on failures
-
-Kees Cook (2):
-      b43: stop format string leaking into error msgs
-      x86: Fix typo in kexec register clearing
-
-Michael Ellerman (1):
-      powerpc: Fix stack overflow crash in resume_kernel when ftracing
-
-Naoya Horiguchi (1):
-      mm: migration: add migrate_entry_wait_huge()
-
-Patrik Jakobsson (2):
-      drm/gma500/psb: Unpin framebuffer on crtc disable
-      drm/gma500/cdv: Unpin framebuffer on crtc disable
-
-Rafael Aquini (1):
-      swap: avoid read_swap_cache_async() race to deadlock while waiting on=
- discard I/O completion
-
-Robin Holt (1):
-      reboot: rigrate shutdown/reboot to boot cpu
-
-Sage Weil (6):
-      libceph: clear messenger auth_retry flag when we authenticate
-      libceph: fix authorizer invalidation
-      libceph: add update_authorizer auth method
-      libceph: wrap auth ops in wrapper functions
-      libceph: wrap auth methods in a mutex
-      ceph: fix statvfs fr_size
-
-Srivatsa S. Bhat (1):
-      CPU hotplug: provide a generic helper to disable/enable CPU hotplug
-
-Stephen M. Cameron (1):
-      cciss: fix broken mutex usage in ioctl
-
-Sujith Manoharan (2):
-      ath9k: Disable PowerSave by default
-      ath9k: Use minstrel rate control by default
-
-Tony Lindgren (1):
-      drivers/rtc/rtc-twl.c: fix missing device_init_wakeup() when booted w=
-ith device tree
+Thanks,
+Rafael
 
 
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+Rationale:
+	acpiphp_glue.c:disable_device() trims the underlying ACPI device objects
+	after removing the companion PCI devices, so the dock station code
+	doesn't need to trim them separately for the dependent devices handled
+	by acpiphp.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+	Moreover, acpiphp_glue.c is the only user of
+	[un]register_hotplug_dock_device(), so *all* devices on the
+	ds->hotplug_devices list are handled by acpiphp and ops is set for all
+	of them.
 
-iQIcBAEBAgAGBQJRw1gKAAoJEDjbvchgkmk+aPIQAMHqJgUC8lDJa0y6PioyoRJ6
-hZbKJZc5gIdZF5TjAmgdDkzMWJeqvT9kfiuZDaMvtpBLd5GsUyNtv1thF7MreF0L
-R9zC93g3ON1sjMcJTgotW6wEIAf+vPRr3vaAK+/N1aZkJJCGLKOxTiJkUA2gfR7p
-44Pzr5BaRClSWFWxpuLkIMJBHCnD1wT42gyowmTyhvFSB4QGutY46mlUsedcRPWd
-uJpL5TL7aUoXkZ6dKpN26vwsltr6Bn1+mDlP692RIvAwLO5/na6FwZFdO4vbCLAb
-7ik6kAG5p4spgcrgBKjEqvypzij4QB6oQ3biV6Vcv079Y0chXuWjLbsdafZPFpHK
-XUV9x8p4rMnowDckZjgiRAmD0EldUaG/5N921801wINJOfSRENKriNbIFG/+JwZy
-QOF/D63sLUJB2KtLypyCSgd3qc7bg3JPZuZEoTDJ4E/Aq8koFpB4RvEaJw8mi62v
-4fL8qqUVRqiZr54yWXiXEE0xNzjzOuJxua8wXpym7W0SMBmi1ztzEWODZgzWwRe+
-xs7NnGeWlqJlAUfc2jX2cIhzid1WiS6J0ka2fmhkjDLvGVyOGYR6X7eda2QnNQ14
-nhuXLcHIlAvh2ZGvBaLwYjzGmIN5q3tejRr22OuFoRtKp2lil9bPvjMRAb6E0aGi
-xJWK+i+iW1cK2DAW28Vq
-=7+xK
------END PGP SIGNATURE-----
+	This means that (1) the ds->hotplug_devices list is not necessary (we
+	can always walk ds->dependent_devices instead and look for those that
+	have dd->ops set) and (2) we don't need to call
+	dock_remove_acpi_device(dd->handle) on eject for any of those devices,
+	because dd->ops->handler() is going to take care of the ACPI device
+	objects trimming for them anyway.
 
---W/nzBZO5zC0uMSeA--
+	Taking the above into account make the following changes:
+	(1) Drop hotplug_devices from struct dock_station.
+	(2) Drop dock_{add|del}_hotplug_device()
+	(3) Make [un]register_hotplug_dock_device() [un]set 'ops' and
+	    'context' for the given device under ds->hp_lock.
+	(4) Add hot_remove_dock_devices() that walks ds->dependent_devices and
+	    either calls dd->ops->handler(), if present, or trims the underlying
+	    ACPI device object, otherwise.
+	(5) Replace hotplug_dock_devices(ds, ACPI_NOTIFY_EJECT_REQUEST) calls
+	    with hot_remove_dock_devices(ds).
+	(6) Rename hotplug_dock_devices() to hot_add_dock_devices() and make
+	    it only handle bus check and device check requests.  Make it walk
+	    ds->dependent_devices instead of ds->hotplug devices.
+	(7) Make dock_event() walk ds->dependent_devices (instead of
+	    ds->hotplug devices) under ds->hp_lock.
+---
+ drivers/acpi/dock.c |  111 ++++++++++++++++++++++++----------------------------
+ 1 file changed, 53 insertions(+), 58 deletions(-)
+
+Index: linux-pm/drivers/acpi/dock.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/dock.c
++++ linux-pm/drivers/acpi/dock.c
+@@ -66,7 +66,6 @@ struct dock_station {
+ 	spinlock_t dd_lock;
+ 	struct mutex hp_lock;
+ 	struct list_head dependent_devices;
+-	struct list_head hotplug_devices;
+ 
+ 	struct list_head sibling;
+ 	struct platform_device *dock_device;
+@@ -121,38 +120,6 @@ add_dock_dependent_device(struct dock_st
+ }
+ 
+ /**
+- * dock_add_hotplug_device - associate a hotplug handler with the dock station
+- * @ds: The dock station
+- * @dd: The dependent device struct
+- *
+- * Add the dependent device to the dock's hotplug device list
+- */
+-static void
+-dock_add_hotplug_device(struct dock_station *ds,
+-			struct dock_dependent_device *dd)
+-{
+-	mutex_lock(&ds->hp_lock);
+-	list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
+-	mutex_unlock(&ds->hp_lock);
+-}
+-
+-/**
+- * dock_del_hotplug_device - remove a hotplug handler from the dock station
+- * @ds: The dock station
+- * @dd: the dependent device struct
+- *
+- * Delete the dependent device from the dock's hotplug device list
+- */
+-static void
+-dock_del_hotplug_device(struct dock_station *ds,
+-			struct dock_dependent_device *dd)
+-{
+-	mutex_lock(&ds->hp_lock);
+-	list_del(&dd->hotplug_list);
+-	mutex_unlock(&ds->hp_lock);
+-}
+-
+-/**
+  * find_dock_dependent_device - get a device dependent on this dock
+  * @ds: the dock station
+  * @handle: the acpi_handle of the device we want
+@@ -342,40 +309,60 @@ static void dock_remove_acpi_device(acpi
+ }
+ 
+ /**
+- * hotplug_dock_devices - insert or remove devices on the dock station
+- * @ds: the dock station
+- * @event: either bus check or eject request
++ * hot_remove_dock_devices - Remove devices on a dock station.
++ * @ds: Dock station to remove devices for.
++ *
++ * For each device depending on @ds, if a dock event handler is registered,
++ * call it for the device, or trim the underlying ACPI device object otherwise.
++ *
++ * Dock event handlers are responsible for trimming the underlying ACPI device
++ * objects if present.
++ */
++static void hot_remove_dock_devices(struct dock_station *ds)
++{
++	struct dock_dependent_device *dd;
++
++	mutex_lock(&ds->hp_lock);
++
++	list_for_each_entry(dd, &ds->dependent_devices, list) {
++		if (dd->ops && dd->ops->handler)
++			dd->ops->handler(dd->handle, ACPI_NOTIFY_EJECT_REQUEST,
++					 dd->context);
++		else
++			dock_remove_acpi_device(dd->handle);
++	}
++
++	mutex_unlock(&ds->hp_lock);
++}
++
++/**
++ * hot_add_dock_devices - Insert devices on a dock station.
++ * @ds: Dock station to insert devices for.
+  *
+  * Some devices on the dock station need to have drivers called
+  * to perform hotplug operations after a dock event has occurred.
+  * Traverse the list of dock devices that have registered a
+  * hotplug handler, and call the handler.
+  */
+-static void hotplug_dock_devices(struct dock_station *ds, u32 event)
++static void hot_add_dock_devices(struct dock_station *ds, u32 event)
+ {
+ 	struct dock_dependent_device *dd;
+ 
+ 	mutex_lock(&ds->hp_lock);
+ 
+-	/*
+-	 * First call driver specific hotplug functions
+-	 */
+-	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
++	/* First call driver specific hotplug event handlers. */
++	list_for_each_entry(dd, &ds->dependent_devices, list)
+ 		if (dd->ops && dd->ops->handler)
+ 			dd->ops->handler(dd->handle, event, dd->context);
+ 
+ 	/*
+-	 * Now make sure that an acpi_device is created for each
+-	 * dependent device, or removed if this is an eject request.
+-	 * This will cause acpi_drivers to be stopped/started if they
+-	 * exist
++	 * Now make sure that an acpi_device is created for each dependent
++	 * device.  That will cause scan handlers to attach to devices objects
++	 * or  acpi_drivers to be started if they exist.
+ 	 */
+-	list_for_each_entry(dd, &ds->dependent_devices, list) {
+-		if (event == ACPI_NOTIFY_EJECT_REQUEST)
+-			dock_remove_acpi_device(dd->handle);
+-		else
+-			dock_create_acpi_device(dd->handle);
+-	}
++	list_for_each_entry(dd, &ds->dependent_devices, list)
++		dock_create_acpi_device(dd->handle);
++
+ 	mutex_unlock(&ds->hp_lock);
+ }
+ 
+@@ -398,10 +385,14 @@ static void dock_event(struct dock_stati
+ 	if (num == DOCK_EVENT)
+ 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
+ 
+-	list_for_each_entry(dd, &ds->hotplug_devices, hotplug_list)
++	mutex_lock(&ds->hp_lock);
++
++	list_for_each_entry(dd, &ds->dependent_devices, list)
+ 		if (dd->ops && dd->ops->uevent)
+ 			dd->ops->uevent(dd->handle, event, dd->context);
+ 
++	mutex_unlock(&ds->hp_lock);
++
+ 	if (num != DOCK_EVENT)
+ 		kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
+ }
+@@ -598,9 +589,10 @@ register_hotplug_dock_device(acpi_handle
+ 		 */
+ 		dd = find_dock_dependent_device(dock_station, handle);
+ 		if (dd) {
++			mutex_lock(&dock_station->hp_lock);
+ 			dd->ops = ops;
+ 			dd->context = context;
+-			dock_add_hotplug_device(dock_station, dd);
++			mutex_unlock(&dock_station->hp_lock);
+ 			ret = 0;
+ 		}
+ 	}
+@@ -623,8 +615,12 @@ void unregister_hotplug_dock_device(acpi
+ 
+ 	list_for_each_entry(dock_station, &dock_stations, sibling) {
+ 		dd = find_dock_dependent_device(dock_station, handle);
+-		if (dd)
+-			dock_del_hotplug_device(dock_station, dd);
++		if (dd) {
++			mutex_lock(&dock_station->hp_lock);
++			dd->ops = NULL;
++			dd->context = NULL;
++			mutex_unlock(&dock_station->hp_lock);
++		}
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(unregister_hotplug_dock_device);
+@@ -649,7 +645,7 @@ static int handle_eject_request(struct d
+ 	 */
+ 	dock_event(ds, event, UNDOCK_EVENT);
+ 
+-	hotplug_dock_devices(ds, ACPI_NOTIFY_EJECT_REQUEST);
++	hot_remove_dock_devices(ds);
+ 	undock(ds);
+ 	dock_lock(ds, 0);
+ 	eject_dock(ds);
+@@ -708,7 +704,7 @@ static void dock_notify(acpi_handle hand
+ 			}
+ 			atomic_notifier_call_chain(&dock_notifier_list,
+ 						   event, NULL);
+-			hotplug_dock_devices(ds, event);
++			hot_add_dock_devices(ds, event);
+ 			complete_dock(ds);
+ 			dock_event(ds, event, DOCK_EVENT);
+ 			dock_lock(ds, 1);
+@@ -953,7 +949,6 @@ static int __init dock_add(acpi_handle h
+ 	mutex_init(&dock_station->hp_lock);
+ 	spin_lock_init(&dock_station->dd_lock);
+ 	INIT_LIST_HEAD(&dock_station->sibling);
+-	INIT_LIST_HEAD(&dock_station->hotplug_devices);
+ 	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
+ 	INIT_LIST_HEAD(&dock_station->dependent_devices);
+ 
+
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
