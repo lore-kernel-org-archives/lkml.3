@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab3FTIKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:10:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30011 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3FTIKf (ORCPT
+	id S1755013Ab3FTIMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:12:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49293 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab3FTIMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:10:35 -0400
-Date: Thu, 20 Jun 2013 11:10:18 +0300
+	Thu, 20 Jun 2013 04:12:38 -0400
+Date: Thu, 20 Jun 2013 11:12:18 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alessandro Rubini <rubini@gnudd.com>, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] FMC: fix error handling in probe() function
-Message-ID: <20130620081018.GB15095@elgon.mountain>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [patch] lib/scatterlist: error handling in __sg_alloc_table()
+Message-ID: <20130620081218.GC15095@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,46 +24,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The call to kzalloc() wasn't checked.
-The dev_info() message dereferenced freed memory on error.
+I was reviewing code which I suspected might allocate a zero size SG
+table.  That will cause memory corruption.  Also we can't return before
+doing the memset or we could end up using uninitialized memory in the
+cleanup path.
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/drivers/fmc/fmc-chardev.c b/drivers/fmc/fmc-chardev.c
-index b071039..cc031db 100644
---- a/drivers/fmc/fmc-chardev.c
-+++ b/drivers/fmc/fmc-chardev.c
-@@ -136,6 +136,8 @@ static int fc_probe(struct fmc_device *fmc)
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a1cf8ca..d39178b 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -247,13 +247,15 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 	struct scatterlist *sg, *prv;
+ 	unsigned int left;
  
- 	/* Create a char device: we want to create it anew */
- 	fc = kzalloc(sizeof(*fc), GFP_KERNEL);
-+	if (!fc)
-+		return -ENOMEM;
- 	fc->fmc = fmc;
- 	fc->misc.minor = MISC_DYNAMIC_MINOR;
- 	fc->misc.fops = &fc_fops;
-@@ -143,15 +145,18 @@ static int fc_probe(struct fmc_device *fmc)
- 
- 	spin_lock(&fc_lock);
- 	ret = misc_register(&fc->misc);
--	if (ret < 0) {
--		kfree(fc->misc.name);
--		kfree(fc);
--	} else {
--		list_add(&fc->list, &fc_devices);
--	}
-+	if (ret < 0)
-+		goto err_unlock;
-+	list_add(&fc->list, &fc_devices);
- 	spin_unlock(&fc_lock);
- 	dev_info(&fc->fmc->dev, "Created misc device \"%s\"\n",
- 		 fc->misc.name);
-+	return 0;
++	memset(table, 0, sizeof(*table));
 +
-+err_unlock:
-+	spin_unlock(&fc_lock);
-+	kfree(fc->misc.name);
-+	kfree(fc);
- 	return ret;
- }
++	if (nents == 0)
++		return -EINVAL;
+ #ifndef ARCH_HAS_SG_CHAIN
+ 	if (WARN_ON_ONCE(nents > max_ents))
+ 		return -EINVAL;
+ #endif
  
+-	memset(table, 0, sizeof(*table));
+-
+ 	left = nents;
+ 	prv = NULL;
+ 	do {
