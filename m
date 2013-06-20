@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3FTUgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 16:36:51 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:52475 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab3FTUgu (ORCPT
+	id S965698Ab3FTUhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 16:37:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46120 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965602Ab3FTUhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 16:36:50 -0400
-Message-ID: <51C367DC.8050808@bootc.net>
-Date: Thu, 20 Jun 2013 21:36:44 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 16:37:39 -0400
+Date: Thu, 20 Jun 2013 13:37:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Galbraith <bitbucket@online.de>
+cc: Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
+In-Reply-To: <1371697844.5739.29.camel@marge.simpson.net>
+Message-ID: <alpine.DEB.2.02.1306201334460.24145@chino.kir.corp.google.com>
+References: <1370967244-5610-1-git-send-email-athorlton@sgi.com> <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com> <20130618164537.GJ16067@sgi.com> <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com> <20130619093212.GX3658@sgi.com>
+ <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com> <20130620022739.GF3658@sgi.com> <alpine.DEB.2.02.1306191939250.24151@chino.kir.corp.google.com> <1371697844.5739.29.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Timo Teras <timo.teras@iki.fi>
-CC: Fan Du <fan.du@windriver.com>, Jean Sacren <sakiwit@gmail.com>,
-        steffen.klassert@secunet.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: PANIC at net/xfrm/xfrm_output.c:125 (3.9.4)
-References: <51AFB204.8070009@bootc.net> <20130606010416.GF26681@mail.gmail.com> <51AFE4C2.1000604@windriver.com> <51B03EAC.6080508@bootc.net> <20130606113840.511a72c3@vostro>
-In-Reply-To: <20130606113840.511a72c3@vostro>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 09:38, Timo Teras wrote:
-> On Thu, 06 Jun 2013 08:47:56 +0100
-> Chris Boot <bootc@bootc.net> wrote:
-> 
->> On 06/06/13 02:24, Fan Du wrote:
->>> Hello Chris/Jean
->>>
->>> This issue might have already been fixed by this:
->>> https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/net/xfrm/xfrm_output.c?id=497574c72c9922cf20c12aed15313c389f722fa0
->>>
->>>
->>> Hope it helps.
->>
->> Hi Fan, Jean,
->>
->> Thanks, that looks like it's the patch for exactly my problem.
->> Unfortunately I can't test it until next week now. :-/
->>
->> Timo/Dave: are there any plans to push this into 3.10-rc and/or
->> stable? I seem to be able to hit the issue pretty reliably.
-> 
-> It is already present in 3.10-rc3 [1], and Dave has it queued for
-> 3.9-stable [2].
-> 
-> - Timo
-> 
-> [1] http://lwn.net/Articles/551922/
-> [2] http://patchwork.ozlabs.org/patch/245594/
+On Thu, 20 Jun 2013, Mike Galbraith wrote:
 
-Hi folks,
+> > I'm suspecting that you're referring to enlarged rss because of 
+> > khugepaged's max_ptes_none and because you're abusing the purpose of 
+> > cpusets for containerization.
+> 
+> Why is containerization an abuse?  What's wrong with renting out chunks
+> of a big box farm on the fly like a task motel?  If a realtime customer
+> checks in, he's not gonna be thrilled about sharing a room.
+> 
 
-I'm just wondering if this patch has got lost in the cracks; I reported
-the issue in 3.9.4 and 3.9.7 is just out without any sign of it. Have I
-missed something?
-
-Thanks,
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
+We "abused" cpusets for containerization for years, I'm not implying any 
+negative connotation to it, see the 
+Documentation/x86/x86_64/fake-numa-for-cpusets document that I wrote.  It 
+doesn't suggest that we should be controlling thp through cpusets; if he's 
+complaining about static binaries where he can't use a malloc hook then 
+why not make it per-process so users don't have to configure cpusets to 
+control it?
