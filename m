@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab3FTIOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:14:10 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:65060 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab3FTIOH (ORCPT
+	id S1755181Ab3FTIPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:15:15 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43163 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab3FTIPM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:14:07 -0400
-Message-ID: <1371716040.3252.389.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net bridge: add null pointer check, fix panic
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: xiaoming gao <gxm.linux.kernel@gmail.com>
-Cc: stephen@networkplumber.org, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Jun 2013 01:14:00 -0700
-In-Reply-To: <51C2B3A9.5070904@gmail.com>
-References: <51C2710D.2060405@gmail.com> <51C2721B.9050603@gmail.com>
-	  <1371704129.3252.356.camel@edumazet-glaptop> <51C2A8AA.5010902@gmail.com>
-	 <1371713342.3252.371.camel@edumazet-glaptop> <51C2B3A9.5070904@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 04:15:12 -0400
+Message-ID: <1371716106.3231.0.camel@hornet>
+Subject: Re: [PATCH] power/reset: Make the vexpress driver optional on arm
+ and arm64
+From: Pawel Moll <pawel.moll@arm.com>
+To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        l@vger.kernel.org
+Cc: "inux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Date: Thu, 20 Jun 2013 09:15:06 +0100
+In-Reply-To: <1370877121-26211-1-git-send-email-pawel.moll@arm.com>
+References: <1370877121-26211-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
 Mime-Version: 1.0
+X-OriginalArrivalTime: 20 Jun 2013 08:15:08.0038 (UTC) FILETIME=[46C45A60:01CE6D8E]
+X-MC-Unique: 113062009151000201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 15:47 +0800, xiaoming gao wrote:
-
+On Mon, 2013-06-10 at 16:12 +0100, Pawel Moll wrote:
+> The driver can be used on either arm or arm64 platforms, but
+> the latter doesn't have any platform-specific configuration
+> options, so it must be possible to manually enable the driver.
 > 
-> if you remove the test on FF_BRIDGE_PORT, and br_port_get_rcu never returns NULL, the problem is fixed.
-> but the codes in mainline is still bugged, am i right??
-> by the way, kernel-stable 3.0 and 3.4 tree also have this bug, and is very easily to reproduce.
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  drivers/power/reset/Kconfig | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Hello Anton, David,
+> 
+> Would you be so kind to queue this small change for 3.11?
+> 
+> Thanks!
+> 
+> Pawel
 
-Commit 00cfec37484761a4 has to be backported anyway, if not already
-backported.
+This is just a friendly and polite reminder...
 
-I would rather fix things properly, instead of adding defensive code.
+Paweł
 
 
