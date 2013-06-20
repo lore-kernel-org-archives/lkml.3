@@ -1,879 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab3FTMUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:20:19 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:57833 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab3FTMUO (ORCPT
+	id S1757654Ab3FTMU1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:20:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50412 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757646Ab3FTMUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:20:14 -0400
-From: Joseph CHANG <josright123@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, joseph_chang@davicom.com.tw,
-        josright@hotmail.com
-Cc: Joseph CHANG <josright123@gmail.com>
-Subject: [PATCH 1/1] net: add dm9620 net usb driver
-Date: Thu, 20 Jun 2013 20:20:01 +0800
-Message-Id: <1371730801-2288-1-git-send-email-josright123@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 20 Jun 2013 08:20:22 -0400
+Date: Thu, 20 Jun 2013 08:20:16 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Rob van der Heij <rvdheij@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Yannick Brosseau <yannick.brosseau@gmail.com>, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
+Subject: Re: [-stable 3.8.1 performance regression] madvise
+	POSIX_FADV_DONTNEED
+Message-ID: <20130620122016.GA12700@Krystal>
+References: <51BE1828.3060206@gmail.com> <20130617141357.GA6034@Krystal> <20130617142459.1d563072231ba269cdac8f11@linux-foundation.org> <20130618092925.GI1875@suse.de> <20130618101147.GA7436@suse.de> <20130619192508.GA666@Krystal> <CAJCc=kijujORhPUmPvzHj-MMdyVbf-iHEK0Jx-VHbTO8q4ESFA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJCc=kijujORhPUmPvzHj-MMdyVbf-iHEK0Jx-VHbTO8q4ESFA@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DM9620 is an USB2.0 network adapter rather than DM9601 USB1.1. This
-driver processed the RX data 4 bytes header, TX data 2 bytes header,
-make the control bit exactly right in PHY write function, and optional
-IFF_ALLMUTLI bit for RX control.
+* Rob van der Heij (rvdheij@gmail.com) wrote:
+> Wouldn't you batch the calls to drop the pages from cache rather than drop
+> one packet at a time?
 
-Tested good for many platforms, include X86 desktop and ARM embedded.
+By default for kernel tracing, lttng's trace packets are 1MB, so I
+consider the call to fadvise to be already batched by applying it to 1MB
+packets rather than indivitual pages. Even there, it seems that the
+extra overhead added by the lru drain on each CPU is noticeable.
 
-Signed-off-by: Joseph CHANG <josright123@gmail.com>
----
- drivers/net/usb/Kconfig  |   13 +
- drivers/net/usb/Makefile |    1 +
- drivers/net/usb/dm9620.c |  796 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 810 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/usb/dm9620.c
+Another reason for not batching this in larger chunks is to limit the
+impact of the tracer on the kernel page cache. LTTng limits itself to
+its own set of buffers, and use the page cache for what is absolutely
+needed to perform I/O, but no more.
 
-diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index 287cc62..e9c9e2a 100644
---- a/drivers/net/usb/Kconfig
-+++ b/drivers/net/usb/Kconfig
-@@ -272,6 +272,19 @@ config USB_NET_DM9601
- 	  This option adds support for Davicom DM9601 based USB 1.1
- 	  10/100 Ethernet adapters.
- 
-+config USB_NET_DM9620
-+	tristate "Davicom DM9620/21 based USB 2.0 10/100 ethernet devices"
-+	depends on USB_USBNET
-+	select CRC32
-+	help
-+	  This option adds support for Davicom DM9620 based USB 2.0
-+	  10/100 Ethernet adapters.
-+
-+	  This driver creates an interface named "ethX", where X depends on
-+	  what other networking devices you have in use.
-+
-+	  To compile this driver as a module, choose M here.
-+
- config USB_NET_SMSC75XX
- 	tristate "SMSC LAN75XX based USB 2.0 gigabit ethernet devices"
- 	depends on USB_USBNET
-diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
-index 9ab5c9d..7d95e5c 100644
---- a/drivers/net/usb/Makefile
-+++ b/drivers/net/usb/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
- obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
- obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
- obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
-+obj-$(CONFIG_USB_NET_DM9620)	+= dm9620.o
- obj-$(CONFIG_USB_NET_SMSC75XX)	+= smsc75xx.o
- obj-$(CONFIG_USB_NET_SMSC95XX)	+= smsc95xx.o
- obj-$(CONFIG_USB_NET_GL620A)	+= gl620a.o
-diff --git a/drivers/net/usb/dm9620.c b/drivers/net/usb/dm9620.c
-new file mode 100644
-index 0000000..aa4226b
---- /dev/null
-+++ b/drivers/net/usb/dm9620.c
-@@ -0,0 +1,796 @@
-+/*
-+ * Davicom DM9620 USB 2.0 10/100Mbps ethernet devices
-+ *
-+ * Peter Korsgaard <jacmet@sunsite.dk>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+/* #define DEBUG */
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/stddef.h>
-+#include <linux/init.h>
-+#include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
-+#include <linux/ethtool.h>
-+#include <linux/mii.h>
-+#include <linux/usb.h>
-+#include <linux/crc32.h>
-+#include <linux/usb/usbnet.h>
-+#include <linux/slab.h>
-+
-+/* control requests */
-+#define DM_READ_REGS	0x00
-+#define DM_WRITE_REGS	0x01
-+#define DM_READ_MEMS	0x02
-+#define DM_WRITE_REG	0x03
-+#define DM_WRITE_MEMS	0x05
-+#define DM_WRITE_MEM	0x07
-+
-+/* registers */
-+#define DM_NET_CTRL	0x00
-+#define DM_RX_CTRL	0x05
-+#define DM_FCR		0x0a
-+#define DM_SHARED_CTRL	0x0b
-+#define DM_SHARED_ADDR	0x0c
-+#define DM_SHARED_DATA	0x0d	/* low + high */
-+#define DM_SHARED_DL	0x0d
-+#define DM_SHARED_DH	0x0e
-+#define DM_WAKEUP_CTRL  0x0f
-+#define DM_PHY_ADDR	0x10	/* 6 bytes */
-+#define DM_MCAST_ADDR	0x16	/* 8 bytes */
-+#define DM_GPR_CTRL	0x1e
-+#define DM_GPR_DATA	0x1f
-+#define DM_PID		0x2a
-+#define DM_CHIP_ID	0x2c
-+#define DM_XPHY_CTRL	0x2e	/* reserved */
-+#define DM_TX_CRC_CTRL	0x31
-+#define DM_RX_CRC_CTRL	0x32
-+#define DM_AZR		0x3f	/* reserved */
-+#define DM_USB_CTRL	0xf4
-+#define DM_MODE_CTRL	0x91	/* only on dm9620 */
-+#define DM_CHIP_ID_EX	0x5C
-+
-+#define MD96XX_EEPROM_MAGIC	0x9620
-+#define DM_MAX_MCAST	64
-+#define DM_MCAST_SIZE	8
-+#define DM_EEPROM_LEN	256
-+#define DM_TX_OVERHEAD	2	/* 2 byte header */
-+#define DM_RX_OVERHEAD	8	/* 4 byte header + 4 byte crc tail */
-+#define DM_TIMEOUT	1000
-+
-+#define DM_NCR_RST	(1<<0)
-+#define DM_NCR_WAKEEN	(1<<6)
-+
-+#define DM_FCR_TXPEN	(1<<5)
-+#define DM_FCR_BKPM	(1<<3)
-+#define DM_FCR_FLCE	(1<<0)
-+
-+#define DMSC_WEP	(1<<4)
-+#define DMSC_ERPRW	(1<<1)
-+#define DMSC_ERRE	(1<<0)
-+
-+#define DM_LINKEN	(1<<5)
-+#define DM_MAGICEN	(1<<3)
-+
-+#define DM_TX_UDPCSE	(1<<2)
-+#define DM_TX_TCPCSE	(1<<1)
-+#define DM_TX_IPCSE	(1<<0)
-+#define DM_RX_RCSEN	(1<<1)
-+#define DM_MODE_DM_TXRX	(0<<4)
-+#define DM_MODE_CDC_TRX	(1<<4)
-+#define DM_MODE_DM_DESC	(0<<5)
-+#define DM_MODE_CDC_DES	(1<<5)
-+
-+#define DM_USB_EP3ACK	(1<<5)
-+
-+#define DM_MODE9601	(0<<7)
-+#define DM_MODE9620	(1<<7)
-+#define DM9620_PHY_ID	1	/* Stone add For kernel read phy register */
-+
-+#define VID_DAVICOM	0x0a46
-+
-+#define PID_DM9620	0x9620
-+#define PID_DM9621	0x9621
-+#define PID_DM9622	0x9622
-+#define PID_DM9620A	0x0269
-+#define PID_DM9621A	0x1269
-+
-+static int dm_read(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	int err;
-+	err = usbnet_read_cmd(dev, DM_READ_REGS,
-+			       USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+			       0, reg, data, length);
-+	if (err != length && err >= 0)
-+		err = -EINVAL;
-+	return err;
-+}
-+
-+static int dm_read_reg(struct usbnet *dev, u8 reg, u8 *value)
-+{
-+	return dm_read(dev, reg, 1, value);
-+}
-+
-+static int dm_write(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	int err;
-+	err = usbnet_write_cmd(dev, DM_WRITE_REGS,
-+				USB_DIR_OUT | USB_TYPE_VENDOR |
-+				USB_RECIP_DEVICE,
-+				0, reg, data, length);
-+
-+	if (err >= 0 && err < length)
-+		err = -EINVAL;
-+	return err;
-+}
-+
-+static int dm_write_reg(struct usbnet *dev, u8 reg, u8 value)
-+{
-+	return usbnet_write_cmd(dev, DM_WRITE_REG,
-+				USB_DIR_OUT | USB_TYPE_VENDOR |
-+				USB_RECIP_DEVICE,
-+				value, reg, NULL, 0);
-+}
-+
-+static void dm_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	usbnet_write_cmd_async(dev, DM_WRITE_REGS,
-+			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+			       0, reg, data, length);
-+}
-+
-+static void dm_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
-+{
-+	usbnet_write_cmd_async(dev, DM_WRITE_REG,
-+			       USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+			       value, reg, NULL, 0);
-+}
-+
-+static int dm_read_shared_word(struct usbnet *dev, int phy, u8 reg,
-+	__le16 *value)
-+{
-+	int ret, i;
-+
-+	mutex_lock(&dev->phy_mutex);
-+
-+	dm_write_reg(dev, DM_SHARED_ADDR, phy ? (reg | 0x40) : reg);
-+	dm_write_reg(dev, DM_SHARED_CTRL, phy ? 0xc : 0x4);
-+
-+	for (i = 0; i < DM_TIMEOUT; i++) {
-+		u8 tmp = 0;
-+
-+		udelay(1);
-+		ret = dm_read_reg(dev, DM_SHARED_CTRL, &tmp);
-+		if (ret < 0)
-+			goto out;
-+
-+		/* ready */
-+		if ((tmp & 1) == 0)
-+			break;
-+	}
-+
-+	if (i == DM_TIMEOUT) {
-+		netdev_err(dev->net, "%s read timed out!\n",
-+			phy ? "phy" : "eeprom");
-+		ret = -EIO;
-+		goto out;
-+	}
-+
-+	dm_write_reg(dev, DM_SHARED_CTRL, 0x0);
-+	ret = dm_read(dev, DM_SHARED_DATA, 2, value);
-+
-+	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
-+		   phy, reg, *value, ret);
-+
-+ out:
-+	mutex_unlock(&dev->phy_mutex);
-+	return ret;
-+}
-+
-+static int dm_write_shared_word(struct usbnet *dev, int phy, u8 reg,
-+	__le16 value)
-+{
-+	int ret, i;
-+
-+	mutex_lock(&dev->phy_mutex);
-+
-+	ret = dm_write(dev, DM_SHARED_DATA, 2, &value);
-+	if (ret < 0)
-+		goto out;
-+
-+	dm_write_reg(dev, DM_SHARED_ADDR, phy ? (reg | 0x40) : reg);
-+	dm_write_reg(dev, DM_SHARED_CTRL, phy ? 0x0a : 0x12);
-+
-+	for (i = 0; i < DM_TIMEOUT; i++) {
-+		u8 tmp = 0;
-+
-+		udelay(1);
-+		ret = dm_read_reg(dev, DM_SHARED_CTRL, &tmp);
-+		if (ret < 0)
-+			goto out;
-+
-+		/* ready */
-+		if ((tmp & 1) == 0)
-+			break;
-+	}
-+
-+	if (i == DM_TIMEOUT) {
-+		netdev_err(dev->net, "%s write timed out!\n",
-+			phy ? "phy" : "eeprom");
-+		ret = -EIO;
-+		goto out;
-+	}
-+
-+	dm_write_reg(dev, DM_SHARED_CTRL, 0x0);
-+
-+out:
-+	mutex_unlock(&dev->phy_mutex);
-+	return ret;
-+}
-+
-+static void device_polling(struct usbnet *dev, u8 reg, u8 dmsc_bit,
-+		u8 uexpected)
-+{
-+	int i, ret;
-+	u8 tmp = 0;
-+	for (i = 0; i < DM_TIMEOUT; i++) {
-+		udelay(1);
-+		ret = dm_read_reg(dev, reg, &tmp);
-+		if (ret < 0) {
-+			netdev_err(dev->net,
-+				"[dm962 read reg] (reg: 0x%02x) error!\n",
-+				reg);
-+			break;
-+		}
-+		if ((tmp & dmsc_bit) == uexpected) /* ready */
-+			break;
-+	}
-+	if (i == DM_TIMEOUT)
-+		netdev_err(dev->net, "[dm962 time out] on polling bit:0x%x\n",
-+			dmsc_bit);
-+}
-+
-+static void dm_write_eeprom_word(struct usbnet *dev, u8 offset, u8 *data)
-+{
-+	mutex_lock(&dev->phy_mutex);
-+
-+	dm_write_reg(dev, DM_SHARED_ADDR, offset);
-+	dm_write_reg(dev, DM_SHARED_DH, data[1]);
-+	dm_write_reg(dev, DM_SHARED_DL, data[0]);
-+	dm_write_reg(dev, DM_SHARED_CTRL, DMSC_WEP | DMSC_ERPRW);
-+	device_polling(dev, DM_SHARED_CTRL, DMSC_ERRE, 0x00);
-+	dm_write_reg(dev, DM_SHARED_CTRL, 0);
-+
-+	mutex_unlock(&dev->phy_mutex);
-+}
-+
-+static int dm_read_eeprom_word(struct usbnet *dev, u8 offset, void *value)
-+{
-+	return dm_read_shared_word(dev, 0, offset, value);
-+}
-+
-+static int dm9620_set_eeprom(struct net_device *net,
-+		struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	int offset = eeprom->offset;
-+	int len = eeprom->len;
-+	int done;
-+
-+	if (eeprom->magic != MD96XX_EEPROM_MAGIC) {
-+		netdev_err(dev->net, "EEPROM: magic value mismatch, magic = 0x%x\n",
-+			eeprom->magic);
-+		return -EINVAL;
-+	}
-+
-+	while (len > 0) {
-+		if (len & 1 || offset & 1) {
-+			int which = offset & 1;
-+			u8 tmp[2];
-+			dm_read_eeprom_word(dev, offset / 2, tmp);
-+			tmp[which] = *data;
-+			dm_write_eeprom_word(dev, offset / 2, tmp);
-+			usleep_range(10000, 15000);
-+			done = 1;
-+		} else {
-+			dm_write_eeprom_word(dev, offset / 2, data);
-+			done = 2;
-+		}
-+		data += done;
-+		offset += done;
-+		len -= done;
-+	}
-+	return 0;
-+}
-+
-+static int dm9620_get_eeprom_len(struct net_device *dev)
-+{
-+	return DM_EEPROM_LEN;
-+}
-+
-+static int dm9620_get_eeprom(struct net_device *net,
-+			     struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	__le16 *ebuf = (__le16 *) data;
-+	int i;
-+
-+	/* access is 16bit */
-+	if ((eeprom->offset % 2) || (eeprom->len % 2))
-+		return -EINVAL;
-+
-+	for (i = 0; i < eeprom->len / 2; i++) {
-+		if (dm_read_eeprom_word(dev, eeprom->offset / 2 + i,
-+					&ebuf[i]) < 0)
-+			return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int dm9620_mdio_read(struct net_device *netdev, int phy_id, int loc)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+
-+	__le16 res;
-+
-+	dm_read_shared_word(dev, 1, loc, &res);
-+
-+	netdev_dbg(dev->net,
-+		   "dm9620_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
-+		   phy_id, loc, le16_to_cpu(res));
-+
-+	return le16_to_cpu(res);
-+}
-+
-+static void dm9620_mdio_write(struct net_device *netdev, int phy_id, int loc,
-+			      int val)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	__le16 res = cpu_to_le16(val);
-+
-+
-+	netdev_dbg(dev->net, "dm9620_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
-+		   phy_id, loc, val);
-+
-+	dm_write_shared_word(dev, 1, loc, res);
-+}
-+
-+static void dm9620_get_drvinfo(struct net_device *net,
-+			       struct ethtool_drvinfo *info)
-+{
-+	/* Inherit standard device info */
-+	usbnet_get_drvinfo(net, info);
-+	info->eedump_len = DM_EEPROM_LEN;
-+}
-+
-+static u32 dm9620_get_link(struct net_device *net)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+
-+	return mii_link_ok(&dev->mii);
-+}
-+
-+static int dm9620_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+
-+	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
-+}
-+
-+static void
-+dm9620_get_wol(struct net_device *net, struct ethtool_wolinfo *wolinfo)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	u8 opt;
-+
-+	if (dm_read_reg(dev, DM_WAKEUP_CTRL, &opt) < 0) {
-+		wolinfo->supported = 0;
-+		wolinfo->wolopts = 0;
-+		return;
-+	}
-+	wolinfo->supported = WAKE_PHY | WAKE_MAGIC;
-+	wolinfo->wolopts = 0;
-+
-+	if (opt & DM_LINKEN)
-+		wolinfo->wolopts |= WAKE_PHY;
-+	if (opt & DM_MAGICEN)
-+		wolinfo->wolopts |= WAKE_MAGIC;
-+}
-+
-+static int
-+dm9620_set_wol(struct net_device *net, struct ethtool_wolinfo *wolinfo)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	u8 opt = 0;
-+
-+	if (wolinfo->wolopts & WAKE_PHY)
-+		opt |= DM_LINKEN;
-+	if (wolinfo->wolopts & WAKE_MAGIC)
-+		opt |= DM_MAGICEN;
-+
-+	dm_write_reg(dev, DM_WAKEUP_CTRL, opt);
-+	/* enable WAKEEN */
-+	return dm_write_reg(dev, DM_NET_CTRL, DM_NCR_WAKEEN);
-+}
-+
-+static const struct ethtool_ops dm9620_ethtool_ops = {
-+	.get_drvinfo	= dm9620_get_drvinfo,
-+	.get_link	= dm9620_get_link,
-+	.get_msglevel	= usbnet_get_msglevel,
-+	.set_msglevel	= usbnet_set_msglevel,
-+	.get_eeprom_len	= dm9620_get_eeprom_len,
-+	.get_eeprom	= dm9620_get_eeprom,
-+	.set_eeprom	= dm9620_set_eeprom,
-+	.get_settings	= usbnet_get_settings,
-+	.set_settings	= usbnet_set_settings,
-+	.nway_reset	= usbnet_nway_reset,
-+	.get_wol	= dm9620_get_wol,
-+	.set_wol	= dm9620_set_wol,
-+};
-+
-+static void dm9620_set_multicast(struct net_device *net)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	/* We use the 20 byte dev->data for our 8 byte filter buffer
-+	 * to avoid allocating memory that is tricky to free later
-+	 */
-+	u8 *hashes = (u8 *) &dev->data;
-+	u8 rx_ctl = 0x31;
-+
-+	memset(hashes, 0, DM_MCAST_SIZE);
-+	hashes[DM_MCAST_SIZE - 1] |= 0x80;	/* broadcast address */
-+
-+	if (net->flags & IFF_PROMISC) {
-+		rx_ctl |= 0x02;
-+	} else if (net->flags & IFF_ALLMULTI ||
-+		   netdev_mc_count(net) > DM_MAX_MCAST) {
-+		rx_ctl |= 0x08;
-+	} else if (!netdev_mc_empty(net)) {
-+		struct netdev_hw_addr *ha;
-+
-+		netdev_for_each_mc_addr(ha, net) {
-+			u32 crc = ether_crc(ETH_ALEN, ha->addr) >> 26;
-+			hashes[crc >> 3] |= 1 << (crc & 0x7);
-+		}
-+	}
-+
-+	dm_write_async(dev, DM_MCAST_ADDR, DM_MCAST_SIZE, hashes);
-+	dm_write_reg_async(dev, DM_RX_CTRL, rx_ctl);
-+}
-+
-+static void __dm9620_set_mac_address(struct usbnet *dev)
-+{
-+	dm_write_async(dev, DM_PHY_ADDR, ETH_ALEN, dev->net->dev_addr);
-+}
-+
-+static int dm9620_set_mac_address(struct net_device *net, void *p)
-+{
-+	struct sockaddr *addr = p;
-+	struct usbnet *dev = netdev_priv(net);
-+
-+	if (!is_valid_ether_addr(addr->sa_data)) {
-+		dev_err(&net->dev, "not setting invalid mac address %pM\n",
-+								addr->sa_data);
-+		return -EINVAL;
-+	}
-+
-+	memcpy(net->dev_addr, addr->sa_data, net->addr_len);
-+	__dm9620_set_mac_address(dev);
-+
-+	return 0;
-+}
-+
-+static const struct net_device_ops dm9620_netdev_ops = {
-+	.ndo_open		= usbnet_open,
-+	.ndo_stop		= usbnet_stop,
-+	.ndo_start_xmit		= usbnet_start_xmit,
-+	.ndo_tx_timeout		= usbnet_tx_timeout,
-+	.ndo_change_mtu		= usbnet_change_mtu,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_do_ioctl		= dm9620_ioctl,
-+	.ndo_set_rx_mode	= dm9620_set_multicast,
-+	.ndo_set_mac_address	= dm9620_set_mac_address,
-+};
-+
-+static int dm9620_bind(struct usbnet *dev, struct usb_interface *intf)
-+{
-+	int ret;
-+	u8 mac[ETH_ALEN], id;
-+	u16 value;
-+
-+	ret = usbnet_get_endpoints(dev, intf);
-+	if (ret)
-+		return ret;
-+
-+	dev->net->netdev_ops = &dm9620_netdev_ops;
-+	dev->net->ethtool_ops = &dm9620_ethtool_ops;
-+	dev->net->hard_header_len += DM_TX_OVERHEAD;
-+	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
-+
-+	/* ftp fail fixed */
-+	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD+1;
-+
-+	dev->mii.dev = dev->net;
-+	dev->mii.mdio_read = dm9620_mdio_read;
-+	dev->mii.mdio_write = dm9620_mdio_write;
-+	dev->mii.phy_id_mask = 0x1f;
-+	dev->mii.reg_num_mask = 0x1f;
-+	dev->mii.phy_id = DM9620_PHY_ID;
-+
-+	/* reset */
-+	dm_write_reg(dev, DM_NET_CTRL, 1);
-+	usleep_range(20, 30);
-+
-+	/* read MAC */
-+	if (dm_read(dev, DM_PHY_ADDR, ETH_ALEN, mac) < 0) {
-+		netdev_err(dev->net, "Error reading MAC address\n");
-+		return -ENODEV;
-+	}
-+
-+	/* Overwrite the auto-generated address only with good ones */
-+	if (is_valid_ether_addr(mac))
-+		memcpy(dev->net->dev_addr, mac, ETH_ALEN);
-+	else {
-+		netdev_warn(dev->net,
-+			"dm9620: No valid MAC address in EEPROM, using %pM\n",
-+			dev->net->dev_addr);
-+		__dm9620_set_mac_address(dev);
-+	}
-+
-+	if (dm_read_reg(dev, DM_CHIP_ID, &id) < 0) {
-+		netdev_err(dev->net, "Error reading chip ID\n");
-+		return -ENODEV;
-+	}
-+
-+	dm_read(dev, DM_PID, 2, &value);
-+
-+	/* Add for check Product dm9620a/21a */
-+	if (value == PID_DM9620A || value == PID_DM9621A)
-+		dm_write_reg(dev, DM_MODE_CTRL, DM_MODE9620 | DM_MODE_CDC_DES);
-+	else
-+		dm_write_reg(dev, DM_MODE_CTRL, DM_MODE9620);
-+
-+	dm_write_reg(dev, DM_RX_CRC_CTRL, DM_RX_RCSEN);
-+
-+	/* power up phy */
-+	dm_write_reg(dev, DM_GPR_CTRL, 1);
-+	dm_write_reg(dev, DM_GPR_DATA, 0);
-+
-+	/* receive broadcast packets */
-+	dm9620_set_multicast(dev->net);
-+
-+	dm9620_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
-+
-+	/* TX Pause Packet Enable */
-+	dm_write_reg(dev, DM_FCR, DM_FCR_TXPEN | DM_FCR_BKPM | DM_FCR_FLCE);
-+
-+	/* Pause Capability on */
-+	dm9620_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
-+		ADVERTISE_ALL | ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
-+
-+	dm_write_reg(dev, DM_USB_CTRL, DM_USB_EP3ACK);
-+
-+	mii_nway_restart(&dev->mii);
-+
-+	return 0;
-+}
-+
-+static void dm9620_unbind(struct usbnet *dev, struct usb_interface *intf)
-+{
-+	netdev_warn(dev->net, "[dm962] Linux Driver = V2.6 - unbind\n");
-+}
-+
-+static int dm9620_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-+{
-+	u8 status;
-+	int len;
-+
-+	/* format:
-+	 * b0: rx_flag
-+	 * b1: rx status
-+	 * b2: packet length (incl crc) low
-+	 * b3: packet length (incl crc) high
-+	 * b4..n-4: packet data
-+	 * bn-3..bn: ethernet crc
-+	 */
-+	if (unlikely(skb->len < DM_RX_OVERHEAD)) {
-+		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
-+		return 0;
-+	}
-+
-+	status = skb->data[1];
-+	len = (skb->data[2] | (skb->data[3] << 8)) - 4;
-+
-+	if (unlikely(status & 0xbf)) {
-+		if (status & 0x01)
-+			dev->net->stats.rx_fifo_errors++;
-+		if (status & 0x02)
-+			dev->net->stats.rx_crc_errors++;
-+		if (status & 0x04)
-+			dev->net->stats.rx_frame_errors++;
-+		if (status & 0x20)
-+			dev->net->stats.rx_missed_errors++;
-+		if (status & 0x90)
-+			dev->net->stats.rx_length_errors++;
-+		return 0;
-+	}
-+
-+	skb_pull(skb, 4);
-+	skb_trim(skb, len);
-+
-+	return 1;
-+}
-+
-+static bool davicom_bulkout_fix(int len, unsigned fullp)
-+{
-+	len = ((len+1)/2)*2;
-+	len += 2;
-+	return !(len % fullp) ? true : false;
-+}
-+
-+static int dm9620_tx_oddadd_len(int len)
-+{
-+	return len & 1;
-+}
-+
-+static int dm9620_tx_fulladd_len(int len, unsigned full_pld)
-+{
-+	if (davicom_bulkout_fix(len, full_pld))
-+		return 2;
-+	return 0;
-+}
-+
-+static struct sk_buff *dm9620_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
-+				       gfp_t flags)
-+{
-+	int len;
-+	int oddadd_len, fulladd_len, newtailroom;
-+
-+	/* format:
-+	 * b1: packet length low
-+	 * b2: packet length high
-+	 * b3..n: packet data
-+	 */
-+	len = skb->len;
-+
-+	oddadd_len = dm9620_tx_oddadd_len(len);
-+	fulladd_len = dm9620_tx_fulladd_len(len, dev->maxpacket);
-+	newtailroom = oddadd_len + fulladd_len;
-+
-+	if (skb_headroom(skb) < DM_TX_OVERHEAD ||
-+		skb_tailroom(skb) < newtailroom) {
-+		struct sk_buff *skb2;
-+
-+		if (skb_headroom(skb) < DM_TX_OVERHEAD &&
-+			skb_tailroom(skb) < newtailroom)
-+			skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, newtailroom,
-+				flags);
-+		else if (skb_headroom(skb) < DM_TX_OVERHEAD)
-+			skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, 0, flags);
-+		else
-+			skb2 = skb_copy_expand(skb, 0, newtailroom, flags);
-+		dev_kfree_skb_any(skb);
-+		skb = skb2;
-+		if (!skb)
-+			return NULL;
-+	}
-+
-+	/* add 2 bytes header which is data[0], data[1]
-+	 * with extra 2 bytes bulkout len
-+	 */
-+	__skb_push(skb, DM_TX_OVERHEAD);
-+
-+	/* add 1, 2, or 3 bytes for tailer
-+	 * with different variate bulkout len
-+	 */
-+	if (newtailroom)
-+		__skb_put(skb, newtailroom);
-+
-+	/* add 2 bytes in length if a multiple of packet size */
-+	len += fulladd_len;
-+
-+	skb->data[0] = len;
-+	skb->data[1] = len >> 8;
-+
-+	return skb;
-+}
-+
-+static void dm9620_status(struct usbnet *dev, struct urb *urb)
-+{
-+	int link;
-+	u8 *buf;
-+
-+	/* format:
-+	 * b0: net status
-+	 * b1: tx status 1
-+	 * b2: tx status 2
-+	 * b3: rx status
-+	 * b4: rx overflow
-+	 * b5: rx count
-+	 * b6: tx count
-+	 * b7: gpr
-+	 */
-+	if (urb->actual_length < 8)
-+		return;
-+
-+	buf = urb->transfer_buffer;
-+
-+	link = !!(buf[0] & 0x40);
-+	if (netif_carrier_ok(dev->net) != link) {
-+		usbnet_link_change(dev, link, 1);
-+		netdev_dbg(dev->net, "Link Status is: %d\n", link);
-+	}
-+}
-+
-+static int dm9620_link_reset(struct usbnet *dev)
-+{
-+	struct ethtool_cmd ecmd = { .cmd = ETHTOOL_GSET };
-+
-+	mii_check_media(&dev->mii, 1, 1);
-+	mii_ethtool_gset(&dev->mii, &ecmd);
-+	dm_write_reg(dev, DM_USB_CTRL, DM_USB_EP3ACK);
-+
-+	netdev_dbg(dev->net, "link_reset() speed: %u duplex: %d\n",
-+		   ethtool_cmd_speed(&ecmd), ecmd.duplex);
-+
-+	return 0;
-+}
-+
-+static const struct driver_info dm9620_info = {
-+	.description	= "Davicom DM9620 USB Ethernet",
-+	.flags		= FLAG_ETHER | FLAG_LINK_INTR,
-+	.bind		= dm9620_bind,
-+	.rx_fixup	= dm9620_rx_fixup,
-+	.tx_fixup	= dm9620_tx_fixup,
-+	.status		= dm9620_status,
-+	.link_reset	= dm9620_link_reset,
-+	.reset		= dm9620_link_reset,
-+	.unbind		= dm9620_unbind,
-+};
-+
-+static const struct usb_device_id products[] = {
-+	{
-+	 USB_DEVICE(VID_DAVICOM, PID_DM9620),	/* dm9620 */
-+	 .driver_info = (unsigned long)&dm9620_info,
-+	 },
-+	{
-+	 USB_DEVICE(VID_DAVICOM, PID_DM9621),	/* dm9621 */
-+	 .driver_info = (unsigned long)&dm9620_info,
-+	 },
-+	{
-+	 USB_DEVICE(VID_DAVICOM, PID_DM9622),	/* dm9622 */
-+	 .driver_info = (unsigned long)&dm9620_info,
-+	 },
-+	{
-+	 USB_DEVICE(VID_DAVICOM, PID_DM9620A),	/* dm9620a */
-+	 .driver_info = (unsigned long)&dm9620_info,
-+	 },
-+	{
-+	 USB_DEVICE(VID_DAVICOM, PID_DM9621A),	/* dm9621a */
-+	 .driver_info = (unsigned long)&dm9620_info,
-+	 },
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(usb, products);
-+
-+static struct usb_driver dm9620_driver = {
-+	.name = "dm9620",
-+	.id_table = products,
-+	.probe = usbnet_probe,
-+	.disconnect = usbnet_disconnect,
-+	.suspend = usbnet_suspend,
-+	.resume = usbnet_resume,
-+	.disable_hub_initiated_lpm = 1,
-+};
-+
-+module_usb_driver(dm9620_driver);
-+
-+MODULE_AUTHOR("Peter Korsgaard <jacmet@sunsite.dk>");
-+MODULE_DESCRIPTION("Davicom DM9620 USB 2.0 ethernet devices");
-+MODULE_LICENSE("GPL");
+> Your effort to help Linux mm seems a bit overkill,
+
+Without performing this, I have a situation similar as yours, where
+LTTng fills up the page cache very quickly, until it gets to a point
+where memory pressure level increase enough that the consumerd is
+blocked until some pages are reclaimed. I really don't care about making
+the consumerd "as fast as possible for a while" if it means its
+throughput will drop when the page cache is filled. I prefer a constant
+slower pace to a short burst followed by slower throughput.
+
+> and you don't want every application to do it like that himself.
+
+Indeed, tracing has always been slightly odd in the sense that it's not
+the workload the system is meant to run, but rather a tool that should
+have the smallest impact on the usual system's run when it is used.
+
+> The
+> fadvise will not even work when the page is still to be flushed out.
+> Without the patch that started the thread, it would 'at random' not work
+> due to SMP race condition (not multi-threading).
+
+This is why the lttng consumerd calls:
+
+sync_file_range with flags:
+    SYNC_FILE_RANGE_WAIT_BEFORE
+    SYNC_FILE_RANGE_WRITE
+    SYNC_FILE_RANGE_WAIT_AFTER
+
+on the page range. The purpose of this call is to flush the pages to
+disk before calling fadvise(POSIX_FADV_DONTNEED) on the page range.
+
+Hopefully we can manage to make the SMP race scenario work with the
+semantic you want without requiring cases where the pages are on the
+local CPU, and already flushed to disk, to schedule work (and wait for
+it) on each CPU. We can expect this to perform very badly on 64+ core
+systems.
+
+As far as LTTng is concerned, if every call to
+fadvise(POSIX_FADV_DONTNEED) involves synchronization across all CPUs, I
+will reconsider using this hint, because the performance hit would start
+to be worse than the benefit of the hint given to the kernel.
+
+Your idea of batching was interesting though. Perharps it would be good
+to let the kernel batch messaging to remote CPUs within fadvise(), and
+perform those asynchronously. Therefore, we could return to the
+application quickly without awaiting for page invalidation to be
+completed. After all, this is just a hint, and AFAIU there is no need to
+guarantee that all those pages are invalidated before fadvise() returns
+to user-space.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+> 
+> I believe the right way would be for Linux to implement the fadvise flags
+> properly to guide cache replacement.
+> 
+> My situation was slightly different. I run in a virtualized environment
+> where it would be a global improvement for the Linux guest not to cache
+> data, even though from Linux mm perspective there is plenty of space and no
+> good reason not to keep the data. My scenario intercepted the close() call
+> to drop each input file during a tar or file system scan. This avoids
+> building a huge page cache with stuff that will not be referenced until
+> next backup and thus gets paged out by the hypervisor. There's some more
+> here:
+> http://zvmperf.wordpress.com/2013/01/27/taming-linux-page-cache/
+> 
+> Rob
+> 
+> 
+> On 19 June 2013 21:25, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>wrote:
+> 
+> > * Mel Gorman (mgorman@suse.de) wrote:
+> > > On Tue, Jun 18, 2013 at 10:29:26AM +0100, Mel Gorman wrote:
+> > > > On Mon, Jun 17, 2013 at 02:24:59PM -0700, Andrew Morton wrote:
+> > > > > On Mon, 17 Jun 2013 10:13:57 -0400 Mathieu Desnoyers <
+> > mathieu.desnoyers@efficios.com> wrote:
+> > > > >
+> > > > > > Hi,
+> > > > > >
+> > > > > > CCing lkml on this,
+> > > > > >
+> > > > > > * Yannick Brosseau (yannick.brosseau@gmail.com) wrote:
+> > > > > > > Hi all,
+> > > > > > >
+> > > > > > > We discovered a performance regression in recent kernels with
+> > LTTng
+> > > > > > > related to the use of fadvise DONTNEED.
+> > > > > > > A call to this syscall is present in the LTTng consumer.
+> > > > > > >
+> > > > > > > The following kernel commit cause the call to fadvise to be
+> > sometime
+> > > > > > > really slower.
+> > > > > > >
+> > > > > > > Kernel commit info:
+> > > > > > > mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to
+> > discard
+> > > > > > > all pages
+> > > > > > > main tree: (since 3.9-rc1)
+> > > > > > > commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732
+> > > > > > > stable tree: (since 3.8.1)
+> > > > > > >
+> > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit?id=bb01afe62feca1e7cdca60696f8b074416b0910d
+> > > > > > >
+> > > > > > > On the workload test, we observe that the call to fadvise takes
+> > about
+> > > > > > > 4-5 us before this patch is applied. After applying the patch,
+> > The
+> > > > > > > syscall now takes values from 5 us up to 4 ms (4000 us)
+> > sometime. The
+> > > > > > > effect on lttng is that the consumer is frozen for this long
+> > period
+> > > > > > > which leads to dropped event in the trace.
+> > > > >
+> > > > > That change wasn't terribly efficient - if there are any unpopulated
+> > > > > pages in the range (which is quite likely), fadvise() will now always
+> > > > > call invalidate_mapping_pages() a second time.
+> > > > >
+> > > >
+> > > > I did not view the path as being performance critical and did not
+> > anticipate
+> > > > a delay that severe.
+> > >
+> > > Which I should have, schedule_on_each_cpu is documented to be slow.
+> > >
+> > > > The original test case as well was based on
+> > > > sequential IO as part of a backup so I was also generally expecting the
+> > > > range to be populated. I looked at the other users of
+> > lru_add_drain_all()
+> > > > but there are fairly few. compaction uses them but only when used via
+> > sysfs
+> > > > or proc. ksm uses it but it's not likely to be that noticable. mlock
+> > uses
+> > > > it but it's unlikely it is being called frequently so I'm not going to
+> > > > worry performance of lru_add_drain_all() in general. I'll look closer
+> > at
+> > > > properly detecting when it's necessarily to call in the fadvise case.
+> > > >
+> > >
+> > > This compile-only tested prototype should detect remaining pages in the
+> > rage
+> > > that were not invalidated. This will at least detect unpopulated pages
+> > but
+> > > whether it has any impact depends on what lttng is invalidating. If it's
+> > > invalidating a range of per-cpu traces then I doubt this will work
+> > because
+> > > there will always be remaining pages. Similarly I wonder if passing down
+> > > the mapping will really help if a large number of cpus are tracing as we
+> > > end up scheduling work on every CPU regardless.
+> >
+> > Here is how LTTng consumerd is using POSIX_FADV_DONTNEED. Please let me
+> > know if we are doing something stupid. ;-)
+> >
+> > The LTTng consumerd deals with trace packets, which consists of a set of
+> > pages. I'll just discuss how the pages are moved around, leaving out
+> > discussion about synchronization between producer/consumer.
+> >
+> > Whenever the Nth trace packet is ready to be written to disk:
+> >
+> > 1) splice the entire set of pages of trace packet N to disk through a
+> >    pipe,
+> > 2) sync_file_range on trace packet N-1 with the following flags:
+> >    SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
+> > SYNC_FILE_RANGE_WAIT_AFTER
+> >    so we wait (blocking) on the _previous_ trace packet to be completely
+> >    written to disk.
+> > 3) posix_fadvise POSIX_FADV_DONTNEED on trace packet N-1.
+> >
+> > There are a couple of comments in my consumerd code explaining why we do
+> > this sequence of steps:
+> >
+> >         /*
+> >          * Give hints to the kernel about how we access the file:
+> >          * POSIX_FADV_DONTNEED : we won't re-access data in a near future
+> > after
+> >          * we write it.
+> >          *
+> >          * We need to call fadvise again after the file grows because the
+> >          * kernel does not seem to apply fadvise to non-existing parts of
+> > the
+> >          * file.
+> >          *
+> >          * Call fadvise _after_ having waited for the page writeback to
+> >          * complete because the dirty page writeback semantic is not well
+> >          * defined. So it can be expected to lead to lower throughput in
+> >          * streaming.
+> >          */
+> >
+> > Currently, the lttng-consumerd is single-threaded, but we plan to
+> > re-introduce multi-threading, and per-cpu affinity, in a near future.
+> >
+> > Yannick will try your patch tomorrow and report whether it improves
+> > performance or not,
+> >
+> > Thanks!
+> >
+> > Mathieu
+> >
+> > >
+> > > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > > index 2c28271..e2bb47e 100644
+> > > --- a/include/linux/fs.h
+> > > +++ b/include/linux/fs.h
+> > > @@ -2176,6 +2176,8 @@ extern int invalidate_partition(struct gendisk *,
+> > int);
+> > >  #endif
+> > >  unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > >                                       pgoff_t start, pgoff_t end);
+> > > +unsigned long invalidate_mapping_pages_check(struct address_space
+> > *mapping,
+> > > +                                     pgoff_t start, pgoff_t end);
+> > >
+> > >  static inline void invalidate_remote_inode(struct inode *inode)
+> > >  {
+> > > diff --git a/mm/fadvise.c b/mm/fadvise.c
+> > > index 7e09268..0579e60 100644
+> > > --- a/mm/fadvise.c
+> > > +++ b/mm/fadvise.c
+> > > @@ -122,7 +122,9 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
+> > loff_t len, int advice)
+> > >               end_index = (endbyte >> PAGE_CACHE_SHIFT);
+> > >
+> > >               if (end_index >= start_index) {
+> > > -                     unsigned long count =
+> > invalidate_mapping_pages(mapping,
+> > > +                     unsigned long nr_remaining;
+> > > +
+> > > +                     nr_remaining =
+> > invalidate_mapping_pages_check(mapping,
+> > >                                               start_index, end_index);
+> > >
+> > >                       /*
+> > > @@ -131,7 +133,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
+> > loff_t len, int advice)
+> > >                        * a per-cpu pagevec for a remote CPU. Drain all
+> > >                        * pagevecs and try again.
+> > >                        */
+> > > -                     if (count < (end_index - start_index + 1)) {
+> > > +                     if (nr_remaining) {
+> > >                               lru_add_drain_all();
+> > >                               invalidate_mapping_pages(mapping,
+> > start_index,
+> > >                                               end_index);
+> > > diff --git a/mm/truncate.c b/mm/truncate.c
+> > > index c75b736..86cfc2e 100644
+> > > --- a/mm/truncate.c
+> > > +++ b/mm/truncate.c
+> > > @@ -312,26 +312,16 @@ void truncate_inode_pages(struct address_space
+> > *mapping, loff_t lstart)
+> > >  }
+> > >  EXPORT_SYMBOL(truncate_inode_pages);
+> > >
+> > > -/**
+> > > - * invalidate_mapping_pages - Invalidate all the unlocked pages of one
+> > inode
+> > > - * @mapping: the address_space which holds the pages to invalidate
+> > > - * @start: the offset 'from' which to invalidate
+> > > - * @end: the offset 'to' which to invalidate (inclusive)
+> > > - *
+> > > - * This function only removes the unlocked pages, if you want to
+> > > - * remove all the pages of one inode, you must call
+> > truncate_inode_pages.
+> > > - *
+> > > - * invalidate_mapping_pages() will not block on IO activity. It will not
+> > > - * invalidate pages which are dirty, locked, under writeback or mapped
+> > into
+> > > - * pagetables.
+> > > - */
+> > > -unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > > -             pgoff_t start, pgoff_t end)
+> > > +static void __invalidate_mapping_pages(struct address_space *mapping,
+> > > +             pgoff_t start, pgoff_t end,
+> > > +             unsigned long *ret_nr_invalidated,
+> > > +             unsigned long *ret_nr_remaining)
+> > >  {
+> > >       struct pagevec pvec;
+> > >       pgoff_t index = start;
+> > >       unsigned long ret;
+> > > -     unsigned long count = 0;
+> > > +     unsigned long nr_invalidated = 0;
+> > > +     unsigned long nr_remaining = 0;
+> > >       int i;
+> > >
+> > >       /*
+> > > @@ -354,8 +344,10 @@ unsigned long invalidate_mapping_pages(struct
+> > address_space *mapping,
+> > >                       if (index > end)
+> > >                               break;
+> > >
+> > > -                     if (!trylock_page(page))
+> > > +                     if (!trylock_page(page)) {
+> > > +                             nr_remaining++;
+> > >                               continue;
+> > > +                     }
+> > >                       WARN_ON(page->index != index);
+> > >                       ret = invalidate_inode_page(page);
+> > >                       unlock_page(page);
+> > > @@ -365,17 +357,73 @@ unsigned long invalidate_mapping_pages(struct
+> > address_space *mapping,
+> > >                        */
+> > >                       if (!ret)
+> > >                               deactivate_page(page);
+> > > -                     count += ret;
+> > > +                     else
+> > > +                             nr_remaining++;
+> > > +                     nr_invalidated += ret;
+> > >               }
+> > >               pagevec_release(&pvec);
+> > >               mem_cgroup_uncharge_end();
+> > >               cond_resched();
+> > >               index++;
+> > >       }
+> > > -     return count;
+> > > +
+> > > +     *ret_nr_invalidated = nr_invalidated;
+> > > +     *ret_nr_remaining = nr_remaining;
+> > >  }
+> > >  EXPORT_SYMBOL(invalidate_mapping_pages);
+> > >
+> > > +/**
+> > > + * invalidate_mapping_pages - Invalidate all the unlocked pages of one
+> > inode
+> > > + * @mapping: the address_space which holds the pages to invalidate
+> > > + * @start: the offset 'from' which to invalidate
+> > > + * @end: the offset 'to' which to invalidate (inclusive)
+> > > + *
+> > > + * This function only removes the unlocked pages, if you want to
+> > > + * remove all the pages of one inode, you must call
+> > truncate_inode_pages.
+> > > + *
+> > > + * invalidate_mapping_pages() will not block on IO activity. It will not
+> > > + * invalidate pages which are dirty, locked, under writeback or mapped
+> > into
+> > > + * pagetables.
+> > > + *
+> > > + * Returns the number of pages invalidated
+> > > + */
+> > > +unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > > +             pgoff_t start, pgoff_t end)
+> > > +{
+> > > +     unsigned long nr_invalidated, nr_remaining;
+> > > +
+> > > +     __invalidate_mapping_pages(mapping, start, end,
+> > > +                                &nr_invalidated, &nr_remaining);
+> > > +
+> > > +     return nr_invalidated;
+> > > +}
+> > > +
+> > > +/**
+> > > + * invalidate_mapping_pages_check - Invalidate all the unlocked pages
+> > of one inode and check for remaining pages.
+> > > + * @mapping: the address_space which holds the pages to invalidate
+> > > + * @start: the offset 'from' which to invalidate
+> > > + * @end: the offset 'to' which to invalidate (inclusive)
+> > > + *
+> > > + * This function only removes the unlocked pages, if you want to
+> > > + * remove all the pages of one inode, you must call
+> > truncate_inode_pages.
+> > > + *
+> > > + * invalidate_mapping_pages() will not block on IO activity. It will not
+> > > + * invalidate pages which are dirty, locked, under writeback or mapped
+> > into
+> > > + * pagetables.
+> > > + *
+> > > + * Returns the number of pages remaining in the invalidated range
+> > > + */
+> > > +unsigned long invalidate_mapping_pages_check(struct address_space
+> > *mapping,
+> > > +             pgoff_t start, pgoff_t end)
+> > > +{
+> > > +     unsigned long nr_invalidated, nr_remaining;
+> > > +
+> > > +     __invalidate_mapping_pages(mapping, start, end,
+> > > +                                &nr_invalidated, &nr_remaining);
+> > > +
+> > > +     return nr_remaining;
+> > > +}
+> > > +
+> > >  /*
+> > >   * This is like invalidate_complete_page(), except it ignores the page's
+> > >   * refcount.  We do this because invalidate_inode_pages2() needs
+> > stronger
+> >
+> > --
+> > Mathieu Desnoyers
+> > EfficiOS Inc.
+> > http://www.efficios.com
+> >
+
 -- 
-1.7.1
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
