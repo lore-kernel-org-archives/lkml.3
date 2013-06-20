@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030322Ab3FTOtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:49:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47644 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030276Ab3FTOtJ (ORCPT
+	id S1757903Ab3FTPDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:03:34 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:44950 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757693Ab3FTPDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:49:09 -0400
-Date: Thu, 20 Jun 2013 07:48:45 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-003002e04ed38618fc37b92ba128f5ca79d39f4f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, fche@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        jlebon@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, fche@redhat.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, jlebon@redhat.com, tglx@linutronix.de
-In-Reply-To: <20130605031216.15285.2001.stgit@mhiramat-M0-7522>
-References: <20130605031216.15285.2001.stgit@mhiramat-M0-7522>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes:
-  Fix arch_prepare_kprobe to handle copy insn failures
-Git-Commit-ID: 003002e04ed38618fc37b92ba128f5ca79d39f4f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 20 Jun 2013 11:03:32 -0400
+Date: Thu, 20 Jun 2013 18:03:21 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Pavel Machek <pavel@denx.de>
+Cc: John Stultz <john.stultz@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: Re: [RFC PATCH 2/2] clocksource: dw_apb: allow build for
+ architectures other than arm
+Message-ID: <20130620150321.GH10269@tarshish>
+References: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
+ <51A51271.2070506@linaro.org>
+ <20130530053233.GL25186@sapphire.tkos.co.il>
+ <20130620144432.GA22115@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 07:48:52 -0700 (PDT)
+In-Reply-To: <20130620144432.GA22115@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  003002e04ed38618fc37b92ba128f5ca79d39f4f
-Gitweb:     http://git.kernel.org/tip/003002e04ed38618fc37b92ba128f5ca79d39f4f
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 5 Jun 2013 12:12:16 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 20 Jun 2013 14:25:48 +0200
+Hi Pavel,
 
-kprobes: Fix arch_prepare_kprobe to handle copy insn failures
+On Thu, Jun 20, 2013 at 04:44:33PM +0200, Pavel Machek wrote:
+> > > >@@ -73,6 +77,9 @@ static void add_clocksource(struct device_node 
+> > > >  *source_timer)
+> > > >  }
+> > > >  static void __iomem *sched_io_base;
+> > > >+#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
+> > > >+static u64 sched_clock_mult __read_mostly;
+> > > >+#endif
+> > > >  static u32 read_sched_clock(void)
+> > > >  {
+> > > >@@ -97,7 +104,11 @@ static void init_sched_clock(void)
+> > > >  	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
+> > > >  	of_node_put(sched_timer);
+> > > >+#ifdef CONFIG_HAVE_SETUP_SCHED_CLOCK
+> > > >  	setup_sched_clock(read_sched_clock, 32, rate);
+> > > >+#else
+> > > >+	sched_clock_mult = NSEC_PER_SEC / rate;
+> > > >+#endif
+> > > >  }
+> > > 
+> > > Can you rework this to not use #ifdefs within the function? They
+> > > make it annoying to read the code.
+> > > 
+> > > Instead maybe have a local setup_sched_clock() function that sets
+> > > the mult value for the !CONFIG_HAVE_SETUP_SCHED_CLOCK case?
+> > > 
+> > > >  static const struct of_device_id osctimer_ids[] __initconst = {
+> > > >@@ -124,3 +135,10 @@ void __init dw_apb_timer_init(void)
+> > > >  	init_sched_clock();
+> > > >  }
+> > > >+
+> > > >+#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
+> > > >+unsigned long long notrace sched_clock()
+> > > >+{
+> > > >+	return read_sched_clock() * sched_clock_mult;
+> > > >+}
+> > > >+#endif
+> > > 
+> > > Also, can you try to condense the number of #ifndef
+> > > CONFIG_HAVE_SETUP_SCHED_CLOCK checks to one, and consolidate the
+> > > needed functions all in that one conditional?
+> > 
+> > Thanks for your comments. I'll rework the patch and resubmit.
+> > 
+> > I've just noticed that I have a bigger problem. read_sched_clock() returns 
+> > u32, not u64. This means that in a rate of, say, 100MHz it will wrap around 
+> > after a little more than 40 seconds. Would it make sense to put ARM's 32 bin 
+> > sched_clock extension code (arch/arm/kernel/sched_clock.c) is a common place 
+> > (maybe drivers/clocksource), and use that? There seems to be nothing ARM 
+> > specific in this code, after all.
+> 
+> Also note that there are two conflicting changes to this area
+> pending. It seems one in soc-next arm tree will prevail.
+> 
+> Please take a look...
 
-Fix arch_prepare_kprobe() to handle failures in copy instruction
-correctly. This fix is related to the previous fix: 8101376
-which made __copy_instruction return an error result if failed,
-but caller site was not updated to handle it. Thus, this is the
-other half of the bugfix.
+Now that generic sched_clock implementation is available to all architectures 
+(38ff87f77 "sched_clock: Make ARM's sched_clock generic for all architectures" 
+in the timers/core branch of the tip tree) this patch is not needed anymore.
 
-This fix is also related to the following bug-report:
+Thanks for the head up.
 
-   https://bugzilla.redhat.com/show_bug.cgi?id=910649
+baruch
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Tested-by: Jonathan Lebon <jlebon@redhat.com>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: systemtap@sourceware.org
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20130605031216.15285.2001.stgit@mhiramat-M0-7522
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/kprobes/core.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 9895a9a..211bce4 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -365,10 +365,14 @@ int __kprobes __copy_instruction(u8 *dest, u8 *src)
- 	return insn.length;
- }
- 
--static void __kprobes arch_copy_kprobe(struct kprobe *p)
-+static int __kprobes arch_copy_kprobe(struct kprobe *p)
- {
-+	int ret;
-+
- 	/* Copy an instruction with recovering if other optprobe modifies it.*/
--	__copy_instruction(p->ainsn.insn, p->addr);
-+	ret = __copy_instruction(p->ainsn.insn, p->addr);
-+	if (!ret)
-+		return -EINVAL;
- 
- 	/*
- 	 * __copy_instruction can modify the displacement of the instruction,
-@@ -384,6 +388,8 @@ static void __kprobes arch_copy_kprobe(struct kprobe *p)
- 
- 	/* Also, displacement change doesn't affect the first byte */
- 	p->opcode = p->ainsn.insn[0];
-+
-+	return 0;
- }
- 
- int __kprobes arch_prepare_kprobe(struct kprobe *p)
-@@ -397,8 +403,8 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	p->ainsn.insn = get_insn_slot();
- 	if (!p->ainsn.insn)
- 		return -ENOMEM;
--	arch_copy_kprobe(p);
--	return 0;
-+
-+	return arch_copy_kprobe(p);
- }
- 
- void __kprobes arch_arm_kprobe(struct kprobe *p)
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
