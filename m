@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab3FTK2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 06:28:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:60775 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab3FTK2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 06:28:48 -0400
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: [v5][PATCH 0/6] powerpc/book3e: powerpc/book3e: make kgdb to work well
-Date: Thu, 20 Jun 2013 18:28:24 +0800
-Message-ID: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757623Ab3FTKa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 06:30:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755163Ab3FTKa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 06:30:56 -0400
+Date: Thu, 20 Jun 2013 18:30:48 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] timer stats: reset entries when disable the timer
+ usage statistics
+Message-ID: <20130620103048.GP8399@zhudong.nay.redhat.com>
+References: <20130610075745.GK8399@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610075745.GK8399@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
+On Mon, Jun 10, 2013 at 03:57:45PM +0800, Dong Zhu wrote:
+> From 4dbb760213856dc382241db456c1c6487694837c Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com>
+> Date: Mon, 10 Jun 2013 15:09:27 +0800
+> 
+> we can start/stop data collection by using :
+> echo [1|0] > /proc/timer_stats
+> when we stop the data collection,hrtimer will not update the statistics
+> for a timer any more,but we could still check the timer usage
+> statistics,unfortunately the data is not the latest, the inaccurate data
+> might make us confusing. So the purpose of this patch is to reset the
+> entries once disable operation is executed.In this way we will never
+> see the inaccurate timer usage statistics.
+> 
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  kernel/time/timer_stats.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+> index 0b537f2..43f05e7 100644
+> --- a/kernel/time/timer_stats.c
+> +++ b/kernel/time/timer_stats.c
+> @@ -371,6 +371,7 @@ static ssize_t tstats_write(struct file *file, const char __user *buf,
+>  	switch (ctl[0]) {
+>  	case '0':
+>  		if (timer_stats_active) {
+> +			reset_entries();
+>  			timer_stats_active = 0;
+>  			time_stop = ktime_get();
+>  			sync_access();
+> -- 
+> 1.7.11.7
 
-As you mention just now, I resend this another pending patch sets v5 used
-to support kgdb/gdb on book3e.
+Hi all,
 
-v5:
+Any comments here ?
 
-* rebase on merge branch.
-
-Note the original patch, [ATCH 5/7] kgdb/kgdbts: support ppc64, is already merged
-by Jason.
-
-v4:
-
-* use DEFINE_PER_CPU to allocate kgdb's thread_info
-* add patch 7 to make usre copy thread_info only !__check_irq_replay
-* leave "andi.   r14,r11,MSR_PR" out of "#ifndef CONFIG_KGDB"
-  since cr0 is still used lately.
-* retest
-
-v3:
-
-* make work when enable CONFIG_RELOCATABLE
-* fix one typo in patch,
-  "powerpc/book3e: store critical/machine/debug exception thread info": 
-	ld	r1,PACAKSAVE(r13);
-    ->  ld	r14,PACAKSAVE(r13);
-* remove copying the thread_info since booke and book3e always copy
-  the thead_info now when we enter the debug exception, and so drop
-  the v2 patch, "book3e/kgdb: Fix a single stgep case of lazy IRQ"
-
-v2:
-
-* Make sure we cover CONFIG_PPC_BOOK3E_64 safely
-* Use LOAD_REG_IMMEDIATE() to load properly
-	the value of the constant expression in load debug exception stack 
-* Copy thread infor form the kernel stack coming from usr
-* Rebase latest powerpc git tree
-
-v1:
-* Copy thread info only when we are from !user mode since we'll get kernel stack
-  coming from usr directly.
-* remove save/restore EX_R14/EX_R15 since DBG_EXCEPTION_PROLOG already covered
-  this.
-* use CURRENT_THREAD_INFO() conveniently to get thread.
-* fix some typos
-* add a patch to make sure gdb can generate a single step properly to invoke a
-  kgdb state.
-* add a patch to if we need to replay an interrupt, we shouldn't restore that
-  previous backup thread info to make sure we can replay an interrupt lately
-  with a proper thread info.
-* rebase latest powerpc git tree
-
-v0:
-This patchset is used to support kgdb for book3e.
-
-------
-Tiejun Chen (6):
-      powerpc/book3e: load critical/machine/debug exception stack
-      powerpc/book3e: store critical/machine/debug exception thread info
-      book3e/kgdb: update thread's dbcr0
-      powerpc/book3e: support kgdb for kernel space
-      powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's thread_info
-      book3e/kgdb: Fix a single stgep case of lazy IRQ
-
- arch/powerpc/kernel/exceptions-64e.S |   68 ++++++++++++++++++++++++++++++++--
- arch/powerpc/kernel/irq.c            |   10 +++++
- arch/powerpc/kernel/kgdb.c           |   21 +++++++----
- 3 files changed, 88 insertions(+), 11 deletions(-)
-
-Tiejun
+-- 
+Best Regards,
+Dong Zhu
