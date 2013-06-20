@@ -1,88 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935699Ab3FTDfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:35:03 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:59417 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935546Ab3FTDfB (ORCPT
+	id S935720Ab3FTDft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:35:49 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35499 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935546Ab3FTDfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:35:01 -0400
-Message-ID: <51C27855.8010905@huawei.com>
-Date: Thu, 20 Jun 2013 11:34:45 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 19 Jun 2013 23:35:47 -0400
+Message-ID: <51C27890.4070709@hitachi.com>
+Date: Thu, 20 Jun 2013 12:35:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
-        <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        <linux-doc@vger.kernel.org>, <linux-mm@kvack.org>,
-        Tejun Heo <tj@kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
-References: <1370967244-5610-1-git-send-email-athorlton@sgi.com> <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com> <20130618164537.GJ16067@sgi.com> <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com> <20130619093212.GX3658@sgi.com> <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v2 2/3] tracing/kprobes: Kill probe_enable_lock
+References: <20130616172149.GA8540@redhat.com> <51BE97C0.1070203@hitachi.com> <20130617151841.GA32267@redhat.com> <51BFD6EF.1060805@hitachi.com> <20130618192414.GA19488@redhat.com> <20130619203005.GA19750@redhat.com>
+In-Reply-To: <20130619203005.GA19750@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Tejun, and cgroup ML
-
->> Here are the entries in the cpuset:
->> cgroup.event_control  mem_exclusive    memory_pressure_enabled  notify_on_release         tasks
->> cgroup.procs          mem_hardwall     memory_spread_page       release_agent
->> cpu_exclusive         memory_migrate   memory_spread_slab       sched_load_balance
->> cpus                  memory_pressure  mems                     sched_relax_domain_level
+(2013/06/20 5:30), Oleg Nesterov wrote:
+> On 06/18, Oleg Nesterov wrote:
 >>
->> There are scheduler, slab allocator, page_cache layout, etc controls.
-> 
-> I think this is mostly for historical reasons since cpusets were 
-> introduced before cgroups.
-> 
->> Why _NOT_ add a thp control to that nicely contained central location?
->> It is a concise set of controls for the job.
+>> On 06/18, Masami Hiramatsu wrote:
+>>>
+>>> Oh, I agree with removing probe_enable_lock itself :)
+>>> I just concerned only about the exceptional case of __init test
+>>> function, which can mislead someone to use enable/disable_trace_probe
+>>> at other racy point.
 >>
-> 
-> All of the above seem to be for cpusets primary purpose, i.e. NUMA 
-> optimizations.  It has nothing to do with transparent hugepages.  (I'm not 
-> saying thp has anything to do with memcg either, but a "memory controller" 
-> seems more appropriate for controlling thp behavior.)
-> 
->> Maybe I am misunderstanding.  Are you saying you want to put memcg
->> information into the cpuset or something like that?
+>> Ah, understand.
 >>
+>> OK, I'll send v2 with the updated comments plus the additional patch
+>> tomorrow.
 > 
-> I'm saying there's absolutely no reason to have thp controlled by a 
-> cpuset, or ANY cgroup for that matter, since you chose not to respond to 
-> the question I asked: why do you want to control thp behavior for certain 
-> static binaries and not others?  Where is the performance regression or 
-> the downside?  Is it because of max_ptes_none for certain jobs blowing up 
-> the rss?  We need information, and even if were justifiable then it 
-> wouldn't have anything to do with ANY cgroup but rather a per-process 
-> control.  It has nothing to do with cpusets whatsoever.
+> So. I'll resend this series, will you ack the v2 below?
 > 
-> (And I'm very curious why you didn't even cc the cpusets maintainer on 
-> this patch in the first place who would probably say the same thing.)
-> .
+> I only added a couple of comments, the interdiff is
+> 
+> 	@@ -1202,6 +1202,12 @@ kretprobe_perf_func(struct trace_probe *
+> 	 }
+> 	 #endif	/* CONFIG_PERF_EVENTS */
+> 	 
+> 	+/*
+> 	+ * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
+> 	+ *
+> 	+ * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
+> 	+ * lockless, but we can't race with this __init function.
+> 	+ */
+> 	 static __kprobes
+> 	 int kprobe_register(struct ftrace_event_call *event,
+> 			    enum trace_reg type, void *data)
+> 	@@ -1367,6 +1373,10 @@ find_trace_probe_file(struct trace_probe
+> 		return NULL;
+> 	 }
+> 	 
+> 	+/*
+> 	+ * Nobody but us can call enable_trace_probe/disable_trace_probe at this
+> 	+ * stage, we can do this lockless.
+> 	+ */
+> 	 static __init int kprobe_trace_self_tests_init(void)
+> 	 {
+> 		int ret, warn = 0;
 
-Don't know whom you were refering to here. It's Paul Jackson who invented
-cpusets, and then Paul Menage took over the maintainership but he wasn't
-doing much maintainer's work. Now it's me and Tejun maintaining cpusets.
-(long ago Ingo once requested cpuset patches should be cced to him and
-Peter.)
+Looks good for me :)
 
-Back to this patch, I'm definitely on your side. This feature doesn't
-interact with existing cpuset features, and it doens't need anything
-that cpuset provides. In a word, it has nothing to do with cpusets hence
-it shouldn't belong to cpusets.
+> 
+> 3/3 was updated too, but the only change is s/list_add_rcu/list_add_tail_rcu/,
+> I won't spam the list but preserve your ack unless you object.
 
-We're clearing all the messes in cgroups, and this patch acts in the
-converse direction.
+OK, I think it's a minor change.
+
+> -------------------------------------------------------------------------------
+> Subject: [PATCH v2] tracing/kprobes: Kill probe_enable_lock
+> 
+> enable_trace_probe() and disable_trace_probe() should not worry about
+> serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
+> holds event_mutex.
+> 
+> They are also called by kprobe_trace_self_tests_init(), but this __init
+> function can't race with itself or trace_events.c
+> 
+> And note that this code depended on event_mutex even before 41a7dd420c
+> which introduced probe_enable_lock. In fact it assumes that the caller
+> kprobe_register() can never race with itself. Otherwise, say, tp->flags
+> manipulations are racy.
+> 
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_kprobe.c |   43 ++++++++++++++++++++-----------------------
+>  1 files changed, 20 insertions(+), 23 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index c0af476..3432652 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -183,16 +183,15 @@ static struct trace_probe *find_trace_probe(const char *event,
+>  	return NULL;
+>  }
+>  
+> +/*
+> + * This and enable_trace_probe/disable_trace_probe rely on event_mutex
+> + * held by the caller, __ftrace_set_clr_event().
+> + */
+>  static int trace_probe_nr_files(struct trace_probe *tp)
+>  {
+> -	struct ftrace_event_file **file;
+> +	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+>  	int ret = 0;
+>  
+> -	/*
+> -	 * Since all tp->files updater is protected by probe_enable_lock,
+> -	 * we don't need to lock an rcu_read_lock.
+> -	 */
+> -	file = rcu_dereference_raw(tp->files);
+>  	if (file)
+>  		while (*(file++))
+>  			ret++;
+> @@ -200,8 +199,6 @@ static int trace_probe_nr_files(struct trace_probe *tp)
+>  	return ret;
+>  }
+>  
+> -static DEFINE_MUTEX(probe_enable_lock);
+> -
+>  /*
+>   * Enable trace_probe
+>   * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+> @@ -211,8 +208,6 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  {
+>  	int ret = 0;
+>  
+> -	mutex_lock(&probe_enable_lock);
+> -
+>  	if (file) {
+>  		struct ftrace_event_file **new, **old;
+>  		int n = trace_probe_nr_files(tp);
+> @@ -223,7 +218,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  			      GFP_KERNEL);
+>  		if (!new) {
+>  			ret = -ENOMEM;
+> -			goto out_unlock;
+> +			goto out;
+>  		}
+>  		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+>  		new[n] = file;
+> @@ -247,10 +242,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		else
+>  			ret = enable_kprobe(&tp->rp.kp);
+>  	}
+> -
+> - out_unlock:
+> -	mutex_unlock(&probe_enable_lock);
+> -
+> + out:
+>  	return ret;
+>  }
+>  
+> @@ -283,8 +275,6 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  {
+>  	int ret = 0;
+>  
+> -	mutex_lock(&probe_enable_lock);
+> -
+>  	if (file) {
+>  		struct ftrace_event_file **new, **old;
+>  		int n = trace_probe_nr_files(tp);
+> @@ -293,7 +283,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		old = rcu_dereference_raw(tp->files);
+>  		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
+>  			ret = -EINVAL;
+> -			goto out_unlock;
+> +			goto out;
+>  		}
+>  
+>  		if (n == 1) {	/* Remove the last file */
+> @@ -304,7 +294,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  				      GFP_KERNEL);
+>  			if (!new) {
+>  				ret = -ENOMEM;
+> -				goto out_unlock;
+> +				goto out;
+>  			}
+>  
+>  			/* This copy & check loop copies the NULL stopper too */
+> @@ -327,10 +317,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+>  		else
+>  			disable_kprobe(&tp->rp.kp);
+>  	}
+> -
+> - out_unlock:
+> -	mutex_unlock(&probe_enable_lock);
+> -
+> + out:
+>  	return ret;
+>  }
+>  
+> @@ -1215,6 +1202,12 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  }
+>  #endif	/* CONFIG_PERF_EVENTS */
+>  
+> +/*
+> + * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
+> + *
+> + * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
+> + * lockless, but we can't race with this __init function.
+> + */
+>  static __kprobes
+>  int kprobe_register(struct ftrace_event_call *event,
+>  		    enum trace_reg type, void *data)
+> @@ -1380,6 +1373,10 @@ find_trace_probe_file(struct trace_probe *tp, struct trace_array *tr)
+>  	return NULL;
+>  }
+>  
+> +/*
+> + * Nobody but us can call enable_trace_probe/disable_trace_probe at this
+> + * stage, we can do this lockless.
+> + */
+>  static __init int kprobe_trace_self_tests_init(void)
+>  {
+>  	int ret, warn = 0;
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
