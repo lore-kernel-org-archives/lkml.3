@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3FTJNC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:13:02 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:52945 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab3FTJM7 (ORCPT
+	id S965106Ab3FTJN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:13:29 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:34296 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755966Ab3FTJNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:12:59 -0400
-Message-ID: <1371719574.3252.397.camel@edumazet-glaptop>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
- spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Jun 2013 02:12:54 -0700
-In-Reply-To: <51C2BF3C.8020804@asianux.com>
-References: <51C11E83.8030902@asianux.com>
-	 <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de>
-	 <51C17D01.2060208@asianux.com>
-	 <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de>
-	 <51C1861A.6030901@asianux.com>
-	 <alpine.DEB.2.02.1306191249260.4013@ionos.tec.linutronix.de>
-	 <51C2BF3C.8020804@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 20 Jun 2013 05:13:25 -0400
+Date: Thu, 20 Jun 2013 11:13:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130620091321.GB6811@gmail.com>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+ <20130619125243.GD11209@gmail.com>
+ <20130619130225.GA28311@pd.tnic>
+ <20130619130434.GB24957@gmail.com>
+ <20130619160804.GB27832@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130619160804.GB27832@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 16:37 +0800, Chen Gang wrote:
 
->  	spin_lock_irqsave(&lock, flags);
+* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+
+> On Wed, Jun 19, 2013 at 03:04:34PM +0200, Ingo Molnar wrote:
+> > * Borislav Petkov <bp@alien8.de> wrote:
+> > > And yet there are the Macs which reportedly cannot stomach this.
+> > 
+> > Do we know why?
 > 
->  is not semantically the same as
+> I got lost in a maze of pointer arithmetic. There seems to be an 
+> assumption that nvram writes should be forbidden if in runtime mode but 
+> with pointers still below the phys/virt split, which obviously makes no 
+> sense but hey.
 > 
->  	local_irq_save(flags);
->  	spin_lock(&lock);
-> 
-> It depend on the spin_lock_irqsave() implementation, if the parameters
-> has no relation ship with each other, semantically the same.
+> But, as always, the only reliable thing to do here is to behave as much 
+> like Windows as possible. [...]
 
-Of course all implementations must respect the blocks are
-totally the same.
+Amen ...
 
-Arguing about this is plain silly.
+> [...] Which means performing the 1:1 mapping but maintaining the high 
+> mapping, and passing the high values via SetVirtualAddressMap.
 
-If you found a buggy implementation, please fix it.
+Cool - and supposedly this will work in a Mac environment as well? Would 
+be very nice to avoid fundamentally fragile system specific quirks for 
+something as fundamental as the EFI runtime memory mapping model ...
 
+Thanks,
 
+	Ingo
