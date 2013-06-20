@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965179Ab3FTJNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:13:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58143 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965135Ab3FTJNb convert rfc822-to-8bit (ORCPT
+	id S965207Ab3FTJNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:13:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59857 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965135Ab3FTJNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:13:31 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH v3 2/4] MFD: Palmas: Add SMPS10_BOOST feature
-Thread-Topic: [PATCH v3 2/4] MFD: Palmas: Add SMPS10_BOOST feature
-Thread-Index: AQHObLILjlLW/j6cEU6iDfHBoqLR45k+BUNQ///GdICAAIby8A==
-Date: Thu, 20 Jun 2013 09:13:06 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229ECDCE@DBDE04.ent.ti.com>
-References: <1371621470-22279-1-git-send-email-j-keerthy@ti.com>
- <1371621470-22279-3-git-send-email-j-keerthy@ti.com>
- <DC88CAD03C0052499C1907B327FC63229ECC05@DBDE04.ent.ti.com>
- <20130620090737.GF15667@zurbaran>
-In-Reply-To: <20130620090737.GF15667@zurbaran>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jun 2013 05:13:41 -0400
+Date: Thu, 20 Jun 2013 11:13:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gang <gang.chen@asianux.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: timer: looping issue, need reset variable
+ 'found'
+In-Reply-To: <51C2BCB3.4060603@asianux.com>
+Message-ID: <alpine.DEB.2.02.1306201029390.4013@ionos.tec.linutronix.de>
+References: <51B4A408.4050909@asianux.com> <alpine.LFD.2.02.1306101501160.22970@ionos> <51C039A8.5000903@asianux.com> <alpine.DEB.2.02.1306200944530.4013@ionos.tec.linutronix.de> <51C2BCB3.4060603@asianux.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
-
-> -----Original Message-----
-> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
-> Sent: Thursday, June 20, 2013 2:38 PM
-> To: J, KEERTHY
-> Cc: broonie@kernel.org; ldewangan@nvidia.com;
-> grant.likely@secretlab.ca; swarren@nvidia.com; linux-
-> kernel@vger.kernel.org; linux-doc@vger.kernel.org; devicetree-
-> discuss@lists.ozlabs.org; gg@slimlogic.co.uk; linux-
-> omap@vger.kernel.org
-> Subject: Re: [PATCH v3 2/4] MFD: Palmas: Add SMPS10_BOOST feature
+On Thu, 20 Jun 2013, Chen Gang wrote:
+> On 06/20/2013 03:47 PM, Thomas Gleixner wrote:
+> -------------------------------------------------------------------------------
+> If we assume "If there is nothing in tv2 which might come before the
+> found timer, then any timer in tv3 will ..." is correct.
 > 
-> Hi,
-> 
-> On Thu, Jun 20, 2013 at 04:34:42AM +0000, J, KEERTHY wrote:
-> > > -----Original Message-----
-> > > From: J, KEERTHY
-> > > Sent: Wednesday, June 19, 2013 11:28 AM
-> > > To: linux-omap@vger.kernel.org
-> > > Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
-> > > sameo@linux.intel.com; grant.likely@secretlab.ca;
-> > > swarren@nvidia.com; linux-kernel@vger.kernel.org;
-> > > linux-doc@vger.kernel.org; devicetree- discuss@lists.ozlabs.org;
-> > > gg@slimlogic.co.uk
-> > > Subject: [PATCH v3 2/4] MFD: Palmas: Add SMPS10_BOOST feature
-> > >
-> > > From: J Keerthy <j-keerthy@ti.com>
-> > >
-> > > The SMPS10 regulator is not presesnt in all the variants of the
-> > > PALMAS PMIC family. Hence adding a feature to distingush between
-> them.
-> > >
-> >
-> > Could you please pull this patch?
-> I'm reverting this one for now as of_match_device is not define for
-> !CONFIG_OF.
+> When we found a timer in 'tv1', we will not search all timers in 'tv2'
+> (we only search first looping of tv2 for the specific 'slot').
 
-So the of_match_device parts can come under #ifdef CONFIG_OF?
+Yes, because that's how the timer wheel works. And I'm not going to
+explain you every little detail of it.
+ 
+> Is it still OK ?
 
-> 
-> Cheers,
-> Samuel.
-> 
-> --
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+Yes, it is. 
 
-Regards,
-Keerthy
+> If you do not want to discuss with others, better quite politely, not
+> need judging or checking others, it is useless for the cooperation with
+> each other, is it right ?  ;-)
+
+I discussed all your patches which fall into my area of responsibility
+with you and I explained to you very politely why your patches are
+incorrect.
+
+When I noticed, that you do not even understand how the timer wheel
+works in detail, which is necessary to understand why the code in
+__next_timer_interrupt() is correct, I asked you politely:
+
+> > Then I recommend that you to sit down and analyze the correctness of
+> > the code.
+
+And you answered:
+
+> That is only your recommend, not mean I have duty to.
+
+Right, it's only a recommendation. Though without proof of a failure,
+I'm not going to discuss that further and I'm not going to apply a
+patch.
+
+Thanks,
+
+	tglx
+
