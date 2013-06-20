@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935753Ab3FTDj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:39:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32169 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935661Ab3FTDgk (ORCPT
+	id S935771Ab3FTDkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:40:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47978 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935661Ab3FTDkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:36:40 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=22EiQ5FInTMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bzfvriLXiRUA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=ACiqJx0mWyVRsQkHO8IA:9 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=HoHcwx061DMkM95v:21 a=rD9T5Sjv4GvA7GZy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130620033639.086221025@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 19 Jun 2013 23:35:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, Wang YanQing <udknight@gmail.com>
-Subject: [for-next][PATCH 04/12] tracing: Fix file mode of free_buffer
-References: <20130620033516.003166252@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-Fix-file-mode-of-free_buffer.patch
+	Wed, 19 Jun 2013 23:40:42 -0400
+Date: Thu, 20 Jun 2013 13:40:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the wireless-next tree with the net
+ tree
+Message-Id: <20130620134032.8b7ae39298881c936338e7fb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Jun_2013_13_40_32_+1000_mlNf_MqL2LnsAacT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang YanQing <udknight@gmail.com>
+--Signature=_Thu__20_Jun_2013_13_40_32_+1000_mlNf_MqL2LnsAacT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Commit 4f271a2a60c748599b30bb4dafff30d770439b96
-(tracing: Add a proc file to stop tracing and free buffer)
-implement a method to free up ring buffer in kernel memory
-in the release code path of free_buffer's fd.
+Hi John,
 
-Then we don't need read/write support for free_buffer,
-indeed we just have a dummy write fop, and don't implement read fop.
+Today's linux-next merge of the wireless-next tree got a conflict in
+net/wireless/nl80211.c between commit 3a5a423bb958 ("nl80211: fix attrbuf
+access race by allocating a separate one") from the net tree and commit
+940d0ac9dbe3 ("cfg80211: fix rtnl leak in wiphy dump error cases") from
+the wireless-next tree.
 
-So the 0200 is more reasonable file mode for free_buffer than
-the current file mode 0644.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Link: http://lkml.kernel.org/r/20130526085201.GA3183@udknight
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Acked-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Acked-by: David Sharp <dhsharp@google.com>
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --cc net/wireless/nl80211.c
+index 51d660e,e402819..0000000
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@@ -1550,7 -1542,7 +1547,8 @@@ static int nl80211_dump_wiphy(struct sk
+ =20
+  			netdev =3D dev_get_by_index(sock_net(skb->sk), ifidx);
+  			if (!netdev) {
++ 				rtnl_unlock();
+ +				kfree(tb);
+  				return -ENODEV;
+  			}
+  			if (netdev->ieee80211_ptr) {
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 1a41023..5f4a09c 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5935,7 +5935,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
- 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
- 			  tr, &tracing_total_entries_fops);
- 
--	trace_create_file("free_buffer", 0644, d_tracer,
-+	trace_create_file("free_buffer", 0200, d_tracer,
- 			  tr, &tracing_free_buffer_fops);
- 
- 	trace_create_file("trace_marker", 0220, d_tracer,
--- 
-1.7.10.4
+--Signature=_Thu__20_Jun_2013_13_40_32_+1000_mlNf_MqL2LnsAacT
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRwnm0AAoJEECxmPOUX5FErdIP/1nP/6tNSyWKkCocOvWVhQU3
+HOuggcNQ1IGShvfr8VJmmOHDodzl0UzoKUh+oedL+f8ENoDiIjC+YVYDPbhEu0OR
+DTsHZdWpITu3PW83MEgk8HgT+j848Tf5QQP0Ti9QrBJTzJOykzNjbm/ZtYj6L03U
+t/dlwaxNR9LI3r/uTpWSS8pWzIyyb5WgVgGFDqq/jl9KASk+FXqCBBUbO7BkiBLm
+zrH7/R/MIfZP76ExprTj2OGLYc/NF8DNpPA8V9YVs2u/v5OBySzESvgaeZN6S2EF
+xxD4KagFH20Ws7tOm/z/x7z3V/SIEMx+jvYxHypJ9RHYGhWp1MxlS5k/MV1A0/n6
+zmk1w92JjqblZ+i1h9uxLrRxSaHMAEr2x4zB66boK1T+bMkZQliewDv8CjMWP6RB
+iErlAt4gis4S4ZUJXQazox2ELG8oP1obL+6XUNaYtpRN4neLNhuciEBVqtvOgWWV
+ZxSSFNMdgmCimAzDYavjtI9D7tD40dbH8EclhDcAKyT+lNgOvjgTZPORsCHVesBB
+8xgJgA7mAfvEptD/mbNO3LJEEcpKGwiwF6q2h17XNNP0DCRleXnbYFslXyyB0/HL
+Jg+k1ZlHa/vigABoS5OTXbhpk5eB3IY6iPDAuVl8KjWzi0hhTXxgx54n/S9m/dlr
+Lg5b6kmHDqBpL7DLdp4l
+=wGgO
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Jun_2013_13_40_32_+1000_mlNf_MqL2LnsAacT--
