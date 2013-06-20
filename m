@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab3FTRkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:40:20 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:44524 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab3FTRkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:40:18 -0400
+	id S1161179Ab3FTRBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:01:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36398 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758006Ab3FTRBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 13:01:33 -0400
+Date: Thu, 20 Jun 2013 19:01:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130620170124.GA19877@pd.tnic>
+References: <20130619160804.GB27832@srcf.ucam.org>
+ <20130620091321.GB6811@gmail.com>
+ <20130620091537.GA17159@srcf.ucam.org>
+ <20130620092237.GA6943@gmail.com>
+ <20130620093337.GI32694@pd.tnic>
+ <20130620094446.GA17882@srcf.ucam.org>
+ <1371740019.2372.3.camel@dabdike>
+ <20130620162916.GA25727@srcf.ucam.org>
+ <1371746775.2372.11.camel@dabdike>
+ <20130620165426.GB26214@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <87fvwirdej.fsf@rustcorp.com.au>
-References: <1371258778-12655-1-git-send-email-minipli@googlemail.com>
-	<87fvwirdej.fsf@rustcorp.com.au>
-Date: Thu, 20 Jun 2013 19:40:16 +0200
-Message-ID: <CA+rthh_J4LMnJLQt6qnQ=ieUD7CpBZBOMsthMMpOb-BkokQggQ@mail.gmail.com>
-Subject: Re: [PATCH v2] module: don't modify argument of module_kallsyms_lookup_name()
-From: Mathias Krause <minipli@googlemail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130620165426.GB26214@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 June 2013 04:35, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Mathias Krause <minipli@googlemail.com> writes:
->> If we pass a pointer to a const string in the form "module:symbol"
->> module_kallsyms_lookup_name() will try to split the string at the colon,
->> i.e., will try to modify r/o data. That will, in fact, fail on a kernel
->> with enabled CONFIG_DEBUG_RODATA.
->>
->> Avoid modifying the passed string in module_kallsyms_lookup_name(),
->> modify find_module_all() instead to pass it the module name length.
->>
->> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->
-> Applied, thanks.
+On Thu, Jun 20, 2013 at 05:54:26PM +0100, Matthew Garrett wrote:
+> On Thu, Jun 20, 2013 at 09:46:15AM -0700, James Bottomley wrote:
+> 
+> > Unless you can think of the way out of this, we seem to have the stark
+> > choice of behave like windows or allow kexec.  For the server market,
+> > kexec wins, so either we find a way not to have to make the choice or we
+> > do something automatic to make it fairly painless.
+> 
+> hpa suggested ensuring that UEFI regions are mapped at fixed high 
+> offsets. Someone who cares about kexec should probably make that happen.
 
-Mind to push it to
-git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git#modules-next
-as well, so it'll be included in linux-next?
+If we can detect the Macs, we can make this decision automatic. And
+since no Mac boots windoze, a single DMI check of the sort "if (Mac)"
+should suffice.
 
-Thanks,
-Mathias
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
