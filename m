@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161282Ab3FTRTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:19:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55198 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1161068Ab3FTRTc (ORCPT
+	id S1161197Ab3FTRBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:01:39 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:55213 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161182Ab3FTRBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:19:32 -0400
-Date: Thu, 20 Jun 2013 13:19:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: tony@atomide.com, <balbi@ti.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/6] Suspend USB Host controller on bus suspend
-In-Reply-To: <51C2F807.1000301@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1306201314160.2063-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Jun 2013 13:01:37 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] PCI: export three functions to support modular host bridge driver
+Date: Fri, 21 Jun 2013 01:01:03 +0800
+Message-Id: <1371747665-12768-2-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
+References: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Roger Quadros wrote:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-> >> As the omap-ehci controller driver needs to do some additional work to put
-> >> itself into suspend/resume and make sure it is resumed to process an interrupt,
-> >> we need to be able to override irq, bus_suspend, and bus_resume handlers. This
-> >> provision is done in patch 3.
-> > 
-> > Do you still need to override these things if you do the controller
-> > suspend at the right time?
-> > 
-> 
-> At least not for bus_suspend and bus_resume. We will still need to override the irq
-> handler though. But, if we can take care of this generically in the ehci_irq handler (i.e. make
-> sure controller is not suspended while accessing it) then we don't need such override
-> for irq.
+The xen-pcifront host bridge driver could be built as a module,
+so export pci_create_root_bus(), pci_stop_and_remove_root_bus() and
+pci_set_host_bridge_release() to support modular host bridge drivers.
+This patch is a preparation for coming xen-pcifront refinement.
 
-I don't think you need to override anything.  The high-level interrupt
-handler usb_hcd_irq() will avoid calling ehci_irq() when the
-HCD_HW_ACCESSIBLE flag isn't set.  All you will need to do in
-ehci-omap.c is call synchronize_irq() after ehci_suspend() returns and
-before turning off the clocks.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
+Cc: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pci/host-bridge.c | 1 +
+ drivers/pci/probe.c       | 1 +
+ drivers/pci/remove.c      | 7 +++++++
+ include/linux/pci.h       | 1 +
+ 4 files changed, 10 insertions(+)
 
-Alan Stern
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index a68dc61..6e390a6 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -34,6 +34,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+ 	bridge->release_fn = release_fn;
+ 	bridge->release_data = release_data;
+ }
++EXPORT_SYMBOL(pci_set_host_bridge_release);
+ 
+ static bool resource_contains(struct resource *res1, struct resource *res2)
+ {
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 46ada5c..ed768d8 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1801,6 +1801,7 @@ err_out:
+ 	kfree(b);
+ 	return NULL;
+ }
++EXPORT_SYMBOL(pci_create_root_bus);
+ 
+ int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+ {
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 8fc54b7..f328668 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -147,3 +147,10 @@ void pci_remove_root_bus(struct pci_bus *bus)
+ 	/* remove the host bridge */
+ 	put_device(&host_bridge->dev);
+ }
++
++void pci_stop_and_remove_root_bus(struct pci_bus *bus)
++{
++	pci_stop_root_bus(bus);
++	pci_remove_root_bus(bus);
++}
++EXPORT_SYMBOL(pci_stop_and_remove_root_bus);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..f1229c7 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -757,6 +757,7 @@ void pci_remove_bus(struct pci_bus *b);
+ void pci_stop_and_remove_bus_device(struct pci_dev *dev);
+ void pci_stop_root_bus(struct pci_bus *bus);
+ void pci_remove_root_bus(struct pci_bus *bus);
++void pci_stop_and_remove_root_bus(struct pci_bus *bus);
+ void pci_setup_cardbus(struct pci_bus *bus);
+ void pci_sort_breadthfirst(void);
+ #define dev_is_pci(d) ((d)->bus == &pci_bus_type)
+-- 
+1.8.1.2
 
