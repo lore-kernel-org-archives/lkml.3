@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab3FTG7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 02:59:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59033 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3FTG7d (ORCPT
+	id S1753929Ab3FTHBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:01:07 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:36492 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3FTHBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 02:59:33 -0400
-Date: Thu, 20 Jun 2013 08:59:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/itimer.c: for return value, using -EINVAL instead
- of -EFAULT
-In-Reply-To: <51C29FBC.1090507@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306200847300.4013@ionos.tec.linutronix.de>
-References: <51C29FBC.1090507@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Jun 2013 03:01:06 -0400
+Message-ID: <51C2A8AA.5010902@gmail.com>
+Date: Thu, 20 Jun 2013 15:00:58 +0800
+From: xiaoming gao <gxm.linux.kernel@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: stephen@networkplumber.org, davem@davemloft.net,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net bridge: add null pointer check, fix panic
+References: <51C2710D.2060405@gmail.com> <51C2721B.9050603@gmail.com> <1371704129.3252.356.camel@edumazet-glaptop>
+In-Reply-To: <1371704129.3252.356.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Chen Gang wrote:
+Eric Dumazet said, at 2013-6-20 12:55:
+> On Thu, 2013-06-20 at 11:08 +0800, xiaoming gao wrote:
+>> From: newtongao <newtongao@tencent.com>
+>> Date: Wed, 19 Jun 2013 14:58:33 +0800
+>> Subject: [PATCH] net bridge: add null pointer check,fix panic
+>>
+>> in kernel 3.0, br_port_get_rcu() may return NULL when network interface be deleting from bridge,
+>> but in function br_handle_frame and br_handle_local_finish, the pointer didn't be checked before using,
+>> so all br_port_get_rcu callers must do null check,or there occurs the null pointer panic.
+>>
+>> kernel 3.4 also has this bug,i have verified.
+>> mainline kernel still did not  check br_port_get_rcu()'s NULL pointer, but i have not tested it yet.
+> 
+> Please check current version before sending a patch.
+> 
+> This was most probably fixed in commit 00cfec37484761a44
+> ("net: add a synchronize_net() in netdev_rx_handler_unregister()")
+> 
+> Thanks
+> 
+> 
+HI Eric
+the problem is as follow:
+br_del_if()-->del_nbp():
 
-> For the system call getitimer(), if the parameter 'value' is NULL, need
-> return -EINVAL, not -EFAULT.
+list_del_rcu(&p->list);
+dev->priv_flags &= ~IFF_BRIDGE_PORT;
 
-Care to explain why? Because you are feeling so?
+------>at this point, the nic be deleting still have rx_handler , so , may in br_handle_frame()
+------>br_port_exists() will return false,so br_get_port_rcu() will return NULL
+------>so in br_handle_frame , there will be a null panic.
 
-I recommend reading the man page of getitimer:
+netdev_rx_handler_unregister(dev);
+synchronize_net();
 
- ERRORS
-       EFAULT new_value, old_value, or curr_value is not valid a pointer.
 
-And NULL is definitely NOT a valid pointer.
+i have checked commit 00cfec37484761a44, i think it didn't fix this bug..
 
-The Posix spec does not specify an explicit error value for this
-syscall, but the general policy is:
-
-[EFAULT]
-    Bad address. The system detected an invalid address in attempting
-    to use an argument of a call. The reliable detection of this error
-    cannot be guaranteed, and when not detected may result in the
-    generation of a signal, indicating an address violation, which is
-    sent to the process.
-
-And we made use of this, which is correct and makes sense.
-
-Returning EINVAL makes no sense at all, because EINVAL _IS_ a
-specified error code for this syscall:
-
-[EINVAL]
-        The which argument is not recognized.
-
-Thanks,
-
-	tglx
+thanks.
