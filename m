@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965571Ab3FTN6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:58:31 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:44408 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965093Ab3FTN62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:58:28 -0400
-Date: Thu, 20 Jun 2013 13:58:27 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 2/2] mm: add sysctl to pick vmstat monitor cpu
-In-Reply-To: <1371672168-9869-2-git-send-email-gilad@benyossef.com>
-Message-ID: <0000013f61e10d68-d5ca253d-d14f-4547-8291-aafa6b596ed7-000000@email.amazonses.com>
-References: <CAOtvUMc5w3zNe8ed6qX0OOM__3F_hOTqvFa1AkdXF0PHvzGZqg@mail.gmail.com> <1371672168-9869-2-git-send-email-gilad@benyossef.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1030284Ab3FTOFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:05:16 -0400
+Received: from 8bytes.org ([85.214.48.195]:35070 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965093Ab3FTOFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:05:14 -0400
+Date: Thu, 20 Jun 2013 16:05:11 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, galak@kernel.crashing.org,
+        benh@kernel.crashing.org, stuart.yoder@freescale.com,
+        scottwood@freescale.com
+Subject: Re: [PATCH 1/2 v15] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Message-ID: <20130620140511.GT2575@8bytes.org>
+References: <1366803351-17429-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.20-54.240.9.62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366803351-17429-1-git-send-email-Varun.Sethi@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun 20 16:05:13 2013
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c30c1920866169210981
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jun 2013, Gilad Ben-Yossef wrote:
+Varun,
 
-> Add a sysctl knob to enable admin to hand pick the scapegoat cpu
-> that will perform the extra work of preiodically checking for
-> new VM activity on CPUs that have switched off their vmstat_update
-> work item schedling.
+On Wed, Apr 24, 2013 at 05:05:50PM +0530, Varun Sethi wrote:
+> Added the following domain attributes for the FSL PAMU driver:
+> 1. Added new iommu stash attribute, which allows setting of the
+>    LIODN specific stash id parameter through IOMMU API.
+> 2. Added an attribute for enabling/disabling DMA to a particular
+>    memory window.
+> 3. Added domain attribute to check for PAMUV1 specific constraints.
+> 
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 
-Not necessary if we use the dynticks sacrificial processor
-(boot cpu). Seems to be also used for RCU.
+Can you please rebase the driver tp v3.10-rc6 and resend asap? I will
+give it another review then and request AlexW to look over the
+iommu-group stuff. So we can probably get this merged for v3.11.
+
+
+Thank,
+
+	Joerg
+
 
