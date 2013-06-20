@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab3FTSfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:35:45 -0400
-Received: from sauhun.de ([89.238.76.85]:45762 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758034Ab3FTSfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:35:43 -0400
-Date: Thu, 20 Jun 2013 20:37:46 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [RFC] i2c: add deprecation warning for class based instantiation
-Message-ID: <20130620183745.GA2961@katana>
-References: <20130607090623.GC3428@katana>
- <1370596166-12404-1-git-send-email-wsa@the-dreams.de>
- <20130619101526.GF2950@katana>
- <51C1F6BF.4030200@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
-Content-Disposition: inline
-In-Reply-To: <51C1F6BF.4030200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935485Ab3FTOKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:10:50 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:51107 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030355Ab3FTOKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:10:47 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel@stlinux.com, linux-serial@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>
+Subject: [PATCH v3 07/10] ARM:multi_v7_defconfig: rerun savedefconfig
+Date: Thu, 20 Jun 2013 15:06:27 +0100
+Message-Id: <1371737187-9516-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch is generated after re-running savedefconfig on top of
+multi_v7_defconfig which gets rid of some of the options, as they are
+now slected by mach level or other Kconfigs.
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The reason to generate this patch is because, it becomes confusing when
+some of these options dissapear as part of new SOC addition to
+multi_v7_defconfig.
+I wanted this to be in a seperate patch, as these options are not
+related any of the new SOC support.
 
-Hi,
+Already some discussion at:https://patchwork.kernel.org/patch/2696481
 
-> Sorry, for delayed reply - I've had problems with my e-mail.
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ arch/arm/configs/multi_v7_defconfig |   29 ++++++++++++-----------------
+ 1 files changed, 12 insertions(+), 17 deletions(-)
 
-You still have. This message has unwanted linebreaks.
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 2e67a27..f2b4957 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -1,23 +1,20 @@
+-CONFIG_EXPERIMENTAL=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_ARCH_MVEBU=y
+ CONFIG_MACH_ARMADA_370=y
+-CONFIG_ARCH_SIRF=y
+ CONFIG_MACH_ARMADA_XP=y
+ CONFIG_ARCH_HIGHBANK=y
+ CONFIG_ARCH_SOCFPGA=y
+-CONFIG_ARCH_SUNXI=y
+-CONFIG_ARCH_WM8850=y
+-# CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
+-CONFIG_ARCH_ZYNQ=y
+-CONFIG_ARM_ERRATA_754322=y
+ CONFIG_PLAT_SPEAR=y
+ CONFIG_ARCH_SPEAR13XX=y
+ CONFIG_MACH_SPEAR1310=y
+ CONFIG_MACH_SPEAR1340=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_ARCH_SIRF=y
++CONFIG_ARCH_WM8850=y
++CONFIG_ARCH_ZYNQ=y
++CONFIG_ARM_ERRATA_754322=y
+ CONFIG_SMP=y
+-CONFIG_ARM_ARCH_TIMER=y
+ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+ CONFIG_HIGHPTE=y
+@@ -27,25 +24,25 @@ CONFIG_NEON=y
+ CONFIG_NET=y
+ CONFIG_BLK_DEV_SD=y
+ CONFIG_ATA=y
++CONFIG_SATA_AHCI_PLATFORM=y
+ CONFIG_SATA_HIGHBANK=y
+ CONFIG_SATA_MV=y
+-CONFIG_SATA_AHCI_PLATFORM=y
+ CONFIG_NETDEVICES=y
+ CONFIG_NET_CALXEDA_XGMAC=y
+ CONFIG_SMSC911X=y
+ CONFIG_STMMAC_ETH=y
++CONFIG_KEYBOARD_SPEAR=y
+ CONFIG_SERIO_AMBAKMI=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_8250_DW=y
+-CONFIG_KEYBOARD_SPEAR=y
+ CONFIG_SERIAL_AMBA_PL011=y
+ CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+-CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_SERIAL_SIRFSOC=y
+ CONFIG_SERIAL_SIRFSOC_CONSOLE=y
+ CONFIG_SERIAL_VT8500=y
+ CONFIG_SERIAL_VT8500_CONSOLE=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_IPMI_HANDLER=y
+ CONFIG_IPMI_SI=y
+ CONFIG_I2C=y
+@@ -54,7 +51,6 @@ CONFIG_I2C_SIRF=y
+ CONFIG_SPI=y
+ CONFIG_SPI_PL022=y
+ CONFIG_SPI_SIRF=y
+-CONFIG_GPIO_PL061=y
+ CONFIG_FB=y
+ CONFIG_FB_ARMCLCD=y
+ CONFIG_FB_WM8505=y
+@@ -67,7 +63,6 @@ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+ CONFIG_MMC_SDHCI_SPEAR=y
+-CONFIG_MMC_WMT=y
+ CONFIG_EDAC=y
+ CONFIG_EDAC_MM_EDAC=y
+ CONFIG_EDAC_HIGHBANK_MC=y
+@@ -75,9 +70,9 @@ CONFIG_EDAC_HIGHBANK_L2=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_PL031=y
+ CONFIG_RTC_DRV_VT8500=y
+-CONFIG_PWM=y
+-CONFIG_PWM_VT8500=y
+ CONFIG_DMADEVICES=y
+-CONFIG_PL330_DMA=y
+-CONFIG_SIRF_DMA=y
+ CONFIG_DW_DMAC=y
++CONFIG_SIRF_DMA=y
++CONFIG_PL330_DMA=y
++CONFIG_PWM=y
++CONFIG_PWM_VT8500=y
+-- 
+1.7.6.5
 
-> I've tested this patch on our TI K3.4 product kernel with additional
-> change below:
-
-Thanks.
-
-> [    0.662567]  (null): This adapter will soon drop class based
-> instantiation of slaves
->                 ^^^^^ invalid adapter device name here
-
-Good point, thanks! Will send an updated patch in a minute.
-
-> In addition, I've found the following users of *i2c-gpio* (just FYI):
-
-Ehrm, okay, and why exactly did you post it? :)
-
-Regards,
-
-   Wolfram
-
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRw0v5AAoJEBQN5MwUoCm21HUQAKIJDSWJxSTcYBvXihSEXNlp
-qF/TM0jQGvuWhKBLMuQW4z0HVFTfuxzCa9pvXwRkROfA5o464txZ4H7lqsmkEuTy
-PgKiUpNbqdSwt3s6dP8LwI4l5PQqcYYOd87iD8NYZXNoDOoPvHxtAjjFb+OlQj9e
-YjbQYpPw2bfuPyXCpQfMh0WwjgtjXfmBOA34UvBbwFZt+hH+bqXIIMKk9uwpeFRF
-YX2GOTZON+EoDEAGXeC+XFrgSC40mtX4X62Bnqw9SQKxvAe0DnWJbdcSAol3tOys
-q5EJH7kC2kmkC9XSEsBMaSqCOXwtbRhlQVEQJ8nkXk98FbzY17Cm6QICPJ1o+24B
-1cbmQ5u3qAHb0+2FZqM03G2HquoPWk/xP9Qoy5TYg80xVHKaQgo7R1l7gHtA8otM
-AIbxOMm0uIH0ta4JHxCchML5c4KnTXkAz9VD3+kSLEzO66xQoMSiQFAnQH+4mQMS
-FiPTUg2/g/r6o/qNZpzoq9pC5+Otq+BJofq+G68Euqdkpxl8fm5eGyW74cBYXxpA
-+1NYLyYbVBYPdcRbTKq3j/vA0Nqvrwde79x0in90KVglUioRn2qP5bubcTosBbOF
-R9TjasqqlPPnn/1ltPd0fatDMWKEOLr8Xy5Xhsli3ztFiNbcXWN0rrDt2ugYqPG8
-Eb8hD6DcZPeQj68094cA
-=Egiz
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
