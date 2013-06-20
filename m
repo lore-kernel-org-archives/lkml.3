@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161179Ab3FTRBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:01:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36398 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758006Ab3FTRBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:01:33 -0400
-Date: Thu, 20 Jun 2013 19:01:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130620170124.GA19877@pd.tnic>
-References: <20130619160804.GB27832@srcf.ucam.org>
- <20130620091321.GB6811@gmail.com>
- <20130620091537.GA17159@srcf.ucam.org>
- <20130620092237.GA6943@gmail.com>
- <20130620093337.GI32694@pd.tnic>
- <20130620094446.GA17882@srcf.ucam.org>
- <1371740019.2372.3.camel@dabdike>
- <20130620162916.GA25727@srcf.ucam.org>
- <1371746775.2372.11.camel@dabdike>
- <20130620165426.GB26214@srcf.ucam.org>
+	id S965610Ab3FTROb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:14:31 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:34444 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965198Ab3FTRO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 13:14:29 -0400
+Message-ID: <51C3386F.5050009@gmail.com>
+Date: Fri, 21 Jun 2013 01:14:23 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130620165426.GB26214@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 3/3] PCI: mark pci_scan_bus_parented() as __deprecated
+References: <1371747665-12768-1-git-send-email-liuj97@gmail.com> <1371747665-12768-4-git-send-email-liuj97@gmail.com> <20130620170855.GA21465@kroah.com>
+In-Reply-To: <20130620170855.GA21465@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 05:54:26PM +0100, Matthew Garrett wrote:
-> On Thu, Jun 20, 2013 at 09:46:15AM -0700, James Bottomley wrote:
+On 06/21/2013 01:08 AM, Greg Kroah-Hartman wrote:
+> On Fri, Jun 21, 2013 at 01:01:05AM +0800, Jiang Liu wrote:
+>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Mark pci_scan_bus_parented() as __deprecated and clean up outdated
+>> comments.
 > 
-> > Unless you can think of the way out of this, we seem to have the stark
-> > choice of behave like windows or allow kexec.  For the server market,
-> > kexec wins, so either we find a way not to have to make the choice or we
-> > do something automatic to make it fairly painless.
+> Why not just delete the function, if no in-kernel users are calling it,
+> it's no longer needed at all.
+Hi Greg,
+I thought that may break out of tree drivers, so give a warning first
+for smooth transitions. Any guidelines here? I have some other similar
+cases to keep some exported symbols just for out of tree drivers.
+Regards!
+Gerry
+
 > 
-> hpa suggested ensuring that UEFI regions are mapped at fixed high 
-> offsets. Someone who cares about kexec should probably make that happen.
+> thanks,
+> 
+> greg k-h
+> 
 
-If we can detect the Macs, we can make this decision automatic. And
-since no Mac boots windoze, a single DMI check of the sort "if (Mac)"
-should suffice.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
