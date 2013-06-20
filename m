@@ -1,135 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab3FTP4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:56:09 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59831 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab3FTP4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:56:06 -0400
-Date: Thu, 20 Jun 2013 11:55:55 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Younger Liu <younger.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        Ocfs2-Devel <ocfs2-devel@oss.oracle.com>,
-        Li Zefan <lizefan@huawei.com>, jack@suse.cz
-Subject: Re: [PATCH] fs/jbd2: t_updates should increase when
- start_this_handle() failed in jbd2__journal_restart()
-Message-ID: <20130620155555.GE28309@thunk.org>
-References: <51C1381A.2@huawei.com>
+	id S1757541Ab3FTOY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:24:56 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53514 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753541Ab3FTOYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:24:55 -0400
+Date: Thu, 20 Jun 2013 09:23:28 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv13 3/4] zswap: add to mm/
+Message-ID: <20130620142328.GA9461@cerebellum>
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1370291585-26102-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <CAA_GA1eWFYDxp3gEdWzajVP4jMpmJbt=oWBZYqZEQjndU=s_Qg@mail.gmail.com>
+ <20130620023750.GA1194@cerebellum>
+ <CAA_GA1c8cH1fu9jHk8evKZvK-gpQ+c8NEp5=_jDLKPcMbG_ufA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51C1381A.2@huawei.com>
+In-Reply-To: <CAA_GA1c8cH1fu9jHk8evKZvK-gpQ+c8NEp5=_jDLKPcMbG_ufA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062014-7182-0000-0000-0000076F4127
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ LKML and linux-fsdevel BCC'ed ]
-
-On Wed, Jun 19, 2013 at 12:48:26PM +0800, Younger Liu wrote:
-> jbd2_journal_restart() would restart a handle. In this function, it
-> calls start_this_handle(). Before calling start_this_handle()，subtract
-> 1 from transaction->t_updates.
-> If start_this_handle() succeeds, transaction->t_updates increases by 1
-> in it. But if start_this_handle() fails, transaction->t_updates does
-> not increase.
-> So, when commit the handle's transaction in jbd2_journal_stop(), the
-> assertion is false, and then trigger a bug.
-> The assertion is as follows:
-> J_ASSERT(atomic_read(&transaction->t_updates) > 0) 
+On Thu, Jun 20, 2013 at 05:42:04PM +0800, Bob Liu wrote:
+> > Just made a mmtests run of my own and got very different results:
+> >
 > 
-> Signed-off-by: Younger Liu <younger.liu@huawei.com>
+> It's strange, I'll update to rc6 and try again.
+> By the way, are you using 824 hardware compressor instead of lzo?
 
-Thanks for pointing out this potential problem.  Your fix isn't quite
-the right one, however.
+My results where using lzo software compression.
 
-The problem is once we get to this point, the transaction pointer may
-no longer be valid, since once we decrement t_updates, the transaction
-could start commiting, and so we should not actually dereference the
-transaction pointer after we unlock transaction->t_handle_lock.  (We
-are referencing t_tid two lines later, and technically that's a bug.
-We've just been getting lucky.)
+Seth
 
-The real issue is that by the time we call start_this_handle() in
-jbd2__journal_restart, the handle is not attached to any transaction.
-So if jbd2_journal_restart() fails, the handle has to be considered
-invalid, and the calling code should not try to use the handle at all,
-including calling jbd2_journal_stop().
-
-Jan Kara is I believe currently on vacation but I'd really like him to
-chime in with his opinion about the best way to fix this, since he's
-also quite familiar with the jbd2 code.
-
-Also, Jan has recently submitted changes to implement reserved handles
-(to be submitted in the next merge window), and in these new
-functions, if start_this_handle() fails when called from
-jbd2_journal_start_reserved(), the handle is left invalidated, and the
-caller of jbd2_journal_start_reserved() must not touch the handle
-again, including calling jbd2_journal_stop() --- in fact, because
-jbd2_journal_start_reserved() clears current->journal_info on failure,
-an attempt to call jbd2_journal_stop() will result in the kernel oops
-due to an assertion failure.
-
-My inclination is to fix this in the same way, but it will require
-changing the current code paths that use jbd2_journal_restart(), and
-in some cases passing back the state that the handle is now invalid
-and should not be released via jbd2_journal_stop() is going to be
-tricky indeed.
-
-
-Another possible fix is to set the handle to be aborted, via
-jbd2_journal_abort_handle().  This function isn't used at all at the
-moment, but from what I can tell this should do the right thing.  The
-one unfortunate thing about this is that when jbd2_journal_stop() gets
-called, it will return EROFS, which is a misleading error code.  I'm
-guessing you're seeing this because start_this_handle() returned
-ENOMEM, correct?  We could hack around this by stashing the real error
-in the handle, and then change jbd2_journal_stop() to return that
-error instead of EROFS if it is set.
-
-This second solution is hacky all-around, and it's also inconsistent
-with how we are doing things with jbd2_journal_start_reserved().  So
-I'm not so happy with this solution.  But it would require a lot less
-work because the fix would be isolated in the jbd2 layer.  OTOH, right
-now if the code calls jbd2_journal_stop() on the handle after a
-failure in jbd2_journal_start_reserved(), they are crashing anyway, so
-changing the code so it changes with an assertion failure doesn't make
-things any worse, and then we fix things in ext4 and ocfs2 without any
-patch interdependencies --- and this is a problem which appears to
-happen very rarely in practice.
-
-(How did you manage to trigger this, BTW?  Was this something you
-noticed by manual code inspection?  Or are you instrumenting the
-kernel's memory allocators to occasionally fail to test our error
-paths?  Or were you running in a system with very heavy memory
-pressure?)
-
-						- Ted
-
-
-
-> ---
->  fs/jbd2/transaction.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-> index 325bc01..9ddb444 100644
-> --- a/fs/jbd2/transaction.c
-> +++ b/fs/jbd2/transaction.c
-> @@ -530,6 +530,8 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, gfp_t gfp_mask)
->  	lock_map_release(&handle->h_lockdep_map);
->  	handle->h_buffer_credits = nblocks;
->  	ret = start_this_handle(journal, handle, gfp_mask);
-> +	if (ret < 0)
-> +		atomic_inc(&transaction->t_updates);
->  	return ret;
->  }
->  EXPORT_SYMBOL(jbd2__journal_restart);
-> -- 
-> 1.7.9.7
-> 
