@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965137Ab3FTJXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:23:42 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:55313 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757400Ab3FTJXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:23:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <51C2B47A.6010906@monstr.eu>
-References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
-	<CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com>
-	<51A8387C.4030704@monstr.eu>
-	<CACRpkdbHiaK6YPgXyxNgEeZxAsddK4x0vS-q3YfyXnj_BgHvuw@mail.gmail.com>
-	<51A852A1.7020505@monstr.eu>
-	<CACRpkdbL4pqiF8zxMi28SRTJ9AESiFt0wJMhK1oBio_cfFhpsQ@mail.gmail.com>
-	<51C2B47A.6010906@monstr.eu>
-Date: Thu, 20 Jun 2013 11:23:36 +0200
-Message-ID: <CACRpkdbWXFLgcUJ-gcUArRotJMoX4JBU9mmheooJBWsLR=QHOA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965216Ab3FTJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:24:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12721 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965024Ab3FTJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 05:24:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,903,1363158000"; 
+   d="scan'208";a="332633975"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: tony.luck@intel.com, bp@alien8.de
+Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH] x86/MCE: Update MCE severity condition check
+Date: Thu, 20 Jun 2013 05:16:12 -0400
+Message-Id: <1371719773-27572-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 9:51 AM, Michal Simek <monstr@monstr.eu> wrote:
-> On 06/17/2013 07:29 AM, Linus Walleij wrote:
+Update some SRAR severity conditions check to make it clearer,
+according to latest Intel SDM Vol 3(June 2013), table 15-20.
 
->> I think of_property_read_bool() will accept
->> xlnx,is-dual = <1>; to mean the same as xlnx,is-dual;
->> try it.
->
-> First of all sorry for delay.
-> You are right that of_property_read_bool()
-> also accept xlnx,is-dual = <1>;
-> but also accept and return 1 when xlnx,is-dual = <0>;
-> which is incorrect behaviour.
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-OK but that is a coding issue, not a DT bindings design issue.
-Can't we think a bit outside the box?
-What about something like this:
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index beb1f16..1fa12ea 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -110,22 +110,17 @@ static struct severity {
+ 	/* known AR MCACODs: */
+ #ifdef	CONFIG_MEMORY_FAILURE
+ 	MCESEV(
+-		KEEP, "HT thread notices Action required: data load error",
+-		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
+-		MCGMASK(MCG_STATUS_EIPV, 0)
++		KEEP, "Action required but non-affected thread is continuable",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR),
++		MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
+ 		),
+ 	MCESEV(
+-		AR, "Action required: data load error",
++		AR, "Action required: data load error on user land",
+ 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
+ 		USER
+ 		),
+ 	MCESEV(
+-		KEEP, "HT thread notices Action required: instruction fetch error",
+-		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_INSTR),
+-		MCGMASK(MCG_STATUS_EIPV, 0)
+-		),
+-	MCESEV(
+-		AR, "Action required: instruction fetch error",
++		AR, "Action required: instruction fetch error on user land",
+ 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_INSTR),
+ 		USER
+ 		),
+-- 
+1.7.10.4
 
-static bool is_dual (struct device_node *np)
-{
-    struct property *prop = of_find_property(np, "xlnx,is-dual", NULL);
-    int ret;
-    u32 val;
-
-    if (!prop)
-        return false;
-
-    ret = of_property_read_u32(np, "xlnx,is-dual", &val);
-    if (ret < 0)
-        return true; /* node exists but has no cells */
-
-    return !!val;
-}
-
-Yours,
-Linus Walleij
