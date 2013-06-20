@@ -1,84 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965381Ab3FTMfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:35:06 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:48155 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965039Ab3FTMfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:35:04 -0400
-Date: Thu, 20 Jun 2013 14:34:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Tobias Waldekranz <tobias@waldekranz.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] timekeeping: handle epoch roll-over (2038) on 32-bit
- systems
-Message-ID: <20130620123459.GA17359@gmail.com>
-References: <CAFaRD2FP0rrQstV1GszP_URO+cZZuQdyRxOYUEmA+5BvopUAvQ@mail.gmail.com>
- <alpine.LFD.2.02.1306031622520.2905@ionos>
- <51ACE8AE.2090809@linaro.org>
- <alpine.LFD.2.02.1306072308040.24812@ionos>
+	id S1757350Ab3FTMf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:35:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57064 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab3FTMf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:35:56 -0400
+Message-ID: <51C2F70A.3040708@ti.com>
+Date: Thu, 20 Jun 2013 15:35:22 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1306072308040.24812@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <balbi@ti.com>
+CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-5-git-send-email-rogerq@ti.com> <20130620121151.GD9817@arwen.pp.htv.fi>
+In-Reply-To: <20130620121151.GD9817@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/20/2013 03:11 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Jun 19, 2013 at 05:05:51PM +0300, Roger Quadros wrote:
+>> Runtime suspend the controller during bus suspend and resume it
+>> during bus resume. This will ensure that the USB Host power domain
+>> enters lower power state and does not prevent the SoC from
+>> endering deeper sleep states.
+>>
+>> Remote wakeup will come up as an interrupt while the controller
+>> is suspended, so tackle it carefully using a workqueue.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  drivers/usb/host/ehci-omap.c |   82 ++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 82 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+>> index 16d7150..91f14f1 100644
+>> --- a/drivers/usb/host/ehci-omap.c
+>> +++ b/drivers/usb/host/ehci-omap.c
+>> @@ -44,6 +44,8 @@
+>>  #include <linux/usb/hcd.h>
+>>  #include <linux/of.h>
+>>  #include <linux/dma-mapping.h>
+>> +#include <linux/workqueue.h>
+>> +#include <linux/spinlock.h>
+>>  
+>>  #include "ehci.h"
+>>  
+>> @@ -69,6 +71,7 @@ static const char hcd_name[] = "ehci-omap";
+>>  struct omap_hcd {
+>>  	struct usb_phy *phy[OMAP3_HS_USB_PORTS]; /* one PHY for each port */
+>>  	int nports;
+>> +	struct work_struct work;
+>>  };
+>>  
+>>  static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
+>> @@ -81,6 +84,76 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
+>>  	return __raw_readl(base + reg);
+>>  }
+>>  
+>> +static void omap_ehci_work(struct work_struct *work)
+>> +{
+>> +	struct omap_hcd *omap = container_of(work, struct omap_hcd, work);
+>> +	struct ehci_hcd *ehci = container_of((void *) omap,
+>> +						struct ehci_hcd, priv);
+>> +	struct usb_hcd *hcd = ehci_to_hcd(ehci);
+>> +	struct device *dev = hcd->self.controller;
+>> +
+>> +	pm_runtime_get_sync(dev);
+>> +	enable_irq(hcd->irq);
+>> +	/*
+>> +	 * enable_irq() should preempt us with a pending IRQ
+>> +	 * so we can be sure that IRQ handler completes before
+>> +	 * we call pm_runtime_put_sync()
+>> +	 */
+>> +	pm_runtime_put_sync(dev);
+>> +}
+>> +
+>> +static irqreturn_t omap_ehci_irq(struct usb_hcd *hcd)
+>> +{
+>> +	struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
+>> +	struct device *dev = hcd->self.controller;
+>> +	irqreturn_t ret;
+>> +
+>> +	if (pm_runtime_suspended(dev)) {
+>> +		schedule_work(&omap->work);
+>> +		disable_irq_nosync(hcd->irq);
+>> +		ret = IRQ_HANDLED;
+> 
+> looks like this could be done as:
+> 
+> if (pm_runtime_suspended(dev)) {
+> 	pm_runtime_get(dev);
+> 	omap->flags |= OMAP_EHCI_IRQ_PENDING;
+> 	disable_irq_nosync(hcd->irq);
+> 	ret = IRQ_HANDLED;
+> }
+> 
+> then on your ->runtime_resume():
+> 
+> runtime_resume(dev)
+> {
+> 	...
+> 
+> 	if (omap->flags & OMAP_EHCI_IRQ_PENDING) {
+> 		process_pending_irqs(omap);
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+OK, thanks. 
 
-> On Mon, 3 Jun 2013, John Stultz wrote:
-> > On 06/03/2013 07:34 AM, Thomas Gleixner wrote:
-> > > Though even if we fix that we still need to twist our brains around
-> > > the timespec/timeval based user space interfaces. That's going to be
-> > > the way more interesting challenge.
-> > 
-> > I'm curious if there are any there other ideas that folks are considering?
-> 
-> Honestly, we have almost 25 years ahead of us to solve that. So why
-> hurry? If Tobias thinks that his embedded system of today needs to
-> survive 2038 without updating the kernel and all of userspace, then
-> all I can do is wish him good luck. Albeit we should not waste 25
-> years and run into another Y2K horror. :)
-> 
-> The only solid solution is to implement a new set of syscalls (and
-> there are not that many which are affected by this). The new syscalls
-> should use a nanosecond based scalar time value and get rid of the
-> timespec /timeval / time_t nonsense alltogether. That reduces the
-> number of new syscalls significantly.
-> 
-> That time value should be 64bit, also people might argue, that we are
-> creating a new issue for the year 2554, i.e 541 years from now. I
-> don't think we need to worry about that really. We have to leave our
-> grand-grand-grand..grandchildren (~20 generations from now) a few
-> unsolved problems!
-> 
-> The evil plan to make this happen looks like this:
-> 
->     1) Convert the core code to u64 with a timespec based shadow
->        infrastruture to avoid performance regressions in the first
->        place.
-> 
->     2) Add new u64 based syscalls
-> 
->     3) Disable the timespec based shadow infrastructure five years
->        from now to force all lazy buggers who ignored the new syscalls
->        to fix their crap.
-> 
->     4) Deprecate the old syscalls 10 years from now
-> 
->     5) Remove the old syscalls 100 years from now so Linus won't hunt
->        us for breaking userspace :)
+But I'm not sure if the generic ehci_irq handler is able to
+run in a process context. Maybe if we replace spin_lock(&ehci->lock);
+with spin_lock_irqsave() there, it will work.
 
-50 years from now should be enough for most of us - beyond that there will 
-be no hunting, only haunting ... ;-)
+Alan is this a doable option?
 
-Thanks,
+> 		omap->flags &= ~OMAP_EHCI_IRQ_PENDING;
+> 	}
+> 
+> 	return 0;
+> }
+> 
+> or something similar
+> 
 
-	Ingo
+cheers,
+-roger
