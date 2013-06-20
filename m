@@ -1,195 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3FTVnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:43:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60455 "EHLO bear.ext.ti.com"
+	id S1758274Ab3FTVoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:44:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17002 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757555Ab3FTVnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 17:43:49 -0400
-Date: Thu, 20 Jun 2013 16:43:45 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <viresh.kumar@linaro.org>,
-        <cpufreq@vger.kernel.org>
-Subject: Re: [RFC PATCH] regulator: core: allow consumers to request to
- closes step voltage
-Message-ID: <20130620214344.GA10756@kahuna>
-References: <1371669474-24473-1-git-send-email-nm@ti.com>
- <20130619223828.GK1403@sirena.org.uk>
- <20130620124542.GA28320@kahuna>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130620124542.GA28320@kahuna>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757555Ab3FTVn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:43:57 -0400
+Message-ID: <1371764634.30572.47.camel@ul30vt.home>
+Subject: Re: [PATCH v2 1/2] pci: Fix flaw in pci_acs_enabled()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Jun 2013 15:43:54 -0600
+In-Reply-To: <CAErSpo7Z9v1QPQZLpfNAUPiq3w4ZfmzS1PStJW+SgJ_DmjjFvg@mail.gmail.com>
+References: <20130607162732.7733.17758.stgit@bling.home>
+	 <20130607163441.7733.23221.stgit@bling.home>
+	 <20130618170926.GA9203@google.com> <1371580735.22681.216.camel@ul30vt.home>
+	 <CAErSpo75R26gqO=muqrR28igNkMay4NNRW-VJWPt3xQCqp1YBQ@mail.gmail.com>
+	 <1371595667.22659.53.camel@ul30vt.home>
+	 <CAErSpo7Z9v1QPQZLpfNAUPiq3w4ZfmzS1PStJW+SgJ_DmjjFvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07:45-20130620, Nishanth Menon wrote:
-> On 23:38-20130619, Mark Brown wrote:
-> > On Wed, Jun 19, 2013 at 02:17:54PM -0500, Nishanth Menon wrote:
-> > 
-> > > Account for step size accuracy when exact voltage requests are send for
-> > > step based regulators.
-> > 
-> > If the consumer can tolerate a different voltage why not just request
-> > the range that can be tolerated?  Your problem here is specifying an
-> > exact voltage.
-> I think you mean using regulator_get_linear_step
+On Tue, 2013-06-18 at 20:30 -0600, Bjorn Helgaas wrote:
+> On Tue, Jun 18, 2013 at 4:47 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Tue, 2013-06-18 at 16:10 -0600, Bjorn Helgaas wrote:
+> >> On Tue, Jun 18, 2013 at 12:38 PM, Alex Williamson
+> >> <alex.williamson@redhat.com> wrote:
+> >> > On Tue, 2013-06-18 at 11:09 -0600, Bjorn Helgaas wrote:
+> >> >> On Fri, Jun 07, 2013 at 10:34:41AM -0600, Alex Williamson wrote:
+> > ...
+> >> >> >   * pci_acs_enabled - test ACS against required flags for a given device
+> >> >> >   * @pdev: device to test
+> >> >> > @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
+> >> >> >   */
+> >> >> >  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+> >> >>
+> >> >> I know you didn't change the *name* of this function, but I think it
+> >> >> would be easier to follow if you did change the name to something more
+> >> >> descriptive, e.g., something to do with the actual property you're
+> >> >> interested in, which has to do with routing peer-to-peer DMA.
+> >> >>
+> >> >> That property makes sense even for the excluded devices, while the
+> >> >> idea of an ACS capability that doesn't even exist is implicitly
+> >> >> enabled, really doesn't.
+> >> >
+> >> > I think we also don't want to put the complexity at the caller for
+> >> > understanding what capabilities are applicable to a given device.  It's
+> >> > also convenient to use the set of ACS flags.  Given that, the current
+> >> > naming came about.  It's a little awkward, but it's easy to use.
+> >> > Suggestions for a better name?
+> >>
+> >> 100% agreed the caller shouldn't have to worry about different device
+> >> types.  I was thinking something like "pci_enforces_peer_isolation()"
+> >> or "pci_peer_dma_routed_upstream()".  Or maybe it should be
+> >> "pci_dev_...()".
+> >
+> > Ok, I'll play with those.  I'm worried that there are nuances to each
+> > flag bit that don't all fit under such a broad description.
 > 
-> > 
-> > > The specific example I faced was using cpufreq-cpu0 driver with voltages
-> > > for OPPs for MPU rail and attempting the common definitions against voltages
-> > > that are non-exact multiples of stepsize of PMIC.
-> > 
-> > > The alternative would be implement custom set_voltage (as againsta simpler
-> > > set_voltage_sel and using linear map/list functions) for the regulator which
-> > > will account for the same.
-> > 
-> > > Yet another alternative might be to introduce yet another custom function similar
-> > > to regulator_set_voltage_tol which accounts for this. something like:
-> > > regulator_set_voltage_floor(regulator, voltage, tol) or something to that effect.
-> > 
-> > Or as I keep telling you guys the consumer can just do that directly
-> > using the existing API; the whole point in specifying the voltage as a
-> > range is to allow the consumer to cope with arbatrary regulators by
-> > giving a range of voltages that it can accept.
-> > 
-> > The API is deliberately very conservative in these matters since there
-> > is a danger of physical damage if things really go wrong in some
-> > applications, it makes sure that both the drivers and the system
-> > integration are involved.
-> I agree. The intent of this series was to start a conversation to see if
-> we can make it simpler.
+> It's true that they might be overly broad.  On the other hand, the set
+> of flags we look for is always the same: PCI_ACS_SV | PCI_ACS_RR |
+> PCI_ACS_CR | PCI_ACS_UF, so what's the point in making a completely
+> general-purpose interface?  I'm not sure it's even worth passing the
+> flags around if the code would be clearer without that.
 > 
-> Searching for the users of regulator_get_linear_step in 3.10-rc6
-> shows none.
+> > Do you want
+> > to gate this series on a rename of an existing function?
 > 
-> For a generic driver which needs to handle platforms which
-> have tolerance, they'd use regulator_set_voltage_tol. But the
-> implementation would allow for uV - tol to uV + tol as range, which in
-> the case I mentioned(min voltage =uV) wont work.
+> You put me in a bit of a tight spot :)  My #1 concern is correctness
+> and maintainability.  Naming things so they're consistent with other
+> code and make sense to other readers is a huge part of that.
+> Unfortunately I don't have time to do any work myself, and my only
+> tool is to apply patches or not.  But no, I don't want to gate a
+> simple bug fix on other "cleanup" rework.
 > 
-> If the consumer wants to be aware of linear step regulator, they'd have to do:
-> step_uV = regulator_get_linear_step(...);
-> regulator_set_voltage(uV, uV + step_uV);
+> > ...
+> >> >> Maybe something like (pidgin C):
+> >> >>
+> >> >>     if (PCI_EXP_TYPE_DOWNSTREAM || PCI_EXP_TYPE_ROOT_PORT)
+> >> >>       return pci_acs_flags_enabled(pdev, acs_flags);
+> >> >>
+> >> >>     if (!pdev->multifunction)
+> >> >>       return true;
+> >> >>
+> >> >>     acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | ...);
+> >> >>     return pci_acs_flags_enabled(pdev, acs_flags);
+> >> >
+> >> > ...  Note that
+> >> > the above simplification incorrectly handles multifunction bridges or EC
+> >> > devices.
+> >>
+> >> Hmm...  What *is* the correct behavior for a bridge?  You return
+> >> "true," i.e., you're saying that a PCIe-to-PCI bridge will always
+> >> route peer-to-peer transactions from PCI devices upstream to its PCIe
+> >> link.  But that seems wrong: a PCI DMA transaction can target a peer
+> >> on the same PCI bus, and it's not even possible for the bridge to
+> >> validate the transaction or forward it upstream.
+> >>
+> >> I suspect the "ACS is never applicable to a PCI Express to PCI Bridge
+> >> Function" statement in 6.12.1 just means "it's impossible for ACS to
+> >> isolate the devices below the bridge from each other, so it would be
+> >> misleading to implement the capability."
+> >
+> > Note that we never consider ACS to be enabled for a conventional PCI
+> > device.  I suppose we could have cases where it's the only device on a
+> > bus, but for the most part, it's not worth the trouble (it may be the
+> > only device now, then a hotplug occurs).  So really saying the bridge
+> > does or doesn't support ACS doesn't matter to the devices behind it.
 > 
-> Then this wont handle tolerance. So the solution seems to be (for the
-> consumer):
-> step_uV = regulator_get_linear_step(...);
-> ..
-> if (tol)
-> 	regulator_set_voltage_tol(uV, tol);
-> else
-> 	regulator_set_voltage(uV, uV + step_uV);
-> (with the required error checks for regulator being a linear regulator
->  etc..).
+> > What does matter is the fan-out of that isolation group of the
+> > conventional devices beyond the bridge.  If the spec is indicating that
+> > a bridge cannot do peer-to-peer with other devices  then all of the
+> > conventional devices behind it are in an isolation domain so long as the
+> > path between the bridge and the RC supports ACS.  If the bridge can do
+> > peer-to-peer and it is a multifunction device, then the isolation domain
+> > grows to include the other functions and subordinates of the other
+> > functions.  I took the assumption that a bridge probably needs to
+> > forward transaction upstream.  Do you have an alternate opinion?
 > 
-> At least to me, there is no sane manner to handle "tolerance" and linear step
-> accuracy for a defined voltage (Should tolerance be rounded off to
-> step_uV? what about the border cases etc.)
-> 
-> Would you agree?
+> I think you're talking about a multi-function device with several
+> PCIe-to-PCI bridges (e.g., Option A of Figure 1-4, p. 29, of the PCIe
+> bridge spec 1.0), and the question is whether the bridge can forward a
+> transaction between bus X and bus Y without forwarding it upstream.
 
-Here is an RFC for the same. My hope was to see if something simpler
-could be done.
->From cb9830191cb9b8021e50bcda25d110b4b9a7dbd3 Mon Sep 17 00:00:00 2001
-From: Nishanth Menon <nm@ti.com>
-Date: Thu, 20 Jun 2013 16:37:30 -0500
-Subject: [RFC PATCH] cpufreq: cpufreq-cpu0: account for regulator step size
- accuracy
+Right, or the second function may not be a bridge, it could be anything
+that could accept a p2p DMA.
 
-Generic regulator consumers such as cpufreq-cpu0 are not aware
-of the characteristics of regulator used to supply. For example:
-consumerX requests for voltage min_uV = 500mV, max_uV = 500mV
-On a regulator which has a step size of 10mV, this can be exactly
-achieved.
+> I don't see any mention of forwarding transactions between functions
+> of a multi-ported bridge, so the conservative assumption would be that
+> a bridge is allowed to do that.  I would expect a conventional
+> multi-port PCI-PCI bridge to forward between functions, because in
+> conventional PCI there would be no reason to forward it upstream, so
+> I'd think PCIe-PCI bridges, at least those designed pre-ACS, would be
+> similar.  And I don't think the ACS capability is expressive enough to
+> say "peer-to-peer transactions between functions must be forwarded
+> upstream, but peer-to-peer transactions below a single function may
+> not be."
 
-However, on a regulator which is non-exact divider step size (example
-12.66mV step size), the closest achievable would be 506.4.
-regulator_set_voltage_tol does not work out either as <500mV is not an
-acceptable operational voltage.
+The best I can find is the statement that the bridge must forward
+transactions from the secondary interface to the primary interface.  We
+could infer that that means upstream, but we can't rule out some switch
+logic in a multifunction package that could do a re-route from that
+statement.  However then why would the PCIe spec forbid a PCIe-to-PCI
+bridge from implementing ACS?
 
-Account for step size accuracy when exact voltage requests are send for
-step based regulators.
+ACS doesn't need to be expressive enough for what you're describing.  We
+know that there's no protection against p2p on conventional PCI.  The
+PCIe bridge spec even indicates that transactions within the bridge
+apertures should not be forwarded to the primary interface (which should
+really be a big red flag that we shouldn't even attempt to support
+assignment of such devices).  The question is whether a transaction
+going out the primary interface is necessarily headed upstream or if it
+can go directly to a peer device.  In that case, I can't figure out why
+ACS is precluded from PCIe-to-PCI bridges.  If anything this is an
+example of why we need a user override, then we could it to the more
+conservative value pending further information and let the user change
+it.  Thanks,
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/cpufreq/cpufreq-cpu0.c |   28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+Alex
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ad1fde2..707565c 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -28,6 +28,7 @@ static struct device *cpu_dev;
- static struct clk *cpu_clk;
- static struct regulator *cpu_reg;
- static struct cpufreq_frequency_table *freq_table;
-+static int cpu_reg_step_size;
- 
- static int cpu0_verify_speed(struct cpufreq_policy *policy)
- {
-@@ -91,7 +92,12 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 
- 	/* scaling up?  scale voltage before frequency */
- 	if (cpu_reg && freqs.new > freqs.old) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		if (tol)
-+			ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		else
-+			ret = regulator_set_voltage(cpu_reg, volt,
-+						    volt + cpu_reg_step_size);
-+
- 		if (ret) {
- 			pr_err("failed to scale voltage up: %d\n", ret);
- 			freqs.new = freqs.old;
-@@ -102,15 +108,28 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 	ret = clk_set_rate(cpu_clk, freq_exact);
- 	if (ret) {
- 		pr_err("failed to set clock rate: %d\n", ret);
--		if (cpu_reg)
--			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
-+		if (cpu_reg) {
-+			if (tol)
-+				ret = regulator_set_voltage_tol(cpu_reg,
-+								volt_old,
-+								tol);
-+			else
-+				ret = regulator_set_voltage(cpu_reg,
-+							    volt_old,
-+							    volt_old +
-+							    cpu_reg_step_size);
-+		}
- 		freqs.new = freqs.old;
- 		goto post_notify;
- 	}
- 
- 	/* scaling down?  scale voltage after frequency */
- 	if (cpu_reg && freqs.new < freqs.old) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		if (tol)
-+			ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		else
-+			ret = regulator_set_voltage(cpu_reg, volt,
-+						    volt + cpu_reg_step_size);
- 		if (ret) {
- 			pr_err("failed to scale voltage down: %d\n", ret);
- 			clk_set_rate(cpu_clk, freqs.old * 1000);
-@@ -260,6 +279,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		ret = regulator_set_voltage_time(cpu_reg, min_uV, max_uV);
- 		if (ret > 0)
- 			transition_latency += ret * 1000;
-+		cpu_reg_step_size = regulator_get_linear_step(cpu_reg);
- 	}
- 
- 	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
--- 
-1.7.9.5
-
-
--- 
-Regards,
-Nishanth Menon
