@@ -1,166 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab3FTNCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:02:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40735 "EHLO arroyo.ext.ti.com"
+	id S965420Ab3FTNDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:03:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755040Ab3FTNCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:02:48 -0400
-Message-ID: <51C2FD5B.1090508@ti.com>
-Date: Thu, 20 Jun 2013 16:02:19 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
-        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <b-cousson@ti.com>
-Subject: Re: [RFC PATCH 5/6] ARM: dts: omap3beagle-xm: Add idle state pins
- for USB host
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-6-git-send-email-rogerq@ti.com> <87obb26ixm.fsf@linaro.org> <51C2EDB1.3080801@ti.com> <51C2EF50.3070707@ti.com>
-In-Reply-To: <51C2EF50.3070707@ti.com>
+	id S1754273Ab3FTNDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 09:03:52 -0400
+Message-ID: <1371733353.16587.19.camel@dhcp137-13.rdu.redhat.com>
+Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
+From: Eric Paris <eparis@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: Aristeu Rozanski <aris@redhat.com>, containers@lists.linux-foundation.org,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
+Date: Thu, 20 Jun 2013 09:02:33 -0400
+In-Reply-To: <51C270AF.1080902@cn.fujitsu.com>
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
+	  <20130619204927.GJ3212@redhat.com>
+	 <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com>
+	 <51C270AF.1080902@cn.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 03:02 PM, Roger Quadros wrote:
-> On 06/20/2013 02:55 PM, Roger Quadros wrote:
->> On 06/19/2013 09:42 PM, Kevin Hilman wrote:
->>> Roger Quadros <rogerq@ti.com> writes:
->>>
->>>> Add the Idle state pins for USB host and enable WAKEUP on
->>>> DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
->>>> sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
->>>>
->>>> CC: Benoît Cousson <b-cousson@ti.com>
->>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>
->>> This one doesn't apply...
->>>
->>>> ---
->>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
->>>>  1 files changed, 23 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>> index d3808ed..f1d56c2 100644
->>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>> @@ -89,12 +89,7 @@
->>>>  };
->>>>  
->>>>  &omap3_pmx_core {
->>>> -	pinctrl-names = "default";
->>>> -	pinctrl-0 = <
->>>> -			&hsusbb2_pins
->>>> -	>;
->>>> -
->>>> -	hsusbb2_pins: pinmux_hsusbb2_pins {
->>>
->>> This omap3_pmx_core section doesn't exist upstream in the xM DTS file
->>> (but does in omap3-beagle.dts.)  
->>>
->>> Is there a dependency patch missing?
->>>
->>
->> Sorry for not mentioning it earlier. This is based on Benoit's tree [1]
->> and you need these patches
->>
->> http://thread.gmane.org/gmane.linux.drivers.devicetree/38383
+On Thu, 2013-06-20 at 11:02 +0800, Gao feng wrote:
+> On 06/20/2013 04:51 AM, Eric Paris wrote:
+> > On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
+> >> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
+> >>> This patchset is first part of namespace support for audit.
+> >>> in this patchset, the mainly resources of audit system have
+> >>> been isolated. the audit filter, rules havn't been isolated
+> >>> now. It will be implemented in Part2. We finished the isolation
+> >>> of user audit message in this patchset.
+> >>>
+> >>> I choose to assign audit to the user namespace.
+> >>> Right now,there are six kinds of namespaces, such as
+> >>> net, mount, ipc, pid, uts and user. the first five
+> >>> namespaces have special usage. the audit isn't suitable to
+> >>> belong to these five namespaces, And since the flag of system
+> >>> call clone is in short supply, we can't provide a new flag such
+> >>> as CLONE_NEWAUDIT to enable audit namespace separately. so the
+> >>> user namespace may be the best choice.
+> >>
+> >> I thought it was said on the last submission that to tie userns and
+> >> audit namespace would be a bad idea?
+> > 
+> > I consider it a non-starter.  unpriv users are allowed to launch their
+> > own user namespace.  The whole point of audit is to have only a priv
+> > user be allowed to make changes.  If you tied audit namespace to user
+> > namespace you grant an unpriv user the ability to modify audit.
+> > 
 > 
-> Just noticed that this no longer applies today. I'll send a revision soon.
+> I understand your views.
 > 
+> But ven the unpriv user are allowed to make changes, they can do no harm.
+> they can only make changes on the audit namespace they created.they can
+> only communicate with the audit namespace they created.
 
-OK. In case you are eager to test, please use the series [1] on l-o on top of Benoit's
-for_3.11/_dts branch and then the $subject series with the updated patch 5 below [2].
+Imagine I set up my machine to audit all user access to super secret
+information.  With your patch set all an malicious user has to do is
+create a new user namespace.  Now when he accesses the super secret
+information it will be logged inside the user namespace he created.  So
+he can just dump those logs in the trash.
 
-[1] - [PATCH v5 0/2] ARM: dts: Add USB host support for Beagle-xm
+I believe that each audit namespace should require priv
+(CAP_AUDIT_CONTROL) in the user namespace that created the current audit
+namespace.  So lets say the machine boots and we are in the init_user
+and init_audit namespace.  Creating a new audit namespace should require
+CAP_AUDIT_CONTROL in the init_user namespace.  If instead we spawned a
+new user namespace userns1 and try to create a new audit namespace, we
+should STILL check for CAP_AUDIT_CONTROL in the init_user namespace.
 
-[2] - Updated Patch 5
+Assuming we've spawned auditns1 in userns1 and want to spawn auditns2 it
+should require CAP_AUDIT_CONTROL in userns1.  So now you only have
+permission to change your audit config (create a new audit namespace) if
+you already had permission to change your current audit config.
 
->From b712a1fb936f65fa05f21fcd2c62fff5628d0628 Mon Sep 17 00:00:00 2001
-From: Roger Quadros <rogerq@ti.com>
-Date: Wed, 19 Jun 2013 11:14:35 +0300
-Subject: [PATCH] ARM: dts: omap3beagle-xm: Add idle state pins for USB host
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Now how to handle coding this...
 
-Add the Idle state pins for USB host and enable WAKEUP on
-DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
-sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
+When the kernel receives an audit message on the netlink socket it can
+always check the current->[whatever] to figure out which audit namespace
+it came from.  Then it can be processed accordingly...
 
-CC: Benoît Cousson <b-cousson@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
- 1 files changed, 23 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index 371b1e2..91d19fa 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -113,11 +113,6 @@
- };
- 
- &omap3_pmx_core {
--	pinctrl-names = "default";
--	pinctrl-0 = <
--			&hsusbb2_pins
--	>;
--
- 	uart3_pins: pinmux_uart3_pins {
- 		pinctrl-single,pins = <
- 			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
-@@ -125,7 +120,7 @@
- 		>;
- 	};
- 
--	hsusbb2_pins: pinmux_hsusbb2_pins {
-+	hsusb2_pins: pinmux_hsusb2_pins {
- 		pinctrl-single,pins = <
- 			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
- 			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
-@@ -141,6 +136,25 @@
- 			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
- 		>;
- 	};
-+
-+	/* WAKEUP enabled on DIR, DAT0-3 */
-+	hsusb2_idle_pins: pinmux_hsusb2_idle_pins {
-+		pinctrl-single,pins = <
-+			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
-+			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
-+			0x5c4 (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
-+			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)			/* etk_d13.hsusb2_nxt */
-+			0x5c8 (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
-+			0x5cA (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
-+			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
-+			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
-+			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
-+			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
-+			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
-+			0x1ae (PIN_INPUT_PULLDOWN | WAKEUP_EN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
-+		>;
-+		interrupts = <77>; /* route padconf wakeup to EHCI IRQ */
-+	};
- };
- 
- &i2c1 {
-@@ -223,6 +237,9 @@
- };
- 
- &usbhshost {
-+	pinctrl-names = "default", "idle";
-+	pinctrl-0 = <&hsusb2_pins>;
-+	pinctrl-1 = <&hsusb2_idle_pins>;
- 	port2-mode = "ehci-phy";
- };
- 
--- 
-1.7.4.1
-
+Sending messages to the userspace auditd is a little more tricky.  We
+need to somehow map the audit namespace to a socket connected to auditd
+in userspace.  I'd imagine we'd have to either have per auditns backlog
+queues and run one kauditd per audit namespace, or we'd have to tag the
+skb's with the intended namespace somehow and then find the right socket
+in kauditd.  Either way it doesn't seem too onerous (although I admit, I
+don't know how to code the per namespace kauditd right offhand)
 
