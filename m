@@ -1,161 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030303Ab3FTOLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:11:31 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:44561 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935500Ab3FTOLY (ORCPT
+	id S1030375Ab3FTOLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:11:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42296 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030360Ab3FTOLd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:11:24 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel@stlinux.com, linux-serial@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 09/10] ARM:stih41x: Add B2000 board support
-Date: Thu, 20 Jun 2013 15:06:49 +0100
-Message-Id: <1371737209-9607-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
+	Thu, 20 Jun 2013 10:11:33 -0400
+From: "Cousson, Benoit" <b-cousson@ti.com>
+To: "Quadros, Roger" <rogerq@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v5 0/2] ARM: dts: Add USB host support for Beagle-xm
+Thread-Topic: [PATCH v5 0/2] ARM: dts: Add USB host support for Beagle-xm
+Thread-Index: AQHObbQpc1IUVewzIES5AteXfA54X5k+pCnQ
+Date: Thu, 20 Jun 2013 14:11:04 +0000
+Message-ID: <B7CE1C39EBFBA0428A012975D4B2FC830B72CECA@DNCE05.ent.ti.com>
+References: <1371732374-27191-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1371732374-27191-1-git-send-email-rogerq@ti.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.167.131.83]
+x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B2000 board is reference board for STIH415/416 SOCs, it has
-2 x UART, 4x USB, 2 x Ethernet, 1 x SATA, 1 x PCIe, and 1GB RAM.
+Thanks Roger,
 
-This patch add initial support to b2000 with STiH415/416 with UART2 as
-console and a heard beat LED.
+I'll take them for 3.12. I was already late for my 3.11 pull request.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/boot/dts/Makefile           |    2 +
- arch/arm/boot/dts/stih415-b2000.dts  |   15 ++++++++++++
- arch/arm/boot/dts/stih416-b2000.dts  |   16 +++++++++++++
- arch/arm/boot/dts/stih41x-b2000.dtsi |   41 ++++++++++++++++++++++++++++++++++
- 4 files changed, 74 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/stih415-b2000.dts
- create mode 100644 arch/arm/boot/dts/stih416-b2000.dts
- create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
+Regards,
+Benoit
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f0895c5..d4615fd 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -177,6 +177,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
- 	spear320-evb.dtb \
- 	spear320-hmi.dtb
- dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
-+dtb-$(CONFIG_ARCH_STIXXXX)+= stih415-b2000.dtb \
-+	stih416-b2000.dtb
- dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun4i-a10-cubieboard.dtb \
- 	sun4i-a10-mini-xplus.dtb \
-diff --git a/arch/arm/boot/dts/stih415-b2000.dts b/arch/arm/boot/dts/stih415-b2000.dts
-new file mode 100644
-index 0000000..d4af531
---- /dev/null
-+++ b/arch/arm/boot/dts/stih415-b2000.dts
-@@ -0,0 +1,15 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih415.dtsi"
-+#include "stih41x-b2000.dtsi"
-+/ {
-+	model = "STiH415 B2000 Board";
-+	compatible = "st,stih415", "st,stih415-b2000";
-+};
-diff --git a/arch/arm/boot/dts/stih416-b2000.dts b/arch/arm/boot/dts/stih416-b2000.dts
-new file mode 100644
-index 0000000..a5eb6ee
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-b2000.dts
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih416.dtsi"
-+#include "stih41x-b2000.dtsi"
-+
-+/ {
-+	compatible = "st,stih416", "st,stih416-b2000";
-+	model = "STiH416 B2000";
-+};
-diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
-new file mode 100644
-index 0000000..8e694d2
---- /dev/null
-+++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/ {
-+
-+	memory{
-+		device_type = "memory";
-+		reg = <0x60000000 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &serial2;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &serial2;
-+	};
-+
-+	soc {
-+		serial2: serial@fed32000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible	= "gpio-leds";
-+			fp_led {
-+				#gpio-cells = <1>;
-+				label	= "Front Panel LED";
-+				gpios	= <&PIO105 7>;
-+				linux,default-trigger	= "heartbeat";
-+			};
-+		};
-+
-+	};
-+};
--- 
-1.7.6.5
+>
+Texas Instruments France SA, 821 Avenue Jack Kilby, 06270 Villeneuve Loubet. 036 420 040 R.C.S Antibes. Capital de EUR 12.654.784
+
+-----Original Message-----
+>From: Quadros, Roger
+>Sent: Thursday, June 20, 2013 7:46 AM
+>To: Cousson, Benoit
+>Cc: tony@atomide.com; linux-omap@vger.kernel.org; devicetree-
+>discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; linux-
+>kernel@vger.kernel.org; Quadros, Roger
+>Subject: [PATCH v5 0/2] ARM: dts: Add USB host support for Beagle-xm
+>
+>Hi Benoit,
+>
+>Patch 1 adds USB host support for beagle-XM.
+>Patch 2 cleans up pin comments for USB host pins.
+>
+>Changes in v4:
+>- Rebased to todays for_3.11/dts branch
+>- added disclaimer about temporary usage of regulator framework for
+>GPIO RESET lines.
+>
+>cheers,
+>-roger
+>
+>Roger Quadros (2):
+>  ARM: dts: omap3-beagle-xm: Add USB Host support
+>  ARM: dts: omap3-beagle: Make USB host pin naming consistent
+>
+> arch/arm/boot/dts/omap3-beagle-xm.dts |   81
+>+++++++++++++++++++++++++++++----
+> arch/arm/boot/dts/omap3-beagle.dts    |   29 +++++++-----
+> 2 files changed, 89 insertions(+), 21 deletions(-)
+>
+>--
+>1.7.4.1
+
 
