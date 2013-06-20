@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3FTFY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 01:24:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49484 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3FTFYX (ORCPT
+	id S1753065Ab3FTF0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:26:48 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42257 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3FTF0r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 01:24:23 -0400
-Date: Wed, 19 Jun 2013 22:24:22 -0700 (PDT)
-Message-Id: <20130619.222422.1490912163789374913.davem@davemloft.net>
-To: wangyijing@huawei.com
-Cc: linux-kernel@vger.kernel.org, guohanjun@huawei.com, jiang.liu@huawei.com,
-        mchan@broadcom.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/9] bnx2: use pdev->pm_cap instead of
- pci_find_capability(..,PCI_CAP_ID_PM)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371543157-14968-1-git-send-email-wangyijing@huawei.com>
-References: <1371543157-14968-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 01:26:47 -0400
+Date: Thu, 20 Jun 2013 00:26:44 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation/cgroups/memory.txt: fix stat file
+ documentation
+To: Aaro Koskinen <aaro.koskinen@nsn.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaro Koskinen <aaro.koskinen@nsn.com>, trivial@kernel.org
+References: <1371645269-19762-1-git-send-email-aaro.koskinen@nsn.com>
+In-Reply-To: <1371645269-19762-1-git-send-email-aaro.koskinen@nsn.com> (from
+	aaro.koskinen@nsn.com on Wed Jun 19 07:34:29 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1371706004.2776.132@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yijing Wang <wangyijing@huawei.com>
-Date: Tue, 18 Jun 2013 16:12:37 +0800
-
-> Pci core has been saved pm cap register offset by pdev->pm_cap in pci_pm_init()
-> in init path. So we can use pdev->pm_cap instead of using
-> pci_find_capability(pdev, PCI_CAP_ID_PM) for better performance and simplified code.
+On 06/19/2013 07:34:29 AM, Aaro Koskinen wrote:
+> Documentation for inactive_anon / active_anon was mixed up. Fix that.
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
 
-Applied.
+Acked-by: Rob Landley <rob@landley.net>
+
+> ---
+>  Documentation/cgroups/memory.txt |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt  
+> b/Documentation/cgroups/memory.txt
+> index ddf4f93..b63be03 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -490,10 +490,10 @@ pgpgin		- # of charging events to the  
+> memory cgroup. The charging
+>  pgpgout		- # of uncharging events to the memory cgroup.  
+> The uncharging
+>  		event happens each time a page is unaccounted from the  
+> cgroup.
+>  swap		- # of bytes of swap usage
+> -inactive_anon	- # of bytes of anonymous memory and swap cache  
+> memory on
+> +inactive_anon	- # of bytes of anonymous and swap cache memory  
+> on inactive
+>  		LRU list.
+>  active_anon	- # of bytes of anonymous and swap cache memory on  
+> active
+> -		inactive LRU list.
+> +		LRU list.
+>  inactive_file	- # of bytes of file-backed memory on inactive  
+> LRU list.
+>  active_file	- # of bytes of file-backed memory on active LRU list.
+>  unevictable	- # of bytes of memory that cannot be reclaimed  
+> (mlocked etc).
+> --
+> 1.7.10.4
+> 
+> 
+
