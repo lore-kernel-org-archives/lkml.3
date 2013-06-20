@@ -1,377 +1,710 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab3FTQSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 12:18:53 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:48626 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965122Ab3FTQSv (ORCPT
+	id S965761Ab3FTS6r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:58:47 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50372 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422669Ab3FTS6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 12:18:51 -0400
-Message-ID: <51C32B64.1010608@gmail.com>
-Date: Fri, 21 Jun 2013 00:18:44 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3, part2 01/20] PCI: introduce hotplug-safe PCI bus iterators
-References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com> <1369583597-3801-2-git-send-email-jiang.liu@huawei.com> <20130617200639.GA7877@google.com>
-In-Reply-To: <20130617200639.GA7877@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 14:58:11 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>
+Cc: jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 1/3] iio: Add Nuvoton NAU7802 ADC driver
+Date: Thu, 20 Jun 2013 20:57:53 +0200
+Message-Id: <1371754675-12242-2-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2013 04:06 AM, Bjorn Helgaas wrote:
-> On Sun, May 26, 2013 at 11:52:58PM +0800, Jiang Liu wrote:
->> Introduce hotplug-safe PCI bus iterators as below, which hold a
->> reference on the returned PCI bus object.
->> bool pci_bus_exists(int domain, int busnr);
->> struct pci_bus *pci_get_bus(int domain, int busnr);
->> struct pci_bus *pci_get_next_bus(struct pci_bus *from);
->> struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
->> #define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
->> #define for_each_pci_root_bus(b)  \
->> 		for (b = NULL; (b = pci_get_next_root_bus(b)); )
->>
->> The long-term goal is to remove hotplug-unsafe pci_find_bus(),
->> pci_find_next_bus() and the global pci_root_buses list.
-> 
-> I think you should mark the unsafe interfaces as __deprecated so
-> users will get compile-time warnings.
-> 
-> I don't think pci_bus_exists() is a safe interface, because the value
-> it returns may be incorrect before the caller can look at it.  The
-> only safe thing would be to make it so we try to create the bus
-> and return failure if it already exists.  Then the mutex can be in
-> the code that creates the bus.
-> 
-> I don't see any uses of for_each_pci_bus(), so please remove that.
-> 
-> It sounds like we don't have a consensus on how to iterate over
-> PCI root buses.  If you separate that from the pci_get_bus()
-> changes, maybe we can at least move forward on the pci_get_bus()
-> stuff.
-Hi Bjorn and Yinghai,
-    I have thought about the way to implement pci_for_each_root_bus()
-again. And there are several possible ways here:
-1) Yinghai has a patch set implementing an iterator for PCI host
-bridges, but we can't safely refer the PCI root bus associated with a
-host bridge device because the host bridge doesn't hold a reference to
-associated PCI root bus. So we need to find a safe way to refer the PCI
-root bus associated with a PCI host bridge.
-2) Unexport pci_root_buses and convert it to klist, then we could walk
-all root buses effectively. This solution is straight-forward, but it
-may break out of tree drivers.
-3) Keep current implementation, which does waste some computation cycles:(
+The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
+gain and sampling rates.
 
-So what's your thoughts about above solutions? Or any other suggestions?
-Regards!
-Gerry
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
+ drivers/iio/adc/Kconfig                            |   9 +
+ drivers/iio/adc/Makefile                           |   1 +
+ drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
+ 4 files changed, 630 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+ create mode 100644 drivers/iio/adc/nau7802.c
 
-> 
-> Bjorn
-> 
->> These new interfaces may be a littler slower than existing interfaces,
->> but it should be acceptable because they are not used on hot paths.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Acked-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: linux-pci@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  drivers/pci/pci.h    |   1 +
->>  drivers/pci/probe.c  |   2 +-
->>  drivers/pci/search.c | 159 +++++++++++++++++++++++++++++++++++++++++----------
->>  include/linux/pci.h  |  23 +++++++-
->>  4 files changed, 153 insertions(+), 32 deletions(-)
->>
->> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
->> index 68678ed..8fe15f6 100644
->> --- a/drivers/pci/pci.h
->> +++ b/drivers/pci/pci.h
->> @@ -126,6 +126,7 @@ static inline void pci_remove_legacy_files(struct pci_bus *bus) { return; }
->>  
->>  /* Lock for read/write access to pci device and bus lists */
->>  extern struct rw_semaphore pci_bus_sem;
->> +extern struct class pcibus_class;
->>  
->>  extern raw_spinlock_t pci_lock;
->>  
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index 2830070..1004a05 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -93,7 +93,7 @@ static void release_pcibus_dev(struct device *dev)
->>  	kfree(pci_bus);
->>  }
->>  
->> -static struct class pcibus_class = {
->> +struct class pcibus_class = {
->>  	.name		= "pci_bus",
->>  	.dev_release	= &release_pcibus_dev,
->>  	.dev_attrs	= pcibus_dev_attrs,
->> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
->> index d0627fa..16ccaf8 100644
->> --- a/drivers/pci/search.c
->> +++ b/drivers/pci/search.c
->> @@ -52,20 +52,27 @@ pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
->>  	return tmp;
->>  }
->>  
->> -static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
->> +struct pci_bus_match_arg {
->> +	int domain;
->> +	int bus;
->> +};
->> +
->> +static int pci_match_bus(struct device *dev, const void *data)
->>  {
->> -	struct pci_bus* child;
->> -	struct list_head *tmp;
->> +	struct pci_bus *bus = to_pci_bus(dev);
->> +	const struct pci_bus_match_arg *arg = data;
->>  
->> -	if(bus->number == busnr)
->> -		return bus;
->> +	return (pci_domain_nr(bus) == arg->domain && bus->number == arg->bus);
->> +}
->>  
->> -	list_for_each(tmp, &bus->children) {
->> -		child = pci_do_find_bus(pci_bus_b(tmp), busnr);
->> -		if(child)
->> -			return child;
->> -	}
->> -	return NULL;
->> +static int pci_match_next_bus(struct device *dev, const void *data)
->> +{
->> +	return 1;
->> +}
->> +
->> +static int pci_match_next_root_bus(struct device *dev, const void *data)
->> +{
->> +	return pci_is_root_bus(to_pci_bus(dev));
->>  }
->>  
->>  /**
->> @@ -76,20 +83,19 @@ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
->>   * Given a PCI bus number and domain number, the desired PCI bus is located
->>   * in the global list of PCI buses.  If the bus is found, a pointer to its
->>   * data structure is returned.  If no bus is found, %NULL is returned.
->> + *
->> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
->> + * Please use pci_get_bus() instead which holds a reference on the returned
->> + * PCI bus.
->>   */
->> -struct pci_bus * pci_find_bus(int domain, int busnr)
->> +struct pci_bus *pci_find_bus(int domain, int busnr)
->>  {
->> -	struct pci_bus *bus = NULL;
->> -	struct pci_bus *tmp_bus;
->> +	struct pci_bus *bus;
->>  
->> -	while ((bus = pci_find_next_bus(bus)) != NULL)  {
->> -		if (pci_domain_nr(bus) != domain)
->> -			continue;
->> -		tmp_bus = pci_do_find_bus(bus, busnr);
->> -		if (tmp_bus)
->> -			return tmp_bus;
->> -	}
->> -	return NULL;
->> +	bus = pci_get_bus(domain, busnr);
->> +	pci_bus_put(bus);
->> +
->> +	return bus;
->>  }
->>  
->>  /**
->> @@ -100,21 +106,114 @@ struct pci_bus * pci_find_bus(int domain, int busnr)
->>   * initiated by passing %NULL as the @from argument.  Otherwise if
->>   * @from is not %NULL, searches continue from next device on the
->>   * global list.
->> + *
->> + * Note: it's not hotplug safe, the returned bus may be destroyed at any time.
->> + * Please use pci_get_next_root_bus() instead which holds a reference
->> + * on the returned PCI root bus.
->>   */
->>  struct pci_bus * 
->>  pci_find_next_bus(const struct pci_bus *from)
->>  {
->> -	struct list_head *n;
->> -	struct pci_bus *b = NULL;
->> +	struct device *dev = from ? (struct device *)&from->dev : NULL;
->> +
->> +	dev = class_find_device(&pcibus_class, dev, NULL,
->> +				&pci_match_next_root_bus);
->> +	if (dev) {
->> +		put_device(dev);
->> +		return to_pci_bus(dev);
->> +	}
->> +
->> +	return NULL;
->> +}
->> +
->> +bool pci_bus_exists(int domain, int busnr)
->> +{
->> +	struct device *dev;
->> +	struct pci_bus_match_arg arg = { domain, busnr };
->>  
->>  	WARN_ON(in_interrupt());
->> -	down_read(&pci_bus_sem);
->> -	n = from ? from->node.next : pci_root_buses.next;
->> -	if (n != &pci_root_buses)
->> -		b = pci_bus_b(n);
->> -	up_read(&pci_bus_sem);
->> -	return b;
->> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
->> +	if (dev)
->> +		put_device(dev);
->> +
->> +	return dev != NULL;
->> +}
->> +EXPORT_SYMBOL(pci_bus_exists);
->> +
->> +/**
->> + * pci_get_bus - locate PCI bus from a given domain and bus number
->> + * @domain: number of PCI domain to search
->> + * @busnr: number of desired PCI bus
->> + *
->> + * Given a PCI bus number and domain number, the desired PCI bus is located.
->> + * If the bus is found, a pointer to its data structure is returned.
->> + * If no bus is found, %NULL is returned.
->> + * Caller needs to release the returned bus by calling pci_bus_put().
->> + */
->> +struct pci_bus *pci_get_bus(int domain, int busnr)
->> +{
->> +	struct device *dev;
->> +	struct pci_bus_match_arg arg = { domain, busnr };
->> +
->> +	WARN_ON(in_interrupt());
->> +	dev = class_find_device(&pcibus_class, NULL, &arg, &pci_match_bus);
->> +	if (dev)
->> +		return to_pci_bus(dev);
->> +
->> +	return NULL;
->> +}
->> +EXPORT_SYMBOL(pci_get_bus);
->> +
->> +/**
->> + * pci_get_next_bus - begin or continue searching for a PCI bus
->> + * @from: Previous PCI bus found, or %NULL for new search.
->> + *
->> + * Iterates through the list of known PCI busses. If a PCI bus is found,
->> + * the reference count to the bus is incremented and a pointer to it is
->> + * returned. Otherwise, %NULL is returned. A new search is initiated by
->> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
->> + * searches continue from next bus on the global list. The reference count
->> + * for @from is always decremented if it is not %NULL.
->> + */
->> +struct pci_bus *pci_get_next_bus(struct pci_bus *from)
->> +{
->> +	struct device *dev = from ? &from->dev : NULL;
->> +
->> +	WARN_ON(in_interrupt());
->> +	dev = class_find_device(&pcibus_class, dev, NULL, &pci_match_next_bus);
->> +	pci_bus_put(from);
->> +	if (dev)
->> +		return to_pci_bus(dev);
->> +
->> +	return NULL;
->> +}
->> +EXPORT_SYMBOL(pci_get_next_bus);
->> +
->> +/**
->> + * pci_find_next_root_bus - begin or continue searching for a PCI root bus
->> + * @from: Previous PCI bus found, or %NULL for new search.
->> + *
->> + * Iterates through the list of known PCI root busses. If a PCI bus is found,
->> + * the reference count to the root bus is incremented and a pointer to it is
->> + * returned. Otherwise, %NULL is returned. A new search is initiated by
->> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
->> + * searches continue from next root bus on the global list. The reference
->> + * count for @from is always decremented if it is not %NULL.
->> + */
->> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
->> +{
->> +	struct device *dev = from ? &from->dev : NULL;
->> +
->> +	WARN_ON(in_interrupt());
->> +	dev = class_find_device(&pcibus_class, dev, NULL,
->> +				&pci_match_next_root_bus);
->> +	pci_bus_put(from);
->> +	if (dev)
->> +		return to_pci_bus(dev);
->> +
->> +	return NULL;
->>  }
->> +EXPORT_SYMBOL(pci_get_next_root_bus);
->>  
->>  /**
->>   * pci_get_slot - locate PCI device for a given PCI slot
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 7b23fa0..1e43423 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -454,6 +454,9 @@ struct pci_bus {
->>  
->>  #define pci_bus_b(n)	list_entry(n, struct pci_bus, node)
->>  #define to_pci_bus(n)	container_of(n, struct pci_bus, dev)
->> +#define for_each_pci_bus(b)	for (b = NULL; (b = pci_get_next_bus(b)); )
->> +#define for_each_pci_root_bus(b) \
->> +			for (b = NULL; (b = pci_get_next_root_bus(b)); )
->>  
->>  /*
->>   * Returns true if the pci bus is root (behind host-pci bridge),
->> @@ -718,7 +721,6 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
->>  void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
->>  			     struct pci_bus_region *region);
->>  void pcibios_scan_specific_bus(int busn);
->> -struct pci_bus *pci_find_bus(int domain, int busnr);
->>  void pci_bus_add_devices(const struct pci_bus *bus);
->>  struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
->>  			int bus, struct pci_ops *ops, void *sysdata);
->> @@ -778,8 +780,15 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap);
->>  int pci_find_next_ext_capability(struct pci_dev *dev, int pos, int cap);
->>  int pci_find_ht_capability(struct pci_dev *dev, int ht_cap);
->>  int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
->> +
->> +struct pci_bus *pci_find_bus(int domain, int busnr);
->>  struct pci_bus *pci_find_next_bus(const struct pci_bus *from);
->>  
->> +bool pci_bus_exists(int domain, int busnr);
->> +struct pci_bus *pci_get_bus(int domain, int busnr);
->> +struct pci_bus *pci_get_next_bus(struct pci_bus *from);
->> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
->> +
->>  struct pci_dev *pci_get_device(unsigned int vendor, unsigned int device,
->>  				struct pci_dev *from);
->>  struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
->> @@ -1430,6 +1439,18 @@ static inline void pci_unblock_cfg_access(struct pci_dev *dev)
->>  static inline struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
->>  { return NULL; }
->>  
->> +static inline bool pci_bus_exists(int domain, int busnr)
->> +{ return false; }
->> +
->> +static inline struct pci_bus *pci_get_bus(int domain, int busnr)
->> +{ return NULL; }
->> +
->> +static inline struct pci_bus *pci_get_next_bus(struct pci_bus *from)
->> +{ return NULL; }
->> +
->> +static inline struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
->> +{ return NULL; }
->> +
->>  static inline struct pci_dev *pci_get_slot(struct pci_bus *bus,
->>  						unsigned int devfn)
->>  { return NULL; }
->> -- 
->> 1.8.1.2
->>
+diff --git a/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+new file mode 100644
+index 0000000..9bc4218
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
+@@ -0,0 +1,17 @@
++* Nuvoton NAU7802 Analog to Digital Converter (ADC)
++
++Required properties:
++  - compatible: Should be "nuvoton,nau7802"
++  - reg: Should contain the ADC I2C address
++
++Optional properties:
++  - nuvoton,vldo: Reference voltage in millivolts (integer)
++  - interrupts: IRQ line for the ADC. If not used the driver will use
++    polling.
++
++Example:
++adc2: nau7802@2a {
++	compatible = "nuvoton,nau7802";
++	reg = <0x2a>;
++	nuvoton,vldo = <3000>;
++};
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index ab0767e6..d7f9ed8 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -133,6 +133,15 @@ config MAX1363
+ 	  max11646, max11647) Provides direct access via sysfs and buffered
+ 	  data via the iio dev interface.
+ 
++config NAU7802
++	tristate "Nuvoton NAU7802 ADC driver"
++	depends on I2C
++	help
++	  Say yes here to build support for Nuvoton NAU7802 ADC.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called nau7802.
++
+ config TI_ADC081C
+ 	tristate "Texas Instruments ADC081C021/027"
+ 	depends on I2C
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 0a825be..d426081 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_AT91_ADC) += at91_adc.o
+ obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
+ obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
+ obj-$(CONFIG_MAX1363) += max1363.o
++obj-$(CONFIG_NAU7802) += nau7802.o
+ obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+ obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
+ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
+diff --git a/drivers/iio/adc/nau7802.c b/drivers/iio/adc/nau7802.c
+new file mode 100644
+index 0000000..e1b6981
+--- /dev/null
++++ b/drivers/iio/adc/nau7802.c
+@@ -0,0 +1,603 @@
++/*
++ * Driver for the Nuvoton NAU7802 ADC
++ *
++ * Copyright 2013 Free Electrons
++ *
++ * Licensed under the GPLv2 or later.
++ */
++
++#include <linux/delay.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/wait.h>
++#include <linux/log2.h>
++
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++
++#define NAU7802_REG_PUCTRL	0x00
++#define NAU7802_PUCTRL_RR(x)		(x << 0)
++#define NAU7802_PUCTRL_RR_BIT		NAU7802_PUCTRL_RR(1)
++#define NAU7802_PUCTRL_PUD(x)		(x << 1)
++#define NAU7802_PUCTRL_PUD_BIT		NAU7802_PUCTRL_PUD(1)
++#define NAU7802_PUCTRL_PUA(x)		(x << 2)
++#define NAU7802_PUCTRL_PUA_BIT		NAU7802_PUCTRL_PUA(1)
++#define NAU7802_PUCTRL_PUR(x)		(x << 3)
++#define NAU7802_PUCTRL_PUR_BIT		NAU7802_PUCTRL_PUR(1)
++#define NAU7802_PUCTRL_CS(x)		(x << 4)
++#define NAU7802_PUCTRL_CS_BIT		NAU7802_PUCTRL_CS(1)
++#define NAU7802_PUCTRL_CR(x)		(x << 5)
++#define NAU7802_PUCTRL_CR_BIT		NAU7802_PUCTRL_CR(1)
++#define NAU7802_PUCTRL_AVDDS(x)		(x << 7)
++#define NAU7802_PUCTRL_AVDDS_BIT	NAU7802_PUCTRL_AVDDS(1)
++#define NAU7802_REG_CTRL1	0x01
++#define NAU7802_CTRL1_VLDO(x)		(x << 3)
++#define NAU7802_CTRL1_GAINS(x)		(x)
++#define NAU7802_CTRL1_GAINS_BITS	0x07
++#define NAU7802_REG_CTRL2	0x02
++#define NAU7802_CTRL2_CHS(x)		(x << 7)
++#define NAU7802_CTRL2_CRS(x)		(x << 4)
++#define NAU7802_SAMP_FREQ_320	0x07
++#define NAU7802_CTRL2_CHS_BIT		NAU7802_CTRL2_CHS(1)
++#define NAU7802_REG_ADC_B2	0x12
++#define NAU7802_REG_ADC_B1	0x13
++#define NAU7802_REG_ADC_B0	0x14
++#define NAU7802_REG_ADC_CTRL	0x15
++
++#define NAU7802_DEFAULT_CONVERSIONS 6
++
++struct nau7802_state {
++	struct i2c_client	*client;
++	s32			last_value;
++	struct mutex		lock;
++	struct mutex		data_lock;
++	u32			vref_mv;
++	u32			conversion_count;
++	u32			min_conversions;
++	u8			sample_rate;
++	u32			scale_avail[8];
++	struct completion	value_ok;
++};
++
++#define NAU7802_CHANNEL(chan) {					\
++	.type = IIO_VOLTAGE,					\
++	.indexed = 1,						\
++	.channel = (chan),					\
++	.scan_index = (chan),					\
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
++	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) |	\
++				BIT(IIO_CHAN_INFO_SAMP_FREQ)	\
++}
++
++static const struct iio_chan_spec nau7802_chan_array[] = {
++	NAU7802_CHANNEL(0),
++	NAU7802_CHANNEL(1),
++};
++
++static const u16 nau7802_sample_freq_avail[] = {10, 20, 40, 80,
++						10, 10, 10, 320};
++
++static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("10 40 80 320");
++
++static ssize_t nau7802_sysfs_set_min_conversions(struct device *dev,
++		struct device_attribute *attr,
++		const char *buf,
++		size_t len)
++{
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct nau7802_state *st = iio_priv(indio_dev);
++	u32 val;
++	int ret;
++
++	ret = kstrtouint(buf, 10, &val);
++	if (ret)
++		return ret;
++
++	mutex_lock(&st->lock);
++	st->min_conversions = val;
++	st->conversion_count = 0;
++	mutex_unlock(&st->lock);
++
++	return len;
++}
++
++static ssize_t nau7802_sysfs_get_min_conversions(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct nau7802_state *st = iio_priv(indio_dev);
++
++	return sprintf(buf, "%d\n", st->min_conversions);
++}
++
++static IIO_DEVICE_ATTR(min_conversions, S_IWUSR | S_IRUGO,
++		nau7802_sysfs_get_min_conversions,
++		nau7802_sysfs_set_min_conversions, 0);
++
++static struct attribute *nau7802_attributes[] = {
++	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
++	&iio_dev_attr_min_conversions.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group nau7802_attribute_group = {
++	.attrs = nau7802_attributes,
++};
++
++static int nau7802_set_gain(struct nau7802_state *st, int gain)
++{
++	u8 data;
++	int ret;
++
++	mutex_lock(&st->lock);
++	st->conversion_count = 0;
++
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL1);
++	if (data < 0)
++		goto nau7802_sysfs_set_gain_out;
++	ret = i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL1,
++					(data & (~NAU7802_CTRL1_GAINS_BITS)) |
++					gain);
++
++nau7802_sysfs_set_gain_out:
++	mutex_unlock(&st->lock);
++
++	return ret ? ret : 0;
++}
++
++static int nau7802_read_conversion(struct nau7802_state *st)
++{
++	u8 data;
++
++	mutex_lock(&st->data_lock);
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_ADC_B2);
++	if (data < 0)
++		goto nau7802_read_conversion_out;
++	st->last_value = data << 16;
++
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_ADC_B1);
++	if (data < 0)
++		goto nau7802_read_conversion_out;
++	st->last_value |= data << 8;
++
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_ADC_B0);
++	if (data < 0)
++		goto nau7802_read_conversion_out;
++	st->last_value |= data;
++
++	st->last_value = sign_extend32(st->last_value, 23);
++
++nau7802_read_conversion_out:
++	mutex_unlock(&st->data_lock);
++
++	return data;
++}
++
++/*
++ * Conversions are synchronised on the rising edge of NAU7802_PUCTRL_CS_BIT
++ */
++static int nau7802_sync(struct nau7802_state *st)
++{
++	int ret;
++	u8 data;
++
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_PUCTRL);
++	if (data < 0)
++		return data;
++	ret = i2c_smbus_write_byte_data(st->client, NAU7802_REG_PUCTRL,
++				data | NAU7802_PUCTRL_CS_BIT);
++
++	return ret;
++}
++
++static irqreturn_t nau7802_eoc_trigger(int irq, void *private)
++{
++	struct iio_dev *indio_dev = private;
++	struct nau7802_state *st = iio_priv(indio_dev);
++	u8 status;
++
++	status = i2c_smbus_read_byte_data(st->client, NAU7802_REG_PUCTRL);
++	if (status < 0)
++		return IRQ_HANDLED;
++
++	if (!(status & NAU7802_PUCTRL_CR_BIT))
++		return IRQ_NONE;
++
++	if (nau7802_read_conversion(st) < 0)
++		return IRQ_HANDLED;
++
++	/* Because there is actually only one ADC for both channels, we have to
++	 * wait for enough conversions to happen before getting a significant
++	 * value when changing channels and the values are far appart.
++	 */
++	if (st->conversion_count < st->min_conversions)
++		st->conversion_count++;
++	if (st->conversion_count >= st->min_conversions)
++		complete_all(&st->value_ok);
++
++	return IRQ_HANDLED;
++}
++
++static int nau7802_read_irq(struct iio_dev *indio_dev,
++			struct iio_chan_spec const *chan,
++			int *val)
++{
++	struct nau7802_state *st = iio_priv(indio_dev);
++	int ret;
++
++	INIT_COMPLETION(st->value_ok);
++	enable_irq(st->client->irq);
++
++	nau7802_sync(st);
++
++	/* read registers to ensure we flush everything */
++	ret = nau7802_read_conversion(st);
++	if (ret < 0)
++		goto read_chan_info_failure;
++
++	/* Wait for a conversion to finish */
++	ret = wait_for_completion_interruptible_timeout(&st->value_ok,
++			msecs_to_jiffies(1000));
++	if (ret == 0)
++		ret = -ETIMEDOUT;
++
++	if (ret < 0)
++		goto read_chan_info_failure;
++
++	disable_irq(st->client->irq);
++
++	*val = st->last_value;
++
++	return IIO_VAL_INT;
++
++read_chan_info_failure:
++	disable_irq(st->client->irq);
++
++	return ret;
++}
++
++static int nau7802_read_poll(struct iio_dev *indio_dev,
++			struct iio_chan_spec const *chan,
++			int *val)
++{
++	struct nau7802_state *st = iio_priv(indio_dev);
++	int ret;
++	u8 data;
++
++	nau7802_sync(st);
++
++	/* read registers to ensure we flush everything */
++	ret = nau7802_read_conversion(st);
++	if (ret < 0)
++		return ret;
++
++	/* Because there is actually only one ADC for both channels, we have to
++	 * wait for enough conversions to happen before getting a significant
++	 * value when changing channels and the values are far appart.
++	 */
++	do {
++		data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_PUCTRL);
++		if (data < 0)
++			return data;
++
++		while (!(data & NAU7802_PUCTRL_CR_BIT)) {
++			if (st->sample_rate != NAU7802_SAMP_FREQ_320)
++				msleep(20);
++			else
++				mdelay(4);
++			data = i2c_smbus_read_byte_data(st->client,
++							NAU7802_REG_PUCTRL);
++			if (data < 0)
++				return data;
++		}
++
++		nau7802_read_conversion(st);
++		if (ret < 0)
++			return ret;
++		if (st->conversion_count < st->min_conversions)
++			st->conversion_count++;
++	} while (st->conversion_count < st->min_conversions);
++
++	*val = st->last_value;
++
++	return IIO_VAL_INT;
++}
++
++static int nau7802_read_raw(struct iio_dev *indio_dev,
++			    struct iio_chan_spec const *chan,
++			    int *val, int *val2, long mask)
++{
++	struct nau7802_state *st = iio_priv(indio_dev);
++	u8 data;
++	int ret;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		mutex_lock(&st->lock);
++		/*
++		 * Select the channel to use
++		 *   - Channel 1 is value 0 in the CHS register
++		 *   - Channel 2 is value 1 in the CHS register
++		 */
++		data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL2);
++		if (data < 0)
++			return data;
++
++		if (((data & NAU7802_CTRL2_CHS_BIT) && !chan->channel) ||
++				(!(data & NAU7802_CTRL2_CHS_BIT) &&
++				 chan->channel)) {
++			st->conversion_count = 0;
++			ret = i2c_smbus_write_byte_data(st->client,
++					NAU7802_REG_CTRL2,
++					NAU7802_CTRL2_CHS(chan->channel) |
++					NAU7802_CTRL2_CRS(st->sample_rate));
++
++			if (ret < 0)
++				return ret;
++		}
++
++		if (st->client->irq)
++			ret = nau7802_read_irq(indio_dev, chan, val);
++		else
++			ret = nau7802_read_poll(indio_dev, chan, val);
++
++		mutex_unlock(&st->lock);
++		return ret;
++
++	case IIO_CHAN_INFO_SCALE:
++		data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_CTRL1);
++		if (data < 0)
++			return data;
++
++		/* we have 24 bits of signed data, that means 23 bits of data
++		 * plus the sign bit */
++		*val = st->vref_mv;
++		*val2 = 23 + (data & NAU7802_CTRL1_GAINS_BITS);
++
++		return IIO_VAL_FRACTIONAL_LOG2;
++
++	case IIO_CHAN_INFO_SAMP_FREQ:
++		*val =  nau7802_sample_freq_avail[st->sample_rate];
++		*val2 = 0;
++		return IIO_VAL_INT;
++
++	default:
++		break;
++	}
++
++	return -EINVAL;
++}
++
++static int nau7802_write_raw(struct iio_dev *indio_dev,
++			     struct iio_chan_spec const *chan,
++			     int val, int val2, long mask)
++{
++	struct nau7802_state *st = iio_priv(indio_dev);
++	int i;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_SCALE:
++		for (i = 0; i < ARRAY_SIZE(st->scale_avail); i++)
++			if (val2 == st->scale_avail[i])
++				return nau7802_set_gain(st, i);
++
++		break;
++
++	case IIO_CHAN_INFO_SAMP_FREQ:
++		for (i = 0; i < ARRAY_SIZE(nau7802_sample_freq_avail); i++)
++			if (val == nau7802_sample_freq_avail[i]) {
++				mutex_lock(&st->lock);
++				st->sample_rate = i;
++				st->conversion_count = 0;
++				i2c_smbus_write_byte_data(st->client,
++					NAU7802_REG_CTRL2,
++					NAU7802_CTRL2_CRS(st->sample_rate));
++				mutex_unlock(&st->lock);
++				return 0;
++			}
++
++		break;
++
++	default:
++		break;
++	}
++
++	return -EINVAL;
++}
++
++static int nau7802_write_raw_get_fmt(struct iio_dev *indio_dev,
++				     struct iio_chan_spec const *chan,
++				     long mask)
++{
++	return IIO_VAL_INT_PLUS_NANO;
++}
++
++static const struct iio_info nau7802_info = {
++	.driver_module = THIS_MODULE,
++	.read_raw = &nau7802_read_raw,
++	.write_raw = &nau7802_write_raw,
++	.write_raw_get_fmt = nau7802_write_raw_get_fmt,
++	.attrs = &nau7802_attribute_group,
++};
++
++static int nau7802_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct iio_dev *indio_dev;
++	struct nau7802_state *st;
++	struct device_node *np = client->dev.of_node;
++	int i, ret;
++	u8 data;
++	u32 tmp;
++
++	if (!client->dev.of_node) {
++		dev_err(&client->dev, "No device tree node available.\n");
++		return -EINVAL;
++	}
++
++	indio_dev = iio_device_alloc(sizeof(*st));
++	if (indio_dev == NULL)
++		return -ENOMEM;
++
++	st = iio_priv(indio_dev);
++
++	i2c_set_clientdata(client, indio_dev);
++
++	indio_dev->dev.parent = &client->dev;
++	indio_dev->name = dev_name(&client->dev);
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->info = &nau7802_info;
++
++	st->client = client;
++
++	/* Reset the device */
++	i2c_smbus_write_byte_data(st->client, NAU7802_REG_PUCTRL,
++				  NAU7802_PUCTRL_RR_BIT);
++
++	/* Enter normal operation mode */
++	i2c_smbus_write_byte_data(st->client, NAU7802_REG_PUCTRL,
++				  NAU7802_PUCTRL_PUD_BIT);
++
++	/*
++	 * After about 200 usecs, the device should be ready and then
++	 * the Power Up bit will be set to 1. If not, wait for it.
++	 */
++	udelay(210);
++	data = i2c_smbus_read_byte_data(st->client, NAU7802_REG_PUCTRL);
++	if (data < 0)
++		return -ENODEV;
++	if (!(data & NAU7802_PUCTRL_PUR_BIT))
++		return -ENODEV;
++
++	of_property_read_u32(np, "nuvoton,vldo", &tmp);
++	st->vref_mv = tmp;
++
++	/* Populate available ADC input ranges */
++	for (i = 0; i < ARRAY_SIZE(st->scale_avail); i++)
++		st->scale_avail[i] = (((u64)st->vref_mv) * 1000000000ULL)
++					   >> (23 + i);
++
++	data = NAU7802_PUCTRL_PUD_BIT | NAU7802_PUCTRL_PUA_BIT |
++		NAU7802_PUCTRL_CS_BIT;
++	if (tmp >= 2400)
++		data |= NAU7802_PUCTRL_AVDDS_BIT;
++
++	i2c_smbus_write_byte_data(st->client, NAU7802_REG_PUCTRL, data);
++	i2c_smbus_write_byte_data(st->client, NAU7802_REG_ADC_CTRL, 0x30);
++
++	if (tmp >= 2400) {
++		data = NAU7802_CTRL1_VLDO((4500 - tmp) / 300);
++		i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL1, data);
++	}
++
++	st->min_conversions = NAU7802_DEFAULT_CONVERSIONS;
++
++	/*
++	 * The ADC fires continuously and we can't do anything about
++	 * it. So we need to have the IRQ disabled by default, and we
++	 * will enable them back when we will need them..
++	 */
++	if (client->irq) {
++		ret = request_threaded_irq(client->irq,
++				NULL,
++				nau7802_eoc_trigger,
++				IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++				client->dev.driver->name,
++				indio_dev);
++		if (ret) {
++			/*
++			 * What may happen here is that our IRQ controller is
++			 * not able to get level interrupt but this is required
++			 * by this ADC as when going over 40 sample per second,
++			 * the interrupt line may stay high between conversions.
++			 * So, we continue no matter what but we switch to
++			 * polling mode.
++			 */
++			dev_info(&client->dev,
++				"Failed to allocate IRQ, using polling mode\n");
++			client->irq = 0;
++		} else
++			disable_irq(client->irq);
++	}
++
++	if (!client->irq) {
++		/*
++		 * We are polling, use the fastest sample rate by
++		 * default
++		 */
++		st->sample_rate = NAU7802_SAMP_FREQ_320;
++		i2c_smbus_write_byte_data(st->client, NAU7802_REG_CTRL2,
++					  NAU7802_CTRL2_CRS(st->sample_rate));
++	}
++
++	/* Setup the ADC channels available on the board */
++	indio_dev->num_channels = 2;
++	indio_dev->channels = nau7802_chan_array;
++
++	init_completion(&st->value_ok);
++	mutex_init(&st->lock);
++	mutex_init(&st->data_lock);
++
++	ret = iio_device_register(indio_dev);
++	if (ret < 0) {
++		dev_err(&client->dev, "Couldn't register the device.\n");
++		goto error_device_register;
++	}
++
++	return 0;
++
++error_device_register:
++	mutex_destroy(&st->lock);
++	mutex_destroy(&st->data_lock);
++	if (client->irq)
++		free_irq(client->irq, indio_dev);
++	iio_device_free(indio_dev);
++
++	return ret;
++}
++
++static int nau7802_remove(struct i2c_client *client)
++{
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct nau7802_state *st = iio_priv(indio_dev);
++
++	iio_device_unregister(indio_dev);
++	mutex_destroy(&st->lock);
++	mutex_destroy(&st->data_lock);
++	if (client->irq)
++		free_irq(client->irq, indio_dev);
++	iio_device_free(indio_dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id nau7802_i2c_id[] = {
++	{ "nau7802", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, nau7802_i2c_id);
++
++static const struct of_device_id nau7802_dt_ids[] = {
++	{ .compatible = "nuvoton,nau7802" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, nau7802_dt_ids);
++
++static struct i2c_driver nau7802_driver = {
++	.probe = nau7802_probe,
++	.remove = nau7802_remove,
++	.id_table = nau7802_i2c_id,
++	.driver = {
++		   .name = "nau7802",
++		   .of_match_table = of_match_ptr(nau7802_dt_ids),
++	},
++};
++
++module_i2c_driver(nau7802_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Nuvoton NAU7802 ADC Driver");
++MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
++MODULE_AUTHOR("Alexandre Belloni <alexandre.belloni@free-electrons.com>");
+-- 
+1.8.1.2
 
