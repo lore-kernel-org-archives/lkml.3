@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935708Ab3FTDjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:39:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25815 "EHLO
+	id S935753Ab3FTDj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:39:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32169 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935694Ab3FTDgk (ORCPT
+	with ESMTP id S935661Ab3FTDgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Jun 2013 23:36:40 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=YmshgJELKgYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=sRP8MWyoXXQA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=PHpoTpGJIJKG0C60QpcA:9 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=rToyBxrhR2Rdg8mJ:21 a=DocnwUXAyffPZPUT:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=22EiQ5FInTMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bzfvriLXiRUA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=ACiqJx0mWyVRsQkHO8IA:9 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=HoHcwx061DMkM95v:21 a=rD9T5Sjv4GvA7GZy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130620033639.412979188@goodmis.org>
+Message-Id: <20130620033639.086221025@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 19 Jun 2013 23:35:22 -0400
+Date: Wed, 19 Jun 2013 23:35:20 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [for-next][PATCH 06/12] ftrace: Remove ftrace_regex_lseek()
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>, Wang YanQing <udknight@gmail.com>
+Subject: [for-next][PATCH 04/12] tracing: Fix file mode of free_buffer
 References: <20130620033516.003166252@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-Remove-ftrace_regex_lseek.patch
+Content-Disposition: inline; filename=0004-tracing-Fix-file-mode-of-free_buffer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizefan@huawei.com>
+From: Wang YanQing <udknight@gmail.com>
 
-This is a leftover after ftrace_regex_lseek() was renamed to
-ftrace_filter_lseek() and then ftrace_filter_lseek() was moved
-out side of CONFIG_DYNAMIC_FTRACE.
+Commit 4f271a2a60c748599b30bb4dafff30d770439b96
+(tracing: Add a proc file to stop tracing and free buffer)
+implement a method to free up ring buffer in kernel memory
+in the release code path of free_buffer's fd.
 
-Link: http://lkml.kernel.org/r/51B1A1BD.40905@huawei.com
+Then we don't need read/write support for free_buffer,
+indeed we just have a dummy write fop, and don't implement read fop.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+So the 0200 is more reasonable file mode for free_buffer than
+the current file mode 0644.
+
+Link: http://lkml.kernel.org/r/20130526085201.GA3183@udknight
+
+Acked-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Acked-by: David Sharp <dhsharp@google.com>
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    4 ----
- 1 file changed, 4 deletions(-)
+ kernel/trace/trace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 99d0fbc..e48ed1d 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -566,10 +566,6 @@ static inline ssize_t ftrace_filter_write(struct file *file, const char __user *
- 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
- static inline ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos) { return -ENODEV; }
--static inline loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
--{
--	return -ENODEV;
--}
- static inline int
- ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
- #endif /* CONFIG_DYNAMIC_FTRACE */
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 1a41023..5f4a09c 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5935,7 +5935,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
+ 			  tr, &tracing_total_entries_fops);
+ 
+-	trace_create_file("free_buffer", 0644, d_tracer,
++	trace_create_file("free_buffer", 0200, d_tracer,
+ 			  tr, &tracing_free_buffer_fops);
+ 
+ 	trace_create_file("trace_marker", 0220, d_tracer,
 -- 
 1.7.10.4
 
