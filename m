@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab3FTOlj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:41:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7382 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757312Ab3FTOlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:41:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,905,1363158000"; 
-   d="scan'208";a="356797338"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jerome Blin <jerome.blin@intel.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] spi/pxa2xx: fix memory corruption due to wrong size used in devm_kzalloc()
-Date: Thu, 20 Jun 2013 17:44:22 +0300
-Message-Id: <1371739462-21139-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1030257Ab3FTOsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:48:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47634 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893Ab3FTOsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:48:52 -0400
+Date: Thu, 20 Jun 2013 07:48:36 -0700
+From: tip-bot for Michel Lespinasse <tipbot@zytor.com>
+Message-ID: <tip-b52e0a7c4e4100f8683af508664e60e1603070f9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, walken@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, walken@google.com
+In-Reply-To: <1370518875-1346-1-git-send-email-walken@google.com>
+References: <1370518875-1346-1-git-send-email-walken@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix trigger_all_cpu_backtrace()
+  implementation
+Git-Commit-ID: b52e0a7c4e4100f8683af508664e60e1603070f9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 07:48:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI part of the driver accidentally used sizeof(*ssp) instead of the
-correct sizeof(*pdata). This leads to nasty memory corruptions like the one
-below:
+Commit-ID:  b52e0a7c4e4100f8683af508664e60e1603070f9
+Gitweb:     http://git.kernel.org/tip/b52e0a7c4e4100f8683af508664e60e1603070f9
+Author:     Michel Lespinasse <walken@google.com>
+AuthorDate: Thu, 6 Jun 2013 04:41:15 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 20 Jun 2013 14:00:21 +0200
 
-    BUG: unable to handle kernel paging request at 0000000749fd30b8
-    IP: [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
-    PGD 0
-    Oops: 0000 [#1] PREEMPT SMP
-    Modules linked in:
-    CPU: 0 PID: 30 Comm: kworker/0:1 Not tainted 3.10.0-rc6v3.10-rc6_sdhci_modprobe+ #443
-    task: ffff8801483a0940 ti: ffff88014839e000 task.ti: ffff88014839e000
-    RIP: 0010:[<ffffffff813fe8a1>]  [<ffffffff813fe8a1>] __list_del_entry+0x31/0xd0
-    RSP: 0000:ffff88014839fde8  EFLAGS: 00010046
-    RAX: ffff880149fd30b0 RBX: ffff880149fd3040 RCX: dead000000200200
-    RDX: 0000000749fd30b0 RSI: ffff880149fd3058 RDI: ffff88014834d640
-    RBP: ffff88014839fde8 R08: ffff88014834d640 R09: 0000000000000001
-    R10: ffff8801483a0940 R11: 0000000000000001 R12: ffff880149fd3040
-    R13: ffffffff810e0b30 R14: ffff8801483a0940 R15: ffff88014834d640
-    FS:  0000000000000000(0000) GS:ffff880149e00000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-    CR2: 0000000000000168 CR3: 0000000001e0b000 CR4: 00000000001407f0
-    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-    Stack:
-     ffff88014839fe48 ffffffff810e0baf ffffffff81120abd ffff88014839fe20
-     ffff8801483a0940 ffff8801483a0940 ffff8801483a0940 ffff8801486b1c90
-     ffff88014834d640 ffffffff810e0b30 0000000000000000 0000000000000000
-    Call Trace:
-     [<ffffffff810e0baf>] worker_thread+0x7f/0x390
-     [<ffffffff81120abd>] ? trace_hardirqs_on+0xd/0x10
-     [<ffffffff810e0b30>] ? manage_workers.isra.22+0x2b0/0x2b0
-     [<ffffffff810e6c09>] kthread+0xd9/0xe0
-     [<ffffffff810f93df>] ? local_clock+0x3f/0x50
-     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
-     [<ffffffff818c5dec>] ret_from_fork+0x7c/0xb0
-     [<ffffffff810e6b30>] ? kthread_create_on_node+0x110/0x110
+x86: Fix trigger_all_cpu_backtrace() implementation
 
-Fix this by using the right structure size in devm_kzalloc().
+The following change fixes the x86 implementation of
+trigger_all_cpu_backtrace(), which was previously (accidentally,
+as far as I can tell) disabled to always return false as on
+architectures that do not implement this function.
 
-Reported-by: Jerome Blin <jerome.blin@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: stable@vger.kernel.org # 3.9+
+trigger_all_cpu_backtrace(), as defined in include/linux/nmi.h,
+should call arch_trigger_all_cpu_backtrace() if available, or
+return false if the underlying arch doesn't implement this
+function.
+
+x86 did provide a suitable arch_trigger_all_cpu_backtrace()
+implementation, but it wasn't actually being used because it was
+declared in asm/nmi.h, which linux/nmi.h doesn't include. Also,
+linux/nmi.h couldn't easily be fixed by including asm/nmi.h,
+because that file is not available on all architectures.
+
+I am proposing to fix this by moving the x86 definition of
+arch_trigger_all_cpu_backtrace() to asm/irq.h.
+
+Tested via: echo l > /proc/sysrq-trigger
+
+Before the change, this uses a fallback implementation which
+shows backtraces on active CPUs (using
+smp_call_function_interrupt() )
+
+After the change, this shows NMI backtraces on all CPUs
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1370518875-1346-1-git-send-email-walken@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/spi/spi-pxa2xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/irq.h    | 5 +++++
+ arch/x86/include/asm/nmi.h    | 4 +---
+ arch/x86/kernel/apic/hw_nmi.c | 1 +
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index f5d84d6..48b396f 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1075,7 +1075,7 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
- 	    acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
- 		return NULL;
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index ba870bb..57873be 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -41,4 +41,9 @@ extern int vector_used_by_percpu_irq(unsigned int vector);
  
--	pdata = devm_kzalloc(&pdev->dev, sizeof(*ssp), GFP_KERNEL);
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata) {
- 		dev_err(&pdev->dev,
- 			"failed to allocate memory for platform data\n");
--- 
-1.8.3.1
-
+ extern void init_ISA_irqs(void);
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
++void arch_trigger_all_cpu_backtrace(void);
++#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
++#endif
++
+ #endif /* _ASM_X86_IRQ_H */
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index c0fa356..86f9301 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -18,9 +18,7 @@ extern int proc_nmi_enabled(struct ctl_table *, int ,
+ 			void __user *, size_t *, loff_t *);
+ extern int unknown_nmi_panic;
+ 
+-void arch_trigger_all_cpu_backtrace(void);
+-#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+-#endif
++#endif /* CONFIG_X86_LOCAL_APIC */
+ 
+ #define NMI_FLAG_FIRST	1
+ 
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 31cb9ae..a698d71 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -9,6 +9,7 @@
+  *
+  */
+ #include <asm/apic.h>
++#include <asm/nmi.h>
+ 
+ #include <linux/cpumask.h>
+ #include <linux/kdebug.h>
