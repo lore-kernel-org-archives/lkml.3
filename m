@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161203Ab3FTU1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 16:27:38 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:26188 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161142Ab3FTU1h convert rfc822-to-8bit (ORCPT
+	id S1030383Ab3FTU2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 16:28:25 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:33368 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965269Ab3FTU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 16:27:37 -0400
-X-AuditID: cbfec37d-b7f036d000004805-b3-51c365b88498
-From: Daniel Phillips <d.phillips@partner.samsung.com>
-To: Christian Stroetmann <stroetmann@ontolinux.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tux3 <tux3@tux3.org>
-Subject: Re: Tux3 Report: Meet Shardmap, the designated successor of HTree
-Thread-topic: Tux3 Report: Meet Shardmap, the designated successor of HTree
-Thread-index: Ac5t1+vVOrBF/IDKR66mJLNzgb4UiA==
-Date: Thu, 20 Jun 2013 20:27:34 +0000
-Message-id: <1EC23D2B9975384993D85B5DB93AAE8860E5EB@sisaex02sj>
-References: <1EC23D2B9975384993D85B5DB93AAE8860E5A2@sisaex02sj>
- <51C353C6.2070406@ontolinux.com>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t9hP90dqYcDDVYfEbLYs/cki8XlXXPY
-	LLpfVVp8OPCZ0YHFY+P6TjaPb09fsXl83iQXwBzFZZOSmpNZllqkb5fAlbHu2ifGgr9sFXsv
-	72NpYDzH2sXIySEhYCKx5ulXdghbTOLCvfVsXYxcHEICyxglXpx7xQLh9DJJNOx8DOXMZ5Q4
-	vXcLI0gLm4CZxNLjZ5hAbBEBY4nZM7aygNjMAuUSDW3XwWxhAS+JR6eWskHUeEscBVvBAWTr
-	Sby4kwISZhFQlZg/6SDYGF4Be4n1cy6BXSQkkCRxZOFcsDgj0HXfT61hghgvLtHcepMF4moB
-	iSV7zjND2KISLx//YwUZLyGgKLF9tRVEuZbE+p3HoVq1JZ68u8AKsUpQ4sfkeywTGMVmIZk6
-	C0nLLCQts5C0LGBkWcUoVlqcXFCclJ5aYaJXnJhbXJqXrpecn7uJERJbtTsY73+1OcQowMGo
-	xMMboHQ4UIg1say4MvcQowQHs5II76NgoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG9Dn83XdS
-	tWzXqTP8ZTLclJtUOfGBzjqeU5x+25nXKVwU/JpyUFNifpDxbL7sx0unTt6TwFYgPaX2tv7O
-	XZ4st1/qt838H5291pjvyOOTmV5zv53cfey44KXnzEt+8Oy/XTjluKgES/6DLKldJs6MkX+m
-	m+ke45dRtf/zzY8v1Opy04Idfh/FlViKMxINtZiLihMBT+B3CIsCAAA=
+	Thu, 20 Jun 2013 16:28:23 -0400
+Message-ID: <51C365E0.1060000@gmail.com>
+Date: Thu, 20 Jun 2013 22:28:16 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Airlie <airlied@linux.ie>,
+        Darren Etheridge <darren.etheridge@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] drm/i2c: tda998x: fix sync generation and calculation
+References: <1371757563-27862-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130620200624.GQ2718@n2100.arm.linux.org.uk>
+In-Reply-To: <20130620200624.GQ2718@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 12:12 PM, Christian Stroetmann wrote:
-> 1. Stop copying my intellectual properties related with file systems and
-> implementing them. You always came several months too late and I am not
-> interested to let it become a running gag, definitely.
-> 2. Stop marketing my ideas, especially in a way that confuses the public
-> about the true origin even further. I am already marketing them on my own.
-> 3. Give credits to my intellectual properties in any case, even if you
-> make a derivation, and take care about the correct licensing.
+On 06/20/2013 10:06 PM, Russell King - ARM Linux wrote:
+> On Thu, Jun 20, 2013 at 09:46:03PM +0200, Sebastian Hesselbarth wrote:
+>> +	ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
+>> +	de_pix_s     = mode->htotal - mode->hdisplay;
+>> +	de_pix_e     = de_pix_s + mode->hdisplay;
+>> +	hs_pix_s     = mode->hsync_start - mode->hdisplay;
+>> +	hs_pix_e     = hs_pix_s + mode->hsync_end - mode->hsync_start;
+>
+> Correct, however, these can be simplified.
+[...]
+> These calculations are the same as what was originally in the driver:
+>
+> +       de_start   = mode->htotal - mode->hdisplay;
+> +       de_end     = mode->htotal;
+> +       hs_start   = mode->hsync_start - mode->hdisplay;
+> +       hs_end     = mode->hsync_end - mode->hdisplay;
+>
+> when it was first committed.
+>
+> This is otherwise exactly what I came up with which gets my TV working
+> again in HDMI mode.
 
-Could you please direct us to details of your design so that we may 
-properly appreciate it?
+Russell,
 
-Note that the key idea in Shardmap is not simply logging a hash table, 
-but sharding it and logging it as a forest of fifos.
+I am fine with any way to describe de/hs but you should notice that
+I also modified refpix/refline and added interlaced sync. With the
+original sync calculation, on some modes there was source blanking
+captured by TDA998x which was also visible in the output image. I
+chose the above description to make it more readable.
 
-Regards,
+Also the patch takes care of input sync and output sync inversion
+while the original driver always expected positive HS/VS.
 
-Daniel
+I tested these sync settings on 4 DVI monitors and TV sets all
+accepted each mode perfectly. Especially, not-so-cheap TV sets
+are very picky about wrong sync.
 
+Sebastian
