@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab3FTHKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:10:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57006 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab3FTHKH (ORCPT
+	id S1754359Ab3FTHKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:10:30 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8349 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3FTHK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:10:07 -0400
-Date: Thu, 20 Jun 2013 17:09:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the tip tree
-Message-Id: <20130620170951.248631b40c84c30a1a57ba7f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Jun_2013_17_09_51_+1000_78.Fb=v_Trqckf6N"
+	Thu, 20 Jun 2013 03:10:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 20 Jun 2013 00:08:20 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>,
+        <thierry.reding@avionic-design.de>, <bhelgaas@google.com>,
+        <ldewangan@nvidia.com>, <olof@lixom.net>, <hdoyu@nvidia.com>,
+        <pgaikwad@nvidia.com>, <mturquette@linaro.org>,
+        <pdeschrijver@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>
+CC: <jtukkinen@nvidia.com>, <kthota@nvidia.com>, <jagarwal@nvidia.com>
+Subject: [PATCH V1] ARM: dts: tegra: Modify pcie memory space size
+Date: Thu, 20 Jun 2013 12:44:51 +0530
+Message-ID: <1371712491-31070-1-git-send-email-jagarwal@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jun_2013_17_09_51_+1000_78.Fb=v_Trqckf6N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+- decrease non-prefetch memory size to 128 MB
+- increase prefetch memory size to 384 MB
+- above change is done because most pcie devices
+  prefetch memory size requirement is quite higher
+  compared to non-prefetch memory space.
 
-Hi all,
+Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+---
+Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-integrator/integrator_ap.c between commit 38ff87f77af0
-("sched_clock: Make ARM's sched_clock generic for all architectures")
-from the tip tree and commit 01ef31053ddd ("ARM: integrator: move VGA
-base assignment") from the arm-soc tree.
+ arch/arm/boot/dts/tegra20.dtsi |    4 ++--
+ arch/arm/boot/dts/tegra30.dtsi |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index fd2a7e1..e09e97f 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -483,8 +483,8 @@
+ 		ranges = <0x82000000 0 0x80000000 0x80000000 0 0x00001000   /* port 0 registers */
+ 			  0x82000000 0 0x80001000 0x80001000 0 0x00001000   /* port 1 registers */
+ 			  0x81000000 0 0          0x82000000 0 0x00010000   /* downstream I/O */
+-			  0x82000000 0 0xa0000000 0xa0000000 0 0x10000000   /* non-prefetchable memory */
+-			  0xc2000000 0 0xb0000000 0xb0000000 0 0x10000000>; /* prefetchable memory */
++			  0x82000000 0 0xa0000000 0xa0000000 0 0x08000000   /* non-prefetchable memory */
++			  0xc2000000 0 0xa8000000 0xa8000000 0 0x18000000>; /* prefetchable memory */
+ 
+ 		clocks = <&tegra_car 70>, <&tegra_car 72>, <&tegra_car 74>,
+ 			 <&tegra_car 118>;
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index e0b96bd..b02bbb4 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -35,8 +35,8 @@
+ 			  0x82000000 0 0x00001000 0x00001000 0 0x00001000   /* port 1 configuration space */
+ 			  0x82000000 0 0x00004000 0x00004000 0 0x00001000   /* port 2 configuration space */
+ 			  0x81000000 0 0          0x02000000 0 0x00010000   /* downstream I/O */
+-			  0x82000000 0 0x20000000 0x20000000 0 0x10000000   /* non-prefetchable memory */
+-			  0xc2000000 0 0x30000000 0x30000000 0 0x10000000>; /* prefetchable memory */
++			  0x82000000 0 0x20000000 0x20000000 0 0x08000000   /* non-prefetchable memory */
++			  0xc2000000 0 0x28000000 0x28000000 0 0x18000000>; /* prefetchable memory */
+ 
+ 		clocks = <&tegra_car 70>, <&tegra_car 72>, <&tegra_car 74>,
+ 			 <&tegra_car 118>, <&tegra_car 215>;
+-- 
+1.7.0.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-integrator/integrator_ap.c
-index aa43462,a5b15c4..0000000
---- a/arch/arm/mach-integrator/integrator_ap.c
-+++ b/arch/arm/mach-integrator/integrator_ap.c
-@@@ -41,8 -41,6 +41,7 @@@
-  #include <linux/stat.h>
-  #include <linux/sys_soc.h>
-  #include <linux/termios.h>
- +#include <linux/sched_clock.h>
-- #include <video/vga.h>
- =20
-  #include <mach/hardware.h>
-  #include <mach/platform.h>
-
---Signature=_Thu__20_Jun_2013_17_09_51_+1000_78.Fb=v_Trqckf6N
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRwqrEAAoJEECxmPOUX5FE7ZcP/2aLQObFpIJj57rw7tPwlPLB
-QItGpphI9kgtnT2geFpAQhU1yUR6WLVQpSkMp3+wGhvkOJlsyGNruH6tMT8JBfwI
-XEvtjsqLZo/Z720ievpvas54QRHYpDtMCcG8W0WY59svQ1ahc7x9Z4Ky3VbM58LA
-U5UqIX9rimtdcRRmvwFMf5+NGINwOGDAERVqdjf0mWoDI9P5Yhq3OfqNTlYxq3Z4
-7FwG956IKOvJLbvaa3+Z0wVu0MNpW5aagkEm4EtfyA+lctSwMjitIGqmptM7qlbq
-vF3Jairn1wnSdQXTPS3ubJIqVAqafdH4tqvhraY54DzDSVwS+0zzg9f6f8fNpK9K
-pQXemX/Kyvnay2UdgYdflDPyDRLW7lTap2LBd31zv0+8KJGVoOB18LT+dfO8CypO
-2YCFfk+MO5/VGUigan5yP/EF2hFZWm1yibsM0gtHUlNDc0dpXitSAAdKxDKMBatN
-VGff7vonDZIY4LQ3L83/gTn9BjJmxTYUJOeAeGIOzWWfMOBsM+oWJ00eYwJWX2Oc
-nY2gdOzPXdGjf0DWiiyoUqcuCTXOpa2o0db1KMqWV6FdxbiqmpFvvPLWQmdMPeBA
-SDUMTIm1ql0bNcvmbgnn5ayiIVZ1rhpBvZ21KJVlfdZFS03o432T12IvVbrx61Rm
-PKL55sENrMq7YETCkAqk
-=3E2p
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Jun_2013_17_09_51_+1000_78.Fb=v_Trqckf6N--
