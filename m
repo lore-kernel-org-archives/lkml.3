@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965498Ab3FTMDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:03:51 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25503 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965372Ab3FTMDt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:03:49 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2EF71.4010308@asianux.com>
-Date: Thu, 20 Jun 2013 20:02:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S935470Ab3FTMDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:03:44 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:27123 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512Ab3FTMDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:03:23 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 7/7] metag: tz1090: instantiate gpio-tz1090-pdc
+Date: Thu, 20 Jun 2013 13:02:38 +0100
+Message-ID: <1371729758-10196-8-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
+References: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, "'Jiri Kosina'" <trivial@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
- so save one instruction, simpler and easier for readers.
-References: <51C2E6F9.80107@asianux.com>
-In-Reply-To: <51C2E6F9.80107@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_20_13_03_19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Instantiate the PDC GPIO controller driver from tz1090.dtsi ready for
+when it is merged.
 
-Oh, sorry, maybe it is a trivial patch, also need send to
-trivial@kernel.org.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/metag/boot/dts/tz1090.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-
-On 06/20/2013 07:26 PM, Chen Gang wrote:
-> 
-> Since copy_to_user() will check 'value', we do not need check it outside
-> again,  so can save one comparing instruction at least.
-> 
-> Also can let code simpler and easier for readers: if checking parameter
-> 'value', it will easily lead readers to think about why not return
-> -EINVAL instead of -EFAULT, when checking parameter failed.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/itimer.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/itimer.c b/kernel/itimer.c
-> index 8d262b4..3b12271 100644
-> --- a/kernel/itimer.c
-> +++ b/kernel/itimer.c
-> @@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
->  
->  SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
->  {
-> -	int error = -EFAULT;
-> +	int error;
->  	struct itimerval get_buffer;
->  
-> -	if (value) {
-> -		error = do_getitimer(which, &get_buffer);
-> -		if (!error &&
-> -		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
-> -			error = -EFAULT;
-> -	}
-> +	error = do_getitimer(which, &get_buffer);
-> +	if (!error &&
-> +	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
-> +		error = -EFAULT;
-> +
->  	return error;
->  }
->  
-> 
-
-
+diff --git a/arch/metag/boot/dts/tz1090.dtsi b/arch/metag/boot/dts/tz1090.dtsi
+index 66cf55d..24ea7d2 100644
+--- a/arch/metag/boot/dts/tz1090.dtsi
++++ b/arch/metag/boot/dts/tz1090.dtsi
+@@ -90,5 +90,19 @@
+ 				gpio-ranges = <&pinctrl 0 60 30>;
+ 			};
+ 		};
++
++		pdc_gpios: gpios@02006500 {
++			gpio-controller;
++			#gpio-cells = <2>;
++
++			compatible = "img,tz1090-pdc-gpio";
++			reg = <0x02006500 0x100>;
++
++			interrupt-parent = <&pdc>;
++			interrupts =	<8  IRQ_TYPE_NONE>,
++					<9  IRQ_TYPE_NONE>,
++					<10 IRQ_TYPE_NONE>;
++			gpio-ranges = <&pdc_pinctrl 0 0 7>;
++		};
+ 	};
+ };
 -- 
-Chen Gang
+1.8.1.2
 
-Asianux Corporation
+
