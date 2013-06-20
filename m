@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965052Ab3FTIiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:38:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44414 "EHLO bear.ext.ti.com"
+	id S965110Ab3FTIjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:39:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52202 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935345Ab3FTIiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:38:18 -0400
+	id S935370Ab3FTIiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:38:21 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <ldewangan@nvidia.com>, <broonie@kernel.org>
 CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
@@ -13,9 +13,9 @@ CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <sameo@linux.intel.com>, <ian@slimlogic.co.uk>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <kishon@ti.com>
-Subject: [PATCH 1/2] regulator: of: Added a property to indicate bypass mode support
-Date: Thu, 20 Jun 2013 14:07:37 +0530
-Message-ID: <1371717458-10307-2-git-send-email-kishon@ti.com>
+Subject: [PATCH 2/2] regulator: palmas: model SMPS10 as two regulators
+Date: Thu, 20 Jun 2013 14:07:38 +0530
+Message-ID: <1371717458-10307-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1371717458-10307-1-git-send-email-kishon@ti.com>
 References: <1371717458-10307-1-git-send-email-kishon@ti.com>
@@ -25,43 +25,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a property to indicate if the regulator supports bypass mode.
-Also modified of_get_regulation_constraints() to check for that
-property and set appropriate constraints.
+SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
+SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
+in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
+it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
+used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
+regulator_enable().
 
 Cc: Laxman Dewangan <ldewangan@nvidia.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/devicetree/bindings/regulator/regulator.txt |    1 +
- drivers/regulator/of_regulator.c                          |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/regulator/palmas-regulator.c |   39 ++++++++++++++++++++++++++++++----
+ include/linux/mfd/palmas.h           |    9 ++++----
+ 2 files changed, 40 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index ecfc6cc..48a3b8e 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -9,6 +9,7 @@ Optional properties:
- - regulator-max-microamp: largest current consumers may set
- - regulator-always-on: boolean, regulator should never be disabled
- - regulator-boot-on: bootloader/firmware enabled regulator
-+- regulator-allow-bypass: allow the regulator to go into bypass mode
- - <name>-supply: phandle to the parent supply/regulator node
- - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 3ae44ac..7004bab 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -97,7 +97,12 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
+ 	},
+ 	{
+-		.name		= "SMPS10",
++		.name		= "SMPS10_OUT1",
++		.sname		= "smps10-out2",
++		.ctrl_addr	= PALMAS_SMPS10_CTRL,
++	},
++	{
++		.name		= "SMPS10_OUT2",
+ 		.sname		= "smps10-in",
+ 		.ctrl_addr	= PALMAS_SMPS10_CTRL,
+ 	},
+@@ -487,6 +492,8 @@ static struct regulator_ops palmas_ops_smps10 = {
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.map_voltage		= regulator_map_voltage_linear,
++	.set_bypass		= regulator_set_bypass_regmap,
++	.get_bypass		= regulator_get_bypass_regmap,
+ };
  
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 66ca769..f3c8f8f 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -61,6 +61,9 @@ static void of_get_regulation_constraints(struct device_node *np,
- 	else /* status change should be possible if not always on. */
- 		constraints->valid_ops_mask |= REGULATOR_CHANGE_STATUS;
+ static int palmas_is_enabled_ldo(struct regulator_dev *dev)
+@@ -538,7 +545,8 @@ static int palmas_smps_init(struct palmas *palmas, int id,
+ 		return ret;
  
-+	if (of_property_read_bool(np, "regulator-allow-bypass"))
-+		constraints->valid_ops_mask |= REGULATOR_CHANGE_BYPASS;
-+
- 	ramp_delay = of_get_property(np, "regulator-ramp-delay", NULL);
- 	if (ramp_delay)
- 		constraints->ramp_delay = be32_to_cpu(*ramp_delay);
+ 	switch (id) {
+-	case PALMAS_REG_SMPS10:
++	case PALMAS_REG_SMPS10_OUT1:
++	case PALMAS_REG_SMPS10_OUT2:
+ 		reg &= ~PALMAS_SMPS10_CTRL_MODE_SLEEP_MASK;
+ 		if (reg_init->mode_sleep)
+ 			reg |= reg_init->mode_sleep <<
+@@ -681,7 +689,8 @@ static struct of_regulator_match palmas_matches[] = {
+ 	{ .name = "smps7", },
+ 	{ .name = "smps8", },
+ 	{ .name = "smps9", },
+-	{ .name = "smps10", },
++	{ .name = "smps10_out1", },
++	{ .name = "smps10_out2", },
+ 	{ .name = "ldo1", },
+ 	{ .name = "ldo2", },
+ 	{ .name = "ldo3", },
+@@ -869,7 +878,25 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 		pmic->desc[id].id = id;
+ 
+ 		switch (id) {
+-		case PALMAS_REG_SMPS10:
++		case PALMAS_REG_SMPS10_OUT1:
++			pmic->desc[id].n_voltages = PALMAS_SMPS10_NUM_VOLTAGES;
++			pmic->desc[id].ops = &palmas_ops_smps10;
++			pmic->desc[id].vsel_reg =
++					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
++							PALMAS_SMPS10_CTRL);
++			pmic->desc[id].vsel_mask = SMPS10_VSEL;
++			pmic->desc[id].enable_reg =
++					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
++							PALMAS_SMPS10_CTRL);
++			pmic->desc[id].enable_mask = SMPS10_SWITCH_EN;
++			pmic->desc[id].bypass_reg =
++					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
++							PALMAS_SMPS10_CTRL);
++			pmic->desc[id].bypass_mask = SMPS10_BYPASS_EN;
++			pmic->desc[id].min_uV = 3750000;
++			pmic->desc[id].uV_step = 1250000;
++			break;
++		case PALMAS_REG_SMPS10_OUT2:
+ 			pmic->desc[id].n_voltages = PALMAS_SMPS10_NUM_VOLTAGES;
+ 			pmic->desc[id].ops = &palmas_ops_smps10;
+ 			pmic->desc[id].vsel_reg =
+@@ -880,6 +907,10 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+ 							PALMAS_SMPS10_CTRL);
+ 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
++			pmic->desc[id].bypass_reg =
++					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
++							PALMAS_SMPS10_CTRL);
++			pmic->desc[id].bypass_mask = SMPS10_BYPASS_EN;
+ 			pmic->desc[id].min_uV = 3750000;
+ 			pmic->desc[id].uV_step = 1250000;
+ 			break;
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 8f21daf..1bbcda9 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -138,7 +138,8 @@ enum palmas_regulators {
+ 	PALMAS_REG_SMPS7,
+ 	PALMAS_REG_SMPS8,
+ 	PALMAS_REG_SMPS9,
+-	PALMAS_REG_SMPS10,
++	PALMAS_REG_SMPS10_OUT1,
++	PALMAS_REG_SMPS10_OUT2,
+ 	/* LDO regulators */
+ 	PALMAS_REG_LDO1,
+ 	PALMAS_REG_LDO2,
+@@ -336,9 +337,9 @@ struct palmas_pmic {
+ 	int smps123;
+ 	int smps457;
+ 
+-	int range[PALMAS_REG_SMPS10];
+-	unsigned int ramp_delay[PALMAS_REG_SMPS10];
+-	unsigned int current_reg_mode[PALMAS_REG_SMPS10];
++	int range[PALMAS_REG_SMPS10_OUT2];
++	unsigned int ramp_delay[PALMAS_REG_SMPS10_OUT2];
++	unsigned int current_reg_mode[PALMAS_REG_SMPS10_OUT2];
+ };
+ 
+ struct palmas_resource {
 -- 
 1.7.10.4
 
