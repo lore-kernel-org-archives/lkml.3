@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab3FTWBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 18:01:43 -0400
-Received: from out04.mta.xmission.com ([166.70.13.234]:42277 "EHLO
-	out04.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758298Ab3FTWBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 18:01:42 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Eric Paris <eparis@redhat.com>, containers@lists.linux-foundation.org,
-        serge.hallyn@ubuntu.com, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
-References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
-	<20130619204927.GJ3212@redhat.com>
-	<1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com>
-	<51C270AF.1080902@cn.fujitsu.com> <51C27266.3060909@cn.fujitsu.com>
-Date: Thu, 20 Jun 2013 15:01:09 -0700
-In-Reply-To: <51C27266.3060909@cn.fujitsu.com> (Gao feng's message of "Thu, 20
-	Jun 2013 11:09:26 +0800")
-Message-ID: <87y5a4phlm.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1758457Ab3FTWLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 18:11:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4857 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758431Ab3FTWLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 18:11:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,907,1363158000"; 
+   d="scan'208";a="257969870"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+CC: Borislav Petkov <bp@alien8.de>, "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Robert Richter <rric@kernel.org>
+Subject: RE: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Topic: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+Thread-Index: AQHObRaMG8NLWdbwnkKYI9OOtTgcdZk9yhyA//+MXBCAAHyTAP//kUdQgACKGAD//4yfcAAQQVUAAA5rtIAAJF5OgAANAjzQ
+Date: Thu, 20 Jun 2013 22:11:27 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA8993C@ORSMSX106.amr.corp.intel.com>
+References: <20130619175438.2852.93449.stgit@localhost.localdomain>
+ <20130619175728.2852.73156.stgit@localhost.localdomain>
+ <20130619180441.GK28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA88106@ORSMSX106.amr.corp.intel.com>
+ <20130619183640.GL28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA881C2@ORSMSX106.amr.corp.intel.com>
+ <20130619201438.GM28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA8838B@ORSMSX106.amr.corp.intel.com>
+ <20130619210706.GP28300@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F2DA884F0@ORSMSX106.amr.corp.intel.com>
+ <51C37251.4000008@linux.vnet.ibm.com>
+In-Reply-To: <51C37251.4000008@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19SehydcZFq0yGQND69DLhT5z0i/0Qg5so=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0938]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Gao feng <gaofeng@cn.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5KMBehb004741
 
-Gao feng <gaofeng@cn.fujitsu.com> writes:
+> - Two, the Generic Error Data Entry (aka UEFI Section Descriptor) has a 
+> flag which indicates 'Error Threshold Exceeded'. From the UEFI spec, it 
+> looks like we could consider this as an indication to offline the page; 
+> though I am not sure if/how this relates to the threshold value above.
 
-> On 06/20/2013 11:02 AM, Gao feng wrote:
->> If we don't tie audit to user namespace, there is still one problem.
->
-> One more problem. some audit messages are generated by some net subsystem
-> such as netfilter. If we don't tie audit to user namespace, we have no
-> idea where these audit messages should go. there is no relationship between
-> net namespace and audit namespace while we can get user namespace through
-> net user namespace.
+This one sounds to make sense ... the flag description sounds exactly what
+we want - I won't feel embarrassed explaining to people why Linux takes
+action when it sees a record like this.
 
-I am in favor of the user namespace tie in.
-
-I am in favor of running a per user namespace audit filter once per user
-namespace walking up the user namespace hierarchy.  Each filter would
-deliver messages to a different userspace audit daemon.
-
-Until we agreement to go that far I am not certain the kernel generated
-audit messages should go anywhere except to the global audit daemon.
-
-I think on an individual basis we can look at kernel audit messages and
-see if they should go to just the global user namespace.  Just the user
-namspace of the relevant network stack.  Or if the message should go to
-the audit daemon of every user namespace that is an ancestor of some
-starting user namespace.
-
-But please let's error on the side of caution here.
-
-Eric
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
