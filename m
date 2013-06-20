@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758422Ab3FTRvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:51:12 -0400
-Received: from www.meduna.org ([92.240.244.38]:47955 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758294Ab3FTRvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:51:10 -0400
-Message-ID: <51C340DE.30806@meduna.org>
-Date: Thu, 20 Jun 2013 19:50:22 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1161079Ab3FTQlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:41:45 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54816 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161031Ab3FTQln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 12:41:43 -0400
+Date: Thu, 20 Jun 2013 09:41:42 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH/RESEND 06/12] msm: iommu: Use clk_set_rate() instead of
+ clk_set_min_rate()
+Message-ID: <20130620164142.GD6300@codeaurora.org>
+References: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
+ <1371490999-15501-7-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org> <519F65DB.2020305@redhat.com> <51BE2F5C.8070408@meduna.org> <51C0B177.2000006@meduna.org> <CA+55aFwm-a0O-jvznYpXM4Ctf_jex+gcgELq_pqXL38Y6X-JPg@mail.gmail.com> <51C15F87.20100@meduna.org> <20130619080656.GF16094@twins.programming.kicks-ass.net>
-In-Reply-To: <20130619080656.GF16094@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2013-06-20 19:50:29
-X-Connected-IP: 95.105.165.4:49076
-X-Message-Linecount: 43
-X-Body-Linecount: 21
-X-Message-Size: 2101
-X-Body-Size: 736
-X-Received-Count: 1
-X-Recipient-Count: 11
-X-Local-Recipient-Count: 11
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371490999-15501-7-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.06.2013 10:06, Peter Zijlstra wrote:
+Sending to correct Joerg address.
 
->> On 19.06.2013 07:20, Linus Torvalds wrote:
->>> There's the fast_tlb race that Peter fixed in commit 29eb77825cc7
->>> ("arch, mm: Remove tlb_fast_mode()"). I'm not seeing how it would
->>> cause infinite TLB faults, but it definitely causes potentially
->>> incoherent TLB contents. And afaik it only happens with
->>> CONFIG_PREEMPT, and on UP systems. Which sounds like it might match
->>> your setup...
+On 06/17, Stephen Boyd wrote:
+> Calling clk_set_min_rate() is no better than just calling
+> clk_set_rate() because MSM clock code already takes care of
+> calling the min_rate ops if the clock really needs
+> clk_set_min_rate() called on it.
+> 
+> Cc: Joerg Roedel <joerg.roedel@amd.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/iommu/msm_iommu_dev.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
+> index d344f6a..9144a6b 100644
+> --- a/drivers/iommu/msm_iommu_dev.c
+> +++ b/drivers/iommu/msm_iommu_dev.c
+> @@ -29,7 +29,6 @@
+>  
+>  #include <mach/iommu_hw-8xxx.h>
+>  #include <mach/iommu.h>
+> -#include <mach/clk.h>
+>  
+>  struct iommu_ctx_iter_data {
+>  	/* input */
+> @@ -168,7 +167,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
+>  
+>  	if (!IS_ERR(iommu_clk))	{
+>  		if (clk_get_rate(iommu_clk) == 0)
+> -			clk_set_min_rate(iommu_clk, 1);
+> +			clk_set_rate(iommu_clk, 1);
+>  
+>  		ret = clk_prepare_enable(iommu_clk);
+>  		if (ret) {
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> The easiest way to test for your system is to ensure tlb_fast_mode()
-> return an unconditional 0.
-
-Nope. Got the faults also with tlb_fast_mode() returning 0, this time
-after ~10 hours. So there still has to be something...
-
-Regards
 -- 
-                                        Stano
-
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
