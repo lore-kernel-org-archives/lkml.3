@@ -1,59 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422760Ab3FTTqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:46:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44579 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965940Ab3FTTqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:46:22 -0400
-Message-ID: <51C35C05.1070005@canonical.com>
-Date: Thu, 20 Jun 2013 14:46:13 -0500
-From: Dave Chiluk <chiluk@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S965672Ab3FTURS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 16:17:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34882 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965473Ab3FTURQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 16:17:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,907,1363158000"; 
+   d="scan'208";a="353139634"
+Date: Thu, 20 Jun 2013 16:17:13 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: RFC: Allow block drivers to poll for I/O instead of sleeping
+Message-ID: <20130620201713.GV8211@linux.intel.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Scheduler accounting inflated for io bound processes.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running the below testcase shows each process consuming 41-43% of it's
-respective cpu while per core idle numbers show 63-65%, a disparity of
-roughly 4-8%.  Is this a bug, known behaviour, or consequence of the
-process being io bound?
 
-1. run sudo taskset -c 0 netserver
-2. run taskset -c 1 netperf -H localhost -l 3600 -t TCP_RR & (start
-netperf with priority on cpu1)
-3. run top, press 1 for multiple CPUs to be separated
+A paper at FAST2012
+(http://static.usenix.org/events/fast12/tech/full_papers/Yang.pdf) pointed
+out the performance overhead of taking interrupts for low-latency block
+I/Os.  The solution the author investigated was to spin waiting for each
+I/O to complete.  This is inefficient as Linux submits many I/Os which
+are not latency-sensitive, and even when we do submit latency-sensitive
+I/Os (eg swap-in), we frequently submit several I/Os before waiting.
 
-The below output is the top output notice the cpu0 idle at 67% when the
-processes claim 42% usage a roughly 9% discrepancy.
+This RFC takes a different approach, only spinning when we would
+otherwise sleep.  To implement this, I add an 'io_poll' function pointer
+to backing_dev_info.  I include a sample implementation for the NVMe
+driver.  Next, I add an io_wait() function which will call io_poll()
+if it is set.  It falls back to calling io_schedule() if anything goes
+wrong with io_poll() or the task exceeds its timeslice.  Finally, all
+that is left is to judiciously replace calls to io_schedule() with
+calls to io_wait().  I think I've covered the main contenders with
+sleep_on_page(), sleep_on_buffer() and the DIO path.
 
-------------------------------------------------
-top - 19:27:38 up  4:08,  2 users,  load average: 0.45, 0.19, 0.13
-Tasks:  85 total,   2 running,  83 sleeping,   0 stopped,   0 zombie
-%Cpu0  :  0.8 us, 15.4 sy,  0.0 ni, 66.7 id,  0.0 wa,  0.0 hi, 17.1 si,
- 0.0 st
-%Cpu1  :  0.8 us, 17.3 sy,  0.0 ni, 63.1 id,  0.0 wa,  0.0 hi, 18.8 si,
- 0.0 st
-KiB Mem:   4049180 total,   252952 used,  3796228 free,    23108 buffers
-KiB Swap:        0 total,        0 used,        0 free,   132932 cached
+I've measured the performance benefits of this with a Chatham NVMe
+prototype device and a simple
+# dd if=/dev/nvme0n1 of=/dev/null iflag=direct bs=512 count=1000000
+The latency of each I/O reduces by about 2.5us (from around 8.0us to
+around 5.5us).  This matches up quite well with the performance numbers
+shown in the FAST2012 paper (which used a similar device).
 
-  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
+Is backing_dev_info the right place for this function pointer?
+Have I made any bad assumptions about the correct way to retrieve
+the backing_dev_info from (eg) a struct page, buffer_head or kiocb?
+Should I pass a 'state' into io_wait() instead of retrieving it from
+'current'?  Is kernel/sched/core.c the right place for io_wait()?
+Should it be bdi_wait() instead?  Should it be marked with __sched?
+Where should I add documentation for the io_poll() function pointer?
 
- 6150 root      20   0  9756  700  536 R  42.6  0.0   0:48.90 netserver
+NB: The NVMe driver piece of this is for illustrative purposes only and
+should not be applied.  I've rearranged the diff so that the interesting
+pieces appear first.
 
- 6149 ubuntu    20   0 11848 1056  852 S  42.2  0.0   0:48.92 netperf
-------------------------------------------------
-
-The above testcase was run on 3.10-rc6.
-
-So is this a bug or can someone explain to me why this isn't a bug?
-
-The related ubuntu bug is
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1193073
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index c388155..97f8fde 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -68,6 +68,7 @@ struct backing_dev_info {
+ 	unsigned int capabilities; /* Device capabilities */
+ 	congested_fn *congested_fn; /* Function pointer if device is md/dm */
+ 	void *congested_data;	/* Pointer to aux data for congested func */
++	int (*io_poll)(struct backing_dev_info *);
+ 
+ 	char *name;
+ 
+@@ -126,6 +127,8 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi);
+ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi);
+ void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2);
+ 
++void io_wait(struct backing_dev_info *bdi);
++
+ extern spinlock_t bdi_lock;
+ extern struct list_head bdi_list;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..4840065 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4527,6 +4527,36 @@ long __sched io_schedule_timeout(long timeout)
+ 	return ret;
+ }
+ 
++/*
++ * Wait for an I/O to complete against this backing_dev_info.  If the
++ * task exhausts its timeslice polling for completions, call io_schedule()
++ * anyway.  If a signal comes pending, return so the task can handle it.
++ * If the io_poll returns an error, give up and call io_schedule(), but
++ * swallow the error.  We may miss an I/O completion (eg if the interrupt
++ * handler gets to it first).  Guard against this possibility by returning
++ * if we've been set back to TASK_RUNNING.
++ */
++void io_wait(struct backing_dev_info *bdi)
++{
++	if (bdi && bdi->io_poll) {
++		long state = current->state;
++		while (!need_resched()) {
++			int ret = bdi->io_poll(bdi);
++			if ((ret > 0) || signal_pending_state(state, current)) {
++				set_current_state(TASK_RUNNING);
++				return;
++			}
++			if (current->state == TASK_RUNNING)
++				return;
++			if (ret < 0)
++				break;
++			cpu_relax();
++		}
++	}
++
++	io_schedule();
++}
++
+ /**
+  * sys_sched_get_priority_max - return maximum RT priority.
+  * @policy: scheduling class.
+diff --git a/fs/aio.c b/fs/aio.c
+index 2bbcacf..7b20397 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -453,11 +453,15 @@ static void kill_ioctx(struct kioctx *ctx)
+  */
+ ssize_t wait_on_sync_kiocb(struct kiocb *iocb)
+ {
++	struct backing_dev_info *bdi = NULL;
++
++	if (iocb->ki_filp)
++		bdi = iocb->ki_filp->f_mapping->backing_dev_info;
+ 	while (atomic_read(&iocb->ki_users)) {
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+ 		if (!atomic_read(&iocb->ki_users))
+ 			break;
+-		io_schedule();
++		io_wait(bdi);
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	return iocb->ki_user_data;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index d2a4d1b..4502909 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -63,7 +63,13 @@ EXPORT_SYMBOL(touch_buffer);
+ 
+ static int sleep_on_buffer(void *word)
+ {
+-	io_schedule();
++	struct buffer_head *bh;
++	struct backing_dev_info *bdi = NULL;
++
++	bh = container_of(word, struct buffer_head, b_state);
++	if (bh->b_assoc_map)
++		bdi = bh->b_assoc_map->backing_dev_info;
++	io_wait(bdi);
+ 	return 0;
+ }
+ 
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 7ab90f5..5a0fe06 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -410,6 +410,8 @@ static struct bio *dio_await_one(struct dio *dio)
+ {
+ 	unsigned long flags;
+ 	struct bio *bio = NULL;
++	struct address_space *mapping = dio->iocb->ki_filp->f_mapping;
++	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
+ 	spin_lock_irqsave(&dio->bio_lock, flags);
+ 
+@@ -423,7 +425,7 @@ static struct bio *dio_await_one(struct dio *dio)
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		dio->waiter = current;
+ 		spin_unlock_irqrestore(&dio->bio_lock, flags);
+-		io_schedule();
++		io_wait(bdi);
+ 		/* wake up sets us TASK_RUNNING */
+ 		spin_lock_irqsave(&dio->bio_lock, flags);
+ 		dio->waiter = NULL;
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 7905fe7..25d3d51 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -178,7 +178,14 @@ EXPORT_SYMBOL(delete_from_page_cache);
+ 
+ static int sleep_on_page(void *word)
+ {
+-	io_schedule();
++	struct page *page = container_of(word, struct page, flags);
++	struct backing_dev_info *bdi = NULL;
++	struct address_space *mapping = page->mapping;
++
++	if (mapping && !((unsigned long)mapping & 1))
++		bdi = mapping->backing_dev_info;
++
++	io_wait(bdi);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index ce79a59..8fe4f27 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -79,7 +82,8 @@ struct nvme_queue {
+ 	u16 sq_head;
+ 	u16 sq_tail;
+ 	u16 cq_head;
+-	u16 cq_phase;
++	u8 cq_phase;
++	u8 irq_processed;
+ 	unsigned long cmdid_data[];
+ };
+ 
+@@ -727,7 +732,7 @@ static void nvme_make_request(struct request_queue *q, struct bio *bio)
+ 	put_nvmeq(nvmeq);
+ }
+ 
+-static irqreturn_t nvme_process_cq(struct nvme_queue *nvmeq)
++static int nvme_process_cq(struct nvme_queue *nvmeq)
+ {
+ 	u16 head, phase;
+ 
+@@ -758,13 +767,14 @@ static irqreturn_t nvme_process_cq(struct nvme_queue *nvmeq)
+ 	 * a big problem.
+ 	 */
+ 	if (head == nvmeq->cq_head && phase == nvmeq->cq_phase)
+-		return IRQ_NONE;
++		return 0;
+ 
+ 	writel(head, nvmeq->q_db + (1 << nvmeq->dev->db_stride));
+ 	nvmeq->cq_head = head;
+ 	nvmeq->cq_phase = phase;
+ 
+-	return IRQ_HANDLED;
++	nvmeq->irq_processed = 1;
++	return 1;
+ }
+ 
+ static irqreturn_t nvme_irq(int irq, void *data)
+@@ -772,7 +782,9 @@ static irqreturn_t nvme_irq(int irq, void *data)
+ 	irqreturn_t result;
+ 	struct nvme_queue *nvmeq = data;
+ 	spin_lock(&nvmeq->q_lock);
+-	result = nvme_process_cq(nvmeq);
++	nvme_process_cq(nvmeq);
++	result = nvmeq->irq_processed ? IRQ_HANDLED : IRQ_NONE;
++	nvmeq->irq_processed = 0;
+ 	spin_unlock(&nvmeq->q_lock);
+ 	return result;
+ }
+@@ -1556,6 +1567,27 @@ static void nvme_config_discard(struct nvme_ns *ns)
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, ns->queue);
+ }
+ 
++static int nvme_io_poll(struct backing_dev_info *bdi)
++{
++	struct request_queue *q = container_of(bdi, struct request_queue,
++							backing_dev_info);
++	struct nvme_ns *ns = q->queuedata;
++	struct nvme_dev *dev = ns->dev;
++	int i, found = 0;
++
++	for (i = 1; i < dev->queue_count; i++) {
++		struct nvme_queue *nvmeq = dev->queues[i];
++		if (!nvmeq)
++			continue;
++		spin_lock_irq(&nvmeq->q_lock);
++		if (nvme_process_cq(nvmeq))
++			found++;
++		spin_unlock_irq(&nvmeq->q_lock);
++	}
++
++	return found;
++}
++
+ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, int nsid,
+ 			struct nvme_id_ns *id, struct nvme_lba_range_type *rt)
+ {
+@@ -1578,6 +1610,7 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, int nsid,
+ 	blk_queue_make_request(ns->queue, nvme_make_request);
+ 	ns->dev = dev;
+ 	ns->queue->queuedata = ns;
++	ns->queue->backing_dev_info.io_poll = nvme_io_poll;
+ 
+ 	disk = alloc_disk(NVME_MINORS);
+ 	if (!disk)
