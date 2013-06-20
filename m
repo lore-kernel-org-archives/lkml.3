@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935676Ab3FTD1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:27:36 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:37228 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935542Ab3FTD1e (ORCPT
+	id S935699Ab3FTDfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:35:03 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:59417 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935546Ab3FTDfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:27:34 -0400
-X-Sasl-enc: GBSgmj8ecwcyEWo00lOlJQyF5flJcWwkEhJpQxUZR9kj 1371698853
-Date: Wed, 19 Jun 2013 20:28:12 -0700
-From: Greg KH <greg@kroah.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- driver-core.current tree
-Message-ID: <20130620032812.GA24385@kroah.com>
-References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
- <CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
- <20130619143918.GC8413@kroah.com>
- <CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
- <20130619163628.GA28672@kroah.com>
- <CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
- <20130620110610.7d245d88b70620fa271a29f7@canb.auug.org.au>
- <CACVXFVN-B7ZrqjoA_QNkWKjM0XdM-S08h-d6JuRjsYOX0YPt=A@mail.gmail.com>
+	Wed, 19 Jun 2013 23:35:01 -0400
+Message-ID: <51C27855.8010905@huawei.com>
+Date: Thu, 20 Jun 2013 11:34:45 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVN-B7ZrqjoA_QNkWKjM0XdM-S08h-d6JuRjsYOX0YPt=A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        <linux-doc@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
+References: <1370967244-5610-1-git-send-email-athorlton@sgi.com> <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com> <20130618164537.GJ16067@sgi.com> <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com> <20130619093212.GX3658@sgi.com> <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 09:22:13AM +0800, Ming Lei wrote:
-> Hi Stephen,
-> 
-> Thanks for your help.
-> 
-> On Thu, Jun 20, 2013 at 9:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> >
-> > Try "git diff-tree --cc e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d"
-> 
-> Greg, Stephen, so is sort of below generated patch what you expected?
-> 
-> If yes, I will send it out to you.
+Cc: Tejun, and cgroup ML
 
-Thanks, that helped out a lot.  I've now merged this together, and
-pushed it out to my driver-core-next branch, can you verify that I got
-it all correct?
+>> Here are the entries in the cpuset:
+>> cgroup.event_control  mem_exclusive    memory_pressure_enabled  notify_on_release         tasks
+>> cgroup.procs          mem_hardwall     memory_spread_page       release_agent
+>> cpu_exclusive         memory_migrate   memory_spread_slab       sched_load_balance
+>> cpus                  memory_pressure  mems                     sched_relax_domain_level
+>>
+>> There are scheduler, slab allocator, page_cache layout, etc controls.
+> 
+> I think this is mostly for historical reasons since cpusets were 
+> introduced before cgroups.
+> 
+>> Why _NOT_ add a thp control to that nicely contained central location?
+>> It is a concise set of controls for the job.
+>>
+> 
+> All of the above seem to be for cpusets primary purpose, i.e. NUMA 
+> optimizations.  It has nothing to do with transparent hugepages.  (I'm not 
+> saying thp has anything to do with memcg either, but a "memory controller" 
+> seems more appropriate for controlling thp behavior.)
+> 
+>> Maybe I am misunderstanding.  Are you saying you want to put memcg
+>> information into the cpuset or something like that?
+>>
+> 
+> I'm saying there's absolutely no reason to have thp controlled by a 
+> cpuset, or ANY cgroup for that matter, since you chose not to respond to 
+> the question I asked: why do you want to control thp behavior for certain 
+> static binaries and not others?  Where is the performance regression or 
+> the downside?  Is it because of max_ptes_none for certain jobs blowing up 
+> the rss?  We need information, and even if were justifiable then it 
+> wouldn't have anything to do with ANY cgroup but rather a per-process 
+> control.  It has nothing to do with cpusets whatsoever.
+> 
+> (And I'm very curious why you didn't even cc the cpusets maintainer on 
+> this patch in the first place who would probably say the same thing.)
+> .
 
-thanks,
+Don't know whom you were refering to here. It's Paul Jackson who invented
+cpusets, and then Paul Menage took over the maintainership but he wasn't
+doing much maintainer's work. Now it's me and Tejun maintaining cpusets.
+(long ago Ingo once requested cpuset patches should be cced to him and
+Peter.)
 
-greg k-h
+Back to this patch, I'm definitely on your side. This feature doesn't
+interact with existing cpuset features, and it doens't need anything
+that cpuset provides. In a word, it has nothing to do with cpusets hence
+it shouldn't belong to cpusets.
+
+We're clearing all the messes in cgroups, and this patch acts in the
+converse direction.
+
