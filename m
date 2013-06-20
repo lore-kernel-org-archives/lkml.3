@@ -1,223 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab3FTKf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 06:35:58 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:14937
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757702Ab3FTKfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 06:35:54 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI98dI9371I1dbaI1432Id799hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51C2DAE8.2040100@freescale.com>
-Date: Thu, 20 Jun 2013 16:05:20 +0530
-From: pankaj chauhan <pankaj.chauhan@freescale.com>
+	id S1757751Ab3FTKhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 06:37:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34386 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757636Ab3FTKg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 06:36:58 -0400
+Message-ID: <51C2DB23.9070705@ti.com>
+Date: Thu, 20 Jun 2013 16:06:19 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Goyal Akhil-B35197 <B35197@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chauhan Pankaj-B32944 <B32944@freescale.com>,
-        "Getz, Robin" <robin.getz@analog.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
- Radio phy
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de>
-In-Reply-To: <51C1AAC4.3010605@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Philip Avinash <avinashphilipk@gmail.com>
+CC: <linux@arm.linux.org.uk>, <grant.likely@secretlab.ca>,
+        <linus.walleij@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <avinashphilip@ti.com>
+Subject: Re: [PATCH v2 2/4] gpio: davinci: DT changes for driver
+References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com> <1371205241-17205-3-git-send-email-avinashphilipk@gmail.com>
+In-Reply-To: <1371205241-17205-3-git-send-email-avinashphilipk@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/19/2013 6:27 PM, Lars-Peter Clausen wrote:
-> On 06/17/2013 10:09 AM, akhil.goyal@freescale.com wrote:
->> From: Akhil Goyal <akhil.goyal@freescale.com>
->>
->> AD9361 is a radio phy(RFIC) for radio networks. This phy
->> can support LTE-FDD/LTE-TDD and WCDMA networks. The RFIC
->> can convert the analog radio signals from air to digital
->> IQ samples.
->>
->> AD9361 is controlled via an SPI bus and all the register
->> read/ write can be performed via SPI transactions.
->>
->> Driver provides various operations for configuring and
->> controlling the AD PHY. These can be controlled from the
->> user space via the rfdev framework.
->>
->> Driver also binds itself to one of AIC lane using RF framework.
->> The combination of AIC lane and PHY connected to it works
->> as one RF device.
->>
->> Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
->> Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
->> Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
->> Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
->
-> Hi,
->
-> This is interesting. We at Analog Devices are currently also working on a
-> driver for this part. We are using the Linux Industrial IO (IIO) framework
-> though, since the AD9361 is more or less a multifunction device implementing
-> different functions already covered by the IIO framework, like ADCs, DACs,
-> clock chips and so on.
->
-Yes i agree AD9361 is more of a multifunction device and it can fit in 
-IIO framework. This patch (ad9361: AD9361 device driver for Radio phy) 
-implements:
+On 6/14/2013 3:50 PM, Philip Avinash wrote:
+> From: KV Sujith <sujithkv@ti.com>
+> 
+> - Add of_device_id for Davinci GPIO driver.
+> - Add function to populate data from DT.
+> - Modify the probe to read from DT if DT match is found.
+> - Add DT binding documentation for Davinci GPIO properties in a new file
+>   gpio-davinci.txt located at Documentation/devicetree/bindings/gpio/.
+> 
+> Signed-off-by: KV Sujith <sujithkv@ti.com>
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> ---
+> Changes since v1:
+> 	- description for interrupts changed to reflecti
+> 	   interrupt array usage.
+> 
+>  .../devicetree/bindings/gpio/gpio-davinci.txt      |   32 +++++++++++
+>  drivers/gpio/gpio-davinci.c                        |   57 ++++++++++++++++++--
+>  2 files changed, 86 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> new file mode 100644
+> index 0000000..1c31638
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> @@ -0,0 +1,32 @@
+> +Davinci GPIO controller bindings
+> +
+> +Required Properties:
+> +- compatible:"ti,da830-gpio"
 
-1. Programming of AD9361 :
+"ti,dm6441-gpio" instead since this came first on DM6441?
 
-Most of initialization is done by parsing Low level script generated by 
-ADI tool, and sending the SPIwrite/read/wait calibration commands to the 
-driver. This is more of a raw write interface to device.
+> +
+> +- reg: Physical base address of the controller and length of memory mapped
+> +	region.
+> +
+> +- interrupts: Array of GPIO interrupt number.
+> +
+> +- ngpio: The number of GPIO pins supported
 
-2. Adding utility function APIs for higher layers:
+Is this a generic GPIO property? I could not find it in documentation.
+Looks like Marvell GPIO uses a similar property too, but even there it
+is not marked as Marvell specific. Should this be added as a generic
+GPIO property?
 
-We have LTE/WCDMA stacks running in user space. They have requirement of 
-monitoring RSSI, changing Attenuation, reading/changing Rx gain, 
-disable/enable of tx/rx antennas, changing LO frequency etc. This patch 
-exposes APIs which can be accessed through RF device layer user space 
-interface (explained later in the email).
+> +- intc_irq_num: The number of IRQs supported by the Interrupt Controller
 
-3. Control of Radio card (which has AD9361): We have radio card which 
-contains AD9361 and there are different set of PA/LNAs (Power 
-amplifier/Low Noise Amplifier). Each set caters a set of frequency 
-bands. This patch also exports functions to enable/disable a Tx/Rx path 
-(PA/LNAs) which are external to AD9361.
+You are not actually looking at the number of IRQs interrupt controller
+on the SoC supports (which is quite unrelated to GPIO module). What you
+are actually looking for is the base from where GPIO interrupt numbering
+can start. So "ti,davinci-gpio-irq-base" is more meaningful.
 
-May be we can spit this driver in two parts :
+That said, this property is probably not required if irqdomains are used
+(I myself have to read about that). Not sure if it is okay to add this
+property now waiting for irqdomain conversion. I will let Linus take a call.
 
-1. AD9361 driver: which covers #1 and #2 as mentioned as above. And this 
-can be merged with the driver you have in IIO framework.
+> +
+> +- gpio_unbanked: The number of GPIOs that have an individual interrupt
+> +		line to processor.
 
-2. Radio card driver: which covers #3 and uses AD9361 driver's exported 
-APIs to program AD9361 OR may be we can program AD9361 from user space 
-using IIO interface.
+This is also a TI specific property so it should be
+"ti,davinci-gpio-unbanked".
 
-pls let me know what do you think is best approach.
-
-> You seem to have made the kernel layer as thin as possible and provide a
-> IOCTL which allows userspace to directly modify the registers of the
-> hardware. So this sentence from the documentation "user space interface is
-> independent of component (vendor specific) drivers" is not exactly true. If
-> you write a userspace application it will still only work with one specific
-> RF-frontend. There is only a common interface on how to talk to the
-> frontend. Your documentation on this is also a bit sparse, e.g. there is no
-> explanation of the individual IOCTLs.
->
-Yes modifying registers from user space is part of the patch set and 
-register read/write interface is aimed only for two purposes:
-
-1. Debugging : taking register dumps etc.
-2. Initializing AD9361 using Low level script generated by ADI GUI tool.
-
-I'll try to explain what we meant by 'independent of vendor specific 
-drivers' and the framework itself.
-
-
-Following is the overview of hardware on which are running these drivers:
-
-1. Antenna controller : This is part of SOC. The controller has
-    multiple IQ data lanes. On the application core of SOC we run Linux.
-    LTE/WCDMA stacks run in user space, and they interact with antenna
-    controller and RFPHY.
-2. Radio card: This contains one or more RF PHYS (AD9361). Each AD9361
-    is connected to Antenna controller IQ lane over JESD207 bus.
-
-With this patch set we aim to abstract combination of a IQ data lane and 
-RF PHY as a 'radio device'. So this patch set is divided in three parts:
-
-1. RF device layer :
-	- Exposes IOCTLS to user space for device configuration.
-	- Exposes registration APIs so that antenna controllers and PHYs
-	  so that they can register their control operations.
-	  antenna controller and RF PHYs don't interact with user space
-	  directly.
-	- Maintains state of overall RF device. For example IQ data
-	  transfer starts only when both the controller and PHY are
-	  configured and ready.
-
-2. Antenna controller driver: This configures the Antenna controller
-    hardware. It registers its control functions as a ops structure
-    (containing function pointers) with RF device layer.
-
-3. RF PHY driver: This is AD9361 driver (in this patch set). This also 
-registers with it ops structure with RF device layer. One of the 
-operation is raw register read/write as you pointed out.
-
-The RF device layer exposes the two (or more than two) devices (i.e 
-antenna controller and RF PHY) as a RF device 'rf0' to user space. It is 
-similar to Ethernet,  which  has two drivers (Ethernet MAC controller 
-driver, and the Ethernet PHY driver) under eth0/eth1 interface.
-
-The exposed IOCTLs from RF device layer are generic or protocol specific 
-(except raw register read/write interface), for example:
-
-1. Setting network mode of device to LTE, WCDMA etc
-2. Configuring device in TDD or FDD mode.
-3. Setting bandwidth to 10 Mhz, 15 Mhz, or 20 Mz.
-4. Changing Downlink/Uplink LO frequency to 'X' Mhz.
-5. Capturing IQ data from controller.
-6. Changing RF settings: attenuation, rx gain etc.
-7. Raw register read/write: so that PHYS with programming model
-    similar to AD9361 (using script containing SPI commands) can
-    be supported.
-
-Generally LTE/WCDMA stacks run in user space and they have to interact 
-with the antenna controller and the RF PHY (AD9361) for initialization, 
-control, IQ capture etc.
-
-If we don't have RF device layer then these stacks have to write vendor 
-drivers (antenna controller and RF PHY) specific code for interaction 
-with underlying controller and PHY drivers.
-
-The RF device layer solves this problem by exposing an interface which 
-is protocol/functionality specific, so that the user space stack do not 
-change if underlying antenna controller or RF phy changes.
-
-In user space we have a library called 'rflib' which interacts with RF 
-device layer through exposed IOCTLs. User space LTE/WCDMA stacks 
-interact only with 'rflib' and they are immune to underlying vendor 
-specific drivers. This is the reason for calling 'vendor independent 
-interface'. And if user space wants to fine tune the RF PHY then raw 
-register read/write interface is also exposed.
-
-We are not aware of any other subsystem which meets above mentioned 
-requirements, and exposes interface for LTE/WCDMA stacks for controlling 
-radio hardware. That's why we introduced RF device layer between user 
-space interface and controller specific drivers.
-
-pls suggest what is best possible way/subsystem for hardware and 
-software requirements that i explained above.
-
-> Since it is probably not such a good idea to have two different drivers for
-> the same device in different subsystems we should probably try to figure
-> something out that will work for us both.
->
-
-I agree, for AD9361 should have one driver, we'll figure out way how 
-requirements for both of us can be met by single driver.
-
-> I'd also be interested in learning more about how the userspace side looks like.
->
-
-The user space (rflib) is not on a public repository yet, i'll try to 
-figure out how rflib can be
-> - Lars
->
-
-sorry for long reply, we'll cover the details of API/framework in 
-documentation in next version of patch.
-
-thanks,
-pankaj
-
-
+Thanks,
+Sekhar
