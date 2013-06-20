@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935485Ab3FTOKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:10:50 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:51107 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030355Ab3FTOKr (ORCPT
+	id S1758599Ab3FTSRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:17:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:58295 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758557Ab3FTSRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:10:47 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel@stlinux.com, linux-serial@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>
-Subject: [PATCH v3 07/10] ARM:multi_v7_defconfig: rerun savedefconfig
-Date: Thu, 20 Jun 2013 15:06:27 +0100
-Message-Id: <1371737187-9516-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
+	Thu, 20 Jun 2013 14:17:37 -0400
+Date: Thu, 20 Jun 2013 19:17:31 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
+Message-ID: <20130620181731.GA27960@srcf.ucam.org>
+References: <20130620094446.GA17882@srcf.ucam.org>
+ <1371740019.2372.3.camel@dabdike>
+ <20130620162916.GA25727@srcf.ucam.org>
+ <1371746775.2372.11.camel@dabdike>
+ <20130620165426.GB26214@srcf.ucam.org>
+ <20130620170124.GA19877@pd.tnic>
+ <20130620171210.GA26593@srcf.ucam.org>
+ <20130620180808.GB19877@pd.tnic>
+ <20130620181015.GA27833@srcf.ucam.org>
+ <20130620181445.GA791@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620181445.GA791@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is generated after re-running savedefconfig on top of
-multi_v7_defconfig which gets rid of some of the options, as they are
-now slected by mach level or other Kconfigs.
+On Thu, Jun 20, 2013 at 08:14:45PM +0200, Borislav Petkov wrote:
+> On Thu, Jun 20, 2013 at 07:10:15PM +0100, Matthew Garrett wrote:
+> > Because Windows passes high addresses to SetVirtualAddressMap(), and
+> > because if you can imagine firmware developers getting it wrong then
+> > firmware developers will have got it wrong.
+> 
+> Can we reversely assume that if we'd used fixed high offsets, as hpa
+> suggests, then it'll be fine? IOW, are any high addresses, even fixed
+> ones, fine?
 
-The reason to generate this patch is because, it becomes confusing when
-some of these options dissapear as part of new SOC addition to
-multi_v7_defconfig.
-I wanted this to be in a seperate patch, as these options are not
-related any of the new SOC support.
+Windows actually seems to start at the top of address space and go down 
+- this is what I get booting Windows 8 under kvm. It looks like very 
+high addresses are fine, and we're currently using "low" high addresses, 
+so I suspect we're fine pretty much anywhere in that range.
 
-Already some discussion at:https://patchwork.kernel.org/patch/2696481
+****** SetVirtualAddressMap
+Type: 5
+Physical Start: 3E878000
+Virtual Start: FFFFFFFFFFBEB000
+Number Of Pages: 15
+Attributes: 800000000000000F
+Type: 6
+Physical Start: 3E88D000
+Virtual Start: FFFFFFFFFFBD6000
+Number Of Pages: 15
+Attributes: 800000000000000F
+Type: 5
+Physical Start: 3FB22000
+Virtual Start: FFFFFFFFFFBA6000
+Number Of Pages: 30
+Attributes: 800000000000000F
+Type: 6
+Physical Start: 3FB52000
+Virtual Start: FFFFFFFFFFB82000
+Number Of Pages: 24
+Attributes: 800000000000000F
+Type: 6
+Physical Start: 3FFE0000
+Virtual Start: FFFFFFFFFFB62000
+Number Of Pages: 20
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- arch/arm/configs/multi_v7_defconfig |   29 ++++++++++++-----------------
- 1 files changed, 12 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 2e67a27..f2b4957 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -1,23 +1,20 @@
--CONFIG_EXPERIMENTAL=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_ARCH_MVEBU=y
- CONFIG_MACH_ARMADA_370=y
--CONFIG_ARCH_SIRF=y
- CONFIG_MACH_ARMADA_XP=y
- CONFIG_ARCH_HIGHBANK=y
- CONFIG_ARCH_SOCFPGA=y
--CONFIG_ARCH_SUNXI=y
--CONFIG_ARCH_WM8850=y
--# CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
--CONFIG_ARCH_ZYNQ=y
--CONFIG_ARM_ERRATA_754322=y
- CONFIG_PLAT_SPEAR=y
- CONFIG_ARCH_SPEAR13XX=y
- CONFIG_MACH_SPEAR1310=y
- CONFIG_MACH_SPEAR1340=y
-+CONFIG_ARCH_SUNXI=y
-+CONFIG_ARCH_SIRF=y
-+CONFIG_ARCH_WM8850=y
-+CONFIG_ARCH_ZYNQ=y
-+CONFIG_ARM_ERRATA_754322=y
- CONFIG_SMP=y
--CONFIG_ARM_ARCH_TIMER=y
- CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_HIGHPTE=y
-@@ -27,25 +24,25 @@ CONFIG_NEON=y
- CONFIG_NET=y
- CONFIG_BLK_DEV_SD=y
- CONFIG_ATA=y
-+CONFIG_SATA_AHCI_PLATFORM=y
- CONFIG_SATA_HIGHBANK=y
- CONFIG_SATA_MV=y
--CONFIG_SATA_AHCI_PLATFORM=y
- CONFIG_NETDEVICES=y
- CONFIG_NET_CALXEDA_XGMAC=y
- CONFIG_SMSC911X=y
- CONFIG_STMMAC_ETH=y
-+CONFIG_KEYBOARD_SPEAR=y
- CONFIG_SERIO_AMBAKMI=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_8250_DW=y
--CONFIG_KEYBOARD_SPEAR=y
- CONFIG_SERIAL_AMBA_PL011=y
- CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
--CONFIG_SERIAL_OF_PLATFORM=y
- CONFIG_SERIAL_SIRFSOC=y
- CONFIG_SERIAL_SIRFSOC_CONSOLE=y
- CONFIG_SERIAL_VT8500=y
- CONFIG_SERIAL_VT8500_CONSOLE=y
-+CONFIG_SERIAL_OF_PLATFORM=y
- CONFIG_IPMI_HANDLER=y
- CONFIG_IPMI_SI=y
- CONFIG_I2C=y
-@@ -54,7 +51,6 @@ CONFIG_I2C_SIRF=y
- CONFIG_SPI=y
- CONFIG_SPI_PL022=y
- CONFIG_SPI_SIRF=y
--CONFIG_GPIO_PL061=y
- CONFIG_FB=y
- CONFIG_FB_ARMCLCD=y
- CONFIG_FB_WM8505=y
-@@ -67,7 +63,6 @@ CONFIG_MMC_ARMMMCI=y
- CONFIG_MMC_SDHCI=y
- CONFIG_MMC_SDHCI_PLTFM=y
- CONFIG_MMC_SDHCI_SPEAR=y
--CONFIG_MMC_WMT=y
- CONFIG_EDAC=y
- CONFIG_EDAC_MM_EDAC=y
- CONFIG_EDAC_HIGHBANK_MC=y
-@@ -75,9 +70,9 @@ CONFIG_EDAC_HIGHBANK_L2=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PL031=y
- CONFIG_RTC_DRV_VT8500=y
--CONFIG_PWM=y
--CONFIG_PWM_VT8500=y
- CONFIG_DMADEVICES=y
--CONFIG_PL330_DMA=y
--CONFIG_SIRF_DMA=y
- CONFIG_DW_DMAC=y
-+CONFIG_SIRF_DMA=y
-+CONFIG_PL330_DMA=y
-+CONFIG_PWM=y
-+CONFIG_PWM_VT8500=y
 -- 
-1.7.6.5
-
+Matthew Garrett | mjg59@srcf.ucam.org
