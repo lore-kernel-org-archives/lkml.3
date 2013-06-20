@@ -1,159 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab3FTMMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:12:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35708 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3FTMMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:12:17 -0400
-Date: Thu, 20 Jun 2013 15:11:51 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
-        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-Message-ID: <20130620121151.GD9817@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
- <1371650753-11452-5-git-send-email-rogerq@ti.com>
+	id S1757485Ab3FTMMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:12:35 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36582 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757310Ab3FTMMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:12:33 -0400
+Message-ID: <51C2F1A7.3030805@monstr.eu>
+Date: Thu, 20 Jun 2013 14:12:23 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
+References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com> <CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com> <51A8387C.4030704@monstr.eu> <CACRpkdbHiaK6YPgXyxNgEeZxAsddK4x0vS-q3YfyXnj_BgHvuw@mail.gmail.com> <51A852A1.7020505@monstr.eu> <CACRpkdbL4pqiF8zxMi28SRTJ9AESiFt0wJMhK1oBio_cfFhpsQ@mail.gmail.com> <51C2B47A.6010906@monstr.eu> <CACRpkdbWXFLgcUJ-gcUArRotJMoX4JBU9mmheooJBWsLR=QHOA@mail.gmail.com> <51C2E0AF.7040702@monstr.eu> <CACRpkdbcq+e099mT+TVwv9vDjXwkf8QdB_4b4UXuysPF+40oUQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbcq+e099mT+TVwv9vDjXwkf8QdB_4b4UXuysPF+40oUQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+SfteS7bOf3dGlBC"
-Content-Disposition: inline
-In-Reply-To: <1371650753-11452-5-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ protocol="application/pgp-signature";
+ boundary="----enig2WUFJARIDAAPIAEFTGAQT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+SfteS7bOf3dGlBC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WUFJARIDAAPIAEFTGAQT
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Wed, Jun 19, 2013 at 05:05:51PM +0300, Roger Quadros wrote:
-> Runtime suspend the controller during bus suspend and resume it
-> during bus resume. This will ensure that the USB Host power domain
-> enters lower power state and does not prevent the SoC from
-> endering deeper sleep states.
+On 06/20/2013 01:33 PM, Linus Walleij wrote:
+> On Thu, Jun 20, 2013 at 12:59 PM, Michal Simek <monstr@monstr.eu> wrote=
+:
+>> On 06/20/2013 11:23 AM, Linus Walleij wrote:
 >=20
-> Remote wakeup will come up as an interrupt while the controller
-> is suspended, so tackle it carefully using a workqueue.
+>>> What about something like this:
+>>>
+>>> static bool is_dual (struct device_node *np)
+>>> {
+>>>     struct property *prop =3D of_find_property(np, "xlnx,is-dual", NU=
+LL);
+>>>     int ret;
+>>>     u32 val;
+>>>
+>>>     if (!prop)
+>>>         return false;
+>>>
+>>>     ret =3D of_property_read_u32(np, "xlnx,is-dual", &val);
+>>>     if (ret < 0)
+>>>         return true; /* node exists but has no cells */
+>>>
+>>>     return !!val;
+>>> }
+>>
+>> we can do it in this way but what I don't like on this is that IP
+>> is design to support 2 channels right now.
+>> It can happen that Xilinx decides to extend this for new channels.
+>> Register map is prepared for it and there is enough space to do it.
+>>
+>> And when this is done then is-dual (which is current name which
+>> is used in hardware configuration from design tools) will contain
+>> larger value >1.
+>> I agree that is-dual is not the best name.
 >=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  drivers/usb/host/ehci-omap.c |   82 ++++++++++++++++++++++++++++++++++++=
-++++++
->  1 files changed, 82 insertions(+), 0 deletions(-)
+> You don't say. It's about as smart as this:
 >=20
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 16d7150..91f14f1 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -44,6 +44,8 @@
->  #include <linux/usb/hcd.h>
->  #include <linux/of.h>
->  #include <linux/dma-mapping.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/spinlock.h>
-> =20
->  #include "ehci.h"
-> =20
-> @@ -69,6 +71,7 @@ static const char hcd_name[] =3D "ehci-omap";
->  struct omap_hcd {
->  	struct usb_phy *phy[OMAP3_HS_USB_PORTS]; /* one PHY for each port */
->  	int nports;
-> +	struct work_struct work;
->  };
-> =20
->  static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
-> @@ -81,6 +84,76 @@ static inline u32 ehci_read(void __iomem *base, u32 re=
-g)
->  	return __raw_readl(base + reg);
->  }
-> =20
-> +static void omap_ehci_work(struct work_struct *work)
-> +{
-> +	struct omap_hcd *omap =3D container_of(work, struct omap_hcd, work);
-> +	struct ehci_hcd *ehci =3D container_of((void *) omap,
-> +						struct ehci_hcd, priv);
-> +	struct usb_hcd *hcd =3D ehci_to_hcd(ehci);
-> +	struct device *dev =3D hcd->self.controller;
-> +
-> +	pm_runtime_get_sync(dev);
-> +	enable_irq(hcd->irq);
-> +	/*
-> +	 * enable_irq() should preempt us with a pending IRQ
-> +	 * so we can be sure that IRQ handler completes before
-> +	 * we call pm_runtime_put_sync()
-> +	 */
-> +	pm_runtime_put_sync(dev);
-> +}
-> +
-> +static irqreturn_t omap_ehci_irq(struct usb_hcd *hcd)
-> +{
-> +	struct omap_hcd *omap =3D (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
-> +	struct device *dev =3D hcd->self.controller;
-> +	irqreturn_t ret;
-> +
-> +	if (pm_runtime_suspended(dev)) {
-> +		schedule_work(&omap->work);
-> +		disable_irq_nosync(hcd->irq);
-> +		ret =3D IRQ_HANDLED;
+> #define NUMBER_TWO 4
+>=20
+> Oh well, that's not your fault.
+>=20
+> But seriously:
+>=20
+>   xlnx,is-dual;
+>=20
+> without an argument can still be taken to mean "2", and
+> you still need to inperpret the absence if this parameter
+> as "1" do you not?
+>
+>> What about to do it differently?
+>> Generate number of channel in the description.
+>> And also do for() loop in the probe function to read values based
+>> on this channel number.
+>=20
+> Sorry I can't translate this, can you send a patch?
 
-looks like this could be done as:
+Sure.
 
-if (pm_runtime_suspended(dev)) {
-	pm_runtime_get(dev);
-	omap->flags |=3D OMAP_EHCI_IRQ_PENDING;
-	disable_irq_nosync(hcd->irq);
-	ret =3D IRQ_HANDLED;
+xlnx,is-dual is always present in the HW and in all DTSes and it
+is generated for several years
+
+Based on my experience with hardware guys what happen when they add
+new channel is that they will use xlnx,is-dual =3D 2 for 3 channels,
+xlnx,is-dual =3D 3 for 4 channels, etc. They won't care about names
+but they are working like that.
+
+It means for me is really problematic it try to work with this
+value as boolean even that name is confusing.
+
+That's why it is much easier for me to start to use new property
+which will describe number of channels but this value is not
+used in design tools. Let's say number-of-channels =3D 1 or 2
+in DT binding which will describe number channels in this IP.
+Is this acceptable for you?
+
+
+
+If you look how that dual channel is supported you will see that it is
+probe_first_channel
+if there is second channel probe it too.
+
+And code there is very similar.
+That's why I am thinking about using the loop to remove that code
+duplication.
+Something like this in "psedo code"
+
+for(i =3D 0; i < number-of-channel; i++) {
+	char *str_def =3D "xlnx,dout-default"
+	if(i)
+		add -(i+1) suffix to str_def (-2 for example just to reflect how design=
+ tools generates it)
+	=09
+	of_property_read_u32(np, str_def, &chip->gpio_state);
+=2E..
+	gpiochip_add()
 }
 
-then on your ->runtime_resume():
-
-runtime_resume(dev)
-{
-	...
-
-	if (omap->flags & OMAP_EHCI_IRQ_PENDING) {
-		process_pending_irqs(omap);
-		omap->flags &=3D ~OMAP_EHCI_IRQ_PENDING;
-	}
-
-	return 0;
-}
-
-or something similar
+Thanks,
+Michal
 
 --=20
-balbi
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
---+SfteS7bOf3dGlBC
+
+
+------enig2WUFJARIDAAPIAEFTGAQT
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRwvGHAAoJEIaOsuA1yqREE0AQAI7N/kNpLUqEjKRAkHq/1NO9
-kw9dU/x+mDSldaCyUqyns6GTes+mg529QW9IyplBnSPWp19fh5EjMGbIPx8209OC
-SPxeUne7mUVrNtj38yn0bnaM/E92Qj/DZWxx/bOYDIqs9p/QK4QtWkrH31853rrz
-qPOfiGpc5IpufPCCukwMTn/bxPILs7vzDrkTkkVYPQ5yn9qKxYsMdk10kq8cAuQf
-Ng/flXwZAbaOBBDWgisVlhOuhIJ+4TztLTkfw/emwRpAUlV6HWHF1ZxBFZ2oqto1
-TwviZ/6utE9UPuu1u90s8E5eFGivl2BmTSsuSSLYHtDvzxqL8bccVzQ5/UTgg9Q/
-Mqo31xDqr2dDNJ5V9I8u/xK7z2vYE5oHNiW0dLz3K7D1Mjaz+C5Z911vDvK3cSqx
-bk91qPb5n3/wm8vyAWit3AZq1VgeIoM+THI7l9Ga4VxtWzNpXuWK0/Huetbx6RRO
-Wg/FuZW/aFDVw5Atw3GneNJ1CBqwPs9fv2fgGzsPyYeKltD8ethWEUL6gjxi2Xdi
-j//r+njnGRCF2MwgsV1+o/R0Jz1b6LfUCoE9tVPEZuArUkvz8OPPieTbEv6d+Iz8
-IWADWhfTPnXqcTKj4N21EK8OMkKll+oV1UScYiMM1oTPW+EQd1WaRgTqsXo/sNDi
-1IlynUe3KSULNiNJGiV8
-=oiR5
+iEYEARECAAYFAlHC8acACgkQykllyylKDCFfPwCfTMK8J97m4QyuGWHLamLbuNB/
+U5cAoJuSCTgKEnkO+zUtaO4Vw7yWUSw7
+=zZnN
 -----END PGP SIGNATURE-----
 
---+SfteS7bOf3dGlBC--
+------enig2WUFJARIDAAPIAEFTGAQT--
