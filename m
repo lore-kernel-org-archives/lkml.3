@@ -1,117 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965480Ab3FTLtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:49:49 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:41594 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965044Ab3FTLtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 07:49:47 -0400
-Date: Thu, 20 Jun 2013 13:49:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, roland@kernel.org, tglx@linutronix.de,
-        kosaki.motohiro@gmail.com, penberg@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-rdma@vger.kernel.org
-Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
-Message-ID: <20130620114943.GB12125@gmail.com>
-References: <20130606124351.GZ27176@twins.programming.kicks-ass.net>
- <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com>
- <20130607110344.GA27176@twins.programming.kicks-ass.net>
- <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
- <20130617110832.GP3204@twins.programming.kicks-ass.net>
- <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com>
+	id S965492Ab3FTLuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:50:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37573 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965044Ab3FTLuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 07:50:21 -0400
+Message-ID: <51C2EC5F.8050703@ti.com>
+Date: Thu, 20 Jun 2013 14:49:51 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <b-cousson@ti.com>
+CC: <florian.vaussard@epfl.ch>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap4-panda: Add USB Host support
+References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-2-git-send-email-rogerq@ti.com> <51C106A1.9030001@ti.com> <51C15F7E.5020305@ti.com> <20130619074605.GW5523@atomide.com> <51C183AC.8040801@ti.com> <51C19011.5050107@ti.com> <51C19E6C.4040802@epfl.ch> <51C1A2AE.2020506@ti.com> <51C1BA8C.6000703@ti.com> <51C2336C.7020504@ti.com>
+In-Reply-To: <51C2336C.7020504@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Christoph Lameter <cl@gentwo.org> wrote:
-
-> On Mon, 17 Jun 2013, Peter Zijlstra wrote:
+On 06/20/2013 01:40 AM, Benoit Cousson wrote:
+> On 06/19/2013 09:05 AM, Roger Quadros wrote:
+>> On 06/19/2013 03:23 PM, Benoit Cousson wrote:
+>>> On 06/19/2013 07:05 AM, Florian Vaussard wrote:
+>>>> Hello,
+>>>>
+>>>> On 06/19/2013 01:03 PM, Roger Quadros wrote:
+>>>>> On 06/19/2013 01:10 PM, Benoit Cousson wrote:
+>>>>>> On 06/19/2013 02:46 AM, Tony Lindgren wrote:
+>>>>>>> * Roger Quadros <rogerq@ti.com> [130619 00:42]:
+>>>>>>>> Hi Benoit,
+>>>>>>>>
+>>>>>>>> On 06/19/2013 04:17 AM, Benoit Cousson wrote:
+>>>>>>>>> Hi Roger,
+>>>>>>>>>
+>>>>>>>>> On 06/18/2013 11:04 AM, Roger Quadros wrote:
+>>>>>>>>>> Provide the RESET and Power regulators for the USB PHY,
+>>>>>>>>>> the USB Host port mode and the PHY device.
+>>>>>>>>>>
+>>>>>>>>>> Also provide pin multiplexer information for the USB host
+>>>>>>>>>> pins.
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>>>>>> ---
+>>>>>>>>>>      arch/arm/boot/dts/omap4-panda-common.dtsi |   62
+>>>>>>>>>> +++++++++++++++++++++++++++++
+>>>>>>>>>>      1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>>>>>>>
+>>>>>>>>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>>>>> b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>>>>> index 00cbaa5..7a21e8e 100644
+>>>>>>>>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>>>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>>>>>>>>> @@ -59,6 +59,42 @@
+>>>>>>>>>>                  "AFML", "Line In",
+>>>>>>>>>>                  "AFMR", "Line In";
+>>>>>>>>>>          };
+>>>>>>>>>> +
+>>>>>>>>>> +    /* HS USB Port 1 RESET */
+>>>>>>>>>> +    hsusb1_reset: hsusb1_reset_reg {
+>>>>>>>>>> +        compatible = "regulator-fixed";
+>>>>>>>>>> +        regulator-name = "hsusb1_reset";
+>>>>>>>>>> +        regulator-min-microvolt = <3300000>;
+>>>>>>>>>> +        regulator-max-microvolt = <3300000>;
+>>>>>>>>>> +        gpio = <&gpio2 30 0>;    /* gpio_62 */
+>>>>>>>>>> +        startup-delay-us = <70000>;
+>>>>>>>>>> +        enable-active-high;
+>>>>>>>>>> +    };
+>>>>>>>>>
+>>>>>>>>> Is this really a regulator? Or just a GPIO line used to reset the
+>>>>>>>>> USB PHY?
+>>>>>>>>
+>>>>>>>> It is in fact a GPIO line used as reset.
+>>>>>>>>>
+>>>>>>>>> If this is the case, I don't think it should be represented as a
+>>>>>>>>> regulator.
+>>>>>>>>
+>>>>>>>> Why not? I think it fits very well in the regulator device model.
+>>>>>>
+>>>>>> I'm not sure fitting very well is the correct term.
+>>>>>> It works, for sure, but it is no different than when we were trying
+>>>>>> to abuse the regulator fmwk to enable the 32k clock in phoenix.
+>>>>>> It is just a hack.
+>>>>>>
+>>>>>
+>>>>> The only difference is there is a dedicated framework for clocks.
+>>>>> Since there is nothing specific to
+>>>>> handle reset lines it is left to the driver writer how he wants to
+>>>>> manage it.
+>>>>>
+>>>>
+>>>> There is a proposed binding for gpio-controlled reset lines, but it is
+>>>> not yet merged [1].
+>>>> I guess it can fit most usage patterns, and it can be an interesting
+>>>> move in the future.
+>>>
+>>> I'm glad to see that I was not the only one thinking that the regulator was not the right fmwk to do that :-)
+>>>
+>>> Thanks for the pointer Florian.
+>>
+>> Thanks again Florian.
+>>>
+>>> I guess that series should be merged for 3.11? Based on the thread, it should to through arm-soc.
+>>>
+>>> Roger,
+>>>
+>>> It might be tricky to have dependency on that series, but if this is possible, you should try. Otherwise, just keep the existing one, adding that a new solution will be available soon as a disclaimer.
+>>>
+>>
+>> I will rework the PHY driver to use the new gpio-reset driver. But for 3.11 let's proceed the way it is.
+>> I'll resend this one with a disclaimer.
 > 
-> > They did no such thing; being one of those who wrote such code. I
-> > expressly used RLIMIT_MEMLOCK for its the one limit userspace has to
-> > limit pages that are exempt from paging.
-> 
-> Dont remember reviewing that. Assumptions were wrong in that patch then.
-> 
-> > > Pinned pages are exempted by the kernel. A device driver or some other
-> > > kernel process (reclaim, page migration, io etc) increase the page count.
-> > > There is currently no consistent accounting for pinned pages. The
-> > > vm_pinned counter was introduced to allow the largest pinners to track
-> > > what they did.
-> >
-> > No, not the largest, user space controlled pinnners. The thing that
-> > makes all the difference is the _USER_ control.
-> 
-> The pinning *cannot* be done from user space. Here it is the IB subsystem
-> that is doing it.
+> OK, I've just done it myself while applying your series.
+>
 
-Peter clearly pointed it out that in the perf case it's user-space that 
-initiates the pinned memory mapping which is resource-controlled via 
-RLIMIT_MEMLOCK - and this was implemented that way before your commit 
-broke the code.
+Great !! Thanks.
 
-You seem to be hell bent on defining 'memory pinning' only as "the thing 
-done via the mlock*() system calls", but that is a nonsensical distinction 
-that actively and incorrectly ignores other system calls that can and do 
-pin memory legitimately.
+There is a similar patch for beagle-xm. But I will resend it to you with the disclaimer.
 
-If some other system call results in mapping pinned memory that is at 
-least as restrictively pinned as an mlock()-ed vma (the perf syscall is 
-such) then it's entirely proper design to be resource controlled under 
-RLIMIT_MEMLOCK as well. In fact this worked so before your commit broke 
-it.
-
-> > > mlockall does not require CAP_IPC_LOCK. Never had an issue.
-> >
-> > MCL_FUTURE does absolutely require CAP_IPC_LOCK, MCL_CURRENT requires 
-> > a huge (as opposed to the default 64k) RLIMIT or CAP_IPC_LOCK.
-> >
-> > There's no argument there, look at the code.
-> 
-> I am sorry but we have been mlockall() for years now without the issues 
-> that you are bringing up. AFAICT mlockall does not require MCL_FUTURE.
-
-You only have to read the mlockall() code to see that Peter's claim is 
-correct:
-
-mm/mlock.c:
-
-SYSCALL_DEFINE1(mlockall, int, flags)
-{
-        unsigned long lock_limit;
-        int ret = -EINVAL;
-
-        if (!flags || (flags & ~(MCL_CURRENT | MCL_FUTURE)))
-                goto out;
-
-        ret = -EPERM;
-        if (!can_do_mlock())
-                goto out;
-...
-
-
-int can_do_mlock(void)
-{
-        if (capable(CAP_IPC_LOCK))
-                return 1;
-        if (rlimit(RLIMIT_MEMLOCK) != 0)
-                return 1;
-        return 0;
-}
-EXPORT_SYMBOL(can_do_mlock);
-
-Q.E.D.
-
-Thanks,
-
-	Ingo
+cheers,
+-roger
