@@ -1,136 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965064Ab3FTI2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:28:13 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:36095 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964995Ab3FTI1t (ORCPT
+	id S965036Ab3FTI3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:29:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59513 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296Ab3FTI27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:27:49 -0400
-Message-ID: <51C2BD00.4000800@monstr.eu>
-Date: Thu, 20 Jun 2013 10:27:44 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 20 Jun 2013 04:28:59 -0400
+Date: Thu, 20 Jun 2013 10:28:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gang <gang.chen@asianux.com>
+cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        laijs@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/kthread.c: need spin_lock_irq() for 'worker'
+ before main looping, since it can "WARN_ON(worker->task)".
+In-Reply-To: <51C2B157.40806@asianux.com>
+Message-ID: <alpine.DEB.2.02.1306200951090.4013@ionos.tec.linutronix.de>
+References: <51C12D9A.8030801@asianux.com> <20130619084124.GF30681@mtj.dyndns.org> <51C18540.5060200@asianux.com> <20130619155218.GA14881@htj.dyndns.org> <51C26087.9000109@asianux.com> <alpine.DEB.2.02.1306200900030.4013@ionos.tec.linutronix.de>
+ <51C2B157.40806@asianux.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: monstr@monstr.eu, Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 0/2] Extend multi_v7_defconfig
-References: <1371664384-24974-1-git-send-email-soren.brinkmann@xilinx.com> <201306192046.41005.arnd@arndb.de> <51C291D0.6000401@monstr.eu> <201306201002.01702.arnd@arndb.de>
-In-Reply-To: <201306201002.01702.arnd@arndb.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2JRVKQIXGUFPTNCANISPF"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2JRVKQIXGUFPTNCANISPF
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Thu, 20 Jun 2013, Chen Gang wrote:
 
-On 06/20/2013 10:02 AM, Arnd Bergmann wrote:
-> On Thursday 20 June 2013, Michal Simek wrote:
->> On 06/19/2013 08:46 PM, Arnd Bergmann wrote:
->>> On Wednesday 19 June 2013, Soren Brinkmann wrote:
->>>> I don't know how much a defconfig is supposed to provide, hence as R=
-FC.
->>>> This patches are needed for booting Zynq into a minimum ramfs based
->>>> system with a serial console.
->>>
->>> In my opinion we should provide enable all the platform specific driv=
-ers
->>> in the defconfigs, as well as everything needed to boot the system,
->>> to get proper compile coverage as well as the ability to test changes=
+> On 06/20/2013 03:02 PM, Thomas Gleixner wrote:
+> > On Thu, 20 Jun 2013, Chen Gang wrote:
+> > 
+> >> > On 06/19/2013 11:52 PM, Tejun Heo wrote:
+> >>> > > On Wed, Jun 19, 2013 at 06:17:36PM +0800, Chen Gang wrote:
+> >>>>> > >> > Hmm... can 'worker->task' has chance to be not NULL before set 'current'
+> >>>>> > >> > to it ?
+> >>> > > Yes, if the caller screws up and try to attach more than one workers
+> >>> > > to the kthread_worker, which has some possibility of happening as
+> >>> > > kthread_worker allows both attaching and detaching a worker.
+> >>> > > 
+> >> > 
+> >> > If we detect the bugs, and still want to use WARN_ON() to report warning
+> >> > and continue running, we need be sure of keeping the related things no
+> >> > touch (at least not lead to worse).
+> >> > 
+> >> > If we can not be sure of keeping the related things no touch:
+> >> >   if it is a kernel bug, better use BUG_ON() instead of,
+> >> >   if it is a user mode bug, better to return failure with error code and
+> >> > print related information.
+> > Wrong. BUG_ON() is only for cases where the kernel CANNOT continue at
+> > all. WARN_ON() prints the very same information, but allows to
+> > continue.
+> > 
+> 
+> In fact, BUG_ON() and WARN_ON() has various implementations in different
+> architectures, and also can be configured by user.
 
->>> easily. Your patches look good. Michal, would you apply them and
->>> send another pull request or should I just take them directly?
->>
->> Soren asked me 2 days ago if make sense to create zynq defconfig or no=
-t.
->> I just suggested him to better extend this multi_v7_defconfig.
->> But still question is if we can/should create zynq specific defconfig?=
+And how is that relevant? 
+ 
+> Even some of 'crazy users' (e.g. randconfig), can make BUG_ON() and
+> WARN_ON() 'empty' (include/asm-generic/bug.h).
 
->> Or are you going to remove all of these platform specific defconfig?
->=20
-> We don't have a consistent policy across platforms at the moment.
-> Traditionally we had multiple defconfigs per platform, in some cases
-> one per board, but moving towards one defconfig per platform at
-> the moment.
+That does not matter at all.
+ 
+> In my experience (mainly for servers), when find a kernel bug, it will
+> stop and report bug, that will let coredump analysing (or KDB trap) much
+> easier.
 
-That's what I though but on the other hand in this process
-all these defconfigs should be removed.
+And your core dump will help you in what way? The code which
+misbehaved is not longer executing. The problem is detected after the
+fact and therefor your coredump will just tell you that worker->task
+is not NULL.
+ 
+> >> > BUG_ON() will stop current working flow and report kernel bug in details.
+> > There is no reason to crash the machine completely. The kernel can
+> > continue and the WARN_ON reports the bug with the same details.
 
-> I guess whether or not to have a separate defconfig for one platform
-> or to use only multi_*_defconfig is a question of how many people
-> would use a zynq_defconfig in practice.
+Linus said about BUG_ON():
 
-The point is if you look at zynq users than they will just use this zynq_=
-defconfig
-because they know that it is for zynq and also they don't want to
-compile drivers for other platforms which zynq can't use.
-=46rom distribution point of view they want to use only one image because=
- it is just
-easier.
+  Adding BUG_ON()'s just makes things much much much worse. There is
+  *never* a reason to add a BUG_ON().
+  
+  BUG_ON() makes it almost impossible to debug something, because you
+  just killed the machine. So using BUG_ON() for "please notice this"
+  is stupid as hell, because the most common end result is: "Oh, the
+  machine just hung with no messages".
 
-Based on this if there is an option to also add just zynq defconfig, I wo=
-uld prefer
-to also add it.
+And he is right about that. 
+ 
+> If so (we still prefer to use WARN_ON), we'd better to let it in lock
+> protected.
 
->> Definitely agree that multi_v7 defconfig should enable everything need=
-ed
->> to boot the system.
->> Does it also mean that we should also enable all zynq drivers
->> to get better compile coverage?
->=20
-> I would say yes.
->=20
-> My feeling is that multi_v7_defconfig should enable all hardware
-> support for the platforms in it, and that users would take it
-> as a starting point if they want to have a configuration for
-> an embedded system, disabling everything they don't need.
+No, because the lock is not protecting anything in that case. If some
+other code misbehaves and sets worker->task, then the lock does not
+prevent this and taking the lock is not making the WARN_ON any more
+reliable. So why the heck should we take it?
+ 
+> At least when we still have to continue, try not to lead things worse.
 
-I just wanted to be sure because you wrote just drivers for booting
-it means any "minimal" configuration to get it boot not all drivers.
+And what's going to be better if we take the lock? Nothing, because
+the lock CANNOT protect the check.
+ 
+> It will provide much help for coredump analysing (or KDB trap).
+> 
+> In fact, for coredump analysers, for every real world coredump, they
+> have to assume the system has already continued blindly, and then die.
 
-If you are ok, Soren will prepare also specific zynq defconfig file
-and check if there are any missing drivers which are not enabled for zynq=
+Core dump analysers cannot analyse dynamic race conditions and neither
+can KDB. 
 
-for multi_v7. I will collect them in one branch and will send pull reques=
-t.
+So what do you gain from crashing the kernel? Exactly NOTHING.
 
 Thanks,
-Michal
 
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2JRVKQIXGUFPTNCANISPF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHCvQEACgkQykllyylKDCEVGQCeLKZ3czjNA2ns0h4imMXs9qXB
-XnIAnjpftG1CE1auE7ai7s3H9QmuSsm/
-=GovF
------END PGP SIGNATURE-----
-
-------enig2JRVKQIXGUFPTNCANISPF--
+	tglx
