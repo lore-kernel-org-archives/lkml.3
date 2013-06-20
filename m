@@ -1,71 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab3FTF0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 01:26:48 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:42257 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab3FTF0r convert rfc822-to-8bit (ORCPT
+	id S1752949Ab3FTF3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:29:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50669 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab3FTF3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 01:26:47 -0400
-Date: Thu, 20 Jun 2013 00:26:44 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation/cgroups/memory.txt: fix stat file
- documentation
-To: Aaro Koskinen <aaro.koskinen@nsn.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@nsn.com>, trivial@kernel.org
-References: <1371645269-19762-1-git-send-email-aaro.koskinen@nsn.com>
-In-Reply-To: <1371645269-19762-1-git-send-email-aaro.koskinen@nsn.com> (from
-	aaro.koskinen@nsn.com on Wed Jun 19 07:34:29 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1371706004.2776.132@driftwood>
+	Thu, 20 Jun 2013 01:29:03 -0400
+Message-ID: <51C292E9.2010904@ti.com>
+Date: Thu, 20 Jun 2013 10:58:09 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <akpm@linux-foundation.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
+        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
+Subject: Re: [PATCH v7 1/9] drivers: phy: add generic PHY framework
+References: <1371113039-5784-1-git-send-email-kishon@ti.com> <1371113039-5784-2-git-send-email-kishon@ti.com> <51C1D30D.1050907@samsung.com>
+In-Reply-To: <51C1D30D.1050907@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2013 07:34:29 AM, Aaro Koskinen wrote:
-> Documentation for inactive_anon / active_anon was mixed up. Fix that.
-> 
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
+Hi,
 
-Acked-by: Rob Landley <rob@landley.net>
+On Wednesday 19 June 2013 09:19 PM, Sylwester Nawrocki wrote:
+> Hi,
+>
+> On 06/13/2013 10:43 AM, Kishon Vijay Abraham I wrote:
+>> +/**
+>> + * phy_create() - create a new phy
+>> + * @dev: device that is creating the new phy
+>> + * @id: id of the phy
+>> + * @ops: function pointers for performing phy operations
+>> + * @label: label given to the phy
+>> + * @priv: private data from phy driver
+>> + *
+>> + * Called to create a phy using phy framework.
+>> + */
+>> +struct phy *phy_create(struct device *dev, u8 id, const struct phy_ops *ops,
+>> +	const char *label, void *priv)
+>> +{
+>> +	int ret;
+>> +	struct phy *phy;
+>> +
+>> +	if (!dev) {
+>> +		dev_WARN(dev, "no device provided for PHY\n");
+>> +		ret = -EINVAL;
+>> +		goto err0;
+>> +	}
+>> +
+>> +	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
+>> +	if (!phy) {
+>> +		ret = -ENOMEM;
+>> +		goto err0;
+>> +	}
+>> +
+>> +	device_initialize(&phy->dev);
+>> +
+>> +	phy->dev.class = phy_class;
+>> +	phy->dev.parent = dev;
+>> +	phy->dev.of_node = dev->of_node;
+>> +	phy->id = id;
+>> +	phy->ops = ops;
+>> +	phy->label = label;
+>
+> Perhaps we could make it:
+>
+> 	phy->label = kstrdup(label, GFP_KERNEL);
+>
+> and free the label in phy_destroy() ?
 
-> ---
->  Documentation/cgroups/memory.txt |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt  
-> b/Documentation/cgroups/memory.txt
-> index ddf4f93..b63be03 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -490,10 +490,10 @@ pgpgin		- # of charging events to the  
-> memory cgroup. The charging
->  pgpgout		- # of uncharging events to the memory cgroup.  
-> The uncharging
->  		event happens each time a page is unaccounted from the  
-> cgroup.
->  swap		- # of bytes of swap usage
-> -inactive_anon	- # of bytes of anonymous memory and swap cache  
-> memory on
-> +inactive_anon	- # of bytes of anonymous and swap cache memory  
-> on inactive
->  		LRU list.
->  active_anon	- # of bytes of anonymous and swap cache memory on  
-> active
-> -		inactive LRU list.
-> +		LRU list.
->  inactive_file	- # of bytes of file-backed memory on inactive  
-> LRU list.
->  active_file	- # of bytes of file-backed memory on active LRU list.
->  unevictable	- # of bytes of memory that cannot be reclaimed  
-> (mlocked etc).
-> --
-> 1.7.10.4
-> 
-> 
+yeah.. Fixed.
+>
+> That way the users would't need to keep the label around. It might
+> be useful when PHY provider generates the labels dynamically. I guess
+> it is OK for PHY providers to hard code the labels and having the PHY
+> user drivers passed labels in platform data ?
 
+yeah. But the only concern here is there is no way to enforce the
+labels are passed in platform data. The PHY user driver can also
+hard code the labels while getting the reference to the PHY and we can
+catch such cases only by review.
+
+>
+>> +	dev_set_drvdata(&phy->dev, priv);
+>> +
+>> +	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
+>> +	if (ret)
+>> +		goto err1;
+>> +
+>> +	ret = device_add(&phy->dev);
+>> +	if (ret)
+>> +		goto err1;
+>> +
+>> +	if (pm_runtime_enabled(dev))
+>> +		pm_runtime_enable(&phy->dev);
+>> +
+>> +	return phy;
+>> +
+>> +err1:
+>> +	put_device(&phy->dev);
+>> +	kfree(phy);
+>> +
+>> +err0:
+>> +	return ERR_PTR(ret);
+>> +}
+>> +EXPORT_SYMBOL_GPL(phy_create);
+>
+>> +/**
+>> + * phy_destroy() - destroy the phy
+>> + * @phy: the phy to be destroyed
+>> + *
+>> + * Called to destroy the phy.
+>> + */
+>> +void phy_destroy(struct phy *phy)
+>> +{
+>> +	pm_runtime_disable(&phy->dev);
+>> +	device_unregister(&phy->dev);
+>
+> Isn't kfree(phy); missing here ?
+
+Not actually. Its done in phy_release (class's dev_release method)
+
+Thanks
+Kishon
