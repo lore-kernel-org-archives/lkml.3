@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3FTKYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 06:24:05 -0400
-Received: from mail7-214.sinamail.sina.com.cn ([202.108.7.214]:60666 "EHLO
-	smtp.sina.com.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757030Ab3FTKX7 (ORCPT
+	id S1757522Ab3FTK2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 06:28:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60779 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756915Ab3FTK2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 06:23:59 -0400
-X-Originating-IP: [27.184.174.6]
-Date: Thu, 20 Jun 2013 17:06:34 +0800
-From: "Xafkpu" <rubberdaisy008@sina.cn>
-Reply-To: admin@hc-rubber.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Packing Tapes
-Message-ID: <201306201706344849135@sina.cn>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Thu, 20 Jun 2013 06:28:48 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: [v5][PATCH 2/6] powerpc/book3e: store critical/machine/debug exception thread info
+Date: Thu, 20 Jun 2013 18:28:26 +0800
+Message-ID: <1371724110-8250-3-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
+References: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5KAOXTF017101
 
-Dear Manager,
+We need to store thread info to these exception thread info like something
+we already did for PPC32.
 
-Glad to hear you are on the market for adhesive tape.We are specialized in this field for several years.
-Please see our main products as following:
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ arch/powerpc/kernel/exceptions-64e.S |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-                         (1) Electrical Tape
-                         (2) Marking Tape 
-                         (3) Cloth Tape
-                         (4) Masking Tape 
-                         
+diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
+index 4d8e57f..07cf657 100644
+--- a/arch/powerpc/kernel/exceptions-64e.S
++++ b/arch/powerpc/kernel/exceptions-64e.S
+@@ -67,6 +67,18 @@
+ 	std	r10,PACA_##level##_STACK(r13);
+ #endif
+ 
++/* Store something to exception thread info */
++#define	BOOK3E_STORE_EXC_LEVEL_THEAD_INFO(type)					\
++	ld	r14,PACAKSAVE(r13);						\
++	CURRENT_THREAD_INFO(r14, r14);						\
++	CURRENT_THREAD_INFO(r15, r1);						\
++	ld	r10,TI_FLAGS(r14);		     				\
++	std	r10,TI_FLAGS(r15);			     			\
++	ld	r10,TI_PREEMPT(r14);		     				\
++	std	r10,TI_PREEMPT(r15);		     				\
++	ld	r10,TI_TASK(r14);			     			\
++	std	r10,TI_TASK(r15);
++
+ /* Exception prolog code for all exceptions */
+ #define EXCEPTION_PROLOG(n, intnum, type, addition)	    		    \
+ 	mtspr	SPRN_SPRG_##type##_SCRATCH,r13;	/* get spare registers */   \
+@@ -104,6 +116,7 @@
+ 	BOOK3E_LOAD_EXC_LEVEL_STACK(CRIT);					\
+ 	ld	r1,PACA_CRIT_STACK(r13);				    \
+ 	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++	BOOK3E_STORE_EXC_LEVEL_THEAD_INFO(CRIT);				\
+ 1:
+ #define SPRN_CRIT_SRR0	SPRN_CSRR0
+ #define SPRN_CRIT_SRR1	SPRN_CSRR1
+@@ -114,6 +127,7 @@
+ 	BOOK3E_LOAD_EXC_LEVEL_STACK(DBG);					\
+ 	ld	r1,PACA_DBG_STACK(r13);					    \
+ 	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++	BOOK3E_STORE_EXC_LEVEL_THEAD_INFO(DBG);					\
+ 1:
+ #define SPRN_DBG_SRR0	SPRN_DSRR0
+ #define SPRN_DBG_SRR1	SPRN_DSRR1
+@@ -124,6 +138,7 @@
+ 	BOOK3E_LOAD_EXC_LEVEL_STACK(MC);					\
+ 	ld	r1,PACA_MC_STACK(r13);					    \
+ 	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
++	BOOK3E_STORE_EXC_LEVEL_THEAD_INFO(MC);					\
+ 1:
+ #define SPRN_MC_SRR0	SPRN_MCSRR0
+ #define SPRN_MC_SRR1	SPRN_MCSRR1
+-- 
+1.7.9.5
 
-Hope to cooperate with you !
-Welcome to inquiry!
-
-Best regards
-Thanks and Best Regards
-Lynn
-
-Web: www.huachuang-tape.com
-Email: admin@hc-rubber.com
-Tel/Fax: 86-0311-87247534ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
