@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965618Ab3FTRDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:03:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37345 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758030Ab3FTRBd (ORCPT
+	id S1758158Ab3FTP7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:59:53 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:38860 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757973Ab3FTP7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:01:33 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] deprecate usage of pci_scan_bus_parented()
-Date: Fri, 21 Jun 2013 01:01:02 +0800
-Message-Id: <1371747665-12768-1-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 20 Jun 2013 11:59:52 -0400
+Date: Thu, 20 Jun 2013 17:59:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/7] hw_breakpoint: fixes/cleanups
+Message-ID: <20130620155948.GA20797@gmail.com>
+References: <20130620154947.GA6301@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620154947.GA6301@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
 
-This patch tries to deprecate usage of pci_scan_bus_parented().
-It applies to
-https://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
-Jiang Liu (3):
-  PCI: export three functions to support modular host bridge driver
-  PCI, xen-pcifront: use new PCI interfaces to simplify implementation
-  PCI: mark pci_scan_bus_parented() as __deprecated
+> Ingo,
+> 
+> 1/7 and 2/7 fix the WARN_ONCE("Can't find any breakpoint slot") problem
+> reported by Vince. The problem is minor but the patches look simple, so
+> perhaps this is 3.10 material. And I added -stable.
+> 
+> Other changes are cleanups/simplifications.
+> 
+> The patches are the same, I only added the acks from Frederic.
+> 
+> Oleg.
+> 
+>  kernel/events/hw_breakpoint.c |  188 +++++++++++++++++------------------------
+>  1 files changed, 79 insertions(+), 109 deletions(-)
 
- arch/tile/kernel/pci.c     |  3 --
- drivers/pci/host-bridge.c  |  1 +
- drivers/pci/probe.c        |  1 +
- drivers/pci/remove.c       |  7 +++++
- drivers/pci/xen-pcifront.c | 70 ++++++++++++++++++++--------------------------
- include/linux/pci.h        |  5 ++--
- 6 files changed, 42 insertions(+), 45 deletions(-)
+Applied, thanks a lot Oleg!
 
--- 
-1.8.1.2
-
+	Ingo
