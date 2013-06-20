@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030347Ab3FTPWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:22:54 -0400
-Received: from 8bytes.org ([85.214.48.195]:35324 "EHLO mail.8bytes.org"
+	id S1757982Ab3FTO6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:58:16 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35305 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030331Ab3FTPWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:22:52 -0400
-Date: Thu, 20 Jun 2013 17:22:48 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
-        linux-pci@vger.kernel.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu: amd/intel: Remove multifunction assumption around
- grouping
-Message-ID: <20130620152248.GF3589@8bytes.org>
-References: <20130530183855.14612.15585.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130530183855.14612.15585.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun 20 17:22:50 2013
-X-DSPAM-Confidence: 0.9983
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51c31e4a20862151317104
+	id S1757888Ab3FTO6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:58:14 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 1/3] evm: calculate HMAC after initializing posix acl on tmpfs
+Date: Thu, 20 Jun 2013 10:56:25 -0400
+Message-Id: <1371740187-11989-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062014-5806-0000-0000-000021CCE5D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 12:39:18PM -0600, Alex Williamson wrote:
-> If a device is multifunction and does not have ACS enabled then we
-> assume that the entire package lacks ACS and use function 0 as the
-> base of the group.  The PCIe spec however states that components are
-> permitted to implement ACS on some, none, or all of their applicable
-> functions.  It's therefore conceivable that function 0 may be fully
-> independent and support ACS while other functions do not.  Instead
-> use the lowest function of the slot that does not have ACS enabled
-> as the base of the group.  This may be the current device, which is
-> intentional.  So long as we use a consistent algorithm, all the
-> non-ACS functions will be grouped together and ACS functions will
-> get separate groups.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/iommu/amd_iommu.c   |   25 +++++++++++++++++++------
->  drivers/iommu/intel-iommu.c |   25 +++++++++++++++++++------
+Included in the EVM hmac calculation is the i_mode.  Any changes to
+the i_mode need to be reflected in the hmac.  shmem_mknod() currently
+calls generic_acl_init(), which modifies the i_mode, after calling
+security_inode_init_security().  This patch reverses the order in
+which they are called.
 
-Didn't really fit into any of my existing branches. Applied it to
-x86/vt-d because it is probably not worth creating a new x86-specific
-branch just for this patch.
+Reported-by: Sven Vermeulen <sven.vermeulen@siphos.be>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+---
+ mm/shmem.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Thanks,
-
-	Joerg
-
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 5e6a842..a8e1072 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1939,6 +1939,13 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+ 
+ 	inode = shmem_get_inode(dir->i_sb, dir, mode, dev, VM_NORESERVE);
+ 	if (inode) {
++#ifdef CONFIG_TMPFS_POSIX_ACL
++		error = generic_acl_init(inode, dir);
++		if (error) {
++			iput(inode);
++			return error;
++		}
++#endif
+ 		error = security_inode_init_security(inode, dir,
+ 						     &dentry->d_name,
+ 						     shmem_initxattrs, NULL);
+@@ -1948,15 +1955,8 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+ 				return error;
+ 			}
+ 		}
+-#ifdef CONFIG_TMPFS_POSIX_ACL
+-		error = generic_acl_init(inode, dir);
+-		if (error) {
+-			iput(inode);
+-			return error;
+-		}
+-#else
++
+ 		error = 0;
+-#endif
+ 		dir->i_size += BOGO_DIRENT_SIZE;
+ 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+ 		d_instantiate(dentry, inode);
+-- 
+1.8.1.4
 
