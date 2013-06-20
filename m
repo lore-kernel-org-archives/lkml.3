@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161162Ab3FTSmL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:42:11 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:56061 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161052Ab3FTSmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:42:09 -0400
+	id S1758129Ab3FTTNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:13:45 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:54346 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758098Ab3FTTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:13:43 -0400
+X-IronPort-AV: E=Sophos;i="4.87,906,1363132800"; 
+   d="scan'208";a="32469510"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <xen-devel@lists.xen.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv5 0/4] xen: maintain an accurate persistent clock in more cases
+Date: Thu, 20 Jun 2013 20:13:37 +0100
+Message-ID: <1371755619-25348-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-In-Reply-To: <20130619100544.GB4545@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-	<20130618171036.GD4553@dhcp-192-168-178-175.profitbricks.localdomain>
-	<CAE9FiQW2CMfNOTNM1MRCZo-ZQuQgj=JQtXLZ3eUxF7dQ8qukTA@mail.gmail.com>
-	<20130619100544.GB4545@dhcp-192-168-178-175.profitbricks.localdomain>
-Date: Thu, 20 Jun 2013 11:42:08 -0700
-X-Google-Sender-Auth: tcPPUOTuT9PWfIeVBZemGXFEhk0
-Message-ID: <CAE9FiQX7LwQHakzSD7f8yw6yT7gR=8d53p-=FxZsxVCyU-+SYw@mail.gmail.com>
-Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        mina86@mina86.com, gong.chen@linux.intel.com, lwoodman@redhat.com,
-        Rik van Riel <riel@redhat.com>, jweiner@redhat.com,
-        Prarit Bhargava <prarit@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 3:05 AM, Vasilis Liaskovitis
-<vasilis.liaskovitis@profitbricks.com> wrote:
-> On Tue, Jun 18, 2013 at 01:19:12PM -0700, Yinghai Lu wrote:
->> On Tue, Jun 18, 2013 at 10:10 AM, Vasilis Liaskovitis
->> <vasilis.liaskovitis@profitbricks.com> wrote:
->> >> could be found at:
->> >>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
->> >>
->> >> and it is based on today's Linus tree.
->> >>
->> >
->> > Has this patchset been tested on various numa configs?
->> > I am using linux-next next-20130607 + part1 with qemu/kvm/seabios VMs. The kernel
->> > boots successfully in many numa configs but while trying different memory sizes
->> > for a 2 numa node VM, I noticed that booting does not complete in all cases
->> > (bootup screen appears to hang but there is no output indicating an early panic)
->> >
->> > node0   node1    boots
->> > 1G      1G       yes
->> > 1G      2G       yes
->> > 1G      0.5G     yes
->> > 3G      2.5G     yes
->> > 3G      3G       yes
->> > 4G      0G       yes
->> > 4G      4G       yes
->> > 1.5G    1G       no
->> > 2G      1G       no
->> > 2G      2G       no
->> > 2.5G    2G       no
->> > 2.5G    2.5G     no
->> >
->> > linux-next next-20130607 boots al of these configs fine.
->> >
->> > Looks odd, perhaps I have something wrong in my setup or maybe there is a
->> > seabios/qemu interaction with this patchset. I will update if I find something.
->>
->> just tried 2g/2g, and it works on qemu-kvm:
->
-> thanks for testing. If you can also share qemu/seabios versions you use (release
-> or git commits), that would be helpful.
+Xen guests use the Xen wallclock as their persistent clock.  This is a
+software only clock in the hypervisor that is used by guests instead
+of a real hardware RTC.
 
-QEMU emulator version 1.5.50, Copyright (c) 2003-2008 Fabrice Bellard
+The kernel has limited support for updating the persistent clock or
+RTC when NTP is synced.  This has the following limitations:
 
-it is at:
-commit 7387de16d0e4d2988df350926537cd12a8e34206
-Merge: b8a75b6 e73fe2b
-Author: Anthony Liguori <aliguori@us.ibm.com>
-Date:   Fri Jun 7 08:40:52 2013 -0500
+* The persistent clock is not updated on step changes.  This leaves a
+  window where it will be incorrect (while NTP resyncs).
 
-    Merge remote-tracking branch 'stefanha/block' into staging
+* Xen guests use the Xen wallclock as their persistent clock.  dom0
+  maintains this clock so it is persistent for domUs but not dom0
+  itself.
 
-start command:
+These limitations mean that guests started before NTP is synchronized
+will start with an incorrect wallclock time and the hardware RTC will
+not be updated (as on bare metal).
 
-#for 64bit numa
-/usr/local/kvm/bin/qemu-system-x86_64 -L /usr/local/kvm/share/qemu
--enable-kvm -numa node,nodeid=0,cpus=0-1,mem=2048 -numa
-node,nodeid=1,cpus=2-3,mem=2048 -smp sockets=2,cores=2,threads=1 -m
-4096 -net nic,model=e1000,macaddr=00:1c:25:1c:13:e9 -net user -hda
-/home/yhlu/data.dsk -cdrom
-/home/yhlu/xx/xx/kernel/tip/linux-2.6/arch/x86/boot/image.iso -boot d
--serial telnet:127.0.0.1:4444,server -monitor stdio
+These series fixes the above limitations and depends on "x86: increase
+precision of x86_platform.get/set_wallclock()" which was previously
+posted.
 
+Changes since v4:
 
->
-> this is most likely some error on my setup, I 'll let you know if I conclude
-> otherwise.
->
-> thanks,
->
-> - Vasilis
+Dropped the change to disable non-boot CPUs during suspend on Xen as
+migration downtime was too poor.  Instead, provide
+hrtimers_late_resume() for use by Xen's resume code to replace the
+call of clock_was_set().  Fix two unused variable warnings.
+
+Changes since v3:
+
+Add a new clock_was_set notifier chain. Use this instead of direct
+calls to clock_was_set() from the timekeeping code.  Use this notifier
+and a new timer to synchronize the Xen wallclock.
+
+Changes since v2:
+
+Don't peek at the timekeeper internals (use __current_kernel_time()
+instead).  Use the native set_wallclock hook in dom0.
+
+Changes since v1:
+
+Reworked to use the pvclock_gtod notifier to sync the wallclock (this
+looked similar to what a KVM host does).  update_persistent_clock()
+will now only update the CMOS RTC.
+
+David
+
