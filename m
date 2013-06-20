@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3FTHVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:21:19 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62945 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753840Ab3FTHVR (ORCPT
+	id S1754143Ab3FTHYC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:24:02 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:54376 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359Ab3FTHYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:21:17 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX182QkVjkOQHg7ZHOUqFCcnu
-Date: Thu, 20 Jun 2013 00:21:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Roger Quadros <rogerq@ti.com>, stern@rowland.harvard.edu, balbi@ti.com,
-        ruslan.bilovol@ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC PATCH 2/6] mfd: omap-usb-host: Put pins in IDLE state on
- suspend
-Message-ID: <20130620072112.GF5523@atomide.com>
-References: <1371650753-11452-1-git-send-email-rogerq@ti.com>
- <1371650753-11452-3-git-send-email-rogerq@ti.com>
- <878v26815g.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878v26815g.fsf@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 20 Jun 2013 03:24:00 -0400
+From: <patrice.chotard.st@gmail.com>
+To: <linux-kernel@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
+Cc: Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>
+Subject: [PATCH 0/2] pinctrl: ABX500: Add device tree support 
+Date: Thu, 20 Jun 2013 09:23:20 +0200
+Message-Id: <1371713002-18974-1-git-send-email-patrice.chotard.st@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kevin Hilman <khilman@linaro.org> [130619 10:30]:
-> Hi Roger,
-> 
-> Roger Quadros <rogerq@ti.com> writes:
-> 
-> > In order to support wake up from suspend use the pinctrl
-> > framework to put the USB host pins in IDLE state during suspend.
-> >
-> > CC: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> You should use helpers for this now in the pinctrl core:
-> 
->     http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html
+From: Patrice Chotard <patrice.chotard@st.com>
 
-Also see the thread "[PATCH] pinctrl: document the pinctrl PM states"
-as we're still discussing how to deal with the various dynamic
-pinctrl needs in a generic way. Meanwile, just make sure the other
-patches work and don't break anything without this patch to
-remove the dependency.
+This patchset replaces previously submitted patch regarding device tree
+support for ABX500 Asic family. It now uses pin configuration generic 
+parsing code proposed by Heiko Stuebner.
 
-Regards,
+Patrice Chotard (2):
+  pinctrl: abx500: Add device tree support
+  pinctrl: abx500: fix abx500_pin_config_set()
 
-Tony
+ .../devicetree/bindings/pinctrl/ste,abx500.txt     |  352 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-abx500.c                   |  215 +++++++++++-
+ 2 files changed, 561 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/ste,abx500.txt
+
+-- 
+1.7.10
+
