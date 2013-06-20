@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935520Ab3FTBs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 21:48:59 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:56335 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935237Ab3FTBs5 (ORCPT
+	id S935526Ab3FTBwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 21:52:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:16183 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935237Ab3FTBwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 21:48:57 -0400
-X-AuditID: cbfee68e-b7f276d000002279-d4-51c25f87472a
-Message-id: <51C25F93.9050004@samsung.com>
-Date: Thu, 20 Jun 2013 10:49:07 +0900
+	Wed, 19 Jun 2013 21:52:05 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-75-51c2603ed7b7
+Message-id: <51C26049.10703@samsung.com>
+Date: Thu, 20 Jun 2013 10:52:09 +0900
 From: Jaehoon Chung <jh80.chung@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510
  Thunderbird/17.0.6
 MIME-version: 1.0
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "'Will Newton'" <will.newton@gmail.com>,
-        "'Bing Zhao'" <bzhao@marvell.com>,
-        "'Ashok Nagarajan'" <asnagarajan@chromium.org>,
-        "'Paul Stewart'" <pstew@chromium.org>,
-        "'Olof Johansson'" <olof@lixom.net>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from
- STATE_DATA_ERROR
-References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
- <5146EAB0.1030705@samsung.com>
- <CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
- <515E88E3.5070507@samsung.com>
- <003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
- <CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
- <001601ce35b9$652c5870$2f850950$%jun@samsung.com>
- <CAD=FV=XKeRjpH1+ytjMfLuGGqQ5VVub22n=V+UpV=jBCD4LLHw@mail.gmail.com>
- <001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
-In-reply-to: <001801ce6c20$6ba39900$42eacb00$%jun@samsung.com>
-Content-type: text/plain; charset=windows-1252
+To: Doug Anderson <dianders@chromium.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Will Newton <will.newton@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v2 2/2] mmc: dw_mmc: Add the ability to set the ciu clock
+ frequency
+References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
+ <1370626110-1731-1-git-send-email-dianders@chromium.org>
+ <1370626110-1731-2-git-send-email-dianders@chromium.org>
+ <51BFE754.6000909@samsung.com>
+ <CAD=FV=Wy5X9C=NOUVyAzZK5+BKD1w4FTmoTHzKipq2j_Y9rdtg@mail.gmail.com>
+In-reply-to: <CAD=FV=Wy5X9C=NOUVyAzZK5+BKD1w4FTmoTHzKipq2j_Y9rdtg@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkQLc9/lCgweJ3ahab18VbzNt6lNVi
-	++uNbBZnlx1ks7jxq43V4vKuOWwWR/73M1qcuv6ZzWLD3amsFh/uX2S2WLjpEJsDt8fshoss
-	Hjtn3WX3OHRlLaPHlRNNrB6TF15k9ujbsorR4/MmuQD2KC6blNSczLLUIn27BK6MN192MxVM
-	561YcfUiWwPjRq4uRk4OCQETiW1fLjBC2GISF+6tZ+ti5OIQEljKKHHywSQmmKKTf16xQiSm
-	M0rsn7OKCcJ5yShxf8kW5i5GDg5eAS2JL00aIA0sAqoSfX/7WEFsNgEdie3fjoMNEhUIk9jU
-	0wxm8woISvyYfI8FpFVEQEPiy/wEkJHMAl+ZJDYu3MwMUiMsEC3xacshdohdP5gl7q1YBXYq
-	p4CdxNIlJ8GamQX0JO5f1AIJMwvIS2xe85YZ4uhWDon7T80h7hGQ+Db5EFi5hICsxKYDUCWS
-	EgdX3GCZwCg2C8lFsxCGzkIydAEj8ypG0dSC5ILipPQiI73ixNzi0rx0veT83E2MwGg9/e9Z
-	3w7GmwesDzEmA22cyCwlmpwPjPa8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NT
-	C1KL4otKc1KLDzEycXBKNTAGa4XZb+B/qDj5WKDzUenwjz2ZhV074pLTnr7KP3BxOt+6Weqn
-	7QVNpf5dkRM/aX/eOinkgn/Jwo1Me5Rnl9fGzoyqeqD477Twtdwd+YzO7Yxqk1Yv5F236fD+
-	j3t+PJqWxTOnNKRy2o2Ar/myk9gKo8U/afB41zv97L/fVyvRbvqivPDi7AtKLMUZiYZazEXF
-	iQDNoUf77AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jQd32+EOBBnNvylpsXhdvMW/rUVaL
-	7a83slmcXXaQzeLGrzZWi8u75rBZHPnfz2hx6vpnNosNd6eyWny4f5HZYuGmQ2wO3B6zGy6y
-	eOycdZfd49CVtYweV040sXpMXniR2aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2V
-	vIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAjlRSKEvMKQUKBSQWFyvp22GaEBripmsB
-	0xih6xsSBNdjZIAGEtYwZrz5spupYDpvxYqrF9kaGDdydTFyckgImEic/POKFcIWk7hwbz1b
-	FyMXh5DAdEaJ/XNWMUE4Lxkl7i/ZwtzFyMHBK6Al8aVJA6SBRUBVou9vH1gzm4COxPZvx5lA
-	bFGBMIlNPc1gNq+AoMSPyfdYQFpFBDQkvsxPABnJLPCVSWLjws3MIDXCAtESn7YcYofY9YNZ
-	4t6KVYwgCU4BO4mlS06CNTML6Encv6gFEmYWkJfYvOYt8wRGgVlIVsxCqJqFpGoBI/MqRtHU
-	guSC4qT0XCO94sTc4tK8dL3k/NxNjOBk8Ex6B+OqBotDjAIcjEo8vBqXDwYKsSaWFVfmHmKU
-	4GBWEuGdJ3EoUIg3JbGyKrUoP76oNCe1+BBjMjAAJjJLiSbnAxNVXkm8obGJmZGlkbmhhZGx
-	OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwLjgdwO4WGPr1AVP9XpP37MW5k9RzJbPq
-	gg87z/i+NVP+0e+E/Wvvn7divcR1I3tflskSmVvb7dSqW0p5Mhgc7wa23C8uuZUWGOf8QTFe
-	9eh0idM6Ygncq2bcV+Ockd88I2HN2mL7qxw17s8nFzyuamHkOan50+B4b3ZhqffiyxlLGD5t
-	qtisxFKckWioxVxUnAgA7JwM2koDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSpGuXcCjQ4M9TNovHaxYzWax8/5fR
+	4sG8bWwW219vZLM4MPshq8XZZQeBrD87GC1u/GpjtVjYtoTF4vKuOWwWR/73M1o8nXCRzeLU
+	9c9sFodXHGCyWPdyOovFh/sXmS1W7frDaLFw0yE2ByGPBZ+vsHvMbrjI4rFz1l12j1erZ7J6
+	HLqyltHjzrU9bB7nZyxk9LhyoonVo2/LKkaPz5vkAriiuGxSUnMyy1KL9O0SuDImrNzDWLBI
+	sGLrPZMGxse8XYycHBICJhL7Xx5jgbDFJC7cW8/WxcjFISSwlFHi3N/LzDBFu3auYoFILGKU
+	uHP4ETtIQkjgJaPEzFdGIDavgIbEyp4dYHEWAVWJtzung9lsAjoS278dZwKxRQXCJDb1NDNB
+	1AtK/Jh8D2yziICmxLOGl8wgC5gFHrBKrJ3yACwhLBApsWvaMmaIzYuZJBp6PrGCJDgFgiXm
+	zl/OBmIzA23Y3zoNypaX2LzmLViDhMAJDomH3a+YIU4SkPg2+RDQVA6ghKzEpgNQr0lKHFxx
+	g2UCo9gsJEfNQjJ2FpKxCxiZVzGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIEJobT/55N3MF4
+	/4D1IcZkoJUTmaVEk/OBiSWvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU7NTUgtSi
+	+KLSnNTiQ4xMHJxSDYyFB+OiJr8qYwmfulFrYurrDYqRqxaxW3L++cO2V+nO/N4bvnsjTzyr
+	3F1qefJXBBenp9pd9oXf1//ll9xauGnjg4Cg6SwBBzs3Rf1XSNxhxfz5hA+r3J39R9ad/tmz
+	+HA4h7mN4KmHIhff8h2Nilmvysu01tdxz+Zq70P8VZ0JHac8z3YpzrBWYinOSDTUYi4qTgQA
+	59CW9yIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDKsWRmVeSWpSXmKPExsVy+t9jAV3bhEOBBrOvWFk8XrOYyWLl+7+M
+	Fg/mbWOz2P56I5vFgdkPWS3OLjsIZP3ZwWhx41cbq8XCtiUsFpd3zWGzOPK/n9Hi6YSLbBan
+	rn9mszi84gCTxbqX01ksPty/yGyxatcfRouFmw6xOQh5LPh8hd1jdsNFFo+ds+6ye7xaPZPV
+	49CVtYwed67tYfM4P2Mho8eVE02sHn1bVjF6fN4kF8AV1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQP0l5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
+	xghd35AguB4jAzSQsIYxY8LKPYwFiwQrtt4zaWB8zNvFyMkhIWAisWvnKhYIW0ziwr31bF2M
+	XBxCAosYJe4cfsQOkhASeMkoMfOVEYjNK6AhsbJnB1icRUBV4u3O6WA2m4COxPZvx5lAbFGB
+	MIlNPc1MEPWCEj8m3wNbICKgKfGs4SUzyAJmgQesEmunPABLCAtESuyatowZYvNiJomGnk+s
+	IAlOgWCJufOXs4HYzEAb9rdOg7LlJTavecs8gVFgFpIls5CUzUJStoCReRWjaGpBckFxUnqu
+	oV5xYm5xaV66XnJ+7iZGcNp5JrWDcWWDxSFGAQ5GJR5ejcsHA4VYE8uKK3MPMUpwMCuJ8M6T
+	OBQoxJuSWFmVWpQfX1Sak1p8iDEZGAYTmaVEk/OBKTGvJN7Q2MTMyNLI3NDCyNicNGElcd4D
+	rdaBQgLpiSWp2ampBalFMFuYODilGhjlPkypD9l14EqnYtybyPvJLJG3H7kYpdVfNl7HHBOS
+	rPWvYce/LYWBCYdm1ssrfCpVn2Th5Tl9wvRP3J/8xXhWNT5QfDT/3YTemCXPQtrCndc+5moM
+	jDHwdWgUFJ/RtPf1lo8TJt69cWqvfsW2391u/TZ/X0g8YhKw3/yJ/VLycZeZ8ks4ZPYosRRn
+	JBpqMRcVJwIA1ZQWNH8DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -72,49 +77,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi Doug,
 
-I tested with Seungwon's patch and this patch.
-I'm agreed with Seungwon's opinion.
+I'm researching for fixed-rate-clocks.
+Maybe i misunderstood for using <fixed-rate-clocks>. :)
 
 Best Regards,
 Jaehoon Chung
 
-On 06/18/2013 09:36 PM, Seungwon Jeon wrote:
-> On Thursday, June 13, 2013, Doug Anderson wrote:
->> Seungwon,
->>
->> On Wed, Apr 10, 2013 at 12:02 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
->>>>> There are two solutions we have applied.
->>>>
->>>> I'm a little confused.  Have you already applied one or both of the
->>>> solutions you list below, or are you proposing them as alternates to
->>>> the patch I submitted?
->>> Yes, first one already has been applied.
->>> I wanted to introduce our fix. Did you try to test with these fixes?
->>
->> I'm coming back to this after being quite distracted for a while.
->>
->> I'm a little confused in that you said that your first fix was already
->> applied.  I don't see it anywhere.  Did you mean that you've already
->> applied it locally, or that it's applied in some git tree somewhere?
->> If so, can you point me to it?
->>
->> If this hasn't been sent out anywhere, perhaps you could send out
->> official patches?
-> Currently, it has just applied for some projects, not official patch.
->>
->> I don't have the failing unit myself, so we'll have to get Bing to try
->> the patches.  You are suggesting that we try applying both of your
->> patches, right?
-> Did you test the patch?
-> I wonder that both are good for your side.
+On 06/19/2013 12:15 AM, Doug Anderson wrote:
+> Jaehoon,
 > 
-> Thanks,
-> Seungwon Jeon
+> On Mon, Jun 17, 2013 at 9:51 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> Hi Doug,
 >>
->> -Doug
+>> I have one question for using <clock-frequency>.
+>> I found the fixed-rate-clocks feature.
+>> If we want to set <clock-frequency>, then can we use the fixed-rate-clocks?
+>> i'm not sure how use the fixed-rate-clocks. but it seems to set fixed-rate value for clock frequency.
+>>
+>> clk_set_rate() didn't ensure to set the <clock-frequency> value.
 > 
+> I'm not sure I understand the question.  I don't think that the
+> fixed-rate-clocks have a close relation to the clock-frequency or the
+> ciu clock.  The fixed-rate-clock entries for a board usually specify
+> the root clock source for a board.  For instance in exynos5250-snow
+> you can see:
+> 
+> fixed-rate-clocks {
+>   xxti {
+>     compatible = "samsung,clock-xxti";
+>     clock-frequency = <24000000>;
+>   };
+> };
+> 
+> Other clocks in the board are derived from this clock through PLLs,
+> muxes, dividers, gates, etc.  On 5250 we have:
+> 
+>  fin_pll (xxti) -> fout_mpll -> fout_mplldiv2 -> mout_mpll_fout ->
+>  sclk_mpll -> sclk_mpll_user -> mout_mmc1 -> div_mmc1
+>  div_mmc_pre1 -> sclk_mmc1
+> 
+> In 5250 the ciu clock for mmc1 is sclk_mmc1, which is a simple gate.
+> When you "enable" this clock it, ungates it.  The sclk_mmc1 has the
+> flag CLK_SET_RATE_PARENT on it.  That means when you try to set the
+> rate it will involve the parent clock (div_mmc_pre1).  The parent
+> clock also has CLK_SET_RATE_PARENT, so it can also involve div_mmc1.
+> I haven't dug through to see how the clock framework splits up divides
+> between div_mmc1 and div_mmc_pre1, but it's supposed to handle that.
+> 
+> We don't allow clk_set_rate to percolate any higher (no
+> CLK_SET_RATE_PARENT at mout_mmc1).
+> 
+> -Doug
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 > the body of a message to majordomo@vger.kernel.org
