@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030461Ab3FTSdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:33:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12528 "EHLO mga02.intel.com"
+	id S1758319Ab3FTTRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:17:03 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:24144 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161087Ab3FTSbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:31:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
-   d="scan'208";a="356936092"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 04/11] tracing: fix disabling of soft disable
-Date: Thu, 20 Jun 2013 13:31:28 -0500
-Message-Id: <f369f565dc440f40f027de0387c99dda4d36154e.1371751701.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+	id S1758243Ab3FTTQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:16:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,906,1363132800"; 
+   d="scan'208";a="32470384"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <xen-devel@lists.xen.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3/4] x86/xen: sync the wallclock when the system time is stepped
+Date: Thu, 20 Jun 2013 20:16:31 +0100
+Message-ID: <1371755792-25962-4-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com>
+References: <1371755792-25962-1-git-send-email-david.vrabel@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment on the soft disable 'disable' case of
-__ftrace_event_enable_disable() states that the soft disable bit
-should be cleared in that case, but currently only the soft mode bit
-is actually cleared.
+From: David Vrabel <david.vrabel@citrix.com>
 
-This essentially leaves the standard non-soft-enable enable/disable
-paths as the only way to clear the soft disable flag, but the soft
-disable bit should also be cleared when removing a trigger with '!'.
+The Xen wallclock is a software only clock within the Xen hypervisor
+that is used by: a) PV guests as the equivalent of a hardware RTC; and
+b) the hypervisor as the clock source for the emulated RTC provided to
+HVM guests.
 
-Also, the SOFT_DISABLED bit should never be set if SOFT_MODE is
-cleared.
+Currently the Xen wallclock is only updated every 11 minutes if NTP is
+synchronized to its clock source.  If a guest is started before NTP is
+synchronized it may see an incorrect wallclock time.
 
-This fixes the above discrepancies.
+Use the clock_was_set notifier chain to receive a notification when
+the system time is stepped and update the wallclock to match the
+current system time.
 
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 ---
- kernel/trace/trace_events.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/xen/time.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index ecb2609..f9738dc 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -282,6 +282,8 @@ static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
- 		/* If in SOFT_MODE, just set the SOFT_DISABLE_BIT */
- 		if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
- 			set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
-+		else
-+			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
- 		break;
- 	case 1:
- 		/*
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index a1947ac..ad077ca 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -211,6 +211,25 @@ static int xen_set_wallclock(const struct timespec *now)
+ 
+ 	return HYPERVISOR_dom0_op(&op);
+ }
++ 
++static int xen_clock_was_set_notify(struct notifier_block *nb, unsigned long unused,
++				    void *priv)
++{
++       struct timespec now;
++
++       /*
++        * Set the Xen wallclock from Linux system time.
++        */
++       now = current_kernel_time();
++       xen_set_wallclock(&now);
++
++       return NOTIFY_OK;
++}
++
++static struct notifier_block xen_clock_was_set_notifier = {
++	.notifier_call = xen_clock_was_set_notify,
++};
++
+ 
+ static struct clocksource xen_clocksource __read_mostly = {
+ 	.name = "xen",
+@@ -473,6 +492,9 @@ static void __init xen_time_init(void)
+ 	xen_setup_runstate_info(cpu);
+ 	xen_setup_timer(cpu);
+ 	xen_setup_cpu_clockevents();
++
++	if (xen_initial_domain())
++		register_clock_was_set_notifier(&xen_clock_was_set_notifier);
+ }
+ 
+ void __init xen_init_time_ops(void)
 -- 
-1.7.11.4
+1.7.2.5
 
