@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965411Ab3FTLG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:06:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60870 "EHLO comal.ext.ti.com"
+	id S965424Ab3FTLHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:07:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60897 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965190Ab3FTLGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 07:06:55 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-omap@vger.kernel.org>, <sameo@linux.intel.com>
-CC: <broonie@kernel.org>, <j-keerthy@ti.com>, <ldewangan@nvidia.com>,
-        <grant.likely@secretlab.ca>, <swarren@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <gg@slimlogic.co.uk>
-Subject: [PATCH 2/4] MFD: Palmas: Add TPS659038 PMIC support
-Date: Thu, 20 Jun 2013 16:35:16 +0530
-Message-ID: <1371726316-10078-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S965163Ab3FTLHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 07:07:11 -0400
+Message-ID: <51C2E23A.5070409@ti.com>
+Date: Thu, 20 Jun 2013 16:36:34 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <linux@arm.linux.org.uk>, <grant.likely@secretlab.ca>,
+        <linus.walleij@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] ARM: davinci: da850: Use #include for all device
+ trees
+References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com> <1371203156-15260-2-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1371203156-15260-2-git-send-email-avinashphilip@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Patch adds TPS659038 PMIC support in the palmas mfd driver.
-The TPS659038 has almost the same registers as of the earlier
-supported variants of PALMAS family such as the TWL6035.
+On 6/14/2013 3:15 PM, Philip Avinash wrote:
+> Replace /include/ by #include for da850 device tree files, in order to
+> use the C pre-processor, making use of #define features possible.
+> 
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 
-The critical differences between TPS659038 and TWL6035 being:
+Added this to my v3.11/dt branch.
 
-1) TPS659038 has nothing related to battery charging and back up battery stuff.
-2) TPS659038 does not have does not have SMPS10(Boost) step up convertor.
-3) TPS659038 does not have Battery detection and anything related to battery.
-4) SD card detection, Battery presence detection, Vibrator, USB OTG are missing
-   when compared to TWL6035.
-
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/palmas.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index ad2edd6..8b20055 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -233,12 +233,17 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
- }
- 
- static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
-+static unsigned int tps659038_features;
- 
- static const struct of_device_id of_palmas_match_tbl[] = {
- 	{
- 		.compatible = "ti,palmas",
- 		.data = &palmas_features,
- 	},
-+	{
-+		.compatible = "ti,tps659038",
-+		.data = &tps659038_features,
-+	},
- 	{ },
- };
- 
--- 
-1.7.5.4
-
+Thanks,
+Sekhar
