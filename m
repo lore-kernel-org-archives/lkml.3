@@ -1,194 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965297Ab3FTS2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:28:13 -0400
-Received: from 8bytes.org ([85.214.48.195]:35634 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965026Ab3FTS2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:28:12 -0400
-Date: Thu, 20 Jun 2013 20:28:08 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd_iommu: Fix leak in free_pagetable()
-Message-ID: <20130620182808.GC11309@8bytes.org>
-References: <20130618014459.20440.73844.stgit@bling.home>
- <20130618015116.20711.90269.stgit@bling.home>
+	id S1758499Ab3FTSKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:10:17 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63394 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758473Ab3FTSKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:10:15 -0400
+Message-ID: <51C34584.8070301@gmail.com>
+Date: Thu, 20 Jun 2013 11:10:12 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130618015116.20711.90269.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun 20 20:28:09 2013
-X-DSPAM-Confidence: 0.9992
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51c349b920861577421911
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: Re: [PATCH] gpio MIPS/OCTEON: Add a driver for OCTEON's on-chip
+ GPIO pins.
+References: <1371251915-18271-1-git-send-email-ddaney.cavm@gmail.com> <CACRpkdYHzBBbPNujYRGkMFGuQRzeYKs9jgfc3e3HWyxQFahvRQ@mail.gmail.com>
+In-Reply-To: <CACRpkdYHzBBbPNujYRGkMFGuQRzeYKs9jgfc3e3HWyxQFahvRQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 07:52:14PM -0600, Alex Williamson wrote:
->  static void free_pagetable(struct protection_domain *domain)
->  {
-> -	int i, j;
-> -	u64 *p1, *p2, *p3;
-> +	int i, j, k, l, m, depth = domain->mode;
-> +	u64 *p1, *p2, *p3, *p4, *p5, *p6;
->  
->  	p1 = domain->pt_root;
->  
->  	if (!p1)
->  		return;
->  
-> -	for (i = 0; i < 512; ++i) {
-> +	for (i = 0; depth > 1 && i < 512; ++i) {
->  		if (!IOMMU_PTE_PRESENT(p1[i]))
->  			continue;
->  
->  		p2 = IOMMU_PTE_PAGE(p1[i]);
-> -		for (j = 0; j < 512; ++j) {
-> +		for (j = 0; depth > 2 && j < 512; ++j) {
->  			if (!IOMMU_PTE_PRESENT(p2[j]))
->  				continue;
-> +
->  			p3 = IOMMU_PTE_PAGE(p2[j]);
-> +			for (k = 0; depth > 3 && k < 512; ++k) {
-> +				if (!IOMMU_PTE_PRESENT(p3[k]))
-> +					continue;
-> +
-> +				p4 = IOMMU_PTE_PAGE(p3[k]);
-> +				for (l = 0; depth > 4 && l < 512; ++l) {
-> +					if (!IOMMU_PTE_PRESENT(p4[l]))
-> +						continue;
-> +
-> +					p5 = IOMMU_PTE_PAGE(p4[l]);
-> +					for (m = 0; depth > 5 && m < 512; ++m) {
-> +						if (!IOMMU_PTE_PRESENT(p5[m]))
-> +							continue;
-> +						p6 = IOMMU_PTE_PAGE(p5[m]);
-> +						free_page((unsigned long)p6);
-> +					}
-> +
-> +					free_page((unsigned long)p5);
-> +				}
-> +
-> +				free_page((unsigned long)p4);
-> +			}
-> +
->  			free_page((unsigned long)p3);
->  		}
-
-Hmm, actually a recursive version would make more sense here. But since
-recursion is a bad idea in the kernel, how about this approach instead:
-
->From d500d538ad1370679d05667663dcaf8603d529db Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <joro@8bytes.org>
-Date: Thu, 20 Jun 2013 20:22:58 +0200
-Subject: [PATCH] iommu/amd: Fix memory leak in free_pagetable
-
-The IOMMU pagetables can have up to 3 levels, but the code
-in free_pagetable() only releases the first 3 levels. Fix
-this leak by releasing all levels.
-
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- drivers/iommu/amd_iommu.c |   73 ++++++++++++++++++++++++++++++---------------
- 1 file changed, 49 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 21d02b0..5cde682 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1893,34 +1893,59 @@ static void domain_id_free(int id)
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
- }
- 
-+#define DEFINE_FREE_PT_FN(LVL, FN)				\
-+static void free_pt_##LVL (unsigned long __pt)			\
-+{								\
-+	unsigned long p;					\
-+	u64 *pt;						\
-+	int i;							\
-+								\
-+	pt = (u64 *)__pt;					\
-+								\
-+	for (i = 0; i < 512; ++i) {				\
-+		if (!IOMMU_PTE_PRESENT(pt[i]))			\
-+			continue;				\
-+								\
-+		p = (unsigned long)IOMMU_PTE_PAGE(pt[i]);	\
-+		FN(p);						\
-+	}							\
-+	free_page((unsigned long)pt);				\
-+}
-+
-+DEFINE_FREE_PT_FN(l2, free_page)
-+DEFINE_FREE_PT_FN(l3, free_pt_l2)
-+DEFINE_FREE_PT_FN(l4, free_pt_l3)
-+DEFINE_FREE_PT_FN(l5, free_pt_l4)
-+DEFINE_FREE_PT_FN(l6, free_pt_l5)
-+
- static void free_pagetable(struct protection_domain *domain)
- {
--	int i, j;
--	u64 *p1, *p2, *p3;
--
--	p1 = domain->pt_root;
--
--	if (!p1)
--		return;
--
--	for (i = 0; i < 512; ++i) {
--		if (!IOMMU_PTE_PRESENT(p1[i]))
--			continue;
-+	unsigned long root = (unsigned long)domain->pt_root;
- 
--		p2 = IOMMU_PTE_PAGE(p1[i]);
--		for (j = 0; j < 512; ++j) {
--			if (!IOMMU_PTE_PRESENT(p2[j]))
--				continue;
--			p3 = IOMMU_PTE_PAGE(p2[j]);
--			free_page((unsigned long)p3);
--		}
--
--		free_page((unsigned long)p2);
-+	switch (domain->mode) {
-+	case PAGE_MODE_NONE:
-+		break;
-+	case PAGE_MODE_1_LEVEL:
-+		free_page(root);
-+		break;
-+	case PAGE_MODE_2_LEVEL:
-+		free_pt_l2(root);
-+		break;
-+	case PAGE_MODE_3_LEVEL:
-+		free_pt_l3(root);
-+		break;
-+	case PAGE_MODE_4_LEVEL:
-+		free_pt_l4(root);
-+		break;
-+	case PAGE_MODE_5_LEVEL:
-+		free_pt_l5(root);
-+		break;
-+	case PAGE_MODE_6_LEVEL:
-+		free_pt_l6(root);
-+		break;
-+	default:
-+		BUG();
- 	}
--
--	free_page((unsigned long)p1);
--
--	domain->pt_root = NULL;
- }
- 
- static void free_gcr3_tbl_level1(u64 *tbl)
--- 
-1.7.9.5
+Sorry for not responding earlier, but my e-mail system seems to have 
+malfunctioned with respect to this message...
 
 
+On 06/17/2013 01:51 AM, Linus Walleij wrote:
+> On Sat, Jun 15, 2013 at 1:18 AM, David Daney <ddaney.cavm@gmail.com> wrote:
+>
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
+>> GPIO pins, this driver handles them all.  Configuring the pins as
+>> interrupt sources is handled elsewhere (OCTEON's irq handling code).
+>>
+>> Signed-off-by: David Daney <david.daney@cavium.com>
+>
+>> This patch depends somewhat on patches in Ralf's MIPS/Linux -next tree
+>> where we have patches that enable the Kconfig CAVIUM_OCTEON_SOC and
+>> ARCH_REQUIRE_GPIOLIB symbols.  Apart from that it is stand-alone and
+>> is probably suitable for merging via the GPIO tree.
+>
+> Really? You're using this:
+>
+> +#include <asm/octeon/octeon.h>
+> +#include <asm/octeon/cvmx-gpio-defs.h>
+>
+> I cannot find this in my tree.
+
+Weird, I see them here:
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/mips/include/asm/octeon/cvmx-gpio-defs.h
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/mips/include/asm/octeon/octeon.h
+
+Do you not have these?
+
+>
+> Further I ask why that second file is not part of *this* patch?
+> It surely seems GPIO-related, and would probably need to
+> go into include/linux/platform_data/gpio-octeon.h or something
+> rather than such platform dirs.
+>
+> (...)
+>> +config GPIO_OCTEON
+>> +       tristate "Cavium OCTEON GPIO"
+>> +       depends on GPIOLIB && CAVIUM_OCTEON_SOC
+>
+> depend on OF as well right? Or does the CAVIUM_OCTEON_SOC already
+> imply that?
+
+We already have 'select USE_OF', so I think adding OF here would be 
+redundant.
+
+
+>
+> (...)
+>> +++ b/drivers/gpio/gpio-octeon.c
+>
+>
+>> +#define RX_DAT 0x80
+>> +#define TX_SET 0x88
+>> +#define TX_CLEAR 0x90
+>
+>
+>> +/*
+>> + * The address offset of the GPIO configuration register for a given
+>> + * line.
+>> + */
+>> +static unsigned int bit_cfg_reg(unsigned int gpio)
+
+>
+> Maybe the passed variable shall be named "offset" here, as it is named
+> offset on all call sites, and it surely local for this instance?
+
+Well it is the gpio line, so perhaps it should universally be change to 
+"line" or "pin"
+
+
+>
+>> +{
+>> +       if (gpio < 16)
+>> +               return 8 * gpio;
+>> +       else
+>> +               return 8 * (gpio - 16) + 0x100;
+>
+> Put this 0x100 in the #defines above with the name something like
+> STRIDE.
+
+But it is not a 'STRIDE', it is a discontinuity compensation and used in 
+exactly one place.
+
+
+>
+>> +struct octeon_gpio {
+>> +       struct gpio_chip chip;
+>> +       u64 register_base;
+>> +};
+>
+> OMG everything is 64 bit. Well has to come to this I guess.
+
+Not everything.  This is custom logic in an SoC with 64-bit wide 
+internal address buses, what would you suggest?
+
+
+>
+>> +static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+>> +{
+>> +       struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+>> +       u64 mask = 1ull << offset;
+>
+> And now BIT(offset) does not work anymore because it is defined as
+> #define BIT(nr)                 (1UL << (nr))
+> OK we will have to live with this FTM I guess.
+>
+>> +static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
+>> +                              int value)
+>> +{
+>> +       struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+>> +       union cvmx_gpio_bit_cfgx cfgx;
+>> +
+>> +       octeon_gpio_set(chip, offset, value);
+>> +
+>> +       cfgx.u64 = 0;
+>> +       cfgx.s.tx_oe = 1;
+>
+> This makes me want to review that magic header file of yours,
+> I guess this comes from <asm/octeon/cvmx-gpio-defs.h>?
+
+Not really magic, but yes that is where it comes from.
+
+>
+> Should not this latter variable be a bool?
+
+I don't think so, it is not the result of a comparison operator.
+
+>
+> I'm not a fan of packed bitfields like this, I prefer if you just
+> OR | and AND & the bits together in the driver.
+>
+>> +static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
+>> +{
+>> +       struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+>> +       u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
+>> +
+>> +       return ((1ull << offset) & read_bits) != 0;
+>
+> A common idiom we use for this is:
+>
+> return !!(read_bits & (1ull << offset));
+
+I hate that idiom, but if its use is a condition of accepting the patch, 
+I will change it.
+
+>
+>> +       pdev->dev.platform_data = chip;
+>> +       chip->label = "octeon-gpio";
+>> +       chip->dev = &pdev->dev;
+>> +       chip->owner = THIS_MODULE;
+>> +       chip->base = 0;
+>> +       chip->can_sleep = 0;
+>> +       chip->ngpio = 20;
+>> +       chip->direction_input = octeon_gpio_dir_in;
+>> +       chip->get = octeon_gpio_get;
+>> +       chip->direction_output = octeon_gpio_dir_out;
+>> +       chip->set = octeon_gpio_set;
+>> +       err = gpiochip_add(chip);
+>> +       if (err)
+>> +               goto out;
+>> +
+>> +       dev_info(&pdev->dev, "OCTEON GPIO\n");
+>
+> This is like shouting "REAL MADRID!" in the bootlog, be a bit more
+> precise: "octeon GPIO driver probed\n" or something so we know what
+> is happening.
+
+No, more akin to 'Real Madrid', as 'OCTEON' is the correct spelling of 
+its given name.
+
+I will happily add "driver probed", and grudgingly switch to lower case 
+if it is a necessary condition of patch acceptance.
+
+David Daney
 
 
