@@ -1,99 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3FTFjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 01:39:32 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39129 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab3FTFjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 01:39:31 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Vagin <avagin@openvz.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH] virtio-pci: fix leaks of msix_affinity_masks
-Date: Thu, 20 Jun 2013 09:36:50 +0400
-Message-Id: <1371706610-12028-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <20130619182809.GC15017@redhat.com>
-References: <20130619182809.GC15017@redhat.com>
+	id S1753411Ab3FTFt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:49:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58809 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab3FTFty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 01:49:54 -0400
+X-IronPort-AV: E=Sophos;i="4.87,902,1363104000"; 
+   d="scan'208";a="7611655"
+Message-ID: <51C298B2.9060900@cn.fujitsu.com>
+Date: Thu, 20 Jun 2013 13:52:50 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, yinghai@kernel.org
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Part1 PATCH v5 00/22] x86, ACPI, numa: Parse numa info earlier
+References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com> <20130618020357.GZ32663@mtj.dyndns.org> <51BFF464.809@cn.fujitsu.com> <20130618172129.GH2767@htj.dyndns.org>
+In-Reply-To: <20130618172129.GH2767@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 13:48:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 13:48:46,
+	Serialize complete at 2013/06/20 13:48:46
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Vagin <avagin@openvz.org>
+Hi tj, Yinghai,
 
-vp_dev->msix_vectors should be initialized before allocating
-msix_affinity_masks, otherwise vp_free_vectors will not free these
-objects.
+On 06/19/2013 01:21 AM, Tejun Heo wrote:
+> Hey, Tang.
+>
+> On Tue, Jun 18, 2013 at 01:47:16PM +0800, Tang Chen wrote:
+>> [approach]
+>> Parse SRAT earlier before memblock starts to work, because there is a
+>> bit in SRAT specifying which memory is hotpluggable.
+>>
+>> I'm not saying this is the best approach. I can also see that this
+>> patch-set touches a lot of boot code. But i think parsing SRAT earlier
+>> is reasonable because this is the only way for now to know which memory
+>> is hotpluggable from firmware.
+>
+> Touching a lot of code is not a problem but it feels like it's trying
+> to boot strap itself while walking and achieves that by carefully
+> sequencing all operations which may allocate from memblock before NUMA
+> info is available without any way to enforce or verify that.
 
-unreferenced object 0xffff88010f969d88 (size 512):
-  comm "systemd-udevd", pid 158, jiffies 4294673645 (age 80.545s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff816e455e>] kmemleak_alloc+0x5e/0xc0
-    [<ffffffff811aa7f1>] kmem_cache_alloc_node_trace+0x141/0x2c0
-    [<ffffffff8133ba23>] alloc_cpumask_var_node+0x23/0x80
-    [<ffffffff8133ba8e>] alloc_cpumask_var+0xe/0x10
-    [<ffffffff813fdb3d>] vp_try_to_find_vqs+0x25d/0x810
-    [<ffffffff813fe171>] vp_find_vqs+0x81/0xb0
-    [<ffffffffa00d2a05>] init_vqs+0x85/0x120 [virtio_balloon]
-    [<ffffffffa00d2c29>] virtballoon_probe+0xf9/0x1a0 [virtio_balloon]
-    [<ffffffff813fb61e>] virtio_dev_probe+0xde/0x140
-    [<ffffffff814452b8>] driver_probe_device+0x98/0x3a0
-    [<ffffffff8144566b>] __driver_attach+0xab/0xb0
-    [<ffffffff814432f4>] bus_for_each_dev+0x94/0xb0
-    [<ffffffff81444f4e>] driver_attach+0x1e/0x20
-    [<ffffffff81444910>] bus_add_driver+0x200/0x280
-    [<ffffffff81445c14>] driver_register+0x74/0x160
-    [<ffffffff813fb7d0>] register_virtio_driver+0x20/0x40
+Yes, the current implementation has no way to verify if there is
+anything violating the hotplug requirement. This is weak and should
+be improved.
 
-v2: change msix_vectors uncoditionaly in vp_free_vectors
+>
+>>> Can't you just move memblock arrays after NUMA init is complete?
+>>> That'd be a lot simpler and way more robust than the proposed changes,
+>>> no?
+>>
+>> Sorry, I don't quite understand the approach you are suggesting. If we
+>> move memblock arrays, we need to update all the pointers pointing to
+>> the moved memory. How can we do this ?
+>
+> So, there are two things involved here - memblock itself and consumers
+> of memblock, right?
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- drivers/virtio/virtio_pci.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Yes.
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index a7ce730..1aba255 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -289,9 +289,9 @@ static void vp_free_vectors(struct virtio_device *vdev)
- 
- 		pci_disable_msix(vp_dev->pci_dev);
- 		vp_dev->msix_enabled = 0;
--		vp_dev->msix_vectors = 0;
- 	}
- 
-+	vp_dev->msix_vectors = 0;
- 	vp_dev->msix_used_vectors = 0;
- 	kfree(vp_dev->msix_names);
- 	vp_dev->msix_names = NULL;
-@@ -309,6 +309,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
- 	unsigned i, v;
- 	int err = -ENOMEM;
- 
-+	vp_dev->msix_vectors = nvectors;
-+
- 	vp_dev->msix_entries = kmalloc(nvectors * sizeof *vp_dev->msix_entries,
- 				       GFP_KERNEL);
- 	if (!vp_dev->msix_entries)
-@@ -336,7 +338,6 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
- 		err = -ENOSPC;
- 	if (err)
- 		goto error;
--	vp_dev->msix_vectors = nvectors;
- 	vp_dev->msix_enabled = 1;
- 
- 	/* Set the vector used for configuration */
--- 
-1.8.1.4
+>I get that the latter shouldn't allocate memory
+> from memblock before NUMA info is entered into memblock, so please
+> reorder as necessary *and* make sure memblock complains if something
+> violates that.  Temporary memory areas which are return are fine.
+> Just complain if there are memory regions remaining which are
+> allocated before NUMA info is available after boot is complete.  No
+> need to make booting more painful than it currently is.
+
+I think there are two difficulties to do this job in your way.
+
+1. It is difficult to tell which memory allocation is temporary and
+    which one is permanent when memblock is allocating memory. So, we
+    can only wait till boot is complete, and see which remains.
+    But, we have the second difficulty.
+
+2. In memblock.reserve[], we cannot tell why we allocated this memory
+    just from the array item, right?  So it is difficult to do the
+    relocation. If in the future, we have to allocate permanent memory
+    for other new purposes, we have to do the relocation again and again.
+    (Not sure if I understand the point correctly. I think there isn't
+     a generic way to relocate memory used for different purposes.)
+
+If you also had a look at the Part2 patches, you will see that I
+introduced a flags member into memblock to specify different types
+of memory, which will help to recognize hotpluggable memory. My
+thinking is that ensure memblock will not allocate hotpluggable
+memory. I think this is the most safe and easy way to satisfy hotplug
+requirement.
+
+(not finished, please see below)
+
+>
+> As for memblock itself, there's no need to walk carefully around it.
+> Just let it do its thing and implement
+> memblock_relocate_to_numa_node_0() or whatever after NUMA information
+> is available.  memblock already does relocate itself whenever it's
+> expanding the arrays anyway, so implementation should be trivial.
+
+Yes, this is easy.
+
+>
+> Maybe I'm missing something but having a working memory allocator as
+> soon as possible is *way* less painful than trying to bootstrap around
+> it.  Allow boot path to allocate memory areas from memblock as soon as
+> possible but just ensure that none of the ones which may violate the
+> hotplug requirements is remaining once boot is complete.  Temporaray
+> regions won't matter then and the few which need persistent areas can
+> either be reordered to happen after NUMA init or they can allocate a
+> new area and move to there after NUMA info is available.  Let's please
+> minimize this walking-and-trying-to-tie-shoestrings-at-the-same-time
+> thing.  It's painful and extremely fragile.
+
+IIUC, I know what you are worrying about:
+
+1. No way to ensure parsing numa info is early enough in the future.
+    Someone could have a chance to use memblock before parsing SRAT
+    in the future.
+
+2. memblock won't complain if anything violates the hotplug requirement.
+    This is not safe.
+
+So you don't agree to serialize the operations at boot time.
+
+But I think ensuring memblock won't allocate hotpluggable memory to
+the kernel (which is the current way in Part2 patches) is the safest
+way to satisfy memory hotplug requirement. And this is right a working
+memory allocator at boot time. Not checking or relocating after system
+boots.
+
+About this patch-set from Yinghai, actually he is doing a job that I
+failed to do. And he also included a lot of other things in the
+patch-set, such as extend max number of overridable acpi tables, local
+node pagetable, and so on.
+
+Maybe all these things are done at the same time looks a little messy.
+So, how about we do it this way:
+
+1. Improvements for ACPI_TABLE_OVERRIDE, such as increase the number
+    of overridable tables.
+
+2. Move forward parsing SRAT.
+
+3. local device pagetable (not local node), I mentioned in Part3
+    patch-set discussion. I'm now also working on it.
+
+I'm not trying to do thing half way. I just think maybe smaller patch-set
+will be easy to understand and review.
+
+
+PS:
+More info about local device pagetable:
+
+There could be more than on memory device in a numa node. If we allocate
+local node pagetable, the pagetable pages of one memory device could be
+in another memory device. So the memory device containing pagetable have
+to be hot-removed in the last place. This is hard to handle in hot-remove
+path. So maybe local device pagetable is more reasonable.
+
+Thanks. :)
+
+
+
+
+
+
 
