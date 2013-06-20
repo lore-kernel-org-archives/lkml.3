@@ -1,265 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab3FTPX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:23:26 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:59967 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab3FTPXX (ORCPT
+	id S1758073Ab3FTPqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:46:10 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:58599 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758058Ab3FTPqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:23:23 -0400
-Date: Thu, 20 Jun 2013 17:23:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "alex.shi@intel.com" <alex.shi@intel.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: power-efficient scheduling design
-Message-ID: <20130620152318.GB17638@gmail.com>
-References: <20130530134718.GB32728@e103034-lin>
- <20130531105204.GE30394@gmail.com>
- <20130604150316.GE32728@e103034-lin>
+	Thu, 20 Jun 2013 11:46:08 -0400
+Message-ID: <51C3238D.9040706@hds.com>
+Date: Thu, 20 Jun 2013 11:45:17 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604150316.GE32728@e103034-lin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org
+CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
+        linux-edac@vger.kernel.org, tony.luck@intel.com,
+        tomoki.sekiyama@hds.com, dle-develop@lists.sourceforge.net
+Subject: [PATCH v17 2/4] trace,x86: Introduce entering/exiting_irq()
+References: <51C32343.7080901@hds.com>
+In-Reply-To: <51C32343.7080901@hds.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-20_06:2013-06-20,2013-06-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0
+ kscore.is_bulkscore=3.04756220259605e-13 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997215366458519
+ urlsuspect_oldscore=0.997215366458519 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
+ spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
+ adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1306200119
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When implementing tracepoints in interrupt handers, if the tracepoints are
+simply added in the performance sensitive path of interrupt handers,
+it may cause potential performance problem due to the time penalty.
 
-* Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+To solve the problem, an idea is to prepare non-trace/trace irq handers and
+switch their IDTs at the enabling/disabling time.
 
-> On Fri, May 31, 2013 at 11:52:04AM +0100, Ingo Molnar wrote:
-> > 
-> > * Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> > 
-> > > Hi,
-> > > 
-> > > A number of patch sets related to power-efficient scheduling have been 
-> > > posted over the last couple of months. Most of them do not have much 
-> > > data to back them up, so I decided to do some testing.
-> > 
-> > Thanks, numbers are always welcome!
-> > 
-> > > Measurement technique:
-> > > Time spent non-idle (not in idle state) for each cpu based on cpuidle
-> > > ftrace events. TC2 does not have per-core power-gating, so packing
-> > > inside the A7 cluster does not lead to any significant power savings.
-> > > Note that any product grade hardware (TC2 is a test-chip) will very
-> > > likely have per-core power-gating, so in those cases packing will have
-> > > an appreciable effect on power savings.
-> > > Measuring non-idle time rather than power should give a more clear idea
-> > > about the effect of the patch sets given that the idle back-end is
-> > > highly implementation specific.
-> > 
-> > Note that I still disagree with the whole design notion of having an "idle 
-> > back-end" (and a 'cpufreq back end') separate from scheduler power saving 
-> > policy, and none of the patch-sets offered so far solve this fundamental 
-> > design problem.
-> > 
-> > PeterZ and me tried to point out the design requirements previously, but 
-> > it still does not appear to be clear enough to people, so let me spell it 
-> > out again, in a hopefully clearer fashion.
-> > 
-> > The scheduler has valuable power saving information available:
-> > 
-> >  - when a CPU is busy: about how long the current task expects to run
-> > 
-> >  - when a CPU is idle: how long the current CPU expects _not_ to run
-> > 
-> >  - topology: it knows how the CPUs and caches interrelate and already 
-> >    optimizes based on that
-> > 
-> >  - various high level and low level load averages and other metrics about 
-> >    the recent past that show how busy a particular CPU is, how busy the 
-> >    whole system is, and what the runtime properties of individual tasks is 
-> >    (how often it sleeps, etc.)
-> > 
-> > so the scheduler is in an _ideal_ position to do a judgement call about 
-> > the near future and estimate how deep an idle state a CPU core should 
-> > enter into and what frequency it should run at.
-> > 
-> > The scheduler is also at a high enough level to host a "I want maximum 
-> > performance, power does not matter to me" user policy override switch and 
-> > similar user policy details.
-> > 
-> > No ifs and whens about that.
-> > 
-> > Today the power saving landscape is fragmented and sad: we just randomly 
-> > interface scheduler task packing changes with some idle policy (and 
-> > cpufreq policy), which might or might not combine correctly.
-> > 
-> > Even when the numbers improve, it's an entirely random, essentially 
-> > unmaintainable property: because there's no clear split (possible) between 
-> > 'scheduler policy' and 'idle policy'. This is why we removed the old, 
-> > broken power saving scheduler code a year ago: to make room for something 
-> > _better_.
-> > 
-> > So if we want to add back scheduler power saving then what should happen 
-> > is genuinely better code:
-> > 
-> > To create a new low level idle driver mechanism the scheduler could use 
-> > and integrate proper power saving / idle policy into the scheduler.
-> > 
-> > In that power saving framework the already existing scheduler topology 
-> > information should be extended with deep idle parameters:
-> > 
-> >  - enumeration of idle states
-> > 
-> >  - how long it takes to enter+exit a particular idle state
-> > 
-> >  - [ perhaps information about how destructive to CPU caches that
-> >      particular idle state is. ]
-> > 
-> >  - new driver entry point that allows the scheduler to enter any of the 
-> >    enumerated idle states. Platform code will not change this state, all 
-> >    policy decisions and the idle state is decided at the power saving 
-> >    policy level.
-> > 
-> > All of this combines into a 'cost to enter and exit an idle state' 
-> > estimation plus a way to enter idle states. It should be presented to the 
-> > scheduler in a platform independent fashion, but without policy embedded: 
-> > a low level platform driver interface in essence.
-> > 
-> > Thomas Gleixner's recent work to generalize platform idle routines will 
-> > further help the implementation of this. (that code is upstream already)
-> > 
-> > _All_ policy, all metrics, all averaging should happen at the scheduler 
-> > power saving level, in a single place, and then the scheduler should 
-> > directly drive the new low level idle state driver mechanism.
-> > 
-> > 'scheduler power saving' and 'idle policy' are one and the same principle 
-> > and they should be handled in a single place to offer the best power 
-> > saving results.
-> > 
-> > Note that any RFC patch-set that offers an implementation for this could 
-> > be structured in a gradual fashion: only implementing it for a limited CPU 
-> > range initially. The new framework can then be extended to more and more 
-> > CPUs and architectures, incorporating more complicated power saving 
-> > features gradually. (The old, existing idle policy code would remain 
-> > untouched and available - it would simply not be used when the new policy 
-> > is activated.)
-> > 
-> > I.e. I'm not asking for a 'rewrite the world' kind of impossible task - 
-> > I'm providing an actionable path to get improved power saving upstream, 
-> > but it has to use a _sane design_.
-> > 
-> > This is a "line in the sand", a 'must have' design property for any 
-> > scheduler power saving patches to be acceptable - and I'm NAK-ing 
-> > incomplete approaches that don't solve the root design cause of our power 
-> > saving troubles...
-> 
-> Thanks for sharing your view.
-> 
-> I agree with idea of having a high level user switch to change
-> power/performance policy trade-offs for the system. Not only for
-> scheduling. I also share your view that the scheduler is in the ideal
-> place to drive the frequency scaling and idle policies.
-> 
-> However, I think that an integrated solution with one unified policy
-> implemented in the scheduler would take a significant rewrite of the
-> scheduler and the power management frameworks even if we start with just
-> a few SoCs.
-> 
-> To reach an integrated solution that does better than the current
-> approach there is a range of things that need to be considered:
-> 
-> - Define a power-efficient scheduling policy. Depending on the power
->   gating support on the particular system packing tasks may improve
->   power-efficiency while spreading the tasks may be better for others.
-> 
-> - Define how the user policy switch works. In previous discussions it
->   was proposed to have a high level switch that allows specification of
->   what the system should strive to achieve - power saving or performance.
->   In those discussions, what power meant wasn't exactly defined.
-> 
-> - Find a generic way to represent the power topology which includes
->   power domains, voltage domains and frequency domains. Also, more
->   importantly how we can derive the optimal power/performance policy for
->   the specific platform. There may be dependencies between idle and
->   frequency states like it is the case for frequency boost mode like Arjan
->   mentions in his reply.
-> 
-> - The fact that not all platforms expose all idle states to the OS and
->   that closed firmware may do whatever it likes behind the scenes. There
->   are various reasons to do this. Not all of them are bad.
-> 
-> - Define a scheduler driven frequency scaling policy that at least
->   matches the 'performance' of the current cpufreq policies and has
->   potential for further improvements.
-> 
-> - Match the power savings of the current cpuidle governors which are
->   based on arcane heuristics developed over years to predict things like
->   the occurrence of the next interrupt.
-> 
-> - Thermal aspects add more complexity to the power/performance policy.
->   Depending on the platform, overheating may be handled by frequency
->   capping or restricting the number of active cpus.
-> 
-> - Asymmetric/heterogeneous multi-processors need to be dealt with.
-> 
-> This is not a complete list. My point is that moving all policy to the 
-> scheduler will significantly increase the complexity of the scheduler. 
-> It is my impression that the general opinion is that the scheduler is 
-> already too complicated. Correct me if I'm wrong.
+So, let's introduce entering_irq()/exiting_irq() for pre/post-
+processing of each irq handler.
 
-The thing we care about is the net complexity of the kernel. Moving 
-related kernel code next to each other will in the _worst case_ result in 
-exactly the same complexity as we had before.
+A way to use them is as follows.
 
-But even just a small number of unifications will decrease complexity and 
-give us a chance to implement a more workable, more maintainable, more 
-correct power saving policy.
+Non-trace irq handler:
+smp_irq_handler()
+{
+	entering_irq();		/* pre-processing of this handler */
+	__smp_irq_handler();	/*
+				 * common logic between non-trace and trace handlers
+				 * in a vector.
+				 */
+	exiting_irq();		/* post-processing of this handler */
 
-The scheduler maintainers have no problem with going this way - we've 
-asked for such a design and approach for years.
+}
 
-> While the proposed task packing patches are not complete solutions, they 
-> address the first item on the above list and can be seen as a step 
-> towards the goal.
->
-> Should I read your recommendation as you prefer a complete and 
-> potentially huge patch set over incremental patch sets?
+Trace irq_handler:
+smp_trace_irq_handler()
+{
+	entering_irq();		/* pre-processing of this handler */
+	trace_irq_entry();	/* tracepoint for irq entry */
+	__smp_irq_handler();	/*
+				 * common logic between non-trace and trace handlers
+				 * in a vector.
+				 */
+	trace_irq_exit();	/* tracepoint for irq exit */
+	exiting_irq();		/* post-processing of this handler */
 
-I like incremental and see no reason why this couldn't be made 
-incremental, by adding the new facility for a smallish, manageable number 
-of supported configurations - then extending it gradually as it proves 
-itself.
+}
 
-> It would be good to have even a high level agreement on the path forward 
-> where the expectation first and foremost is to take advantage of the 
-> schedulers ideal position to drive the power management while 
-> simplifying the power management code.
+If tracepoints can place outside entering_irq()/exiting_irq() as follows,
+it looks cleaner.
 
-I'd suggest to try a set of patches that implements this for the hw 
-configuration you are most interested in - then measure and see where we 
-stand.
+smp_trace_irq_handler()
+{
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+}
 
-It should be a non-disruptive approach: i.e. a new CONFIG_SCHED_POWER 
-.config switch, which, if turned off, makes the new code go away, and it 
-also won't do anything on platforms that don't (yet) support the driver 
-model where the scheduler determines idle and performance states.
+But it doesn't work.
+The problem is with irq_enter/exit() being called. They must be called before
+trace_irq_enter/exit(),  because of the rcu_irq_enter() must be called before
+any tracepoints are used, as tracepoints use  rcu to synchronize.
 
-On CONFIG_SCHED_POWER=y kernels the new policy activates if there's low 
-level support present.
+As a possible alternative, we may be able to call irq_enter() first as follows
+if irq_enter() can nest.
 
-There's no other mode of operation: either the new scheduling policy is 
-fully there, or it's totally inactive.
+smp_trace_irq_hander()
+{
+	irq_entry();
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+	irq_exit();
+}
 
-This makes it entirely non-disruptive and non-regressive, while still 
-providing a road towards goodness.
+But it doesn't work, either.
+If irq_enter() is nested, it may have a time penalty because it has to check if it
+was already called or not. The time penalty is not desired in performance sensitive
+paths even if it is tiny.
 
-Thanks,
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/apic.h              |   27 +++++++++++++++++++++++
+ arch/x86/kernel/apic/apic.c              |   33 ++++++++++++++++------------
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   14 ++++++-----
+ arch/x86/kernel/cpu/mcheck/threshold.c   |   15 +++++++-----
+ arch/x86/kernel/irq.c                    |   18 ++++++--------
+ arch/x86/kernel/irq_work.c               |   14 ++++++++++-
+ arch/x86/kernel/smp.c                    |   35 +++++++++++++++++++++++------
+ 7 files changed, 110 insertions(+), 46 deletions(-)
 
-	Ingo
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 3388034..f8119b5 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -12,6 +12,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mpspec.h>
+ #include <asm/msr.h>
++#include <asm/idle.h>
+ 
+ #define ARCH_APICTIMER_STOPS_ON_C3	1
+ 
+@@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);
+ #endif
+ 
+ #endif /* CONFIG_X86_LOCAL_APIC */
++extern void irq_enter(void);
++extern void irq_exit(void);
++
++static inline void entering_irq(void)
++{
++	irq_enter();
++	exit_idle();
++}
++
++static inline void entering_ack_irq(void)
++{
++	ack_APIC_irq();
++	entering_irq();
++}
++
++static inline void exiting_irq(void)
++{
++	irq_exit();
++}
++
++static inline void exiting_ack_irq(void)
++{
++	irq_exit();
++	/* Ack only at the end to avoid potential reentry */
++	ack_APIC_irq();
++}
+ 
+ #endif /* _ASM_X86_APIC_H */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 904611b..59ee76f 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -919,17 +919,14 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	/*
+ 	 * NOTE! We'd better ACK the irq immediately,
+ 	 * because timer handling can be slow.
+-	 */
+-	ack_APIC_irq();
+-	/*
++	 *
+ 	 * update_process_times() expects us to have done irq_enter().
+ 	 * Besides, if we don't timer interrupts ignore the global
+ 	 * interrupt lock, which is the WrongThing (tm) to do.
+ 	 */
+-	irq_enter();
+-	exit_idle();
++	entering_ack_irq();
+ 	local_apic_timer_interrupt();
+-	irq_exit();
++	exiting_irq();
+ 
+ 	set_irq_regs(old_regs);
+ }
+@@ -1907,12 +1904,10 @@ int __init APIC_init_uniprocessor(void)
+ /*
+  * This interrupt should _never_ happen with our APIC/SMP architecture
+  */
+-void smp_spurious_interrupt(struct pt_regs *regs)
++static inline void __smp_spurious_interrupt(void)
+ {
+ 	u32 v;
+ 
+-	irq_enter();
+-	exit_idle();
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1927,13 +1922,19 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+ 	pr_info("spurious APIC interrupt on CPU#%d, "
+ 		"should never happen.\n", smp_processor_id());
+-	irq_exit();
++}
++
++void smp_spurious_interrupt(struct pt_regs *regs)
++{
++	entering_irq();
++	__smp_spurious_interrupt();
++	exiting_irq();
+ }
+ 
+ /*
+  * This interrupt should never happen with our APIC/SMP architecture
+  */
+-void smp_error_interrupt(struct pt_regs *regs)
++static inline void __smp_error_interrupt(struct pt_regs *regs)
+ {
+ 	u32 v0, v1;
+ 	u32 i = 0;
+@@ -1948,8 +1949,6 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 		"Illegal register address",	/* APIC Error Bit 7 */
+ 	};
+ 
+-	irq_enter();
+-	exit_idle();
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+@@ -1970,7 +1969,13 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+ 
+-	irq_exit();
++}
++
++void smp_error_interrupt(struct pt_regs *regs)
++{
++	entering_irq();
++	__smp_error_interrupt(regs);
++	exiting_irq();
+ }
+ 
+ /**
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 47a1870..f6b35f2 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -378,15 +378,17 @@ static void unexpected_thermal_interrupt(void)
+ 
+ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
+ 
+-asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
++static inline void __smp_thermal_interrupt(void)
+ {
+-	irq_enter();
+-	exit_idle();
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
+-	irq_exit();
+-	/* Ack only at the end to avoid potential reentry */
+-	ack_APIC_irq();
++}
++
++asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
++{
++	entering_irq();
++	__smp_thermal_interrupt();
++	exiting_ack_irq();
+ }
+ 
+ /* Thermal monitoring depends on APIC, ACPI and clock modulation */
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index aa578ca..f20988a 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -17,13 +17,16 @@ static void default_threshold_interrupt(void)
+ 
+ void (*mce_threshold_vector)(void) = default_threshold_interrupt;
+ 
+-asmlinkage void smp_threshold_interrupt(void)
++static inline void __smp_threshold_interrupt(void)
+ {
+-	irq_enter();
+-	exit_idle();
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
+-	irq_exit();
+-	/* Ack only at the end to avoid potential reentry */
+-	ack_APIC_irq();
+ }
++
++asmlinkage void smp_threshold_interrupt(void)
++{
++	entering_irq();
++	__smp_threshold_interrupt();
++	exiting_ack_irq();
++}
++
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index ac0631d..e3b8df1 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -204,23 +204,21 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ /*
+  * Handler for X86_PLATFORM_IPI_VECTOR.
+  */
+-void smp_x86_platform_ipi(struct pt_regs *regs)
++void __smp_x86_platform_ipi(void)
+ {
+-	struct pt_regs *old_regs = set_irq_regs(regs);
+-
+-	ack_APIC_irq();
+-
+-	irq_enter();
+-
+-	exit_idle();
+-
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+ 		x86_platform_ipi_callback();
++}
+ 
+-	irq_exit();
++void smp_x86_platform_ipi(struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
++	entering_ack_irq();
++	__smp_x86_platform_ipi();
++	exiting_irq();
+ 	set_irq_regs(old_regs);
+ }
+ 
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index ca8f703..074d46f 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -9,13 +9,23 @@
+ #include <linux/hardirq.h>
+ #include <asm/apic.h>
+ 
+-void smp_irq_work_interrupt(struct pt_regs *regs)
++static inline void irq_work_entering_irq(void)
+ {
+ 	irq_enter();
+ 	ack_APIC_irq();
++}
++
++static inline void __smp_irq_work_interrupt(void)
++{
+ 	inc_irq_stat(apic_irq_work_irqs);
+ 	irq_work_run();
+-	irq_exit();
++}
++
++void smp_irq_work_interrupt(struct pt_regs *regs)
++{
++	irq_work_entering_irq();
++	__smp_irq_work_interrupt();
++	exiting_irq();
+ }
+ 
+ void arch_irq_work_raise(void)
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 48d2b7d..d858375 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -249,32 +249,51 @@ finish:
+ /*
+  * Reschedule call back.
+  */
+-void smp_reschedule_interrupt(struct pt_regs *regs)
++static inline void __smp_reschedule_interrupt(void)
+ {
+-	ack_APIC_irq();
+ 	inc_irq_stat(irq_resched_count);
+ 	scheduler_ipi();
++}
++
++void smp_reschedule_interrupt(struct pt_regs *regs)
++{
++	ack_APIC_irq();
++	__smp_reschedule_interrupt();
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+ }
+ 
+-void smp_call_function_interrupt(struct pt_regs *regs)
++static inline void call_function_entering_irq(void)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++}
++
++static inline void __smp_call_function_interrupt(void)
++{
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
+-	irq_exit();
+ }
+ 
+-void smp_call_function_single_interrupt(struct pt_regs *regs)
++void smp_call_function_interrupt(struct pt_regs *regs)
++{
++	call_function_entering_irq();
++	__smp_call_function_interrupt();
++	exiting_irq();
++}
++
++static inline void __smp_call_function_single_interrupt(void)
+ {
+-	ack_APIC_irq();
+-	irq_enter();
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
+-	irq_exit();
++}
++
++void smp_call_function_single_interrupt(struct pt_regs *regs)
++{
++	call_function_entering_irq();
++	__smp_call_function_single_interrupt();
++	exiting_irq();
+ }
+ 
+ static int __init nonmi_ipi_setup(char *str)
+-- 
+1.7.1
+
+
+
