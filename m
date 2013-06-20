@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab3FTT0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:26:43 -0400
-Received: from 8bytes.org ([85.214.48.195]:35736 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab3FTT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:26:42 -0400
-Date: Thu, 20 Jun 2013 21:26:38 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd_iommu: Fix leak in free_pagetable()
-Message-ID: <20130620192638.GD11309@8bytes.org>
-References: <20130618014459.20440.73844.stgit@bling.home>
- <20130618015116.20711.90269.stgit@bling.home>
- <20130620182808.GC11309@8bytes.org>
- <1371755280.30572.4.camel@ul30vt.home>
+	id S965710Ab3FTSxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:53:08 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40463 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965649Ab3FTSxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:53:05 -0400
+Message-ID: <51C34F8D.2000806@gmail.com>
+Date: Thu, 20 Jun 2013 12:53:01 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371755280.30572.4.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun 20 21:26:39 2013
-X-DSPAM-Confidence: 0.9981
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51c3576f20862005116848
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
+References: <20130618192147.GA19443@redhat.com>   <20130619121039.GA19225@twins.programming.kicks-ass.net>   <20130619152844.GA9176@redhat.com> <20130619175139.GA20454@redhat.com>   <51C1FD7F.9090606@gmail.com> <20130619195822.GA16489@redhat.com>  <1371752633.18733.96.camel@gandalf.local.home> <51C34B70.60808@gmail.com> <1371754078.18733.106.camel@gandalf.local.home>
+In-Reply-To: <1371754078.18733.106.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 01:08:00PM -0600, Alex Williamson wrote:
-> On Thu, 2013-06-20 at 20:28 +0200, Joerg Roedel wrote:
-> > Hmm, actually a recursive version would make more sense here. But since
-> > recursion is a bad idea in the kernel, how about this approach instead:
-> 
-> It's a fixed maximum depth of recursion though, is it really that taboo?
+On 6/20/13 12:47 PM, Steven Rostedt wrote:
+> On Thu, 2013-06-20 at 12:35 -0600, David Ahern wrote:
+>> On 6/20/13 12:23 PM, Steven Rostedt wrote:
+>>>
+>>> I ran this:
+>>>
+>>>    perf stat --repeat 100 -- perf bench sched pipe > /tmp/perf-bench-sched.{before, after}
+>>
+>> You want to compare:
+>>     perf stat --repeat 100 -p 1 -- perf bench sched pipe
+>>
+>> so that event is tagged to pid 1 and not the perf-bench workload.
+>
+> I guess I'm a bit confused. What's the significance of measuring pid 1
+> (init)?
 
-Well, a recursive version would be better here because it has lower icache
-impact than my patch. But the risk is if there is a bug in recursive
-code and it goes on forever it will overwrite random kernel memory, with
-undefined, potentially very bad, results (like data corruption, killed
-filesystems and so on).
+I believe Oleg's point is the overhead for tasks without events 
+associated with them. To show that create an event tagged to the init 
+task and then run some workload -- like perf bench shed pipe. It shows 
+that all tasks take a hit, not just the one getting profiled.
 
-So in my opinion it is better to not take that risk whenever possible.
-
-> > The IOMMU pagetables can have up to 3 levels, but the code
-> 
-> s/3/6/
-
-Right, thanks.
-
-> Seems like it should do the right thing
-
-Ok, I also gave it some testing (started a vm, assigned and de-assigned
-a device), so it should work as expected.
-
-> Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-
-Thanks,
-
-	Joerg
-
-
+David
