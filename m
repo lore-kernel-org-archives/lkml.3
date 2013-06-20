@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161236Ab3FTSsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:48:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5803 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161220Ab3FTSsB (ORCPT
+	id S1161124Ab3FTTWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:22:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51006 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758511Ab3FTTWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:48:01 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CP4Tl-rxqdAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9d5NqswhC6UA:10 a=3BMTtyEYS9HMFFiruJQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371754078.18733.106.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Jun 2013 14:47:58 -0400
-In-Reply-To: <51C34B70.60808@gmail.com>
-References: <20130618192147.GA19443@redhat.com>
-	  <20130619121039.GA19225@twins.programming.kicks-ass.net>
-	  <20130619152844.GA9176@redhat.com> <20130619175139.GA20454@redhat.com>
-	  <51C1FD7F.9090606@gmail.com> <20130619195822.GA16489@redhat.com>
-	 <1371752633.18733.96.camel@gandalf.local.home> <51C34B70.60808@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 15:22:00 -0400
+Date: Thu, 20 Jun 2013 12:21:59 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [ 13/48] s390/pci: Implement IRQ functions if !PCI
+Message-ID: <20130620192159.GC336@kroah.com>
+References: <20130618161725.912524266@linuxfoundation.org>
+ <20130618161727.767561192@linuxfoundation.org>
+ <20130618173540.GP4752@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130618173540.GP4752@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 12:35 -0600, David Ahern wrote:
-> On 6/20/13 12:23 PM, Steven Rostedt wrote:
-> >
-> > I ran this:
-> >
-> >   perf stat --repeat 100 -- perf bench sched pipe > /tmp/perf-bench-sched.{before, after}
+On Tue, Jun 18, 2013 at 06:35:40PM +0100, Ben Hutchings wrote:
+> On Tue, Jun 18, 2013 at 09:17:39AM -0700, Greg Kroah-Hartman wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > 3.9-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Ben Hutchings <ben@decadent.org.uk>
+> > 
+> > commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
+> > 
+> > All architectures must implement IRQ functions.  Since various
+> > dependencies on !S390 were removed, there are various drivers that can
+> > be selected but will fail to link.  Provide a dummy implementation of
+> > these functions for the !PCI case.
+> [...]
 > 
-> You want to compare:
->    perf stat --repeat 100 -p 1 -- perf bench sched pipe
-> 
-> so that event is tagged to pid 1 and not the perf-bench workload.
+> This breaks !SMP builds, so it's probably best to defer this until the
+> following fix is in mainline.
 
-I guess I'm a bit confused. What's the significance of measuring pid 1
-(init)?
+Now dropped, thanks.
 
--- Steve
-
-
+greg k-h
