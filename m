@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935695Ab3FTCWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:22:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37877 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935506Ab3FTCWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:22:43 -0400
-Message-ID: <51C26765.6030407@ti.com>
-Date: Wed, 19 Jun 2013 22:22:29 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S965017Ab3FTCXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:23:21 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:41268 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935570Ab3FTCXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 22:23:17 -0400
+Date: Wed, 19 Jun 2013 19:23:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH percpu/for-3.11 1/2] percpu-refcount: add __must_check to
+ percpu_ref_init() and don't use ACCESS_ONCE() in percpu_ref_kill_rcu()
+Message-ID: <20130620022312.GA26127@htj.dyndns.org>
+References: <20130613035201.GD9451@mtj.dyndns.org>
+ <87y5a6n71o.fsf@rustcorp.com.au>
+ <20130619082123.GD30681@mtj.dyndns.org>
+ <878v25mwag.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        <jonghwa3.lee@samsung.com>
-Subject: Re: [PATCH V6 25/30] thermal: exynos: Fix to set the second point
- correction value
-References: <1371451599-31035-1-git-send-email-amit.daniel@samsung.com> <1371451599-31035-26-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1371451599-31035-26-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2CJJAJLVHUTFJSBDVRSND"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v25mwag.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2CJJAJLVHUTFJSBDVRSND
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-On 17-06-2013 02:46, Amit Daniel Kachhap wrote:
-> This patch sets the second point trimming value according to the platfo=
-rm
-> data if the register value is 0.
->=20
-> Acked-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+On Thu, Jun 20, 2013 at 10:29:51AM +0930, Rusty Russell wrote:
+> Now seems to get abused by lazy coders who blame users for their own
+> broken APIs.  And Ubuntu, who turn it on by default in their gcc when
+> optimizing.  Yeah, it's a sore point :)
 
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+How is the API broken?  It is a function which either succeeds or
+fails and, if it fails during boot, like any other allocation failures
+during boot, the boot fails.  It's not different from kmalloc()
+returning NULL on failure.
 
-> ---
->  drivers/thermal/samsung/exynos_tmu.c |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
-sung/exynos_tmu.c
-> index a4dbc84..af0e6ca 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -180,10 +180,15 @@ static int exynos_tmu_initialize(struct platform_=
-device *pdev)
->  	data->temp_error2 =3D ((trim_info >> reg->triminfo_85_shift) &
->  				EXYNOS_TMU_TEMP_MASK);
-> =20
-> -	if ((pdata->min_efuse_value > data->temp_error1) ||
-> -			(data->temp_error1 > pdata->max_efuse_value) ||
-> -			(data->temp_error2 !=3D 0))
-> -		data->temp_error1 =3D pdata->efuse_value;
-> +	if (!data->temp_error1 ||
-> +		(pdata->min_efuse_value > data->temp_error1) ||
-> +		(data->temp_error1 > pdata->max_efuse_value))
-> +		data->temp_error1 =3D pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
-> +
-> +	if (!data->temp_error2)
-> +		data->temp_error2 =3D
-> +			(pdata->efuse_value >> reg->triminfo_85_shift) &
-> +			EXYNOS_TMU_TEMP_MASK;
-> =20
->  	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
->  		dev_err(&pdev->dev, "Invalid max trigger level\n");
->=20
+>         	if (system(command))
+>         		doesnt_matter();
 
+It *does* matter.
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+> Sorry, I was unclear.  If you fail the percpu allocation, you have a
+> counter which is always in atomic mode.
+> 
+> This saves everyone a headache.  init doesn't fail, no poorly-tested
+> failure paths, no whining Rusty.
 
-Eduardo Valentin
+How does that save a headache?  It *should* fail if allocation fails.
+Having untraceable persistent slow down after heavy memory pressure is
+no fun to track down.  If you're worried about not being able to
+detect bugs in error path, the right thing to do would be inducing
+allocation failures regularly so that those paths can be tested, which
+we already do.
 
+Thanks.
 
-------enig2CJJAJLVHUTFJSBDVRSND
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHCZ2UACgkQCXcVR3XQvP0EBwD/VZK9GS8xGZMqtVo72a6xW6f/
-mA4z//PVeZ/UjgthrA4BANDoCDkstprAcMqVVXG1UNRq9VPdlbzHu5Ix4rd7py8N
-=fRlp
------END PGP SIGNATURE-----
-
-------enig2CJJAJLVHUTFJSBDVRSND--
+-- 
+tejun
