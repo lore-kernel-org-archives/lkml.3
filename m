@@ -1,472 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030275Ab3FTOKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 10:10:11 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:45741 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757720Ab3FTOKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 10:10:06 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel@stlinux.com, linux-serial@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v3 02/10] clocksource:arm_global_timer: Add ARM global timer support.
-Date: Thu, 20 Jun 2013 15:05:21 +0100
-Message-Id: <1371737121-9295-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1371736996-8770-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1757962Ab3FTOz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:55:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757640Ab3FTOz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 10:55:27 -0400
+Message-ID: <1371740113.32709.22.camel@ul30vt.home>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Joerg Roedel <joro@8bytes.org>
+Date: Thu, 20 Jun 2013 08:55:13 -0600
+In-Reply-To: <51C2C1CC.9000003@ozlabs.ru>
+References: <1371422343.21896.143.camel@pasglop>
+	  <1371438800.22681.38.camel@ul30vt.home>
+	  <1371441361.21896.152.camel@pasglop>
+	  <1371522772.22681.140.camel@ul30vt.home> <87txkun568.fsf@rustcorp.com.au>
+	  <1371617970.21896.232.camel@pasglop>
+	  <E63966E3-336F-4CB8-96EC-24D2C1644E62@suse.de>
+	  <1371653443.21896.291.camel@pasglop>
+	  <1371656989.22659.98.camel@ul30vt.home> <51C28BEA.8050501@ozlabs.ru>
+	  <20130620052822.GB3140@voom.redhat.com> <1371714449.3944.14.camel@pasglop>
+	 <51C2C1CC.9000003@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stuart Menefy <stuart.menefy@st.com>
+On Thu, 2013-06-20 at 18:48 +1000, Alexey Kardashevskiy wrote:
+> On 06/20/2013 05:47 PM, Benjamin Herrenschmidt wrote:
+> > On Thu, 2013-06-20 at 15:28 +1000, David Gibson wrote:
+> >>> Just out of curiosity - would not get_file() and fput_atomic() on a
+> >> group's
+> >>> file* do the right job instead of vfio_group_add_external_user() and
+> >>> vfio_group_del_external_user()?
+> >>
+> >> I was thinking that too.  Grabbing a file reference would certainly be
+> >> the usual way of handling this sort of thing.
+> > 
+> > But that wouldn't prevent the group ownership to be returned to
+> > the kernel or another user would it ?
+> 
+> 
+> Holding the file pointer does not let the group->container_users counter go
+> to zero
 
-This is a simple driver for the global timer module found in the Cortex
-A9-MP cores from revision r1p0 onwards. This should be able to perform
-the functions of the system timer and the local timer in an SMP system.
+How so?  Holding the file pointer means the file won't go away, which
+means the group release function won't be called.  That means the group
+won't go away, but that doesn't mean it's attached to an IOMMU.  A user
+could call UNSET_CONTAINER.
 
-The global timer has the following features:
-    The global timer is a 64-bit incrementing counter with an
-auto-incrementing feature. It continues incrementing after sending
-interrupts. The global timer is memory mapped in the private memory
-region.
-    The global timer is accessible to all Cortex-A9 processors in the
-cluster. Each Cortex-A9 processor has a private 64-bit comparator that
-is used to assert a private interrupt when the global timer has reached
-the comparator value. All the Cortex-A9 processors in a design use the
-banked ID, ID27, for this interrupt. ID27 is sent to the Interrupt
-Controller as a Private Peripheral Interrupt. The global timer is
-clocked by PERIPHCLK.
+>  and this is exactly what vfio_group_add_external_user() and
+> vfio_group_del_external_user() do. The difference is only in absolute value
+> - 2 vs. 3.
+> 
+> No change in behaviour whether I use new vfio API or simply hold file* till
+> KVM closes fd created when IOMMU was connected to LIOBN.
 
-Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Will Deacon <will.deacon@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
----
- .../devicetree/bindings/arm/global_timer.txt       |   21 ++
- drivers/clocksource/Kconfig                        |   13 +
- drivers/clocksource/Makefile                       |    1 +
- drivers/clocksource/arm_global_timer.c             |  330 ++++++++++++++++++++
- 4 files changed, 365 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/global_timer.txt
- create mode 100644 drivers/clocksource/arm_global_timer.c
+By that notion you could open(/dev/vfio/$GROUP) and you're safe, right?
+But what about SET_CONTAINER & SET_IOMMU?  All that you guarantee
+holding the file pointer is that the vfio_group exists.
 
-diff --git a/Documentation/devicetree/bindings/arm/global_timer.txt b/Documentation/devicetree/bindings/arm/global_timer.txt
-new file mode 100644
-index 0000000..b64abac
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/global_timer.txt
-@@ -0,0 +1,21 @@
-+
-+* ARM Global Timer
-+	Cortex-A9 are often associated with a per-core Global timer.
-+
-+** Timer node required properties:
-+
-+- compatible : Should be "arm,cortex-a9-global-timer"
-+		Driver supports versions r2p0 and above.
-+
-+- interrupts : One interrupt to each core
-+
-+- reg : Specify the base address and the size of the GT timer
-+	register window.
-+
-+Example:
-+
-+	timer@2c000600 {
-+		compatible = "arm,cortex-a9-global-timer";
-+		reg = <0x2c000600 0x20>;
-+		interrupts = <1 13 0xf01>;
-+	};
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index f151c6c..b0c4c42 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -67,6 +67,19 @@ config ARM_ARCH_TIMER
- 	bool
- 	select CLKSRC_OF if OF
- 
-+config ARM_GLOBAL_TIMER
-+	bool
-+	select CLKSRC_OF if OF
-+	help
-+	  This options enables support for the ARM global timer unit
-+
-+config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
-+	bool
-+	depends on ARM_GLOBAL_TIMER
-+	default y
-+	help
-+	 Use ARM global timer clock source as sched_clock
-+
- config CLKSRC_METAG_GENERIC
- 	def_bool y if METAG
- 	help
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 8d979c7..b2363cb 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -28,4 +28,5 @@ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
- obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
- 
- obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
-+obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
- obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
-diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-new file mode 100644
-index 0000000..43cd32a
---- /dev/null
-+++ b/drivers/clocksource/arm_global_timer.c
-@@ -0,0 +1,330 @@
-+/*
-+ * drivers/clocksource/arm_global_timer.c
-+ *
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Stuart Menefy <stuart.menefy@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_address.h>
-+
-+#include <asm/sched_clock.h>
-+#include <asm/mach/irq.h>
-+#include <asm/cputype.h>
-+#include <asm/localtimer.h>
-+
-+#define GT_COUNTER0	0x00
-+#define GT_COUNTER1	0x04
-+
-+#define GT_CONTROL	0x08
-+#define GT_CONTROL_TIMER_ENABLE		BIT(0)  /* this bit is NOT banked */
-+#define GT_CONTROL_COMP_ENABLE		BIT(1)	/* banked */
-+#define GT_CONTROL_IRQ_ENABLE		BIT(2)	/* banked */
-+#define GT_CONTROL_AUTO_INC		BIT(3)	/* banked */
-+
-+#define GT_INT_STATUS	0x0c
-+#define GT_INT_STATUS_EVENT_FLAG	BIT(0)
-+
-+#define GT_COMP0	0x10
-+#define GT_COMP1	0x14
-+#define GT_AUTO_INC	0x18
-+
-+/*
-+ * We are expecting to be clocked by the ARM peripheral clock.
-+ *
-+ * Note: it is assumed we are using a prescaler value of zero, so this is
-+ * the units for all operations.
-+ */
-+static void __iomem *gt_base;
-+static unsigned long gt_clk_rate;
-+static int gt_ppi;
-+static struct clock_event_device __percpu **gt_evt;
-+static DEFINE_PER_CPU(bool, percpu_init_called);
-+static DEFINE_PER_CPU(struct clock_event_device, gt_clockevent);
-+
-+/*
-+ * To get the value from the Global Timer Counter register proceed as follows:
-+ * 1. Read the upper 32-bit timer counter register
-+ * 2. Read the lower 32-bit timer counter register
-+ * 3. Read the upper 32-bit timer counter register again. If the value is
-+ *  different to the 32-bit upper value read previously, go back to step 2.
-+ *  Otherwise the 64-bit timer counter value is correct.
-+ */
-+static u64 gt_counter_read(void)
-+{
-+	u64 counter;
-+	u32 lower;
-+	u32 upper, old_upper;
-+
-+	upper = __raw_readl(gt_base + GT_COUNTER1);
-+	do {
-+		old_upper = upper;
-+		lower = __raw_readl(gt_base + GT_COUNTER0);
-+		upper = __raw_readl(gt_base + GT_COUNTER1);
-+	} while (upper != old_upper);
-+
-+	counter = upper;
-+	counter <<= 32;
-+	counter |= lower;
-+	return counter;
-+}
-+
-+/**
-+ * To ensure that updates to comparator value register do not set the
-+ * Interrupt Status Register proceed as follows:
-+ * 1. Clear the Comp Enable bit in the Timer Control Register.
-+ * 2. Write the lower 32-bit Comparator Value Register.
-+ * 3. Write the upper 32-bit Comparator Value Register.
-+ * 4. Set the Comp Enable bit and, if necessary, the IRQ enable bit.
-+ */
-+static void gt_compare_set(unsigned long delta, int periodic)
-+{
-+	u64 counter = gt_counter_read();
-+	unsigned long ctrl = __raw_readl(gt_base + GT_CONTROL);
-+
-+	counter += delta;
-+	ctrl &=  ~(GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE);
-+
-+	__raw_writel(ctrl, gt_base + GT_CONTROL);
-+	__raw_writel(lower_32_bits(counter), gt_base + GT_COMP0);
-+	__raw_writel(upper_32_bits(counter), gt_base + GT_COMP1);
-+
-+	if (periodic) {
-+		__raw_writel(delta, gt_base + GT_AUTO_INC);
-+		ctrl |= GT_CONTROL_AUTO_INC;
-+	}
-+
-+	ctrl |= GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE;
-+	__raw_writel(ctrl, gt_base + GT_CONTROL);
-+}
-+
-+static void gt_clockevent_set_mode(enum clock_event_mode mode,
-+				   struct clock_event_device *clk)
-+{
-+	unsigned long ctrl;
-+
-+	ctrl = __raw_readl(gt_base + GT_CONTROL);
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		gt_compare_set(DIV_ROUND_CLOSEST(gt_clk_rate, HZ), 1);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		ctrl &= ~(GT_CONTROL_AUTO_INC);
-+		__raw_writel(ctrl, gt_base + GT_CONTROL);
-+		break;
-+	/* Can not shut down it as enable bit is not banked */
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		ctrl &= ~(GT_CONTROL_COMP_ENABLE |
-+				GT_CONTROL_IRQ_ENABLE | GT_CONTROL_AUTO_INC);
-+		__raw_writel(ctrl, gt_base + GT_CONTROL);
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+static int gt_clockevent_set_next_event(unsigned long evt,
-+					struct clock_event_device *unused)
-+{
-+	gt_compare_set(evt, 0);
-+	return 0;
-+}
-+
-+static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+
-+	if (__raw_readl(gt_base + GT_INT_STATUS) & GT_INT_STATUS_EVENT_FLAG) {
-+		/**
-+		 * ERRATA 740657( Global Timer can send 2 interrupts for
-+		 * the same event in single-shot mode)
-+		 * Workaround:
-+		 *	Either disable single-shot mode.
-+		 *	Or
-+		 *	Modify the Interrupt Handler to avoid the
-+		 *	offending sequence. This is achieved by clearing
-+		 *	the Global Timer flag _after_ having incremented
-+		 *	the Comparator register	value to a higher value.
-+		 */
-+		if (!(__raw_readl(gt_base + GT_CONTROL) & GT_CONTROL_AUTO_INC))
-+			gt_compare_set(ULONG_MAX, 0);
-+
-+		__raw_writel(GT_INT_STATUS_EVENT_FLAG, gt_base + GT_INT_STATUS);
-+
-+		evt->event_handler(evt);
-+		return IRQ_HANDLED;
-+	}
-+
-+	return IRQ_NONE;
-+}
-+
-+static int __cpuinit gt_clockevents_init(struct clock_event_device *clk)
-+{
-+	struct clock_event_device **this_cpu_clk;
-+	int cpu = smp_processor_id();
-+
-+	clk->name = "ARM global timer clock event";
-+	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	clk->set_mode = gt_clockevent_set_mode;
-+	clk->set_next_event = gt_clockevent_set_next_event;
-+	this_cpu_clk = __this_cpu_ptr(gt_evt);
-+	*this_cpu_clk = clk;
-+	clk->cpumask = cpumask_of(cpu);
-+	clk->irq = gt_ppi;
-+	clockevents_config_and_register(clk, gt_clk_rate,
-+					1, 0xffffffff);
-+	per_cpu(percpu_init_called, cpu) = true;
-+	enable_percpu_irq(clk->irq, IRQ_TYPE_NONE);
-+	return 0;
-+}
-+
-+static void gt_clockevents_stop(struct clock_event_device *clk)
-+{
-+	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
-+	disable_percpu_irq(clk->irq);
-+}
-+
-+static int __cpuinit gt_clockevents_setup(struct clock_event_device *clk)
-+{
-+	/* Use existing clock_event for boot cpu */
-+	if (per_cpu(percpu_init_called, smp_processor_id()))
-+		return 0;
-+
-+	/* already enabled in gt_clocksource_init. */
-+	return gt_clockevents_init(clk);
-+}
-+
-+static cycle_t gt_clocksource_read(struct clocksource *cs)
-+{
-+	return gt_counter_read();
-+}
-+
-+static struct clocksource gt_clocksource = {
-+	.name	= "ARM global timer clock source",
-+	.rating	= 300,
-+	.read	= gt_clocksource_read,
-+	.mask	= CLOCKSOURCE_MASK(64),
-+	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+#ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
-+static u32 gt_sched_clock_read(void)
-+{
-+	if (!gt_base)
-+		return 0;
-+
-+	return gt_counter_read();
-+}
-+#endif
-+
-+static void __init gt_clocksource_init(void)
-+{
-+	__raw_writel(0, gt_base + GT_CONTROL);
-+	__raw_writel(0, gt_base + GT_COUNTER0);
-+	__raw_writel(0, gt_base + GT_COUNTER1);
-+	/* enables timer on all the cores */
-+	__raw_writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
-+
-+#ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
-+	setup_sched_clock(gt_sched_clock_read, 32, gt_clk_rate);
-+#endif
-+	clocksource_register_hz(&gt_clocksource, gt_clk_rate);
-+}
-+
-+#ifdef CONFIG_LOCAL_TIMERS
-+static struct local_timer_ops gt_lt_ops __cpuinitdata = {
-+	.setup	= gt_clockevents_setup,
-+	.stop	= gt_clockevents_stop,
-+};
-+#endif
-+
-+static void __init global_timer_of_register(struct device_node *np)
-+{
-+	unsigned int cpu = smp_processor_id();
-+	struct clock_event_device *evt = &per_cpu(gt_clockevent, cpu);
-+	struct clk *gt_clk;
-+	int err = 0;
-+
-+	/*
-+	 * In r2p0 the comparators for each processor with the global timer
-+	 * fire when the timer value is greater than or equal to. In previous
-+	 * revisions the comparators fired when the timer value was equal to.
-+	 */
-+	if ((read_cpuid_id() & 0xf0000f) < 0x200000) {
-+		pr_warn("global-timer: non support for this cpu version.\n");
-+		return;
-+	}
-+
-+	gt_ppi = irq_of_parse_and_map(np, 0);
-+	if (!gt_ppi) {
-+		pr_warn("global-timer: unable to parse irq\n");
-+		return;
-+	}
-+
-+	gt_base = of_iomap(np, 0);
-+	if (!gt_base) {
-+		pr_warn("global-timer: invalid base address\n");
-+		return;
-+	}
-+
-+	gt_clk = of_clk_get(np, 0);
-+	if (!IS_ERR(gt_clk)) {
-+		err = clk_prepare_enable(gt_clk);
-+	} else {
-+		pr_warn("global-timer: clk not found\n");
-+		err = -EINVAL;
-+		goto out_unmap;
-+	}
-+
-+	gt_evt = alloc_percpu(struct clock_event_device *);
-+	if (!gt_evt) {
-+		pr_warn("global-timer: can't allocate memory\n");
-+		err = -ENOMEM;
-+		goto out_unmap;
-+	}
-+
-+	err = request_percpu_irq(gt_ppi, gt_clockevent_interrupt,
-+				 "gt", gt_evt);
-+	if (err) {
-+		pr_warn("global-timer: can't register interrupt %d (%d)\n",
-+			gt_ppi, err);
-+		goto out_free;
-+	}
-+
-+	gt_clk_rate = clk_get_rate(gt_clk);
-+	gt_clocksource_init();
-+	gt_clockevents_init(evt);
-+#ifdef CONFIG_LOCAL_TIMERS
-+	err =  local_timer_register(&gt_lt_ops);
-+	if (err) {
-+		pr_warn("global-timer: unable to register local timer.\n");
-+		free_percpu_irq(gt_ppi, gt_evt);
-+		goto out_free;
-+	}
-+#endif
-+	return;
-+
-+out_free:
-+	free_percpu(gt_evt);
-+out_unmap:
-+	iounmap(gt_base);
-+	WARN(err, "ARM Global timer register failed (%d)\n", err);
-+}
-+
-+/* Only tested on r2p2 and r3p0  */
-+CLOCKSOURCE_OF_DECLARE(arm_gt, "arm,cortex-a9-global-timer",
-+			global_timer_of_register);
--- 
-1.7.6.5
+> And while this counter is not zero, QEMU cannot take ownership over the group.
+>
+> I am definitely still missing the bigger picture...
+
+The bigger picture is that the group needs to exist AND it needs to be
+setup and maintained to have IOMMU protection.  Actually, my first stab
+at add_external_user doesn't look sufficient, it needs to look more like
+vfio_group_get_device_fd, checking group->container->iommu and
+group_viable().  As written it would allow an external user after
+SET_CONTAINER without SET_IOMMU.  It should also be part of the API that
+the external user must hold the file reference between add_external_use
+and del_external_user and do cleanup on any exit paths.  Thanks,
+
+Alex
 
