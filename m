@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965208Ab3FTMBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:01:50 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35966 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3FTMBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:01:48 -0400
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Cc: Nicolas Palix <nicolas.palix@imag.fr>
-Subject: [PATCH] Coccinelle: Update the documentation
-Date: Thu, 20 Jun 2013 14:00:19 +0200
-Message-Id: <1371729619-18719-1-git-send-email-nicolas.palix@imag.fr>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CAK9yfHyM7OrOtxWN56J06RAVBc-q0idDdhFjYzT3=opw-bZuXA@mail.gmail.com>
-References: <CAK9yfHyM7OrOtxWN56J06RAVBc-q0idDdhFjYzT3=opw-bZuXA@mail.gmail.com>
+	id S965241Ab3FTMCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:02:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35258 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab3FTMCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:02:51 -0400
+Message-ID: <51C2EF50.3070707@ti.com>
+Date: Thu, 20 Jun 2013 15:02:24 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Kevin Hilman <khilman@linaro.org>
+CC: <stern@rowland.harvard.edu>, <tony@atomide.com>, <balbi@ti.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <b-cousson@ti.com>
+Subject: Re: [RFC PATCH 5/6] ARM: dts: omap3beagle-xm: Add idle state pins
+ for USB host
+References: <1371650753-11452-1-git-send-email-rogerq@ti.com> <1371650753-11452-6-git-send-email-rogerq@ti.com> <87obb26ixm.fsf@linaro.org> <51C2EDB1.3080801@ti.com>
+In-Reply-To: <51C2EDB1.3080801@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - The new default mode is 'report'.
- - The available modes are detailed a bit more.
- - Some information about the use of spatch options are
-   also given concerning the use of indexing tools.
+On 06/20/2013 02:55 PM, Roger Quadros wrote:
+> On 06/19/2013 09:42 PM, Kevin Hilman wrote:
+>> Roger Quadros <rogerq@ti.com> writes:
+>>
+>>> Add the Idle state pins for USB host and enable WAKEUP on
+>>> DIR, DAT0-3, so that the PHY can wakeup the OMAP SoC from
+>>> sleep on any USB activity (e.g. remote wakeup or connect/disconnect).
+>>>
+>>> CC: Benoît Cousson <b-cousson@ti.com>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>
+>> This one doesn't apply...
+>>
+>>> ---
+>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   29 +++++++++++++++++++++++------
+>>>  1 files changed, 23 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>> index d3808ed..f1d56c2 100644
+>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>> @@ -89,12 +89,7 @@
+>>>  };
+>>>  
+>>>  &omap3_pmx_core {
+>>> -	pinctrl-names = "default";
+>>> -	pinctrl-0 = <
+>>> -			&hsusbb2_pins
+>>> -	>;
+>>> -
+>>> -	hsusbb2_pins: pinmux_hsusbb2_pins {
+>>
+>> This omap3_pmx_core section doesn't exist upstream in the xM DTS file
+>> (but does in omap3-beagle.dts.)  
+>>
+>> Is there a dependency patch missing?
+>>
+> 
+> Sorry for not mentioning it earlier. This is based on Benoit's tree [1]
+> and you need these patches
+> 
+> http://thread.gmane.org/gmane.linux.drivers.devicetree/38383
 
-Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
----
-v2: Fix typo reported by Sachin Kamat
+Just noticed that this no longer applies today. I'll send a revision soon.
 
- Documentation/coccinelle.txt |   39 ++++++++++++++++++++++++++-------------
- 1 file changed, 26 insertions(+), 13 deletions(-)
-
-diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-index 408439d..81a329f 100644
---- a/Documentation/coccinelle.txt
-+++ b/Documentation/coccinelle.txt
-@@ -48,7 +48,7 @@ A Coccinelle-specific target is defined in the top level
- Makefile. This target is named 'coccicheck' and calls the 'coccicheck'
- front-end in the 'scripts' directory.
- 
--Four modes are defined: patch, report, context, and org. The mode to
-+Four basic modes are defined: patch, report, context, and org. The mode to
- use is specified by setting the MODE variable with 'MODE=<mode>'.
- 
- 'patch' proposes a fix, when possible.
-@@ -62,18 +62,24 @@ diff-like style.Lines of interest are indicated with '-'.
- 'org' generates a report in the Org mode format of Emacs.
- 
- Note that not all semantic patches implement all modes. For easy use
--of Coccinelle, the default mode is "chain" which tries the previous
--modes in the order above until one succeeds.
-+of Coccinelle, the default mode is "report".
- 
--To make a report for every semantic patch, run the following command:
-+Two other modes provide some common combinations of these modes.
- 
--	make coccicheck MODE=report
-+'chain' tries the previous modes in the order above until one succeeds.
- 
--NB: The 'report' mode is the default one.
-+'rep+ctxt' runs successively the report mode and the context mode.
-+	   It should be used with the C option (described later)
-+	   which checks the code on a file basis.
- 
--To produce patches, run:
-+Examples:
-+	To make a report for every semantic patch, run the following command:
- 
--	make coccicheck MODE=patch
-+		make coccicheck MODE=report
-+
-+	To produce patches, run:
-+
-+		make coccicheck MODE=patch
- 
- 
- The coccicheck target applies every semantic patch available in the
-@@ -129,26 +135,33 @@ To check only newly edited code, use the value 2 for the C flag, i.e.
- 
-     make C=2 CHECK="scripts/coccicheck"
- 
-+In these modes, which works on a file basis, there is no information
-+about semantic patches displayed, and no commit message proposed.
-+
- This runs every semantic patch in scripts/coccinelle by default. The
- COCCI variable may additionally be used to only apply a single
- semantic patch as shown in the previous section.
- 
--The "chain" mode is the default. You can select another one with the
-+The "report" mode is the default. You can select another one with the
- MODE variable explained above.
- 
--In this mode, there is no information about semantic patches
--displayed, and no commit message proposed.
--
-  Additional flags
- ~~~~~~~~~~~~~~~~~~
- 
- Additional flags can be passed to spatch through the SPFLAGS
- variable.
- 
--    make SPFLAGS=--use_glimpse coccicheck
-+    make SPFLAGS=--use-glimpse coccicheck
-+    make SPFLAGS=--use-idutils coccicheck
- 
- See spatch --help to learn more about spatch options.
- 
-+Note that the '--use-glimpse' and '--use-idutils' options
-+require external tools for indexing the code. None of them is
-+thus active by default. However, by indexing the code with
-+one of these tools, and according to the cocci file used,
-+spatch could proceed the entire code base more quickly.
-+
-  Proposing new semantic patches
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
--- 
-1.7.9.5
-
+cheers,
+-roger
