@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965460Ab3FTMDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:03:46 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:27107 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965372Ab3FTMDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:03:23 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Stephen Warren <swarren@nvidia.com>,
-        Michal Marek <mmarek@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kbuild@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: [PATCH 1/7] metag: add <dt-bindings/> symlink
-Date: Thu, 20 Jun 2013 13:02:32 +0100
-Message-ID: <1371729758-10196-2-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
-References: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com>
+	id S965498Ab3FTMDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:03:51 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:25503 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965372Ab3FTMDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:03:49 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C2EF71.4010308@asianux.com>
+Date: Thu, 20 Jun 2013 20:02:57 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_06_20_13_03_19
+To: Thomas Gleixner <tglx@linutronix.de>, "'Jiri Kosina'" <trivial@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
+ so save one instruction, simpler and easier for readers.
+References: <51C2E6F9.80107@asianux.com>
+In-Reply-To: <51C2E6F9.80107@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add symlink to include/dt-bindings from arch/metag/boot/dts/include/ to
-match the one in arch/arm/... (see the commit below) so that
-preprocessed device tree files can include various useful constant
-definitions.
 
-Commit c58299aa87544a590c62bda0bf52b69fa56cb8d5 ("kbuild: create an
-"include chroot" for DT bindings") merged in v3.10-rc1.
+Oh, sorry, maybe it is a trivial patch, also need send to
+trivial@kernel.org.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kbuild@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
----
- arch/metag/boot/dts/include/dt-bindings | 1 +
- 1 file changed, 1 insertion(+)
- create mode 120000 arch/metag/boot/dts/include/dt-bindings
 
-diff --git a/arch/metag/boot/dts/include/dt-bindings b/arch/metag/boot/dts/include/dt-bindings
-new file mode 120000
-index 0000000..08c00e4
---- /dev/null
-+++ b/arch/metag/boot/dts/include/dt-bindings
-@@ -0,0 +1 @@
-+../../../../../include/dt-bindings
-\ No newline at end of file
+On 06/20/2013 07:26 PM, Chen Gang wrote:
+> 
+> Since copy_to_user() will check 'value', we do not need check it outside
+> again,  so can save one comparing instruction at least.
+> 
+> Also can let code simpler and easier for readers: if checking parameter
+> 'value', it will easily lead readers to think about why not return
+> -EINVAL instead of -EFAULT, when checking parameter failed.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/itimer.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/itimer.c b/kernel/itimer.c
+> index 8d262b4..3b12271 100644
+> --- a/kernel/itimer.c
+> +++ b/kernel/itimer.c
+> @@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
+>  
+>  SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
+>  {
+> -	int error = -EFAULT;
+> +	int error;
+>  	struct itimerval get_buffer;
+>  
+> -	if (value) {
+> -		error = do_getitimer(which, &get_buffer);
+> -		if (!error &&
+> -		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+> -			error = -EFAULT;
+> -	}
+> +	error = do_getitimer(which, &get_buffer);
+> +	if (!error &&
+> +	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+> +		error = -EFAULT;
+> +
+>  	return error;
+>  }
+>  
+> 
+
+
 -- 
-1.8.1.2
+Chen Gang
 
-
+Asianux Corporation
