@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab3FTNmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:42:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33228 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889Ab3FTNmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:42:07 -0400
-Date: Thu, 20 Jun 2013 15:42:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/itimer.c: beautify code, not need check 'value',
- so save one instruction, simpler and easier for readers.
-In-Reply-To: <51C2E6F9.80107@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de>
-References: <51C2E6F9.80107@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S965566Ab3FTNqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:46:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965461Ab3FTNqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 09:46:14 -0400
+Date: Thu, 20 Jun 2013 15:41:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jan Kratochvil <jan.kratochvil@redhat.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: [PATCH] ptrace: make PTRACE_DETACH work on non-stopped tracees.
+Message-ID: <20130620134157.GA32253@redhat.com>
+References: <1371654936-31742-1-git-send-email-dvlasenk@redhat.com> <20130619163234.GA12029@redhat.com> <51C23C7E.8000400@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C23C7E.8000400@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Chen Gang wrote:
+On 06/20, Denys Vlasenko wrote:
+>
+> On 06/19/2013 06:32 PM, Oleg Nesterov wrote:
+> > On 06/19, Denys Vlasenko wrote:
+> >>
+> >> This is a user-visible behavior change.
+> >> Do we really have to introduce a separate
+> >> PTRACE_NOT_STUPID_DETACH? I hope not.
+> >
+> > Oh, I think yes.
+> >
+> >> @@ -1062,7 +1060,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+> >>  	}
+> >>
+> >>  	ret = ptrace_check_attach(child, request == PTRACE_KILL ||
+> >> -				  request == PTRACE_INTERRUPT);
+> >> +				  request == PTRACE_INTERRUPT ||
+> >> +				  request == PTRACE_DETACH);
+> >
+> > There doesn't look right.
+> >
+> > For example ptrace_disable(). See the comment set_task_blockstep().
+>
+> I see the comment. I think it implies that TF-induced debug
+> interrupt may happen on the running task after it is detached,
+> which will result in SIGTRAP being sent to it.
 
-kernel/itimer.c: beautify code, not need check 'value', so 
-          save one instruction, simpler and easier for readers.
+No. The comment means that set/clear of TIF_BLOCKSTEP is not safe unless
+the tracee can't run. If we race with __switch_to() we can set the wrong
+debugctlmsr.
 
-That's an essay and not a proper subject line for a patch. 
+> If so, do we have the same problem if tracer exits
+> and implicit detach is performed?
 
-See Documentation/SubmittingPatches and look at the other patch
-subject lines in git log.
+No. If the tracer exits it doesn't do the "cleanups" like ptrace_disable().
+That is why this potentially leaves the tracee in the inconsistent state.
 
-> Since copy_to_user() will check 'value', we do not need check it outside
-> again,  so can save one comparing instruction at least.
+Oleg.
 
-copy_to_user() does not check value, it will fault due to a NULL
-pointer dereference and execute the exception fixup. 
-
-That's a massive difference which wants to be documented and argued
-why it's ok to do so.
-
-Aside of that, please line break the changelog lines around 78
-characters.
-
-> Also can let code simpler and easier for readers: if checking parameter
-> 'value', it will easily lead readers to think about why not return
-> -EINVAL instead of -EFAULT, when checking parameter failed.
-
-So you are seriously claiming, that the check for !value makes people
-think that the return value should be -EINVAL?
-
-That's hillarious.
-
-Can you please start to think about, why YOU thought that returning
--EINVAL is the proper return value for that case?
-
-Simply because in your rush to submit patches according to your self
-defined contribution plan, you fail to sit down and carefully study
-the code and the according documentation (man page). Instead of that
-you see some random snippet of code which looks wrong to you and you
-send out patches without care. After someone points out your failure
-you claim that the code is misleading to readers.
-
-The code is not misleading to careful readers, it's only misleading to
-sloppy readers.
-
-And I'm neither accepting sloppy patches nor am I accepting sloppy
-changelogs which make false claims.
-
-Thanks,
-
-	tglx
