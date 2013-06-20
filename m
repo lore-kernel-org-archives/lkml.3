@@ -1,68 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab3FTU5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 16:57:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39201 "EHLO mail.skyhub.de"
+	id S1161038Ab3FTVBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:01:17 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45559 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab3FTU5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 16:57:35 -0400
-Date: Thu, 20 Jun 2013 22:57:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH v2 1/2] mce: acpi/apei: Honour Firmware First for MCA
- banks listed in APEI HEST CMC
-Message-ID: <20130620205726.GA20863@pd.tnic>
-References: <20130619175438.2852.93449.stgit@localhost.localdomain>
- <20130620073943.GE32694@pd.tnic>
- <51C3531D.3000600@linux.vnet.ibm.com>
- <20130620192928.GD19877@pd.tnic>
- <51C36288.4050405@linux.vnet.ibm.com>
+	id S1757696Ab3FTVBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:01:15 -0400
+Date: Thu, 20 Jun 2013 14:01:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [RFC PATCH 2/4] sched: Consolidate nohz cpu load prelude code
+Message-ID: <20130620210107.GM4082@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1371761141-25386-1-git-send-email-fweisbec@gmail.com>
+ <1371761141-25386-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51C36288.4050405@linux.vnet.ibm.com>
+In-Reply-To: <1371761141-25386-3-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062021-5806-0000-0000-000021CF560E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 01:44:00AM +0530, Naveen N. Rao wrote:
-> This won't work across cpu offline/online, right? We will end up
-> _not_ enabling CMCI on certain banks where we should have.
-
-Huh, don't understand. cmci_discover runs on each CPU. After you've run
-hest_parse_cmc early during boot and cleared the mce_poll_banks bits,
-nothing will set them again so CPU hotplug doesn't matter...
-
-> Another thing: for hest_parse_cmc(), does the below look good?
+On Thu, Jun 20, 2013 at 10:45:39PM +0200, Frederic Weisbecker wrote:
+> Gather the common code that computes the pending idle cpu load
+> to decay.
 > 
->         cmc = (struct acpi_hest_ia_corrected *)hest_hdr;
->         if (!cmc->enabled)
->                 return 0;
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Alex Shi <alex.shi@intel.com>
+> Cc: Paul Turner <pjt@google.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/proc.c |   40 ++++++++++++++--------------------------
+>  1 files changed, 14 insertions(+), 26 deletions(-)
 > 
-> #define ACPI_HEST_PARSING_DONE 1
->         /*
->          * We expect HEST to provide a list of MC banks that
->          * report errors in firmware first mode.
->          */
->         if (!(cmc->flags & ACPI_HEST_FIRMWARE_FIRST) ||
-> !cmc->num_hardware_banks)
->                 return ACPI_HEST_PARSING_DONE;
+> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+> index bb3a6a0..030528a 100644
+> --- a/kernel/sched/proc.c
+> +++ b/kernel/sched/proc.c
+> @@ -470,11 +470,14 @@ decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
+>   * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+>   * every tick. We fix it up based on jiffies.
+>   */
+> -static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+> -			      unsigned long pending_updates)
+> +static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
+>  {
+> +	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+
+Isn't jiffies declared volatile?  (Looks that way to me.)  If so, there
+is no need for ACCESS_ONCE().
+
+> +	unsigned long pending_updates;
+>  	int i, scale;
 > 
-> The return value doesn't really matter since we don't check it, but
-> returning an error looked like the wrong thing to do as well.
+> +	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+> +	this_rq->last_load_update_tick = curr_jiffies;
+>  	this_rq->nr_load_updates++;
+> 
+>  	/* Update our load: */
+> @@ -521,20 +524,15 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>   */
+>  void update_idle_cpu_load(struct rq *this_rq)
+>  {
+> -	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>  	unsigned long load = this_rq->load.weight;
+> -	unsigned long pending_updates;
+> 
+>  	/*
+>  	 * bail if there's load or we're actually up-to-date.
+>  	 */
+> -	if (load || curr_jiffies == this_rq->last_load_update_tick)
+> +	if (load || jiffies == this_rq->last_load_update_tick)
+>  		return;
+> 
+> -	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+> -	this_rq->last_load_update_tick = curr_jiffies;
+> -
+> -	__update_cpu_load(this_rq, load, pending_updates);
+> +	__update_cpu_load(this_rq, load);
+>  }
+> 
+>  /*
+> @@ -543,22 +541,16 @@ void update_idle_cpu_load(struct rq *this_rq)
+>  void update_cpu_load_nohz(void)
+>  {
+>  	struct rq *this_rq = this_rq();
+> -	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> -	unsigned long pending_updates;
+> 
+> -	if (curr_jiffies == this_rq->last_load_update_tick)
+> +	if (jiffies == this_rq->last_load_update_tick)
+>  		return;
+> 
+>  	raw_spin_lock(&this_rq->lock);
+> -	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+> -	if (pending_updates) {
+> -		this_rq->last_load_update_tick = curr_jiffies;
+> -		/*
+> -		 * We were idle, this means load 0, the current load might be
+> -		 * !0 due to remote wakeups and the sort.
+> -		 */
+> -		__update_cpu_load(this_rq, 0, pending_updates);
+> -	}
+> +	/*
+> +	 * We were idle, this means load 0, the current load might be
+> +	 * !0 due to remote wakeups and the sort.
+> +	 */
+> +	__update_cpu_load(this_rq, 0);
+>  	raw_spin_unlock(&this_rq->lock);
+>  }
+>  #endif /* CONFIG_NO_HZ */
+> @@ -568,11 +560,7 @@ void update_cpu_load_nohz(void)
+>   */
+>  void update_cpu_load_active(struct rq *this_rq)
+>  {
+> -	/*
+> -	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+> -	 */
+> -	this_rq->last_load_update_tick = jiffies;
+> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+> +	__update_cpu_load(this_rq, this_rq->load.weight);
+> 
+>  	calc_load_account_active(this_rq);
+>  }
+> -- 
+> 1.7.5.4
+> 
 
-I'd add a comment above the "return 1" statement to explain why I'm
-doing this. It is much more verbose even than a well-named macro :)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
