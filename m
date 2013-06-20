@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3FTHBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:01:07 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36492 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3FTHBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:01:06 -0400
-Message-ID: <51C2A8AA.5010902@gmail.com>
-Date: Thu, 20 Jun 2013 15:00:58 +0800
-From: xiaoming gao <gxm.linux.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: stephen@networkplumber.org, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net bridge: add null pointer check, fix panic
-References: <51C2710D.2060405@gmail.com> <51C2721B.9050603@gmail.com> <1371704129.3252.356.camel@edumazet-glaptop>
-In-Reply-To: <1371704129.3252.356.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+	id S1753999Ab3FTHBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:01:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58601 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab3FTHBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 03:01:50 -0400
+Message-ID: <1371711696.3944.13.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Jun 2013 17:01:36 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet said, at 2013-6-20 12:55:
-> On Thu, 2013-06-20 at 11:08 +0800, xiaoming gao wrote:
->> From: newtongao <newtongao@tencent.com>
->> Date: Wed, 19 Jun 2013 14:58:33 +0800
->> Subject: [PATCH] net bridge: add null pointer check,fix panic
->>
->> in kernel 3.0, br_port_get_rcu() may return NULL when network interface be deleting from bridge,
->> but in function br_handle_frame and br_handle_local_finish, the pointer didn't be checked before using,
->> so all br_port_get_rcu callers must do null check,or there occurs the null pointer panic.
->>
->> kernel 3.4 also has this bug,i have verified.
->> mainline kernel still did not  check br_port_get_rcu()'s NULL pointer, but i have not tested it yet.
-> 
-> Please check current version before sending a patch.
-> 
-> This was most probably fixed in commit 00cfec37484761a44
-> ("net: add a synchronize_net() in netdev_rx_handler_unregister()")
-> 
-> Thanks
-> 
-> 
-HI Eric
-the problem is as follow:
-br_del_if()-->del_nbp():
+Hi Linus !
 
-list_del_rcu(&p->list);
-dev->priv_flags &= ~IFF_BRIDGE_PORT;
+Please pull this regression fix into 3.10. We accidentally broke
+hugetlbfs on Freescale embedded processors which use a slightly
+different page table layout than our server processors.
 
------->at this point, the nic be deleting still have rx_handler , so , may in br_handle_frame()
------->br_port_exists() will return false,so br_get_port_rcu() will return NULL
------->so in br_handle_frame , there will be a null panic.
+Cheers,
+Ben.
 
-netdev_rx_handler_unregister(dev);
-synchronize_net();
+The following changes since commit c0691143dfe1d42ec9bd89de5921ccb6a27ea1b3:
+
+  mn10300: Fix include dependency in irqflags.h et al. (2013-06-19 06:29:54 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 8bbd9f04b7d982d1c6aeb5c08f5983b3d0b9e2fe:
+
+  powerpc: Fix bad pmd error with book3E config (2013-06-20 15:25:21 +1000)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc: Fix bad pmd error with book3E config
+
+ arch/powerpc/mm/hugetlbpage.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 
-i have checked commit 00cfec37484761a44, i think it didn't fix this bug..
-
-thanks.
