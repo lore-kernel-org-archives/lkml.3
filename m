@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422934Ab3FTVKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:10:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37723 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161047Ab3FTVH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161068Ab3FTVH5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Jun 2013 17:07:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37689 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758089Ab3FTVHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:07:52 -0400
 From: Joel A Fernandes <joelagnel@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Matt Porter <matt@ohporter.com>,
@@ -29,9 +29,9 @@ CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v12 09/11] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-Date: Thu, 20 Jun 2013 16:06:45 -0500
-Message-ID: <1371762407-24544-10-git-send-email-joelagnel@ti.com>
+Subject: [PATCH v12 07/11] ARM: davinci: Fix compiler warnings in devices-da8xx
+Date: Thu, 20 Jun 2013 16:06:43 -0500
+Message-ID: <1371762407-24544-8-git-send-email-joelagnel@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
 References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
@@ -41,120 +41,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mporter@ti.com>
+From: Joel A Fernandes <agnel.joel@gmail.com>
 
-Convert dmaengine channel requests to use
-dma_request_slave_channel_compat(). This supports the DT case of
-platforms requiring channel selection from either the OMAP DMA or
-the EDMA engine. AM33xx only boots from DT and is the only user
-implementing EDMA so in the !DT case we can default to the OMAP DMA
-filter.
+queue_priority_mapping and queue_tc_mapping are no longer
+const anymore generating a bunch of warnings in devices-da8xx.
+Fix them by not doing constant assignments.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
 ---
- drivers/spi/spi-omap2-mcspi.c |   64 ++++++++++++++++++++++++++++-------------
- 1 file changed, 44 insertions(+), 20 deletions(-)
+ arch/arm/mach-davinci/devices-da8xx.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 86d2158..ca4ab78 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -102,6 +102,9 @@ struct omap2_mcspi_dma {
- 
- 	struct completion dma_tx_completion;
- 	struct completion dma_rx_completion;
-+
-+	char dma_rx_ch_name[14];
-+	char dma_tx_ch_name[14];
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index bf57252..eb254fe 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -105,27 +105,27 @@ struct platform_device da8xx_serial_device = {
+ 	},
  };
  
- /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
-@@ -830,12 +833,20 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 	sig = mcspi_dma->dma_rx_sync_dev;
--	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+
-+	mcspi_dma->dma_rx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_rx_ch_name);
- 	if (!mcspi_dma->dma_rx)
- 		goto no_dma;
+-static const s8 da8xx_queue_tc_mapping[][2] = {
++static s8 da8xx_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+ 	{1, 1},
+ 	{-1, -1}
+ };
  
- 	sig = mcspi_dma->dma_tx_sync_dev;
--	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+	mcspi_dma->dma_tx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_tx_ch_name);
-+
- 	if (!mcspi_dma->dma_tx) {
- 		dma_release_channel(mcspi_dma->dma_rx);
- 		mcspi_dma->dma_rx = NULL;
-@@ -1256,29 +1267,42 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
- 		goto free_master;
+-static const s8 da8xx_queue_priority_mapping[][2] = {
++static s8 da8xx_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+ 	{1, 7},
+ 	{-1, -1}
+ };
  
- 	for (i = 0; i < master->num_chipselect; i++) {
--		char dma_ch_name[14];
-+		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
-+		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
- 		struct resource *dma_res;
+-static const s8 da850_queue_tc_mapping[][2] = {
++static s8 da850_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+ 	{-1, -1}
+ };
  
--		sprintf(dma_ch_name, "rx%d", i);
--		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
--		if (!dma_res) {
--			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
--			status = -ENODEV;
--			break;
--		}
-+		sprintf(dma_rx_ch_name, "rx%d", i);
-+		if (!pdev->dev.of_node) {
-+			dma_res =
-+				platform_get_resource_byname(pdev,
-+							     IORESOURCE_DMA,
-+							     dma_rx_ch_name);
-+			if (!dma_res) {
-+				dev_dbg(&pdev->dev,
-+					"cannot get DMA RX channel\n");
-+				status = -ENODEV;
-+				break;
-+			}
- 
--		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
--		sprintf(dma_ch_name, "tx%d", i);
--		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
--		if (!dma_res) {
--			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
--			status = -ENODEV;
--			break;
-+			mcspi->dma_channels[i].dma_rx_sync_dev =
-+				dma_res->start;
- 		}
-+		sprintf(dma_tx_ch_name, "tx%d", i);
-+		if (!pdev->dev.of_node) {
-+			dma_res =
-+				platform_get_resource_byname(pdev,
-+							     IORESOURCE_DMA,
-+							     dma_tx_ch_name);
-+			if (!dma_res) {
-+				dev_dbg(&pdev->dev,
-+					"cannot get DMA TX channel\n");
-+				status = -ENODEV;
-+				break;
-+			}
- 
--		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
-+			mcspi->dma_channels[i].dma_tx_sync_dev =
-+				dma_res->start;
-+		}
- 	}
- 
- 	if (status < 0)
+-static const s8 da850_queue_priority_mapping[][2] = {
++static s8 da850_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+ 	{-1, -1}
 -- 
 1.7.9.5
 
