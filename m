@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030351Ab3FTP0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:26:45 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:55910 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030221Ab3FTP0o (ORCPT
+	id S1030304Ab3FTOtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:49:03 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:44761 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030276Ab3FTOs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:26:44 -0400
-Date: Thu, 20 Jun 2013 17:26:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, jolsa@redhat.com,
-        namhyung@kernel.org, eranian@google.com
-Subject: Re: [RFC PATCH 4/4] perf: add timehist command
-Message-ID: <20130620152640.GC17638@gmail.com>
-References: <1370643734-9579-1-git-send-email-dsahern@gmail.com>
- <1370643734-9579-5-git-send-email-dsahern@gmail.com>
- <20130620104656.GA11256@gmail.com>
- <51C318F6.2030301@gmail.com>
+	Thu, 20 Jun 2013 10:48:59 -0400
+Date: Thu, 20 Jun 2013 14:48:56 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, roland@kernel.org, tglx@linutronix.de,
+        kosaki.motohiro@gmail.com, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-rdma@vger.kernel.org
+Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
+In-Reply-To: <20130620114943.GB12125@gmail.com>
+Message-ID: <0000013f620f4699-f484f28e-3d12-4560-adfe-3b00af995fd9-000000@email.amazonses.com>
+References: <20130606124351.GZ27176@twins.programming.kicks-ass.net> <0000013f1ad00ec0-9574a936-3a75-4ccc-a84c-4a12a7ea106e-000000@email.amazonses.com> <20130607110344.GA27176@twins.programming.kicks-ass.net> <0000013f1f1f79d1-2cf8cb8c-7e63-4e83-9f2b-7acc0e0638a1-000000@email.amazonses.com>
+ <20130617110832.GP3204@twins.programming.kicks-ass.net> <0000013f536c60ee-9a1ca9da-b798-416a-a32e-c896813d3bac-000000@email.amazonses.com> <20130620114943.GB12125@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51C318F6.2030301@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.06.20-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Jun 2013, Ingo Molnar wrote:
 
-* David Ahern <dsahern@gmail.com> wrote:
+> Peter clearly pointed it out that in the perf case it's user-space that
+> initiates the pinned memory mapping which is resource-controlled via
+> RLIMIT_MEMLOCK - and this was implemented that way before your commit
+> broke the code.
 
-> On 6/20/13 4:46 AM, Ingo Molnar wrote:
-> >Looks very useful!
-> >
-> >This is the kind of analysis I thought 'perf sched' might one day end up
-> >doing.
-> >
-> >Do you plan to submit it non-RFC, to be merged?
-> 
-> Yes. Hopefully I can find time to work on it over the next 2 months
-> for 3.12, 3.13 at the latest.
-> 
-> >
-> >Your tool could take over the somewhat stale 'perf sched' command as well
-> >btw., while possibly carrying over some of the perf sched features like
-> >'replay'.
-> >
-> >'perf sched record' enough events to support the ones you need:
-> >
-> >>>        perf record -e cs -c 1 -ag -- <workload>
-> >plus:
-> >
-> >  'perf sched sum[mary]'       # show the summary
-> >  'perf sched tree'            # could show the tree.
-> >  'perf sched hist[ogram]'     # would show the histogram
-> >
-> >i.e. feel free to take over 'perf sched' to suit your 'timehist' workflow
-> >and logic. As the main (and somewhat overworked) author of 'perf sched' I
-> >have no problem with you taking it over, at all.
-> 
-> It should be part of perf-sched. It is not at the moment for a number of 
-> (mostly shortcut) reasons. For the next iteration I will look at 
-> combining it with perf-sched and in the process I will go through the 
-> existing code for perf-sched.
+There is no way that user space can initiate a page pin right now. Perf is
+pinning the page from the kernel. Similarly the IB subsystem pins memory
+meeded for device I/O.
 
-If it's easier you could start by using your code as the starting point 
-and add back perf sched features after that. I find your tool 
-fundamentally more valuable because it's in active use.
+> You seem to be hell bent on defining 'memory pinning' only as "the thing
+> done via the mlock*() system calls", but that is a nonsensical distinction
+> that actively and incorrectly ignores other system calls that can and do
+> pin memory legitimately.
 
-> As an FYI I also have a daemon that provides the functionality in a 
-> flight recorder mode but with data dumped only when requested. Future 
-> project to integrate that with perf. ;-)
+Nope. I have said that Memory pinning is done by increasing the refcount
+which is different from mlock which sets a page flag.
 
-:-)
+I have consistently argued that these are two different things. And I am
+a
+bit surprised that this point has not been understood after all these
+repetitions.
 
-Thanks,
+Memory pinning these days is done as a side effect of kernel / driver
+needs. I.e. the memory registration done through the IB subsystem and
+elsewhere.
 
-	Ingo
+> int can_do_mlock(void)
+> {
+>         if (capable(CAP_IPC_LOCK))
+>                 return 1;
+>         if (rlimit(RLIMIT_MEMLOCK) != 0)
+>                 return 1;
+>         return 0;
+> }
+> EXPORT_SYMBOL(can_do_mlock);
+>
+> Q.E.D.
+
+Argh. Just checked the apps. True. They did set the rlimit to 0 at some
+point in order to make this work. Then they monitor the number of locked
+pages and create alerts so that action can be taking if a system uses too
+many mlocked pages.
