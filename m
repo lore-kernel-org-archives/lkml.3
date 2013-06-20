@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab3FTVHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:07:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37387 "EHLO comal.ext.ti.com"
+	id S965670Ab3FTVOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:14:25 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2825 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758085Ab3FTVHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 17:07:52 -0400
-From: Joel A Fernandes <joelagnel@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>
-CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Joel A Fernandes <joelagnel@ti.com>
-Subject: [PATCH v12 06/11] da8xx: config: Enable MMC and FS options
-Date: Thu, 20 Jun 2013 16:06:42 -0500
-Message-ID: <1371762407-24544-7-git-send-email-joelagnel@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com>
+	id S965398Ab3FTVOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:14:24 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51C370A5.3020900@broadcom.com>
+Date: Thu, 20 Jun 2013 14:14:13 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510
+ Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Matt Porter" <matt.porter@linaro.org>
+cc: "Arnd Bergmann" <arnd@arndb.de>, "Olof Johansson" <olof@lixom.net>,
+        "Linux ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Linaro Patches" <patches@linaro.org>
+Subject: Re: [PATCH] ARM: dts: bcm281xx: change comment to C89 style
+References: <1370976358-18014-1-git-send-email-matt.porter@linaro.org>
+In-Reply-To: <1370976358-18014-1-git-send-email-matt.porter@linaro.org>
+X-WSS-ID: 7DDDB0C61R034567675-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joel A Fernandes <agnel.joel@gmail.com>
+On 13-06-11 11:45 AM, Matt Porter wrote:
+> CodingStyle does not allow C99 style comments. Since the
+> dts files live in the kernel for now, make this compliant.
+>
+> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> Acked-by: Christian Daudt <csd@broadcom.com>
+> ---
+>   arch/arm/boot/dts/bcm11351.dtsi |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+> index 824bebe..0651a72 100644
+> --- a/arch/arm/boot/dts/bcm11351.dtsi
+> +++ b/arch/arm/boot/dts/bcm11351.dtsi
+> @@ -36,7 +36,7 @@
+>   
+>   	smc@0x3404c000 {
+>   		compatible = "bcm,bcm11351-smc", "bcm,kona-smc";
+> -		reg = <0x3404c000 0x400>; //1 KiB in SRAM
+> +		reg = <0x3404c000 0x400>; /* 1 KiB in SRAM */
+>   	};
+>   
+>   	uart@3e000000 {
+applied for for-3.11/dt
+  thanks,
+    csd
 
-Required to get OMAP-L1 EVM access MMC and mount rootfs
-
-Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
----
- arch/arm/configs/da8xx_omapl_defconfig |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/configs/da8xx_omapl_defconfig b/arch/arm/configs/da8xx_omapl_defconfig
-index 7c86813..35919ca 100644
---- a/arch/arm/configs/da8xx_omapl_defconfig
-+++ b/arch/arm/configs/da8xx_omapl_defconfig
-@@ -104,6 +104,7 @@ CONFIG_SND_DAVINCI_SOC=m
- # CONFIG_USB_SUPPORT is not set
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
-+CONFIG_EXT4_FS=y
- CONFIG_XFS_FS=m
- CONFIG_INOTIFY=y
- CONFIG_AUTOFS4_FS=m
-@@ -135,3 +136,5 @@ CONFIG_DEBUG_ERRORS=y
- # CONFIG_CRYPTO_HW is not set
- CONFIG_CRC_CCITT=m
- CONFIG_CRC_T10DIF=m
-+CONFIG_MMC=y
-+CONFIG_MMC_DAVINCI=y
--- 
-1.7.9.5
 
