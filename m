@@ -1,124 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750943Ab3FTEJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 00:09:59 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65354 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab3FTEJ6 (ORCPT
+	id S1751097Ab3FTEPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 00:15:05 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:51293 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab3FTEPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 00:09:58 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 19 Jun 2013 21:10:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Adding support for ARINC429 into the Linux kernel
-Message-ID: <20130620041001.GA1099@roeck-us.net>
-References: <20130619202954.GA5594@roeck-us.net>
- <201306192345.31106.arnd@arndb.de>
+	Thu, 20 Jun 2013 00:15:03 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C28193.3080106@asianux.com>
+Date: Thu, 20 Jun 2013 12:14:11 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201306192345.31106.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
+ + local_irq_save, especially when CONFIG_LOCKDEP not defined
+References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C182EE.5070500@asianux.com> <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 11:45:30PM +0200, Arnd Bergmann wrote:
-> On Wednesday 19 June 2013, Guenter Roeck wrote:
-> > I have been asked to explore options for adding ARINC 429 support [1]
-> > into the Linux kernel, primarily to support devices from Holt Integrated
-> > Circuits [2] (the request is unrelated to the chip manufacturer).
-> > 
-> > ARINC429 is a protocol which is widely used in commercial airplanes. 
-> > 
-> > There are various chips supporting this protocol available, as well as
-> > out-of-tree Linux support. The drivers I have looked at implement it
-> > either as character device or misc device and typically pass raw receive
-> > data to userspace.
-> > 
-> > I can see a number of options for going forward:
-> > 1) Implement as character device (or possibly misc device) and pass
-> >    raw data to/from user space
-> >    1a) Just implement a driver for the specific chips
-> >    2b) Implement some kind of generic infrastructure
-> > 2) Implement as network driver with a new address family, similar to,
-> >    say, AF_CAN.
-> > 
-> > Any thoughts / suggestions which approach would be better and, most of all,
-> > which approach might have a better chance of being accepted upstream ?
+On 06/19/2013 06:49 PM, Thomas Gleixner wrote:
+>> > But I feel, they are not semantically the same.
+> This is not about feelings. This is about facts.
+>  
+
+Excuse me, my English is not quite well, the reason why I use 'feel' is
+to want to say with more polite.
+
+Maybe it is not the correct word for saying with more polite.
+
+
+>> > if CONFIG_LOCKDEP is not defined, spin_lock_irqsave() should call
+>> > do_raw_spin_lock_flags(), not call LOCK_CONTENDED().
+> That is what the code already does:
 > 
-> Since this is a standard protocol, a driver that just supports a specific
-> chip (1a) would be the worst option IMHO.
+> #ifdef CONFIG_LOCKDEP
+>         LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+> #else
+> 	do_raw_spin_lock_flags(lock, &flags);
+> #endif
 > 
-It would not be optimal, but straightforward and easy to implement.
-
-> A character device and a network protocol both sound reasonable, but
-> it really depends on the use cases:
+> If LOCKDEP is not defined it calls do_raw_spin_lock_flags(). Where is
+> your point?
 > 
-> * Does Linux act both as the sender and receiver, or do you want to
->   support just one of the cases (which?)?
+
+Yes, it is my point.
+
+
+> And the reason why the LOCKDEP case and the !LOCKDEP case are
+> different is explained in the comment above that code. And both behave
+> the same way versus the spinlock semantics.
 > 
-Both, depending on the use case. Some of those are
-
-1) ACARS -
-   http://en.wikipedia.org/wiki/Aircraft_Communications_Addressing_and_Reporting_System
-   Rx and tx
-
-2) CIDS - Cabin Intercommunication Data System
-   Rx and tx
-
-3) IRS (Inertial Reference System) and FMS (Flight Management System)
-   Rx only
-
-> * Would you expect to always just transfer a single 32-bit word, or
->   are there larger chunks of logically contigous data? What are typical
->   and maximum sizes for those?
+> We must do this because some architectures implement
+> do_raw_spin_lock_flags() in the following way:
 > 
-The raw protocol is chunks of 32 bit (Logical Data Unit, or LDU), which
-the protocol refers to as 'physical layer'. Broadcast messages such as
-those from IRS and FMS use this format.
-
-There is also bit-oriented data. The two protocols I am aware of are "Bit-
-Oriented File Transfer Protocol", and "Bit-Oriented Media Access Control
-(MAC) Protocol", which is supposed to be IEEE 802 compliant. Packet size
-is 3 to 255 LDUs for FTP and 3 to 1023 LDUs for the MAC protocol.
-Both include a SOF and EOF marker, so the actual data size would be 1-253
-or 1-1021 LDUs. Each LDU carries 20 bit, and partial words are possible
-in 4-bit increments, which means the data transfer size is 4 to 20,420 bit
-(2,552.5 bytes) for the MAC protocol, and 4 to 5,060 bit (632.5 bytes)
-for FTP.
-
-Bit-oriented data is commonly used for ACARS and CIDS, where bi-directional
-communication is used.
-
-Details are available in Specification ARINC-429P3-19-2009, sections 2.5 and 3.0.
-You should be able to find it on the web if you are interested.
-
-> * Would you expect the kernel to filter for specific data on the
->   receiver side?
+> do_raw_spin_lock_flags(l, flags)
+> {
+> 	while (!arch_spin_trylock(l)) {
+> 	      if (!irq_disabled_flags(flags)) {
+> 	      	      arch_irq_restore(flags);
+> 		      cpu_relax();
+> 		      arch_irq_disable();
+> 	      }
+> 	}
+> }
 > 
-Each LDU has an 8-bit label. Applications listen for specific sets of labels.
-The chips have a configurable hardware filter; if there are not enough hardware
-filters, the kernel would have to do the filtering. Either case, the kernel
-has to select protocol receivers (sockets or open file descriptors) based
-on bind/registration information. For example, one aplication may register
-for label 1,3,5, and 7, and another for labels 1, 3, 12, and 14. So there can
-be overlaps.
 
-> * Would a user space receiver want to always see all data from one
->   sender, or only the latest word?
+For mn10300 and sparc64 (not space32), it doesn't like your demo above.
+
+For powerpc and s390, it seems your demo above (although not quite
+precious)
+
+For x86 and parisc, it like your demo above.
+
+And another will be no different between LOCKDEP and !LOCKDEP
+
+
+> This is done to limit irq disabled time while we wait for the
+> lock. Though most architectures implement it as:
 > 
-The receiver would want to receive all data for the labels it has registered
-for.
+> 	while (!arch_spin_trylock(l))
+> 	      cpu_relax();
+> 
 
-Hope this helps. Note that, at least as first step, I only envision to handle
-4-byte units and pass those to/from user-space. Implementing the two link layer
-protocols would probably make sense, especially with the socket interface,
-but that would be a second step.
+Yes.
 
-Thanks,
-Guenter
+
+> In the lockdep case we CANNOT reenable interrupts in the spinning code
+> and therefor we use the 
+> 
+> 	while (!arch_spin_trylock(l))
+> 	      cpu_relax();
+> 
+> variant.
+> 
+> And again. Both are semantically the same.
+> 
+
+I am not quite sure about mn10300 and sparc64.
+
+Could you be sure about it ?
+
+At least, for mn10300 and sparc64, they have no duty to make sure of
+our using ways to be correct.
+
+
+> spin_lock_irqsave() semantics are:
+> 
+> The function returns with the lock acquired, interrupts and preemption
+> disabled. Both variants do that.
+> 
+> The internal details whether an architecture reenables interrupts
+> while spinning on a contended lock or not are completely irrelevant
+> and do not affect the correctness of the code.
+
+For API definition, it has no duty to make it correct if the user call
+them with informal ways, especially, the implementation is related with
+various architectures.
+
+At last if it is really correct now, it is still dangerous (the API has
+no duty to let it always correct).
+
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
