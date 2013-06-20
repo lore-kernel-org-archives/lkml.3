@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab3FTH6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:58:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab3FTH6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:58:31 -0400
-Date: Thu, 20 Jun 2013 10:59:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH] virtio-pci: fix leaks of msix_affinity_masks
-Message-ID: <20130620075907.GA23621@redhat.com>
-References: <20130619182809.GC15017@redhat.com>
- <1371706610-12028-1-git-send-email-avagin@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371706610-12028-1-git-send-email-avagin@openvz.org>
+	id S1755292Ab3FTIAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:00:21 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46046 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab3FTIAS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:00:18 -0400
+Date: Thu, 20 Jun 2013 10:00:13 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: Re: [PATCH V6 3/3] ARM: dts: Add pcie controller node for Samsung
+ EXYNOS5440 SoC
+Message-ID: <20130620100013.6000458f@skate>
+In-Reply-To: <00c301ce6d8b$d198b210$74ca1630$@samsung.com>
+References: <00c201ce6d85$83b072a0$8b1157e0$@samsung.com>
+	<20130620094835.3f1f34c2@skate>
+	<00c301ce6d8b$d198b210$74ca1630$@samsung.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 09:36:50AM +0400, Andrey Vagin wrote:
-> From: Andrew Vagin <avagin@openvz.org>
-> 
-> vp_dev->msix_vectors should be initialized before allocating
-> msix_affinity_masks, otherwise vp_free_vectors will not free these
-> objects.
-> 
-> unreferenced object 0xffff88010f969d88 (size 512):
->   comm "systemd-udevd", pid 158, jiffies 4294673645 (age 80.545s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->   backtrace:
->     [<ffffffff816e455e>] kmemleak_alloc+0x5e/0xc0
->     [<ffffffff811aa7f1>] kmem_cache_alloc_node_trace+0x141/0x2c0
->     [<ffffffff8133ba23>] alloc_cpumask_var_node+0x23/0x80
->     [<ffffffff8133ba8e>] alloc_cpumask_var+0xe/0x10
->     [<ffffffff813fdb3d>] vp_try_to_find_vqs+0x25d/0x810
->     [<ffffffff813fe171>] vp_find_vqs+0x81/0xb0
->     [<ffffffffa00d2a05>] init_vqs+0x85/0x120 [virtio_balloon]
->     [<ffffffffa00d2c29>] virtballoon_probe+0xf9/0x1a0 [virtio_balloon]
->     [<ffffffff813fb61e>] virtio_dev_probe+0xde/0x140
->     [<ffffffff814452b8>] driver_probe_device+0x98/0x3a0
->     [<ffffffff8144566b>] __driver_attach+0xab/0xb0
->     [<ffffffff814432f4>] bus_for_each_dev+0x94/0xb0
->     [<ffffffff81444f4e>] driver_attach+0x1e/0x20
->     [<ffffffff81444910>] bus_add_driver+0x200/0x280
->     [<ffffffff81445c14>] driver_register+0x74/0x160
->     [<ffffffff813fb7d0>] register_virtio_driver+0x20/0x40
-> 
-> v2: change msix_vectors uncoditionaly in vp_free_vectors
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Dear Jingoo Han,
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+On Thu, 20 Jun 2013 16:57:32 +0900, Jingoo Han wrote:
 
-> ---
->  drivers/virtio/virtio_pci.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > -	pinctrl {
+> > > +	pin_ctrl: pinctrl {
+> > >  		compatible = "samsung,exynos5440-pinctrl";
+> > 
+> > I know I'm nitpicking, but isn't this change completely unrelated to
+> > PCIe support?
 > 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index a7ce730..1aba255 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -289,9 +289,9 @@ static void vp_free_vectors(struct virtio_device *vdev)
->  
->  		pci_disable_msix(vp_dev->pci_dev);
->  		vp_dev->msix_enabled = 0;
-> -		vp_dev->msix_vectors = 0;
->  	}
->  
-> +	vp_dev->msix_vectors = 0;
->  	vp_dev->msix_used_vectors = 0;
->  	kfree(vp_dev->msix_names);
->  	vp_dev->msix_names = NULL;
-> @@ -309,6 +309,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->  	unsigned i, v;
->  	int err = -ENOMEM;
->  
-> +	vp_dev->msix_vectors = nvectors;
-> +
->  	vp_dev->msix_entries = kmalloc(nvectors * sizeof *vp_dev->msix_entries,
->  				       GFP_KERNEL);
->  	if (!vp_dev->msix_entries)
-> @@ -336,7 +338,6 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->  		err = -ENOSPC;
->  	if (err)
->  		goto error;
-> -	vp_dev->msix_vectors = nvectors;
->  	vp_dev->msix_enabled = 1;
->  
->  	/* Set the vector used for configuration */
-> -- 
-> 1.8.1.4
+> This change is related to PCIe support.
+> Without this, I cannot use gpio binding.
+> 
+> This change was guided by Thomas Abraham (Author of Samsung pinctrl).
+> Also, it was confirmed by Kukjin Kim (Maintainer of Samsung SoC).
+> 
+> Thank you for your caring. :)
+
+I mean, the change is fine for sure, but it should maybe part of a
+separate patch as it is more a fix than really the introduction of the
+PCIe controller node, as the patch title suggests. This would also for
+example allow this fix to be merged right now (for 3.11), regardless of
+what happens for the rest of your PCIe patches.
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
