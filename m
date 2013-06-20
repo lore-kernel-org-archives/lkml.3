@@ -1,302 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab3FTJEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:04:09 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:38391 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab3FTJEB (ORCPT
+	id S1757246Ab3FTJGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:06:11 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:54165 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab3FTJGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:04:01 -0400
+	Thu, 20 Jun 2013 05:06:07 -0400
+Date: Thu, 20 Jun 2013 11:06:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20130620090601.GA6812@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
-References: <1371716524-19370-1-git-send-email-cw00.choi@samsung.com>
-Date: Thu, 20 Jun 2013 14:33:59 +0530
-Message-ID: <CAKohponD5s6-g0X9rgsVt0U4RutfyXSQJRZP3vT7EuczgMMQ2Q@mail.gmail.com>
-Subject: Re: [PATCH v2] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 June 2013 13:52, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index 534fcb8..8a429b3 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -45,6 +45,12 @@ config CPU_FREQ_STAT_DETAILS
->
->           If in doubt, say N.
->
-> +config NR_CPU_LOAD_STORAGE
-> +       int "Maximum storage size to save CPU load (10-100)"
-> +       range 10 100
-> +       depends on CPU_FREQ_STAT_DETAILS
-> +       default "10"
+Linus,
 
-As we are adding it in debugfs, probably we can use
-CPU_FREQ_STAT instead of CPU_FREQ_STAT_DETAILS
+Please pull the latest sched-urgent-for-linus git tree from:
 
-@Rafael?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 2d53f47..cbaaff0 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -292,6 +292,10 @@ void __cpufreq_notify_transition(struct cpufreq_policy *policy,
->                 if (likely(policy) && likely(policy->cpu == freqs->cpu))
->                         policy->cur = freqs->new;
->                 break;
-> +       case CPUFREQ_LOADCHECK:
-> +               srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
-> +                               CPUFREQ_LOADCHECK, freqs);
-> +               break;
->         }
->  }
->  /**
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index dc9b72e..bca341b 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -90,6 +90,9 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
->         unsigned int max_load = 0;
->         unsigned int ignore_nice;
->         unsigned int j;
-> +#ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> +       struct cpufreq_freqs freq;
-> +#endif
->
->         if (dbs_data->cdata->governor == GOV_ONDEMAND)
->                 ignore_nice = od_tuners->ignore_nice;
-> @@ -144,11 +147,17 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
->                         idle_time += jiffies_to_usecs(cur_nice_jiffies);
->                 }
->
-> -               if (unlikely(!wall_time || wall_time < idle_time))
-> +               if (unlikely(!wall_time || wall_time < idle_time)) {
-> +#ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> +                       freq.load[j] = 0;
-> +#endif
->                         continue;
-> +               }
->
->                 load = 100 * (wall_time - idle_time) / wall_time;
-> -
-> +#ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> +               freq.load[j] = load;
-> +#endif
+   HEAD: 29bb9e5a75684106a37593ad75ec75ff8312731b tracing/context-tracking: Add preempt_schedule_context() for tracing
 
-Add blank line here
+Two smaller fixes - plus a context tracking tracing fix that is a bit 
+bigger.
 
->                 if (dbs_data->cdata->governor == GOV_ONDEMAND) {
->                         int freq_avg = __cpufreq_driver_getavg(policy, j);
->                         if (freq_avg <= 0)
-> @@ -161,6 +170,12 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
->                         max_load = load;
->         }
->
-> +#ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> +       freq.time = ktime_to_ms(ktime_get());
-> +       freq.old = freq.new = policy->cur;
-> +
-> +       cpufreq_notify_transition(policy, &freq, CPUFREQ_LOADCHECK);
-> +#endif
+ Thanks,
 
-Add blank line here
+	Ingo
 
->         dbs_data->cdata->gov_check_cpu(cpu, max_load);
->  }
->  EXPORT_SYMBOL_GPL(dbs_check_cpu);
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index fb65dec..289d675 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -12,6 +12,7 @@
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
->  #include <linux/cpu.h>
-> +#include <linux/debugfs.h>
->  #include <linux/sysfs.h>
->  #include <linux/cpufreq.h>
->  #include <linux/module.h>
-> @@ -23,6 +24,7 @@
->  #include <asm/cputime.h>
->
->  static spinlock_t cpufreq_stats_lock;
-> +static spinlock_t cpufreq_stats_lock_load_table;
+------------------>
+Andrew Jones (1):
+      sched/x86: Construct all sibling maps if smt
 
-Why need an extra lock?
+Steven Rostedt (1):
+      tracing/context-tracking: Add preempt_schedule_context() for tracing
 
->
->  struct cpufreq_stats {
->         unsigned int cpu;
-> @@ -35,6 +37,12 @@ struct cpufreq_stats {
->         unsigned int *freq_table;
->  #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
->         unsigned int *trans_table;
-> +
-> +       /* debugfs file for load_table */
-> +       struct cpufreq_freqs *load_table;
-> +       unsigned int load_last_index;
-> +       unsigned int load_max_index;
-> +       struct dentry *debugfs_cpufreq;
->  #endif
->  };
->
-> @@ -149,6 +157,134 @@ static struct attribute_group stats_attr_group = {
->         .name = "stats"
->  };
->
-> +#ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> +#define MAX_LINE_SIZE          255
-> +static ssize_t load_table_read(struct file *file, char __user *user_buf,
-> +                                       size_t count, loff_t *ppos)
-> +{
-> +       struct cpufreq_policy *policy = file->private_data;
-> +       struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-> +       struct cpufreq_freqs *load_table = stat->load_table;
-> +       unsigned int alloc_size_buf;
-> +       ssize_t len = 0;
-> +       char *buf;
-> +       int i, j, ret;
-> +
-> +       alloc_size_buf = MAX_LINE_SIZE * stat->load_max_index;
-> +       buf = kzalloc(alloc_size_buf, GFP_KERNEL);
-> +       if (!buf)
-> +               return 0;
-> +
-> +       spin_lock(&cpufreq_stats_lock_load_table);
-> +       len += sprintf(buf + len, "%10s %10s", "Time", "Frequency");
-> +       for (j = 0; j < NR_CPUS; j++)
-> +               len += sprintf(buf + len, " %3s%d", "cpu", j);
-> +       len += sprintf(buf + len, "\n");
-> +
-> +       i = stat->load_last_index;
-> +       do {
-> +               len += sprintf(buf + len, "%10lld %10d",
-> +                               load_table[i].time,
-> +                               load_table[i].old);
-> +
-> +               for (j = 0; j < NR_CPUS; j++)
+Vincent Guittot (1):
+      sched: Fix clear NOHZ_BALANCE_KICK
 
-Should we use, for_each_present_cpu() instead of NR_CPUS
-for both loops above?
 
-> +                       len += sprintf(buf + len, " %4d",
-> +                                       load_table[i].load[j]);
-> +               len += sprintf(buf + len, "\n");
-> +
-> +               if (++i == stat->load_max_index)
-> +                       i = 0;
-> +       } while (i != stat->load_last_index);
-> +       spin_unlock(&cpufreq_stats_lock_load_table);
-> +
-> +       ret = simple_read_from_buffer(user_buf, count, ppos, buf, len);
-> +       kfree(buf);
-> +
-> +       return ret;
-> +}
-> +
-> +static const struct file_operations load_table_fops = {
-> +       .read           = load_table_read,
-> +       .open           = simple_open,
-> +       .llseek         = no_llseek,
-> +};
-> +
-> +static void cpufreq_stats_store_load_table(struct cpufreq_freqs *freq)
-> +{
-> +       struct cpufreq_stats *stat;
-> +       int i, last_index;
-> +
-> +       stat = per_cpu(cpufreq_stats_table, freq->cpu);
-> +       if (!stat)
-> +               return;
-> +
-> +       spin_lock(&cpufreq_stats_lock_load_table);
-> +       last_index = stat->load_last_index;
-> +       stat->load_table[last_index].old = freq->old;
+ arch/x86/kernel/smpboot.c |  8 ++++----
+ include/linux/preempt.h   | 18 +++++++++++++++++-
+ kernel/context_tracking.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c       | 21 +++++++++++++++++----
+ 4 files changed, 78 insertions(+), 9 deletions(-)
 
-what about keeping valid value of freq->new here too? I now
-currently it is same as freq->old, but maybe we can fill it with
-what we tried to go for? Or what actually was programmed?
-
-Then this table will be even more useful.
-
-> +       stat->load_table[last_index].time = freq->time;
-> +       for (i = 0; i < NR_CPUS; i++)
-> +               stat->load_table[last_index].load[i] = freq->load[i];
-> +
-> +       if (++stat->load_last_index == stat->load_max_index)
-> +               stat->load_last_index = 0;
-> +       spin_unlock(&cpufreq_stats_lock_load_table);
-> +}
-> +
-> +static int cpufreq_stats_create_debugfs(struct cpufreq_policy *policy)
-> +{
-> +       struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-> +       unsigned int alloc_size_load;
-
-s/alloc_size_load/size .. we don't need to name local variables
-very meaningfully, i.e. they should be short and precise.
-
-> +       int ret = 0;
-> +
-> +       stat->load_last_index = 0;
-> +       stat->load_max_index = CONFIG_NR_CPU_LOAD_STORAGE;
-> +       alloc_size_load = sizeof(*stat->load_table) * stat->load_max_index;
-> +       stat->load_table = kzalloc(alloc_size_load, GFP_KERNEL);
-> +       if (!stat->load_table) {
-> +               ret = -ENOMEM;
-> +               goto err;
-> +       }
-> +
-> +       stat->debugfs_cpufreq = debugfs_create_dir("cpufreq", NULL);
-> +       if (!stat->debugfs_cpufreq) {
-> +               ret = -EINVAL;
-> +               goto err;
-> +       }
-> +
-> +       debugfs_create_file("load_table", S_IWUSR, stat->debugfs_cpufreq,
-> +                               (void *)policy, &load_table_fops);
-> +err:
-> +       return ret;
-> +}
-> +
-> +static void cpufreq_stats_free_debugfs(unsigned int cpu)
-> +{
-> +       struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-
-you need to put it too
-
-> +       struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
-> +
-> +       if (!policy)
-> +               return;
-> +
-> +       if (!policy_is_shared(policy)) {
-
-why ??
-
-> +               pr_debug("%s: Free debugfs stat\n", __func__);
-> +               debugfs_remove(stat->debugfs_cpufreq);
-> +       }
-> +}
-> +#else
-> +static void cpufreq_stats_store_load_table(struct cpufreq_freqs *freq)
-> +{
-> +       return 0;
-> +}
-> +static int cpufreq_stats_create_debugfs(struct cpufreq_policy *policy)
-> +{
-> +       return 0;
-> +}
-> +static void cpufreq_stats_free_debugfs(unsigned int cpu)
-> +{
-> +       return;
-
-you don't need this
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 9c73b51..bfd348e 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+ 
+ void __cpuinit set_cpu_sibling_map(int cpu)
+ {
+-	bool has_mc = boot_cpu_data.x86_max_cores > 1;
+ 	bool has_smt = smp_num_siblings > 1;
++	bool has_mp = has_smt || boot_cpu_data.x86_max_cores > 1;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 	struct cpuinfo_x86 *o;
+ 	int i;
+ 
+ 	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+ 
+-	if (!has_smt && !has_mc) {
++	if (!has_mp) {
+ 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+ 		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
+ 		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+@@ -394,7 +394,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 		if ((i == cpu) || (has_smt && match_smt(c, o)))
+ 			link_mask(sibling, cpu, i);
+ 
+-		if ((i == cpu) || (has_mc && match_llc(c, o)))
++		if ((i == cpu) || (has_mp && match_llc(c, o)))
+ 			link_mask(llc_shared, cpu, i);
+ 
+ 	}
+@@ -406,7 +406,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 	for_each_cpu(i, cpu_sibling_setup_mask) {
+ 		o = &cpu_data(i);
+ 
+-		if ((i == cpu) || (has_mc && match_mc(c, o))) {
++		if ((i == cpu) || (has_mp && match_mc(c, o))) {
+ 			link_mask(core, cpu, i);
+ 
+ 			/*
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 87a03c7..f5d4723 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -33,9 +33,25 @@ do { \
+ 		preempt_schedule(); \
+ } while (0)
+ 
++#ifdef CONFIG_CONTEXT_TRACKING
++
++void preempt_schedule_context(void);
++
++#define preempt_check_resched_context() \
++do { \
++	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++		preempt_schedule_context(); \
++} while (0)
++#else
++
++#define preempt_check_resched_context() preempt_check_resched()
++
++#endif /* CONFIG_CONTEXT_TRACKING */
++
+ #else /* !CONFIG_PREEMPT */
+ 
+ #define preempt_check_resched()		do { } while (0)
++#define preempt_check_resched_context()	do { } while (0)
+ 
+ #endif /* CONFIG_PREEMPT */
+ 
+@@ -88,7 +104,7 @@ do { \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+ 	barrier(); \
+-	preempt_check_resched(); \
++	preempt_check_resched_context(); \
+ } while (0)
+ 
+ #else /* !CONFIG_PREEMPT_COUNT */
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 65349f0..6667700 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -71,6 +71,46 @@ void user_enter(void)
+ 	local_irq_restore(flags);
+ }
+ 
++#ifdef CONFIG_PREEMPT
++/**
++ * preempt_schedule_context - preempt_schedule called by tracing
++ *
++ * The tracing infrastructure uses preempt_enable_notrace to prevent
++ * recursion and tracing preempt enabling caused by the tracing
++ * infrastructure itself. But as tracing can happen in areas coming
++ * from userspace or just about to enter userspace, a preempt enable
++ * can occur before user_exit() is called. This will cause the scheduler
++ * to be called when the system is still in usermode.
++ *
++ * To prevent this, the preempt_enable_notrace will use this function
++ * instead of preempt_schedule() to exit user context if needed before
++ * calling the scheduler.
++ */
++void __sched notrace preempt_schedule_context(void)
++{
++	struct thread_info *ti = current_thread_info();
++	enum ctx_state prev_ctx;
++
++	if (likely(ti->preempt_count || irqs_disabled()))
++		return;
++
++	/*
++	 * Need to disable preemption in case user_exit() is traced
++	 * and the tracer calls preempt_enable_notrace() causing
++	 * an infinite recursion.
++	 */
++	preempt_disable_notrace();
++	prev_ctx = exception_enter();
++	preempt_enable_no_resched_notrace();
++
++	preempt_schedule();
++
++	preempt_disable_notrace();
++	exception_exit(prev_ctx);
++	preempt_enable_notrace();
++}
++EXPORT_SYMBOL_GPL(preempt_schedule_context);
++#endif /* CONFIG_PREEMPT */
+ 
+ /**
+  * user_exit - Inform the context tracking that the CPU is
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..919bee6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -633,7 +633,19 @@ void wake_up_nohz_cpu(int cpu)
+ static inline bool got_nohz_idle_kick(void)
+ {
+ 	int cpu = smp_processor_id();
+-	return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
++
++	if (!test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu)))
++		return false;
++
++	if (idle_cpu(cpu) && !need_resched())
++		return true;
++
++	/*
++	 * We can't run Idle Load Balance on this CPU for this time so we
++	 * cancel it and clear NOHZ_BALANCE_KICK
++	 */
++	clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
++	return false;
+ }
+ 
+ #else /* CONFIG_NO_HZ_COMMON */
+@@ -1393,8 +1405,9 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
+-	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
+-	    && !tick_nohz_full_cpu(smp_processor_id()))
++	if (llist_empty(&this_rq()->wake_list)
++			&& !tick_nohz_full_cpu(smp_processor_id())
++			&& !got_nohz_idle_kick())
+ 		return;
+ 
+ 	/*
+@@ -1417,7 +1430,7 @@ void scheduler_ipi(void)
+ 	/*
+ 	 * Check if someone kicked us for doing the nohz idle load balance.
+ 	 */
+-	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
++	if (unlikely(got_nohz_idle_kick())) {
+ 		this_rq()->idle_balance = 1;
+ 		raise_softirq_irqoff(SCHED_SOFTIRQ);
+ 	}
