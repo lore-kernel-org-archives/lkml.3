@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183Ab3FTQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 12:19:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48294 "EHLO
+	id S1758221Ab3FTQTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:19:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48310 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758092Ab3FTQTY (ORCPT
+	with ESMTP id S1758092Ab3FTQTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 12:19:24 -0400
-Date: Thu, 20 Jun 2013 09:19:04 -0700
+	Thu, 20 Jun 2013 12:19:41 -0400
+Date: Thu, 20 Jun 2013 09:19:22 -0700
 From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-7ab71f3244e9f970c29566c5a67e13d1fa38c387@git.kernel.org>
+Message-ID: <tip-e12cbc10cb27fcbe51b5f68e2015138dc451a2eb@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fweisbec@gmail.com, vincent.weaver@maine.edu, oleg@redhat.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         vincent.weaver@maine.edu, fweisbec@gmail.com, tglx@linutronix.de,
         oleg@redhat.com
-In-Reply-To: <20130620155013.GA6337@redhat.com>
-References: <20130620155013.GA6337@redhat.com>
+In-Reply-To: <20130620155018.GA6347@redhat.com>
+References: <20130620155018.GA6347@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] hw_breakpoint: Simplify the "weight"
-  usage in toggle_bp_slot() paths
-Git-Commit-ID: 7ab71f3244e9f970c29566c5a67e13d1fa38c387
+Subject: [tip:perf/core] hw_breakpoint:
+  Simplify *register_wide_hw_breakpoint()
+Git-Commit-ID: e12cbc10cb27fcbe51b5f68e2015138dc451a2eb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,85 +30,101 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 09:19:10 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 09:19:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7ab71f3244e9f970c29566c5a67e13d1fa38c387
-Gitweb:     http://git.kernel.org/tip/7ab71f3244e9f970c29566c5a67e13d1fa38c387
+Commit-ID:  e12cbc10cb27fcbe51b5f68e2015138dc451a2eb
+Gitweb:     http://git.kernel.org/tip/e12cbc10cb27fcbe51b5f68e2015138dc451a2eb
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Thu, 20 Jun 2013 17:50:13 +0200
+AuthorDate: Thu, 20 Jun 2013 17:50:18 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 20 Jun 2013 17:58:55 +0200
+CommitDate: Thu, 20 Jun 2013 17:58:57 +0200
 
-hw_breakpoint: Simplify the "weight" usage in toggle_bp_slot() paths
+hw_breakpoint: Simplify *register_wide_hw_breakpoint()
 
-Change toggle_bp_slot() to make "weight" negative if !enable.
-This way we can always use "+ weight" without additional "if
-(enable)" check and toggle_bp_task_slot() no longer needs this
-arg.
+1. register_wide_hw_breakpoint() can use unregister_ if failure,
+   no need to duplicate the code.
+
+2. "struct perf_event **pevent" adds the unnecesary lever of
+   indirection and complication, use per_cpu(*cpu_events, cpu).
 
 Reported-by: Vince Weaver <vincent.weaver@maine.edu>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20130620155013.GA6337@redhat.com
+Link: http://lkml.kernel.org/r/20130620155018.GA6347@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/hw_breakpoint.c | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ kernel/events/hw_breakpoint.c | 34 +++++++++++-----------------------
+ 1 file changed, 11 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index dee0148..5cd4f6d 100644
+index 9c71445..38418f7 100644
 --- a/kernel/events/hw_breakpoint.c
 +++ b/kernel/events/hw_breakpoint.c
-@@ -182,7 +182,7 @@ fetch_this_slot(struct bp_busy_slots *slots, int weight)
- /*
-  * Add a pinned breakpoint for the given task in our constraint table
-  */
--static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
-+static void toggle_bp_task_slot(struct perf_event *bp, int cpu,
- 				enum bp_type_idx type, int weight)
+@@ -497,8 +497,8 @@ register_wide_hw_breakpoint(struct perf_event_attr *attr,
+ 			    perf_overflow_handler_t triggered,
+ 			    void *context)
  {
- 	/* tsk_pinned[n-1] is the number of tasks having n>0 breakpoints */
-@@ -190,10 +190,7 @@ static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
- 	int old_idx, new_idx;
+-	struct perf_event * __percpu *cpu_events, **pevent, *bp;
+-	long err;
++	struct perf_event * __percpu *cpu_events, *bp;
++	long err = 0;
+ 	int cpu;
  
- 	old_idx = task_bp_pinned(cpu, bp, type) - 1;
--	if (enable)
--		new_idx = old_idx + weight;
--	else
--		new_idx = old_idx - weight;
-+	new_idx = old_idx + weight;
+ 	cpu_events = alloc_percpu(typeof(*cpu_events));
+@@ -507,31 +507,21 @@ register_wide_hw_breakpoint(struct perf_event_attr *attr,
  
- 	if (old_idx >= 0)
- 		tsk_pinned[old_idx]--;
-@@ -211,22 +208,21 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	int cpu = bp->cpu;
- 	struct task_struct *tsk = bp->hw.bp_target;
- 
-+	if (!enable)
-+		weight = -weight;
-+
- 	/* Pinned counter cpu profiling */
- 	if (!tsk) {
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu) {
+-		pevent = per_cpu_ptr(cpu_events, cpu);
+ 		bp = perf_event_create_kernel_counter(attr, cpu, NULL,
+ 						      triggered, context);
 -
--		if (enable)
--			per_cpu(nr_cpu_bp_pinned[type], bp->cpu) += weight;
--		else
--			per_cpu(nr_cpu_bp_pinned[type], bp->cpu) -= weight;
-+		per_cpu(nr_cpu_bp_pinned[type], cpu) += weight;
- 		return;
- 	}
+-		*pevent = bp;
+-
+ 		if (IS_ERR(bp)) {
+ 			err = PTR_ERR(bp);
+-			goto fail;
++			break;
+ 		}
+-	}
+-	put_online_cpus();
+-
+-	return cpu_events;
  
- 	/* Pinned counter task profiling */
- 	if (cpu >= 0) {
--		toggle_bp_task_slot(bp, cpu, enable, type, weight);
-+		toggle_bp_task_slot(bp, cpu, type, weight);
- 	} else {
- 		for_each_possible_cpu(cpu)
--			toggle_bp_task_slot(bp, cpu, enable, type, weight);
-+			toggle_bp_task_slot(bp, cpu, type, weight);
+-fail:
+-	for_each_online_cpu(cpu) {
+-		pevent = per_cpu_ptr(cpu_events, cpu);
+-		if (IS_ERR(*pevent))
+-			break;
+-		unregister_hw_breakpoint(*pevent);
++		per_cpu(*cpu_events, cpu) = bp;
  	}
+ 	put_online_cpus();
  
- 	if (enable)
+-	free_percpu(cpu_events);
++	if (likely(!err))
++		return cpu_events;
++
++	unregister_wide_hw_breakpoint(cpu_events);
+ 	return (void __percpu __force *)ERR_PTR(err);
+ }
+ EXPORT_SYMBOL_GPL(register_wide_hw_breakpoint);
+@@ -543,12 +533,10 @@ EXPORT_SYMBOL_GPL(register_wide_hw_breakpoint);
+ void unregister_wide_hw_breakpoint(struct perf_event * __percpu *cpu_events)
+ {
+ 	int cpu;
+-	struct perf_event **pevent;
+ 
+-	for_each_possible_cpu(cpu) {
+-		pevent = per_cpu_ptr(cpu_events, cpu);
+-		unregister_hw_breakpoint(*pevent);
+-	}
++	for_each_possible_cpu(cpu)
++		unregister_hw_breakpoint(per_cpu(*cpu_events, cpu));
++
+ 	free_percpu(cpu_events);
+ }
+ EXPORT_SYMBOL_GPL(unregister_wide_hw_breakpoint);
