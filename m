@@ -1,442 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3FTPqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:46:10 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:58599 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758058Ab3FTPqI (ORCPT
+	id S965436Ab3FTPOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:14:10 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45085 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965153Ab3FTPOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:46:08 -0400
-Message-ID: <51C3238D.9040706@hds.com>
-Date: Thu, 20 Jun 2013 11:45:17 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org
-CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
-        linux-edac@vger.kernel.org, tony.luck@intel.com,
-        tomoki.sekiyama@hds.com, dle-develop@lists.sourceforge.net
-Subject: [PATCH v17 2/4] trace,x86: Introduce entering/exiting_irq()
-References: <51C32343.7080901@hds.com>
-In-Reply-To: <51C32343.7080901@hds.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-20_06:2013-06-20,2013-06-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0
- kscore.is_bulkscore=3.04756220259605e-13 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.997215366458519
- urlsuspect_oldscore=0.997215366458519 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
- spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
- adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1305240000 definitions=main-1306200119
+	Thu, 20 Jun 2013 11:14:08 -0400
+From: Ghennadi Procopciuc <unix140@gmail.com>
+To: akpm@linux-foundation.org, js1304@gmail.com, rientjes@google.com,
+        minchan@kernel.org, kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Ghennadi Procopciuc <unix140@gmail.com>,
+        Daniel Baluta <dbaluta@ixiacom.com>
+Subject: [PATCH] mm: fix overflow in alloc_vmap_area
+Date: Thu, 20 Jun 2013 18:12:30 +0300
+Message-Id: <1371741150-10861-1-git-send-email-unix140@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When implementing tracepoints in interrupt handers, if the tracepoints are
-simply added in the performance sensitive path of interrupt handers,
-it may cause potential performance problem due to the time penalty.
+Inserting the following kernel module:
 
-To solve the problem, an idea is to prepare non-trace/trace irq handers and
-switch their IDTs at the enabling/disabling time.
+<snip>
 
-So, let's introduce entering_irq()/exiting_irq() for pre/post-
-processing of each irq handler.
-
-A way to use them is as follows.
-
-Non-trace irq handler:
-smp_irq_handler()
+static int simple_test_init(void)
 {
-	entering_irq();		/* pre-processing of this handler */
-	__smp_irq_handler();	/*
-				 * common logic between non-trace and trace handlers
-				 * in a vector.
-				 */
-	exiting_irq();		/* post-processing of this handler */
+        size_t i, j;
+        void *address;
 
+        for (i = 0 * MB; i<  60 * MB; i += 1 * MB) {
+                for (j = i; j<  i + 1 * MB; j += KB) {
+                        address = vmalloc(j);
+                        vfree(address);
+                }
+        }
+
+        return 0;
 }
 
-Trace irq_handler:
-smp_trace_irq_handler()
-{
-	entering_irq();		/* pre-processing of this handler */
-	trace_irq_entry();	/* tracepoint for irq entry */
-	__smp_irq_handler();	/*
-				 * common logic between non-trace and trace handlers
-				 * in a vector.
-				 */
-	trace_irq_exit();	/* tracepoint for irq exit */
-	exiting_irq();		/* post-processing of this handler */
+</snip>
 
-}
+triggers BUG at mm/vmalloc.c:310 on a x86 machine:
 
-If tracepoints can place outside entering_irq()/exiting_irq() as follows,
-it looks cleaner.
+[   95.218283] Kernel BUG at c1126cdb [verbose debug info unavailable]
+[   95.218306] invalid opcode: 0000 [#1] SMP
+[   95.218324] Modules linked in: lkma_test(OF+)<snip lots of not tainted modules>
+[   95.218559] Pid: 2419, comm: insmod Tainted: GF          O 3.9.0+ #57 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
+[   95.218597] EIP: 0060:[<c1126cdb>] EFLAGS: 00010207 CPU: 3
+[   95.218617] EIP is at __insert_vmap_area+0xfb/0x100
+[   95.218635] EAX: f85dc000 EBX: ef05cac0 ECX: f7be08c4 EDX: 00000007
+[   95.218657] ESI: f2ed044c EDI: c1a220b8 EBP: f027bd34 ESP: f027bd14
+[   95.218680]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   95.218699] CR0: 80050033 CR2: b5995118 CR3: 30364000 CR4: 000407f0
+[   95.218721] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   95.218743] DR6: ffff0ff0 DR7: 00000400
+[   95.218758] Process insmod (pid: 2419, ti=f027a000 task=efe64010 task.ti=f027a000)
+[   95.218784] Stack:
+[   95.218792]  c177b964 fecfb000 f85e2000 00000000 f85dc000 ffbfe000 f02da1c0 0007f000
+[   95.218829]  f027bd7c c112802d c177b9b0 fecfb000 01305000 ffbfe000 00000001 ef05cac0
+[   95.218866]  00000000 00000000 f83fe000 01304fff f83fe000 ffffffff 01305000 ef05c500
+[   95.218903] Call Trace:
+[   95.218915]  [<f85e2000>] ? 0xf85e1fff
+[   95.218930]  [<f85dc000>] ? 0xf85dbfff
+[   95.218945]  [<c112802d>] alloc_vmap_area.isra.16+0x1bd/0x2f0
+[   95.218967]  [<c112867f>] __get_vm_area_node.isra.17+0x8f/0x130
+[   95.218988]  [<c1128d77>] __vmalloc_node_range+0x57/0x200
+[   95.219009]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
+[   95.219031]  [<c1128f82>] __vmalloc_node+0x62/0x70
+[   95.219049]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
+[   95.219071]  [<c1129058>] vmalloc+0x38/0x40
+[   95.219087]  [<f85f3075>] ? lkma_test_init+0x45/0x70 [lkma_test]
+[   95.219109]  [<f85f3075>] lkma_test_init+0x45/0x70 [lkma_test]
+[   95.219131]  [<f85f3030>] ? kzalloc+0x10/0x10 [lkma_test]
+[   95.219151]  [<c1001222>] do_one_initcall+0x112/0x160
+[   95.219171]  [<c15ca3cf>] ? set_section_ro_nx+0x54/0x59
+[   95.219190]  [<c1099b69>] load_module+0x1d79/0x2660
+[   95.219209]  [<c114721d>] ? create_object+0x19d/0x280
+[   95.219230]  [<c109a4c8>] sys_init_module+0x78/0xb0
+[   95.219250]  [<c15d9801>] sysenter_do_call+0x12/0x22
+[   95.219268] Code: 39 03 73 0c 8b 3f 89 f0 83 c7 08 e9 3d ff ff ff 8b 46 f4 39 43 04 76 13 8b 3f 89 f0 83 c7 04 e9 29 ff ff ff e8 fb 1b 4a 00 eb ab<0f>  0b 8d 76 00 55 89 e5 56 53 66 66 66 66 90 83 60 0c df 89 c6
+[   95.219415] EIP: [<c1126cdb>] __insert_vmap_area+0xfb/0x100 SS:ESP 0068:f027bd14
+[   95.228313] ---[ end trace e0a1efb2acb97c98 ]---
 
-smp_trace_irq_handler()
-{
-	trace_irq_entry();
-	smp_irq_handler();
-	trace_irq_exit();
-}
+A printk placed in __insert_vmap_area will show:
 
-But it doesn't work.
-The problem is with irq_enter/exit() being called. They must be called before
-trace_irq_enter/exit(),  because of the rcu_irq_enter() must be called before
-any tracepoints are used, as tracepoints use  rcu to synchronize.
+[   95.218256] va->va_start=0xfecfb000 tmp_va->va_end=0xf85e2000 va->va_end=0 tmp_va->va_start=0xf85dc000
 
-As a possible alternative, we may be able to call irq_enter() first as follows
-if irq_enter() can nest.
+and another one, before sum operation in alloc_vmap_area:
 
-smp_trace_irq_hander()
-{
-	irq_entry();
-	trace_irq_entry();
-	smp_irq_handler();
-	trace_irq_exit();
-	irq_exit();
-}
+[   95.218204] addr = 0xfecfb000 size = 19943424 vend = 0xffbfe000
 
-But it doesn't work, either.
-If irq_enter() is nested, it may have a time penalty because it has to check if it
-was already called or not. The time penalty is not desired in performance sensitive
-paths even if it is tiny.
+If after addition the result is smaller than one of the arguments,
+then an overflow occurred. In our case there is an obvious overflow.
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Ghennadi Procopciuc <unix140@gmail.com>
+Cc: Daniel Baluta<dbaluta@ixiacom.com>
+
 ---
- arch/x86/include/asm/apic.h              |   27 +++++++++++++++++++++++
- arch/x86/kernel/apic/apic.c              |   33 ++++++++++++++++------------
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   14 ++++++-----
- arch/x86/kernel/cpu/mcheck/threshold.c   |   15 +++++++-----
- arch/x86/kernel/irq.c                    |   18 ++++++--------
- arch/x86/kernel/irq_work.c               |   14 ++++++++++-
- arch/x86/kernel/smp.c                    |   35 +++++++++++++++++++++++------
- 7 files changed, 110 insertions(+), 46 deletions(-)
+ Don't know if this is the right solution, but the bug happens for me in
+ 3.10-rc6 and 3.9.
+---
+ mm/vmalloc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 3388034..f8119b5 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -12,6 +12,7 @@
- #include <asm/fixmap.h>
- #include <asm/mpspec.h>
- #include <asm/msr.h>
-+#include <asm/idle.h>
- 
- #define ARCH_APICTIMER_STOPS_ON_C3	1
- 
-@@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);
- #endif
- 
- #endif /* CONFIG_X86_LOCAL_APIC */
-+extern void irq_enter(void);
-+extern void irq_exit(void);
-+
-+static inline void entering_irq(void)
-+{
-+	irq_enter();
-+	exit_idle();
-+}
-+
-+static inline void entering_ack_irq(void)
-+{
-+	ack_APIC_irq();
-+	entering_irq();
-+}
-+
-+static inline void exiting_irq(void)
-+{
-+	irq_exit();
-+}
-+
-+static inline void exiting_ack_irq(void)
-+{
-+	irq_exit();
-+	/* Ack only at the end to avoid potential reentry */
-+	ack_APIC_irq();
-+}
- 
- #endif /* _ASM_X86_APIC_H */
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 904611b..59ee76f 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -919,17 +919,14 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	/*
- 	 * NOTE! We'd better ACK the irq immediately,
- 	 * because timer handling can be slow.
--	 */
--	ack_APIC_irq();
--	/*
-+	 *
- 	 * update_process_times() expects us to have done irq_enter().
- 	 * Besides, if we don't timer interrupts ignore the global
- 	 * interrupt lock, which is the WrongThing (tm) to do.
- 	 */
--	irq_enter();
--	exit_idle();
-+	entering_ack_irq();
- 	local_apic_timer_interrupt();
--	irq_exit();
-+	exiting_irq();
- 
- 	set_irq_regs(old_regs);
- }
-@@ -1907,12 +1904,10 @@ int __init APIC_init_uniprocessor(void)
- /*
-  * This interrupt should _never_ happen with our APIC/SMP architecture
-  */
--void smp_spurious_interrupt(struct pt_regs *regs)
-+static inline void __smp_spurious_interrupt(void)
- {
- 	u32 v;
- 
--	irq_enter();
--	exit_idle();
- 	/*
- 	 * Check if this really is a spurious interrupt and ACK it
- 	 * if it is a vectored one.  Just in case...
-@@ -1927,13 +1922,19 @@ void smp_spurious_interrupt(struct pt_regs *regs)
- 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
- 	pr_info("spurious APIC interrupt on CPU#%d, "
- 		"should never happen.\n", smp_processor_id());
--	irq_exit();
-+}
-+
-+void smp_spurious_interrupt(struct pt_regs *regs)
-+{
-+	entering_irq();
-+	__smp_spurious_interrupt();
-+	exiting_irq();
- }
- 
- /*
-  * This interrupt should never happen with our APIC/SMP architecture
-  */
--void smp_error_interrupt(struct pt_regs *regs)
-+static inline void __smp_error_interrupt(struct pt_regs *regs)
- {
- 	u32 v0, v1;
- 	u32 i = 0;
-@@ -1948,8 +1949,6 @@ void smp_error_interrupt(struct pt_regs *regs)
- 		"Illegal register address",	/* APIC Error Bit 7 */
- 	};
- 
--	irq_enter();
--	exit_idle();
- 	/* First tickle the hardware, only then report what went on. -- REW */
- 	v0 = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
-@@ -1970,7 +1969,13 @@ void smp_error_interrupt(struct pt_regs *regs)
- 
- 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
- 
--	irq_exit();
-+}
-+
-+void smp_error_interrupt(struct pt_regs *regs)
-+{
-+	entering_irq();
-+	__smp_error_interrupt(regs);
-+	exiting_irq();
- }
- 
- /**
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 47a1870..f6b35f2 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -378,15 +378,17 @@ static void unexpected_thermal_interrupt(void)
- 
- static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
- 
--asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
-+static inline void __smp_thermal_interrupt(void)
- {
--	irq_enter();
--	exit_idle();
- 	inc_irq_stat(irq_thermal_count);
- 	smp_thermal_vector();
--	irq_exit();
--	/* Ack only at the end to avoid potential reentry */
--	ack_APIC_irq();
-+}
-+
-+asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
-+{
-+	entering_irq();
-+	__smp_thermal_interrupt();
-+	exiting_ack_irq();
- }
- 
- /* Thermal monitoring depends on APIC, ACPI and clock modulation */
-diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
-index aa578ca..f20988a 100644
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@ -17,13 +17,16 @@ static void default_threshold_interrupt(void)
- 
- void (*mce_threshold_vector)(void) = default_threshold_interrupt;
- 
--asmlinkage void smp_threshold_interrupt(void)
-+static inline void __smp_threshold_interrupt(void)
- {
--	irq_enter();
--	exit_idle();
- 	inc_irq_stat(irq_threshold_count);
- 	mce_threshold_vector();
--	irq_exit();
--	/* Ack only at the end to avoid potential reentry */
--	ack_APIC_irq();
- }
-+
-+asmlinkage void smp_threshold_interrupt(void)
-+{
-+	entering_irq();
-+	__smp_threshold_interrupt();
-+	exiting_ack_irq();
-+}
-+
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index ac0631d..e3b8df1 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -204,23 +204,21 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- /*
-  * Handler for X86_PLATFORM_IPI_VECTOR.
-  */
--void smp_x86_platform_ipi(struct pt_regs *regs)
-+void __smp_x86_platform_ipi(void)
- {
--	struct pt_regs *old_regs = set_irq_regs(regs);
--
--	ack_APIC_irq();
--
--	irq_enter();
--
--	exit_idle();
--
- 	inc_irq_stat(x86_platform_ipis);
- 
- 	if (x86_platform_ipi_callback)
- 		x86_platform_ipi_callback();
-+}
- 
--	irq_exit();
-+void smp_x86_platform_ipi(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-+	entering_ack_irq();
-+	__smp_x86_platform_ipi();
-+	exiting_irq();
- 	set_irq_regs(old_regs);
- }
- 
-diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-index ca8f703..074d46f 100644
---- a/arch/x86/kernel/irq_work.c
-+++ b/arch/x86/kernel/irq_work.c
-@@ -9,13 +9,23 @@
- #include <linux/hardirq.h>
- #include <asm/apic.h>
- 
--void smp_irq_work_interrupt(struct pt_regs *regs)
-+static inline void irq_work_entering_irq(void)
- {
- 	irq_enter();
- 	ack_APIC_irq();
-+}
-+
-+static inline void __smp_irq_work_interrupt(void)
-+{
- 	inc_irq_stat(apic_irq_work_irqs);
- 	irq_work_run();
--	irq_exit();
-+}
-+
-+void smp_irq_work_interrupt(struct pt_regs *regs)
-+{
-+	irq_work_entering_irq();
-+	__smp_irq_work_interrupt();
-+	exiting_irq();
- }
- 
- void arch_irq_work_raise(void)
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 48d2b7d..d858375 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -249,32 +249,51 @@ finish:
- /*
-  * Reschedule call back.
-  */
--void smp_reschedule_interrupt(struct pt_regs *regs)
-+static inline void __smp_reschedule_interrupt(void)
- {
--	ack_APIC_irq();
- 	inc_irq_stat(irq_resched_count);
- 	scheduler_ipi();
-+}
-+
-+void smp_reschedule_interrupt(struct pt_regs *regs)
-+{
-+	ack_APIC_irq();
-+	__smp_reschedule_interrupt();
- 	/*
- 	 * KVM uses this interrupt to force a cpu out of guest mode
- 	 */
- }
- 
--void smp_call_function_interrupt(struct pt_regs *regs)
-+static inline void call_function_entering_irq(void)
- {
- 	ack_APIC_irq();
- 	irq_enter();
-+}
-+
-+static inline void __smp_call_function_interrupt(void)
-+{
- 	generic_smp_call_function_interrupt();
- 	inc_irq_stat(irq_call_count);
--	irq_exit();
- }
- 
--void smp_call_function_single_interrupt(struct pt_regs *regs)
-+void smp_call_function_interrupt(struct pt_regs *regs)
-+{
-+	call_function_entering_irq();
-+	__smp_call_function_interrupt();
-+	exiting_irq();
-+}
-+
-+static inline void __smp_call_function_single_interrupt(void)
- {
--	ack_APIC_irq();
--	irq_enter();
- 	generic_smp_call_function_single_interrupt();
- 	inc_irq_stat(irq_call_count);
--	irq_exit();
-+}
-+
-+void smp_call_function_single_interrupt(struct pt_regs *regs)
-+{
-+	call_function_entering_irq();
-+	__smp_call_function_single_interrupt();
-+	exiting_irq();
- }
- 
- static int __init nonmi_ipi_setup(char *str)
--- 
-1.7.1
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 0f751f2..6ea525c 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -421,12 +421,13 @@ nocache:
+ 	}
 
+ found:
+-	if (addr + size > vend)
++	va->va_end = addr + size;
++	if (va->va_end < addr || va->va_end < size || va->va_end > vend)
+ 		goto overflow;
 
+ 	va->va_start = addr;
+-	va->va_end = addr + size;
+ 	va->flags = 0;
++
+ 	__insert_vmap_area(va);
+ 	free_vmap_cache = &va->rb_node;
+ 	spin_unlock(&vmap_area_lock);
+--
+1.8.1.2
 
