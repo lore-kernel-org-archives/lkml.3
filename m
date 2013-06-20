@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab3FTKcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 06:32:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:2843 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab3FTKcS (ORCPT
+	id S1757697Ab3FTKfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 06:35:47 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41077 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845Ab3FTKfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 06:32:18 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2D9FE.40203@asianux.com>
-Date: Thu, 20 Jun 2013 18:31:26 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 20 Jun 2013 06:35:45 -0400
+Date: Thu, 20 Jun 2013 11:35:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Phil Carmody <phil.carmody@partner.samsung.com>
+Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, alsa-devel@alsa-project.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Vinod Koul'" <vinod.koul@intel.com>, "'Dan Williams'" <djbw@fb.co>
+Message-ID: <20130620103532.GA27646@sirena.org.uk>
+References: <1371416058-22047-1-git-send-email-tomasz.figa@gmail.com>
+ <20130619174047.GB1403@sirena.org.uk>
+ <3697657.tZFV7pR81Q@flatron>
+ <20130619192211.GH1403@sirena.org.uk>
+ <001201ce6d98$03d9b920$0b8d2b60$%carmody@partner.samsung.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of spin_lock
- + local_irq_save, especially when CONFIG_LOCKDEP not defined
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C182EE.5070500@asianux.com> <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de> <51C28193.3080106@asianux.com> <alpine.DEB.2.02.1306200903520.4013@ionos.tec.linutronix.de> <51C2C077.2050900@asianux.com> <alpine.DEB.2.02.1306201055580.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306201055580.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+In-Reply-To: <001201ce6d98$03d9b920$0b8d2b60$%carmody@partner.samsung.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH 00/11] ARM: s3c64xx: Let amba-pl08x driver handle DMA
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 05:02 PM, Thomas Gleixner wrote:
-> On Thu, 20 Jun 2013, Chen Gang wrote:
->> > On 06/20/2013 03:36 PM, Thomas Gleixner wrote:
->>> > > On Thu, 20 Jun 2013, Chen Gang wrote:
->>>>> > >> > On 06/19/2013 06:49 PM, Thomas Gleixner wrote:
->>>>>>> > >>> > > We must do this because some architectures implement
->>>>>>> > >>> > > do_raw_spin_lock_flags() in the following way:
->>>>>>> > >>> > > 
->>>>>>> > >>> > > do_raw_spin_lock_flags(l, flags)
->>>>>>> > >>> > > {
->>>>>>> > >>> > > 	while (!arch_spin_trylock(l)) {
->>>>>>> > >>> > > 	      if (!irq_disabled_flags(flags)) {
->>>>>>> > >>> > > 	      	      arch_irq_restore(flags);
->>>>>>> > >>> > > 		      cpu_relax();
->>>>>>> > >>> > > 		      arch_irq_disable();
->>>>>>> > >>> > > 	      }
->>>>>>> > >>> > > 	}
->>>>>>> > >>> > > }
->>>>>>> > >>> > > 
->>>>> > >> > 
->>>>> > >> > For mn10300 and sparc64 (not space32), it doesn't like your demo above.
->>> > > Sigh. You're an sparc64 and mn10300 assembler expert, right?
->>> > >  
->> > 
->> > No, do you mean: "only the related expert can discuss about it" ?
-> A discussion requires that the people who are discussing something are
-> familiar with the matter.
-> 
 
-In fact, if every related member are familiar with the matter, it is
-only a "work flow" (providing pach --> review --> apply), not need
-'discussion'.
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Jun 20, 2013 at 12:24:47PM +0300, Phil Carmody wrote:
 
->>>>> > >> > For API definition, it has no duty to make it correct if the user call
->>>>> > >> > them with informal ways, especially, the implementation is related with
->>>>> > >> > various architectures.
->>> > > Nonsense.
->>> > >
->> > 
->> > The word 'Nonsense' seems not quite polite.  ;-)
-> It might be not polite, but it's correct. And I really start to get
-> annoyed.
->  
+> Can you just make that minimal change, and diff the objdump of the two .o=
+'s?
+> It would be worth a bug-report against the toolchain if different code was
+> being generated. If objdump spews huge numbers of diffs (due to one addre=
+ss
+> changing and pushing everything else out of kilter), then feel free to
+> forward both .o's or both objdumps to me, and I can run a script over the=
+m,
+> which knows to ignore unimportant address changes.=20
 
-correct and polite are different things.
+See Arnd's followup - this looks like a collision with the get_signal
+macro in signal.h.
 
-For cooperation, better with polite.
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
->> > At least, when some one see this usage below:
->> > 
->> >    spin_lock_irqsave(&l1, flags);
->> >    spin_unlock(&l1);
->> >    spin_lock(&l2);
->> >    spin_unlock_irqrestore(&l2, flags);
->> > 
->> > most of them will be amazing.
-> What's amazing about this?
-> 
-> It's the equivivalent to:
-> 
->      local_irq_save(flags);
->      spin_lock(&l1);
->      spin_unlock(&l1);
->      spin_lock(&l2);
->      spin_unlock(&l2);
->      local_irq_restore(flags);
-> 
-> The only difference is, that spin_lock_irqsave() implementations are
-> allowed to reenable interrupts while spinning, but again that's an
-> implementation detail which does not matter at all.
+iQIcBAEBAgAGBQJRwtrxAAoJELSic+t+oim9ytUP/iaXkxamNtAxJCrJS8P3m93W
+ZUPZaMCU41/G63MIK93SQY6CoyWa/9vouACdzxZXv0SG+IWAmiLM1+NP/B5S2HAq
+uY+SEoRhrB3tlAJqNs7HXZTQCLVe0eaSkAFPLtsvR19BxrGYv0gQZ4vvpYJlspMR
+KngeUEN73bjJXdyRVW7D2fGt3r4pSmyps15EU4wOTMfgzSxJXs1BWchzq09eEBbs
+J6rsDZU6Sh/7iinWV6/7j3ip1jDWSblb7DDH1kHim/0+J2qoSIwOUCWnzDpV3xpp
+RCxFZAImyqVfvY2kKTt5b2HusLDVN+ySN1HN6gMsd/uQ2FaYZtKiDFa0Ms2NBC4o
+BAKGrztdoXu72+3bQSwAvcBxbXUHHKnwXltoBFqfEgdGubkA8CI234/JFYKUkvzp
+e3WkQBFQ4v4Wafcerh1YXpdusB5x0mCySriVndpmypnO16VO7J4XIzeD9b5VC9DP
+V9QdH8yuKDuTIVVXQ5HsX1UGBVWqIiwyKhhsIO4eArLTiFO9NktP6Vejcaq0H2av
+Y4VbW8Lv0qMsYmDOKvZsMBqNMt8z0+oOB4cXopkAzHGi2Ks7Hori7QJ2cbt/AeoO
+XLsIUnMVGvWf+pCsqOUnCORLEDmecqkMxMovFao++yYhBMA1arxi396qwD6m+REn
+JMlx0IVUWCLiwvKbuG+S
+=2NXl
+-----END PGP SIGNATURE-----
 
-We are just discussing about it in another mail thread, so not need
-reply it.
-
-
-Thanks
--- 
-Chen Gang
-
-Asianux Corporation
+--7JfCtLOvnd9MIVvH--
