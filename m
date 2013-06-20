@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3FTHO6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:14:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33579 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3FTHO5 (ORCPT
+	id S1754282Ab3FTHTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:19:09 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:39376 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab3FTHTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:14:57 -0400
-Date: Thu, 20 Jun 2013 17:14:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Baruch Siach <baruch@tkos.co.il>
-Subject: linux-next: manual merge of the arm-soc tree with the tip tree
-Message-Id: <20130620171452.365bf173b71870c690d52e27@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Jun_2013_17_14_52_+1000__RzWCn5H2QvaK9Z7"
+	Thu, 20 Jun 2013 03:19:07 -0400
+X-Spam-Score: -100.8
+Message-ID: <51C2ACB8.6050701@asianux.com>
+Date: Thu, 20 Jun 2013 15:18:16 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/itimer.c: for return value, using -EINVAL instead
+ of -EFAULT
+References: <51C29FBC.1090507@asianux.com> <alpine.DEB.2.02.1306200847300.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1306200847300.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jun_2013_17_14_52_+1000__RzWCn5H2QvaK9Z7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/20/2013 02:59 PM, Thomas Gleixner wrote:
+> On Thu, 20 Jun 2013, Chen Gang wrote:
+> 
+>> > For the system call getitimer(), if the parameter 'value' is NULL, need
+>> > return -EINVAL, not -EFAULT.
+> Care to explain why? Because you are feeling so?
+> 
 
-Hi all,
+I am not feeling so, the original implementation really just checks the parameter 'value', if it is invalid, need return, is it incorrect ??
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/clocksource/dw_apb_timer_of.c between commits 0a0a7e66fa26
-("clocksource: dw_apb: Remove unused header") and 38ff87f77af0
-("sched_clock: Make ARM's sched_clock generic for all architectures")
-from the tip tree and commit a8b447f2bbbb ("clocksource: dw_apb_timer_of:
-add clock-handling") from the arm-soc tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> I recommend reading the man page of getitimer:
+> 
+>  ERRORS
+>        EFAULT new_value, old_value, or curr_value is not valid a pointer.
+> 
+> And NULL is definitely NOT a valid pointer.
+> 
+> The Posix spec does not specify an explicit error value for this
+> syscall, but the general policy is:
+> 
+> [EFAULT]
+>     Bad address. The system detected an invalid address in attempting
+>     to use an argument of a call. The reliable detection of this error
+>     cannot be guaranteed, and when not detected may result in the
+>     generation of a signal, indicating an address violation, which is
+>     sent to the process.
+> 
+> And we made use of this, which is correct and makes sense.
+> 
+> Returning EINVAL makes no sense at all, because EINVAL _IS_ a
+> specified error code for this syscall:
+> 
+> [EINVAL]
+>         The which argument is not recognized.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+That means we need not check the parameter 'value' out side of copy_to_user().
 
-diff --cc drivers/clocksource/dw_apb_timer_of.c
-index d9a1e8d,cef5544..0000000
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@@ -20,8 -20,11 +20,9 @@@
-  #include <linux/of.h>
-  #include <linux/of_address.h>
-  #include <linux/of_irq.h>
- +#include <linux/sched_clock.h>
-+ #include <linux/clk.h>
- =20
- -#include <asm/mach/time.h>
- -#include <asm/sched_clock.h>
- -
-  static void timer_get_base_and_rate(struct device_node *np,
-  				    void __iomem **base, u32 *rate)
-  {
+And the implement need like this:
 
---Signature=_Thu__20_Jun_2013_17_14_52_+1000__RzWCn5H2QvaK9Z7
-Content-Type: application/pgp-signature
+---------------------------diff begin-----------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/kernel/itimer.c b/kernel/itimer.c
+index 8d262b4..3b12271 100644
+--- a/kernel/itimer.c
++++ b/kernel/itimer.c
+@@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
+ 
+ SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
+ {
+-	int error = -EFAULT;
++	int error;
+ 	struct itimerval get_buffer;
+ 
+-	if (value) {
+-		error = do_getitimer(which, &get_buffer);
+-		if (!error &&
+-		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+-			error = -EFAULT;
+-	}
++	error = do_getitimer(which, &get_buffer);
++	if (!error &&
++	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
++		error = -EFAULT;
++
+ 	return error;
+ }
 
-iQIcBAEBCAAGBQJRwqvsAAoJEECxmPOUX5FEHcQP/Rhz488ZSwLQvftg+jDr1xPR
-gWvG6wuKc4sH4+T5N5WZAB9axvdfNiUx2LlfbB4ClgLM+9b/d8lYSXs5JAP/e+HB
-ZWFZQxXMvBsio20uCmIyeKo+YnplbsP9K737BlACelJFN4kWpuku4A1Df8e6aBd6
-hvKxVRttg9ij88wuLU8lNGixlupzvgokxCZ81XhkbZhY+EmnUMw5+C6OP5XHCo8y
-hWFed327qJM440Mrr81ZhntNSLAUrPev8HHXtiymwZpUR0zw4/hBNQx1E27NF+9Q
-6FMY5UJjIOGnkquXKtsL63HMJz58CG+TXuiOucS3ygpPFN6XvbugL8CfHAzDz4OT
-ZsfpR5GfAdZ4PmrHeSFAibCwcmNzp1lQxhZv/HkF2pCAmwOSKCMRe6Pm7oz8naHK
-SR65VmxVL98yQmJpe4H85QOSwjBmXkkBrlgVAkIHX7STpRIDZq290yp5my9YR07a
-UdFUGwEefX047aRhtHsWduzKO0s+JhxmMdPER1pdUxLHk8fCGqjQzVARYKaOUXHS
-+fGZaON65ohm98J0N9xSnnjyLUKeitsJTZld/rNS8mwwed1QTfK6p/cQwas1gZXh
-YiOZF3CFvJxPfrwQmo1yZSpyUs2ivJ7ZxXz0iDxLaWrv7tzEOadfWEZ97igP1eoW
-qRInWLsFi805ZRYVko9O
-=x30r
------END PGP SIGNATURE-----
 
---Signature=_Thu__20_Jun_2013_17_14_52_+1000__RzWCn5H2QvaK9Z7--
+---------------------------diff end-------------------------------------
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
