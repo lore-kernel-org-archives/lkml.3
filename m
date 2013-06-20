@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab3FTI1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 04:27:33 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:57954 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab3FTI1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 04:27:19 -0400
-X-Spam-Score: -100.8
-Message-ID: <51C2BCB3.4060603@asianux.com>
-Date: Thu, 20 Jun 2013 16:26:27 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S965042Ab3FTI1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 04:27:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13347 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964992Ab3FTI1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 04:27:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,903,1363158000"; 
+   d="scan'208";a="356629679"
+Date: Thu, 20 Jun 2013 10:27:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+Cc: tony@atomide.com, lgirdwood@gmail.com, broonie@kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        t-kristo@ti.com, gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] MFD: Change TWL6025 references to TWL6032
+Message-ID: <20130620082741.GB15667@zurbaran>
+References: <1371644642-934-1-git-send-email-oleksandr.kozaruk@ti.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: timer: looping issue, need reset variable 'found'
-References: <51B4A408.4050909@asianux.com> <alpine.LFD.2.02.1306101501160.22970@ionos> <51C039A8.5000903@asianux.com> <alpine.DEB.2.02.1306200944530.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1306200944530.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371644642-934-1-git-send-email-oleksandr.kozaruk@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 03:47 PM, Thomas Gleixner wrote:
-> On Tue, 18 Jun 2013, Chen Gang wrote:
->> > On 06/10/2013 10:12 PM, Thomas Gleixner wrote:
->> > I think we can treat original implementation as for speed optimization,
->> > so our discussion is "whether this speed optimization has effect with
->> > correctness".
-> Then I recommend that you to sit down and analyze the correctness of
-> the code.
+Hi Oleksandr,
 
-That is only your recommend, not mean I have duty to.
-
+On Wed, Jun 19, 2013 at 03:24:02PM +0300, Oleksandr Kozaruk wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
 > 
-> Come back when you have a proof of the code being wrong. And by proof
-> I mean factual proof not just handwaving theories.
+> The TWL6025 was never released beyond sample form and was replaced by
+> the PhoenixLite range of chips - TWL6032. Change the references to
+> reference the TWL6032 class and name the registers to twl6032 in line with
+> an actual released chip name to avoid confusion.
+> 
+> Currently there are no users of TWL6025 in the code.
+> 
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+> ---
+> 
+> There are non-mainline branches that use twl6032 by its name (for example
+> git://git.omapzoom.org/kernel/omap.git). There is intention to add support
+> of twl6032 device in mainline, but we'd like to know if we can use twl6032
+> instead of twl6025 in our new patches, that we are going to provide.
+> Related discussion: https://patchwork.kernel.org/patch/2686331/
+> 
+>  .../bindings/regulator/twl-regulator.txt           |   26 +++----
+>  .../devicetree/bindings/usb/twlxxxx-usb.txt        |    2 +-
+>  drivers/mfd/twl-core.c                             |   46 ++++++------
+>  drivers/regulator/twl-regulator.c                  |   76 ++++++++++----------
+>  drivers/usb/phy/phy-twl6030-usb.c                  |    2 +-
+>  include/linux/i2c/twl.h                            |   30 ++++----
+>  6 files changed, 91 insertions(+), 91 deletions(-)
+Applied to mfd-next, thanks.
 
+Cheers,
+Samuel.
 
-At least before say so, please reply:
-
--------------------------------------------------------------------------------
-If we assume "If there is nothing in tv2 which might come before the
-found timer, then any timer in tv3 will ..." is correct.
-
-When we found a timer in 'tv1', we will not search all timers in 'tv2'
-(we only search first looping of tv2 for the specific 'slot').
-
-Is it still OK ?
--------------------------------------------------------------------------------
-
-
-If you do not want to discuss with others, better quite politely, not
-need judging or checking others, it is useless for the cooperation with
-each other, is it right ?  ;-)
-
-
-Thanks.
 -- 
-Chen Gang
-
-Asianux Corporation
+Intel Open Source Technology Centre
+http://oss.intel.com/
