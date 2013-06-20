@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab3FTGFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 02:05:20 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:47478 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3FTGFS (ORCPT
+	id S1753477Ab3FTGFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 02:05:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49996 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3FTGFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 02:05:18 -0400
-Message-ID: <1371708312.3252.359.camel@edumazet-glaptop>
-Subject: Re: [net-next rfc 1/3] net: avoid high order memory allocation for
- queues by using flex array
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, davem@davemloft.net,
-        edumazet@google.com, hkchu@google.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 19 Jun 2013 23:05:12 -0700
-In-Reply-To: <51C28FA7.2070901@redhat.com>
-References: <1371620452-49349-1-git-send-email-jasowang@redhat.com>
-	  <1371620452-49349-2-git-send-email-jasowang@redhat.com>
-	  <1371623518.3252.267.camel@edumazet-glaptop>
-	  <20130619091132.GA2816@redhat.com>
-	 <1371635763.3252.289.camel@edumazet-glaptop> <51C28FA7.2070901@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jun 2013 02:05:47 -0400
+Date: Wed, 19 Jun 2013 23:05:46 -0700 (PDT)
+Message-Id: <20130619.230546.1612893804152231671.davem@davemloft.net>
+To: rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH 2/9] PTR_RET is now PTR_ERR_OR_ZERO(): Replace most.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1371357768-4968-2-git-send-email-rusty@rustcorp.com.au>
+References: <87ehc2rczo.fsf@rustcorp.com.au>
+	<1371357768-4968-1-git-send-email-rusty@rustcorp.com.au>
+	<1371357768-4968-2-git-send-email-rusty@rustcorp.com.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 13:14 +0800, Jason Wang wrote:
+From: Rusty Russell <rusty@rustcorp.com.au>
+Date: Sun, 16 Jun 2013 14:12:41 +0930
 
-> A drawback of NETIF_F_LLTX is that we may contend on qdisc lock
-> especially when we have a huge number of tx queues.
+> Sweep of the simple cases.
+> 
+> Cc: netdev@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Julia Lawall <julia.lawall@lip6.fr>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-For your information loopback driver is LLTX, and there is no qdisc on
-it, unless you specifically add one.
-
-Once you add a qdisc on a device, you hit the typical contention on a
-spinlock. But its hard to design a parallel qdisc. So far nobody did
-that.
-
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
