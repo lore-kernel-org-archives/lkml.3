@@ -1,123 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab3FTPp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:45:29 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:49387 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758021Ab3FTPpZ (ORCPT
+	id S965323Ab3FTQLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:11:41 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:38697
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965123Ab3FTQLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:45:25 -0400
-Message-ID: <51C3236C.8030508@hds.com>
-Date: Thu, 20 Jun 2013 11:44:44 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 12:11:40 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <benh@kernel.crashing.org>, <galak@kernel.crashing.org>,
+        <stuart.yoder@freescale.com>, <scottwood@freescale.com>,
+        <alex.williamson@redhat.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 2/3 v16] iommu/fsl: Add additional iommu attributes required by the PAMU driver.
+Date: Thu, 20 Jun 2013 21:31:27 +0530
+Message-ID: <1371744089-17780-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org
-CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
-        linux-edac@vger.kernel.org, tony.luck@intel.com,
-        tomoki.sekiyama@hds.com, dle-develop@lists.sourceforge.net
-Subject: [PATCH v17 1/4] tracing: Add DEFINE_EVENT_FN() macro
-References: <51C32343.7080901@hds.com>
-In-Reply-To: <51C32343.7080901@hds.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-20_06:2013-06-20,2013-06-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0
- kscore.is_bulkscore=3.04756220259605e-13 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.997215366458519
- urlsuspect_oldscore=0.997215366458519 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
- spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
- adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1305240000 definitions=main-1306200119
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+Added the following domain attributes for the FSL PAMU driver:
+1. Added new iommu stash attribute, which allows setting of the
+   LIODN specific stash id parameter through IOMMU API.
+2. Added an attribute for enabling/disabling DMA to a particular
+   memory window.
+3. Added domain attribute to check for PAMUV1 specific constraints.
 
-Each TRACE_EVENT() adds several helper functions. If two or more trace events
-share the same structure and print format, they can also share most of these
-helper functions and save a lot of space from duplicate code. This is why the
-DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
-
-Some events require a trigger to be called at registering and unregistering of
-the event and to do so they use TRACE_EVENT_FN().
-
-If multiple events require a trigger, they currently have no choice but to use
-TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This unfortunately
-causes a lot of wasted duplicate code created.
-
-By adding a DEFINE_EVENT_FN(), these events can still use a
-DECLARE_EVENT_CLASS() and then define their own triggers.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
- include/linux/tracepoint.h   |    2 ++
- include/trace/define_trace.h |    5 +++++
- include/trace/ftrace.h       |    4 ++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+v16 changes:
+- rebased to 3.10-rc6
+v15 changes:
+- Moved fsl_pamu_stash.h under arch/powerpc/include/asm.
+v14 changes:
+- Add FSL prefix to PAMU attributes.
+v13 changes:
+- created a new file include/linux/fsl_pamu_stash.h for stash
+attributes.
+v12 changes:
+- Moved PAMU specifc stash ids and structures to PAMU header file.
+- no change in v11.
+- no change in v10.
+ arch/powerpc/include/asm/fsl_pamu_stash.h |   39 +++++++++++++++++++++++++++++
+ include/linux/iommu.h                     |   16 ++++++++++++
+ 2 files changed, 55 insertions(+), 0 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/fsl_pamu_stash.h
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index f8e084d..ebeab36 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
- #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
- #define DEFINE_EVENT(template, name, proto, args)		\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
-+	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_CONDITION(template, name, proto,		\
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index 1905ca8..02e1003 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -44,6 +44,10 @@
- #define DEFINE_EVENT(template, name, proto, args) \
- 	DEFINE_TRACE(name)
- 
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
-+	DEFINE_TRACE_FN(name, reg, unreg)
+diff --git a/arch/powerpc/include/asm/fsl_pamu_stash.h b/arch/powerpc/include/asm/fsl_pamu_stash.h
+new file mode 100644
+index 0000000..caa1b21
+--- /dev/null
++++ b/arch/powerpc/include/asm/fsl_pamu_stash.h
+@@ -0,0 +1,39 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ */
 +
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_TRACE(name)
-@@ -91,6 +95,7 @@
- #undef TRACE_EVENT_CONDITION
- #undef DECLARE_EVENT_CLASS
- #undef DEFINE_EVENT
-+#undef DEFINE_EVENT_FN
- #undef DEFINE_EVENT_PRINT
- #undef DEFINE_EVENT_CONDITION
- #undef TRACE_HEADER_MULTI_READ
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 19edd7f..d615f78 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -71,6 +71,10 @@
- 	static struct ftrace_event_call	__used		\
- 	__attribute__((__aligned__(4))) event_##name
- 
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
-+	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++#ifndef __FSL_PAMU_STASH_H
++#define __FSL_PAMU_STASH_H
 +
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++/* cache stash targets */
++enum pamu_stash_target {
++	PAMU_ATTR_CACHE_L1 = 1,
++	PAMU_ATTR_CACHE_L2,
++	PAMU_ATTR_CACHE_L3,
++};
++
++/*
++ * This attribute allows configuring stashig specific parameters
++ * in the PAMU hardware.
++ */
++
++struct pamu_stash_attribute {
++	u32 	cpu;	/* cpu number */
++	u32 	cache;	/* cache to stash to: L1,L2,L3 */
++};
++
++#endif  /* __FSL_PAMU_STASH_H */
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 3aeb730..7ea319e 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -58,10 +58,26 @@ struct iommu_domain {
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+ #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+ 
++/*
++ * Following constraints are specifc to FSL_PAMUV1:
++ *  -aperture must be power of 2, and naturally aligned
++ *  -number of windows must be power of 2, and address space size
++ *   of each window is determined by aperture size / # of windows
++ *  -the actual size of the mapped region of a window must be power
++ *   of 2 starting with 4KB and physical address must be naturally
++ *   aligned.
++ * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned contraints.
++ * The caller can invoke iommu_domain_get_attr to check if the underlying
++ * iommu implementation supports these constraints.
++ */
++
+ enum iommu_attr {
+ 	DOMAIN_ATTR_GEOMETRY,
+ 	DOMAIN_ATTR_PAGING,
+ 	DOMAIN_ATTR_WINDOWS,
++	DOMAIN_ATTR_FSL_PAMU_STASH,
++	DOMAIN_ATTR_FSL_PAMU_ENABLE,
++	DOMAIN_ATTR_FSL_PAMUV1,
+ 	DOMAIN_ATTR_MAX,
+ };
+ 
 -- 
-1.7.1
-
+1.7.4.1
 
 
