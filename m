@@ -1,74 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422683Ab3FTS6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 14:58:12 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50359 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422666Ab3FTS6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 14:58:09 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>
-Cc: jimwall@q.com, brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 0/3] Add support for the Nuvoton NAU7802 ADC to the cfa10049
-Date: Thu, 20 Jun 2013 20:57:52 +0200
-Message-Id: <1371754675-12242-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S965539Ab3FTScv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:32:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14966 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030380Ab3FTSbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:31:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
+   d="scan'208";a="320172549"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: rostedt@goodmis.org
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH 08/11] tracing: add 'stacktrace' event trigger command
+Date: Thu, 20 Jun 2013 13:31:32 -0500
+Message-Id: <a78b60c31953d3de0f5ca1f5b34072cc783cf904.1371751701.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1371751701.git.tom.zanussi@linux.intel.com>
+References: <cover.1371751701.git.tom.zanussi@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add 'stacktrace' ftrace_func_command.  stacktrace event triggers are
+added by the user via this command in a similar way and using
+practically the same syntax as the analogous 'stacktrace' ftrace
+function command, but instead of writing to the set_ftrace_filter
+file, the stacktrace event trigger is written to the per-event
+'trigger' files:
 
-Sorry for the delay, this is v2 of the patchset that adds support for the 3
-Nuvoton NAU7802 ADCs present on the CFA-10049 board from Crystalfontz. The first
-patch adds the driver, the next ones are adding them in the DT after switching
-the second i2c bus to bitbanging following a lot of timeout issues we have on
-that bus.
+    echo 'stacktrace' > .../tracing/events/somesys/someevent/trigger
 
-Since v1, I've taken into account the review from Jonathan Cameron, Lars-Peter
-Clausen and Maxime Ripard:
- - channels are now statically allocated
- - no wrappers around i2c functions
- - sampling_freq is a shared attribute
- - setting gain is done through scale
- - cosmetics changes (s/idev/indio_dev/, blank lines before returns)
- - use of sign_extend32 to extend the sign
- - reading scale now returns IIO_VAL_FRACTIONAL_LOG2
- - no dt lookup for interrupts, this is done in of_i2c.c but that was mask due
- to a bug.
+The above command will turn on stacktraces for someevent i.e. whenever
+someevent is hit, a stacktrace will be logged.
 
-what I didn't address is setting the external reference voltage through a fixed
-regulator and I kept the vldo attribute to set the internal voltage reference in
-the DT as Jonathan seemed to be ok with that. If anybody is using a nau7802 with
-an external reference, it will still be time to add the fixed regulator. It
-shouldn't be difficult but I don't have any hardware to test.
+This also adds a 'count' version that limits the number of times the
+command will be invoked:
 
-Regards,
+    echo 'stacktrace:N' > .../tracing/events/somesys/someevent/trigger
 
-Alexandre Belloni (1):
-  iio: Add Nuvoton NAU7802 ADC driver
+Where N is the number of times the command will be invoked.
 
-Maxime Ripard (2):
-  ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
-  ARM: mxs: cfa10049: Add NAU7802 ADCs to the device tree
+The above command will log N stacktraces for someevent i.e. whenever
+someevent is hit N times, a stacktrace will be logged.
 
- .../bindings/iio/adc/nuvoton-nau7802.txt           |  17 +
- arch/arm/boot/dts/imx28-cfa10049.dts               | 126 +++--
- drivers/iio/adc/Kconfig                            |   9 +
- drivers/iio/adc/Makefile                           |   1 +
- drivers/iio/adc/nau7802.c                          | 603 +++++++++++++++++++++
- 5 files changed, 713 insertions(+), 43 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/nuvoton-nau7802.txt
- create mode 100644 drivers/iio/adc/nau7802.c
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+---
+ kernel/trace/trace_events_trigger.c | 88 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 88 insertions(+)
 
+diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+index 3e8dfe1..ee456f3 100644
+--- a/kernel/trace/trace_events_trigger.c
++++ b/kernel/trace/trace_events_trigger.c
+@@ -690,6 +690,83 @@ static struct event_command trigger_snapshot_cmd = {
+ 	.get_trigger_ops	= snapshot_get_trigger_ops,
+ };
+ 
++/*
++ * Skip 4:
++ *   ftrace_stacktrace()
++ *   function_trace_probe_call()
++ *   ftrace_ops_list_func()
++ *   ftrace_call()
++ */
++#define STACK_SKIP 4
++
++static void
++stacktrace_trigger(void **_data)
++{
++	struct event_trigger_data **p = (struct event_trigger_data **)_data;
++	struct event_trigger_data *data = *p;
++
++	if (!data)
++		return;
++
++	trace_dump_stack(STACK_SKIP);
++}
++
++static void
++stacktrace_count_trigger(void **_data)
++{
++	struct event_trigger_data **p = (struct event_trigger_data **)_data;
++	struct event_trigger_data *data = *p;
++
++	if (!data)
++		return;
++
++	if (!data->count)
++		return;
++
++	if (data->count != -1)
++		(data->count)--;
++
++	stacktrace_trigger(_data);
++}
++
++static int
++stacktrace_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
++			 void *_data)
++{
++	struct event_trigger_data *data = _data;
++
++	return event_trigger_print("stacktrace", m, (void *)data->count,
++				   data->filter_str);
++}
++
++static struct event_trigger_ops stacktrace_trigger_ops = {
++	.func			= stacktrace_trigger,
++	.print			= stacktrace_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops stacktrace_count_trigger_ops = {
++	.func			= stacktrace_count_trigger,
++	.print			= stacktrace_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops *
++stacktrace_get_trigger_ops(char *cmd, char *param)
++{
++	return param ? &stacktrace_count_trigger_ops : &stacktrace_trigger_ops;
++}
++
++static struct event_command trigger_stacktrace_cmd = {
++	.name			= "stacktrace",
++	.func			= event_trigger_callback,
++	.reg			= register_trigger,
++	.unreg			= unregister_trigger,
++	.get_trigger_ops	= stacktrace_get_trigger_ops,
++};
++
+ static __init void unregister_trigger_traceon_traceoff_cmds(void)
+ {
+ 	unregister_event_command(&trigger_traceon_cmd,
+@@ -734,5 +811,16 @@ __init int register_trigger_cmds(void)
+ 		return ret;
+ 	}
+ 
++	ret = register_event_command(&trigger_stacktrace_cmd,
++				      &trigger_commands,
++				      &trigger_cmd_mutex);
++	if (WARN_ON(ret < 0)) {
++		unregister_trigger_traceon_traceoff_cmds();
++		unregister_event_command(&trigger_snapshot_cmd,
++					 &trigger_commands,
++					 &trigger_cmd_mutex);
++		return ret;
++	}
++
+ 	return 0;
+ }
 -- 
-1.8.1.2
+1.7.11.4
 
