@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965892Ab3FTTaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:30:55 -0400
-Received: from sauhun.de ([89.238.76.85]:46677 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab3FTTax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:30:53 -0400
-Date: Thu, 20 Jun 2013 21:32:56 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: Re: [PATCH 3/4] i2c-i801: SMBus patch for Intel Coleto Creek
- DeviceIDs
-Message-ID: <20130620193256.GC2961@katana>
-References: <1371686397-6532-1-git-send-email-seth.heasley@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="32u276st3Jlj2kUU"
-Content-Disposition: inline
-In-Reply-To: <1371686397-6532-1-git-send-email-seth.heasley@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422747Ab3FTTIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:08:52 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:34619 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422731Ab3FTTIt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:08:49 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, shuahkhan@gmail.com
+Subject: [PATCH] leds: Convert led class driver from legacy pm ops to dev_pm_ops
+Date: Thu, 20 Jun 2013 13:08:44 -0600
+Message-Id: <1371755324-18248-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert drivers/leds/led-class to use dev_pm_ops for power management and
+remove Legacy PM ops hooks. With this change, led class registers
+suspend/resume callbacks via class->pm (dev_pm_ops) instead of Legacy
+class->suspend/resume. When __device_suspend() runs call-backs, it will
+find class->pm ops for the led class.
 
---32u276st3Jlj2kUU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/leds/led-class.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-On Wed, Jun 19, 2013 at 04:59:57PM -0700, Seth Heasley wrote:
-> This patch adds the i801 SMBus Controller DeviceIDs for the Intel Coleto =
-Creek PCH.
->=20
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index a20752f..4336e37 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -156,7 +156,7 @@ void led_classdev_resume(struct led_classdev *led_cdev)
+ }
+ EXPORT_SYMBOL_GPL(led_classdev_resume);
+ 
+-static int led_suspend(struct device *dev, pm_message_t state)
++static int led_suspend(struct device *dev)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+ 
+@@ -176,6 +176,11 @@ static int led_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static const struct dev_pm_ops leds_class_dev_pm_ops = {
++	.suspend        = led_suspend,
++	.resume         = led_resume,
++};
++
+ /**
+  * led_classdev_register - register a new object of led_classdev class.
+  * @parent: The device to register.
+@@ -252,8 +257,7 @@ static int __init leds_init(void)
+ 	leds_class = class_create(THIS_MODULE, "leds");
+ 	if (IS_ERR(leds_class))
+ 		return PTR_ERR(leds_class);
+-	leds_class->suspend = led_suspend;
+-	leds_class->resume = led_resume;
++	leds_class->pm = &leds_class_dev_pm_ops;
+ 	leds_class->dev_attrs = led_class_attrs;
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
-Applied to for-next, thanks!
-
-
---32u276st3Jlj2kUU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRw1joAAoJEBQN5MwUoCm2AnYP/3rW0yuHOJFb3xKFBSKbMoAg
-si4J38n9r2KKraurY5+Ttds6OUTze76kDv4qfV9eej7XiJg7M/OdjwqIxuFFV2Li
-7izN9UGmbIIFRZiG6nPIVQ+9pOquU3WYY+ne4uwIAMD/dN3NKsniYuulGJjQN06L
-Z3wwQWkmisd9aGet9/cL8V97vI7WgQ9Hg99P/ekFoEf9SqVm7bnW2tJgS3x267pj
-CAD+bwaEGVTlB1Ana0Pw1PZ6k+8GR0CKgQ6nrMyB8i/IBSYBvHxjk6GJKV7DLsWU
-lqOiDpqwNaQET1zCDcliomQwm5rWC0Q/7EG3uPbHR1EAUSKTVUWPwdrArOTVqcc9
-TpZFcE3xtj+bWyvn2n7EYFO1Nf7NDImd9PCC1HXKzAapb0Fc84wW1fcptB+ubO5z
-GbMUBKGBw6u1qCdhu2hDvaqBE2HTuZyNStuLE3NcBQmWOBHxiwvxbSt5NQiNZMRx
-QfQgvoZwjcOt1TCjLKXbXz5DKyUMf5Agsry1NWNEEjIPbdpaPD9i81UgjlLOWHxQ
-BjYWFmmz/ojR84OJQin9Bfym0ceO8qRVofkaKND4thm213mEaqIf+z7eRQnI/+65
-t4y46KbasmE9F9s+FPQC/9/5O9J1GZ426PLZ3mznXq+LyERMvoaJ1GRFV4XQkY1L
-n5cFm1D+ZVme4ZH72Wz1
-=Xypk
------END PGP SIGNATURE-----
-
---32u276st3Jlj2kUU--
