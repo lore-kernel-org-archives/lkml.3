@@ -1,169 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab3FTVoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:44:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757555Ab3FTVn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 17:43:57 -0400
-Message-ID: <1371764634.30572.47.camel@ul30vt.home>
-Subject: Re: [PATCH v2 1/2] pci: Fix flaw in pci_acs_enabled()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Jun 2013 15:43:54 -0600
-In-Reply-To: <CAErSpo7Z9v1QPQZLpfNAUPiq3w4ZfmzS1PStJW+SgJ_DmjjFvg@mail.gmail.com>
-References: <20130607162732.7733.17758.stgit@bling.home>
-	 <20130607163441.7733.23221.stgit@bling.home>
-	 <20130618170926.GA9203@google.com> <1371580735.22681.216.camel@ul30vt.home>
-	 <CAErSpo75R26gqO=muqrR28igNkMay4NNRW-VJWPt3xQCqp1YBQ@mail.gmail.com>
-	 <1371595667.22659.53.camel@ul30vt.home>
-	 <CAErSpo7Z9v1QPQZLpfNAUPiq3w4ZfmzS1PStJW+SgJ_DmjjFvg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1758244Ab3FTV4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:56:44 -0400
+Received: from mailgw01.dd24.net ([193.46.215.41]:40394 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab3FTV4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:56:43 -0400
+Subject: Re: support for Intel Atom based QNAP LEDs/buttons/buzzer in Linux?
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, wokeswang@qnap.com
+In-Reply-To: <20130620214207.GA12922@kroah.com>
+References: <1371259861.12984.6.camel@heisenberg.scientia.net>
+	 <1371687272.30351.13.camel@heisenberg.scientia.net>
+	 <20130620025900.GA21820@kroah.com>
+	 <1371763706.5197.6.camel@fermat.scientia.net>
+	 <20130620214207.GA12922@kroah.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-haEGvWEZsr5IIvF/xaQ0"
+Date: Thu, 20 Jun 2013 23:56:34 +0200
+Message-ID: <1371765394.5197.14.camel@fermat.scientia.net>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 20:30 -0600, Bjorn Helgaas wrote:
-> On Tue, Jun 18, 2013 at 4:47 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Tue, 2013-06-18 at 16:10 -0600, Bjorn Helgaas wrote:
-> >> On Tue, Jun 18, 2013 at 12:38 PM, Alex Williamson
-> >> <alex.williamson@redhat.com> wrote:
-> >> > On Tue, 2013-06-18 at 11:09 -0600, Bjorn Helgaas wrote:
-> >> >> On Fri, Jun 07, 2013 at 10:34:41AM -0600, Alex Williamson wrote:
-> > ...
-> >> >> >   * pci_acs_enabled - test ACS against required flags for a given device
-> >> >> >   * @pdev: device to test
-> >> >> > @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
-> >> >> >   */
-> >> >> >  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
-> >> >>
-> >> >> I know you didn't change the *name* of this function, but I think it
-> >> >> would be easier to follow if you did change the name to something more
-> >> >> descriptive, e.g., something to do with the actual property you're
-> >> >> interested in, which has to do with routing peer-to-peer DMA.
-> >> >>
-> >> >> That property makes sense even for the excluded devices, while the
-> >> >> idea of an ACS capability that doesn't even exist is implicitly
-> >> >> enabled, really doesn't.
-> >> >
-> >> > I think we also don't want to put the complexity at the caller for
-> >> > understanding what capabilities are applicable to a given device.  It's
-> >> > also convenient to use the set of ACS flags.  Given that, the current
-> >> > naming came about.  It's a little awkward, but it's easy to use.
-> >> > Suggestions for a better name?
-> >>
-> >> 100% agreed the caller shouldn't have to worry about different device
-> >> types.  I was thinking something like "pci_enforces_peer_isolation()"
-> >> or "pci_peer_dma_routed_upstream()".  Or maybe it should be
-> >> "pci_dev_...()".
-> >
-> > Ok, I'll play with those.  I'm worried that there are nuances to each
-> > flag bit that don't all fit under such a broad description.
-> 
-> It's true that they might be overly broad.  On the other hand, the set
-> of flags we look for is always the same: PCI_ACS_SV | PCI_ACS_RR |
-> PCI_ACS_CR | PCI_ACS_UF, so what's the point in making a completely
-> general-purpose interface?  I'm not sure it's even worth passing the
-> flags around if the code would be clearer without that.
-> 
-> > Do you want
-> > to gate this series on a rename of an existing function?
-> 
-> You put me in a bit of a tight spot :)  My #1 concern is correctness
-> and maintainability.  Naming things so they're consistent with other
-> code and make sense to other readers is a huge part of that.
-> Unfortunately I don't have time to do any work myself, and my only
-> tool is to apply patches or not.  But no, I don't want to gate a
-> simple bug fix on other "cleanup" rework.
-> 
-> > ...
-> >> >> Maybe something like (pidgin C):
-> >> >>
-> >> >>     if (PCI_EXP_TYPE_DOWNSTREAM || PCI_EXP_TYPE_ROOT_PORT)
-> >> >>       return pci_acs_flags_enabled(pdev, acs_flags);
-> >> >>
-> >> >>     if (!pdev->multifunction)
-> >> >>       return true;
-> >> >>
-> >> >>     acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | ...);
-> >> >>     return pci_acs_flags_enabled(pdev, acs_flags);
-> >> >
-> >> > ...  Note that
-> >> > the above simplification incorrectly handles multifunction bridges or EC
-> >> > devices.
-> >>
-> >> Hmm...  What *is* the correct behavior for a bridge?  You return
-> >> "true," i.e., you're saying that a PCIe-to-PCI bridge will always
-> >> route peer-to-peer transactions from PCI devices upstream to its PCIe
-> >> link.  But that seems wrong: a PCI DMA transaction can target a peer
-> >> on the same PCI bus, and it's not even possible for the bridge to
-> >> validate the transaction or forward it upstream.
-> >>
-> >> I suspect the "ACS is never applicable to a PCI Express to PCI Bridge
-> >> Function" statement in 6.12.1 just means "it's impossible for ACS to
-> >> isolate the devices below the bridge from each other, so it would be
-> >> misleading to implement the capability."
-> >
-> > Note that we never consider ACS to be enabled for a conventional PCI
-> > device.  I suppose we could have cases where it's the only device on a
-> > bus, but for the most part, it's not worth the trouble (it may be the
-> > only device now, then a hotplug occurs).  So really saying the bridge
-> > does or doesn't support ACS doesn't matter to the devices behind it.
-> 
-> > What does matter is the fan-out of that isolation group of the
-> > conventional devices beyond the bridge.  If the spec is indicating that
-> > a bridge cannot do peer-to-peer with other devices  then all of the
-> > conventional devices behind it are in an isolation domain so long as the
-> > path between the bridge and the RC supports ACS.  If the bridge can do
-> > peer-to-peer and it is a multifunction device, then the isolation domain
-> > grows to include the other functions and subordinates of the other
-> > functions.  I took the assumption that a bridge probably needs to
-> > forward transaction upstream.  Do you have an alternate opinion?
-> 
-> I think you're talking about a multi-function device with several
-> PCIe-to-PCI bridges (e.g., Option A of Figure 1-4, p. 29, of the PCIe
-> bridge spec 1.0), and the question is whether the bridge can forward a
-> transaction between bus X and bus Y without forwarding it upstream.
 
-Right, or the second function may not be a bridge, it could be anything
-that could accept a p2p DMA.
+--=-haEGvWEZsr5IIvF/xaQ0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I don't see any mention of forwarding transactions between functions
-> of a multi-ported bridge, so the conservative assumption would be that
-> a bridge is allowed to do that.  I would expect a conventional
-> multi-port PCI-PCI bridge to forward between functions, because in
-> conventional PCI there would be no reason to forward it upstream, so
-> I'd think PCIe-PCI bridges, at least those designed pre-ACS, would be
-> similar.  And I don't think the ACS capability is expressive enough to
-> say "peer-to-peer transactions between functions must be forwarded
-> upstream, but peer-to-peer transactions below a single function may
-> not be."
+On Thu, 2013-06-20 at 14:42 -0700, Greg KH wrote:
+> Also, do you have a pointer to the git tree for
+> the hardware again, I can't seem to find it.
+You mean a git repo for their driver? I don't think they have one...
+just the big tarball with the patches integrated...
 
-The best I can find is the statement that the bridge must forward
-transactions from the secondary interface to the primary interface.  We
-could infer that that means upstream, but we can't rule out some switch
-logic in a multifunction package that could do a re-route from that
-statement.  However then why would the PCIe spec forbid a PCIe-to-PCI
-bridge from implementing ACS?
+>   I can dig through the tree
+> to see if I can make something "self-contained", if you are willing to
+> test it out.
+Sure... I'm happy to test anything out... right now the box isn't used
+in production yet... so it's easy for me... and I guess you have enough
+experience to not accidentally write code that overwrites the
+firmware ;) (which would probably happen when I'd have tried to ^^)
 
-ACS doesn't need to be expressive enough for what you're describing.  We
-know that there's no protection against p2p on conventional PCI.  The
-PCIe bridge spec even indicates that transactions within the bridge
-apertures should not be forwarded to the primary interface (which should
-really be a big red flag that we shouldn't even attempt to support
-assignment of such devices).  The question is whether a transaction
-going out the primary interface is necessarily headed upstream or if it
-can go directly to a peer device.  In that case, I can't figure out why
-ACS is precluded from PCIe-to-PCI bridges.  If anything this is an
-example of why we need a user override, then we could it to the more
-conservative value pending further information and let the user change
-it.  Thanks,
 
-Alex
+Thanks,
+Chris.
+
+btw: Let's remove Wokes Wang again in any following messages... if he's
+interested in contributing he can come back and read the messages in the
+archive (http://thread.gmane.org/gmane.linux.kernel/1508763)... and I
+don't want to spam him, if he's not interested.
+
+--=-haEGvWEZsr5IIvF/xaQ0
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIQ/jCCBXUw
+ggNdoAMCAQICAwEBgjANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwG
+A1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290
+MB4XDTEyMDcyMzE0NTY0NVoXDTE0MDcyMzE0NTY0NVowfDEhMB8GA1UEAxMYQ2hyaXN0b3BoIEFu
+dG9uIE1pdHRlcmVyMSQwIgYJKoZIhvcNAQkBFhVjYWxlc3R5b0BzY2llbnRpYS5uZXQxMTAvBgkq
+hkiG9w0BCQEWIm1haWxAY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyLm5hbWUwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQCq/4X3Urm/IHCIYUyqPrBN6FZ2pmd8V5epPyDlveqtdYvLBLNy
+gP3G3KhGoCA4Jf49KYGmbqk+F7fVWcG1zcdwEx7itKJyj39nYf2HWXogxUSfKFptbOgpsTcEWuxg
+ka2EkJuErTvYbwCEKT7mn4v6ScuFBc3Q+Hswlt1jbqjczi+OxcU1skvxM5jGjzRwYPUsiHZJRkWp
+ogbbhNWZNbwXiMPln380TAlryRAr5UE0dSe1dg1qHhF6HSNKwaer0+Dcd/goL4XQhHxCAGZKfCK0
+wVRf1SeEsS9FDGMMjW2b6HpHF+OVXuagjrxSWHttx0+Ez/PZDXpeZpjXatzzmlJFAgMBAAGjggEm
+MIIBIjAMBgNVHRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlm
+aWNhdGUgZm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzBABgNVHSUE
+OTA3BggrBgEFBQcDBAYIKwYBBQUHAwIGCisGAQQBgjcKAwQGCisGAQQBgjcKAwMGCWCGSAGG+EIE
+ATAyBggrBgEFBQcBAQQmMCQwIgYIKwYBBQUHMAGGFmh0dHA6Ly9vY3NwLmNhY2VydC5vcmcwRAYD
+VR0RBD0wO4EVY2FsZXN0eW9Ac2NpZW50aWEubmV0gSJtYWlsQGNocmlzdG9waC5hbnRvbi5taXR0
+ZXJlci5uYW1lMA0GCSqGSIb3DQEBBQUAA4ICAQAW4jm8Jql9XYO+p1FsK9XAI/QfolXZC4fVP5gO
+fJnN8zriOs4GVCdcTehaOFGo++Y2q1tCw4XxbI2ec+NOewhH2Cg636N8h6hxGw1M/+KMUp7wi4e4
+2PjY+XsnuaxqLnouKrBOriJ26LpqvlZY6oXKjYWEhBr9ZtmdyV8BcODOqCnmkpOr9Jd0ZHmrX5cY
+sWiYjJ52Cz0bOvbP7cqXn86If/cHWWKq7AJ509SejkTZBEgSfdIYQcLnKD+EWwqQvW5PFGwlgXlM
+Kv+/R0f6AbqHL9kJ+siZ6uwPS1lcOxvbm1QnWTJnisJ9UtwF+gDWxDdoh5Ca6PTZMzcSPfWb17eF
+n0pbmwiu9x+gg2mBDGQ5aqgEouWyBGYX1Woke1SOaxbA6KCYF2k/9MlKQfZ482DqA/YdScNYYi4L
+/UmAMARni8BuV0hJ0J5WJL6+qzRZntbBOO6XnfGkByIIaa9ePHtndFyEku0lL++9IfC5YGPwyh3R
+iuQ90qkiyxz9YpaklSX2Bh27+92ZAnF7vBC+y9xtvBOY3A6JUttnuAiiYKuWKnVDEFVZ4hSq7H+N
+I1w9MHSfFzE+fU42wy8b2Fdh6Mrc/yXdz4qD8th4DflK+VEa+mILqXV/b27i5uLmjdGN9XQ2ZXxO
+eyb+sIlJ60ejYYrbhEgXJqEBagnYIY+SaTYNAjCCBXUwggNdoAMCAQICAwEBgjANBgkqhkiG9w0B
+AQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
+b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEyMDcyMzE0NTY0NVoXDTE0MDcy
+MzE0NTY0NVowfDEhMB8GA1UEAxMYQ2hyaXN0b3BoIEFudG9uIE1pdHRlcmVyMSQwIgYJKoZIhvcN
+AQkBFhVjYWxlc3R5b0BzY2llbnRpYS5uZXQxMTAvBgkqhkiG9w0BCQEWIm1haWxAY2hyaXN0b3Bo
+LmFudG9uLm1pdHRlcmVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCq/4X3
+Urm/IHCIYUyqPrBN6FZ2pmd8V5epPyDlveqtdYvLBLNygP3G3KhGoCA4Jf49KYGmbqk+F7fVWcG1
+zcdwEx7itKJyj39nYf2HWXogxUSfKFptbOgpsTcEWuxgka2EkJuErTvYbwCEKT7mn4v6ScuFBc3Q
++Hswlt1jbqjczi+OxcU1skvxM5jGjzRwYPUsiHZJRkWpogbbhNWZNbwXiMPln380TAlryRAr5UE0
+dSe1dg1qHhF6HSNKwaer0+Dcd/goL4XQhHxCAGZKfCK0wVRf1SeEsS9FDGMMjW2b6HpHF+OVXuag
+jrxSWHttx0+Ez/PZDXpeZpjXatzzmlJFAgMBAAGjggEmMIIBIjAMBgNVHRMBAf8EAjAAMFYGCWCG
+SAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlmaWNhdGUgZm9yIEZSRUUgaGVhZCBvdmVy
+IHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzBABgNVHSUEOTA3BggrBgEFBQcDBAYIKwYBBQUHAwIG
+CisGAQQBgjcKAwQGCisGAQQBgjcKAwMGCWCGSAGG+EIEATAyBggrBgEFBQcBAQQmMCQwIgYIKwYB
+BQUHMAGGFmh0dHA6Ly9vY3NwLmNhY2VydC5vcmcwRAYDVR0RBD0wO4EVY2FsZXN0eW9Ac2NpZW50
+aWEubmV0gSJtYWlsQGNocmlzdG9waC5hbnRvbi5taXR0ZXJlci5uYW1lMA0GCSqGSIb3DQEBBQUA
+A4ICAQAW4jm8Jql9XYO+p1FsK9XAI/QfolXZC4fVP5gOfJnN8zriOs4GVCdcTehaOFGo++Y2q1tC
+w4XxbI2ec+NOewhH2Cg636N8h6hxGw1M/+KMUp7wi4e42PjY+XsnuaxqLnouKrBOriJ26LpqvlZY
+6oXKjYWEhBr9ZtmdyV8BcODOqCnmkpOr9Jd0ZHmrX5cYsWiYjJ52Cz0bOvbP7cqXn86If/cHWWKq
+7AJ509SejkTZBEgSfdIYQcLnKD+EWwqQvW5PFGwlgXlMKv+/R0f6AbqHL9kJ+siZ6uwPS1lcOxvb
+m1QnWTJnisJ9UtwF+gDWxDdoh5Ca6PTZMzcSPfWb17eFn0pbmwiu9x+gg2mBDGQ5aqgEouWyBGYX
+1Woke1SOaxbA6KCYF2k/9MlKQfZ482DqA/YdScNYYi4L/UmAMARni8BuV0hJ0J5WJL6+qzRZntbB
+OO6XnfGkByIIaa9ePHtndFyEku0lL++9IfC5YGPwyh3RiuQ90qkiyxz9YpaklSX2Bh27+92ZAnF7
+vBC+y9xtvBOY3A6JUttnuAiiYKuWKnVDEFVZ4hSq7H+NI1w9MHSfFzE+fU42wy8b2Fdh6Mrc/yXd
+z4qD8th4DflK+VEa+mILqXV/b27i5uLmjdGN9XQ2ZXxOeyb+sIlJ60ejYYrbhEgXJqEBagnYIY+S
+aTYNAjCCBggwggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEe
+MBwGA1UECxMVaHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcg
+QXV0aG9yaXR5MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDcz
+NjU1WhcNMzMwMzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0
+cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkq
+hkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH7
+63KQDXShlmSrn6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSM
+JSioxXkJfUa5ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpe
+dD6XM1nowwM9YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSn
+atU7kn5MkAV+k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9Y
+pwOtvrQuE+1dqkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ug
+W+pOlrh819WghnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv
+1X8pwLJBA2iSzOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev
+2zol848xVOomi4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8
+c1n3ZkJ0Horj+NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsG
+AQUFBwEBBFEwTzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUH
+MAKGHGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAz
+MDEGCCsGAQUFBwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqG
+SIb3DQEBBAUAA4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7
+QpHCmf0bUZurRqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC
+55O5hU2XT7EeOEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLz
+pB8eMvwnFQXP3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1
+USKqiDAA4rDUvL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl
+5QpsvxfHckZXnJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFs
+oBelLRDrnHpKvb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5sl
+elZjAGS5XaRifVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/TH
+duOhWVf3cbLEbhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYIT
+QdJupRuZJ4DnC6moADGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNV
+BAsTFWh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAID
+AQGCMAkGBSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
+MQ8XDTEzMDYyMDIxNTYzNFowIwYJKoZIhvcNAQkEMRYEFMRedlaySleL5QGMFaDPNUdLmtWxMGoG
+CSsGAQQBgjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93
+d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDAQGCMGwGCyqGSIb3
+DQEJEAILMV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMBAYIwDQYJKoZIhvcNAQEB
+BQAEggEAUHuVoOS/+4tLwYgnc3L0DPC/rg6nbTMDQPhRHU+cyVcStTGpG4mLKY5iDkq88tgqyvZo
+EBeg3+J2mOdKSHp+iSyTwQSRn6CFYaEi8ZsdXbDPZIpv/8UjRM+8+/q5sDxelsFRUegAgTbD2MM1
+q/IoyB+26NjE5QF15m1uJdBR9ZBEyWyXouVMWcI/eqe7M6RLgNg6fZ+F0aU3KsTQXh2g+7RY3fBh
+EG2twolCNuE/YkWy88iT5nsdU4oI2echgg/0DzF2h96AWLZOSxb/buw8PFelxBZ4Xy+xjIODTENW
+y866BiRyf5WMKBDvpn2TyENQQ/GBDLqDHcAm6oItVMD18gAAAAAAAA==
+
+
+--=-haEGvWEZsr5IIvF/xaQ0--
 
