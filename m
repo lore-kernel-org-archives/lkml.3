@@ -1,121 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964994Ab3FTAha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 20:37:30 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60969 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935382Ab3FTAh3 (ORCPT
+	id S935452Ab3FTAxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 20:53:08 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41949 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934734Ab3FTAxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 20:37:29 -0400
-Date: Wed, 19 Jun 2013 20:36:54 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86: Fix section mismatch on load_ucode_ap
-Message-ID: <20130620003654.GB15693@windriver.com>
-References: <1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com>
- <tip-949785996ec2250fa958fc3a924e5186e9a8fa2c@git.kernel.org>
- <CAE9FiQWdTVFo5PW7dycXj-Exv5jVyzQcHfrH_q2tJbDRYnPZeA@mail.gmail.com>
+	Wed, 19 Jun 2013 20:53:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWdTVFo5PW7dycXj-Exv5jVyzQcHfrH_q2tJbDRYnPZeA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51C162F9.9020705@ti.com>
+References: <1371609080-30595-1-git-send-email-chao.xie@marvell.com>
+	<51C162F9.9020705@ti.com>
+Date: Thu, 20 Jun 2013 08:53:05 +0800
+Message-ID: <CADApbej+qcvV2EmcB9g_k=DGp7R-1H_dEaA7StimMoR+G6z0Cg@mail.gmail.com>
+Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
+ host controller
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Chao Xie <chao.xie@marvell.com>, Alan Stern <stern@rowland.harvard.edu>,
+        "balbi@ti.com" <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [tip:x86/urgent] x86: Fix section mismatch on load_ucode_ap] On 19/06/2013 (Wed 17:02) Yinghai Lu wrote:
+On Wed, Jun 19, 2013 at 3:51 PM, Roger Quadros <rogerq@ti.com> wrote:
+> Hi Chao,
+>
+> On 06/19/2013 05:31 AM, Chao Xie wrote:
+>> Some controller need software to initialize PHY before add
+>> host controller, and shut down PHY after remove host controller.
+>> Add the generic code for these controllers so they do not need
+>> do it in its own host controller driver.
+>>
+>> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+>> ---
+>>  drivers/usb/core/hcd.c |   24 +++++++++++++++++++++++-
+>>  1 files changed, 23 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+>> index d53547d..301c639 100644
+>> --- a/drivers/usb/core/hcd.c
+>> +++ b/drivers/usb/core/hcd.c
+>> @@ -40,9 +40,11 @@
+>>  #include <linux/platform_device.h>
+>>  #include <linux/workqueue.h>
+>>  #include <linux/pm_runtime.h>
+>> +#include <linux/err.h>
+>>
+>>  #include <linux/usb.h>
+>>  #include <linux/usb/hcd.h>
+>> +#include <linux/usb/phy.h>
+>>
+>>  #include "usb.h"
+>>
+>> @@ -2531,12 +2533,26 @@ int usb_add_hcd(struct usb_hcd *hcd,
+>>        */
+>>       set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
+>>
+>> +     /* In case hcd->phy contains the error code. */
+>> +     if (IS_ERR(hcd->phy))
+>> +             hcd->phy = NULL;
+>> +
+>> +     /* Initialize the PHY before other hardware operation. */
+>> +     if (hcd->phy) {
+>> +             retval = usb_phy_init(hcd->phy);
+>> +             if (retval) {
+>> +                     dev_err(hcd->self.controller,
+>> +                             "can't initialize phy\n");
+>> +                     goto err_hcd_driver_setup;
+>> +             }
+>> +     }
+>> +
+>>       /* "reset" is misnamed; its role is now one-time init. the controller
+>>        * should already have been reset (and boot firmware kicked off etc).
+>>        */
+>>       if (hcd->driver->reset && (retval = hcd->driver->reset(hcd)) < 0) {
+>>               dev_err(hcd->self.controller, "can't setup\n");
+>> -             goto err_hcd_driver_setup;
+>> +             goto err_hcd_driver_init_phy;
+>>       }
+>>       hcd->rh_pollable = 1;
+>>
+>> @@ -2608,6 +2624,9 @@ err_hcd_driver_start:
+>>       if (usb_hcd_is_primary_hcd(hcd) && hcd->irq > 0)
+>>               free_irq(irqnum, hcd);
+>>  err_request_irq:
+>> +err_hcd_driver_init_phy:
+>> +     if (hcd->phy)
+>> +             usb_phy_shutdown(hcd->phy);
+>>  err_hcd_driver_setup:
+>>  err_set_rh_speed:
+>>       usb_put_dev(hcd->self.root_hub);
+>> @@ -2674,6 +2693,9 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+>>                       free_irq(hcd->irq, hcd);
+>>       }
+>>
+>> +     if (hcd->phy)
+>> +             usb_phy_shutdown(hcd->phy);
+>> +
+>>       usb_put_dev(hcd->self.root_hub);
+>>       usb_deregister_bus(&hcd->self);
+>>       hcd_buffer_destroy(hcd);
+>>
+>
+> I still think that we shouldn't do this because it adds more confusion and is not
+> still a generic enough solution.
+>
+> 1) It is better for the piece of code that does usb_phy_get() to do usb_phy_init/shutdown,
+> else there will be lot of confusion. (Felipe pointed this out earlier).
+>
+> 2) There is no standard way of getting phy for different controllers. It is mostly platform
+> dependent and it is best to leave this to the controller drivers. (Pointed out by Alan).
+>
+> 3) Controllers can have multiple PHYs. e.g. ehci-omap has one PHY per port and it supports
+> 3 ports. This is also platform specific and difficult to handle generically.
+>
+> 4) Controllers can have specific timing requirements as to when the PHY is initialized relative
+> to the controller being initialized. I've pointed OMAP specific stuff in the earlier patch.
+>
+> Considering all these points, I think we should leave things as they are. It isn't that hard
+> for controllers to manage phy_init() and phy_shutdown(), and there is not much code space saved
+> when compared to the complexity it creates if we move them to HCD layer.
+>
+In fact, the PHY setting and handling is related to platform or SOC,
+and for different SOC they can
+have same EHCI HCD but they PHY handling can be different.
+Omap'a case is the example, and i think some other vendors may have
+silimar cases.
+>From above point, It is better to leave the PHY initialization and
+shutdown to be done by each echi-xxx driver.
 
-> On Wed, Jun 19, 2013 at 3:03 PM, tip-bot for Paul Gortmaker
-> <tipbot@zytor.com> wrote:
-> > Commit-ID:  949785996ec2250fa958fc3a924e5186e9a8fa2c
-> > Gitweb:     http://git.kernel.org/tip/949785996ec2250fa958fc3a924e5186e9a8fa2c
-> > Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
-> > AuthorDate: Wed, 19 Jun 2013 11:15:26 -0400
-> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > CommitDate: Wed, 19 Jun 2013 14:43:59 -0700
-> >
-> > x86: Fix section mismatch on load_ucode_ap
-> >
-> > We are in the process of removing all the __cpuinit annotations.
-> > While working on making that change, an existing problem was
-> > made evident:
-> >
-> >   WARNING: arch/x86/kernel/built-in.o(.text+0x198f2): Section mismatch
-> >   in reference from the function cpu_init() to the function
-> >   .init.text:load_ucode_ap()   The function cpu_init() references
-> >   the function __init load_ucode_ap().  This is often because cpu_init
-> >   lacks a __init annotation or the annotation of load_ucode_ap is wrong.
-> >
-> > This now appears because in my working tree, cpu_init() is no longer
-> > tagged as __cpuinit, and so the audit picks up the mismatch.  The 2nd
-> > hypothesis from the audit is the correct one, as there was an incorrect
-> > __init tag on the prototype in the header (but __cpuinit was used on
-> > the function itself.)
-> >
-> > The audit is telling us that the prototype's __init annotation took
-> > effect and the function did land in the .init.text section.  Checking
-> > with objdump on a mainline tree that still has __cpuinit shows that
-> > the __cpuinit on the function takes precedence over the __init on the
-> > prototype, but that won't be true once we make __cpuinit a no-op.
-> >
-> > Even though we are removing __cpuinit, we temporarily align both
-> > the function and the prototype on __cpuinit so that the changeset
-> > can be applied to stable trees  if desired.
-> >
-> > [ hpa: build fix only, no object code change ]
-> >
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Cc: stable <stable@vger.kernel.org> # 3.9+
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Link: http://lkml.kernel.org/r/1371654926-11729-1-git-send-email-paul.gortmaker@windriver.com
-> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > ---
-> >  arch/x86/include/asm/microcode.h | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-> > index 6825e2e..6bc3985 100644
-> > --- a/arch/x86/include/asm/microcode.h
-> > +++ b/arch/x86/include/asm/microcode.h
-> > @@ -60,11 +60,11 @@ static inline void __exit exit_amd_microcode(void) {}
-> >  #ifdef CONFIG_MICROCODE_EARLY
-> >  #define MAX_UCODE_COUNT 128
-> >  extern void __init load_ucode_bsp(void);
-> > -extern __init void load_ucode_ap(void);
-> > +extern void __cpuinit load_ucode_ap(void);
-> 
-> why not just dropping __init in header file?
+So Alan and Felipe
+What are your ideas about it?
 
-Why?  Because then the mis-match remains, and the next person along who
-cares about understanding what it really means, has to repeat the same
-research that I did in order to understand what was really happening
-(or in this case, not happening).  Why do that?  That doesn't make sense.
-
-Paul.
---
-
-> 
-> 
-> >  extern int __init save_microcode_in_initrd(void);
-> >  #else
-> >  static inline void __init load_ucode_bsp(void) {}
-> > -static inline __init void load_ucode_ap(void) {}
-> > +static inline void __cpuinit load_ucode_ap(void) {}
-> >  static inline int __init save_microcode_in_initrd(void)
-> >  {
-> >         return 0;
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> cheers,
+> -roger
