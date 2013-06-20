@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935703Ab3FTCVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:21:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16182 "EHLO mga03.intel.com"
+	id S935673Ab3FTCVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:21:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6154 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935671Ab3FTCVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:21:20 -0400
+	id S935648Ab3FTCVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 22:21:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,901,1363158000"; 
-   d="scan'208";a="319759558"
+   d="scan'208";a="319759507"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -20,9 +20,9 @@ Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
         tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
         riel@redhat.com
-Subject: [Resend patch v8 11/13] sched/cfs_rq: change atomic64_t removed_load to atomic_long_t
-Date: Thu, 20 Jun 2013 10:18:55 +0800
-Message-Id: <1371694737-29336-12-git-send-email-alex.shi@intel.com>
+Subject: [Resend patch v8 07/13] sched: consider runnable load average in move_tasks
+Date: Thu, 20 Jun 2013 10:18:51 +0800
+Message-Id: <1371694737-29336-8-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
 References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
@@ -30,69 +30,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like as runnable_load_avg, blocked_load_avg variable, long type is
-enough for removed_load in 64 bit or 32 bit machine.
+Except using runnable load average in background, move_tasks is also
+the key functions in load balance. We need consider the runnable load
+average in it in order to the apple to apple load comparison.
 
-Then we avoid the expensive atomic64 operations on 32 bit machine.
+Morten had caught a div u64 bug on ARM, thanks!
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Tested-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c  | 10 ++++++----
- kernel/sched/sched.h |  3 ++-
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c2a2a36..8889fbf 100644
+index 7d5c477..ddbc19f 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1517,8 +1517,9 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 	if (!decays && !force_update)
- 		return;
+@@ -4184,11 +4184,14 @@ static int tg_load_down(struct task_group *tg, void *data)
+ 	long cpu = (long)data;
  
--	if (atomic64_read(&cfs_rq->removed_load)) {
--		u64 removed_load = atomic64_xchg(&cfs_rq->removed_load, 0);
-+	if (atomic_long_read(&cfs_rq->removed_load)) {
-+		unsigned long removed_load;
-+		removed_load = atomic_long_xchg(&cfs_rq->removed_load, 0);
- 		subtract_blocked_load_contrib(cfs_rq, removed_load);
+ 	if (!tg->parent) {
+-		load = cpu_rq(cpu)->load.weight;
++		load = cpu_rq(cpu)->avg.load_avg_contrib;
+ 	} else {
++		unsigned long tmp_rla;
++		tmp_rla = tg->parent->cfs_rq[cpu]->runnable_load_avg + 1;
++
+ 		load = tg->parent->cfs_rq[cpu]->h_load;
+-		load *= tg->se[cpu]->load.weight;
+-		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
++		load *= tg->se[cpu]->avg.load_avg_contrib;
++		load /= tmp_rla;
  	}
  
-@@ -3485,7 +3486,8 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
- 	 */
- 	if (se->avg.decay_count) {
- 		se->avg.decay_count = -__synchronize_entity_decay(se);
--		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
-+		atomic_long_add(se->avg.load_avg_contrib,
-+						&cfs_rq->removed_load);
- 	}
- }
- #endif /* CONFIG_SMP */
-@@ -5947,7 +5949,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
- #endif
- #if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
- 	atomic64_set(&cfs_rq->decay_counter, 1);
--	atomic64_set(&cfs_rq->removed_load, 0);
-+	atomic_long_set(&cfs_rq->removed_load, 0);
- #endif
- }
+ 	tg->cfs_rq[cpu]->h_load = load;
+@@ -4214,12 +4217,9 @@ static void update_h_load(long cpu)
+ static unsigned long task_h_load(struct task_struct *p)
+ {
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+-	unsigned long load;
+-
+-	load = p->se.load.weight;
+-	load = div_u64(load * cfs_rq->h_load, cfs_rq->load.weight + 1);
  
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 78bb990..755d930 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -278,8 +278,9 @@ struct cfs_rq {
- 	 * the FAIR_GROUP_SCHED case).
- 	 */
- 	unsigned long runnable_load_avg, blocked_load_avg;
--	atomic64_t decay_counter, removed_load;
-+	atomic64_t decay_counter;
- 	u64 last_decay;
-+	atomic_long_t removed_load;
+-	return load;
++	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
++			cfs_rq->runnable_load_avg + 1);
+ }
+ #else
+ static inline void update_blocked_averages(int cpu)
+@@ -4232,7 +4232,7 @@ static inline void update_h_load(long cpu)
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	/* Required to track per-cpu representation of a task_group */
+ static unsigned long task_h_load(struct task_struct *p)
+ {
+-	return p->se.load.weight;
++	return p->se.avg.load_avg_contrib;
+ }
+ #endif
+ 
 -- 
 1.7.12
 
