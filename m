@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935738Ab3FTDgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:36:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32169 "EHLO
+	id S965187Ab3FTDjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:39:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29064 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935546Ab3FTDgj (ORCPT
+	with ESMTP id S935701Ab3FTDgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:36:39 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=DNHN-bC5VMQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=LAX8XD9Y1q8A:10 a=q-zO9UgPWf2GTEgsOIMA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Wed, 19 Jun 2013 23:36:40 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=jFrl7hLK7gcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fU4MqtBxlbIA:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=jMg_Gfg-Gvda8nM5g_EA:9 a=lqfzikGvtTgA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=RdTXm-Io4kZL_5OU:21 a=kenop1vB8jGrfAZk:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130620033516.003166252@goodmis.org>
+Message-Id: <20130620033639.582765054@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 19 Jun 2013 23:35:16 -0400
+Date: Wed, 19 Jun 2013 23:35:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 00/12] tracing: Updates and minor fixes for 3.11.
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [for-next][PATCH 07/12] tracing: Do not call kmem_cache_free() on allocation failure
+References: <20130620033516.003166252@goodmis.org>
+Content-Disposition: inline; filename=0007-tracing-Do-not-call-kmem_cache_free-on-allocation-fa.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches are queued for 3.11.
+From: Namhyung Kim <namhyung.kim@lge.com>
+
+There's no point calling it when _alloc() failed.
+
+Link: http://lkml.kernel.org/r/1370585268-29169-1-git-send-email-namhyung@kernel.org
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index db086f1..f57b015 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -97,7 +97,7 @@ static int __trace_define_field(struct list_head *head, const char *type,
+ 
+ 	field = kmem_cache_alloc(field_cachep, GFP_TRACE);
+ 	if (!field)
+-		goto err;
++		return -ENOMEM;
+ 
+ 	field->name = name;
+ 	field->type = type;
+@@ -114,11 +114,6 @@ static int __trace_define_field(struct list_head *head, const char *type,
+ 	list_add(&field->link, head);
+ 
+ 	return 0;
+-
+-err:
+-	kmem_cache_free(field_cachep, field);
+-
+-	return -ENOMEM;
+ }
+ 
+ int trace_define_field(struct ftrace_event_call *call, const char *type,
+-- 
+1.7.10.4
 
 
-Harsh Prateek Bora (1):
-      tracing/trivial: Consolidate error return condition
-
-Juri Lelli (1):
-      ftrace: Fix stddev calculation in function profiler
-
-Li Zefan (1):
-      ftrace: Remove ftrace_regex_lseek()
-
-Namhyung Kim (1):
-      tracing: Do not call kmem_cache_free() on allocation failure
-
-Steven Rostedt (2):
-      ftrace: Use schedule_on_each_cpu() as a heavy synchronize_sched()
-      tracing: Add binary '&' filter for events
-
-Steven Rostedt (Red Hat) (4):
-      tracing: Add function probe to trigger a ftrace dump to console
-      tracing: Add function probe to trigger a ftrace dump of current CPU trace
-      tracing: Update documentation on tracepoint glob matching
-      tracing: Disable tracing on warning
-
-Wang YanQing (1):
-      tracing: Fix file mode of free_buffer
-
-zhangwei(Jovi) (1):
-      tracing/kprobes: Remove unnecessary checking of trace_probe_is_enabled
-
-----
- Documentation/kernel-parameters.txt |   13 +++++
- Documentation/trace/events.txt      |   15 ++++-
- Documentation/trace/ftrace.txt      |   13 +++++
- include/linux/ftrace.h              |    9 +--
- kernel/panic.c                      |    3 +
- kernel/sysctl.c                     |    7 +++
- kernel/trace/ftrace.c               |   33 +++++++++--
- kernel/trace/trace.c                |   19 ++++++-
- kernel/trace/trace_events.c         |   12 +---
- kernel/trace/trace_events_filter.c  |    6 ++
- kernel/trace/trace_functions.c      |  103 +++++++++++++++++++++++++++++++++--
- kernel/trace/trace_kprobe.c         |    3 +-
- 12 files changed, 207 insertions(+), 29 deletions(-)
