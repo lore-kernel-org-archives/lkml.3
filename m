@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935725Ab3FTDqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 23:46:06 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:60084 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935668Ab3FTDqD (ORCPT
+	id S935748Ab3FTDqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 23:46:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39657 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935668Ab3FTDqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 23:46:03 -0400
+	Wed, 19 Jun 2013 23:46:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <2925371.ZJMOdCiC6f@vostro.rjw.lan>
-References: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
-	<CAFgnuDe1bUub92uE1H9Fc9U7AJCYL=WKdyDe2bg00yEr=kMEbQ@mail.gmail.com>
-	<CAKohpo=ADC_MGpXFp-QssYS70PHwBBA6qzrWhYGEqZeeaZHLDQ@mail.gmail.com>
-	<2925371.ZJMOdCiC6f@vostro.rjw.lan>
-Date: Thu, 20 Jun 2013 09:16:02 +0530
-Message-ID: <CAKohpon7PjFpzeEPHdQ4SAGmhJ7T1UqrQB86zq9M7aarvNdx1A@mail.gmail.com>
-Subject: Re: [PATCH v5] cpufreq: fix governor start/stop race condition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Xiaoguang Chen <chenxg.marvell@gmail.com>,
-        Xiaoguang Chen <chenxg@marvell.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
+In-Reply-To: <20130620032812.GA24385@kroah.com>
+References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+	<CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
+	<20130619143918.GC8413@kroah.com>
+	<CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
+	<20130619163628.GA28672@kroah.com>
+	<CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
+	<20130620110610.7d245d88b70620fa271a29f7@canb.auug.org.au>
+	<CACVXFVN-B7ZrqjoA_QNkWKjM0XdM-S08h-d6JuRjsYOX0YPt=A@mail.gmail.com>
+	<20130620032812.GA24385@kroah.com>
+Date: Thu, 20 Jun 2013 11:46:11 +0800
+Message-ID: <CACVXFVNLP4Wks_Fh+rUi7jLdL+tsGVKbpgME6CGt+s0_jm75rg@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 June 2013 04:19, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Thu, Jun 20, 2013 at 11:28 AM, Greg KH <greg@kroah.com> wrote:
+> On Thu, Jun 20, 2013 at 09:22:13AM +0800, Ming Lei wrote:
+>> Hi Stephen,
+>>
+>> Thanks for your help.
+>>
+>> On Thu, Jun 20, 2013 at 9:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> >
+>> > Try "git diff-tree --cc e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d"
+>>
+>> Greg, Stephen, so is sort of below generated patch what you expected?
+>>
+>> If yes, I will send it out to you.
+>
+> Thanks, that helped out a lot.  I've now merged this together, and
+> pushed it out to my driver-core-next branch, can you verify that I got
+> it all correct?
 
-> Well, sentences that don't start from upper-case letters don't look like
-> separate sentences
+I just pull your driver-core-next branch, looks drivers/base/firmware_class.c
+is fine now, thank you
 
-s/sequences/sentences for your initial mail.
-
-I misunderstood it as, you want to name cpu{0|1|2} as CPU{1|2|3}..
-Obviously sentences must start with capitals.
-
-> and when I see "cpus" written like this I tend to read
-> it as "cups" with a typo.
-
-Hmm..
+Thanks,
+--
+Ming Lei
