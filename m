@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3FTPAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:00:13 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:37674 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757701Ab3FTPAM (ORCPT
+	id S1758039Ab3FTPAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:00:44 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.111]:43945 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757701Ab3FTPAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:00:12 -0400
-Message-ID: <51C318F6.2030301@gmail.com>
-Date: Thu, 20 Jun 2013 09:00:06 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 11:00:43 -0400
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jun 2013 11:00:42 EDT
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-11.tower-193.messagelabs.com!1371740051!14778750!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201306201454.r5KEs9av010969@swsrvapps-01.diasemi.com>
+From: Steve Twiss <stwiss.opensource@diasemi.com>
+Date: Thu, 20 Jun 2013 14:42:04 +0100
+Subject: [RFC V1]  DA9210 driver request for comments
+To: LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, jolsa@redhat.com,
-        namhyung@kernel.org, eranian@google.com
-Subject: Re: [RFC PATCH 4/4] perf: add timehist command
-References: <1370643734-9579-1-git-send-email-dsahern@gmail.com> <1370643734-9579-5-git-send-email-dsahern@gmail.com> <20130620104656.GA11256@gmail.com>
-In-Reply-To: <20130620104656.GA11256@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/13 4:46 AM, Ingo Molnar wrote:
-> Looks very useful!
->
-> This is the kind of analysis I thought 'perf sched' might one day end up
-> doing.
->
-> Do you plan to submit it non-RFC, to be merged?
+From: Steve Twiss <stwiss.opensource@diasemi.com>
 
-Yes. Hopefully I can find time to work on it over the next 2 months for 
-3.12, 3.13 at the latest.
+The following describes the driver DA9210 from Dialog Semiconductor Ltd.
 
->
-> Your tool could take over the somewhat stale 'perf sched' command as well
-> btw., while possibly carrying over some of the perf sched features like
-> 'replay'.
->
-> 'perf sched record' enough events to support the ones you need:
->
->> >        perf record -e cs -c 1 -ag -- <workload>
-> plus:
->
->   'perf sched sum[mary]'       # show the summary
->   'perf sched tree'            # could show the tree.
->   'perf sched hist[ogram]'     # would show the histogram
->
-> i.e. feel free to take over 'perf sched' to suit your 'timehist' workflow
-> and logic. As the main (and somewhat overworked) author of 'perf sched' I
-> have no problem with you taking it over, at all.
+This is a request for comment relating to the Dialog DA9210 driver.
+The patches have been made relative to the following kernel version:
 
-It should be part of perf-sched. It is not at the moment for a number of 
-(mostly shortcut) reasons. For the next iteration I will look at 
-combining it with perf-sched and in the process I will go through the 
-existing code for perf-sched.
+linux-next next-20130620
 
-As an FYI I also have a daemon that provides the functionality in a 
-flight recorder mode but with data dumped only when requested. Future 
-project to integrate that with perf. ;-)
+This driver is for the Dialog DA9210 Multi-phase 12A DC-DC Buck
+Converter controlled only from an I2C bus. It consists of a I2C device
+driver which controls a synchronous 12 Amp step down converter. In this
+case, the regulator component contains all parts of the driver in a
+single file.
 
->
-> You could also add a 'perf timehist' alias to the new 'perf sched'
-> command, to keep your original (and well established?) naming.
+It would be appreciated if you could add any comments you may have about
+the driver.
 
-It is well established internally, so a convenience shortcut would 
-lessen the pain of moving to newer perf versions when the time comes.
+Thank you,
+Steve Twiss, Dialog Semiconductor Ltd.
 
-David
+S Twiss (1):
+  COMMIT 1: DA9210 driver files
+
+ drivers/regulator/Kconfig                  |    7 +
+ drivers/regulator/Makefile                 |    1 +
+ drivers/regulator/da9210-regulator.c       |  334 ++++++++++++++++++++++++++++
+ include/linux/regulator/da9210-regulator.h |  286 ++++++++++++++++++++++++
+ 4 files changed, 628 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/da9210-regulator.c
+ create mode 100644 include/linux/regulator/da9210-regulator.h
+
+-- 
+end-of-patch for RFC V1
+
