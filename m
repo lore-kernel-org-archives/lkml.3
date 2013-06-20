@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965011Ab3FTA7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 20:59:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46808 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab3FTA7c (ORCPT
+	id S935472Ab3FTBGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 21:06:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57612 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934734Ab3FTBGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 20:59:32 -0400
-Date: Wed, 19 Jun 2013 17:59:28 -0700 (PDT)
-Message-Id: <20130619.175928.1277008545805789566.davem@davemloft.net>
-To: steve.moorby@ntlworld.com
-Cc: sasha.levin@oracle.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, jiri@resnulli.us,
-        linux-x25@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net/x25: fix address parsing bug in
- x25_parse_address_block.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371673956-471-1-git-send-email-steve.moorby@ntlworld.com>
-References: <1371673956-471-1-git-send-email-steve.moorby@ntlworld.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 19 Jun 2013 21:06:23 -0400
+Date: Thu, 20 Jun 2013 11:06:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+Message-Id: <20130620110610.7d245d88b70620fa271a29f7@canb.auug.org.au>
+In-Reply-To: <CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
+References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
+	<CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
+	<20130619143918.GC8413@kroah.com>
+	<CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
+	<20130619163628.GA28672@kroah.com>
+	<CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Moorby <steve.moorby@ntlworld.com>
-Date: Wed, 19 Jun 2013 21:32:36 +0100
+--Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This problem was discovered when a linux box was incorrectly rejecting
-> calls from some X.25 equipment.  The problem was diagnosed to an incorrect
-> address length calculation in 'x25_parse_address_block', the calculation
-> did not account for the address digits being BCD encoded.  The correct
-> calculation is already performed on line 155.
-> 
-> Patched on linux-next 18-Jun-2013
-> Tested on 2.6.32-45-generic
-> 
-> Signed-off-by: Stephen Moorby <steve.moorby@ntlworld.com>
+Hi Ming,
 
-This change has two problems:
+On Thu, 20 Jun 2013 08:23:30 +0800 Ming Lei <ming.lei@canonical.com> wrote:
+>
+> Yes, I already merged the two branches together in my local repository,
+> and there is one merge commit, but I don't know how to generate/format
+> patch for this merge commit only:
+>=20
+> commit e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d
+> Merge: bb07b00 8759793
+> Author: Ming Lei <tom.leiming@gmail.com>
+> Date:   Wed Jun 19 23:56:05 2013 +0800
+>=20
+>     firmware loader: fix conflict driver-core-linus and driver-core-next
+>=20
+>     Conflicts:
+>         drivers/base/firmware_class.c
+>=20
+> Anyone who knows, please let me know, thanks.
 
-1) If there is existing code that does the calculation correctly, don't
-   get creative and express the calculation differently than the existing
-   code.
+Try "git diff-tree --cc e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d"
 
-2) If there are two places doing the same thing, write a helper function
-   that does it in one place.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The exact reason this bug exists is because of code duplication, you are
-making it even worse by writing the same calculation two different ways.
+--Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0
+Content-Type: application/pgp-signature
 
-Please fix this up and resubmit, thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRwlWGAAoJEECxmPOUX5FExRcP/ipZr1sef+CGOiF7/q1a9yHQ
+1wUkm65G7uru/KxYYH0+DY9kXp1ocEPTR4chxI78ZhoznNwwGd/InQw422WjbUQP
+GaKMPH5fWdarOraxmq+gOO0O3mPMVMefF3lNzKshXDN7CR1qgvXxy86QwXLqZM0E
+jY4Z9a8Bjq2X9OLixMNstzR6fRUMzUIe12Lcky9awjRp28ITSxFxZIB6lfJt/kz5
+UUKMVolKr0FFYgxzJ2+Xw3sDspuA8EGtL2PI9SPyI1u2bePxfb2AIsTGlIyFHwYY
+bCyZVGNC2A3Ot1jDIH+zte9J/iqITefIWBGePW3bhec1es2Eg2IqPjrVEDp2glgs
+rLqroiZ3rbaQHDhekTaF+O0yntt3R1uE40ERRY4atTq5PCYqVPi5Zjws+A0ej5Lg
+CmkD5qlgwzBggd2GsXUJZqWghqri4acILPF5jI2xyGnLf26TIlF9VkpoKVa+nPda
+F4+NcrIaBKsX7xXyUZChJ5+V/ZpUSXV3XMD4jvQbeaaukPwYJ1LmsDu4G3r70Rsn
+9j7Gp7IdFaDGSpLKiOfzSmt/uXnU8ICItxTxuZhcpPbavVl+NoganaiTWzvOtoy1
+MNphVlLT0P6sSKLTM8+sUJ7L4t9G5g2nFtZE7GIJsfH9dddKvo8EuHsImfv4JcFp
+nLnAfbqgrQE3c+EDYqIW
+=ctmJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0--
