@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965702Ab3FTXch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 19:32:37 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23431 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965307Ab3FTXcf (ORCPT
+	id S1161158Ab3FTXno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 19:43:44 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:54295 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161046Ab3FTXnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 19:32:35 -0400
-Message-ID: <51C390FA.3080302@oracle.com>
-Date: Thu, 20 Jun 2013 19:32:10 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 19:43:43 -0400
 MIME-Version: 1.0
-To: rubini@gnudd.com
-CC: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org
-Subject: FMC: BUG: scheduling while atomic on boot
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <084100@agluck-desk.sc.intel.com>
+References: <1371491416-11037-2-git-send-email-bp@alien8.de>
+	<084100@agluck-desk.sc.intel.com>
+Date: Thu, 20 Jun 2013 16:43:42 -0700
+Message-ID: <CA+8MBbKQ9qTUvzkQO+c68JvF=TJ0rvs+yc5XzQ1o7EyvKY64fA@mail.gmail.com>
+Subject: Re: [PATCH] [IA64] sim: Add casts to avoid assignment warnings
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Oops - pasted in old e-mail address for Boris
 
-I compiled FMC in to test it out, but when booting with it I get:
-
-[   22.120253] BUG: scheduling while atomic: swapper/0/1/0x00000002
-[   22.120371] 4 locks held by swapper/0/1:
-[   22.120762]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff81f69ee0>] __dri
-ver_attach+0x40/0xa0
-[   22.121835]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff81f69eee>] 
-__driver_attach+0x4e/0xa0
-[   22.122916]  #2:  (fc_lock){+.+.+.}, at: [<ffffffff83b1436a>] fc_probe+0x9a/0x110
-[   22.123745]  #3:  (misc_mtx){+.+.+.}, at: [<ffffffff81ce52c4>] misc_register+0x24/0x130
-[   22.124628] CPU: 3 PID: 1 Comm: swapper/0 Tainted: G        W 
-3.10.0-rc6-next-20130620-sasha-00011-gb6e9296 #1044
-[   22.125646]  0000000000000003 ffff8801285597f8 ffffffff84058925 ffff8801285597f8
-[   22.126556]  ffff880128555000 ffff880128559818 ffffffff81154a51 ffff880128559a20
-[   22.127367]  ffff88012add7880 ffff8801285598a8 ffffffff8405b043 0000000000019190
-[   22.128161] Call Trace:
-[   22.128429]  [<ffffffff84058925>] dump_stack+0x52/0x87
-[   22.128991]  [<ffffffff81154a51>] __schedule_bug+0x71/0x90
-[   22.130363]  [<ffffffff8405b043>] __schedule+0xa3/0x8e0
-[   22.131298]  [<ffffffff8405b9e5>] schedule+0x55/0x60
-[   22.131492]  [<ffffffff84058a48>] schedule_timeout+0x38/0x2c0
-[   22.131492]  [<ffffffff8118fd89>] ? mark_held_locks+0x109/0x140
-[   22.132033]  [<ffffffff8405dbab>] ? _raw_spin_unlock_irq+0x2b/0x80
-[   22.132678]  [<ffffffff8405a8e7>] wait_for_completion+0xb7/0x110
-[   22.133277]  [<ffffffff8115d3b0>] ? try_to_wake_up+0x2a0/0x2a0
-[   22.133871]  [<ffffffff81f6ea58>] devtmpfs_create_node+0x128/0x170
-[   22.134474]  [<ffffffff81153903>] ? complete+0x23/0x60
-[   22.135003]  [<ffffffff81f673b0>] device_add+0x220/0x490
-[   22.135539]  [<ffffffff81f67639>] device_register+0x19/0x20
-[   22.136124]  [<ffffffff81f676f5>] device_create_vargs+0xb5/0x100
-[   22.136732]  [<ffffffff81f6776c>] device_create+0x2c/0x30
-[   22.137296]  [<ffffffff84059bb0>] ? mutex_lock_nested+0x40/0x50
-[   22.137885]  [<ffffffff81ce536e>] misc_register+0xce/0x130
-[   22.138426]  [<ffffffff83b14373>] fc_probe+0xa3/0x110
-[   22.138943]  [<ffffffff83b12082>] fmc_probe+0x12/0x20
-[   22.140280]  [<ffffffff81f69c2f>] really_probe+0x10f/0x2e0
-[   22.140280]  [<ffffffff81f69e7b>] driver_probe_device+0x7b/0xa0
-[   22.140734]  [<ffffffff81f69f03>] __driver_attach+0x63/0xa0
-[   22.141302]  [<ffffffff81f69ea0>] ? driver_probe_device+0xa0/0xa0
-[   22.141917]  [<ffffffff81f69ea0>] ? driver_probe_device+0xa0/0xa0
-[   22.142515]  [<ffffffff81f67d06>] bus_for_each_dev+0x66/0xc0
-[   22.143070]  [<ffffffff81f69869>] driver_attach+0x19/0x20
-[   22.143605]  [<ffffffff81f69192>] bus_add_driver+0x102/0x270
-[   22.144188]  [<ffffffff83b143e0>] ? fc_probe+0x110/0x110
-[   22.144727]  [<ffffffff81f6a558>] driver_register+0xa8/0x140
-[   22.145322]  [<ffffffff83b143e0>] ? fc_probe+0x110/0x110
-[   22.145842]  [<ffffffff83b12684>] fmc_driver_register+0x34/0x40
-[   22.146447]  [<ffffffff83b143f0>] fc_init+0x10/0x20
-[   22.146961]  [<ffffffff865fe8d4>] do_one_initcall+0xae/0x175
-[   22.147530]  [<ffffffff8114419b>] ? parse_args+0x1cb/0x310
-[   22.148081]  [<ffffffff865fed08>] ? kernel_init_freeable+0x288/0x288
-[   22.148723]  [<ffffffff865fea62>] do_basic_setup+0x9c/0xba
-[   22.150280]  [<ffffffff865fed08>] ? kernel_init_freeable+0x288/0x288
-[   22.150333]  [<ffffffff866296aa>] ? smp_init+0x8a/0x92
-[   22.151432]  [<ffffffff865fec88>] kernel_init_freeable+0x208/0x288
-[   22.151970]  [<ffffffff840411e0>] ? rest_init+0x140/0x140
-[   22.152551]  [<ffffffff840411e9>] kernel_init+0x9/0xf0
-[   22.153120]  [<ffffffff8405ebfc>] ret_from_fork+0x7c/0xb0
-[   22.153689]  [<ffffffff840411e0>] ? rest_init+0x140/0x140
-[   22.154233] BUG: scheduling while atomic: swapper/0/1/0x00000002
-[   22.155496] 4 locks held by swapper/0/1:
-[   22.155614]  #0:  (&__lockdep_no_validate__){......}, at: [<ffffffff81f69ee0>] 
-__driver_attach+0x40/0xa0
-[   22.155950]  #1:  (&__lockdep_no_validate__){......}, at: [<ffffffff81f69eee>] 
-__driver_attach+0x4e/0xa0
-[   22.156971]  #2:  (fc_lock){+.+.+.}, at: [<ffffffff83b1436a>] fc_probe+0x9a/0x110
-[   22.157806]  #3:  (misc_mtx){+.+.+.}, at: [<ffffffff81ce52c4>] misc_register+0x24/0x130
-
-
-Thanks,
-Sasha
+On Thu, Jun 20, 2013 at 11:15 AM, Luck, Tony <tony.luck@intel.com> wrote:
+> Pointers in the efi_runtime_services_t structure now have type
+> "void *" (formerly they were "unsigned long"). So we now see a
+> bunch of warnings like this:
+>
+> arch/ia64/hp/sim/boot/fw-emu.c:293: warning: assignment makes pointer from integer without a cast
+>
+> Add (void *) casts to the 10 affected lines to make the build quiet again.
+>
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+>
+> ---
+>
+> Boris, Matt - Can you add this patch to the same tree that
+>
+>    commit 43ab0476a648053e5998bf081f47f215375a4502 [linux-next id]
+>    efi: Convert runtime services function ptrs
+>
+> is in so that it will follow along behind it.  Thanks.
+>
+>  arch/ia64/hp/sim/boot/fw-emu.c | 20 ++++++++++----------
+>  1 file changed, 10 insertions(+), 10 deletions(-)
+>
+> diff --git a/arch/ia64/hp/sim/boot/fw-emu.c b/arch/ia64/hp/sim/boot/fw-emu.c
+> index 271f412..87bf9ad 100644
+> --- a/arch/ia64/hp/sim/boot/fw-emu.c
+> +++ b/arch/ia64/hp/sim/boot/fw-emu.c
+> @@ -290,16 +290,16 @@ sys_fw_init (const char *args, int arglen)
+>         efi_runtime->hdr.signature = EFI_RUNTIME_SERVICES_SIGNATURE;
+>         efi_runtime->hdr.revision = EFI_RUNTIME_SERVICES_REVISION;
+>         efi_runtime->hdr.headersize = sizeof(efi_runtime->hdr);
+> -       efi_runtime->get_time = __pa(&fw_efi_get_time);
+> -       efi_runtime->set_time = __pa(&efi_unimplemented);
+> -       efi_runtime->get_wakeup_time = __pa(&efi_unimplemented);
+> -       efi_runtime->set_wakeup_time = __pa(&efi_unimplemented);
+> -       efi_runtime->set_virtual_address_map = __pa(&efi_unimplemented);
+> -       efi_runtime->get_variable = __pa(&efi_unimplemented);
+> -       efi_runtime->get_next_variable = __pa(&efi_unimplemented);
+> -       efi_runtime->set_variable = __pa(&efi_unimplemented);
+> -       efi_runtime->get_next_high_mono_count = __pa(&efi_unimplemented);
+> -       efi_runtime->reset_system = __pa(&efi_reset_system);
+> +       efi_runtime->get_time = (void *)__pa(&fw_efi_get_time);
+> +       efi_runtime->set_time = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->get_wakeup_time = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->set_wakeup_time = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->set_virtual_address_map = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->get_variable = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->get_next_variable = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->set_variable = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->get_next_high_mono_count = (void *)__pa(&efi_unimplemented);
+> +       efi_runtime->reset_system = (void *)__pa(&efi_reset_system);
+>
+>         efi_tables->guid = SAL_SYSTEM_TABLE_GUID;
+>         efi_tables->table = __pa(sal_systab);
+> --
+> 1.8.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
