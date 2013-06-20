@@ -1,115 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab3FTGlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 02:41:20 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:56672 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab3FTGlR (ORCPT
+	id S935056Ab3FTGlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 02:41:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:14998 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab3FTGlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 02:41:17 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-d0-51c2a40b9e5b
-Date: Thu, 20 Jun 2013 08:41:08 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: Add boost frequency support in core
-Message-id: <20130620084108.39b188aa@amdc308.digital.local>
-In-reply-to: <CAKohponTEb_XQnGTpDVC78jknCuwumnckCKZk6cObq45RmWpFA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <20130617155156.4c729b5a@amdc308.digital.local>
- <CAKohpo=_=u35wTb-ZUXrR2hNno+ryAqq4gSC3EiJr=-bmgb9JQ@mail.gmail.com>
- <3258927.Qds4G9CTyG@vostro.rjw.lan>
- <20130618154456.56d99e18@amdc308.digital.local>
- <20130619091612.60e4d69d@amdc308.digital.local>
- <CAKohponTEb_XQnGTpDVC78jknCuwumnckCKZk6cObq45RmWpFA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 20 Jun 2013 02:41:44 -0400
+X-AuditID: cbfee68e-b7f276d000002279-fe-51c2a4269f85
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <000b01ce6839$0f0455d0$2d0d0170$@samsung.com>
+ <201306181556.47656.arnd@arndb.de>
+ <002401ce6c8a$2dd1e4a0$8975ade0$@samsung.com>
+ <201306191443.09598.arnd@arndb.de>
+In-reply-to: <201306191443.09598.arnd@arndb.de>
+Subject: Re: [PATCH V5 1/3] pci: Add PCIe driver for Samsung Exynos
+Date: Thu, 20 Jun 2013 15:41:42 +0900
+Message-id: <00be01ce6d81$39743950$ac5cabf0$@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkkeLIzCtJLcpLzFFi42I5/e+xgC73kkOBBvNeWls0XA2x+PN2OavF
-	06Yf7BbzPstadJ59wmzRu+Aqm8WbR9wWl3fNYbP43HuE0eJ24wo2i/6FvUwWHUe+MVts/Orh
-	wOtx59oeNo91094ye/RtWcXo8WhxC6PH501yAaxRXDYpqTmZZalF+nYJXBkvV89kLDjDV7Ho
-	8ybmBsbt3F2MnBwSAiYSj1beYoGwxSQu3FvPBmILCSxilPh0sbSLkQvIbmeSuDnrAStIgkVA
-	VWLT5CmMIDabgJ7E57tPmboYOThEBLQkXt5MBalnFpjJIvH/xyF2kBphAQ+Jc0emgdXzClhL
-	PGtbzAhSzykQLLHyphrE/H5miSurb4DN5xeQlGj/94MZ4iA7iXOfNrBD9ApK/Jh8D+xQZqBd
-	m7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6hXnJhbXJqXrpecn7uJ
-	ERwxz6R2MK5ssDjEKMDBqMTDq3H5YKAQa2JZcWXuIUYJDmYlEd7UOYcChXhTEiurUovy44tK
-	c1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTByv9GaWPP7blvXdYU3Ebq5vFkX
-	Ph4JiOd9VTdJrLDh68oCiZTwHTvStNd+2jhN0lUrbN7VvzWcjd1x32wlc+PlfbXUtmutt3yu
-	ebbigjzjA4X63TpPHx1/ETNHjOl93bJNBxsjGT8wlB2b0f7TyeXO6YdMKfsyFQ5VKutv//Yp
-	5sihTo+JL3uVWIozEg21mIuKEwE9veRflAIAAA==
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIepNJd3UbA8CoBBJYQqRm0XD6uiAMqwmv2AsxxTtIB5T8o75he1Esw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t8zY121JYcCDfa26Fk0/9/OavF30jF2
+	iyVNGRYHZj9ktXh1ZiObxeWFl1gtvt8wtehdcJXNYtPja6wWl3fNYbM4O+84m8WM8/uYLFY0
+	bWW0WHxxObPF7pVLWCyOzVjCaPH0QROTg6DHmnlrGD1+/5rE6NE35Sqbx5NNFxk9Fmwq9bhz
+	bQ+bx+Yl9R7nZyxk9Pi+oxeoYMsqRo+fL3U8Pm+SC+CJ4rJJSc3JLEst0rdL4Mp4/vsFU8FE
+	noopc4IbGKdzdjFyckgImEhcezaZHcIWk7hwbz1bFyMXh5DAMkaJ3z+/s8AUHZl7mB0iMZ1R
+	YvO8/4wQzi+gqjf7WUGq2ATUJL58OQw2SkRAWeL4yzssIEXMAodYJSa+6YZq38woceL0HyaQ
+	Kk4BfYnJa/cxg9jCAs4SF74tYQOxWQRUJU7f+gJm8wpYSqzs3M0MYQtK/Jh8D+wmZgEtifU7
+	jzNB2PISm9e8ZYa4VUFix9nXjBBXuElMPLsQql5EYt+Ld2BnSwg84JB41rGEFWKZgMS3yYeA
+	ijiAErISmw5AzZGUOLjiBssERolZSFbPQrJ6FpLVs5CsWMDIsopRNLUguaA4Kb3ISK84Mbe4
+	NC9dLzk/dxMjJMX07WC8ecD6EGMy0PqJzFKiyfnAFJVXEm9obGZkYWpiamxkbmlGmrCSOK9a
+	i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsag/w9XT5p/q3Z988LXF5Zbv7o9/RDT5Rdx
+	Xqftsx42HCi7fZd1129jtS+FHPM1p8Zp/gk7/63Jbq3CZInlSwvnyIZU/zPx+/sqVLDkUfuM
+	c/HLV9z6sCpwtuti9iciJ/uXru0+nfXv2NrHopIbqy5WVsgcqflbe10yLev+v9PXDkRbTNe5
+	qN0up8RSnJFoqMVcVJwIAC8oNI9HAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIJsWRmVeSWpSXmKPExsVy+t9jQV21JYcCDTraNSya/29ntfg76Ri7
+	xZKmDIsDsx+yWrw6s5HN4vLCS6wW32+YWvQuuMpmsenxNVaLy7vmsFmcnXeczWLG+X1MFiua
+	tjJaLL64nNli98olLBbHZixhtHj6oInJQdBjzbw1jB6/f01i9OibcpXN48mmi4weCzaVety5
+	tofNY/OSeo/zMxYyenzf0QtUsGUVo8fPlzoenzfJBfBENTDaZKQmpqQWKaTmJeenZOal2yp5
+	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gD9paRQlphTChQKSCwuVtK3wzQhNMRN1wKm
+	MULXNyQIrsfIAA0krGPMeP77BVPBRJ6KKXOCGxinc3YxcnJICJhIHJl7mB3CFpO4cG89Wxcj
+	F4eQwHRGic3z/jNCOL8YJX6/2c8KUsUmoCbx5QtEh4iAssTxl3dYQIqYBQ6xSkx8080O0bGZ
+	UeLE6T9MIFWcAvoSk9fuYwaxhQWcJS58W8IGYrMIqEqcvvUFzOYVsJRY2bmbGcIWlPgx+R4L
+	iM0soCWxfudxJghbXmLzmrfMELcqSOw4+5oR4go3iYlnF0LVi0jse/GOcQKj0Cwko2YhGTUL
+	yahZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOYM+kdjCubLA4xCjAwajEw6tx
+	+WCgEGtiWXFl7iFGCQ5mJRHe1DmHAoV4UxIrq1KL8uOLSnNSiw8xJgN9OpFZSjQ5H5hc80ri
+	DY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBceKube9ORQUmcZ2Z
+	b85oapue+VdP+UHI9yv9LVw1ZgcEWCa+Wnmvu5nnr1DRafat/Ql3pzkyZXIwCnWbLf+7fXX9
+	i+LJpz/oM9/482zy+ROPz0/Zc6Vbd+GxC6YTNQXFfbRsGHfxbj1c5t6u/PrXA48Xn1iaNnhw
+	P4oIazkaeCCZ9bvt3zm6X5RYijMSDbWYi4oTAegTgWKkAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013 10:41:41 +0530, Viresh Kumar wrote:
-> On 19 June 2013 12:46, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > I would like to clarify the above issue.
+On Wednesday, June 19, 2013 9:43 PM, Arnd Bergmann wrote:
+> On Wednesday 19 June 2013, Jingoo Han wrote:
+> > Then, do you mean the following?
 > >
-> > When I've discussed with Viresh previous version of this patch, we
-> > have agreed, that "boost" sysfs attribute [*]:
-> > /sys/devices/system/cpu/cpufreq/boost
+> > static int __exit exynos_pcie_remove(struct platform_device *pdev)
+> > {
+> >         struct pcie_port *pp = platform_get_drvdata(pdev);
 > >
-> > would be only visible when boost_supported flag is set at cpufreq
-> > driver.
-> 
-> Yes.
-> 
-> > When acpi-cpufreq driver doesn't support boost, the attribute [*]
-> > won't be exported at all. This contradicts the documentation and
-> > legacy acpi-cpufreq behaviour.
-> 
-> No they aren't contradictory. What the documentation meant was:
-> acpi-cpufreq driver is used by lots of different x86 processors. Now
-> all processors might not support boost inside x86 also. And for them
-> we will keep 'boost' file readonly. This is done by following
-> statement
-
-Thanks for explanation.
-
-> 
-> 	if (boot_cpu_has(X86_FEATURE_CPB) ||
-> boot_cpu_has(X86_FEATURE_IDA)) { boost_supported = true;
->                 ....
-> 	} else
-> 		global_boost.attr.mode = 0444;
-
-Grrr.... So simple and obvious solution [1]. 
-
-> 
-> Documentation file doesn't talk about any other cpufreq driver, for
-> them there is no concept like boost.
-> 
-> You need to preserve this functionality.
-
-Yes the idea [1], solves problem with legacy API.
-
-> 
-> > Since I'm affraid to break API (with all its consequences :-) ), I
-> > would like to be sure that this is OK, and thereof I'm allowed to
-> > rewrite documentation accordingly.
+> >         clk_disable_unprepare(pp->bus_clk);
+> >         clk_disable_unprepare(pp->clk);
 > >
-> > I simply need explicit permission from both maintainers :-).
+> >         return 0;
+> > }
+> >
+> > static struct platform_driver exynos_pcie_driver = {
+> >         .remove = __exit_p(exynos_pcie_remove),
+> >
+> > [.....]
+> >
+> > /* Exynos PCIe driver does not allow module unload */
+> >
+> > static int __init pcie_init(void)
+> > {
+> >         hook_fault_code(16 + 6, exynos_pcie_abort, SIGBUS, 0,
+> >                         "imprecise external abort");
+> >
+> >         platform_driver_probe(&exynos_pcie_driver, exynos_pcie_probe);
+> >
+> >         return 0;
+> > }
+> > subsys_initcall(pcie_init);
+> >
+> > MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+> > MODULE_DESCRIPTION("Samsung PCIe host controller driver");
+> > MODULE_LICENSE("GPLv2");
+> >
 > 
-> For me its okay to rewrite documentation.
+> Yes, this looks good. I would probably use platform_driver_register
+> rather than platform_driver_probe, but that is your choice. using
+> platform_driver_probe() mean you cannot deal with deferred probing.
 
-I will extent documentation about the SW managed boost.
+Hi Arnd,
 
--- 
+Thank you for your reply. :)
+I will send PATCH v6, soon.
+I really appreciate your comments.
+
+Hi Thomas Abraham, Kukjin Kim,
+Thank you for your support.
+It is very helpful.
+
+
 Best regards,
+Jingoo Han
 
-Lukasz Majewski
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
