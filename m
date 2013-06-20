@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161079Ab3FTQlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 12:41:45 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54816 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161031Ab3FTQln (ORCPT
+	id S965532Ab3FTQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:29:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34625 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965397Ab3FTQ3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 12:41:43 -0400
-Date: Thu, 20 Jun 2013 09:41:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH/RESEND 06/12] msm: iommu: Use clk_set_rate() instead of
- clk_set_min_rate()
-Message-ID: <20130620164142.GD6300@codeaurora.org>
-References: <1371490999-15501-1-git-send-email-sboyd@codeaurora.org>
- <1371490999-15501-7-git-send-email-sboyd@codeaurora.org>
+	Thu, 20 Jun 2013 12:29:38 -0400
+Message-ID: <51C32DEF.1060209@wwwdotorg.org>
+Date: Thu, 20 Jun 2013 10:29:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371490999-15501-7-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Hogan <james.hogan@imgtec.com>
+CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Michal Marek <mmarek@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/7] metag: add <dt-bindings/> symlink
+References: <1371729758-10196-1-git-send-email-james.hogan@imgtec.com> <1371729758-10196-2-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1371729758-10196-2-git-send-email-james.hogan@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sending to correct Joerg address.
+On 06/20/2013 06:02 AM, James Hogan wrote:
+> Add symlink to include/dt-bindings from arch/metag/boot/dts/include/ to
+> match the one in arch/arm/... (see the commit below) so that
+> preprocessed device tree files can include various useful constant
+> definitions.
+> 
+> Commit c58299aa87544a590c62bda0bf52b69fa56cb8d5 ("kbuild: create an
+> "include chroot" for DT bindings") merged in v3.10-rc1.
 
-On 06/17, Stephen Boyd wrote:
-> Calling clk_set_min_rate() is no better than just calling
-> clk_set_rate() because MSM clock code already takes care of
-> calling the min_rate ops if the clock really needs
-> clk_set_min_rate() called on it.
-> 
-> Cc: Joerg Roedel <joerg.roedel@amd.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/iommu/msm_iommu_dev.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
-> index d344f6a..9144a6b 100644
-> --- a/drivers/iommu/msm_iommu_dev.c
-> +++ b/drivers/iommu/msm_iommu_dev.c
-> @@ -29,7 +29,6 @@
->  
->  #include <mach/iommu_hw-8xxx.h>
->  #include <mach/iommu.h>
-> -#include <mach/clk.h>
->  
->  struct iommu_ctx_iter_data {
->  	/* input */
-> @@ -168,7 +167,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
->  
->  	if (!IS_ERR(iommu_clk))	{
->  		if (clk_get_rate(iommu_clk) == 0)
-> -			clk_set_min_rate(iommu_clk, 1);
-> +			clk_set_rate(iommu_clk, 1);
->  
->  		ret = clk_prepare_enable(iommu_clk);
->  		if (ret) {
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
