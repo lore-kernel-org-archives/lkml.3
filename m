@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965390Ab3FTLqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:46:51 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:13780 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965016Ab3FTLqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 07:46:50 -0400
-X-IronPort-AV: E=Sophos;i="4.87,904,1363132800"; 
-   d="scan'208";a="30804287"
-Message-ID: <51C2EBA7.9060208@citrix.com>
-Date: Thu, 20 Jun 2013 12:46:47 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S965443Ab3FTLrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:47:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965016Ab3FTLrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 07:47:31 -0400
+Date: Thu, 20 Jun 2013 14:48:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Asias He <asias@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH net] vhost-net: fix use-after-free in vhost_net_flush
+Message-ID: <20130620114813.GA17373@redhat.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/4] xen: disable non-boot VCPUs during suspend
-References: <1371655523-15609-1-git-send-email-david.vrabel@citrix.com> <1371655523-15609-2-git-send-email-david.vrabel@citrix.com> <51C2F7C102000078000DF504@nat28.tlf.novell.com>
-In-Reply-To: <51C2F7C102000078000DF504@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/06/13 11:38, Jan Beulich wrote:
->>>> On 19.06.13 at 17:25, David Vrabel <david.vrabel@citrix.com> wrote:
->> syscore_suspend() and syscore_resume() expect there to be only one
->> online CPU.  e.g., hrtimers_resume() only triggers events for the
->> current CPU.  Xen's suspend path was leaving all VCPUs online and then
->> attempting to fixup problems afterwards (e.g., with an explicit call
->> to clock_was_set() to trigger pending high resolution timers).
->>
->> Instead, disable non-boot CPUs before calling stop_machine() and
->> reenable them afterwards.
-> 
-> In XenoLinux the so called "fast suspend" mode was specifically
-> added for performance reasons, and it looks like to date pv-ops
-> only ever supported that mode. So one question is whether
-> there's going to be any bad performance effect from this.
+vhost_net_ubuf_put_and_wait has a confusing name:
+it will actually also free it's argument.
+Thus since commit 1280c27f8e29acf4af2da914e80ec27c3dbd5c01
+vhost_net_flush tries to use the argument after passing it
+to vhost_net_ubuf_put_and_wait, this results
+in use after free.
+To fix, don't free the argument in vhost_net_ubuf_put_and_wait,
+add an new API for callers that want to free ubufs.
 
-Yes :(
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-On a VM with 4 VCPUs, disable_boot_cpus() took > 200 ms.
+Dave, this is needed for stable as well, but
+the code has moved a bit since then.
+I'll post a patch tweaked to apply against 3.9 and 3.8 separately.
 
-I'll have to rethink this.
+ drivers/vhost/net.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-David
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 5c77d6a..534adb0 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -149,6 +149,11 @@ static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
+ {
+ 	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
+ 	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
++}
++
++static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
++{
++	vhost_net_ubuf_put_and_wait(ubufs);
+ 	kfree(ubufs);
+ }
+ 
+@@ -1073,7 +1078,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 	mutex_unlock(&vq->mutex);
+ 
+ 	if (oldubufs) {
+-		vhost_net_ubuf_put_and_wait(oldubufs);
++		vhost_net_ubuf_put_wait_and_free(oldubufs);
+ 		mutex_lock(&vq->mutex);
+ 		vhost_zerocopy_signal_used(n, vq);
+ 		mutex_unlock(&vq->mutex);
+@@ -1091,7 +1096,7 @@ err_used:
+ 	vq->private_data = oldsock;
+ 	vhost_net_enable_vq(n, vq);
+ 	if (ubufs)
+-		vhost_net_ubuf_put_and_wait(ubufs);
++		vhost_net_ubuf_put_wait_and_free(ubufs);
+ err_ubufs:
+ 	fput(sock->file);
+ err_vq:
+-- 
+MST
