@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965505Ab3FTNM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:12:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51649 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965398Ab3FTNM0 (ORCPT
+	id S965546Ab3FTNMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:12:37 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:45421 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965398Ab3FTNMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:12:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: cleanup for 3.11 #2
-Date: Thu, 20 Jun 2013 15:11:52 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-References: <1371545020-23186-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1371545020-23186-1-git-send-email-nicolas.ferre@atmel.com>
+	Thu, 20 Jun 2013 09:12:34 -0400
+Date: Thu, 20 Jun 2013 22:12:32 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Alexander Frolkin <avf@eldamar.org.uk>, lvs-devel@vger.kernel.org,
+        Wensong Zhang <wensong@linux-vs.org>, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ipvs: sloppy TCP and SCTP
+Message-ID: <20130620131232.GB24993@verge.net.au>
+References: <20130612104754.GA29327@eldamar.org.uk>
+ <20130613075615.GA29773@eldamar.org.uk>
+ <alpine.LFD.2.00.1306131121470.1680@ja.ssi.bg>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306201511.52876.arnd@arndb.de>
-X-Provags-ID: V02:K0:qcGuE6XcAcBGaAClxz4aaK238k7MLkGLO5stutOfKPk
- Hme3daBQX5YYftNWMr2DDjMaWjCKUdczS1GsNw0HdCWmO7WwD0
- s0bT/GjDfp10QkLIsjMu8/OIn4whFtE0UxsrrOm7M1516UD5Cc
- WHCJ3w5bQakP/q5AVcwAwGL3y2XpTaPylCYGdY1TQGNtFovQGx
- b8NaUKvPqXUP2zP/5XOphxqFerx/dHjxI2Ts5oQUrHvRXqkNjN
- PDH7nnZg0MkqSI/gUlq7b1FCOd1NvJOg6Ea3tTM1tSTxhYtlr7
- rED70ii/TRrbbHtrv5TKExtr4HssncYspvgYqsy0cqTbKodcF0
- GKnYrpQ87B5iKnfYOY/4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1306131121470.1680@ja.ssi.bg>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 June 2013, Nicolas Ferre wrote:
-> The patch that was remaining from my old "soc" pull-request. It is stacked on
-> top of the "cleanup" patches already send as recommended by Olof.
+On Thu, Jun 13, 2013 at 11:32:11AM +0300, Julian Anastasov wrote:
 > 
-> Thanks, best regards,
+> 	Hello,
 > 
-> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
+> On Thu, 13 Jun 2013, Alexander Frolkin wrote:
 > 
->   ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
+> > This adds support for sloppy TCP and SCTP modes to IPVS.
+> > 
+> > When enabled (sysctls net.ipv4.vs.sloppy_tcp and
+> > net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
+> > packet, not just a TCP SYN (or SCTP INIT).
+> > 
+> > This allows connections to fail over from one IPVS director to another
+> > mid-flight.
+> > 
+> > Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
 > 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-cleanup
-> 
+> 	Thanks! Simon, please apply to ipvs-next tree!
 
-Pulled into next/cleanup, thanks!
+Done :)
 
-	Arnd
+> Signed-off-by: Julian Anastasov <ja@ssi.bg>
