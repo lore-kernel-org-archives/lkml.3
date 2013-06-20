@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab3FTC1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 22:27:47 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:46448 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935506Ab3FTC1q convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 22:27:46 -0400
-From: Chao Xie <cxie4@marvell.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yi Zhang <yizhang@marvell.com>
-Date: Wed, 19 Jun 2013 19:25:26 -0700
-Subject: RE: linux-next: build failure after merge of the final tree (mfd
- tree related)
-Thread-Topic: linux-next: build failure after merge of the final tree (mfd
- tree related)
-Thread-Index: Ac5sxn2QLOULZnwlSVeX1tpHjNPFDAAio3CQ
-Message-ID: <AAD1C6EB06EE3649B35B7E026785068D2581671C20@SC-VEXCH2.marvell.com>
-References: <20130618171957.9d8fbcf376243d1d5f1d92b0@canb.auug.org.au>
- <20130619082456.GR7161@zurbaran>
-In-Reply-To: <20130619082456.GR7161@zurbaran>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S935582Ab3FTC35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 22:29:57 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42192 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935506Ab3FTC3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 22:29:55 -0400
+Date: Wed, 19 Jun 2013 19:28:37 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+        xiaoguangrong@linux.vnet.ibm.com, icycoder@gmail.com
+Subject: Re: [PATCH 1/2] perf tools: fix a typo of a Power7 event name
+Message-ID: <20130620022837.GA20609@us.ibm.com>
+References: <1371633326-7696-1-git-send-email-runzhen@linux.vnet.ibm.com>
+ <1371691282.21846.1.camel@concordia>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371691282.21846.1.camel@concordia>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062002-5518-0000-0000-00000FBDA427
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Samuel Ortiz [mailto:sameo@linux.intel.com] 
-> Sent: Wednesday, June 19, 2013 4:25 PM
-> To: Stephen Rothwell
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Chao Xie; Yi Zhang
-> Subject: Re: linux-next: build failure after merge of the final tree (mfd tree related)
+Michael Ellerman [michael@ellerman.id.au] wrote:
+| On Wed, 2013-06-19 at 17:15 +0800, Runzhen Wang wrote:
+| > In the Power7 PMU guide:
+| > https://www.power.org/documentation/commonly-used-metrics-for-performance-analysis/
+| > PM_BRU_MPRED is referred to as PM_BR_MPRED.
+| > 
+| > This patch fix the typo by changing the name of the event in kernel and
+| > documentation accordingly.
+| > 
+| > Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+| > ---
+| >  .../testing/sysfs-bus-event_source-devices-events  |    2 +-
+| >  arch/powerpc/perf/power7-pmu.c                     |   12 ++++++------
+| >  2 files changed, 7 insertions(+), 7 deletions(-)
+| > 
+| > diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+| > index 8b25ffb..3c1cc24 100644
+| > --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+| > +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+| > @@ -29,7 +29,7 @@ Description:	Generic performance monitoring events
+| >  
+| >  What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
+| >  		/sys/devices/cpu/events/PM_BRU_FIN
+| > -		/sys/devices/cpu/events/PM_BRU_MPRED
+| > +		/sys/devices/cpu/events/PM_BR_MPRED
+| 
+| So you're changing the ABI.
+| 
+| I think that's probably OK, but you at least need to mention _why_ you
+| think it's OK.
 
-> Hi Stephen,
+Some of the reasons I think its ok to change:
 
->>On Tue, Jun 18, 2013 at 05:19:57PM +1000, Stephen Rothwell wrote:
->> Hi all,
->> 
->> After merging the final tree, today's linux-next build (powerpc
->> allyesconfig) failed like this:
->> 
->> drivers/mfd/88pm800.c: In function 'pm800_pages_init':
->> drivers/mfd/88pm800.c:434:2: error: implicit declaration of function 'IS_ERR' [-Werror=implicit-function-declaration]
->>   if (IS_ERR(subchip->regmap_power)) {
->>   ^
->> drivers/mfd/88pm800.c:435:3: error: implicit declaration of function 'PTR_ERR' [-Werror=implicit-function-declaration]
->>    ret = PTR_ERR(subchip->regmap_power);
->>    ^
->> 
->> Caused by commit f8ca616f67f7 ("mfd: 88pm800: Enhance error handling for
->> sub pages probe/remove") from the mfd tree.  Forgot to include
->> linux/err.h (see Rule 1 in Documentation/SubmitChecklist).
->Sorry about that. This is fixed now.
+- It is relatively new interface, specific to the Power7 platform.
 
-It is my fault. Thanks for fixing it.
+- No tools that we know of actually use this interface at this point (none
+  are listed near the interface).
 
-> Cheers,
-> Samuel.
+- Users of this interface (eg oprofile users migrating to perf) would be
+  more used to the "PM_BR_MPRED" rather than "PM_BRU_MPRED".
 
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+- These are in the ABI/testing at this point rather than ABI/stable, so
+  hoping we have some wiggle room.
+
+But of course this is not a "grave error" or "security hole" which are
+the justifications listed in the Documentation/ABI/README.  If these
+are not good enough reasons, we can leave the misnomer around and
+create another file in sysfs with the correct name PM_BR_MPRED.
+
+Sukadev
+
