@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab3FTRZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 13:25:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55210 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757339Ab3FTRZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 13:25:33 -0400
-Date: Thu, 20 Jun 2013 13:25:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Chao Xie <xiechao.mail@gmail.com>, Roger Quadros <rogerq@ti.com>,
-        Chao Xie <chao.xie@marvell.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2] USB: initialize or shutdown PHY when add or remove
- host controller
-In-Reply-To: <20130620121749.GF9817@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1306201319580.2063-100000@iolanthe.rowland.org>
+	id S1758422Ab3FTRvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:51:12 -0400
+Received: from www.meduna.org ([92.240.244.38]:47955 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758294Ab3FTRvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 13:51:10 -0400
+Message-ID: <51C340DE.30806@meduna.org>
+Date: Thu, 20 Jun 2013 19:50:22 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org> <519F65DB.2020305@redhat.com> <51BE2F5C.8070408@meduna.org> <51C0B177.2000006@meduna.org> <CA+55aFwm-a0O-jvznYpXM4Ctf_jex+gcgELq_pqXL38Y6X-JPg@mail.gmail.com> <51C15F87.20100@meduna.org> <20130619080656.GF16094@twins.programming.kicks-ass.net>
+In-Reply-To: <20130619080656.GF16094@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2013-06-20 19:50:29
+X-Connected-IP: 95.105.165.4:49076
+X-Message-Linecount: 43
+X-Body-Linecount: 21
+X-Message-Size: 2101
+X-Body-Size: 736
+X-Received-Count: 1
+X-Recipient-Count: 11
+X-Local-Recipient-Count: 11
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Felipe Balbi wrote:
+On 19.06.2013 10:06, Peter Zijlstra wrote:
 
-> > In fact, the PHY setting and handling is related to platform or SOC,
-> > and for different SOC they can
-> > have same EHCI HCD but they PHY handling can be different.
-> > Omap'a case is the example, and i think some other vendors may have
-> > silimar cases.
-> > From above point, It is better to leave the PHY initialization and
-> > shutdown to be done by each echi-xxx driver.
-> > 
-> > So Alan and Felipe
-> > What are your ideas about it?
-> 
-> If we have so many exceptions, then sure. But eventually, the common
-> case should be added generically with a flag so that non-generic cases
-> (like OMAP) can request to handle the PHY by themselves.
-> 
-> Alan ?
+>> On 19.06.2013 07:20, Linus Torvalds wrote:
+>>> There's the fast_tlb race that Peter fixed in commit 29eb77825cc7
+>>> ("arch, mm: Remove tlb_fast_mode()"). I'm not seeing how it would
+>>> cause infinite TLB faults, but it definitely causes potentially
+>>> incoherent TLB contents. And afaik it only happens with
+>>> CONFIG_PREEMPT, and on UP systems. Which sounds like it might match
+>>> your setup...
 
-I don't have very strong feelings about this; Felipe has much more
-experience with these things.
+> The easiest way to test for your system is to ensure tlb_fast_mode()
+> return an unconditional 0.
 
-However, when the common case is added into the core, the simplest way
-to indicate that the HCD wants to handle the PHY(s) by itself will be
-to leave hcd->phy set to NULL or an ERR_PTR value.
+Nope. Got the faults also with tlb_fast_mode() returning 0, this time
+after ~10 hours. So there still has to be something...
 
-One important thing that hasn't been pointed out yet: When we move
-these calls into the core, the same patch must also remove those calls
-from the glue drivers that currently do set hcd->phy.  And it must make
-sure that the glue drivers which handle the PHY by themselves do not
-set hcd->phy.
+Regards
+-- 
+                                        Stano
 
-Alan Stern
 
