@@ -1,57 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965079Ab3FTJIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:08:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47592 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755509Ab3FTJIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:08:20 -0400
-Date: Thu, 20 Jun 2013 10:07:29 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jed Davis <jld@mozilla.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: ARM: Record the user-mode PC in the call chain.
-Message-ID: <20130620090728.GA2842@mudshark.cambridge.arm.com>
-References: <20130613232111.GA12536@mozilla.com>
- <20130618131319.GC6801@mudshark.cambridge.arm.com>
- <20130620031706.GB27428@mozilla.com>
+	id S965155Ab3FTJIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:08:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57841 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965105Ab3FTJIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 05:08:31 -0400
+Message-ID: <51C2C66D.4030106@ti.com>
+Date: Thu, 20 Jun 2013 14:37:57 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130620031706.GB27428@mozilla.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Philip Avinash <avinashphilip@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux@arm.linux.org.uk>, <khilman@deeprootsystems.com>,
+        <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 5/7] ARM: davinci: da8xx: gpio device creation
+References: <1371202532-14628-1-git-send-email-avinashphilip@ti.com> <1371202532-14628-6-git-send-email-avinashphilip@ti.com> <51C2BFEF.1090205@ti.com>
+In-Reply-To: <51C2BFEF.1090205@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 04:17:06AM +0100, Jed Davis wrote:
-> On Tue, Jun 18, 2013 at 02:13:19PM +0100, Will Deacon wrote:
-> > On Fri, Jun 14, 2013 at 12:21:11AM +0100, Jed Davis wrote:
-> > > With this change, we no longer lose the innermost entry in the user-mode
-> > > part of the call chain.  See also the x86 port, which includes the ip.
-> > > 
-> > > It's possible to partially work around this problem by post-processing
-> > > the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-> > > wasn't in the kernel when the sample was taken.
-> > 
-> > Thanks. I guess we need something similar for arm64 too. Could you cook a
-> > similar patch please?
+On 6/20/2013 2:10 PM, Sekhar Nori wrote:
+> On 6/14/2013 3:05 PM, Philip Avinash wrote:
+>> Create davinci gpio device and remove references in davinci_soc_info
+>> structure. Also rearrange header file inclusion in group basis.
+>>
+>> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+>> ---
+>>  arch/arm/mach-davinci/board-da830-evm.c     |   19 +++++++++++++++----
+>>  arch/arm/mach-davinci/board-da850-evm.c     |   11 +++++++++++
+>>  arch/arm/mach-davinci/board-omapl138-hawk.c |    2 ++
+>>  arch/arm/mach-davinci/da830.c               |    4 ----
+>>  arch/arm/mach-davinci/da850.c               |    4 ----
+>>  5 files changed, 28 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+>> index 1332de8..4e8bcc1 100644
+>> --- a/arch/arm/mach-davinci/board-da830-evm.c
+>> +++ b/arch/arm/mach-davinci/board-da830-evm.c
+>> @@ -22,17 +22,19 @@
+>>  #include <linux/mtd/partitions.h>
+>>  #include <linux/spi/spi.h>
+>>  #include <linux/spi/flash.h>
+>> +#include <linux/platform_data/mtd-davinci.h>
+>> +#include <linux/platform_data/gpio-davinci.h>
+>> +#include <linux/platform_data/usb-davinci.h>
+>> +#include <linux/platform_data/mtd-davinci-aemif.h>
+>> +#include <linux/platform_data/spi-davinci.h>
 > 
-> Done (and tested, on the ARM V8 Foundation Model).
+> While doing this, its better to keep the header files you are adding in
+> sorted order.
+> 
+>>  
+>>  #include <asm/mach-types.h>
+>>  #include <asm/mach/arch.h>
+>>  
+>>  #include <mach/cp_intc.h>
+>>  #include <mach/mux.h>
+>> -#include <linux/platform_data/mtd-davinci.h>
+>> +#include <mach/common.h>
+> 
+> You dont need to include this file here.
+> 
+>>  #include <mach/da8xx.h>
+>> -#include <linux/platform_data/usb-davinci.h>
+>> -#include <linux/platform_data/mtd-davinci-aemif.h>
+>> -#include <linux/platform_data/spi-davinci.h>
+>>  
+>>  #define DA830_EVM_PHY_ID		""
+>>  /*
+>> @@ -590,11 +592,20 @@ static struct spi_board_info da830evm_spi_info[] = {
+>>  	},
+>>  };
+>>  
+>> +static struct davinci_gpio_platform_data da830_gpio_platform_data = {
+>> +	.ngpio = 128,
+>> +	.intc_irq_num = DA830_N_CP_INTC_IRQ,
+>> +};
+>> +
+>>  static __init void da830_evm_init(void)
+>>  {
+>>  	struct davinci_soc_info *soc_info = &davinci_soc_info;
+>>  	int ret;
+>>  
+>> +	ret = da8xx_register_gpio(&da830_gpio_platform_data);
+>> +	if (ret)
+>> +		pr_warn("da830_evm_init: GPIO init failed: %d\n", ret);
+>> +
+>>  	ret = da830_register_edma(da830_edma_rsv);
+>>  	if (ret)
+>>  		pr_warning("da830_evm_init: edma registration failed: %d\n",
+>> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+>> index 8a24b6c..d5dd010 100644
+>> --- a/arch/arm/mach-davinci/board-da850-evm.c
+>> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+>> @@ -28,6 +28,7 @@
+>>  #include <linux/mtd/partitions.h>
+>>  #include <linux/mtd/physmap.h>
+>>  #include <linux/platform_device.h>
+>> +#include <linux/platform_data/gpio-davinci.h>
+>>  #include <linux/platform_data/mtd-davinci.h>
+>>  #include <linux/platform_data/mtd-davinci-aemif.h>
+>>  #include <linux/platform_data/spi-davinci.h>
+>> @@ -42,6 +43,7 @@
+>>  #include <mach/da8xx.h>
+>>  #include <mach/mux.h>
+>>  #include <mach/sram.h>
+>> +#include <mach/common.h>
+> 
+> No need of this file, as before.
+> 
+>>  
+>>  #include <asm/mach-types.h>
+>>  #include <asm/mach/arch.h>
+>> @@ -1138,6 +1140,11 @@ static struct edma_rsv_info *da850_edma_rsv[2] = {
+>>  	&da850_edma_cc1_rsv,
+>>  };
+>>  
+>> +static struct davinci_gpio_platform_data da850_gpio_platform_data = {
+>> +	.ngpio = 144,
+>> +	.intc_irq_num = DA850_N_CP_INTC_IRQ,
+>> +};
 
-Wow, I didn't expect you to test it. Thanks!
+I did not notice this before, but this is a wrong place for this. This
+should be in SoC file since it does not change with each board. And this
+explains why you left hawk board broken - you would end up replicating
+this there.
 
-> It looked as if the powerpc and sparc ports might have similar issues,
-> but I haven't checked on them yet.
+You need to fix patches 3-6 and repost again. I have some fixes what I
+made while reviewing and committed to my v3.11/gpio branch. You can to
+take that branch as starting point and complete the fixes.
 
-I can extract some hardware from the pile in the corner of my flat if you
-want a hand with testing.
-
-Will
+Thanks,
+Sekhar
