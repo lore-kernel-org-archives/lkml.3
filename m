@@ -1,171 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab3FTPBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:01:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45100 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab3FTPBR (ORCPT
+	id S1758226Ab3FTQUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 12:20:30 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:52219 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758186Ab3FTQTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:01:17 -0400
-Message-ID: <51C31926.3060400@pengutronix.de>
-Date: Thu, 20 Jun 2013 17:00:54 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Thu, 20 Jun 2013 12:19:35 -0400
+Date: Thu, 20 Jun 2013 09:16:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130620161652.GA4462@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130619164540.GB22483@redhat.com>
+ <20130619175356.GA23673@redhat.com>
+ <20130619181302.GE5146@linux.vnet.ibm.com>
+ <20130620001212.GB12151@redhat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, John Stultz <john.stultz@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Andres Salomon <dilinger@queued.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: RFC: [PATCH] clocksource: tcb: fix min_delta calculation
-References: <517687AB.1040309@pengutronix.de> <1366722524-25991-1-git-send-email-mkl@pengutronix.de> <alpine.LFD.2.02.1304251618590.21884@ionos> <51794385.1030308@pengutronix.de>
-In-Reply-To: <51794385.1030308@pengutronix.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2QNSWXQJJHGMCAVOSVDEE"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130620001212.GB12151@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062016-3620-0000-0000-000003386847
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2QNSWXQJJHGMCAVOSVDEE
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 19, 2013 at 08:12:12PM -0400, Dave Jones wrote:
+> On Wed, Jun 19, 2013 at 11:13:02AM -0700, Paul E. McKenney wrote:
+>  > On Wed, Jun 19, 2013 at 01:53:56PM -0400, Dave Jones wrote:
+>  > > On Wed, Jun 19, 2013 at 12:45:40PM -0400, Dave Jones wrote:
+>  > >  > I've been hitting this a lot the last few days.
+>  > >  > This is the same machine that I was also seeing lockups during sync()
+>  > > 
+>  > > On a whim, I reverted 971394f389992f8462c4e5ae0e3b49a10a9534a3
+>  > > (As I started seeing these just after that rcu merge).
+>  > > 
+>  > > It's only been 30 minutes, but it seems stable again. Normally I would
+>  > > hit these within 5 minutes.
+>  > > 
+>  > > I think this may be the same root cause for http://www.spinics.net/lists/kernel/msg1551503.html too.
+>  > > 
+>  > > Paul ?
+>  > 
+>  > ???
+>  > 
+>  > In both cases, I am guessing that you built with CONFIG_PROVE_RCU_DELAY=y.
+>  > Even then, this is very strange.  I am at a loss as to why udelay(200)
+>  > would result in a hang.  Or does your system turn udelay() into something
+>  > other than a pure spin?
+> 
+> Dammit. Paul, you're off the hook (for now).
+> It just took longer to hit.
 
-Hello Thomas,
+Well, this commit could significantly increase CPU overhead, which might
+make the bug more likely to occur.  (Hey, I can rationalize -anything-!!!)
 
-On 04/25/2013 04:53 PM, Marc Kleine-Budde wrote:
-> On 04/25/2013 04:21 PM, Thomas Gleixner wrote:
->> On Tue, 23 Apr 2013, Marc Kleine-Budde wrote:
->>> The commit
->>>
->>>     77cc982 clocksource: use clockevents_config_and_register() where =
-possible
->>>
->>> switches from manually calculating min_delta_ns (and others) and
->>> clockevents_register_device() to automatic calculation via
->>> clockevents_config_and_register(). During this conversation the "+ 1"=
- in
->>>
->>>     min_delta_ns =3D clockevent_delta2ns(1, &clkevt.clkevt) + 1;
->>>
->>> was lost. This leads to problems with schedule_delayed_work() with a =
-delay of
->>> "1". Resulting in the work not scheduled in time.
->>
->> Errm. How is schedule_delayed_work() related to this?
+							Thanx, Paul
 
-Coming back to the this problem after some time.
+> 	Dave
+> 
+> 
+> [19886.451044] BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:12994]
+> [19886.452659] Modules linked in: bridge stp snd_seq_dummy fuse tun hidp rfcomm ipt_ULOG bnep nfnetlink can_raw ipx p8023 p8022 pppoe pppox ppp_generic slhc scsi_transport_iscsi can_bcm rds bluetooth can nfc 
+> rfkill af_key af_802154 netrom irda af_rxrpc appletalk phonet psnap caif_socket caif x25 crc_ccitt llc2 llc rose ax25 atm coretemp hwmon kvm_intel kvm crc32c_intel ghash_clmulni_intel snd_hda_codec_realtek mi
+> crocode pcspkr snd_hda_codec_hdmi usb_debug snd_hda_intel snd_seq e1000e snd_hda_codec snd_hwdep ptp pps_core snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+> [19886.464209] irq event stamp: 2380319
+> [19886.465510] hardirqs last  enabled at (2380318): [<ffffffff816ed220>] restore_args+0x0/0x30
+> [19886.467446] hardirqs last disabled at (2380319): [<ffffffff816f5d2a>] apic_timer_interrupt+0x6a/0x80
+> [19886.469464] softirqs last  enabled at (196990): [<ffffffff810542d4>] __do_softirq+0x194/0x440
+> [19886.471395] softirqs last disabled at (197479): [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+> [19886.473238] CPU: 0 PID: 12994 Comm: trinity-child0 Not tainted 3.10.0-rc6+ #17
+> [19886.477881] task: ffff8801a8222520 ti: ffff880228d98000 task.ti: ffff880228d98000
+> [19886.479712] RIP: 0010:[<ffffffff810541f1>]  [<ffffffff810541f1>] __do_softirq+0xb1/0x440
+> [19886.481706] RSP: 0018:ffff880244803f08  EFLAGS: 00000202
+> [19886.483298] RAX: ffff8801a8222520 RBX: ffffffff816ed220 RCX: 0000000000000002
+> [19886.485094] RDX: 00000000000045b0 RSI: ffff8801a8222ca0 RDI: ffff8801a8222520
+> [19886.486896] RBP: ffff880244803f70 R08: 0000000000000001 R09: 0000000000000000
+> [19886.488687] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880244803e78
+> [19886.490507] R13: ffffffff816f5d2f R14: ffff880244803f70 R15: 0000000000000000
+> [19886.492325] FS:  00007f0bcf727740(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
+> [19886.494184] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [19886.495781] CR2: 0000000000000001 CR3: 00000001a56d0000 CR4: 00000000001407f0
+> [19886.497545] DR0: 00007f21e7713000 DR1: 0000000000000000 DR2: 0000000000000000
+> [19886.499304] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> [19886.501070] Stack:
+> [19886.502247]  0000000a00406040 00000001001ddcf4 ffff880228d99fd8 ffff880228d99fd8
+> [19886.504104]  ffff880228d99fd8 ffff8801a8222918 ffff880228d99fd8 ffff880200000000
+> [19886.505996]  ffff8801a8222520 0000000000000000 0000000000002e82 00000000162dccb4
+> [19886.507859] Call Trace:
+> [19886.509095]  <IRQ> 
+> [19886.509334]  [<ffffffff8105473d>] irq_exit+0xcd/0xe0
+> [19886.511879]  [<ffffffff816f6bcb>] smp_apic_timer_interrupt+0x6b/0x9b
+> [19886.513586]  [<ffffffff816f5d2f>] apic_timer_interrupt+0x6f/0x80
+> [19886.515243]  <EOI> 
+> [19886.515482]  [<ffffffff812fe80d>] ? idr_find_slowpath+0x4d/0x150
+> [19886.518126]  [<ffffffff812a2cb9>] ipcget+0x89/0x380
+> [19886.519656]  [<ffffffff810b72dd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [19886.521409]  [<ffffffff812a43b6>] SyS_msgget+0x56/0x60
+> [19886.522971]  [<ffffffff812a39a0>] ? rcu_read_lock+0x80/0x80
+> [19886.524585]  [<ffffffff812a37e0>] ? sysvipc_msg_proc_show+0xd0/0xd0
+> [19886.526274]  [<ffffffff816f52d4>] tracesys+0xdd/0xe2
+> [19886.527804]  [<ffffffff8100ffff>] ? enable_step+0x3f/0x1d0
+> [19886.529397] Code: 48 89 45 b8 48 89 45 b0 48 89 45 a8 66 0f 1f 44 00 00 65 c7 04 25 80 0f 1d 00 00 00 00 00 e8 b7 31 06 00 fb 49 c7 c6 00 41 c0 81 <eb> 0e 0f 1f 44 00 00 49 83 c6 08 41 d1 ef 74 6c 41 f6 c7 01 74 
+> 
 
-I'm on at91sam9263 (armv5) using latest linus/master (v3.10-rc6-84-gc0691=
-14).
-I can illustrate the problem running cyclictest.
-
-Here's the output of unpatched linus/master:
-
-> root@halo22:~ cyclictest -i 10000 -n -t 4
-> policy: other/other: loadavg: 0.10 0.19 0.10 2/31 133
->=20
-> T: 0 (  130) P: 0 I:10000 C:  30767 Min:     57 Act:  165 Avg:909453 Ma=
-x: 201897444
-> T: 1 (  131) P: 0 I:10500 C:  29302 Min:     68 Act:  144 Avg:906651 Ma=
-x: 204005666
-> T: 2 (  132) P: 0 I:11000 C:  27970 Min:     79 Act:  188 Avg:905068 Ma=
-x: 204008666
-> T: 3 (  133) P: 0 I:11500 C:  26754 Min:     52 Act:  132 Avg:904438 Ma=
-x: 203665111
-
-Cyclictest runs for about two seconds, but then shows no output for
-about two seconds, then it runs again, then stops and so on...
-
-With my patch applied, the numbers are back to normal:
-
-> root@halo22:~ cyclictest -i 10000 -n -t 4
-> policy: other/other: loadavg: 0.34 0.15 0.06 2/32 109
->=20
-> T: 0 (  106) P: 0 I:10000 C:    292 Min:    112 Act:  208 Avg:  189 Max=
-:    1715
-> T: 1 (  107) P: 0 I:10500 C:    277 Min:    107 Act:  198 Avg:  201 Max=
-:    1464
-> T: 2 (  108) P: 0 I:11000 C:    265 Min:    104 Act:  148 Avg:  195 Max=
-:    1530
-> T: 3 (  109) P: 0 I:11500 C:    252 Min:    113 Act:  205 Avg:  167 Max=
-:     269
-
-Cyclictest keeps running without 2 second stops.
-
-Is my patch a valid solution to the problem? If so, I'll write more=20
-specific commit message.
-
-regards,
-Marc
-
----
-
-The commit
-
-    77cc982 clocksource: use clockevents_config_and_register() where poss=
-ible
-
-switches from manually calculating min_delta_ns (and others) and
-clockevents_register_device() to automatic calculation via
-clockevents_config_and_register(). During this conversation the "+ 1" in
-
-    min_delta_ns =3D clockevent_delta2ns(1, &clkevt.clkevt) + 1;
-
-was lost. This leads to problems with schedule_delayed_work() with a dela=
-y of
-"1". Resulting in the work not scheduled in time.
-
-This patch fixes the problem by increasing the min_delta to "2" ticks.
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
----
- drivers/clocksource/tcb_clksrc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_c=
-lksrc.c
-index 8a61872..7cf6dc7 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -197,7 +197,7 @@ static void __init setup_clkevents(struct atmel_tc *t=
-c, int clk32k_divisor_idx)
-=20
- 	clkevt.clkevt.cpumask =3D cpumask_of(0);
-=20
--	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
-+	clockevents_config_and_register(&clkevt.clkevt, 32768, 2, 0xffff);
-=20
- 	setup_irq(irq, &tc_irqaction);
- }
--- 1.8.2.rc2
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-------enig2QNSWXQJJHGMCAVOSVDEE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlHDGSYACgkQjTAFq1RaXHOPiQCeLe8ZthRwRbaN+80qdw0hyEqn
-TZMAniE6gGCSqXyuDSSMI6S+/72Bj1ft
-=nSdO
------END PGP SIGNATURE-----
-
-------enig2QNSWXQJJHGMCAVOSVDEE--
