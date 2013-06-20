@@ -1,184 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161040Ab3FTP0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:26:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45021 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030221Ab3FTP0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:26:10 -0400
-Date: Thu, 20 Jun 2013 12:26:03 -0300
-From: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Robert Richter <rric@kernel.org>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@calxeda.com>
-Subject: Re: [PATCH] perf tools: Fix output directory of Documentation/
-Message-ID: <20130620152603.GC4767@ghostprotocols.net>
-References: <1367865614-30876-1-git-send-email-rric@kernel.org>
- <20130620134154.GC1083@krava.brq.redhat.com>
+	id S1161057Ab3FTP1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 11:27:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38987 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030221Ab3FTP1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 11:27:04 -0400
+Message-ID: <51C31F30.5000307@ti.com>
+Date: Thu, 20 Jun 2013 20:56:40 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130620134154.GC1083@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] regulator: palmas: model SMPS10 as two regulators
+References: <1371717458-10307-1-git-send-email-kishon@ti.com> <1371717458-10307-3-git-send-email-kishon@ti.com> <51C2DEEB.9090600@nvidia.com> <51C3089F.5030003@ti.com> <51C30B95.4010406@nvidia.com> <51C30F60.3060100@ti.com> <51C31537.9030705@nvidia.com>
+In-Reply-To: <51C31537.9030705@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 20, 2013 at 03:41:54PM +0200, Jiri Olsa escreveu:
-> hi,
-> looks like this one is breaking the 'make install' for perf with:
-> 
-> ------------------------------------------------------------------------
-> $ touch Documentation/perf-diff.txt
-> [jolsa@krava perf]$ touch Documentation/perf-diff.txt 
+Hi,
 
+On Thursday 20 June 2013 08:14 PM, Laxman Dewangan wrote:
+> On Thursday 20 June 2013 07:49 PM, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Thursday 20 June 2013 07:33 PM, Laxman Dewangan wrote:
+>>> On Thursday 20 June 2013 07:20 PM, Kishon Vijay Abraham I wrote:
+>>>> Hi,
+>>>>
+>>>> On Thursday 20 June 2013 04:22 PM, Laxman Dewangan wrote:
+>>>>> On Thursday 20 June 2013 02:07 PM, Kishon Vijay Abraham I wrote:
+>>>>>> SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
+>>>>>> SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
+>>>>>> in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
+>>>>>> it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
+>>>>>> used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
+>>>>>> regulator_enable().
+>>>>>>
+>>>>>> Cc: Laxman Dewangan <ldewangan@nvidia.com>
+>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>> ---
+>>>>>>     drivers/regulator/palmas-regulator.c |   39
+>>>>>> ++++++++++++++++++++++++++++++----
+>>>>>>     include/linux/mfd/palmas.h           |    9 ++++----
+>>>>>>     2 files changed, 40 insertions(+), 8 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/regulator/palmas-regulator.c
+>>>>>> b/drivers/regulator/palmas-regulator.c
+>>>>>> index 3ae44ac..7004bab 100644
+>>>>>> --- a/drivers/regulator/palmas-regulator.c
+>>>>>> +++ b/drivers/regulator/palmas-regulator.c
+>>>>>> @@ -97,7 +97,12 @@ static const struct regs_info palmas_regs_info[] = {
+>>>>>>             .ctrl_addr    = PALMAS_SMPS9_CTRL,
+>>>>>>         },
+>>>>>>         {
+>>>>>> -        .name        = "SMPS10",
+>>>>>> +        .name        = "SMPS10_OUT1",
+>>>>>> +        .sname        = "smps10-out2",
+>>>>>> +        .ctrl_addr    = PALMAS_SMPS10_CTRL,
+>>>>>> +    },
+>>>>>> +    {
+>>>>>> +        .name        = "SMPS10_OUT2",
+>>>>>>             .sname        = "smps10-in",
+>>>>>>
+>>>>> This sequence can create regulator to be never register.
+>>>>> In probe, we register regulator from 0 to max_id.
+>>>>> Here smps10-out1 comes first and see the supply as smps10-out2 which is not
+>>>>> registered yet and so will fail with PROBE_DEFER
+>>>>> When again it tries, the same issue.
+>>>> hmm.. But I was able to get (regulator_get) *SMPS10_OUT1* without any issue
+>>>> during my testing. From looking at the code, I couldn't see *sname* being used
+>>>> anywhere.
+>>> We used the sname as
+>>> pmic->desc[id].supply_name = palmas_regs_info[id].sname;
+>>>
+>>> However, how you have populated your dt?
+>>> Have you added like
+>>> smps10-out2-supply = <&SMPS10_OUT2>
+>>>
+>>> for the palmas regualtor -dt.
+>> I added the regulator data like
+>>
+>> +                       smps10_out1_reg: smps10_out1 {
+>> +                               regulator-name = "smps10_out1";
+>> +                               regulator-min-microvolt = <5000000>;
+>> +                               regulator-max-microvolt = <5000000>;
+>> +                               regulator-always-on;
+>> +                               regulator-boot-on;
+>> +                               regulator-allow-bypass;
+>> +                               ti,warm_sleep = <0>;
+>> +                               ti,roof_floor = <0>;
+>> +                               ti,mode_sleep = <0>;
+>> +                               ti,warm_reset = <0>;
+>> +                               ti,tstep = <0>;
+>> +                               ti,vsel = <0>;
+>> +                       };
+>>
+>> and from my controller I reference it using
+>> +               vbus-supply = <&smps10_out1_reg>;
+>>
+>> and in the controller driver I use
+>> +               vbus_reg = devm_regulator_get(dev, "vbus");
+>
+> Have you added the regulator supply entries?
+> Are you testing on mainline linux-next?
 
-Robert, so this one is with:
+Not in linux-next :-( Tested only with mainline.
+Does inverting the order helps?
 
-	cd tools/perf
-	make install-doc
-
-I tested with:
-
-	make -C tools/perf O=/tmp/build/perf install-doc
-
-and it works, so it is just the in tree build that fails.
-
-- Arnaldo
-
-> [jolsa@krava perf]$ make install-doc
->     CHK -fstack-protector-all
->     CHK -Wstack-protector
->     CHK -Wvolatile-register-var
->     CHK -D_FORTIFY_SOURCE=2
->     CHK bionic
->     CHK libelf
->     CHK libdw
->     CHK -DLIBELF_MMAP
->     CHK -DLIBELF_MMAP
->     CHK libunwind
-> config/Makefile:223: No libunwind found, disabling post unwind support.
-> Please install libunwind-dev[el] >= 0.99
->     CHK libaudit
->     CHK libslang
->     CHK gtk2
->     CHK -DHAVE_GTK_INFO_BAR
->     CHK perl
->     CHK python
->     CHK python version
->     CHK libbfd
->     CHK -DHAVE_STRLCPY
->     CHK -DHAVE_ON_EXIT
->     CHK -DBACKTRACE_SUPPORT
->     CHK libnuma
->     SUBDIR Documentation
->     SUBDIR ../
->     CHK -fstack-protector-all
->     CHK -Wstack-protector
->     CHK -Wvolatile-register-var
->     CHK -D_FORTIFY_SOURCE=2
->     CHK bionic
->     CHK libelf
->     CHK libdw
->     CHK -DLIBELF_MMAP
->     CHK -DLIBELF_MMAP
->     CHK libunwind
-> config/Makefile:223: No libunwind found, disabling post unwind support.
-> Please install libunwind-dev[el] >= 0.99
->     CHK libaudit
->     CHK libslang
->     CHK gtk2
->     CHK -DHAVE_GTK_INFO_BAR
->     CHK perl
->     CHK python
->     CHK python version
->     CHK libbfd
->     CHK -DHAVE_STRLCPY
->     CHK -DHAVE_ON_EXIT
->     CHK -DBACKTRACE_SUPPORT
->     CHK libnuma
->     ASCIIDOC perf-diff.xml
->     XMLTO perf-diff.1
-> usage: xmlto [OPTION]... FORMAT XML
-> OPTIONs are:
->   -v              verbose output (-vv for very verbose)
->   -x stylesheet   use the specified stylesheet instead of choosing one
->   -m fragment     use the XSL fragment to customize the stylesheet
->   -o directory    put output in the specified directory instead of
->                   the current working directory
->   -p postprocopts pass option to postprocessor
->   --extensions    turn on stylesheet extensions for this tool chain
->   --noautosize    do not autodetect paper size via locales or paperconf
->   --noclean       temp files are not deleted automatically
->                   (good for diagnostics)
->   --noextensions  do not use passivetex/fop extensions
->   --searchpath    colon-separated list of fallback directories
->   --skip-validation
->                   do not attempt to validate the input before processing
->   --stringparam paramname=paramvalue
->                   pass a named parameter to the stylesheet from the
->                   command line
->   --with-fop      use fop for formatting (if fop available)
->   --with-dblatex  use dblatex for formatting (if dblatex available)
-> 
-> Available FORMATs depend on the type of the XML file (which is
-> determined automatically).
-> 
-> For documents of type "fo":
-> awt  mif  pcl  svg  txt
-> 
-> For documents of type "docbook":
-> awt  dvi  epub  fo  html  htmlhelp  html-nochunks  javahelp  man  mif
-> pcl  pdf  ps  svg  txt  xhtml  xhtml-nochunks
-> make[1]: *** [perf-diff.1] Error 1
-> make: *** [install-doc] Error 2
-> ------------------------------------------------------------------------
-> 
-> I bistected the issue to this one.. it works after I reverted it
-> 
-> 'make -f tests/make' test catches this error ;-)
-> 
-> jirka
-> 
-> On Mon, May 06, 2013 at 08:40:14PM +0200, Robert Richter wrote:
-> > From: Robert Richter <robert.richter@calxeda.com>
-> > 
-> > The OUTPUT directory is wrongly determind leading to:
-> > 
-> >  make[3]: *** No rule to make target `.../.build/perf/PERF-VERSION-FILE'.  Stop.
-> > 
-> > Fixing this by using the generic approach in script/Makefile.include.
-> > 
-> > Signed-off-by: Robert Richter <robert.richter@calxeda.com>
-> > ---
-> >  tools/perf/Documentation/Makefile | 8 +-------
-> >  1 file changed, 1 insertion(+), 7 deletions(-)
-> > 
-> > diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-> > index f751757..1368e88 100644
-> > --- a/tools/perf/Documentation/Makefile
-> > +++ b/tools/perf/Documentation/Makefile
-> > @@ -1,12 +1,6 @@
-> > +include ../../scripts/Makefile.include
-> >  include ../config/utilities.mak
-> >  
-> > -OUTPUT := ./
-> > -ifeq ("$(origin O)", "command line")
-> > -  ifneq ($(O),)
-> > -	OUTPUT := $(O)/
-> > -  endif
-> > -endif
-> > -
-> >  MAN1_TXT= \
-> >  	$(filter-out $(addsuffix .txt, $(ARTICLES) $(SP_ARTICLES)), \
-> >  		$(wildcard perf-*.txt)) \
-> > -- 
-> > 1.8.1.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Thanks
+Kishon
