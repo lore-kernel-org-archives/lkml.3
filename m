@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab3FTTNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:13:45 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:54346 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758098Ab3FTTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:13:43 -0400
-X-IronPort-AV: E=Sophos;i="4.87,906,1363132800"; 
-   d="scan'208";a="32469510"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <xen-devel@lists.xen.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv5 0/4] xen: maintain an accurate persistent clock in more cases
-Date: Thu, 20 Jun 2013 20:13:37 +0100
-Message-ID: <1371755619-25348-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1758059Ab3FTRAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 13:00:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47829 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab3FTRAv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 13:00:51 -0400
+Date: Thu, 20 Jun 2013 10:01:31 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/48] 3.9.7-stable review
+Message-ID: <20130620170131.GA21356@kroah.com>
+References: <20130618161725.912524266@linuxfoundation.org>
+ <878v253xrx.wl%satoru.takeuchi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v253xrx.wl%satoru.takeuchi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen guests use the Xen wallclock as their persistent clock.  This is a
-software only clock in the hypervisor that is used by guests instead
-of a real hardware RTC.
+On Thu, Jun 20, 2013 at 07:02:42PM +0900, Satoru Takeuchi wrote:
+> At Tue, 18 Jun 2013 09:17:26 -0700,
+> Greg Kroah-Hartman wrote:
+> > 
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > This is the start of the stable review cycle for the 3.9.7 release.
+> > There are 48 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Thu Jun 20 16:15:42 UTC 2013.
+> > Anything received after that time might be too late.
+> 
+> This kernel can be built and boot without any problem.
+> Building a kernel with this kernel also works fine.
 
-The kernel has limited support for updating the persistent clock or
-RTC when NTP is synced.  This has the following limitations:
+Thanks for testing and letting us know.
 
-* The persistent clock is not updated on step changes.  This leaves a
-  window where it will be incorrect (while NTP resyncs).
-
-* Xen guests use the Xen wallclock as their persistent clock.  dom0
-  maintains this clock so it is persistent for domUs but not dom0
-  itself.
-
-These limitations mean that guests started before NTP is synchronized
-will start with an incorrect wallclock time and the hardware RTC will
-not be updated (as on bare metal).
-
-These series fixes the above limitations and depends on "x86: increase
-precision of x86_platform.get/set_wallclock()" which was previously
-posted.
-
-Changes since v4:
-
-Dropped the change to disable non-boot CPUs during suspend on Xen as
-migration downtime was too poor.  Instead, provide
-hrtimers_late_resume() for use by Xen's resume code to replace the
-call of clock_was_set().  Fix two unused variable warnings.
-
-Changes since v3:
-
-Add a new clock_was_set notifier chain. Use this instead of direct
-calls to clock_was_set() from the timekeeping code.  Use this notifier
-and a new timer to synchronize the Xen wallclock.
-
-Changes since v2:
-
-Don't peek at the timekeeper internals (use __current_kernel_time()
-instead).  Use the native set_wallclock hook in dom0.
-
-Changes since v1:
-
-Reworked to use the pvclock_gtod notifier to sync the wallclock (this
-looked similar to what a KVM host does).  update_persistent_clock()
-will now only update the CMOS RTC.
-
-David
-
+greg k-h
