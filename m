@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965197Ab3FTJPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:15:48 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51957 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964817Ab3FTJPp (ORCPT
+	id S965201Ab3FTJR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:17:57 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:52228 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964817Ab3FTJRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:15:45 -0400
-Date: Thu, 20 Jun 2013 10:15:37 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -v2 0/4] EFI 1:1 mapping
-Message-ID: <20130620091537.GA17159@srcf.ucam.org>
-References: <1371491416-11037-1-git-send-email-bp@alien8.de>
- <20130619125243.GD11209@gmail.com>
- <20130619130225.GA28311@pd.tnic>
- <20130619130434.GB24957@gmail.com>
- <20130619160804.GB27832@srcf.ucam.org>
- <20130620091321.GB6811@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130620091321.GB6811@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 20 Jun 2013 05:17:55 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] dmaengine: ste_dma40: Declare memcpy config as static
+Date: Thu, 20 Jun 2013 11:17:39 +0200
+Message-Id: <1371719859-4600-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 11:13:21AM +0200, Ingo Molnar wrote:
+Fix sparse warnings:
 
-> Cool - and supposedly this will work in a Mac environment as well? Would 
-> be very nice to avoid fundamentally fragile system specific quirks for 
-> something as fundamental as the EFI runtime memory mapping model ...
+drivers/dma/ste_dma40.c:81:26: warning: symbol 'dma40_memcpy_conf_phy' was not declared. Should it be static?
+drivers/dma/ste_dma40.c:95:26: warning: symbol 'dma40_memcpy_conf_log' was not declared. Should it be static?
 
-Apple is the only case where I'd expect there to be an issue, since they 
-only started supporting booting Windows via UEFI on very recent systems. 
-However, unless they're actually sniffing the page tables on UEFI entry, 
-I can't see any way that this could break things…
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
 
+Hi Linus,
+
+just a quick sparse error fixup on the dma driver.
+
+Thanks,
+Fabio
+
+ drivers/dma/ste_dma40.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index fa4f9a3..8f72085 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -78,7 +78,7 @@ static int dma40_memcpy_channels[] = {
+ };
+ 
+ /* Default configuration for physcial memcpy */
+-struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
++static struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
+ 	.mode = STEDMA40_MODE_PHYSICAL,
+ 	.dir = DMA_MEM_TO_MEM,
+ 
+@@ -92,7 +92,7 @@ struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
+ };
+ 
+ /* Default configuration for logical memcpy */
+-struct stedma40_chan_cfg dma40_memcpy_conf_log = {
++static struct stedma40_chan_cfg dma40_memcpy_conf_log = {
+ 	.mode = STEDMA40_MODE_LOGICAL,
+ 	.dir = DMA_MEM_TO_MEM,
+ 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.8.2
+
