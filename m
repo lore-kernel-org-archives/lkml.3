@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab3FTPAo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 11:00:44 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.111]:43945 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757701Ab3FTPAn (ORCPT
+	id S1030322Ab3FTOtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 10:49:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47644 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030276Ab3FTOtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 11:00:43 -0400
-X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jun 2013 11:00:42 EDT
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-11.tower-193.messagelabs.com!1371740051!14778750!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201306201454.r5KEs9av010969@swsrvapps-01.diasemi.com>
-From: Steve Twiss <stwiss.opensource@diasemi.com>
-Date: Thu, 20 Jun 2013 14:42:04 +0100
-Subject: [RFC V1]  DA9210 driver request for comments
-To: LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+	Thu, 20 Jun 2013 10:49:09 -0400
+Date: Thu, 20 Jun 2013 07:48:45 -0700
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-003002e04ed38618fc37b92ba128f5ca79d39f4f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, fche@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        jlebon@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, jlebon@redhat.com, tglx@linutronix.de
+In-Reply-To: <20130605031216.15285.2001.stgit@mhiramat-M0-7522>
+References: <20130605031216.15285.2001.stgit@mhiramat-M0-7522>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] kprobes:
+  Fix arch_prepare_kprobe to handle copy insn failures
+Git-Commit-ID: 003002e04ed38618fc37b92ba128f5ca79d39f4f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 07:48:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Twiss <stwiss.opensource@diasemi.com>
+Commit-ID:  003002e04ed38618fc37b92ba128f5ca79d39f4f
+Gitweb:     http://git.kernel.org/tip/003002e04ed38618fc37b92ba128f5ca79d39f4f
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Wed, 5 Jun 2013 12:12:16 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 20 Jun 2013 14:25:48 +0200
 
-The following describes the driver DA9210 from Dialog Semiconductor Ltd.
+kprobes: Fix arch_prepare_kprobe to handle copy insn failures
 
-This is a request for comment relating to the Dialog DA9210 driver.
-The patches have been made relative to the following kernel version:
+Fix arch_prepare_kprobe() to handle failures in copy instruction
+correctly. This fix is related to the previous fix: 8101376
+which made __copy_instruction return an error result if failed,
+but caller site was not updated to handle it. Thus, this is the
+other half of the bugfix.
 
-linux-next next-20130620
+This fix is also related to the following bug-report:
 
-This driver is for the Dialog DA9210 Multi-phase 12A DC-DC Buck
-Converter controlled only from an I2C bus. It consists of a I2C device
-driver which controls a synchronous 12 Amp step down converter. In this
-case, the regulator component contains all parts of the driver in a
-single file.
+   https://bugzilla.redhat.com/show_bug.cgi?id=910649
 
-It would be appreciated if you could add any comments you may have about
-the driver.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Jonathan Lebon <jlebon@redhat.com>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: systemtap@sourceware.org
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20130605031216.15285.2001.stgit@mhiramat-M0-7522
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/kprobes/core.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-Thank you,
-Steve Twiss, Dialog Semiconductor Ltd.
-
-S Twiss (1):
-  COMMIT 1: DA9210 driver files
-
- drivers/regulator/Kconfig                  |    7 +
- drivers/regulator/Makefile                 |    1 +
- drivers/regulator/da9210-regulator.c       |  334 ++++++++++++++++++++++++++++
- include/linux/regulator/da9210-regulator.h |  286 ++++++++++++++++++++++++
- 4 files changed, 628 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/da9210-regulator.c
- create mode 100644 include/linux/regulator/da9210-regulator.h
-
--- 
-end-of-patch for RFC V1
-
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 9895a9a..211bce4 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -365,10 +365,14 @@ int __kprobes __copy_instruction(u8 *dest, u8 *src)
+ 	return insn.length;
+ }
+ 
+-static void __kprobes arch_copy_kprobe(struct kprobe *p)
++static int __kprobes arch_copy_kprobe(struct kprobe *p)
+ {
++	int ret;
++
+ 	/* Copy an instruction with recovering if other optprobe modifies it.*/
+-	__copy_instruction(p->ainsn.insn, p->addr);
++	ret = __copy_instruction(p->ainsn.insn, p->addr);
++	if (!ret)
++		return -EINVAL;
+ 
+ 	/*
+ 	 * __copy_instruction can modify the displacement of the instruction,
+@@ -384,6 +388,8 @@ static void __kprobes arch_copy_kprobe(struct kprobe *p)
+ 
+ 	/* Also, displacement change doesn't affect the first byte */
+ 	p->opcode = p->ainsn.insn[0];
++
++	return 0;
+ }
+ 
+ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+@@ -397,8 +403,8 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	p->ainsn.insn = get_insn_slot();
+ 	if (!p->ainsn.insn)
+ 		return -ENOMEM;
+-	arch_copy_kprobe(p);
+-	return 0;
++
++	return arch_copy_kprobe(p);
+ }
+ 
+ void __kprobes arch_arm_kprobe(struct kprobe *p)
