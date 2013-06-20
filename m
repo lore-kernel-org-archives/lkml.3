@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab3FTMqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:46:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44767 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757823Ab3FTMqo (ORCPT
+	id S965455Ab3FTMsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:48:01 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:63613 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965102Ab3FTMsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:46:44 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <b-cousson@ti.com>
-CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v5 0/2] ARM: dts: Add USB host support for Beagle-xm
-Date: Thu, 20 Jun 2013 15:46:12 +0300
-Message-ID: <1371732374-27191-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 20 Jun 2013 08:48:00 -0400
+Message-ID: <51C2F9FF.4090702@cogentembedded.com>
+Date: Thu, 20 Jun 2013 16:47:59 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Asias He <asias@redhat.com>, Jason Wang <jasowang@redhat.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH net] vhost-net: fix use-after-free in vhost_net_flush
+References: <20130620114813.GA17373@redhat.com>
+In-Reply-To: <20130620114813.GA17373@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+Hello.
 
-Patch 1 adds USB host support for beagle-XM.
-Patch 2 cleans up pin comments for USB host pins.
+On 20-06-2013 15:48, Michael S. Tsirkin wrote:
 
-Changes in v4:
-- Rebased to todays for_3.11/dts branch
-- added disclaimer about temporary usage of regulator framework for
-GPIO RESET lines.
+> vhost_net_ubuf_put_and_wait has a confusing name:
+> it will actually also free it's argument.
+> Thus since commit 1280c27f8e29acf4af2da914e80ec27c3dbd5c01
 
-cheers,
--roger
+    Please also specify that commit's summary line in parens.
 
-Roger Quadros (2):
-  ARM: dts: omap3-beagle-xm: Add USB Host support
-  ARM: dts: omap3-beagle: Make USB host pin naming consistent
+> vhost_net_flush tries to use the argument after passing it
+> to vhost_net_ubuf_put_and_wait, this results
+> in use after free.
+> To fix, don't free the argument in vhost_net_ubuf_put_and_wait,
+> add an new API for callers that want to free ubufs.
 
- arch/arm/boot/dts/omap3-beagle-xm.dts |   81 +++++++++++++++++++++++++++++----
- arch/arm/boot/dts/omap3-beagle.dts    |   29 +++++++-----
- 2 files changed, 89 insertions(+), 21 deletions(-)
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
--- 
-1.7.4.1
+WBR, Sergei
 
