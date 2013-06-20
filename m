@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab3FTJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 05:02:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59703 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab3FTJCX (ORCPT
+	id S1757369Ab3FTJD7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 05:03:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52607 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab3FTJD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 05:02:23 -0400
-Date: Thu, 20 Jun 2013 11:02:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
- spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
-In-Reply-To: <51C2C077.2050900@asianux.com>
-Message-ID: <alpine.DEB.2.02.1306201055580.4013@ionos.tec.linutronix.de>
-References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C182EE.5070500@asianux.com>
- <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de> <51C28193.3080106@asianux.com> <alpine.DEB.2.02.1306200903520.4013@ionos.tec.linutronix.de> <51C2C077.2050900@asianux.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Jun 2013 05:03:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH V6 3/3] ARM: dts: Add pcie controller node for Samsung EXYNOS5440 SoC
+Date: Thu, 20 Jun 2013 11:03:47 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+References: <00c201ce6d85$83b072a0$8b1157e0$@samsung.com>
+In-Reply-To: <00c201ce6d85$83b072a0$8b1157e0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306201103.47855.arnd@arndb.de>
+X-Provags-ID: V02:K0:r754rbMqnVsiXVE4Z1KoTG76U0W3st7sxnJVP/zzPbM
+ +tqYdeG8/C7/yapuXBAqqWOGeQ+8YZnKf9cU8vZoM9ToVLO3vW
+ IaK8qF7WxRejQdBW6NBVNG6FL4txnbg5gFw39oo3Rql4VLGMAS
+ YTN9jgkGUjkguwcd9OibY5Wm0/DO2oOQ81zVGeRqArKFDQZJH1
+ RITKiviXY3tLjV/rlmEDS1gkRChu6cyKn53duonZ/Y/jzvjVFL
+ +IvIfjBZAujeYhh9ZNSZKB4tt2OkhzE5rRL8oFFPveP6wVQOdI
+ A/e2IDE8ws6GDYWoTby3dQgOS4gq8PLkKPhROBoP0zu0OIyRfC
+ i6FHLjooiDGAh7eo3MSA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jun 2013, Chen Gang wrote:
-> On 06/20/2013 03:36 PM, Thomas Gleixner wrote:
-> > On Thu, 20 Jun 2013, Chen Gang wrote:
-> >> > On 06/19/2013 06:49 PM, Thomas Gleixner wrote:
-> >>> > > We must do this because some architectures implement
-> >>> > > do_raw_spin_lock_flags() in the following way:
-> >>> > > 
-> >>> > > do_raw_spin_lock_flags(l, flags)
-> >>> > > {
-> >>> > > 	while (!arch_spin_trylock(l)) {
-> >>> > > 	      if (!irq_disabled_flags(flags)) {
-> >>> > > 	      	      arch_irq_restore(flags);
-> >>> > > 		      cpu_relax();
-> >>> > > 		      arch_irq_disable();
-> >>> > > 	      }
-> >>> > > 	}
-> >>> > > }
-> >>> > > 
-> >> > 
-> >> > For mn10300 and sparc64 (not space32), it doesn't like your demo above.
-> > Sigh. You're an sparc64 and mn10300 assembler expert, right?
-> >  
+On Thursday 20 June 2013, Jingoo Han wrote:
+> Exynos5440 has two PCIe controllers which can be used as root complex
+> for PCIe interface.
 > 
-> No, do you mean: "only the related expert can discuss about it" ?
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-A discussion requires that the people who are discussing something are
-familiar with the matter.
-
-> >> > For API definition, it has no duty to make it correct if the user call
-> >> > them with informal ways, especially, the implementation is related with
-> >> > various architectures.
-> > Nonsense.
-> >
-> 
-> The word 'Nonsense' seems not quite polite.  ;-)
-
-It might be not polite, but it's correct. And I really start to get
-annoyed.
- 
-> At least, when some one see this usage below:
-> 
->    spin_lock_irqsave(&l1, flags);
->    spin_unlock(&l1);
->    spin_lock(&l2);
->    spin_unlock_irqrestore(&l2, flags);
-> 
-> most of them will be amazing.
-
-What's amazing about this?
-
-It's the equivivalent to:
-
-     local_irq_save(flags);
-     spin_lock(&l1);
-     spin_unlock(&l1);
-     spin_lock(&l2);
-     spin_unlock(&l2);
-     local_irq_restore(flags);
-
-The only difference is, that spin_lock_irqsave() implementations are
-allowed to reenable interrupts while spinning, but again that's an
-implementation detail which does not matter at all.
-
-Thanks,
-
-	tglx
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
