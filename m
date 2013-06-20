@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab3FTTQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 15:16:15 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4618 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758091Ab3FTTQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 15:16:14 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <51C354E0.4080906@broadcom.com>
-Date: Thu, 20 Jun 2013 21:15:44 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
- rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S965795Ab3FTTCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 15:02:48 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:41890 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965763Ab3FTTCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 15:02:45 -0400
+Message-ID: <51C351C5.80906@linux.vnet.ibm.com>
+Date: Fri, 21 Jun 2013 00:32:29 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Steven Rostedt" <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Subject: Re: [for-next][PATCH 08/12] tracing: Add binary & filter for
- events
-References: <20130620033516.003166252@goodmis.org>
- <20130620033639.723900482@goodmis.org> <51C2B8AB.8060709@broadcom.com>
- <1371730487.18733.72.camel@gandalf.local.home>
- <51C349BD.4030403@broadcom.com>
- <1371753270.18733.99.camel@gandalf.local.home>
- <1371753510.18733.100.camel@gandalf.local.home>
-In-Reply-To: <1371753510.18733.100.camel@gandalf.local.home>
-X-WSS-ID: 7DDD8C1D1R034531170-18-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+To: Borislav Petkov <bp@alien8.de>
+CC: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
+        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
+ mode for corrected errors
+References: <20130619175438.2852.93449.stgit@localhost.localdomain> <20130619175728.2852.73156.stgit@localhost.localdomain> <20130620074824.GF32694@pd.tnic>
+In-Reply-To: <20130620074824.GF32694@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13062018-5490-0000-0000-000003AEF56C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/13 20:38, Steven Rostedt wrote:
-> On Thu, 2013-06-20 at 14:34 -0400, Steven Rostedt wrote:
->> On Thu, 2013-06-20 at 20:28 +0200, Arend van Spriel wrote:
+On 06/20/2013 01:18 PM, Borislav Petkov wrote:
+> On Wed, Jun 19, 2013 at 11:27:42PM +0530, Naveen N. Rao wrote:
+>> Add a boot option to disable firmware first mode for corrected errors.
 >>
->>> Reading the whole text with your remark in mind, I guess it does
->>> indicate there are no guarantees depending on the kernel and the list of
->>> operators are what trace-cmd supports. I overlooked/ignored the text
->>> seeing the operators.
+>> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+>> ---
+>>   Documentation/x86/x86_64/boot-options.txt |    5 +++++
+>>   arch/x86/include/asm/acpi.h               |    2 ++
+>>   arch/x86/kernel/acpi/boot.c               |    5 +++++
+>>   drivers/acpi/apei/hest.c                  |    3 ++-
+>>   4 files changed, 14 insertions(+), 1 deletion(-)
 >>
->> Exactly, which means that if you over looked the text, so has others.
->> The text
->> should be changed to make it more comprehensible.
+>> diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+>> index e9e8ddb..1228b22 100644
+>> --- a/Documentation/x86/x86_64/boot-options.txt
+>> +++ b/Documentation/x86/x86_64/boot-options.txt
+>> @@ -176,6 +176,11 @@ ACPI
 >>
+>>     acpi=noirq	Don't route interrupts
+>>
+>> +  acpi=nocmcff	Disable firmware first mode for corrected errors. This
+>> +		disables parsing the HEST CMC error source to check if
+>> +		firmware has set the FF flag. This may result in
+>> +		duplicate corrected error reports.
 >
-> Would this change have helped you catch this?
-
-Always difficult to say in retrospect, but it certainly is more clear.
-
-Regards,
-Arend
-
-> diff --git a/Documentation/trace-cmd-record.1.txt b/Documentation/trace-cmd-record.1.txt
-> index b95e1b4..9ef1e2a 100644
-> --- a/Documentation/trace-cmd-record.1.txt
-> +++ b/Documentation/trace-cmd-record.1.txt
-> @@ -79,10 +79,12 @@ OPTIONS
->       let you use C notation to check if an event should be processed or not.
+> Ok, this option should be called something more vendor-agnostic like
 >
->   ----------------------------------------
-> -    ==,>=,<=,>,<,&, |,&&  and ||
-> +    ==,>=,<=,>,<,&, ~,&&  and ||
->   ----------------------------------------
+> acpi=noff
 >
-> -    The above are usually safe to use to compare fields.
-> +    Note, not all of the above operators may work with all kernels.
-> +    The filter is passed directly to the kernel and is dependent on the
-> +    kernel supporting the operators.
+> for example.
 >
->   *-v*::
->       This will cause all events specified after it on the command line to not
+> CMCI is Intel-specific and Firmware First is a generic way to say that
+> firmware would like to look at the errors first.
 >
-> -- Steve
->
+> AMD has similar thing called error thresholding so...
 >
 
+nocmcff actually refers to CMC (Corrected Machine Check) Error source 
+which is APEI terminology, so this is not actually Intel-specific and 
+should apply equally well for AMD. I chose nocmcff over noff since there 
+is also a firmware first flag for MCE Error source in APEI and this 
+option only disables FF for CMC.
+
+Thanks,
+Naveen
 
