@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935472Ab3FTBGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 21:06:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57612 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab3FTBGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 21:06:23 -0400
-Date: Thu, 20 Jun 2013 11:06:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- driver-core.current tree
-Message-Id: <20130620110610.7d245d88b70620fa271a29f7@canb.auug.org.au>
-In-Reply-To: <CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
-References: <20130619153225.9ff68f0984bfa54333c4df10@canb.auug.org.au>
-	<CACVXFVMhVs7Wy1A=TfczYzHLFwyRPhEGW9Yo9hTERekaxSnpdQ@mail.gmail.com>
-	<20130619143918.GC8413@kroah.com>
-	<CACVXFVObBDwaounzZ7RyF=+QrQCBoEd0s-uLYFokksOzKgZSjA@mail.gmail.com>
-	<20130619163628.GA28672@kroah.com>
-	<CACVXFVNsbBunNzYecUG34sFjPqRuzMHRTBD2Siy9d4RhqPnr3A@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	id S935465Ab3FTBV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 21:21:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:52407 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934734Ab3FTBV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jun 2013 21:21:26 -0400
+Message-ID: <1371691282.21846.1.camel@concordia>
+Subject: Re: [PATCH 1/2] perf tools: fix a typo of a Power7 event name
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, sukadev@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, icycoder@gmail.com
+Date: Thu, 20 Jun 2013 11:21:22 +1000
+In-Reply-To: <1371633326-7696-1-git-send-email-runzhen@linux.vnet.ibm.com>
+References: <1371633326-7696-1-git-send-email-runzhen@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-06-19 at 17:15 +0800, Runzhen Wang wrote:
+> In the Power7 PMU guide:
+> https://www.power.org/documentation/commonly-used-metrics-for-performance-analysis/
+> PM_BRU_MPRED is referred to as PM_BR_MPRED.
+> 
+> This patch fix the typo by changing the name of the event in kernel and
+> documentation accordingly.
+> 
+> Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+> ---
+>  .../testing/sysfs-bus-event_source-devices-events  |    2 +-
+>  arch/powerpc/perf/power7-pmu.c                     |   12 ++++++------
+>  2 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+> index 8b25ffb..3c1cc24 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+> @@ -29,7 +29,7 @@ Description:	Generic performance monitoring events
+>  
+>  What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
+>  		/sys/devices/cpu/events/PM_BRU_FIN
+> -		/sys/devices/cpu/events/PM_BRU_MPRED
+> +		/sys/devices/cpu/events/PM_BR_MPRED
 
-Hi Ming,
+So you're changing the ABI.
 
-On Thu, 20 Jun 2013 08:23:30 +0800 Ming Lei <ming.lei@canonical.com> wrote:
->
-> Yes, I already merged the two branches together in my local repository,
-> and there is one merge commit, but I don't know how to generate/format
-> patch for this merge commit only:
->=20
-> commit e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d
-> Merge: bb07b00 8759793
-> Author: Ming Lei <tom.leiming@gmail.com>
-> Date:   Wed Jun 19 23:56:05 2013 +0800
->=20
->     firmware loader: fix conflict driver-core-linus and driver-core-next
->=20
->     Conflicts:
->         drivers/base/firmware_class.c
->=20
-> Anyone who knows, please let me know, thanks.
+I think that's probably OK, but you at least need to mention _why_ you
+think it's OK.
 
-Try "git diff-tree --cc e4b00d75ee3ed3af9fac83970d21e27d1ad4aa8d"
+cheers
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRwlWGAAoJEECxmPOUX5FExRcP/ipZr1sef+CGOiF7/q1a9yHQ
-1wUkm65G7uru/KxYYH0+DY9kXp1ocEPTR4chxI78ZhoznNwwGd/InQw422WjbUQP
-GaKMPH5fWdarOraxmq+gOO0O3mPMVMefF3lNzKshXDN7CR1qgvXxy86QwXLqZM0E
-jY4Z9a8Bjq2X9OLixMNstzR6fRUMzUIe12Lcky9awjRp28ITSxFxZIB6lfJt/kz5
-UUKMVolKr0FFYgxzJ2+Xw3sDspuA8EGtL2PI9SPyI1u2bePxfb2AIsTGlIyFHwYY
-bCyZVGNC2A3Ot1jDIH+zte9J/iqITefIWBGePW3bhec1es2Eg2IqPjrVEDp2glgs
-rLqroiZ3rbaQHDhekTaF+O0yntt3R1uE40ERRY4atTq5PCYqVPi5Zjws+A0ej5Lg
-CmkD5qlgwzBggd2GsXUJZqWghqri4acILPF5jI2xyGnLf26TIlF9VkpoKVa+nPda
-F4+NcrIaBKsX7xXyUZChJ5+V/ZpUSXV3XMD4jvQbeaaukPwYJ1LmsDu4G3r70Rsn
-9j7Gp7IdFaDGSpLKiOfzSmt/uXnU8ICItxTxuZhcpPbavVl+NoganaiTWzvOtoy1
-MNphVlLT0P6sSKLTM8+sUJ7L4t9G5g2nFtZE7GIJsfH9dddKvo8EuHsImfv4JcFp
-nLnAfbqgrQE3c+EDYqIW
-=ctmJ
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Jun_2013_11_06_10_+1000_K78g1cXe1IosawX0--
