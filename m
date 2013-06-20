@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965670Ab3FTVOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 17:14:25 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2825 "EHLO mms2.broadcom.com"
+	id S1757339Ab3FTVQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 17:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28827 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965398Ab3FTVOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 17:14:24 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <51C370A5.3020900@broadcom.com>
-Date: Thu, 20 Jun 2013 14:14:13 -0700
-From: "Christian Daudt" <csd@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510
- Thunderbird/17.0.6
+	id S1755518Ab3FTVQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 17:16:45 -0400
+Date: Thu, 20 Jun 2013 18:05:56 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH] vgacon.c: add cond reschedule points in vgacon_do_font_op
+Message-ID: <20130620210556.GA13479@amt.cnet>
 MIME-Version: 1.0
-To: "Matt Porter" <matt.porter@linaro.org>
-cc: "Arnd Bergmann" <arnd@arndb.de>, "Olof Johansson" <olof@lixom.net>,
-        "Linux ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linaro Patches" <patches@linaro.org>
-Subject: Re: [PATCH] ARM: dts: bcm281xx: change comment to C89 style
-References: <1370976358-18014-1-git-send-email-matt.porter@linaro.org>
-In-Reply-To: <1370976358-18014-1-git-send-email-matt.porter@linaro.org>
-X-WSS-ID: 7DDDB0C61R034567675-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-06-11 11:45 AM, Matt Porter wrote:
-> CodingStyle does not allow C99 style comments. Since the
-> dts files live in the kernel for now, make this compliant.
->
-> Signed-off-by: Matt Porter <matt.porter@linaro.org>
-> Acked-by: Christian Daudt <csd@broadcom.com>
-> ---
->   arch/arm/boot/dts/bcm11351.dtsi |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-> index 824bebe..0651a72 100644
-> --- a/arch/arm/boot/dts/bcm11351.dtsi
-> +++ b/arch/arm/boot/dts/bcm11351.dtsi
-> @@ -36,7 +36,7 @@
->   
->   	smc@0x3404c000 {
->   		compatible = "bcm,bcm11351-smc", "bcm,kona-smc";
-> -		reg = <0x3404c000 0x400>; //1 KiB in SRAM
-> +		reg = <0x3404c000 0x400>; /* 1 KiB in SRAM */
->   	};
->   
->   	uart@3e000000 {
-applied for for-3.11/dt
-  thanks,
-    csd
 
+Booting a 64-vcpu KVM guest, with CONFIG_PREEMPT_VOLUNTARY,
+can result in a soft lockup:
 
+BUG: soft lockup - CPU#41 stuck for 67s! [setfont:1505]
+ RIP: 0010:[<ffffffff812c48da>]
+[<ffffffff812c48da>] vgacon_do_font_op.clone.0+0x1ba/0x550
+
+This is due to the 8192 (cmapsz) IO operations taking longer than expected
+due to lock contention in QEMU.
+
+Add conditional resched points in between writes allowing other tasks to
+execute.
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+
+diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
+index 5855d17..0dd6d96 100644
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -1124,11 +1124,15 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 
+ 	if (arg) {
+ 		if (set)
+-			for (i = 0; i < cmapsz; i++)
++			for (i = 0; i < cmapsz; i++) {
+ 				vga_writeb(arg[i], charmap + i);
++				cond_resched();
++			}
+ 		else
+-			for (i = 0; i < cmapsz; i++)
++			for (i = 0; i < cmapsz; i++) {
+ 				arg[i] = vga_readb(charmap + i);
++				cond_resched();
++			}
+ 
+ 		/*
+ 		 * In 512-character mode, the character map is not contiguous if
+@@ -1139,11 +1143,15 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 			charmap += 2 * cmapsz;
+ 			arg += cmapsz;
+ 			if (set)
+-				for (i = 0; i < cmapsz; i++)
++				for (i = 0; i < cmapsz; i++) {
+ 					vga_writeb(arg[i], charmap + i);
++					cond_resched();
++				}
+ 			else
+-				for (i = 0; i < cmapsz; i++)
++				for (i = 0; i < cmapsz; i++) {
+ 					arg[i] = vga_readb(charmap + i);
++					cond_resched();
++				}
+ 		}
+ 	}
+ 
