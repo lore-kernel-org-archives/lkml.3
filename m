@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147Ab3FTQTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 12:19:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48286 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758092Ab3FTQTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 12:19:15 -0400
-Date: Thu, 20 Jun 2013 09:18:55 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-e1ebe86203e6532eb5a0ae8f26ccae47aca548ae@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fweisbec@gmail.com, vincent.weaver@maine.edu, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, fweisbec@gmail.com, tglx@linutronix.de,
-        oleg@redhat.com
-In-Reply-To: <20130620155011.GA6330@redhat.com>
-References: <20130620155011.GA6330@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] hw_breakpoint: Simplify list/
- idx mess in toggle_bp_slot() paths
-Git-Commit-ID: e1ebe86203e6532eb5a0ae8f26ccae47aca548ae
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Jun 2013 09:19:01 -0700 (PDT)
+	id S1030321Ab3FTS3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 14:29:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59661 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030277Ab3FTS3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 14:29:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,906,1363158000"; 
+   d="scan'208";a="257884884"
+From: "Luck, Tony" <tony.luck@intel.com>
+Date: Thu, 20 Jun 2013 11:15:39 -0700
+Subject: [PATCH] [IA64] sim: Add casts to avoid assignment warnings
+In-reply-to: <1371491416-11037-2-git-send-email-bp@alien8.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org
+Message-Id: <084100@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e1ebe86203e6532eb5a0ae8f26ccae47aca548ae
-Gitweb:     http://git.kernel.org/tip/e1ebe86203e6532eb5a0ae8f26ccae47aca548ae
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Thu, 20 Jun 2013 17:50:11 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 20 Jun 2013 17:58:55 +0200
+Pointers in the efi_runtime_services_t structure now have type
+"void *" (formerly they were "unsigned long"). So we now see a
+bunch of warnings like this:
 
-hw_breakpoint: Simplify list/idx mess in toggle_bp_slot() paths
+arch/ia64/hp/sim/boot/fw-emu.c:293: warning: assignment makes pointer from integer without a cast
 
-The enable/disable logic in toggle_bp_slot() is not symmetrical
-and imho very confusing. "old_count" in toggle_bp_task_slot() is
-actually new_count because this bp was already removed from the
-list.
+Add (void *) casts to the 10 affected lines to make the build quiet again.
 
-Change toggle_bp_slot() to always call list_add/list_del after
-toggle_bp_task_slot(). This way old_idx is task_bp_pinned() and
-this entry should be decremented, new_idx is +/-weight and we
-need to increment this element. The code/logic looks obvious.
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20130620155011.GA6330@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/hw_breakpoint.c | 40 ++++++++++++++++------------------------
- 1 file changed, 16 insertions(+), 24 deletions(-)
 
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index ef8ebe5..dee0148 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -185,26 +185,20 @@ fetch_this_slot(struct bp_busy_slots *slots, int weight)
- static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
- 				enum bp_type_idx type, int weight)
- {
--	unsigned int *tsk_pinned;
--	int old_count = 0;
--	int old_idx = 0;
--	int idx = 0;
--
--	old_count = task_bp_pinned(cpu, bp, type);
--	old_idx = old_count - 1;
--	idx = old_idx + weight;
--
--	/* tsk_pinned[n] is the number of tasks having n breakpoints */
--	tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
--	if (enable) {
--		tsk_pinned[idx]++;
--		if (old_count > 0)
--			tsk_pinned[old_idx]--;
--	} else {
--		tsk_pinned[idx]--;
--		if (old_count > 0)
--			tsk_pinned[old_idx]++;
--	}
-+	/* tsk_pinned[n-1] is the number of tasks having n>0 breakpoints */
-+	unsigned int *tsk_pinned = per_cpu(nr_task_bp_pinned[type], cpu);
-+	int old_idx, new_idx;
-+
-+	old_idx = task_bp_pinned(cpu, bp, type) - 1;
-+	if (enable)
-+		new_idx = old_idx + weight;
-+	else
-+		new_idx = old_idx - weight;
-+
-+	if (old_idx >= 0)
-+		tsk_pinned[old_idx]--;
-+	if (new_idx >= 0)
-+		tsk_pinned[new_idx]++;
- }
+Boris, Matt - Can you add this patch to the same tree that
+
+   commit 43ab0476a648053e5998bf081f47f215375a4502 [linux-next id]
+   efi: Convert runtime services function ptrs
+
+is in so that it will follow along behind it.  Thanks.
+
+ arch/ia64/hp/sim/boot/fw-emu.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/ia64/hp/sim/boot/fw-emu.c b/arch/ia64/hp/sim/boot/fw-emu.c
+index 271f412..87bf9ad 100644
+--- a/arch/ia64/hp/sim/boot/fw-emu.c
++++ b/arch/ia64/hp/sim/boot/fw-emu.c
+@@ -290,16 +290,16 @@ sys_fw_init (const char *args, int arglen)
+ 	efi_runtime->hdr.signature = EFI_RUNTIME_SERVICES_SIGNATURE;
+ 	efi_runtime->hdr.revision = EFI_RUNTIME_SERVICES_REVISION;
+ 	efi_runtime->hdr.headersize = sizeof(efi_runtime->hdr);
+-	efi_runtime->get_time = __pa(&fw_efi_get_time);
+-	efi_runtime->set_time = __pa(&efi_unimplemented);
+-	efi_runtime->get_wakeup_time = __pa(&efi_unimplemented);
+-	efi_runtime->set_wakeup_time = __pa(&efi_unimplemented);
+-	efi_runtime->set_virtual_address_map = __pa(&efi_unimplemented);
+-	efi_runtime->get_variable = __pa(&efi_unimplemented);
+-	efi_runtime->get_next_variable = __pa(&efi_unimplemented);
+-	efi_runtime->set_variable = __pa(&efi_unimplemented);
+-	efi_runtime->get_next_high_mono_count = __pa(&efi_unimplemented);
+-	efi_runtime->reset_system = __pa(&efi_reset_system);
++	efi_runtime->get_time = (void *)__pa(&fw_efi_get_time);
++	efi_runtime->set_time = (void *)__pa(&efi_unimplemented);
++	efi_runtime->get_wakeup_time = (void *)__pa(&efi_unimplemented);
++	efi_runtime->set_wakeup_time = (void *)__pa(&efi_unimplemented);
++	efi_runtime->set_virtual_address_map = (void *)__pa(&efi_unimplemented);
++	efi_runtime->get_variable = (void *)__pa(&efi_unimplemented);
++	efi_runtime->get_next_variable = (void *)__pa(&efi_unimplemented);
++	efi_runtime->set_variable = (void *)__pa(&efi_unimplemented);
++	efi_runtime->get_next_high_mono_count = (void *)__pa(&efi_unimplemented);
++	efi_runtime->reset_system = (void *)__pa(&efi_reset_system);
  
- /*
-@@ -228,10 +222,6 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	}
- 
- 	/* Pinned counter task profiling */
--
--	if (!enable)
--		list_del(&bp->hw.bp_list);
--
- 	if (cpu >= 0) {
- 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	} else {
-@@ -241,6 +231,8 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 
- 	if (enable)
- 		list_add_tail(&bp->hw.bp_list, &bp_task_head);
-+	else
-+		list_del(&bp->hw.bp_list);
- }
- 
- /*
+ 	efi_tables->guid = SAL_SYSTEM_TABLE_GUID;
+ 	efi_tables->table = __pa(sal_systab);
+-- 
+1.8.1.4
+
