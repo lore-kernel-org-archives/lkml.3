@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3FTFUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 01:20:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50230 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab3FTFUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 01:20:18 -0400
-X-IronPort-AV: E=Sophos;i="4.87,902,1363104000"; 
-   d="scan'208";a="7611345"
-Message-ID: <51C2916C.2070103@cn.fujitsu.com>
-Date: Thu, 20 Jun 2013 13:21:48 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1752816Ab3FTFV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:21:28 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:49358 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab3FTFV0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 01:21:26 -0400
+Date: Thu, 20 Jun 2013 00:21:21 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 7/7] KVM: MMU: document fast invalidate all mmio sptes
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+References: <1371632965-20077-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	<1371632965-20077-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1371632965-20077-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	(from xiaoguangrong@linux.vnet.ibm.com on Wed Jun 19 04:09:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1371705681.2776.131@driftwood>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Eric Paris <eparis@redhat.com>, Aristeu Rozanski <aris@redhat.com>,
-        containers@lists.linux-foundation.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, serge.hallyn@ubuntu.com,
-        matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
-Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
-References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com> <20130619204927.GJ3212@redhat.com> <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com> <87a9mlu82y.fsf@xmission.com>
-In-Reply-To: <87a9mlu82y.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/20 13:19:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/20 13:19:11,
-	Serialize complete at 2013/06/20 13:19:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 05:03 AM, Eric W. Biederman wrote:
-> Eric Paris <eparis@redhat.com> writes:
-> 
->> On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
->>> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
->>>> This patchset is first part of namespace support for audit.
->>>> in this patchset, the mainly resources of audit system have
->>>> been isolated. the audit filter, rules havn't been isolated
->>>> now. It will be implemented in Part2. We finished the isolation
->>>> of user audit message in this patchset.
->>>>
->>>> I choose to assign audit to the user namespace.
->>>> Right now,there are six kinds of namespaces, such as
->>>> net, mount, ipc, pid, uts and user. the first five
->>>> namespaces have special usage. the audit isn't suitable to
->>>> belong to these five namespaces, And since the flag of system
->>>> call clone is in short supply, we can't provide a new flag such
->>>> as CLONE_NEWAUDIT to enable audit namespace separately. so the
->>>> user namespace may be the best choice.
->>>
->>> I thought it was said on the last submission that to tie userns and
->>> audit namespace would be a bad idea?
->>
->> I consider it a non-starter.  unpriv users are allowed to launch their
->> own user namespace.  The whole point of audit is to have only a priv
->> user be allowed to make changes.  If you tied audit namespace to user
->> namespace you grant an unpriv user the ability to modify audit.
->>
->> NAK.
->>
->> If there are not clone flags you will either need to only do this from
->> unshare and not from clone, or get more flags to clone
-> 
-> I completely agree that only priveleged user should be able to make
-> changes.
-> 
-> On the flip side, I don't know if this is at all interesting unless we
-> have a solution that works for users in unprivileged user namespaces.
-> Something like having the possibility of two or more instances of audit
-> working on every action.  One for each layer of privilege.
-> 
-> Gao feng, how do you want to use the audit infrastructure?
-> 
+On 06/19/2013 04:09:25 AM, Xiao Guangrong wrote:
+> Document it to Documentation/virtual/kvm/mmu.txt
 
-I want the root user in container can use the audit related api
-(audit_open,audit_log_user_message..) and some network related
-audit messages generated by container shouldn't be logged to host.
+Why break a change to a single documentation file into 7 pieces.
 
-Thanks,
-Gao
+Are we going to bisect the documentation?
+
+Rob
