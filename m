@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3FTHgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 03:36:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44496 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3FTHgJ (ORCPT
+	id S1754740Ab3FTHg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 03:36:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59202 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab3FTHg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 03:36:09 -0400
-Date: Thu, 20 Jun 2013 17:36:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: linux-next: manual merge of the samsung tree with Linus' tree
-Message-Id: <20130620173604.67b07fa0932dac4a75583fd5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Jun_2013_17_36_04_+1000_offgw2Y_IAMhxnUC"
+	Thu, 20 Jun 2013 03:36:28 -0400
+Date: Thu, 20 Jun 2013 09:36:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gang <gang.chen@asianux.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/timer.c: using spin_lock_irqsave instead of
+ spin_lock + local_irq_save, especially when CONFIG_LOCKDEP not defined
+In-Reply-To: <51C28193.3080106@asianux.com>
+Message-ID: <alpine.DEB.2.02.1306200903520.4013@ionos.tec.linutronix.de>
+References: <51C11E83.8030902@asianux.com> <alpine.DEB.2.02.1306191029530.4013@ionos.tec.linutronix.de> <51C17D01.2060208@asianux.com> <alpine.DEB.2.02.1306191151390.4013@ionos.tec.linutronix.de> <51C182EE.5070500@asianux.com>
+ <alpine.DEB.2.02.1306191228030.4013@ionos.tec.linutronix.de> <51C28193.3080106@asianux.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jun_2013_17_36_04_+1000_offgw2Y_IAMhxnUC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 20 Jun 2013, Chen Gang wrote:
+> On 06/19/2013 06:49 PM, Thomas Gleixner wrote:
+> > We must do this because some architectures implement
+> > do_raw_spin_lock_flags() in the following way:
+> > 
+> > do_raw_spin_lock_flags(l, flags)
+> > {
+> > 	while (!arch_spin_trylock(l)) {
+> > 	      if (!irq_disabled_flags(flags)) {
+> > 	      	      arch_irq_restore(flags);
+> > 		      cpu_relax();
+> > 		      arch_irq_disable();
+> > 	      }
+> > 	}
+> > }
+> > 
+> 
+> For mn10300 and sparc64 (not space32), it doesn't like your demo above.
 
-Hi Kukjin,
+Sigh. You're an sparc64 and mn10300 assembler expert, right?
+ 
+> For powerpc and s390, it seems your demo above (although not quite
+> precious)
 
-Today's linux-next merge of the samsung tree got a conflict in
-drivers/clk/samsung/clk-exynos5250.c between commit 39b72d89eb2b ("clk:
-exynos5250: Update cpufreq related clocks for EXYNOS5250") from Linus'
-tree and commit 407e8d62fa7d ("clk: exynos5250: Staticize local symbols")
-from the samsung tree.
+It does not matter at all whether the code is implemented exactly that
+way. What matters is that the semantics are the same.
+ 
+> For x86 and parisc, it like your demo above.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+For parisc, yes.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+For x86, no. 
 
-diff --cc drivers/clk/samsung/clk-exynos5250.c
-index 22d7699,f6e3031..0000000
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@@ -207,11 -213,11 +213,11 @@@ static struct samsung_fixed_factor_cloc
-  	FFACTOR(none, "fout_bplldiv2", "fout_bpll", 1, 2, 0),
-  };
- =20
-- struct samsung_mux_clock exynos5250_mux_clks[] __initdata =3D {
-+ static struct samsung_mux_clock exynos5250_mux_clks[] __initdata =3D {
- -	MUX(none, "mout_apll", mout_apll_p, SRC_CPU, 0, 1),
- -	MUX(none, "mout_cpu", mout_cpu_p, SRC_CPU, 16, 1),
- +	MUX_A(none, "mout_apll", mout_apll_p, SRC_CPU, 0, 1, "mout_apll"),
- +	MUX_A(none, "mout_cpu", mout_cpu_p, SRC_CPU, 16, 1, "mout_cpu"),
-  	MUX(none, "mout_mpll_fout", mout_mpll_fout_p, PLL_DIV2_SEL, 4, 1),
- -	MUX(none, "sclk_mpll", mout_mpll_p, SRC_CORE1, 8, 1),
- +	MUX_A(none, "sclk_mpll", mout_mpll_p, SRC_CORE1, 8, 1, "mout_mpll"),
-  	MUX(none, "mout_bpll_fout", mout_bpll_fout_p, PLL_DIV2_SEL, 0, 1),
-  	MUX(none, "sclk_bpll", mout_bpll_p, SRC_CDREX, 0, 1),
-  	MUX(none, "mout_vpllsrc", mout_vpllsrc_p, SRC_TOP2, 0, 1),
+static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
+                                                  unsigned long flags)
+{
+        arch_spin_lock(lock);
+}
 
---Signature=_Thu__20_Jun_2013_17_36_04_+1000_offgw2Y_IAMhxnUC
-Content-Type: application/pgp-signature
+> > And again. Both are semantically the same.
+> > 
+> 
+> I am not quite sure about mn10300 and sparc64.
+> 
+> Could you be sure about it ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+I am sure, because I can read _and_ understand the asm code.
 
-iQIcBAEBCAAGBQJRwrDkAAoJEECxmPOUX5FEbrAP/289l96CKfPfj2n9DGO6HWqW
-57UXpsvNpNdC7gbVJtMZGgg3xsAFFVFXGmtcANmDsFzV0A8WOUhrHeb/9yKhYZq4
-ekQxVogln4yoDJaP0k0RrDYhwlOVT/s/s3SJM4ylH4yyjaZur8mXBVwU+NAe7aKl
-eyAg3V6GZzQt5s5j3JpTFHNjRu++dfG1nEgKVBCMueqYrM09+M5XtnPYnpenBbu2
-kuleDEGp8GC1eAa2/rmthofR+gaQ1Aw7znwUAgXhU6+Bawef3Z1t4Wq3hVInPlUh
-8P+4JAxCVaWmcLFDJd4+NiWzqtXCdpqgkEwmzHPqSPE28mjuZ+ZSmsR4PmWLshr5
-1bmPp0fTLMTeruIanKo8UNYLNbFDNg9y/saACyF7FesrTaEFdoq30DIxNWV7oOeq
-ENs2+VQLqemrY0HbVMGxlSeew/pI3TQ0dKPMo8SzCc3XXXPZPbvi3cK56TUVRO9s
-jUsRiJxj7Mu1MJhTYdqM+ARp+JX1r1iZrbDJFhkmIQnVe7EAO8ZeR5cqOrC4sWdu
-s9CpHY8Mfbpc4Ceil7JxP47d+DoPBj3R5rb8B+84QhG7qqOagWT9YFzS6tu8kuGa
-M/O1OmdVKWCJL77gxgg83oSMe0TySRd6r5dm0MGmAjtOKMNwm9jQZq1psP1KEEVx
-kt9rFNYpt9n+lT5UBiXY
-=KCR1
------END PGP SIGNATURE-----
+> At least, for mn10300 and sparc64, they have no duty to make sure of
+> our using ways to be correct.
 
---Signature=_Thu__20_Jun_2013_17_36_04_+1000_offgw2Y_IAMhxnUC--
+You think that architectures can implement these functions as they
+want and see fit? No, they can't otherwise their kernel would not work
+at all. Again the semantics are what we care about, not the
+implementation. And it's totally irrelevant whether its implemented in
+C or in assembler.
+
+> > spin_lock_irqsave() semantics are:
+> > 
+> > The function returns with the lock acquired, interrupts and preemption
+> > disabled. Both variants do that.
+> > 
+> > The internal details whether an architecture reenables interrupts
+> > while spinning on a contended lock or not are completely irrelevant
+> > and do not affect the correctness of the code.
+> 
+> For API definition, it has no duty to make it correct if the user call
+> them with informal ways, especially, the implementation is related with
+> various architectures.
+
+Nonsense.
+
+We define an API and the semantics and every implementation has to
+follow these semantics. Period.
+
+If there is an implementation, which does not follow the
+specification, then it needs to be fixed. Period.
+
+And this has nothing to do how this is called and whether various
+architecture specific implementations exist or not.
+ 
+> At last if it is really correct now, it is still dangerous (the API has
+> no duty to let it always correct).
+
+The API CANNOT make sure that the implementations are correct. It's
+the duty of the person who implements the API to make sure it is
+correct.
+
+And there is nothing dangerous except your ongoing attempts to patch
+code which you really do not understand at all.
+
+Thanks,
+
+	tglx
