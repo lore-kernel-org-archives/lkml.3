@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965420Ab3FTNDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:03:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab3FTNDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:03:52 -0400
-Message-ID: <1371733353.16587.19.camel@dhcp137-13.rdu.redhat.com>
-Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
-From: Eric Paris <eparis@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Aristeu Rozanski <aris@redhat.com>, containers@lists.linux-foundation.org,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
-Date: Thu, 20 Jun 2013 09:02:33 -0400
-In-Reply-To: <51C270AF.1080902@cn.fujitsu.com>
-References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com>
-	  <20130619204927.GJ3212@redhat.com>
-	 <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com>
-	 <51C270AF.1080902@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S965505Ab3FTNM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:12:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51649 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965398Ab3FTNM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 09:12:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: cleanup for 3.11 #2
+Date: Thu, 20 Jun 2013 15:11:52 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+References: <1371545020-23186-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1371545020-23186-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306201511.52876.arnd@arndb.de>
+X-Provags-ID: V02:K0:qcGuE6XcAcBGaAClxz4aaK238k7MLkGLO5stutOfKPk
+ Hme3daBQX5YYftNWMr2DDjMaWjCKUdczS1GsNw0HdCWmO7WwD0
+ s0bT/GjDfp10QkLIsjMu8/OIn4whFtE0UxsrrOm7M1516UD5Cc
+ WHCJ3w5bQakP/q5AVcwAwGL3y2XpTaPylCYGdY1TQGNtFovQGx
+ b8NaUKvPqXUP2zP/5XOphxqFerx/dHjxI2Ts5oQUrHvRXqkNjN
+ PDH7nnZg0MkqSI/gUlq7b1FCOd1NvJOg6Ea3tTM1tSTxhYtlr7
+ rED70ii/TRrbbHtrv5TKExtr4HssncYspvgYqsy0cqTbKodcF0
+ GKnYrpQ87B5iKnfYOY/4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 11:02 +0800, Gao feng wrote:
-> On 06/20/2013 04:51 AM, Eric Paris wrote:
-> > On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
-> >> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
-> >>> This patchset is first part of namespace support for audit.
-> >>> in this patchset, the mainly resources of audit system have
-> >>> been isolated. the audit filter, rules havn't been isolated
-> >>> now. It will be implemented in Part2. We finished the isolation
-> >>> of user audit message in this patchset.
-> >>>
-> >>> I choose to assign audit to the user namespace.
-> >>> Right now,there are six kinds of namespaces, such as
-> >>> net, mount, ipc, pid, uts and user. the first five
-> >>> namespaces have special usage. the audit isn't suitable to
-> >>> belong to these five namespaces, And since the flag of system
-> >>> call clone is in short supply, we can't provide a new flag such
-> >>> as CLONE_NEWAUDIT to enable audit namespace separately. so the
-> >>> user namespace may be the best choice.
-> >>
-> >> I thought it was said on the last submission that to tie userns and
-> >> audit namespace would be a bad idea?
-> > 
-> > I consider it a non-starter.  unpriv users are allowed to launch their
-> > own user namespace.  The whole point of audit is to have only a priv
-> > user be allowed to make changes.  If you tied audit namespace to user
-> > namespace you grant an unpriv user the ability to modify audit.
-> > 
+On Tuesday 18 June 2013, Nicolas Ferre wrote:
+> The patch that was remaining from my old "soc" pull-request. It is stacked on
+> top of the "cleanup" patches already send as recommended by Olof.
 > 
-> I understand your views.
+> Thanks, best regards,
 > 
-> But ven the unpriv user are allowed to make changes, they can do no harm.
-> they can only make changes on the audit namespace they created.they can
-> only communicate with the audit namespace they created.
+> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
+> 
+>   ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+> 
 
-Imagine I set up my machine to audit all user access to super secret
-information.  With your patch set all an malicious user has to do is
-create a new user namespace.  Now when he accesses the super secret
-information it will be logged inside the user namespace he created.  So
-he can just dump those logs in the trash.
+Pulled into next/cleanup, thanks!
 
-I believe that each audit namespace should require priv
-(CAP_AUDIT_CONTROL) in the user namespace that created the current audit
-namespace.  So lets say the machine boots and we are in the init_user
-and init_audit namespace.  Creating a new audit namespace should require
-CAP_AUDIT_CONTROL in the init_user namespace.  If instead we spawned a
-new user namespace userns1 and try to create a new audit namespace, we
-should STILL check for CAP_AUDIT_CONTROL in the init_user namespace.
-
-Assuming we've spawned auditns1 in userns1 and want to spawn auditns2 it
-should require CAP_AUDIT_CONTROL in userns1.  So now you only have
-permission to change your audit config (create a new audit namespace) if
-you already had permission to change your current audit config.
-
-Now how to handle coding this...
-
-When the kernel receives an audit message on the netlink socket it can
-always check the current->[whatever] to figure out which audit namespace
-it came from.  Then it can be processed accordingly...
-
-Sending messages to the userspace auditd is a little more tricky.  We
-need to somehow map the audit namespace to a socket connected to auditd
-in userspace.  I'd imagine we'd have to either have per auditns backlog
-queues and run one kauditd per audit namespace, or we'd have to tag the
-skb's with the intended namespace somehow and then find the right socket
-in kauditd.  Either way it doesn't seem too onerous (although I admit, I
-don't know how to code the per namespace kauditd right offhand)
-
+	Arnd
