@@ -1,37 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898Ab3FTFTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 01:19:39 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49401 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab3FTFTg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 01:19:36 -0400
-Date: Wed, 19 Jun 2013 22:19:36 -0700 (PDT)
-Message-Id: <20130619.221936.645815291796203336.davem@davemloft.net>
-To: lkundrak@v3.sk
-Cc: konszert@marvell.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] pxa168_eth: Allocate receive queue initialized to
- zero
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1371576648-21632-1-git-send-email-lkundrak@v3.sk>
-References: <1371576648-21632-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752548Ab3FTFUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 01:20:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50230 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab3FTFUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 01:20:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,902,1363104000"; 
+   d="scan'208";a="7611345"
+Message-ID: <51C2916C.2070103@cn.fujitsu.com>
+Date: Thu, 20 Jun 2013 13:21:48 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Eric Paris <eparis@redhat.com>, Aristeu Rozanski <aris@redhat.com>,
+        containers@lists.linux-foundation.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, serge.hallyn@ubuntu.com,
+        matthltc@linux.vnet.ibm.com, sgrubb@redhat.com
+Subject: Re: [Part1 PATCH 00/22] Add namespace support for audit
+References: <1371606834-5802-1-git-send-email-gaofeng@cn.fujitsu.com> <20130619204927.GJ3212@redhat.com> <1371675095.16587.5.camel@dhcp137-13.rdu.redhat.com> <87a9mlu82y.fsf@xmission.com>
+In-Reply-To: <87a9mlu82y.fsf@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 13:19:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/20 13:19:11,
+	Serialize complete at 2013/06/20 13:19:11
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lubomir Rintel <lkundrak@v3.sk>
-Date: Tue, 18 Jun 2013 19:30:48 +0200
-
-> Zero pointer in rx_skb or tx_skb is how respective *_deinit() functions find
-> out that a skb slot is unallocated. If *_init() functions unsuccessfully return
-> after the allocation (e.g. when subsequent dma_alloc_coherent() is not
-> successful), this would result in attempt to kfree() invalid pointers.
+On 06/20/2013 05:03 AM, Eric W. Biederman wrote:
+> Eric Paris <eparis@redhat.com> writes:
 > 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+>> On Wed, 2013-06-19 at 16:49 -0400, Aristeu Rozanski wrote:
+>>> On Wed, Jun 19, 2013 at 09:53:32AM +0800, Gao feng wrote:
+>>>> This patchset is first part of namespace support for audit.
+>>>> in this patchset, the mainly resources of audit system have
+>>>> been isolated. the audit filter, rules havn't been isolated
+>>>> now. It will be implemented in Part2. We finished the isolation
+>>>> of user audit message in this patchset.
+>>>>
+>>>> I choose to assign audit to the user namespace.
+>>>> Right now,there are six kinds of namespaces, such as
+>>>> net, mount, ipc, pid, uts and user. the first five
+>>>> namespaces have special usage. the audit isn't suitable to
+>>>> belong to these five namespaces, And since the flag of system
+>>>> call clone is in short supply, we can't provide a new flag such
+>>>> as CLONE_NEWAUDIT to enable audit namespace separately. so the
+>>>> user namespace may be the best choice.
+>>>
+>>> I thought it was said on the last submission that to tie userns and
+>>> audit namespace would be a bad idea?
+>>
+>> I consider it a non-starter.  unpriv users are allowed to launch their
+>> own user namespace.  The whole point of audit is to have only a priv
+>> user be allowed to make changes.  If you tied audit namespace to user
+>> namespace you grant an unpriv user the ability to modify audit.
+>>
+>> NAK.
+>>
+>> If there are not clone flags you will either need to only do this from
+>> unshare and not from clone, or get more flags to clone
+> 
+> I completely agree that only priveleged user should be able to make
+> changes.
+> 
+> On the flip side, I don't know if this is at all interesting unless we
+> have a solution that works for users in unprivileged user namespaces.
+> Something like having the possibility of two or more instances of audit
+> working on every action.  One for each layer of privilege.
+> 
+> Gao feng, how do you want to use the audit infrastructure?
+> 
 
-Applied.
+I want the root user in container can use the audit related api
+(audit_open,audit_log_user_message..) and some network related
+audit messages generated by container shouldn't be logged to host.
+
+Thanks,
+Gao
