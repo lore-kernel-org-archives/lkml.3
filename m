@@ -1,139 +1,586 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965415Ab3FTLMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:12:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56665 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965322Ab3FTLMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1030252Ab3FTLMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:12:32 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:47571 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965288Ab3FTLMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Jun 2013 07:12:13 -0400
-Date: Thu, 20 Jun 2013 12:12:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH v5] Soft limit rework
-Message-ID: <20130620111206.GA14809@suse.de>
-References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Nicolas Palix <nicolas.palix@imag.fr>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] Coccinelle: Update the options used to the new option scheme
+Date: Thu, 20 Jun 2013 13:10:56 +0200
+Message-Id: <1371726656-24928-2-git-send-email-nicolas.palix@imag.fr>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371726656-24928-1-git-send-email-nicolas.palix@imag.fr>
+References: <1371726656-24928-1-git-send-email-nicolas.palix@imag.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 18, 2013 at 02:09:39PM +0200, Michal Hocko wrote:
-> base is mmotm-2013-05-09-15-57
-> baserebase is mmotm-2013-06-05-17-24-63 + patches from the current mmots
-> without slab shrinkers patchset.
-> reworkrebase all patches 8 applied on top of baserebase
-> 
-> * No-limit
-> User
-> base: min: 1164.94 max: 1169.75 avg: 1168.31 std: 1.57 runs: 6
-> baserebase: min: 1169.46 [100.4%] max: 1176.07 [100.5%] avg: 1172.49 [100.4%] std: 2.38 runs: 6
-> reworkrebase: min: 1172.58 [100.7%] max: 1177.43 [100.7%] avg: 1175.53 [100.6%] std: 1.91 runs: 6
-> System
-> base: min: 242.55 max: 245.36 avg: 243.92 std: 1.17 runs: 6
-> baserebase: min: 235.36 [97.0%] max: 238.52 [97.2%] avg: 236.70 [97.0%] std: 1.04 runs: 6
-> reworkrebase: min: 236.21 [97.4%] max: 239.46 [97.6%] avg: 237.55 [97.4%] std: 1.05 runs: 6
-> Elapsed
-> base: min: 596.81 max: 620.04 avg: 605.52 std: 7.56 runs: 6
-> baserebase: min: 666.45 [111.7%] max: 710.89 [114.7%] avg: 690.62 [114.1%] std: 13.85 runs: 6
-> reworkrebase: min: 664.05 [111.3%] max: 701.06 [113.1%] avg: 689.29 [113.8%] std: 12.36 runs: 6
-> 
-> Elapsed time regressed by 13% wrt. base but it seems that this came from
-> baserebase which regressed by the same amount.
-> 
+spatch has changed its option scheme.
+E.g., --no_show_diff is now --no-show-diff
 
-boo-urns
+This patch updates:
+ - scripts/coccicheck
+ - Semantic patches under scripts/coccinelle/
 
-> Page fault statistics tell us at least part of the story:
-> Minor
-> base: min: 35941845.00 max: 36029788.00 avg: 35986860.17 std: 28288.66 runs: 6
-> baserebase: min: 35852414.00 [99.8%] max: 35899605.00 [99.6%] avg: 35874906.83 [99.7%] std: 18722.59 runs: 6
-> reworkrebase: min: 35538346.00 [98.9%] max: 35584907.00 [98.8%] avg: 35562362.17 [98.8%] std: 18921.74 runs: 6
-> Major
-> base: min: 25390.00 max: 33132.00 avg: 29961.83 std: 2476.58 runs: 6
-> baserebase: min: 34224.00 [134.8%] max: 45674.00 [137.9%] avg: 41556.83 [138.7%] std: 3595.39 runs: 6
-> reworkrebase: min: 277.00 [1.1%] max: 480.00 [1.4%] avg: 384.67 [1.3%] std: 74.67 runs: 6
+Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+---
+ scripts/coccicheck                                 |   28 ++++++++++----------
+ .../coccinelle/api/alloc/drop_kmalloc_cast.cocci   |    2 +-
+ scripts/coccinelle/api/alloc/kzalloc-simple.cocci  |    2 +-
+ scripts/coccinelle/api/d_find_alias.cocci          |    2 +-
+ .../coccinelle/api/devm_request_and_ioremap.cocci  |    2 +-
+ scripts/coccinelle/api/kstrdup.cocci               |    2 +-
+ scripts/coccinelle/api/memdup.cocci                |    2 +-
+ scripts/coccinelle/api/memdup_user.cocci           |    2 +-
+ scripts/coccinelle/api/ptr_ret.cocci               |    2 +-
+ scripts/coccinelle/api/simple_open.cocci           |    2 +-
+ scripts/coccinelle/free/devm_free.cocci            |    2 +-
+ scripts/coccinelle/free/kfree.cocci                |    2 +-
+ scripts/coccinelle/free/kfreeaddr.cocci            |    2 +-
+ scripts/coccinelle/iterators/fen.cocci             |    2 +-
+ scripts/coccinelle/iterators/itnull.cocci          |    2 +-
+ .../coccinelle/iterators/list_entry_update.cocci   |    2 +-
+ scripts/coccinelle/iterators/use_after_iter.cocci  |    2 +-
+ scripts/coccinelle/locks/call_kern.cocci           |    2 +-
+ scripts/coccinelle/locks/double_lock.cocci         |    2 +-
+ scripts/coccinelle/locks/flags.cocci               |    2 +-
+ scripts/coccinelle/locks/mini_lock.cocci           |    2 +-
+ scripts/coccinelle/misc/boolinit.cocci             |    2 +-
+ scripts/coccinelle/misc/cstptr.cocci               |    2 +-
+ scripts/coccinelle/misc/doubleinit.cocci           |    2 +-
+ scripts/coccinelle/misc/ifaddr.cocci               |    2 +-
+ scripts/coccinelle/misc/ifcol.cocci                |    2 +-
+ scripts/coccinelle/misc/noderef.cocci              |    2 +-
+ scripts/coccinelle/misc/orplus.cocci               |    2 +-
+ scripts/coccinelle/misc/warn.cocci                 |    2 +-
+ scripts/coccinelle/null/eno.cocci                  |    2 +-
+ scripts/coccinelle/null/kmerr.cocci                |    2 +-
+ scripts/coccinelle/tests/doublebitand.cocci        |    2 +-
+ scripts/coccinelle/tests/doubletest.cocci          |    2 +-
+ scripts/coccinelle/tests/odd_ptr_err.cocci         |    2 +-
+ 34 files changed, 47 insertions(+), 47 deletions(-)
 
-Can you try this monolithic patch please?
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index fe73724..f677780 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1477,25 +1477,11 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 * as there is no guarantee the dirtying process is throttled in the
- 	 * same way balance_dirty_pages() manages.
- 	 *
--	 * This scales the number of dirty pages that must be under writeback
--	 * before a zone gets flagged ZONE_WRITEBACK. It is a simple backoff
--	 * function that has the most effect in the range DEF_PRIORITY to
--	 * DEF_PRIORITY-2 which is the priority reclaim is considered to be
--	 * in trouble and reclaim is considered to be in trouble.
--	 *
--	 * DEF_PRIORITY   100% isolated pages must be PageWriteback to throttle
--	 * DEF_PRIORITY-1  50% must be PageWriteback
--	 * DEF_PRIORITY-2  25% must be PageWriteback, kswapd in trouble
--	 * ...
--	 * DEF_PRIORITY-6 For SWAP_CLUSTER_MAX isolated pages, throttle if any
--	 *                     isolated page is PageWriteback
--	 *
- 	 * Once a zone is flagged ZONE_WRITEBACK, kswapd will count the number
- 	 * of pages under pages flagged for immediate reclaim and stall if any
- 	 * are encountered in the nr_immediate check below.
- 	 */
--	if (nr_writeback && nr_writeback >=
--			(nr_taken >> (DEF_PRIORITY - sc->priority)))
-+	if (nr_writeback && nr_writeback == nr_taken)
- 		zone_set_flag(zone, ZONE_WRITEBACK);
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index ad8e8ff..d3757ad 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -20,7 +20,7 @@ else
+ 	NPROC="$J"
+ fi
  
- 	/*
-@@ -2382,12 +2368,14 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 	struct zone *zone;
- 	unsigned long writeback_threshold;
- 	bool aborted_reclaim;
-+	int min_scan_priority = 1;
+-FLAGS="$SPFLAGS -very_quiet"
++FLAGS="$SPFLAGS --very-quiet"
  
- 	delayacct_freepages_start();
+ # spatch only allows include directories with the syntax "-I include"
+ # while gcc also allows "-Iinclude" and "-include include"
+@@ -36,14 +36,14 @@ if [ "$C" = "1" -o "$C" = "2" ]; then
+ else
+     ONLINE=0
+     if [ "$KBUILD_EXTMOD" = "" ] ; then
+-        OPTIONS="-dir $srctree $COCCIINCLUDE"
++        OPTIONS="--dir $srctree $COCCIINCLUDE"
+     else
+-        OPTIONS="-dir $KBUILD_EXTMOD $COCCIINCLUDE"
++        OPTIONS="--dir $KBUILD_EXTMOD $COCCIINCLUDE"
+     fi
+ fi
  
- 	if (global_reclaim(sc))
- 		count_vm_event(ALLOCSTALL);
+ if [ "$KBUILD_EXTMOD" != "" ] ; then
+-    OPTIONS="-patch $srctree $OPTIONS"
++    OPTIONS="--patch $srctree $OPTIONS"
+ fi
  
-+rescan:
- 	do {
- 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
- 				sc->priority);
-@@ -2442,7 +2430,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 						WB_REASON_TRY_TO_FREE_PAGES);
- 			sc->may_writepage = 1;
- 		}
--	} while (--sc->priority >= 0);
-+	} while (--sc->priority >= min_scan_priority);
+ if [ ! -x "$SPATCH" ]; then
+@@ -67,7 +67,7 @@ if [ "$MODE" = "chain" ] ; then
+ 	echo 'All available modes will be tried (in that order): patch, report, context, org'
+     fi
+ elif [ "$MODE" = "report" -o "$MODE" = "org" ] ; then
+-    FLAGS="$FLAGS -no_show_diff"
++    FLAGS="$FLAGS --no-show-diff"
+ fi
  
- out:
- 	delayacct_freepages_end();
-@@ -2466,6 +2454,12 @@ out:
- 	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
+ if [ "$ONLINE" = "0" ] ; then
+@@ -83,7 +83,7 @@ run_cmd() {
+ 		echo "Running ($NPROC in parallel): $@"
+ 	fi
+ 	for i in $(seq 0 $(( NPROC - 1)) ); do
+-		eval "$@ -max $NPROC -index $i &"
++		eval "$@ --max $NPROC --index $i &"
+ 		SPATCH_PID[$i]=$!
+ 		if [ $VERBOSE -eq 2 ] ; then
+ 			echo "${SPATCH_PID[$i]} running"
+@@ -106,7 +106,7 @@ coccinelle () {
  
-+	/* If the page allocator is going to consider OOM, rescan at priority 0 */
-+	if (min_scan_priority) {
-+		min_scan_priority = 0;
-+		goto rescan;
-+	}
-+
- 	return 0;
+     OPT=`grep "Option" $COCCI | cut -d':' -f2`
+ 
+-#   The option '-parse_cocci' can be used to syntactically check the SmPL files.
++#   The option '--parse-cocci' can be used to syntactically check the SmPL files.
+ #
+ #    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
+ 
+@@ -147,20 +147,20 @@ coccinelle () {
+ 
+     if [ "$MODE" = "chain" ] ; then
+ 	run_cmd $SPATCH -D patch   \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS               || \
+ 	run_cmd $SPATCH -D report  \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS --no-show-diff || \
+ 	run_cmd $SPATCH -D context \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS               || \
+ 	run_cmd $SPATCH -D org     \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS --no-show-diff || exit 1
+     elif [ "$MODE" = "rep+ctxt" ] ; then
+ 	run_cmd $SPATCH -D report  \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS --no-show-diff && \
+ 	run_cmd $SPATCH -D context \
+-		$FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
++		$FLAGS --cocci-file $COCCI $OPT $OPTIONS || exit 1
+     else
+-	run_cmd $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
++	run_cmd $SPATCH -D $MODE   $FLAGS --cocci-file $COCCI $OPT $OPTIONS || exit 1
+     fi
+ 
  }
+diff --git a/scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci b/scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci
+index 7d4771d..bd5d08b 100644
+--- a/scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci
++++ b/scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci
+@@ -5,7 +5,7 @@
+ // Confidence: High
+ // Copyright: 2009,2010 Nicolas Palix, DIKU.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ //
+ // Keywords: kmalloc, kzalloc, kcalloc
+ // Version min: < 2.6.12 kmalloc
+diff --git a/scripts/coccinelle/api/alloc/kzalloc-simple.cocci b/scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+index 046b9b1..52c55e4 100644
+--- a/scripts/coccinelle/api/alloc/kzalloc-simple.cocci
++++ b/scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+@@ -9,7 +9,7 @@
+ // Copyright: (C) 2009-2010 Julia Lawall, Nicolas Palix, DIKU.  GPLv2.
+ // Copyright: (C) 2009-2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/rules/kzalloc.html
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ //
+ // Keywords: kmalloc, kzalloc
+ // Version min: < 2.6.12 kmalloc
+diff --git a/scripts/coccinelle/api/d_find_alias.cocci b/scripts/coccinelle/api/d_find_alias.cocci
+index a9694a8..9594c9f 100644
+--- a/scripts/coccinelle/api/d_find_alias.cocci
++++ b/scripts/coccinelle/api/d_find_alias.cocci
+@@ -4,7 +4,7 @@
+ //
+ // Confidence: Moderate
+ // URL: http://coccinelle.lip6.fr/
+-// Options: -include_headers
++// Options: --include-headers
  
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/api/devm_request_and_ioremap.cocci b/scripts/coccinelle/api/devm_request_and_ioremap.cocci
+index 46beb81..562ec88 100644
+--- a/scripts/coccinelle/api/devm_request_and_ioremap.cocci
++++ b/scripts/coccinelle/api/devm_request_and_ioremap.cocci
+@@ -10,7 +10,7 @@
+ // Copyright: (C) 2011 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual org
+diff --git a/scripts/coccinelle/api/kstrdup.cocci b/scripts/coccinelle/api/kstrdup.cocci
+index 07a74b2..09cba54 100644
+--- a/scripts/coccinelle/api/kstrdup.cocci
++++ b/scripts/coccinelle/api/kstrdup.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/api/memdup.cocci b/scripts/coccinelle/api/memdup.cocci
+index 4dceab6..3d1aa71 100644
+--- a/scripts/coccinelle/api/memdup.cocci
++++ b/scripts/coccinelle/api/memdup.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/api/memdup_user.cocci b/scripts/coccinelle/api/memdup_user.cocci
+index 2b131a8..c606231 100644
+--- a/scripts/coccinelle/api/memdup_user.cocci
++++ b/scripts/coccinelle/api/memdup_user.cocci
+@@ -7,7 +7,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
+index 15f076f..2274638 100644
+--- a/scripts/coccinelle/api/ptr_ret.cocci
++++ b/scripts/coccinelle/api/ptr_ret.cocci
+@@ -5,7 +5,7 @@
+ // Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ //
+ // Keywords: ERR_PTR, PTR_ERR, PTR_RET
+ // Version min: 2.6.39
+diff --git a/scripts/coccinelle/api/simple_open.cocci b/scripts/coccinelle/api/simple_open.cocci
+index 05962f7..b67e174 100644
+--- a/scripts/coccinelle/api/simple_open.cocci
++++ b/scripts/coccinelle/api/simple_open.cocci
+@@ -4,7 +4,7 @@
+ ///
+ // Confidence: High
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual report
+diff --git a/scripts/coccinelle/free/devm_free.cocci b/scripts/coccinelle/free/devm_free.cocci
+index 0a1e361..3d93490 100644
+--- a/scripts/coccinelle/free/devm_free.cocci
++++ b/scripts/coccinelle/free/devm_free.cocci
+@@ -18,7 +18,7 @@
+ // Copyright: (C) 2011 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/free/kfree.cocci b/scripts/coccinelle/free/kfree.cocci
+index d9ae6d8..577b780 100644
+--- a/scripts/coccinelle/free/kfree.cocci
++++ b/scripts/coccinelle/free/kfree.cocci
+@@ -10,7 +10,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/free/kfreeaddr.cocci b/scripts/coccinelle/free/kfreeaddr.cocci
+index 662e997..ce8aacc 100644
+--- a/scripts/coccinelle/free/kfreeaddr.cocci
++++ b/scripts/coccinelle/free/kfreeaddr.cocci
+@@ -4,7 +4,7 @@
+ // Copyright: (C) 2013 Julia Lawall, INRIA/LIP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/iterators/fen.cocci b/scripts/coccinelle/iterators/fen.cocci
+index 0a40af8..48c152f 100644
+--- a/scripts/coccinelle/iterators/fen.cocci
++++ b/scripts/coccinelle/iterators/fen.cocci
+@@ -7,7 +7,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/iterators/itnull.cocci b/scripts/coccinelle/iterators/itnull.cocci
+index 259899f..f58732b 100644
+--- a/scripts/coccinelle/iterators/itnull.cocci
++++ b/scripts/coccinelle/iterators/itnull.cocci
+@@ -11,7 +11,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/iterators/list_entry_update.cocci b/scripts/coccinelle/iterators/list_entry_update.cocci
+index b296747..873f444 100644
+--- a/scripts/coccinelle/iterators/list_entry_update.cocci
++++ b/scripts/coccinelle/iterators/list_entry_update.cocci
+@@ -9,7 +9,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/iterators/use_after_iter.cocci b/scripts/coccinelle/iterators/use_after_iter.cocci
+index 06284c5..f085f59 100644
+--- a/scripts/coccinelle/iterators/use_after_iter.cocci
++++ b/scripts/coccinelle/iterators/use_after_iter.cocci
+@@ -11,7 +11,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LIP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/locks/call_kern.cocci b/scripts/coccinelle/locks/call_kern.cocci
+index 8f10b49..669b244 100644
+--- a/scripts/coccinelle/locks/call_kern.cocci
++++ b/scripts/coccinelle/locks/call_kern.cocci
+@@ -9,7 +9,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/locks/double_lock.cocci b/scripts/coccinelle/locks/double_lock.cocci
+index 63b24e6..002752f 100644
+--- a/scripts/coccinelle/locks/double_lock.cocci
++++ b/scripts/coccinelle/locks/double_lock.cocci
+@@ -8,7 +8,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/locks/flags.cocci b/scripts/coccinelle/locks/flags.cocci
+index 1c4ffe6..debd70e 100644
+--- a/scripts/coccinelle/locks/flags.cocci
++++ b/scripts/coccinelle/locks/flags.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/locks/mini_lock.cocci b/scripts/coccinelle/locks/mini_lock.cocci
+index 3267d74..47f649b 100644
+--- a/scripts/coccinelle/locks/mini_lock.cocci
++++ b/scripts/coccinelle/locks/mini_lock.cocci
+@@ -11,7 +11,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/misc/boolinit.cocci b/scripts/coccinelle/misc/boolinit.cocci
+index 97ce41c..b9abed4 100644
+--- a/scripts/coccinelle/misc/boolinit.cocci
++++ b/scripts/coccinelle/misc/boolinit.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+-// Options: -include_headers
++// Options: --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/misc/cstptr.cocci b/scripts/coccinelle/misc/cstptr.cocci
+index d425644..f0368b3 100644
+--- a/scripts/coccinelle/misc/cstptr.cocci
++++ b/scripts/coccinelle/misc/cstptr.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/doubleinit.cocci b/scripts/coccinelle/misc/doubleinit.cocci
+index cf74a00..c0c3371 100644
+--- a/scripts/coccinelle/misc/doubleinit.cocci
++++ b/scripts/coccinelle/misc/doubleinit.cocci
+@@ -8,7 +8,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments: requires at least Coccinelle 0.2.4, lex or parse error otherwise
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/ifaddr.cocci b/scripts/coccinelle/misc/ifaddr.cocci
+index 3e4089a..8aebd18 100644
+--- a/scripts/coccinelle/misc/ifaddr.cocci
++++ b/scripts/coccinelle/misc/ifaddr.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/ifcol.cocci b/scripts/coccinelle/misc/ifcol.cocci
+index b7ed91d..d0d00ef 100644
+--- a/scripts/coccinelle/misc/ifcol.cocci
++++ b/scripts/coccinelle/misc/ifcol.cocci
+@@ -13,7 +13,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/noderef.cocci b/scripts/coccinelle/misc/noderef.cocci
+index c170721..80a831c 100644
+--- a/scripts/coccinelle/misc/noderef.cocci
++++ b/scripts/coccinelle/misc/noderef.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/orplus.cocci b/scripts/coccinelle/misc/orplus.cocci
+index 4a28cef..81fabf3 100644
+--- a/scripts/coccinelle/misc/orplus.cocci
++++ b/scripts/coccinelle/misc/orplus.cocci
+@@ -7,7 +7,7 @@
+ // Copyright: (C) 2013 Gilles Muller, INRIA/LIP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual org
+ virtual report
+diff --git a/scripts/coccinelle/misc/warn.cocci b/scripts/coccinelle/misc/warn.cocci
+index fda8c35..d2e5b6c 100644
+--- a/scripts/coccinelle/misc/warn.cocci
++++ b/scripts/coccinelle/misc/warn.cocci
+@@ -5,7 +5,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/null/eno.cocci b/scripts/coccinelle/null/eno.cocci
+index ed961a1..9bd29aa 100644
+--- a/scripts/coccinelle/null/eno.cocci
++++ b/scripts/coccinelle/null/eno.cocci
+@@ -6,7 +6,7 @@
+ // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+diff --git a/scripts/coccinelle/null/kmerr.cocci b/scripts/coccinelle/null/kmerr.cocci
+index 949bf65..5354a79 100644
+--- a/scripts/coccinelle/null/kmerr.cocci
++++ b/scripts/coccinelle/null/kmerr.cocci
+@@ -10,7 +10,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/tests/doublebitand.cocci b/scripts/coccinelle/tests/doublebitand.cocci
+index 9ba73d0..72f1572a 100644
+--- a/scripts/coccinelle/tests/doublebitand.cocci
++++ b/scripts/coccinelle/tests/doublebitand.cocci
+@@ -10,7 +10,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/tests/doubletest.cocci b/scripts/coccinelle/tests/doubletest.cocci
+index 13a2c0e..78d74c2 100644
+--- a/scripts/coccinelle/tests/doubletest.cocci
++++ b/scripts/coccinelle/tests/doubletest.cocci
+@@ -8,7 +8,7 @@
+ // Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual context
+ virtual org
+diff --git a/scripts/coccinelle/tests/odd_ptr_err.cocci b/scripts/coccinelle/tests/odd_ptr_err.cocci
+index e8dd8a6..cfe0a35 100644
+--- a/scripts/coccinelle/tests/odd_ptr_err.cocci
++++ b/scripts/coccinelle/tests/odd_ptr_err.cocci
+@@ -7,7 +7,7 @@
+ // Copyright: (C) 2012 Gilles Muller, INRIA.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+ // Comments:
+-// Options: -no_includes -include_headers
++// Options: --no-includes --include-headers
+ 
+ virtual patch
+ virtual context
+-- 
+1.7.9.5
+
