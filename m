@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab3FTMvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 08:51:13 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43670 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab3FTMvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 08:51:11 -0400
-Message-ID: <51C2FABA.5050207@suse.cz>
-Date: Thu, 20 Jun 2013 14:51:06 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1757984Ab3FTMv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 08:51:26 -0400
+Received: from 8bytes.org ([85.214.48.195]:34877 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757970Ab3FTMvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 08:51:23 -0400
+Date: Thu, 20 Jun 2013 14:51:20 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+Message-ID: <20130620125120.GP2575@8bytes.org>
+References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
+ <20130529083652.GA25971@dhcp-26-207.brq.redhat.com>
+ <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
+ <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com>
 MIME-Version: 1.0
-To: tingwei liu <tingw.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <linus971@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re:
-References: <CA+qZnSSj+UCV9LUddS8qArnG5e8Q4wyC98B=awJ9TBbY+J6nBw@mail.gmail.com>
-In-Reply-To: <CA+qZnSSj+UCV9LUddS8qArnG5e8Q4wyC98B=awJ9TBbY+J6nBw@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun 20 14:51:22 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c2faca20861818510844
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 02:28 PM, tingwei liu wrote:
-> Hi, dears:
+On Mon, Jun 03, 2013 at 02:46:59PM -0600, Bjorn Helgaas wrote:
+> I pushed these with updates to
+> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
 > 
->       On Suse 11 sp2 3.0.13 kernel. After a few days, Nginx reply
-> packets with src ip 0.0.0.0 and  dst ip 0.0.0.0。
->       Just like https://bbs.archlinux.org/viewtopic.php?id=129304. Is
-> there a bug?
+> Anybody want to ack the iommu/irq_remapping.c patch?  If so, I can
+> merge that branch into -next for v3.11.
 
-You should better report this via suse's standard channels (suse
-support/bugzilla). We cannot help you otherwise.
+Sorry for being unresponsive, things habe been pretty busy here :-(
+The changes look good, you have my
 
-thanks,
--- 
-js
-suse labs
+Acked-by: Joerg Roedel <joro@8bytes.org>
+
+
