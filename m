@@ -1,143 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab3FTN3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 09:29:25 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:54662 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558Ab3FTN3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 09:29:24 -0400
+	id S1757849Ab3FTNdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 09:33:18 -0400
+Received: from 8bytes.org ([85.214.48.195]:35004 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757615Ab3FTNdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jun 2013 09:33:16 -0400
+Date: Thu, 20 Jun 2013 15:33:14 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: Masked MSIs expectations
+Message-ID: <20130620133314.GR2575@8bytes.org>
+References: <1368086982.25488.165.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <1371694737-29336-7-git-send-email-alex.shi@intel.com>
-References: <1371694737-29336-1-git-send-email-alex.shi@intel.com>
-	<1371694737-29336-7-git-send-email-alex.shi@intel.com>
-Date: Thu, 20 Jun 2013 15:29:23 +0200
-Message-ID: <CAKfTPtACq+whBLEHUm2Vrf7rStKUViGaSX_fn=Kf4SduXOjvbg@mail.gmail.com>
-Subject: Re: [Resend patch v8 06/13] sched: compute runnable load avg in
- cpu_load and cpu_avg_load_per_task
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        gregkh@linuxfoundation.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
-        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368086982.25488.165.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun 20 15:33:15 2013
+X-DSPAM-Confidence: 0.9978
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51c3049b20861959017358
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 June 2013 04:18, Alex Shi <alex.shi@intel.com> wrote:
-> They are the base values in load balance, update them with rq runnable
-> load average, then the load balance will consider runnable load avg
-> naturally.
->
-> We also try to include the blocked_load_avg as cpu load in balancing,
-> but that cause kbuild performance drop 6% on every Intel machine, and
-> aim7/oltp drop on some of 4 CPU sockets machines.
-> Or only add blocked_load_avg into get_rq_runable_load, hackbench still
-> drop a little on NHM EX.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  kernel/sched/fair.c |  5 +++--
->  kernel/sched/proc.c | 17 +++++++++++++++--
->  2 files changed, 18 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 1e5a5e6..7d5c477 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2968,7 +2968,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  /* Used instead of source_load when we know the type == 0 */
->  static unsigned long weighted_cpuload(const int cpu)
->  {
-> -       return cpu_rq(cpu)->load.weight;
-> +       return cpu_rq(cpu)->cfs.runnable_load_avg;
->  }
+(In case this topic is still relevant)
 
-Alex,
+On Thu, May 09, 2013 at 06:09:42PM +1000, Benjamin Herrenschmidt wrote:
+> Do we provide drivers any guarantee to what happen if an MSI is shot
+> while masked with disable_irq() or while not yet request_irq()'ed ?
+> 
+> Do we guarantee delivery (latched while masked), non-delivery, or
+> undefined ?
 
-In the wake-affine function, we use current->se.load.weight  and
-p->se.load.weight to update the load of this_cpu and prev_cpu whereas
-these loads are now equal to runnable_load_avg which is the sum of
-se->avg.load_avg_contrib now. Shouldn't we use
-se->avg.load_avg_contrib instead of se.load.weight ?
+I am not aware of any guarantees the kernel gives in this situation. I
+think it would just drop the IRQ and print a "nobody cared" message.
 
-Vincent
+> I'm bringing up a piece of HW where if it happened, it won't be
+> automatically sent to the CPU and can block further MSIs unless I
+> explicitly either ditch it or force a resend when unmasking (at the PCI
+> Express controller PIC level).
+> 
+> I'm tempted to just ditch anything that happened while masked, it would
+> make everything easier on my side, but maybe drivers have different
+> expectations (and of course an LSI would still shoot, that's not an
+> issue, only MSIs are in question here).
+> 
+> I have cases of devices continuing to shoot one or two MSIs after kexec
+> and before the new kernel takes over, causing a "loss" of any subsequent
+> one unless I deal with that case one way or another.
 
->
->  /*
-> @@ -3013,9 +3013,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->         struct rq *rq = cpu_rq(cpu);
->         unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> +       unsigned long load_avg = rq->cfs.runnable_load_avg;
->
->         if (nr_running)
-> -               return rq->load.weight / nr_running;
-> +               return load_avg / nr_running;
->
->         return 0;
->  }
-> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-> index bb3a6a0..ce5cd48 100644
-> --- a/kernel/sched/proc.c
-> +++ b/kernel/sched/proc.c
-> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->         sched_avg_update(this_rq);
->  }
->
-> +#ifdef CONFIG_SMP
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +       return rq->cfs.runnable_load_avg;
-> +}
-> +#else
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +       return rq->load.weight;
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_NO_HZ_COMMON
->  /*
->   * There is no sane way to deal with nohz on smp when using jiffies because the
-> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->  void update_idle_cpu_load(struct rq *this_rq)
->  {
->         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-> -       unsigned long load = this_rq->load.weight;
-> +       unsigned long load = get_rq_runnable_load(this_rq);
->         unsigned long pending_updates;
->
->         /*
-> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
->   */
->  void update_cpu_load_active(struct rq *this_rq)
->  {
-> +       unsigned long load = get_rq_runnable_load(this_rq);
->         /*
->          * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
->          */
->         this_rq->last_load_update_tick = jiffies;
-> -       __update_cpu_load(this_rq, this_rq->load.weight, 1);
-> +       __update_cpu_load(this_rq, load, 1);
->
->         calc_load_account_active(this_rq);
->  }
-> --
-> 1.7.12
->
+I would also just ditch such IRQs that happen in that kexec case and
+make sure that they will work again when the kexec-kernel device driver
+wants to initialize them.
+
+
+	Joerg
+
+
