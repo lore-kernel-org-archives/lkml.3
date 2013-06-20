@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965353Ab3FTLJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jun 2013 07:09:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28423 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030258Ab3FTLJI (ORCPT
+	id S1030260Ab3FTLJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jun 2013 07:09:07 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:35525 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030244Ab3FTLJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jun 2013 07:09:08 -0400
-Message-ID: <51C2E265.9010209@huawei.com>
-Date: Thu, 20 Jun 2013 19:07:17 +0800
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 20 Jun 2013 07:09:06 -0400
+Message-ID: <51C2E2D1.3040707@newflow.co.uk>
+Date: Thu, 20 Jun 2013 12:09:05 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: <rostedt@goodmis.org>
-CC: <fweisbec@gmail.com>, <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] trace: using strlcpy instead of strncpy
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Unable to find JFFS2 partition ... but I know it's there !!
+References: <51C2CBF1.5060900@newflow.co.uk>
+In-Reply-To: <51C2CBF1.5060900@newflow.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.200]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for NUL terminated string, need alway set '\0' in the end.
+On 20/06/13 10:31, Mark Jackson wrote:
+> I'm struggling to debug an issue where the kernel is unable to
+> find a JFFS2 partition held in NOR flash (on CS0)
 
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
----
- include/trace/events/sock.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Fixed ... I finally worked out I needed to add:-
 
-diff --git a/include/trace/events/sock.h b/include/trace/events/sock.h
-index 779abb9..333d8b5 100644
---- a/include/trace/events/sock.h
-+++ b/include/trace/events/sock.h
-@@ -44,7 +44,7 @@ TRACE_EVENT(sock_exceed_buf_limit,
- 	),
- 
- 	TP_fast_assign(
--		strncpy(__entry->name, prot->name, 32);
-+		strlcpy(__entry->name, prot->name, 32);
- 		__entry->sysctl_mem = prot->sysctl_mem;
- 		__entry->allocated = allocated;
- 		__entry->sysctl_rmem = prot->sysctl_rmem[0];
--- 
-1.7.1
+CONFIG_MTD_BLOCK
+CONFIG_MTD_BLOCK2MTD
 
+Sorry for the noise.
+
+Mark J.
