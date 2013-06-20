@@ -1,128 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935513Ab3FTBns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jun 2013 21:43:48 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:49974 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935398Ab3FTBnr (ORCPT
+	id S935529Ab3FTBoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jun 2013 21:44:21 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45707 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935516Ab3FTBoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jun 2013 21:43:47 -0400
+	Wed, 19 Jun 2013 21:44:20 -0400
+X-AuditID: 9c93016f-b7b6cae000007078-09-51c25e72937a
+Date: Thu, 20 Jun 2013 10:44:40 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: do not put a slab to cpu partial list when
+ cpu_partial is 0
+Message-ID: <20130620014439.GA13026@lge.com>
+References: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <51c1652d.246e320a.4057.ffffed4fSMTPIN_ADDED_BROKEN@mx.google.com>
+ <20130619085250.GC12231@lge.com>
+ <51c24c29.425c320a.433e.ffff9d8fSMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-In-Reply-To: <51BF2E37.5040400@intel.com>
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-	<1370589652-24549-5-git-send-email-alex.shi@intel.com>
-	<CAPM31RLB6nN+qN8UNq0RXiRYKaFZ6GYVP-=kZMR8-rkP9831Bw@mail.gmail.com>
-	<51BF2E37.5040400@intel.com>
-Date: Thu, 20 Jun 2013 09:43:45 +0800
-Message-ID: <CALZhoSSweOzTgjykRMxv_kha9TH-8EAKvuhinf8ADFyFDzDTuQ@mail.gmail.com>
-Subject: Re: [patch v8 4/9] sched: fix slept time double counting in enqueue entity
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51c24c29.425c320a.433e.ffff9d8fSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On Thu, Jun 20, 2013 at 08:26:03AM +0800, Wanpeng Li wrote:
+> On Wed, Jun 19, 2013 at 05:52:50PM +0900, Joonsoo Kim wrote:
+> >On Wed, Jun 19, 2013 at 04:00:32PM +0800, Wanpeng Li wrote:
+> >> On Wed, Jun 19, 2013 at 03:33:55PM +0900, Joonsoo Kim wrote:
+> >> >In free path, we don't check number of cpu_partial, so one slab can
+> >> >be linked in cpu partial list even if cpu_partial is 0. To prevent this,
+> >> >we should check number of cpu_partial in put_cpu_partial().
+> >> >
+> >> 
+> >> How about skip get_partial entirely? put_cpu_partial is called 
+> >> in two paths, one is during refill cpu partial lists in alloc 
+> >> slow path, the other is in free slow path. And cpu_partial is 0 
+> >> just in debug mode. 
+> >> 
+> >> - alloc slow path, there is unnecessary to call get_partial 
+> >>   since cpu partial lists won't be used in debug mode. 
+> >> - free slow patch, new.inuse won't be true in debug mode 
+> >>   which lead to put_cpu_partial won't be called.
+> >> 
+> >
+> >In debug mode, put_cpu_partial() can't be called already on both path.
+> >But, if we assign 0 to cpu_partial via sysfs, put_cpu_partial() will be called
+> >on free slow path. On alloc slow path, it can't be called, because following
+> >test in get_partial_node() is always failed.
+> >
+> >available > s->cpu_partial / 2
+> 
+> Is it always true? We can freeze slab from partial list, and 
+> s->cpu_partial is 0. 
 
-On Mon, Jun 17, 2013 at 11:41 PM, Alex Shi <alex.shi@intel.com> wrote:
-> On 06/17/2013 07:51 PM, Paul Turner wrote:
->> Can you add something like:
->>
->> +               /*
->> +                * Task re-woke on same cpu (or else
->> migrate_task_rq_fair()
->> +                * would have made count negative); we must be careful
->> to avoid
->> +                * double-accounting blocked time after synchronizing
->> decays.
->> +                */
->>
->>
->> Reviewed-by: Paul Turner <pjt@google.com>
->
-> thanks for review!
-> ---
->
-> From 24d9b43e7a269e6ffee5b874d39812b83812a809 Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Thu, 9 May 2013 10:54:13 +0800
-> Subject: [PATCH] sched: fix slept time double counting in enqueue entity
->
-> The wakeuped migrated task will __synchronize_entity_decay(se); in
-> migrate_task_fair, then it needs to set
+Do you mean node partial list?
 
-Should be migrate_task_rq_fair, right? :)
+At first, acquire_slab() is called for a cpu slab(not cpu partial list)
+in get_partial_node(), and then, check above test. In this time, available
+is always higher than 0, so, if we assign 0 to s->cpu_partial, we break
+the loop and we don't try to get a slab for cpu partial list.
 
-> `se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
-> before update_entity_load_avg, in order to avoid slept time is updated
-> twice for se.avg.load_avg_contrib in both __syncchronize and
-> update_entity_load_avg.
->
-> but if the slept task is waked up from self cpu, it miss the
-> last_runnable_update before update_entity_load_avg(se, 0, 1), then the
-> slept time was used twice in both functions.
-> So we need to remove the double slept time counting.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Reviewed-by: Paul Turner <pjt@google.com>
-> ---
->  kernel/sched/fair.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index df5b8a9..1e5a5e6 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1571,7 +1571,13 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->                 }
->                 wakeup = 0;
->         } else {
-> -               __synchronize_entity_decay(se);
-> +               /*
-> +                * Task re-woke on same cpu (or else migrate_task_rq_fair()
-> +                * would have made count negative); we must be careful to avoid
-> +                * double-accounting blocked time after synchronizing decays.
-> +                */
-> +               se->avg.last_runnable_update += __synchronize_entity_decay(se)
-> +                                                       << 20;
+Thanks.
 
-I'm kind of getting confused at here, since migrate_task_rq_fair use
-below equation to
-avoid sleep time be accounted for twice.
- `se->avg.last_runnable_update -= (-se->avg.decay_count) << 20'
-
-Why here we need to use "+=", which the reversed version comparing
-with previous?
-
-Thanks,
-Lei
-
->         }
->
->         /* migrated tasks did not contribute to our blocked load */
+> 
+> Regards,
+> Wanpeng Li 
+> 
+> >
+> >Thanks.
+> >
+> >> Regards,
+> >> Wanpeng Li 
+> >> 
+> >> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >> >
+> >> >diff --git a/mm/slub.c b/mm/slub.c
+> >> >index 57707f0..7033b4f 100644
+> >> >--- a/mm/slub.c
+> >> >+++ b/mm/slub.c
+> >> >@@ -1955,6 +1955,9 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+> >> > 	int pages;
+> >> > 	int pobjects;
+> >> >
+> >> >+	if (!s->cpu_partial)
+> >> >+		return;
+> >> >+
+> >> > 	do {
+> >> > 		pages = 0;
+> >> > 		pobjects = 0;
+> >> >-- 
+> >> >1.7.9.5
+> >> >
+> >> >--
+> >> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> >the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> >see: http://www.linux-mm.org/ .
+> >> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >> 
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 > --
-> 1.7.5.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
